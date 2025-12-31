@@ -27,8 +27,14 @@ make sense, let us know so we can improve it.
 
 Installation
 ------------
-Unfortunately, this software is not yet available as an installable package. We hope to change this soon. If you would like to use in now however, you are welcome to clone/copy the 
+Unfortunately, this software is not yet available as an installable package. We hope to change this soon.
+
+If you would like to use in now however, you are welcome to clone/copy the 
 repository onto your own device. The requirements for the toolbox can be installed using ``pip install -r requirements.txt``.
+
+If using Anaconda, the ``environment.yaml`` file can be used to create a conda environment using:
+``conda env create -f environment.yaml``.
+This should include all of the packages required to operate the software and run the example notebooks.
 
 Getting Started
 ---------------
