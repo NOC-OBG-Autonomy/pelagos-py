@@ -180,6 +180,7 @@
       "doc_lineno": 199
     }
   ],
+  "getting_started": [],
   "index": [
     {
       "source": "# Create the pipeline using the specified config\nPipe = Pipeline(\n   config_path=r\"config.yaml\"\n)\nPipe.run()",
@@ -195,6 +196,6 @@
       "doc_lineno": 16
     }
   ],
-  "installation": [],
-  "usage": []
+  "steps": [],
+  "tests": []
 }

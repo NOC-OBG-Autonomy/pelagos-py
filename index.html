@@ -5,7 +5,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>NOC Autonomy Toolbox Docs — Toolbox 0.0.0a documentation</title>
+<title>NOC Autonomy Toolbox Docs — NOCAT 0.0.0 documentation</title>
 <script data-cfasync="false">
     document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
     document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
@@ -32,7 +32,7 @@
 <!-- Pre-loaded scripts that we'll load fully later -->
 <link as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" rel="preload"/>
 <link as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" rel="preload"/>
-<script src="_static/documentation_options.js?v=e8454e50"></script>
+<script src="_static/documentation_options.js?v=7026087e"></script>
 <script src="_static/doctools.js?v=9bcbadda"></script>
 <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
 <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -43,7 +43,7 @@
 <link href="https://noc-obg-autonomy.github.io/toolbox/index.html" rel="canonical"/>
 <link href="genindex.html" rel="index" title="Index"/>
 <link href="search.html" rel="search" title="Search"/>
-<link href="installation.html" rel="next" title="Installation"/>
+<link href="steps.html" rel="next" title="Steps"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
 <meta content="en" name="docsearch:language"/>
 <meta content="0.0.0" name="docsearch:version"/>
@@ -71,7 +71,7 @@
 <div class="col-lg-3 navbar-header-items__start">
 <div class="navbar-item">
 <a class="navbar-brand logo" href="#">
-<p class="title logo__title">Toolbox 0.0.0a documentation</p>
+<p class="title logo__title">NOCAT 0.0.0 documentation</p>
 </a></div>
 </div>
 <div class="col-lg-9 navbar-header-items">
@@ -80,23 +80,28 @@
 <nav>
 <ul class="bd-navbar-elements navbar-nav">
 <li class="nav-item">
-<a class="nav-link nav-internal" href="installation.html">
-    Installation
+<a class="nav-link nav-internal" href="steps.html">
+    Steps
   </a>
 </li>
 <li class="nav-item">
-<a class="nav-link nav-internal" href="usage.html">
-    Usage
+<a class="nav-link nav-internal" href="tests.html">
+    Tests
   </a>
 </li>
 <li class="nav-item">
-<a class="nav-link nav-internal" href="api/src/toolbox/index.html">
-    src.toolbox
+<a class="nav-link nav-internal" href="getting_started.html">
+    Getting Started
   </a>
 </li>
 <li class="nav-item">
 <a class="nav-link nav-internal" href="contributing.html">
     Contributing
+  </a>
+</li>
+<li class="nav-item">
+<a class="nav-link nav-internal" href="api/src/toolbox/index.html">
+    src.toolbox
   </a>
 </li>
 </ul>
@@ -140,23 +145,28 @@
 <nav>
 <ul class="bd-navbar-elements navbar-nav">
 <li class="nav-item">
-<a class="nav-link nav-internal" href="installation.html">
-    Installation
+<a class="nav-link nav-internal" href="steps.html">
+    Steps
   </a>
 </li>
 <li class="nav-item">
-<a class="nav-link nav-internal" href="usage.html">
-    Usage
+<a class="nav-link nav-internal" href="tests.html">
+    Tests
   </a>
 </li>
 <li class="nav-item">
-<a class="nav-link nav-internal" href="api/src/toolbox/index.html">
-    src.toolbox
+<a class="nav-link nav-internal" href="getting_started.html">
+    Getting Started
   </a>
 </li>
 <li class="nav-item">
 <a class="nav-link nav-internal" href="contributing.html">
     Contributing
+  </a>
+</li>
+<li class="nav-item">
+<a class="nav-link nav-internal" href="api/src/toolbox/index.html">
+    src.toolbox
   </a>
 </li>
 </ul>
@@ -205,52 +215,34 @@ simple as possible. See <a class="reference internal" href="contributing.html"><
 be fairly intuitive to set them up. We have provided extensive details in <code class="docutils literal notranslate"><span class="pre">examples/configs/all_step_configs.yaml</span></code> which should help you - but if you see anything that doesn’t
 make sense, let us know so we can improve it.</p>
 </section>
-<section id="installation">
-<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading">#</a></h2>
-<p>Unfortunately, this software is not yet available as an installable package. We hope to change this soon.</p>
-<p>If you would like to use in now however, you are welcome to clone/copy the
-repository onto your own device. The requirements for the toolbox can be installed using <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-r</span> <span class="pre">requirements.txt</span></code>.</p>
-<p>If using Anaconda, the <code class="docutils literal notranslate"><span class="pre">environment.yaml</span></code> file can be used to create a conda environment using:
-<code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">env</span> <span class="pre">create</span> <span class="pre">-f</span> <span class="pre">environment.yaml</span></code>.
-This should include all of the packages required to operate the software and run the example notebooks.</p>
-</section>
-<section id="getting-started">
-<h2>Getting Started<a class="headerlink" href="#getting-started" title="Link to this heading">#</a></h2>
-<p>If you are new here, we recommend that you check out the <code class="docutils literal notranslate"><span class="pre">example/notebooks/pipeline_demo.ipynb</span></code> jupyter notebook. This presents an example use case of processing CTD measurements from freely
-available glider data hosted by the British Oceanographic Data Centre (BODC). A fully commented config file is also used for this processing, so make sure you check it out!</p>
-<p>The details of how each step works can be found in the documentation (see below). This is currently a work in progress so some steps may be missing or badly formatted. If you spot any mistakes
-or would like a specific steps documentation to be prioritized, please leave an issue in the <a class="reference external" href="https://github.com/NOC-OBG-Autonomy/toolbox/issues">github issues page</a>.</p>
-</section>
 <section id="contents">
 <h2>Contents<a class="headerlink" href="#contents" title="Link to this heading">#</a></h2>
 <div class="toctree-wrapper compound">
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="steps.html">Steps</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="steps.html#what-is-a-step">What is a Step?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="steps.html#step-qc-filters">Step QC Filters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="steps.html#steps-by-variable">Steps by Variable</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="steps.html#non-specific">Non-specific</a></li>
+<li class="toctree-l3"><a class="reference internal" href="steps.html#variable-specific">Variable Specific</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tests.html">Tests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#example-pipeline">Example Pipeline</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="api/src/toolbox/index.html">src.toolbox</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="api/src/toolbox/index.html#submodules">Submodules</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="api/src/toolbox/pipeline/index.html">src.toolbox.pipeline</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="api/src/toolbox/pipeline/index.html#classes">Classes</a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/src/toolbox/pipeline/index.html#module-contents">Module Contents</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="api/src/toolbox/pipeline_manager/index.html">src.toolbox.pipeline_manager</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="api/src/toolbox/pipeline_manager/index.html#classes">Classes</a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/src/toolbox/pipeline_manager/index.html#module-contents">Module Contents</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="api/src/toolbox/steps/index.html">src.toolbox.steps</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="api/src/toolbox/steps/index.html#submodules">Submodules</a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/src/toolbox/steps/index.html#attributes">Attributes</a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/src/toolbox/steps/index.html#functions">Functions</a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/src/toolbox/steps/index.html#package-contents">Package Contents</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="api/src/toolbox/utils/index.html">src.toolbox.utils</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="api/src/toolbox/utils/index.html#submodules">Submodules</a></li>
-</ul>
-</li>
+<li class="toctree-l3"><a class="reference internal" href="api/src/toolbox/pipeline/index.html">src.toolbox.pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/src/toolbox/pipeline_manager/index.html">src.toolbox.pipeline_manager</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/src/toolbox/steps/index.html">src.toolbox.steps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/src/toolbox/utils/index.html">src.toolbox.utils</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="api/src/toolbox/index.html#attributes">Attributes</a></li>
@@ -261,7 +253,6 @@ or would like a specific steps documentation to be prioritized, please leave an 
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
 </ul>
 </div>
 </section>
@@ -269,10 +260,10 @@ or would like a specific steps documentation to be prioritized, please leave an 
 </article>
 <footer class="prev-next-footer d-print-none">
 <div class="prev-next-area">
-<a class="right-next" href="installation.html" title="next page">
+<a class="right-next" href="steps.html" title="next page">
 <div class="prev-next-info">
 <p class="prev-next-subtitle">next</p>
-<p class="prev-next-title">Installation</p>
+<p class="prev-next-title">Steps</p>
 </div>
 <i class="fa-solid fa-angle-right"></i>
 </a>
@@ -288,8 +279,6 @@ or would like a specific steps documentation to be prioritized, please leave an 
 <nav aria-labelledby="pst-page-navigation-heading-2" class="bd-toc-nav page-toc">
 <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#welcome">Welcome!</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installation">Installation</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#getting-started">Getting Started</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#contents">Contents</a></li>
 </ul>
 </nav></div>
