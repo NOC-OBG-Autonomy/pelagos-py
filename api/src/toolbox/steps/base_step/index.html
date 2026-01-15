@@ -490,6 +490,11 @@ Every concrete subclass (registered via &#64;register_step) inherits this.</p>
 <span class="sig-name descname"><span class="pre">context</span></span><a class="reference internal" href="../../../../../_modules/src/toolbox/steps/base_step.html#BaseStep.context"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.base_step.BaseStep.context" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.toolbox.steps.base_step.BaseStep.logger">
+<span class="sig-name descname"><span class="pre">logger</span></span><a class="reference internal" href="../../../../../_modules/src/toolbox/steps/base_step.html#BaseStep.logger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.base_step.BaseStep.logger" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.steps.base_step.BaseStep.run">
 <em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/src/toolbox/steps/base_step.html#BaseStep.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.base_step.BaseStep.run" title="Link to this definition">#</a></dt>
@@ -505,13 +510,14 @@ Every concrete subclass (registered via &#64;register_step) inherits this.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.steps.base_step.BaseStep.log">
 <span class="sig-name descname"><span class="pre">log</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/src/toolbox/steps/base_step.html#BaseStep.log"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.base_step.BaseStep.log" title="Link to this definition">#</a></dt>
-<dd><p>Log messages with step name.</p>
+<dd><p>Log an info-level message with step name prefix.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.steps.base_step.BaseStep.log_warn">
 <span class="sig-name descname"><span class="pre">log_warn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warning_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">UserWarning</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/src/toolbox/steps/base_step.html#BaseStep.log_warn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.base_step.BaseStep.log_warn" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Log a warning-level message with step name prefix.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.steps.base_step.BaseStep.update_parameters">
@@ -598,6 +604,7 @@ Example:</p>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.base_step.BaseStep.parameters"><code class="docutils literal notranslate"><span class="pre">BaseStep.parameters</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.base_step.BaseStep.diagnostics"><code class="docutils literal notranslate"><span class="pre">BaseStep.diagnostics</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.base_step.BaseStep.context"><code class="docutils literal notranslate"><span class="pre">BaseStep.context</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.base_step.BaseStep.logger"><code class="docutils literal notranslate"><span class="pre">BaseStep.logger</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.base_step.BaseStep.run"><code class="docutils literal notranslate"><span class="pre">BaseStep.run()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.base_step.BaseStep.generate_diagnostics"><code class="docutils literal notranslate"><span class="pre">BaseStep.generate_diagnostics()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.base_step.BaseStep.log"><code class="docutils literal notranslate"><span class="pre">BaseStep.log()</span></code></a></li>

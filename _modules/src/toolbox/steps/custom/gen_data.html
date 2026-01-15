@@ -353,7 +353,9 @@
                 <article class="bd-article">
                   
   <h1>Source code for src.toolbox.steps.custom.gen_data</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
+<span></span><span class="sd">&quot;&quot;&quot;Step for generating synthetic data for testing pipelines&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
@@ -366,8 +368,9 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">GenerateData</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Example config setup:</span>
-<span class="sd">        </span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
+
 <div class="viewcode-block" id="GenerateData.step_name">
 <a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/gen_data/index.html#src.toolbox.steps.custom.gen_data.GenerateData.step_name">[docs]</a>
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Generate Data&quot;</span></div>
@@ -376,7 +379,6 @@
 <div class="viewcode-block" id="GenerateData.run">
 <a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/gen_data/index.html#src.toolbox.steps.custom.gen_data.GenerateData.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
         <span class="c1"># Check if the data is already in the context</span>
         <span class="k">if</span> <span class="s2">&quot;data&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
@@ -386,14 +388,20 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gen_fixed_data</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Generating fixed data&quot;</span><span class="p">)</span>
             <span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span>
+
             <span class="n">ncols</span> <span class="o">=</span> <span class="mi">2</span>
             <span class="n">column_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">][:</span><span class="n">ncols</span><span class="p">]</span>
             <span class="n">qc_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span> <span class="n">repeat</span><span class="o">=</span><span class="n">ncols</span><span class="p">)))</span>
-            <span class="n">values</span> <span class="o">=</span> <span class="p">[[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="mi">10</span> <span class="o">**</span> <span class="n">ncols</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">ncols</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
-            <span class="n">df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
-                <span class="o">**</span><span class="p">{</span><span class="n">col</span><span class="p">:</span> <span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">column_names</span><span class="p">)},</span>
-                <span class="o">**</span><span class="p">{</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">:</span> <span class="n">qc_values</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">column_names</span><span class="p">)}</span>
-            <span class="p">})</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="p">[[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="n">ncols</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">ncols</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="o">**</span><span class="p">{</span><span class="n">col</span><span class="p">:</span> <span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">column_names</span><span class="p">)},</span>
+                    <span class="o">**</span><span class="p">{</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">:</span> <span class="n">qc_values</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span>
+                        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">column_names</span><span class="p">)</span>
+                    <span class="p">},</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
 
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Generating random data&quot;</span><span class="p">)</span>
@@ -417,7 +425,7 @@
             <span class="p">}</span>
             <span class="n">variable_limits</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">user_value_limits</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">diagnostics</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Generate Data] Variables: </span><span class="si">{</span><span class="n">variable_limits</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Generate Data] Variables: </span><span class="si">{</span><span class="n">variable_limits</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
             <span class="c1"># Make time index for dataframe (df)</span>
             <span class="n">df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">select</span><span class="p">(</span>

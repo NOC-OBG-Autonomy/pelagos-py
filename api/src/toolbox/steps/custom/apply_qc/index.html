@@ -427,7 +427,7 @@
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.apply_qc.ApplyQC" title="src.toolbox.steps.custom.apply_qc.ApplyQC"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ApplyQC</span></code></a></p></td>
-<td><p>Base class for pipeline steps with config-mirroring support.</p></td>
+<td><p>Step to apply quality control tests to the dataset.</p></td>
 </tr>
 </tbody>
 </table>
@@ -439,8 +439,8 @@
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.apply_qc.ApplyQC">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.apply_qc.</span></span><span class="sig-name descname"><span class="pre">ApplyQC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/apply_qc.html#ApplyQC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.apply_qc.ApplyQC" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="../../base_step/index.html#src.toolbox.steps.base_step.BaseStep" title="src.toolbox.steps.base_step.BaseStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">src.toolbox.steps.base_step.BaseStep</span></code></a></p>
-<p>Base class for pipeline steps with config-mirroring support.
-Every concrete subclass (registered via &#64;register_step) inherits this.</p>
+<p>Step to apply quality control tests to the dataset.</p>
+<p>Inherits properties from BaseStep (see base_step.py).</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.apply_qc.ApplyQC.step_name">
 <span class="sig-name descname"><span class="pre">step_name</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Apply</span> <span class="pre">QC'</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/apply_qc.html#ApplyQC.step_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.apply_qc.ApplyQC.step_name" title="Link to this definition">#</a></dt>
@@ -449,12 +449,28 @@ Every concrete subclass (registered via &#64;register_step) inherits this.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.apply_qc.ApplyQC.organise_flags">
 <span class="sig-name descname"><span class="pre">organise_flags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_flags</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/apply_qc.html#ApplyQC.organise_flags"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.apply_qc.ApplyQC.organise_flags" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Method for taking in new flags (new_flags) and cross checking against existing flags (self.flag_store), including upgrading flags when necessary, following ARGO flagging standards.
+See Wong et al. 2025 pp. 106 (<a class="reference external" href="http://dx.doi.org/10.13155/33951">http://dx.doi.org/10.13155/33951</a>) and Mancini et al. 2021 pp. 43-44 for additional ARGO flag definitions.</p>
+<p>Combinatrix logic:
+0: No QC performed, the initial flag.
+1: Good data. No adjustment needed.
+2: Probably good data.
+3: Probably bad data that are potentially correctable.
+4: Bad data that are not correctable.
+5: Value changed.
+6, 7: Not used.
+8: Estimated by interpolation, extrapolation, or other algorithm.
+9: Missing value.</p>
+<p>The combinatrix defines flagging priority when merging in new flags. The flag value itself acts as a kind of index.
+As an example, if an existing flag is 2 (probably good data) and a new flag is 4 (bad data), the resulting flag will be 4.
+2 (probably good data) + 4 (bad data) -&gt; 4 (bad data)
+3 (probably bad data) + 5 (value changed) -&gt; 3 (probably bad data)</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.apply_qc.ApplyQC.run">
 <span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/apply_qc.html#ApplyQC.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.apply_qc.ApplyQC.run" title="Link to this definition">#</a></dt>
-<dd><p>To be implemented by subclasses.</p>
+<dd><p>Run the Apply QC step.</p>
 </dd></dl>
 
 </dd></dl>

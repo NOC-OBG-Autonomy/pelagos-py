@@ -353,9 +353,7 @@
                 <article class="bd-article">
                   
   <h1>Source code for src.toolbox.steps.base_test</h1><div class="highlight"><pre>
-<span></span>
-
-<span class="c1"># Registry of explicitly registered step classes</span>
+<span></span><span class="c1"># Registry of explicitly registered step classes</span>
 <div class="viewcode-block" id="REGISTERED_QC">
 <a class="viewcode-back" href="../../../../api/src/toolbox/steps/index.html#src.toolbox.steps.base_test.REGISTERED_QC">[docs]</a>
 <span class="n">REGISTERED_QC</span> <span class="o">=</span> <span class="p">{}</span></div>
@@ -372,7 +370,7 @@
     <span class="mi">6</span><span class="p">:</span> <span class="s2">&quot;gray&quot;</span><span class="p">,</span>
     <span class="mi">7</span><span class="p">:</span> <span class="s2">&quot;gray&quot;</span><span class="p">,</span>
     <span class="mi">8</span><span class="p">:</span> <span class="s2">&quot;cyan&quot;</span><span class="p">,</span>
-    <span class="mi">9</span><span class="p">:</span> <span class="s2">&quot;black&quot;</span>
+    <span class="mi">9</span><span class="p">:</span> <span class="s2">&quot;black&quot;</span><span class="p">,</span>
 <span class="p">}</span></div>
 
 
@@ -426,7 +424,9 @@
 
         <span class="n">invalid_params</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expected_parameters</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
         <span class="k">if</span> <span class="n">invalid_params</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unexpected parameters for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">test_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">invalid_params</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Unexpected parameters for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">test_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">invalid_params</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
 
         <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">expected_parameters</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>

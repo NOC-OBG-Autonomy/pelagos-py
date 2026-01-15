@@ -6,6 +6,12 @@ Installation
 Unfortunately, this software is not yet available as an installable package. We hope to change this soon. If you would like to use in now however, you are welcome to clone/copy the 
 repository onto your own device. The requirements for the toolbox can be installed using ``pip install -r requirements.txt``.
 
+If using Anaconda, the ``environment.yaml`` file can be used to create a conda environment using:
+
+``conda env create -f environment.yaml``.
+
+This should include all of the packages required to operate the software and run the example notebooks.
+
 Example Pipeline
 ----------------
 If you are new here, we recommend that you check out the ``example/notebooks/pipeline_demo.ipynb`` jupyter notebook. This presents an example use case of processing CTD measurements from freely 

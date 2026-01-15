@@ -418,6 +418,7 @@
                   
   <section id="module-src.toolbox.utils.qc_handling">
 <span id="src-toolbox-utils-qc-handling"></span><h1>src.toolbox.utils.qc_handling<a class="headerlink" href="#module-src.toolbox.utils.qc_handling" title="Link to this heading">#</a></h1>
+<p>Class definition to handle quality control bulk operations.</p>
 <section id="classes">
 <h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
@@ -467,22 +468,26 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.utils.qc_handling.QCHandlingMixin.filter_qc">
 <span class="sig-name descname"><span class="pre">filter_qc</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/src/toolbox/utils/qc_handling.html#QCHandlingMixin.filter_qc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.utils.qc_handling.QCHandlingMixin.filter_qc" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>NaN-out data based on bad QC flags</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.utils.qc_handling.QCHandlingMixin.reconstruct_data">
 <span class="sig-name descname"><span class="pre">reconstruct_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/src/toolbox/utils/qc_handling.html#QCHandlingMixin.reconstruct_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.utils.qc_handling.QCHandlingMixin.reconstruct_data" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Reconstruct data by replacing flagged values with original values</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.utils.qc_handling.QCHandlingMixin.update_qc">
 <span class="sig-name descname"><span class="pre">update_qc</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/src/toolbox/utils/qc_handling.html#QCHandlingMixin.update_qc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.utils.qc_handling.QCHandlingMixin.update_qc" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Update QC flags based on changes in data values</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.utils.qc_handling.QCHandlingMixin.generate_qc">
 <span class="sig-name descname"><span class="pre">generate_qc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">qc_constituents</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/src/toolbox/utils/qc_handling.html#QCHandlingMixin.generate_qc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.utils.qc_handling.QCHandlingMixin.generate_qc" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Generate QC flags for child variables based on parent variables’ QC flags</p>
+</dd></dl>
 
 </dd></dl>
 
