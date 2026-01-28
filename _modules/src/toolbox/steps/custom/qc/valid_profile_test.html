@@ -369,6 +369,8 @@
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
 
+<span class="sd">&quot;&quot;&quot;QC tests for assessing validity of a glider profile, based on different definitions of successful data.&quot;&quot;&quot;</span>
+
 <span class="c1">#### Mandatory imports ####</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base_test</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseTest</span><span class="p">,</span> <span class="n">register_qc</span><span class="p">,</span> <span class="n">flag_cols</span>
 
@@ -378,14 +380,15 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
 
+
 <span class="nd">@register_qc</span>
 <div class="viewcode-block" id="valid_profile_test">
 <a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/valid_profile_test/index.html#src.toolbox.steps.custom.qc.valid_profile_test.valid_profile_test">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">valid_profile_test</span><span class="p">(</span><span class="n">BaseTest</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Target Variable: PROFILE_NUMEBER</span>
+<span class="sd">    Target Variable: PROFILE_NUMBER</span>
 <span class="sd">    Flag Number: 4 (bad data), 3 (potentially bad)</span>
-<span class="sd">    Variables Flagged: PROFILE_NUMEBER</span>
+<span class="sd">    Variables Flagged: PROFILE_NUMBER</span>
 <span class="sd">    Checks that each profile is of a certain length (in number of points)</span>
 <span class="sd">    and contains points within a specified depth range.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -413,11 +416,9 @@
 <div class="viewcode-block" id="valid_profile_test.return_qc">
 <a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/valid_profile_test/index.html#src.toolbox.steps.custom.qc.valid_profile_test.valid_profile_test.return_qc">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">return_qc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
         <span class="c1"># Convert to polars</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">from_pandas</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span><span class="p">]</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">(),</span>
-            <span class="n">nan_to_null</span><span class="o">=</span><span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span><span class="p">]</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">(),</span> <span class="n">nan_to_null</span><span class="o">=</span><span class="kc">False</span>
         <span class="p">)</span>
 
         <span class="c1"># Check profiles are of a given length</span>
@@ -426,20 +427,19 @@
 
         <span class="c1"># Find profiles that have no data between the sepcified depth ranges</span>
         <span class="n">profile_ranges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">group_by</span><span class="p">(</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">agg</span><span class="p">(</span>
-            <span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;DEPTH&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">is_between</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">depth_range</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">())</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s2">&quot;in_depth_range&quot;</span><span class="p">)</span>
+            <span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;DEPTH&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">is_between</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">depth_range</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">())</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span>
+                <span class="s2">&quot;in_depth_range&quot;</span>
+            <span class="p">)</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">profile_ranges</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
-            <span class="n">pl</span><span class="o">.</span><span class="n">when</span><span class="p">(</span>
-                <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">is_nan</span><span class="p">()</span>
-            <span class="p">)</span><span class="o">.</span><span class="n">then</span><span class="p">(</span><span class="mi">9</span><span class="p">)</span>
-            <span class="o">.</span><span class="n">when</span><span class="p">(</span>
-                <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;count&quot;</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile_length</span>
-            <span class="p">)</span><span class="o">.</span><span class="n">then</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
-            <span class="o">.</span><span class="n">when</span><span class="p">(</span>
-                <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;in_depth_range&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">not_</span><span class="p">()</span>
-            <span class="p">)</span><span class="o">.</span><span class="n">then</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">when</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">is_nan</span><span class="p">())</span>
+            <span class="o">.</span><span class="n">then</span><span class="p">(</span><span class="mi">9</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">when</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;count&quot;</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile_length</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">then</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">when</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;in_depth_range&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">not_</span><span class="p">())</span>
+            <span class="o">.</span><span class="n">then</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
             <span class="o">.</span><span class="n">otherwise</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
             <span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s2">&quot;PROFILE_NUMBER_QC&quot;</span><span class="p">)</span>
         <span class="p">)</span>
@@ -448,10 +448,9 @@
         <span class="n">flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;^.*_QC$&quot;</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span>
             <span class="n">data_vars</span><span class="o">=</span><span class="p">{</span>
-                <span class="n">col</span><span class="p">:</span> <span class="p">(</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,</span> <span class="n">flags</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">())</span>
-                <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">flags</span><span class="o">.</span><span class="n">columns</span>
+                <span class="n">col</span><span class="p">:</span> <span class="p">(</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,</span> <span class="n">flags</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">())</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">flags</span><span class="o">.</span><span class="n">columns</span>
             <span class="p">},</span>
-            <span class="n">coords</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">]}</span>
+            <span class="n">coords</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">]},</span>
         <span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">flags</span></div>
@@ -491,7 +490,6 @@
         <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 </div>
-
 
 </pre></div>
 

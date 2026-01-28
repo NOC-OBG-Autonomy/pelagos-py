@@ -369,13 +369,17 @@
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
 
+<span class="sd">&quot;&quot;&quot;Example QC test template, using parts of impossible_date_test as a skeleton.&quot;&quot;&quot;</span>
+
 <span class="c1">#### Mandatory imports ####</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base_test</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseTest</span><span class="p">,</span> <span class="n">register_qc</span><span class="p">,</span> <span class="n">flag_cols</span>
+<span class="c1"># from toolbox.steps.base_test import BaseTest, register_qc, flag_cols # Uncomment when implementing</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base_test</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseTest</span>
 
 <span class="c1">#### Custom imports ####</span>
+<span class="c1"># any additional imports required for the test go here</span>
 
 
-<span class="nd">@register_qc</span>
+<span class="c1"># @register_qc  # Uncomment when implementing</span>
 <div class="viewcode-block" id="impossible_date_test">
 <a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/blank_test/index.html#src.toolbox.steps.custom.qc.blank_test.impossible_date_test">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">impossible_date_test</span><span class="p">(</span><span class="n">BaseTest</span><span class="p">):</span>
@@ -414,7 +418,8 @@
 <div class="viewcode-block" id="impossible_date_test.plot_diagnostics">
 <a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/blank_test/index.html#src.toolbox.steps.custom.qc.blank_test.impossible_date_test.plot_diagnostics">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">plot_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+        <span class="c1"># plt.show(block=True)</span>
+        <span class="k">pass</span></div>
 </div>
 
 </pre></div>

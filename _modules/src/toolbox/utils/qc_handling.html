@@ -454,7 +454,12 @@
 <a class="viewcode-back" href="../../../../api/src/toolbox/utils/qc_handling/index.html#src.toolbox.utils.qc_handling.QCHandlingMixin.reconstruct_data">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">reconstruct_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Reconstruct data by replacing flagged values with original values</span>
+<span class="sd">        Reconstruct data by replacing flagged values with original values.</span>
+
+<span class="sd">        raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        KeyError</span>
+<span class="sd">            If the specified behaviour is not specified in this method.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">behaviour</span> <span class="o">==</span> <span class="s2">&quot;replace&quot;</span><span class="p">:</span>
             <span class="k">pass</span>
@@ -502,7 +507,12 @@
 <a class="viewcode-back" href="../../../../api/src/toolbox/utils/qc_handling/index.html#src.toolbox.utils.qc_handling.QCHandlingMixin.generate_qc">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_qc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">qc_constituents</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Generate QC flags for child variables based on parent variables&#39; QC flags</span>
+<span class="sd">        Generate QC flags for child variables based on parent variables&#39; QC flags.</span>
+
+<span class="sd">        parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        qc_constituents : dict</span>
+<span class="sd">            A dictionary mapping child QC variable names to lists of parent QC variable names.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Unpack the parent qc</span>
         <span class="k">for</span> <span class="n">qc_child</span><span class="p">,</span> <span class="n">qc_parents</span> <span class="ow">in</span> <span class="n">qc_constituents</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>

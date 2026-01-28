@@ -327,6 +327,7 @@
 <li class="toctree-l4 current active"><a class="current reference internal" href="#">src.toolbox.steps.custom.qc.par_irregularity_test</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../position_on_land_test/index.html">src.toolbox.steps.custom.qc.position_on_land_test</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../range_test/index.html">src.toolbox.steps.custom.qc.range_test</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../range_test_gross/index.html">src.toolbox.steps.custom.qc.range_test_gross</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../spike_test/index.html">src.toolbox.steps.custom.qc.spike_test</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../stuck_value_test/index.html">src.toolbox.steps.custom.qc.stuck_value_test</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../valid_profile_test/index.html">src.toolbox.steps.custom.qc.valid_profile_test</a></li>
@@ -424,12 +425,15 @@
                   
   <section id="module-src.toolbox.steps.custom.qc.par_irregularity_test">
 <span id="src-toolbox-steps-custom-qc-par-irregularity-test"></span><h1>src.toolbox.steps.custom.qc.par_irregularity_test<a class="headerlink" href="#module-src.toolbox.steps.custom.qc.par_irregularity_test" title="Link to this heading">#</a></h1>
+<p>QC tests to identify irregularities in PAR profiles based on La Forgia &amp; Organelli (2025).
+* Shapiro–Wilk test
+* Day and night sequences</p>
 <section id="classes">
 <h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.qc.par_irregularity_test.par_irregularity_test" title="src.toolbox.steps.custom.qc.par_irregularity_test.par_irregularity_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">par_irregularity_test</span></code></a></p></td>
-<td><p></p></td>
+<td><p>Wrapper for qc_par_flagging, defining solar_elevation if it is not provided.</p></td>
 </tr>
 </tbody>
 </table>
@@ -543,6 +547,7 @@ NaN if undefined.</p></li>
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.par_irregularity_test.par_irregularity_test">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.qc.par_irregularity_test.</span></span><span class="sig-name descname"><span class="pre">par_irregularity_test</span></span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/par_irregularity_test.html#par_irregularity_test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.par_irregularity_test.par_irregularity_test" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">toolbox.steps.base_test.BaseTest</span></code></p>
+<p>Wrapper for qc_par_flagging, defining solar_elevation if it is not provided.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.par_irregularity_test.par_irregularity_test.test_name">
 <span class="sig-name descname"><span class="pre">test_name</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'PAR</span> <span class="pre">irregularity</span> <span class="pre">test'</span></em><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/par_irregularity_test.html#par_irregularity_test.test_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.par_irregularity_test.par_irregularity_test.test_name" title="Link to this definition">#</a></dt>

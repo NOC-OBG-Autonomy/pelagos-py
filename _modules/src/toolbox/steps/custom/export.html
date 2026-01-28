@@ -374,12 +374,15 @@
 <span class="c1">#### Mandatory imports ####</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">toolbox.utils.diagnostics</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">diag</span>
-
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 
 <span class="nd">@register_step</span>
 <div class="viewcode-block" id="ExportStep">
 <a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/export/index.html#src.toolbox.steps.custom.export.ExportStep">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ExportStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Step to export data in various formats.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 <div class="viewcode-block" id="ExportStep.step_name">
 <a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/export/index.html#src.toolbox.steps.custom.export.ExportStep.step_name">[docs]</a>
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Data Export&quot;</span></div>
@@ -398,6 +401,11 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Data found in context.&quot;</span><span class="p">)</span>
         <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
+        <span class="c1"># Add exiting notes on QC history if available TODO: Move earlier to individual QC steps on each data variable attribute</span>
+        <span class="k">if</span> <span class="s2">&quot;qc_history&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;QC history found in context.&quot;</span><span class="p">)</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;delayed_qc_history&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;qc_history&quot;</span><span class="p">])</span>
+
         <span class="n">export_format</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;export_format&quot;</span><span class="p">]</span>
         <span class="n">output_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;output_path&quot;</span><span class="p">]</span>
 
@@ -430,7 +438,9 @@
 <div class="viewcode-block" id="ExportStep.generate_diagnostics">
 <a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/export/index.html#src.toolbox.steps.custom.export.ExportStep.generate_diagnostics">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate diagnostics for the export step.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate diagnostics for the export step.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Generating diagnostics for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="n">diag</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Diagnostics generated successfully.&quot;</span><span class="p">)</span></div>

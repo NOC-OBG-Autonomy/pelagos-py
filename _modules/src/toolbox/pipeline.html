@@ -366,7 +366,7 @@
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
 
-<span class="sd">&quot;&quot;&quot;Pipeline Class&quot;&quot;&quot;</span>
+<span class="sd">&quot;&quot;&quot;Pipeline class definition to handle configuration and step execution.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
@@ -386,9 +386,24 @@
 <span class="p">)</span>
 
 <span class="n">_PIPELINE_LOGGER_NAME</span> <span class="o">=</span> <span class="s2">&quot;toolbox.pipeline&quot;</span>
+<span class="sd">&quot;&quot;&quot;Global logger name for the pipeline. Used to create child loggers for steps.&quot;&quot;&quot;</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_setup_logging</span><span class="p">(</span><span class="n">log_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set up logging for the entire pipeline.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Set up logging for the entire pipeline.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    log_file : str, optional</span>
+<span class="sd">        Path to the log file. If provided, logs will be written to this file.</span>
+<span class="sd">    level : int, optional</span>
+<span class="sd">        Logging level (e.g., logging.INFO, logging.DEBUG).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    logging.Logger</span>
+<span class="sd">        Configured logger instance.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">_PIPELINE_LOGGER_NAME</span><span class="p">)</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">propagate</span> <span class="o">=</span> <span class="kc">False</span>
@@ -423,14 +438,29 @@
 <a class="viewcode-back" href="../../../api/src/toolbox/pipeline/index.html#src.toolbox.pipeline.Pipeline">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Pipeline</span><span class="p">(</span><span class="n">ConfigMirrorMixin</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Pipeline that manages a sequence of processing steps.</span>
+<span class="sd">    </span>
 <span class="sd">    Config-aware pipeline that can:</span>
 <span class="sd">      - Load config YAML into private self._parameters</span>
 <span class="sd">      - Keep global_parameters mirrored to _parameters[&#39;pipeline&#39;]</span>
 <span class="sd">      - Build, run, and export steps as before</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ConfigMirrorMixin : Class</span>
+<span class="sd">        Class to handle configuration</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize pipeline with optional config file&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize pipeline with optional config file.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        config_path : str, optional</span>
+<span class="sd">            Path to the YAML configuration file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
 <div class="viewcode-block" id="Pipeline.steps">
 <a class="viewcode-back" href="../../../api/src/toolbox/pipeline/index.html#src.toolbox.pipeline.Pipeline.steps">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">steps</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># hierarchical step configs</span></div>
@@ -460,7 +490,16 @@
 <div class="viewcode-block" id="Pipeline.build_steps">
 <a class="viewcode-back" href="../../../api/src/toolbox/pipeline/index.html#src.toolbox.pipeline.Pipeline.build_steps">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">build_steps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">steps_config</span><span class="p">,</span> <span class="n">parent_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Recursively build steps from configuration&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Recursively build steps from configuration.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        steps_config : list of dict</span>
+<span class="sd">            List of step configurations.</span>
+<span class="sd">        parent_name : str, optional</span>
+<span class="sd">            Name of the parent step, if any.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">steps_config</span><span class="p">:</span>
             <span class="n">REQUIRED_STEPS</span> <span class="o">=</span> <span class="n">STEP_DEPENDENCIES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">step</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">],</span> <span class="p">[])</span>
             <span class="k">for</span> <span class="n">required_step</span> <span class="ow">in</span> <span class="n">REQUIRED_STEPS</span><span class="p">:</span>
@@ -489,7 +528,27 @@
         <span class="n">parent_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">run_immediately</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Dynamically adds a step and optionally runs it immediately&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Dynamically adds a step and optionally runs it immediately.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        step_name : str</span>
+<span class="sd">            Name of the step to add.</span>
+<span class="sd">        parameters : dict, optional</span>
+<span class="sd">            Parameters for the step.</span>
+<span class="sd">        diagnostics : bool, optional</span>
+<span class="sd">            Whether to enable diagnostics for this step.</span>
+<span class="sd">        parent_name : str, optional</span>
+<span class="sd">            Name of the parent step, if any.</span>
+<span class="sd">        run_immediately : bool, optional</span>
+<span class="sd">            Whether to run the step immediately after adding it.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If the step name is not recognized or a specified parent step is not found.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">step_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">STEP_CLASSES</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Step &#39;</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">&#39; is not recognized or missing @register_step.&quot;</span>
@@ -519,7 +578,16 @@
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_find_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">steps_list</span><span class="p">,</span> <span class="n">step_name</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Recursively find a step by name&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Recursively find a step by name.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        steps_list : list of dict</span>
+<span class="sd">            List of step configurations.</span>
+<span class="sd">        step_name : str</span>
+<span class="sd">            Name of the step to find.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">steps_list</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">step</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">step_name</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">step</span>
@@ -531,7 +599,16 @@
 <div class="viewcode-block" id="Pipeline.execute_step">
 <a class="viewcode-back" href="../../../api/src/toolbox/pipeline/index.html#src.toolbox.pipeline.Pipeline.execute_step">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">execute_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_config</span><span class="p">,</span> <span class="n">_context</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Executes a single step&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Executes a single step.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        step_config : dict</span>
+<span class="sd">            Configuration for the step to execute.</span>
+<span class="sd">        _context : dict</span>
+<span class="sd">            Current context to pass to the step.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">step</span> <span class="o">=</span> <span class="n">create_step</span><span class="p">(</span><span class="n">step_config</span><span class="p">,</span> <span class="n">_context</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Executing: </span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">step</span><span class="o">.</span><span class="n">run</span><span class="p">()</span></div>
@@ -540,7 +617,9 @@
 <div class="viewcode-block" id="Pipeline.run_last_step">
 <a class="viewcode-back" href="../../../api/src/toolbox/pipeline/index.html#src.toolbox.pipeline.Pipeline.run_last_step">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run_last_step</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Runs only the most recently added step&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Runs only the most recently added step based on the index in self.steps.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;No steps to run.&quot;</span><span class="p">)</span>
             <span class="k">return</span>
@@ -552,7 +631,12 @@
 <div class="viewcode-block" id="Pipeline.run">
 <a class="viewcode-back" href="../../../api/src/toolbox/pipeline/index.html#src.toolbox.pipeline.Pipeline.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Runs the entire pipeline&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Runs the entire pipeline.</span>
+
+<span class="sd">        If visualisation is specified in the configuration parameters, a visualisation</span>
+<span class="sd">        of the pipeline execution will be generated.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute_step</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_context</span><span class="p">)</span>
 
@@ -563,10 +647,13 @@
 <div class="viewcode-block" id="Pipeline.visualise_pipeline">
 <a class="viewcode-back" href="../../../api/src/toolbox/pipeline/index.html#src.toolbox.pipeline.Pipeline.visualise_pipeline">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">visualise_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generates a visualisation of the pipeline execution&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates a visualisation of the pipeline execution.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">add_to_graph</span><span class="p">(</span><span class="n">step_config</span><span class="p">,</span> <span class="n">parent_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">step_order</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Add a step to the graph, intended for recursive use.&quot;&quot;&quot;</span>
             <span class="n">step_name</span> <span class="o">=</span> <span class="n">step_config</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
             <span class="n">diagnostics</span> <span class="o">=</span> <span class="n">step_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
             <span class="n">color</span> <span class="o">=</span> <span class="s2">&quot;red&quot;</span> <span class="k">if</span> <span class="n">diagnostics</span> <span class="k">else</span> <span class="s2">&quot;black&quot;</span>
@@ -596,7 +683,14 @@
 <div class="viewcode-block" id="Pipeline.generate_config">
 <a class="viewcode-back" href="../../../api/src/toolbox/pipeline/index.html#src.toolbox.pipeline.Pipeline.generate_config">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a configuration dictionary from the current pipeline setup&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate a configuration dictionary from the current pipeline setup.</span>
+<span class="sd">        </span>
+<span class="sd">        returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict</span>
+<span class="sd">            Configuration dictionary of the current pipeline.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">cfg</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;pipeline&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span><span class="p">,</span>
             <span class="s2">&quot;steps&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">,</span>
@@ -609,7 +703,19 @@
 <div class="viewcode-block" id="Pipeline.export_config">
 <a class="viewcode-back" href="../../../api/src/toolbox/pipeline/index.html#src.toolbox.pipeline.Pipeline.export_config">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">export_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;generated_pipeline.yaml&quot;</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Write current config to file (respects private _parameters)&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write current config to file (respects private _parameters)</span>
+<span class="sd">        </span>
+<span class="sd">        parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        output_path : str</span>
+<span class="sd">            Path to save the exported configuration YAML file.</span>
+<span class="sd">        </span>
+<span class="sd">        returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict</span>
+<span class="sd">            Configuration dictionary of the current pipeline.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">cfg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_config</span><span class="p">()</span>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">yaml</span><span class="o">.</span><span class="n">safe_dump</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
@@ -620,7 +726,14 @@
 <div class="viewcode-block" id="Pipeline.save_config">
 <a class="viewcode-back" href="../../../api/src/toolbox/pipeline/index.html#src.toolbox.pipeline.Pipeline.save_config">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">save_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="s2">&quot;pipeline_config.yaml&quot;</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save the canonical private config (same as manager.save_config).&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Save the canonical private config (same as manager.save_config).</span>
+
+<span class="sd">        parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        path : str</span>
+<span class="sd">            Path to save the exported configuration YAML file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># ensure _parameters is up to date</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">generate_config</span><span class="p">())</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">save_config</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>

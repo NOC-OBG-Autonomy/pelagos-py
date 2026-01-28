@@ -368,11 +368,13 @@
 <span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
+<span class="sd">&quot;&quot;&quot;This module defines the base class for QC tests and a registry for QC test classes.&quot;&quot;&quot;</span>
 
-<span class="c1"># Registry of explicitly registered step classes</span>
 <div class="viewcode-block" id="REGISTERED_QC">
 <a class="viewcode-back" href="../../../../api/src/toolbox/steps/index.html#src.toolbox.steps.base_test.REGISTERED_QC">[docs]</a>
 <span class="n">REGISTERED_QC</span> <span class="o">=</span> <span class="p">{}</span></div>
+
+<span class="sd">&quot;&quot;&quot;Registry of explicitly registered QC test classes.&quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="flag_cols">
 <a class="viewcode-back" href="../../../../api/src/toolbox/steps/base_test/index.html#src.toolbox.steps.base_test.flag_cols">[docs]</a>
@@ -389,6 +391,7 @@
     <span class="mi">9</span><span class="p">:</span> <span class="s2">&quot;black&quot;</span><span class="p">,</span>
 <span class="p">}</span></div>
 
+<span class="sd">&quot;&quot;&quot;Map of QC flag values to colors for diagnostics plotting.&quot;&quot;&quot;</span>
 
 
 <div class="viewcode-block" id="register_qc">
@@ -409,10 +412,19 @@
 <a class="viewcode-back" href="../../../../api/src/toolbox/steps/base_test/index.html#src.toolbox.steps.base_test.BaseTest">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">BaseTest</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Initializes a base class for quality control, to be further tweaked when inherited.</span>
+
+<span class="sd">    Follow the docstring format below when creating new QC tests.</span>
+<span class="sd">    </span>
+<span class="sd">    Target Variable: &quot;Any&quot; or a specific variable names (see impossible_location_test.py)</span>
+<span class="sd">    Flag Number: &quot;Any&quot; or a specific ARGO flag number</span>
+<span class="sd">    Variables Flagged: &quot;Any&quot; or specific variable names, possibly external to the target variable (see valid_profile_test.py)</span>
+<span class="sd">    Your description follows here.</span>
+
 <span class="sd">    Target Variable:</span>
 <span class="sd">    Flag Number:</span>
 <span class="sd">    Variables Flagged:</span>
-<span class="sd">    ? description ?</span>
+<span class="sd">    </span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="BaseTest.test_name">
@@ -458,6 +470,13 @@
 <div class="viewcode-block" id="BaseTest.return_qc">
 <a class="viewcode-back" href="../../../../api/src/toolbox/steps/base_test/index.html#src.toolbox.steps.base_test.BaseTest.return_qc">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">return_qc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Representative of QC processing, to be overridden by subclasses.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        flags : array-like</span>
+<span class="sd">            Output QC flags for the data specific to the test.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># replace with processing of some kind</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">flags</span></div>
 
@@ -465,7 +484,8 @@
 <div class="viewcode-block" id="BaseTest.plot_diagnostics">
 <a class="viewcode-back" href="../../../../api/src/toolbox/steps/base_test/index.html#src.toolbox.steps.base_test.BaseTest.plot_diagnostics">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">plot_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="c1"># Any relevant diagnostic</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Representative of diagnostic plotting (optional).&quot;&quot;&quot;</span>
+        <span class="c1"># Any relevant diagnostic is generated or written out here</span>
         <span class="k">pass</span></div>
 </div>
 

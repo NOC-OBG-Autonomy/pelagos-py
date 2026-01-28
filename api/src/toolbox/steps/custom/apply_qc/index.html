@@ -327,6 +327,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../qc/par_irregularity_test/index.html">src.toolbox.steps.custom.qc.par_irregularity_test</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../qc/position_on_land_test/index.html">src.toolbox.steps.custom.qc.position_on_land_test</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../qc/range_test/index.html">src.toolbox.steps.custom.qc.range_test</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/range_test_gross/index.html">src.toolbox.steps.custom.qc.range_test_gross</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../qc/spike_test/index.html">src.toolbox.steps.custom.qc.spike_test</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../qc/stuck_value_test/index.html">src.toolbox.steps.custom.qc.stuck_value_test</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../qc/valid_profile_test/index.html">src.toolbox.steps.custom.qc.valid_profile_test</a></li>
@@ -465,12 +466,25 @@ See Wong et al. 2025 pp. 106 (<a class="reference external" href="http://dx.doi.
 As an example, if an existing flag is 2 (probably good data) and a new flag is 4 (bad data), the resulting flag will be 4.
 2 (probably good data) + 4 (bad data) -&gt; 4 (bad data)
 3 (probably bad data) + 5 (value changed) -&gt; 3 (probably bad data)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>new_flags</strong> (<em>xarray.Dataset</em>) – Dataset containing new QC flag variables to be merged into the existing flag store.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.apply_qc.ApplyQC.run">
 <span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/apply_qc.html#ApplyQC.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.apply_qc.ApplyQC.run" title="Link to this definition">#</a></dt>
 <dd><p>Run the Apply QC step.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.14)"><strong>KeyError</strong></a> – If no QC operations are specified, if requested QC tests are invalid, or esssential variables are missing.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If no data is found in context.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>

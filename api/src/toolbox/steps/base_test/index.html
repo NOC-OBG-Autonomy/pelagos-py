@@ -327,6 +327,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../custom/qc/par_irregularity_test/index.html">src.toolbox.steps.custom.qc.par_irregularity_test</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../custom/qc/position_on_land_test/index.html">src.toolbox.steps.custom.qc.position_on_land_test</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../custom/qc/range_test/index.html">src.toolbox.steps.custom.qc.range_test</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../custom/qc/range_test_gross/index.html">src.toolbox.steps.custom.qc.range_test_gross</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../custom/qc/spike_test/index.html">src.toolbox.steps.custom.qc.spike_test</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../custom/qc/stuck_value_test/index.html">src.toolbox.steps.custom.qc.stuck_value_test</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../custom/qc/valid_profile_test/index.html">src.toolbox.steps.custom.qc.valid_profile_test</a></li>
@@ -418,15 +419,16 @@
                   
   <section id="module-src.toolbox.steps.base_test">
 <span id="src-toolbox-steps-base-test"></span><h1>src.toolbox.steps.base_test<a class="headerlink" href="#module-src.toolbox.steps.base_test" title="Link to this heading">#</a></h1>
+<p>This module defines the base class for QC tests and a registry for QC test classes.</p>
 <section id="attributes">
 <h2>Attributes<a class="headerlink" href="#attributes" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.base_test.REGISTERED_QC" title="src.toolbox.steps.base_test.REGISTERED_QC"><code class="xref py py-obj docutils literal notranslate"><span class="pre">REGISTERED_QC</span></code></a></p></td>
-<td><p></p></td>
+<td><p>Registry of explicitly registered QC test classes.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#src.toolbox.steps.base_test.flag_cols" title="src.toolbox.steps.base_test.flag_cols"><code class="xref py py-obj docutils literal notranslate"><span class="pre">flag_cols</span></code></a></p></td>
-<td><p></p></td>
+<td><p>Map of QC flag values to colors for diagnostics plotting.</p></td>
 </tr>
 </tbody>
 </table>
@@ -437,7 +439,7 @@
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.base_test.BaseTest" title="src.toolbox.steps.base_test.BaseTest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BaseTest</span></code></a></p></td>
-<td><p>Target Variable:</p></td>
+<td><p>Initializes a base class for quality control, to be further tweaked when inherited.</p></td>
 </tr>
 </tbody>
 </table>
@@ -459,12 +461,14 @@
 <dl class="py data">
 <dt class="sig sig-object py" id="src.toolbox.steps.base_test.REGISTERED_QC">
 <span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.base_test.</span></span><span class="sig-name descname"><span class="pre">REGISTERED_QC</span></span><a class="reference internal" href="../../../../../_modules/src/toolbox/steps/base_test.html#REGISTERED_QC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.base_test.REGISTERED_QC" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Registry of explicitly registered QC test classes.</p>
+</dd></dl>
 
 <dl class="py data">
 <dt class="sig sig-object py" id="src.toolbox.steps.base_test.flag_cols">
 <span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.base_test.</span></span><span class="sig-name descname"><span class="pre">flag_cols</span></span><a class="reference internal" href="../../../../../_modules/src/toolbox/steps/base_test.html#flag_cols"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.base_test.flag_cols" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Map of QC flag values to colors for diagnostics plotting.</p>
+</dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="src.toolbox.steps.base_test.register_qc">
@@ -475,10 +479,15 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="src.toolbox.steps.base_test.BaseTest">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.base_test.</span></span><span class="sig-name descname"><span class="pre">BaseTest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/src/toolbox/steps/base_test.html#BaseTest"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.base_test.BaseTest" title="Link to this definition">#</a></dt>
-<dd><p>Target Variable:
+<dd><p>Initializes a base class for quality control, to be further tweaked when inherited.</p>
+<p>Follow the docstring format below when creating new QC tests.</p>
+<p>Target Variable: “Any” or a specific variable names (see impossible_location_test.py)
+Flag Number: “Any” or a specific ARGO flag number
+Variables Flagged: “Any” or specific variable names, possibly external to the target variable (see valid_profile_test.py)
+Your description follows here.</p>
+<p>Target Variable:
 Flag Number:
-Variables Flagged:
-? description ?</p>
+Variables Flagged:</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="src.toolbox.steps.base_test.BaseTest.test_name">
 <span class="sig-name descname"><span class="pre">test_name</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="reference internal" href="../../../../../_modules/src/toolbox/steps/base_test.html#BaseTest.test_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.base_test.BaseTest.test_name" title="Link to this definition">#</a></dt>
@@ -512,12 +521,22 @@ Variables Flagged:
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.steps.base_test.BaseTest.return_qc">
 <span class="sig-name descname"><span class="pre">return_qc</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/src/toolbox/steps/base_test.html#BaseTest.return_qc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.base_test.BaseTest.return_qc" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Representative of QC processing, to be overridden by subclasses.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>flags</strong> – Output QC flags for the data specific to the test.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>array-like</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.steps.base_test.BaseTest.plot_diagnostics">
 <span class="sig-name descname"><span class="pre">plot_diagnostics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/src/toolbox/steps/base_test.html#BaseTest.plot_diagnostics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.base_test.BaseTest.plot_diagnostics" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Representative of diagnostic plotting (optional).</p>
+</dd></dl>
 
 </dd></dl>
 

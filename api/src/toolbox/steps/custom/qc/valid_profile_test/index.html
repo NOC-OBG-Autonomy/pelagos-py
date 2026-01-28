@@ -327,6 +327,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../par_irregularity_test/index.html">src.toolbox.steps.custom.qc.par_irregularity_test</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../position_on_land_test/index.html">src.toolbox.steps.custom.qc.position_on_land_test</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../range_test/index.html">src.toolbox.steps.custom.qc.range_test</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../range_test_gross/index.html">src.toolbox.steps.custom.qc.range_test_gross</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../spike_test/index.html">src.toolbox.steps.custom.qc.spike_test</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../stuck_value_test/index.html">src.toolbox.steps.custom.qc.stuck_value_test</a></li>
 <li class="toctree-l4 current active"><a class="current reference internal" href="#">src.toolbox.steps.custom.qc.valid_profile_test</a></li>
@@ -424,12 +425,13 @@
                   
   <section id="module-src.toolbox.steps.custom.qc.valid_profile_test">
 <span id="src-toolbox-steps-custom-qc-valid-profile-test"></span><h1>src.toolbox.steps.custom.qc.valid_profile_test<a class="headerlink" href="#module-src.toolbox.steps.custom.qc.valid_profile_test" title="Link to this heading">#</a></h1>
+<p>QC tests for assessing validity of a glider profile, based on different definitions of successful data.</p>
 <section id="classes">
 <h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.qc.valid_profile_test.valid_profile_test" title="src.toolbox.steps.custom.qc.valid_profile_test.valid_profile_test"><code class="xref py py-obj docutils literal notranslate"><span class="pre">valid_profile_test</span></code></a></p></td>
-<td><p>Target Variable: PROFILE_NUMEBER</p></td>
+<td><p>Target Variable: PROFILE_NUMBER</p></td>
 </tr>
 </tbody>
 </table>
@@ -441,9 +443,9 @@
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.valid_profile_test.valid_profile_test">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.qc.valid_profile_test.</span></span><span class="sig-name descname"><span class="pre">valid_profile_test</span></span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/valid_profile_test.html#valid_profile_test"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.valid_profile_test.valid_profile_test" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">toolbox.steps.base_test.BaseTest</span></code></p>
-<p>Target Variable: PROFILE_NUMEBER
+<p>Target Variable: PROFILE_NUMBER
 Flag Number: 4 (bad data), 3 (potentially bad)
-Variables Flagged: PROFILE_NUMEBER
+Variables Flagged: PROFILE_NUMBER
 Checks that each profile is of a certain length (in number of points)
 and contains points within a specified depth range.</p>
 <dl class="py attribute">

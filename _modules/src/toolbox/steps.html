@@ -385,22 +385,28 @@
 <a class="viewcode-back" href="../../../api/src/toolbox/steps/index.html#src.toolbox.steps.STEP_CLASSES">[docs]</a>
 <span class="n">STEP_CLASSES</span> <span class="o">=</span> <span class="p">{}</span></div>
 
+<span class="sd">&quot;&quot;&quot;Dictionary mapping step names to their implementing classes.&quot;&quot;&quot;</span>
 <div class="viewcode-block" id="QC_CLASSES">
 <a class="viewcode-back" href="../../../api/src/toolbox/steps/index.html#src.toolbox.steps.QC_CLASSES">[docs]</a>
 <span class="n">QC_CLASSES</span> <span class="o">=</span> <span class="p">{}</span></div>
 
+<span class="sd">&quot;&quot;&quot;Dictionary mapping QC test names to their implementing classes.&quot;&quot;&quot;</span>
 <div class="viewcode-block" id="STEP_DEPENDENCIES">
 <a class="viewcode-back" href="../../../api/src/toolbox/steps/index.html#src.toolbox.steps.STEP_DEPENDENCIES">[docs]</a>
 <span class="n">STEP_DEPENDENCIES</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">&quot;QC: Salinity&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;Load OG1&quot;</span><span class="p">],</span>
 <span class="p">}</span></div>
 
+<span class="sd">&quot;&quot;&quot;Dictionary of explicit dependencies between steps by name.&quot;&quot;&quot;</span>
 
 
 <div class="viewcode-block" id="discover_steps">
 <a class="viewcode-back" href="../../../api/src/toolbox/steps/index.html#src.toolbox.steps.discover_steps">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">discover_steps</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Dynamically discover and import step modules from the custom directory.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Dynamically discover and import step modules from the custom directory.</span>
+<span class="sd">    This populates the global STEP_CLASSES and QC_CLASSES registries for use elsewhere.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">base_dir</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
     <span class="n">custom_dir</span> <span class="o">=</span> <span class="n">base_dir</span> <span class="o">/</span> <span class="s2">&quot;custom&quot;</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Discovery] Scanning for step modules in </span><span class="si">{</span><span class="n">custom_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>

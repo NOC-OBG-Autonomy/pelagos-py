@@ -327,6 +327,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../steps/custom/qc/par_irregularity_test/index.html">src.toolbox.steps.custom.qc.par_irregularity_test</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../steps/custom/qc/position_on_land_test/index.html">src.toolbox.steps.custom.qc.position_on_land_test</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../steps/custom/qc/range_test/index.html">src.toolbox.steps.custom.qc.range_test</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../steps/custom/qc/range_test_gross/index.html">src.toolbox.steps.custom.qc.range_test_gross</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../steps/custom/qc/spike_test/index.html">src.toolbox.steps.custom.qc.spike_test</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../steps/custom/qc/stuck_value_test/index.html">src.toolbox.steps.custom.qc.stuck_value_test</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../steps/custom/qc/valid_profile_test/index.html">src.toolbox.steps.custom.qc.valid_profile_test</a></li>
@@ -415,13 +416,13 @@
                   
   <section id="module-src.toolbox.pipeline">
 <span id="src-toolbox-pipeline"></span><h1>src.toolbox.pipeline<a class="headerlink" href="#module-src.toolbox.pipeline" title="Link to this heading">#</a></h1>
-<p>Pipeline Class</p>
+<p>Pipeline class definition to handle configuration and step execution.</p>
 <section id="classes">
 <h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.pipeline.Pipeline" title="src.toolbox.pipeline.Pipeline"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Pipeline</span></code></a></p></td>
-<td><p>Config-aware pipeline that can:</p></td>
+<td><p>Pipeline that manages a sequence of processing steps.</p></td>
 </tr>
 </tbody>
 </table>
@@ -433,12 +434,18 @@
 <dt class="sig sig-object py" id="src.toolbox.pipeline.Pipeline">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.toolbox.pipeline.</span></span><span class="sig-name descname"><span class="pre">Pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/src/toolbox/pipeline.html#Pipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.pipeline.Pipeline" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">toolbox.utils.config_mirror.ConfigMirrorMixin</span></code></p>
+<p>Pipeline that manages a sequence of processing steps.</p>
 <dl class="simple">
 <dt>Config-aware pipeline that can:</dt><dd><ul class="simple">
 <li><p>Load config YAML into private self._parameters</p></li>
 <li><p>Keep global_parameters mirrored to _parameters[‘pipeline’]</p></li>
 <li><p>Build, run, and export steps as before</p></li>
 </ul>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ConfigMirrorMixin</strong> (<em>Class</em>) – Class to handle configuration</p>
 </dd>
 </dl>
 <dl class="py attribute">
@@ -459,55 +466,111 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.pipeline.Pipeline.build_steps">
 <span class="sig-name descname"><span class="pre">build_steps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">steps_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/src/toolbox/pipeline.html#Pipeline.build_steps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.pipeline.Pipeline.build_steps" title="Link to this definition">#</a></dt>
-<dd><p>Recursively build steps from configuration</p>
+<dd><p>Recursively build steps from configuration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>steps_config</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – List of step configurations.</p></li>
+<li><p><strong>parent_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Name of the parent step, if any.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.pipeline.Pipeline.add_step">
 <span class="sig-name descname"><span class="pre">add_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">step_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_immediately</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/src/toolbox/pipeline.html#Pipeline.add_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.pipeline.Pipeline.add_step" title="Link to this definition">#</a></dt>
-<dd><p>Dynamically adds a step and optionally runs it immediately</p>
+<dd><p>Dynamically adds a step and optionally runs it immediately.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>step_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Name of the step to add.</p></li>
+<li><p><strong>parameters</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Parameters for the step.</p></li>
+<li><p><strong>diagnostics</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – Whether to enable diagnostics for this step.</p></li>
+<li><p><strong>parent_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Name of the parent step, if any.</p></li>
+<li><p><strong>run_immediately</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – Whether to run the step immediately after adding it.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If the step name is not recognized or a specified parent step is not found.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.pipeline.Pipeline.execute_step">
 <span class="sig-name descname"><span class="pre">execute_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">step_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_context</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/src/toolbox/pipeline.html#Pipeline.execute_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.pipeline.Pipeline.execute_step" title="Link to this definition">#</a></dt>
-<dd><p>Executes a single step</p>
+<dd><p>Executes a single step.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>step_config</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Configuration for the step to execute.</p></li>
+<li><p><strong>_context</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Current context to pass to the step.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.pipeline.Pipeline.run_last_step">
 <span class="sig-name descname"><span class="pre">run_last_step</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/src/toolbox/pipeline.html#Pipeline.run_last_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.pipeline.Pipeline.run_last_step" title="Link to this definition">#</a></dt>
-<dd><p>Runs only the most recently added step</p>
+<dd><p>Runs only the most recently added step based on the index in self.steps.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.pipeline.Pipeline.run">
 <span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/src/toolbox/pipeline.html#Pipeline.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.pipeline.Pipeline.run" title="Link to this definition">#</a></dt>
-<dd><p>Runs the entire pipeline</p>
+<dd><p>Runs the entire pipeline.</p>
+<p>If visualisation is specified in the configuration parameters, a visualisation
+of the pipeline execution will be generated.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.pipeline.Pipeline.visualise_pipeline">
 <span class="sig-name descname"><span class="pre">visualise_pipeline</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/src/toolbox/pipeline.html#Pipeline.visualise_pipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.pipeline.Pipeline.visualise_pipeline" title="Link to this definition">#</a></dt>
-<dd><p>Generates a visualisation of the pipeline execution</p>
+<dd><p>Generates a visualisation of the pipeline execution.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.pipeline.Pipeline.generate_config">
 <span class="sig-name descname"><span class="pre">generate_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/src/toolbox/pipeline.html#Pipeline.generate_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.pipeline.Pipeline.generate_config" title="Link to this definition">#</a></dt>
-<dd><p>Generate a configuration dictionary from the current pipeline setup</p>
+<dd><p>Generate a configuration dictionary from the current pipeline setup.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Configuration dictionary of the current pipeline.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.pipeline.Pipeline.export_config">
 <span class="sig-name descname"><span class="pre">export_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'generated_pipeline.yaml'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/src/toolbox/pipeline.html#Pipeline.export_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.pipeline.Pipeline.export_config" title="Link to this definition">#</a></dt>
 <dd><p>Write current config to file (respects private _parameters)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>output_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Path to save the exported configuration YAML file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Configuration dictionary of the current pipeline.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.pipeline.Pipeline.save_config">
 <span class="sig-name descname"><span class="pre">save_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'pipeline_config.yaml'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/src/toolbox/pipeline.html#Pipeline.save_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.pipeline.Pipeline.save_config" title="Link to this definition">#</a></dt>
 <dd><p>Save the canonical private config (same as manager.save_config).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Path to save the exported configuration YAML file.</p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>

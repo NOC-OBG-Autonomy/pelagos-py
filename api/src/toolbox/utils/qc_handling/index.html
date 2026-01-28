@@ -327,6 +327,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/par_irregularity_test/index.html">src.toolbox.steps.custom.qc.par_irregularity_test</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/position_on_land_test/index.html">src.toolbox.steps.custom.qc.position_on_land_test</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/range_test/index.html">src.toolbox.steps.custom.qc.range_test</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/range_test_gross/index.html">src.toolbox.steps.custom.qc.range_test_gross</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/spike_test/index.html">src.toolbox.steps.custom.qc.spike_test</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/stuck_value_test/index.html">src.toolbox.steps.custom.qc.stuck_value_test</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/valid_profile_test/index.html">src.toolbox.steps.custom.qc.valid_profile_test</a></li>
@@ -474,7 +475,12 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.utils.qc_handling.QCHandlingMixin.reconstruct_data">
 <span class="sig-name descname"><span class="pre">reconstruct_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/src/toolbox/utils/qc_handling.html#QCHandlingMixin.reconstruct_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.utils.qc_handling.QCHandlingMixin.reconstruct_data" title="Link to this definition">#</a></dt>
-<dd><p>Reconstruct data by replacing flagged values with original values</p>
+<dd><p>Reconstruct data by replacing flagged values with original values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.14)"><strong>KeyError</strong></a> – If the specified behaviour is not specified in this method.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -486,7 +492,12 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.utils.qc_handling.QCHandlingMixin.generate_qc">
 <span class="sig-name descname"><span class="pre">generate_qc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">qc_constituents</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/src/toolbox/utils/qc_handling.html#QCHandlingMixin.generate_qc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.utils.qc_handling.QCHandlingMixin.generate_qc" title="Link to this definition">#</a></dt>
-<dd><p>Generate QC flags for child variables based on parent variables’ QC flags</p>
+<dd><p>Generate QC flags for child variables based on parent variables’ QC flags.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>qc_constituents</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – A dictionary mapping child QC variable names to lists of parent QC variable names.</p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>

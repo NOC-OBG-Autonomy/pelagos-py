@@ -369,6 +369,8 @@
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
 
+<span class="sd">&quot;&quot;&quot;QC test(s) for flagging based on value ranges.&quot;&quot;&quot;</span>
+
 <span class="c1">#### Mandatory imports ####</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base_test</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseTest</span><span class="p">,</span> <span class="n">register_qc</span><span class="p">,</span> <span class="n">flag_cols</span>
@@ -387,7 +389,7 @@
 <span class="sd">    Target Variable: Any</span>
 <span class="sd">    Flag Number: Any</span>
 <span class="sd">    Variables Flagged: Any</span>
-<span class="sd">    Checks that a meausrement is within a reasonable range.</span>
+<span class="sd">    Checks that a meausurement is within a reasonable range.</span>
 
 <span class="sd">    EXAMPLE</span>
 <span class="sd">    -------</span>
@@ -403,6 +405,7 @@
 <span class="sd">        }</span>
 <span class="sd">      diagnostics: true</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
 <div class="viewcode-block" id="range_test.test_name">
 <a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/range_test/index.html#src.toolbox.steps.custom.qc.range_test.range_test.test_name">[docs]</a>
     <span class="n">test_name</span> <span class="o">=</span> <span class="s2">&quot;range test&quot;</span></div>
@@ -415,20 +418,25 @@
 
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-
         <span class="c1"># Check the necessary kwargs are available</span>
         <span class="n">required_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;variable_ranges&quot;</span><span class="p">,</span> <span class="s2">&quot;also_flag&quot;</span><span class="p">,</span> <span class="s2">&quot;plot&quot;</span><span class="p">}</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">required_kwargs</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">())):</span>
-            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">required_kwargs</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">set</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2"> are missing from </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">test_name</span><span class="si">}</span><span class="s2"> settings&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">required_kwargs</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">set</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2"> are missing from </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">test_name</span><span class="si">}</span><span class="s2"> settings&quot;</span>
+            <span class="p">)</span>
 
         <span class="c1"># Specify the tests paramters from kwargs (config)</span>
 <div class="viewcode-block" id="range_test.expected_parameters">
 <a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/range_test/index.html#src.toolbox.steps.custom.qc.range_test.range_test.expected_parameters">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">expected_parameters</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">required_kwargs</span><span class="p">}</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">expected_parameters</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">required_kwargs</span>
+        <span class="p">}</span></div>
 
 <div class="viewcode-block" id="range_test.required_variables">
 <a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/range_test/index.html#src.toolbox.steps.custom.qc.range_test.range_test.required_variables">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expected_parameters</span><span class="p">[</span><span class="s2">&quot;variable_ranges&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+            <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expected_parameters</span><span class="p">[</span><span class="s2">&quot;variable_ranges&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="p">)</span></div>
 
 <div class="viewcode-block" id="range_test.tested_variables">
 <a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/range_test/index.html#src.toolbox.steps.custom.qc.range_test.range_test.tested_variables">[docs]</a>
@@ -441,8 +449,11 @@
 <div class="viewcode-block" id="range_test.qc_outputs">
 <a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/range_test/index.html#src.toolbox.steps.custom.qc.range_test.range_test.qc_outputs">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">qc_outputs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
-            <span class="nb">set</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tested_variables</span><span class="p">)</span> <span class="o">|</span>
-            <span class="nb">set</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expected_parameters</span><span class="p">[</span><span class="s2">&quot;also_flag&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="p">[]))</span>
+            <span class="nb">set</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tested_variables</span><span class="p">)</span>
+            <span class="o">|</span> <span class="nb">set</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span>
+                <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expected_parameters</span><span class="p">[</span><span class="s2">&quot;also_flag&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="p">[])</span>
+            <span class="p">)</span>
         <span class="p">)</span></div>
 
 
@@ -460,44 +471,44 @@
 <div class="viewcode-block" id="range_test.return_qc">
 <a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/range_test/index.html#src.toolbox.steps.custom.qc.range_test.range_test.return_qc">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">return_qc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
         <span class="c1"># Subset the data</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span><span class="p">]</span>
 
         <span class="c1"># If the user specified a depth range, limit the checks to that range</span>
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;test_depth_range&quot;</span><span class="p">):</span>
             <span class="c1"># TODO: -DEPTH</span>
-            <span class="n">depth_range_mask</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;DEPTH&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">test_depth_range</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&amp;</span>
-                    <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;DEPTH&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">test_depth_range</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">depth_range_mask</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;DEPTH&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">test_depth_range</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;DEPTH&quot;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">test_depth_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">depth_range_mask</span> <span class="o">=</span> <span class="kc">True</span>
 
         <span class="c1"># Make the empty QC columns</span>
         <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tested_variables</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">([</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]),</span> <span class="mi">0</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="p">[</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">],</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]),</span> <span class="mi">0</span><span class="p">),</span>
+            <span class="p">)</span>
 
         <span class="c1"># Generate the variable-specific flags</span>
         <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">meta</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variable_ranges</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">for</span> <span class="n">flag</span><span class="p">,</span> <span class="n">bounds</span> <span class="ow">in</span> <span class="n">meta</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
                     <span class="p">(</span>
-                        <span class="n">depth_range_mask</span> <span class="o">&amp;</span>
-                        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">bounds</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&amp;</span>
-                        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">bounds</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">&amp;</span>
-                        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+                        <span class="n">depth_range_mask</span>
+                        <span class="o">&amp;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">bounds</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                        <span class="o">&amp;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">bounds</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+                        <span class="o">&amp;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
                     <span class="p">),</span>
                     <span class="n">flag</span><span class="p">,</span>
-                    <span class="mi">0</span>
+                    <span class="mi">0</span><span class="p">,</span>
                 <span class="p">)</span>
 
             <span class="c1"># Replace all remaining 0s (unchecked) with 1s (good)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
-                <span class="n">depth_range_mask</span> <span class="o">&amp;</span>
-                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">),</span>
+                <span class="n">depth_range_mask</span> <span class="o">&amp;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">),</span>
                 <span class="mi">1</span><span class="p">,</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">],</span>
             <span class="p">)</span>
 
             <span class="c1"># Broadcast the QC found for var into variables specified by &quot;also_flag&quot;</span>
@@ -506,7 +517,9 @@
                     <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">extra_var</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">]</span>
 
         <span class="c1"># Select just the flags</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[[</span><span class="n">var_qc</span> <span class="k">for</span> <span class="n">var_qc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span> <span class="k">if</span> <span class="s2">&quot;_QC&quot;</span> <span class="ow">in</span> <span class="n">var_qc</span><span class="p">]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span>
+            <span class="p">[</span><span class="n">var_qc</span> <span class="k">for</span> <span class="n">var_qc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span> <span class="k">if</span> <span class="s2">&quot;_QC&quot;</span> <span class="ow">in</span> <span class="n">var_qc</span><span class="p">]</span>
+        <span class="p">]</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">flags</span></div>
 
@@ -518,7 +531,9 @@
 
         <span class="c1"># If not plots were specified</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;WARNING: In &#39;range test&#39; diagnostics were called but no plots were specified.&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="s2">&quot;WARNING: In &#39;range test&#39; diagnostics were called but no plots were specified.&quot;</span>
+            <span class="p">)</span>
             <span class="k">return</span>
 
         <span class="c1"># Plot the QC output</span>
@@ -527,17 +542,18 @@
             <span class="n">axs</span> <span class="o">=</span> <span class="p">[</span><span class="n">axs</span><span class="p">]</span>
 
         <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="p">):</span>
-
             <span class="c1"># Check that the user specified var exists in the test set</span>
             <span class="k">if</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">qc_outputs</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;WARNING: Cannot plot </span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC as it was not included in this test.&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;WARNING: Cannot plot </span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC as it was not included in this test.&quot;</span>
+                <span class="p">)</span>
                 <span class="k">continue</span>
 
             <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
                 <span class="c1"># Plot by flag number</span>
-                <span class="n">plot_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span>
-                    <span class="p">[</span><span class="n">var</span><span class="p">,</span> <span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">]</span>
-                <span class="p">]</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">i</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">plot_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[[</span><span class="n">var</span><span class="p">,</span> <span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">i</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span>
+                <span class="p">)</span>
 
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">plot_data</span><span class="p">[</span><span class="n">var</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                     <span class="k">continue</span>

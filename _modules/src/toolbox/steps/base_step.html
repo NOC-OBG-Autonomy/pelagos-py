@@ -368,6 +368,7 @@
 <span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
+<span class="sd">&quot;&quot;&quot;This module defines the base class for pipeline steps and configurations.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.utils.config_mirror</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigMirrorMixin</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
@@ -376,11 +377,11 @@
 
 <span class="n">warnings</span><span class="o">.</span><span class="n">formatwarning</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">msg</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">msg</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
 
-<span class="c1"># Registry of explicitly registered step classes</span>
 <div class="viewcode-block" id="REGISTERED_STEPS">
 <a class="viewcode-back" href="../../../../api/src/toolbox/steps/index.html#src.toolbox.steps.base_step.REGISTERED_STEPS">[docs]</a>
 <span class="n">REGISTERED_STEPS</span> <span class="o">=</span> <span class="p">{}</span></div>
 
+<span class="sd">&quot;&quot;&quot;Registry of explicitly registered step classes.&quot;&quot;&quot;</span>
 
 
 <div class="viewcode-block" id="register_step">

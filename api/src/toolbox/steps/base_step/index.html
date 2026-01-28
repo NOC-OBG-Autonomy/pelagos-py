@@ -327,6 +327,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../custom/qc/par_irregularity_test/index.html">src.toolbox.steps.custom.qc.par_irregularity_test</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../custom/qc/position_on_land_test/index.html">src.toolbox.steps.custom.qc.position_on_land_test</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../custom/qc/range_test/index.html">src.toolbox.steps.custom.qc.range_test</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../custom/qc/range_test_gross/index.html">src.toolbox.steps.custom.qc.range_test_gross</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../custom/qc/spike_test/index.html">src.toolbox.steps.custom.qc.spike_test</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../custom/qc/stuck_value_test/index.html">src.toolbox.steps.custom.qc.stuck_value_test</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../custom/qc/valid_profile_test/index.html">src.toolbox.steps.custom.qc.valid_profile_test</a></li>
@@ -418,12 +419,13 @@
                   
   <section id="module-src.toolbox.steps.base_step">
 <span id="src-toolbox-steps-base-step"></span><h1>src.toolbox.steps.base_step<a class="headerlink" href="#module-src.toolbox.steps.base_step" title="Link to this heading">#</a></h1>
+<p>This module defines the base class for pipeline steps and configurations.</p>
 <section id="attributes">
 <h2>Attributes<a class="headerlink" href="#attributes" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.base_step.REGISTERED_STEPS" title="src.toolbox.steps.base_step.REGISTERED_STEPS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">REGISTERED_STEPS</span></code></a></p></td>
-<td><p></p></td>
+<td><p>Registry of explicitly registered step classes.</p></td>
 </tr>
 </tbody>
 </table>
@@ -456,7 +458,8 @@
 <dl class="py data">
 <dt class="sig sig-object py" id="src.toolbox.steps.base_step.REGISTERED_STEPS">
 <span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.base_step.</span></span><span class="sig-name descname"><span class="pre">REGISTERED_STEPS</span></span><a class="reference internal" href="../../../../../_modules/src/toolbox/steps/base_step.html#REGISTERED_STEPS"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.base_step.REGISTERED_STEPS" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Registry of explicitly registered step classes.</p>
+</dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="src.toolbox.steps.base_step.register_step">

@@ -369,6 +369,8 @@
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
 
+<span class="sd">&quot;&quot;&quot;QC test that identifies glider positions not located on land and flags accordingly.&quot;&quot;&quot;</span>
+
 <span class="c1">#### Mandatory imports ####</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base_test</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseTest</span><span class="p">,</span> <span class="n">register_qc</span><span class="p">,</span> <span class="n">flag_cols</span>
 
@@ -380,6 +382,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">geopandas</span>
+
 
 <span class="nd">@register_qc</span>
 <div class="viewcode-block" id="position_on_land_test">
@@ -412,20 +415,14 @@
 <div class="viewcode-block" id="position_on_land_test.return_qc">
 <a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/position_on_land_test/index.html#src.toolbox.steps.custom.qc.position_on_land_test.position_on_land_test.return_qc">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">return_qc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
         <span class="c1"># Convert to polars</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">from_pandas</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span><span class="p">]</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">(),</span>
-            <span class="n">nan_to_null</span><span class="o">=</span><span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span><span class="p">]</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">(),</span> <span class="n">nan_to_null</span><span class="o">=</span><span class="kc">False</span>
         <span class="p">)</span>
 
         <span class="c1"># Concat the polygons into a MultiPolygon object</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">world</span> <span class="o">=</span> <span class="n">geopandas</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span>
-            <span class="n">get_path</span><span class="p">(</span><span class="s2">&quot;naturalearth.land&quot;</span><span class="p">)</span>
-        <span class="p">)</span>
-        <span class="n">land_polygons</span> <span class="o">=</span> <span class="n">sh</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">unary_union</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">geometry</span>
-        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">world</span> <span class="o">=</span> <span class="n">geopandas</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">get_path</span><span class="p">(</span><span class="s2">&quot;naturalearth.land&quot;</span><span class="p">))</span>
+        <span class="n">land_polygons</span> <span class="o">=</span> <span class="n">sh</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">unary_union</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">world</span><span class="o">.</span><span class="n">geometry</span><span class="p">)</span>
 
         <span class="c1"># Check if lat, long coords fall within the area of the land polygons</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
@@ -434,10 +431,11 @@
                 <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">sh</span><span class="o">.</span><span class="n">contains_xy</span><span class="p">(</span>
                     <span class="n">land_polygons</span><span class="p">,</span>
                     <span class="n">x</span><span class="o">.</span><span class="n">struct</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s2">&quot;LONGITUDE&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span>
-                    <span class="n">x</span><span class="o">.</span><span class="n">struct</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s2">&quot;LATITUDE&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+                    <span class="n">x</span><span class="o">.</span><span class="n">struct</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s2">&quot;LATITUDE&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span>
                 <span class="p">)</span>
                 <span class="o">*</span> <span class="mi">4</span>
-            <span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">({</span><span class="mi">0</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
+            <span class="p">)</span>
+            <span class="o">.</span><span class="n">replace</span><span class="p">({</span><span class="mi">0</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
             <span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s2">&quot;LONGITUDE_QC&quot;</span><span class="p">)</span>
         <span class="p">)</span>
         <span class="c1"># Add the flags to LATITUDE as well.</span>
@@ -447,10 +445,9 @@
         <span class="n">flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;^.*_QC$&quot;</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span>
             <span class="n">data_vars</span><span class="o">=</span><span class="p">{</span>
-                <span class="n">col</span><span class="p">:</span> <span class="p">(</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,</span> <span class="n">flags</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">())</span>
-                <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">flags</span><span class="o">.</span><span class="n">columns</span>
+                <span class="n">col</span><span class="p">:</span> <span class="p">(</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,</span> <span class="n">flags</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">())</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">flags</span><span class="o">.</span><span class="n">columns</span>
             <span class="p">},</span>
-            <span class="n">coords</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">]}</span>
+            <span class="n">coords</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">]},</span>
         <span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">flags</span></div>
@@ -467,9 +464,7 @@
 
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
             <span class="c1"># Plot by flag number</span>
-            <span class="n">plot_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
-                <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;LATITUDE_QC&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="n">i</span>
-            <span class="p">)</span>
+            <span class="n">plot_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;LATITUDE_QC&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="n">i</span><span class="p">)</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">plot_data</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">continue</span>
 

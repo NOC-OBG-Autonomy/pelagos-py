@@ -55,6 +55,7 @@
   "api/src/toolbox/steps/custom/qc/par_irregularity_test/index": [],
   "api/src/toolbox/steps/custom/qc/position_on_land_test/index": [],
   "api/src/toolbox/steps/custom/qc/range_test/index": [],
+  "api/src/toolbox/steps/custom/qc/range_test_gross/index": [],
   "api/src/toolbox/steps/custom/qc/spike_test/index": [],
   "api/src/toolbox/steps/custom/qc/stuck_value_test/index": [],
   "api/src/toolbox/steps/custom/qc/valid_profile_test/index": [],
