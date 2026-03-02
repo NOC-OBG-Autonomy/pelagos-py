@@ -732,6 +732,11 @@ class WriteDataReport(BaseStep):
         odir = self.context["global_parameters"]["out_directory"]
         fout = odir + self.parameters.get("fname")
         data = self.context.get("data")
+
+        if "dataset_id" not in data.attrs:
+            self.log_warn("Dataset ID missing from OG1 file. Reporting with unk platform information.")
+            data.attrs["dataset_id"] = "unknown"
+
         with open(fout, "w") as output_file:
             doc = RstCloth(output_file)
             doc.h2("RstCloth will consume this h2, some kind of bug.")
