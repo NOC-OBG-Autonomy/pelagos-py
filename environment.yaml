@@ -27,7 +27,8 @@ dependencies:
   - geopandas
   - pvlib
   - tqdm
-  - glidertools
+  - pyyaml
+  - pip
 
   # Documentation and development tools
   - ipykernel
@@ -42,4 +43,9 @@ dependencies:
   - black
   - pre-commit
   - cartopy
-  - rstcloth
+
+  # Pypi only
+  - pip:
+    - glidertools
+    - rstcloth
+    - -e .

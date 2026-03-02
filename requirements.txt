@@ -25,3 +25,4 @@ ipykernel
 pytest
 rstcloth
 cartopy
+pyyaml
