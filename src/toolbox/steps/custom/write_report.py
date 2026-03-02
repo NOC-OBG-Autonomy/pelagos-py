@@ -39,6 +39,24 @@ import numpy as np
 from pathlib import Path
 
 
+def current_info() -> dict:
+    """Returns current operator information from when the report is being generated."""
+
+    now = datetime.now(timezone.utc)
+
+    info = {
+        "timestamp_utc": now.isoformat(),
+        "user": getpass.getuser(),
+        "toolbox_version": version(
+            "NOCAT"
+        ),  #   Normally done with __version__. "NOCAT" placeholder until name is known.
+        "python_version": platform.python_version(),
+        "system": f"{platform.system()}: {platform.release()}",
+    }
+
+    return info
+
+
 def write_conf_py(
     source_dir,
     project="Pipeline Report",
@@ -132,22 +150,142 @@ latex_documents = [
     conf_py.write_text(conf_text.strip() + "\n")
 
 
-def current_info() -> dict:
-    """Returns current operator information from when the report is being generated."""
+def run_sphinx(source_dir, build_dir=None) -> None:
+    """
+    Build a PDF from a Sphinx source directory using the latexpdf builder.
 
-    now = datetime.now(timezone.utc)
+    Requires a conf.py to be located in the source directory.
 
-    info = {
-        "timestamp_utc": now.isoformat(),
-        "user": getpass.getuser(),
-        "toolbox_version": version(
-            "NOCAT"
-        ),  #   Normally done with __version__. "NOCAT" placeholder until name is known.
-        "python_version": platform.python_version(),
-        "system": f"{platform.system()}: {platform.release()}",
-    }
+    Parameters
+    ----------
+    source_dir : str or Path
+        Directory containing the .rst and conf.py files.
+    build_dir : str or Path
+        Directory where Sphinx output can be placed. Defaults to source_dir/_build.
 
-    return info
+    """
+    source_dir = Path(source_dir).resolve()  # For simlinks
+
+    conf_py = source_dir / "conf.py"
+    if not conf_py.exists():
+        # User needs to run write_conf_py first.
+        raise RuntimeError(f"conf.py not found in {source_dir}")
+
+    if build_dir is None:
+        build_dir = source_dir / "_build"
+    else:
+        build_dir = Path(build_dir).resolve()
+
+    subprocess.run(
+        [
+            "sphinx-build",
+            "-M",  # Make-mode, to use a builder
+            "latexpdf",  # target
+            str(source_dir),
+            str(build_dir),
+            "-q",  # quiet, comment this and next 4 lines for logger
+        ],
+        check=True,  # If errors, raise an exception
+        capture_output=True,  # Suppress terminal output of stdout and stderr
+        text=True,  # Get text output
+    )  # See sphinx docs at https://www.sphinx-doc.org/en/master/man/sphinx-build.html
+
+
+def build_qc_dict(data: xr.Dataset) -> dict:
+    """
+    Return a dictionary of all QC variable names and their corresponding QC attributes.
+
+    Can be expanded in the future if additional attributes related to testing are added.
+    Tests are ID'd using `_flag_cts` suffix in variable test parameters
+
+    Parameters
+    ----------
+    data : Xarray DataSet
+        The top level data containing all the relevant QC variables.
+
+    Returns
+    -------
+    qc_dict : dict
+        Nested dictionaries of QC variables with test names and results.
+
+        Structure:
+        {
+            "VAR_QC": {
+                "test_name": {
+                    "params": {...},
+                    "flag_counts": {...},
+                    "stats": {...},
+                },
+                "test_name_2": {
+                    ...
+                },
+            }
+        }
+    """
+    qc_dict = {}
+    for var in data.data_vars:
+        if not var.endswith("_QC"):
+            continue
+
+        attrs = data[var].attrs
+        qc_dict[var] = {}
+
+        # ID tests that were run for indexing.
+        # _flag_cts seems like the least standardized name to ID qc with
+        test_names = [
+            attr.replace("_flag_cts", "")
+            for attr in attrs
+            if attr.endswith("_flag_cts")
+        ]
+
+        for test in test_names:
+            params_key = f"{test}_params"
+            flag_key = f"{test}_flag_cts"
+            stats_key = f"{test}_stats"
+
+            # Safely load JSON fields if present (how they were likely saved)
+            params = json.loads(attrs[params_key]) if params_key in attrs else {}
+            flag_cts = json.loads(attrs[flag_key]) if flag_key in attrs else {}
+            stats = json.loads(attrs[stats_key]) if stats_key in attrs else {}
+
+            qc_dict[var][test] = {
+                "params": params,
+                "flag_counts": flag_cts,
+                "stats": stats,
+            }
+
+    return qc_dict
+
+
+def flatten_qc_dict(qc_dict: dict) -> list:
+    #   Make the dictionary table-friendly
+    rows = []
+
+    for qc_var, tests in qc_dict.items():
+        if not tests:
+            continue
+
+        for test_name, test_data in tests.items():
+            stats = test_data.get("stats", {})
+            flag_counts = test_data.get("flag_counts", {})
+
+            for flag, count in flag_counts.items():
+                if count == 0:
+                    continue
+
+                rows.append(
+                    [
+                        qc_var,
+                        test_name,
+                        flag,
+                        f"{count:,}",
+                    ]
+                )
+
+    return rows
+
+
+### RST builders
 
 
 def run_info_page(rs, params_dict, glatters) -> None:
@@ -217,115 +355,6 @@ def add_log(logfile, rs, ncols=4) -> None:
         # width=100
     )
     rs.newline()
-
-
-def run_sphinx(source_dir, build_dir=None) -> None:
-    """
-    Build a PDF from a Sphinx source directory using the latexpdf builder.
-    """
-    source_dir = Path(source_dir).resolve()  # For simlinks
-
-    conf_py = source_dir / "conf.py"
-    if not conf_py.exists():
-        # User needs to run write_conf_py first.
-        raise RuntimeError(f"conf.py not found in {source_dir}")
-
-    if build_dir is None:
-        build_dir = source_dir / "_build"
-    else:
-        build_dir = Path(build_dir).resolve()
-
-    subprocess.run(
-        [
-            "sphinx-build",
-            "-M",  # Make-mode, to use a builder
-            "latexpdf",  # target
-            str(source_dir),
-            str(build_dir),
-            "-q",  # quiet, comment this and next 4 lines for logger
-        ],
-        check=True,  # If errors, raise an exception
-        capture_output=True,  # Suppress terminal output of stdout and stderr
-        text=True,  # Get text output
-    )  # See sphinx docs at https://www.sphinx-doc.org/en/master/man/sphinx-build.html
-
-
-def build_qc_dict(data) -> dict:
-    """
-    Return a dictionary of all QC variable names and their corresponding QC attributes, including statistics for each test that was run.
-
-    Structure:
-    {
-        "VAR_QC": {
-            "test_name": {
-                "params": {...},
-                "flag_counts": {...},
-                "stats": {...}
-            }
-        }
-    }
-    """
-    qc_dict = {}
-    for var in data.data_vars:
-        if not var.endswith("_QC"):
-            continue
-
-        attrs = data[var].attrs
-        qc_dict[var] = {}
-
-        # ID tests that were run for indexing.
-        # _flag_cts seems like the least standardized name to ID qc with
-        test_names = [
-            attr.replace("_flag_cts", "")
-            for attr in attrs
-            if attr.endswith("_flag_cts")
-        ]
-
-        for test in test_names:
-            params_key = f"{test}_params"
-            flag_key = f"{test}_flag_cts"
-            stats_key = f"{test}_stats"
-
-            # Safely load JSON fields if present (how they were likely saved)
-            params = json.loads(attrs[params_key]) if params_key in attrs else {}
-            flag_cts = json.loads(attrs[flag_key]) if flag_key in attrs else {}
-            stats = json.loads(attrs[stats_key]) if stats_key in attrs else {}
-
-            qc_dict[var][test] = {
-                "params": params,
-                "flag_counts": flag_cts,
-                "stats": stats,
-            }
-
-    return qc_dict
-
-
-def flatten_qc_dict(qc_dict: dict) -> list:
-    #   Make the dictionary table-friendly
-    rows = []
-
-    for qc_var, tests in qc_dict.items():
-        if not tests:
-            continue
-
-        for test_name, test_data in tests.items():
-            stats = test_data.get("stats", {})
-            flag_counts = test_data.get("flag_counts", {})
-
-            for flag, count in flag_counts.items():
-                if count == 0:
-                    continue
-
-                rows.append(
-                    [
-                        qc_var,
-                        test_name,
-                        flag,
-                        f"{count:,}",
-                    ]
-                )
-
-    return rows
 
 
 def qc_section(doc, data) -> None:
@@ -645,6 +674,10 @@ class WriteDataReport(BaseStep):
 
     Base template:
     * Title page (automatically handled by sphinx)
+    * Quality control summary
+    * Basic plots
+    * Run metadata and pipeline parameters
+    * Logfile
 
     Parameters
     ----------
