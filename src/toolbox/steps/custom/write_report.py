@@ -419,9 +419,10 @@ def qc_section(doc, data: xr.Dataset) -> None:
 
 def img_rst(doc, fname: str, fields: list = None):
     """
-    Inserts image information into the .rst, as RstCloth does not support image insertion.
+    Inserts image information into the .rst using `directive`.
 
     See rst directives for image information (https://docutils.sourceforge.io/docs/ref/rst/directives.html#images)
+    See RstCloth for info about `directive` (https://rstcloth.readthedocs.io/en/latest/rstcloth.html)
 
     Parameters
     ----------
@@ -442,9 +443,9 @@ def img_rst(doc, fname: str, fields: list = None):
        :height: 100px
        :width: 100px
     """
-    #   Sphinx is constrained to /outdir, lop that and the extension off
+    #   Sphinx is constrained to /outdir, lop path and the extension off
     new_name = fname.split("/")[-1].split(".")[0] + ".*"
-    doc.hint(name="image", arg=new_name, fields=fields)
+    doc.directive(name="image", arg=new_name, fields=fields)
     doc.newline()
     doc.newline()
 
