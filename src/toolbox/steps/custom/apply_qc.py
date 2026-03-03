@@ -163,6 +163,11 @@ class ApplyQC(BaseStep):
             self.log(f"Found existing flags columns {set(existing_flags)} in data.")
             self.flag_store = data[existing_flags].fillna(9).astype(int)
         
+        other_existing_qc = set([var for var in data.data_vars if var.endswith("_QC")]) - set(test_qc_outputs_cols)
+        if any(other_existing_qc):
+            self.log(f"Found QC columns for untested values: {other_existing_qc}")
+            self.log("These columns will not be modified and are not subject to this step.")
+
         # Initialize the missing flag columns
         mia_qc = test_qc_outputs_cols - set(data.data_vars)
         base = [var[:-3] for var in mia_qc]
