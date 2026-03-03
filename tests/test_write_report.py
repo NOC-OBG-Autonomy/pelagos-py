@@ -288,7 +288,7 @@ def test_info_page(tmp_path):
 def test_img_rst():
     doc = MagicMock()
     write_report.img_rst(doc, "/some/output/dir/TEMP_QC.png")
-    doc.hint.assert_called_once_with(
+    doc.directive.assert_called_once_with(
         name="image", arg="TEMP_QC.*", fields=None
     )
     assert doc.newline.call_count == 2
