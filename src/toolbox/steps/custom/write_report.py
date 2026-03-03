@@ -642,16 +642,25 @@ def qc_hist(
     if bins == None:  #   If not specified, center the bins around each flag integer
         bins = np.arange(len(hislim)) - 0.5
 
-    #   Plot the source variable using xarray.plot for speed
-    data[var_source].plot(ax=axs[0])
+    #   Plot the source variable using xarray.plot for speed.
+    #   If all NaN, clarify that on the plot.
+    if np.all(np.isnan(data[var_source])):
+        axs[0].text(0.2, 0.5, f'Data ({var_source}) are NaN',
+            transform=axs[0].transAxes)
+    else:
+        data[var_source].plot(ax=axs[0])
     axs[0].set_title(f"{var_source}: n={len(data[var_source])}", ha="right")
 
-    data[var].plot.hist(
-        yscale="log", bins=bins, xticks=hislim, xlim=xlims, ylim=ylims, ax=axs[1]
-    )
-    bars = axs[1].containers[0]  #   Number of points in each bin
-    axs[1].bar_label(bars, fontsize=7, label_type="center")
-    axs[1].set_yscale("log")
+    if np.all(np.isnan(data[var])):
+        axs[1].text(0.2, 0.5, f'Flags ({var}) are NaN',
+            transform=axs[1].transAxes)
+    else:
+        data[var].plot.hist(
+            yscale="log", bins=bins, xticks=hislim, xlim=xlims, ylim=ylims, ax=axs[1]
+        )
+        bars = axs[1].containers[0]  #   Number of points in each bin
+        axs[1].bar_label(bars, fontsize=7, label_type="center")
+        axs[1].set_yscale("log")
     axs[1].set_title(f"{var} flag histogram", ha="right")
     fig.supylabel(data.attrs["dataset_id"])
 
@@ -693,7 +702,6 @@ def make_plots(
     inset_geo(doc, data, outdir, scale="50m")
 
     qc_vars = [var for var in data.data_vars if "_QC" in var]
-
     for var in tqdm(
         qc_vars,
         colour="green",
