@@ -7,7 +7,7 @@ requires = [
 ]
 
 [project]
-name = "NOCAT"
+name = "Pelagos-py"
 description = "Python interface for ERDDAP"
 readme = "README.md"
 maintainers = [
