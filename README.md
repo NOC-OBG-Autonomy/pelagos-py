@@ -2,11 +2,11 @@
 Copyright 2025-2026 The National Oceanography Centre and The Contributors
 
 ## Documentation
-The documentation for this package is available [here](https://noc-obg-autonomy.github.io/toolbox/)
+The documentation for this package is available [here](https://noc-obg-autonomy.github.io/pelagos-py/)
 > Please note that the documentation is still under construction.
 
 ## Building Your Own Steps
-[Click here](https://noc-obg-autonomy.github.io/toolbox/developer_guide.html) for a guide on how to build your own steps.
+[Click here](https://noc-obg-autonomy.github.io/pelagos-py/developer_guide.html) for a guide on how to build your own steps.
 
 ## Development Information
 Python >= 3.10
@@ -16,7 +16,7 @@ Python >= 3.10
 For a local, editable version of the toolbox
 
 ```bash
-git clone https://github.com/NOC-OBG-Autonomy/toolbox.git
+git clone https://github.com/NOC-OBG-Autonomy/pelagos-py.git
 cd toolbox
 # create/activate a virtual environment
 pip install -e . 
@@ -132,7 +132,7 @@ steps:
 ```
 
 ## 🔁 Extending the Pipeline
-A full breakdown can be found here: [Developer Guide](https://noc-obg-autonomy.github.io/toolbox/developer_guide.html).
+A full breakdown can be found here: [Developer Guide](https://noc-obg-autonomy.github.io/pelagos-py/developer_guide.html).
 
 TL;DR:
 1. Create a file under `toolbox/steps/custom/variables` (e.g., `qc_salinity.py`).

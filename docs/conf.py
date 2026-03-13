@@ -6,10 +6,10 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "NOCAT"
-copyright = "2025, National Oceanography Centre"
+project = "pelagos-py"
+copyright = "2026, National Oceanography Centre"
 author = "Adam Ward & Daniel Bangay, National Oceanography Centre"
-version = "0.0.0"
+version = "0.0.0.1"
 release = version
 
 # -- General configuration ------------------------------------------------
@@ -89,10 +89,10 @@ autoapi_options = [
 # html_theme = "sphinx_rtd_theme"
 html_theme = "pydata_sphinx_theme"
 
-html_baseurl = "https://noc-obg-autonomy.github.io/toolbox/"
+html_baseurl = "https://noc-obg-autonomy.github.io/pelagos-py/"
 html_static_path = ["_static"]
 html_last_updated_fmt = "%b %d, %Y"
-
+html_show_sourcelink = False
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
