@@ -8,7 +8,7 @@ requires = [
 
 [project]
 name = "Pelagos-py"
-description = "Python interface for ERDDAP"
+description = "Customizable processing pipeline for oceanographic data from autonomous assets"
 readme = "README.md"
 maintainers = [
   { name = "Daniel Bangay", email = "Daniel.Bangay@noc.ac.uk" },
@@ -26,9 +26,9 @@ dynamic = [
   "dependencies",
   "version",
 ]
-urls.documentation = "https://noc-obg-autonomy.github.io/toolbox/"
-urls.homepage = "https://github.com/NOC-OBG-Autonomy/toolbox"
-urls.repository = "https://github.com/NOC-OBG-Autonomy/toolbox"
+urls.documentation = "https://noc-obg-autonomy.github.io/pelagos-py/"
+urls.homepage = "https://github.com/NOC-OBG-Autonomy/pelagos-py"
+urls.repository = "https://github.com/NOC-OBG-Autonomy/pelagos-py"
 
 
 [tool.setuptools.dynamic]

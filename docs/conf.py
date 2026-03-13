@@ -7,9 +7,9 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "pelagos-py"
-copyright = "2026, National Oceanography Centre"
+copyright = "2025, National Oceanography Centre"
 author = "Adam Ward & Daniel Bangay, National Oceanography Centre"
-version = "0.0.0.1"
+version = "0.0.1"
 release = version
 
 # -- General configuration ------------------------------------------------
