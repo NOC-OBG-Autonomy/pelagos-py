@@ -36,7 +36,7 @@ from toolbox.steps import (
 _PIPELINE_LOGGER_NAME = "toolbox.pipeline"
 """Global logger name for the pipeline. Used to create child loggers for steps."""
 
-def _setup_logging(log_file=None, level=logging.INFO):
+def _setup_logging(out_dir=None, log_file=None, level=logging.INFO):
     """
     Set up logging for the entire pipeline.
 
@@ -72,7 +72,7 @@ def _setup_logging(log_file=None, level=logging.INFO):
 
     # File handler if specified
     if log_file:
-        log_file = os.path.abspath(log_file)        # absolute path
+        log_file = os.path.abspath(os.path.join(out_dir or ".", log_file))        # absolute path
         os.makedirs(os.path.dirname(log_file) or ".", exist_ok=True)
         fh = logging.FileHandler(log_file)
         fh.setLevel(level)
@@ -120,13 +120,17 @@ class Pipeline(ConfigMirrorMixin):
             # set convenience alias for user-facing access
             self.global_parameters = self._parameters.get("pipeline", {})
             # build steps from loaded config
-            self.logger = _setup_logging(self.global_parameters.get("log_file"))
+            self.logger = _setup_logging(self.global_parameters.get("out_directory"),
+                                         self.global_parameters.get("log_file"))
             self.build_steps(self._parameters.get("steps", []))
             self.logger.info("Pipeline initialised")
 
     def build_steps(self, steps_config, parent_name=None):
         """
         Recursively build steps from configuration.
+
+        Individual steps, including parameters and diagnostics, are saved to self.steps using add_step() for other functions.
+        If "substeps" is a part of the defined step, it recursively builds that child step as a field of the parent.
 
         Parameters
         ----------
@@ -135,6 +139,7 @@ class Pipeline(ConfigMirrorMixin):
         parent_name : str, optional
             Name of the parent step, if any.
         """
+        self.logger.info("Assembling steps to run from config.")
         for step in steps_config:
             REQUIRED_STEPS = STEP_DEPENDENCIES.get(step["name"], [])
             for required_step in REQUIRED_STEPS:
@@ -238,7 +243,9 @@ class Pipeline(ConfigMirrorMixin):
         _context : dict
             Current context to pass to the step.
         """
-        step = create_step(step_config, _context)
+        step_context = _context.copy() if _context else {}
+        step_context["global_parameters"] = self.global_parameters
+        step = create_step(step_config, step_context)
         self.logger.info(f"Executing: {step.name}")
         return step.run()
 

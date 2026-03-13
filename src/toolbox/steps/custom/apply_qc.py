@@ -25,6 +25,7 @@ from toolbox.steps import QC_CLASSES
 import polars as pl
 import xarray as xr
 import numpy as np
+import json
 
 
 @register_step
@@ -95,6 +96,7 @@ class ApplyQC(BaseStep):
             for column_name in flag_columns_to_add:
                 self.flag_store[column_name] = new_flags[column_name]
 
+
     def run(self):
         """
         Run the Apply QC step.
@@ -121,18 +123,13 @@ class ApplyQC(BaseStep):
         queued_qc = [QC_CLASSES.get(key) for key in self.qc_settings.keys()]
 
         # Check if the data is in the context
-        if "data" not in self.context:
-            raise ValueError(
-                "[Apply QC] No data found in context. Please load data first."
-            )
-        else:
-            self.log("Data found in context.")
+        self.check_data()
         data = self.context["data"].copy(deep=True)
 
         # Try and fetch the qc history from context and update it
         qc_history = self.context.setdefault("qc_history", {})
 
-        # Collect all of the required varible names and qc outputs
+        # Collect all of the required varible names and qc outputs for each test
         all_required_variables = set({})
         test_qc_outputs_cols = set({})
         for test in queued_qc:
@@ -145,36 +142,55 @@ class ApplyQC(BaseStep):
             else:
                 all_required_variables.update(test.required_variables)
                 test_qc_outputs_cols.update(test.qc_outputs)
-
+            #   Check that the required variables for the test are in the dataset
+            if not set(all_required_variables).issubset(set(data.keys())):
+                raise KeyError(
+                    f"[Apply QC] The data is missing variables: ({set(all_required_variables) - set(data.keys())}) which are required for running QC '{test.test_name}'."
+                    f" Make sure that the variables are present in the data, or use remove tests from the order."
+                )
         # Convert data to polars for fast processing
-        if not set(all_required_variables).issubset(set(data.keys())):
-            raise KeyError(
-                f"[Apply QC] The data is missing variables: ({set(all_required_variables) - set(data.keys())}) which are required for QC."
-                f" Make sure that the variables are present in the data, or use remove tests from the order."
-            )
-
         # Fetch existing flags from the data and create a place to store them
         existing_flags = [
             flag_col for flag_col in data.data_vars if flag_col in test_qc_outputs_cols
         ]
         self.flag_store = xr.Dataset(coords={"N_MEASUREMENTS": data["N_MEASUREMENTS"]})
         if len(existing_flags) > 0:
-            self.flag_store = data[existing_flags]
+            self.log(f"Found existing flags columns {set(existing_flags)} in data.")
+            self.flag_store = data[existing_flags].fillna(9).astype(int)
+        
+        other_existing_qc = set([var for var in data.data_vars if var.endswith("_QC")]) - set(test_qc_outputs_cols)
+        if any(other_existing_qc):
+            self.log(f"Found QC columns for untested values: {other_existing_qc}")
+            self.log("These columns will not be modified and are not subject to this step.")
+
+        # Initialize the missing flag columns
+        mia_qc = test_qc_outputs_cols - set(data.data_vars)
+        base = [var[:-3] for var in mia_qc]
+        if not set(base).issubset(set(data.keys())):    #   Confirm that the required QC columns exist
+            raise KeyError(
+                f"[Apply QC] The data is missing: ({set(base) - set(data.keys())}), which is/are defined in the config as a variable to flag or use during one of the tests."
+                f" Double check the configuration file and make sure all variable parameters (like 'also flag' [CHLA]) are present in the data."
+            )
+        data_subset = data[base]
+        masks = xr.where(data_subset.isnull(), 9, 0).astype(int)
+        masks = masks.rename({var: f"{var}_QC" for var in base})
+        self.flag_store.update(masks)
 
         # Run through all of the QC steps and add the flags to flag_store
         for qc_test_name, qc_test_params in self.qc_settings.items():
             # Create an instance of this test step
             self.log(f"Applying: {qc_test_name}")   # print(f"[Apply QC] Applying: {qc_test_name}")
             qc_test_instance = QC_CLASSES[qc_test_name](data, **qc_test_params)
-            returned_flags = qc_test_instance.return_qc()
+            returned_flags = qc_test_instance.return_qc()   #   Runs the test, returns the flags
             self.organise_flags(returned_flags)
 
             # Update QC history
             for flagged_var in returned_flags.data_vars:
                 #   Track percent of flags no longer 0 (following ARGO convention)
+                var_flags = returned_flags[flagged_var]
                 percent_flagged = (
-                    returned_flags[flagged_var].to_numpy() != 0
-                ).sum() / len(returned_flags[flagged_var])
+                    var_flags.to_numpy() != 0
+                ).sum() / len(var_flags)
                 if percent_flagged == 0:
                     self.log_warn(f"All flags for {flagged_var} remain 0 after {qc_test_name}")
                 # else: #   TODO: Add 'verbose' log option if needed. Might not need to happen at this point.
@@ -182,6 +198,23 @@ class ApplyQC(BaseStep):
                 qc_history.setdefault(flagged_var, []).append(
                     (qc_test_name, percent_flagged)
                 )
+
+                # Write additional QC details to _QC variable attributes
+                # TODO: Find where columns are initialized, or just run on non-QC'd datasets
+                parent_attrs = data[flagged_var[:-3]].attrs                
+                attrs = self.flag_store[flagged_var].attrs
+                attrs["quality_control_conventions"] = "Argo standard flags"
+                attrs["valid_min"] = 0
+                attrs["valid_max"] = 9
+                attrs["flag_values"] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+                attrs["flag_meanings"] = "NO_QC, GOOD, PROB_GOOD, PROB_BAD, BAD, VALUE_CHANGED, NOT_USED, NOT_USED, ESTIMATED, MISSING"
+                attrs["long_name"] = f"{parent_attrs['long_name']} quality flag"
+                attrs["standard_name"] = f"{parent_attrs['standard_name']}_flag"
+                attr_test = qc_test_name.replace(" ", "_").lower()
+                attrs[f"{attr_test}_flag_cts"] = json.dumps({i: int(np.sum(var_flags.to_numpy() == i)) for i in range(10)})
+                attrs[f"{attr_test}_stats"] = json.dumps(var_flags.to_series().describe().round(5).to_dict())
+                attrs[f"{attr_test}_params"] = json.dumps(qc_test_params)
+                # Can get indices of 3/4 with np.where(var_flags.to_numpy() == 3)[0] for future reference
 
             # Diagnostic plotting
             if self.diagnostics:
@@ -192,10 +225,18 @@ class ApplyQC(BaseStep):
 
         # Append the flags from self.flag_store to the xarray data and push back into context
         for flag_column in self.flag_store.data_vars:
+            if (self.flag_store[flag_column] == 0).all():
+                self.log_warn(f"{flag_column} is all 0 after running all QC steps. Check intended QC variables and test requirements.")
+            elif (self.flag_store[flag_column] == 0).any():
+                n_zero = int((self.flag_store[flag_column] == 0).sum())
+                self.log_warn(f"{flag_column} (length={len(self.flag_store[flag_column])}) has {n_zero} zero QC values following all QC steps.")
+
             data[flag_column] = (
                 ("N_MEASUREMENTS",),
                 self.flag_store[flag_column].to_numpy(),
             )
+            data[flag_column].attrs = self.flag_store[flag_column].attrs.copy()
         self.context["data"] = data
         self.context["qc_history"] = qc_history
+
         return self.context

@@ -44,7 +44,7 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
 
     def run(self):
         """
-        Execute the CTD variable derivation process. The following varibales are
+        Execute the CTD variable derivation process. The following variables are
         required: ["TIME", "LATITUDE", "LONGITUDE", "CNDC", "PRES", "TEMP"]
 
         This method performs the following operations:

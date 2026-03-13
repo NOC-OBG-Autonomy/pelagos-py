@@ -89,6 +89,13 @@ class BaseStep(ConfigMirrorMixin):
         self.logger.warning("[%s] %s", self.name, message)
         warnings.warn(f"[{self.name}] WARNING: {message}", warning_type)
 
+    def check_data(self):
+        """Check for data in context for transformer steps."""
+        if "data" not in self.context:
+            raise ValueError("No data found in context. Please load data first.")
+        else:
+            self.log(f"Data found in context.")
+
     # ----------- Config Handling -----------
 
     def update_parameters(self, **kwargs):

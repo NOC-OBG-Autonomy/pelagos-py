@@ -14,6 +14,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Pipeline definitions
+# These are passed into the data object as global attributes, making them accessible from all steps
+pipeline:
+ # [name]: "Short string name"
+ # A name for the pipeline, helpful to distinguish specific tasks
+ name: "Data Processing Pipeline"
+ # [description]: "Longer string describing describing pipeline purpse"
+ description: "A pipeline for processing and analyzing multi-dimensional data"
+ # [visualisation]: true/false
+ # Enable visualisation of the pipeline in Pipeline.visualise_pipeline()
+ visualisation: false 
+ # [out_directory]: string or path
+ # Output directory for any generated files (logs, reports, figures, etc.)
+ out_directory: ./examples/data/
+ # [log_file]: string name for the log file
+ # The name intended for the log file, helpful if running different pipelines and tracking performance.
+ # Default behavior overwrites the previous log file
+ log_file: last_run.log
+
 # All step configs
 # The general structure of a step follows:
 #
@@ -270,7 +289,7 @@ steps:
       #   Window sizes to adjust smoothing of the vertical velocities. The values apply to ["median filter", "mean filter"]
       filter_window_sizes: ["20s", "20s"]
       # [depth_column]:
-      #   Name of the column used to derive vertical valocies
+      #   Name of the column used to derive vertical velocities
       depth_column: DEPTH
     # [diagnostics]:
     #   If true, the pipeline will plot the profiling result and launch a tkinter window that will let the user adjust the
@@ -485,3 +504,38 @@ steps:
       uncalibrated_phase_correction_applied: true
     diagnostics: false
 
+# ------------------------------------------------------------------------------------------- Report assembly -------------------------------------------------------------------------------------------
+
+# Report generation is currently under development (2026-02-12) and is subject to change
+# following testing. More detailed documentation and exensive templates will be available
+# when fully implemented in a few different workflows.
+
+# Report generation is done using Sphinx, called using the `subprocess` library. This
+# may or may not be functional universally on different systems, so other packages may
+# be subject to exploration in the near future.
+
+# This step does not currently have diagnostics.
+
+  - name: Write Data Report
+    parameters:
+      # [title]: string of the title
+      # The title of the report, which will go on the title page
+      title: "Data Pipeline Report"
+      # [fname]: string of the .rst filename
+      # The filename of the main .rst file which will be written to within the pipeline's 
+      # `out_directory`.
+      fname: "data_report.rst"
+      # [build]: true/false
+      # Whether to run Sphinx on the .rst at the end and generate the specified PDF
+      build: false
+      # [extent]: list of lat/lon
+      # This is for use on the geographic extent of the inset figure. Helpful for providing
+      # context to each glider mission, which can vary. Defaults to the Baltic Sea.
+      extent: [min_lon max_lon min_lat max_lon]
+
+      ### Below are additional reporting parameters for the future
+      # ext_format: pdf   # Something to eventually support - singletext, html
+      # overwrite: True   # Delete _build from within the "out_directory", if it exists
+      # template: None    # Could define conf.py or report generation orders different from the current base one
+      # figures: png      # Add .svg, .pdf support for vector formats
+      # method: Sphinx    # if Sphinx is found to be problematic on certain systems, attempt with another system

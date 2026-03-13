@@ -368,6 +368,7 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
             (4) difference between raw and ADJ (CTlag + thermal lag correction) salinity and temperature
 
         """
+        self.log("Displaying salinity profiles.")
         mpl.use("tkagg")
 
         # Get corrected and uncorrected profiles

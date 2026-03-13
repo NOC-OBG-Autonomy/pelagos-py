@@ -34,10 +34,7 @@ class ExportStep(BaseStep):
         )
 
         # Check if the data is in the context
-        if "data" not in self.context:
-            raise ValueError("No data found in context. Please load data first.")
-        else:
-            self.log(f"Data found in context.")
+        self.check_data()
         data = self.context["data"]
         # Add exiting notes on QC history if available TODO: Move earlier to individual QC steps on each data variable attribute
         if "qc_history" in self.context:

@@ -1,0 +1,126 @@
+# VOTO Pipeline configuration
+# WIP: Tabulated comments for a specific step are either for testing or indicate functionality that should be added
+pipeline:
+  name: VOTO glider processing pipeline
+  description: A pipeline for processing VOTO glider data   # VOTO test default 2026
+  visualisation: false                          # Not practical if called on from another script
+  out_directory: ../examples/data/OG1/testing/  # generic output directory for any generated files (logs, reports, figures, etc.)
+  log_file: voto_processing.log   # Added log_file to pipeline parameters, should another step need to load it (reporting)
+
+# To run on Nelson data, comment out lines containing the following: 'CHLA', 'CDOM', 'DOXY', and the spike test (no PROFILE_NUMBER)
+
+# Pipeline steps
+# ------------------------ IMPORT DATA -----------------------
+steps:
+  - name: Load OG1
+    parameters:
+      # file_path: ../examples/data/OG1/sea077_20230316T1019_delayed.nc  # Path to the input NetCDF file
+      file_path: ../examples/data/OG1/sea055_20240628T0856_delayed.nc
+      # file_path: ../examples/data/OG1/Nelson_646_R.nc
+    diagnostics: false  # No diagnostics for loading data
+
+# ----------------------- Quality control --------------------
+  - name: Apply QC
+    parameters:
+      # old_flags: Move   # If there are existing flags in the dataset:
+                          # *Move* them to a "_QC2" variable and append a comment, 
+                          # *Erase* them, reinitializing thereafter
+                          # *Merge* them (harder), picking the worst flag from multiple routines to keep and merging the QC attributes
+      qc_settings:
+        impossible date test: {}      # Is the date between 1985 and now?
+        impossible location test: {}  # Are the GPS coords within logical bounds?
+        position on land test: {}     # Are the coords on land?
+        impossible speed test: {}     # Is the horizontal speed reasonable?
+        range test:
+          variable_ranges:
+            PRES:
+              3: [-5, -2.4]  # Pressure in this range is flagged as probably bad (3)
+              4: [-.inf, -5]  # and bad (4) in this range.
+          also_flag:
+            PRES: [CNDC, TEMP]  # Flag CNDC & TEMP based on PRES flags
+          plot: [PRES]  # Plot pressure coloured by flag number
+        gross range test: # TODO: Add functionality if these are blank for a "valid_min" in attr - use that to assign the possible 4s
+          variable_ranges:
+            TEMP:
+              3: [0, 30]
+              4: [-2.5, 40]
+            CNDC:
+              3: [5, 42]  
+              4: [2, 45]
+            DOXY: # Comment out for Nelson
+              3: [0.01, 425]  # Sensor possibilities
+              4: [0, 500] # Crazy town
+            CHLA:
+              3: [0, 15]
+              4: [-1, 20] # VOTO preexisting, IOOS uses 100 for upper bound
+            # CDOM:
+            #   3: [0, 5]
+            #   4: [-0.1, 375] # Manufacturer's max
+          also_flag:
+            PRES: [TEMP, CNDC, DOXY]  # Flag TEMP & CNDC based on PRES flags
+            TEMP: [CNDC, DOXY]
+            CNDC: [DOXY]
+        spike test:   # Runs across individual profiles, therefore "PROFILE_NUMBER" must be defined # Comment out for Nelson
+          variables:
+            PRES: 5.0
+            # TEMP: 2.0 # Spike test is the longest part of the reporting. Test IOOS, Argo, and SBE alternatives for speed and efficacy.
+            # CNDC: 0.5
+            # DOXY: 10.0
+            # CHLA: 5.0
+          also_flag:
+            CNDC: [PSAL]
+          window_size: 10
+          plot: [PRES, TEMP, CNDC]
+        stuck value test:
+          variables:
+            PRES: 2  # If pressure is stuck for >2 values, they are flagged as bad
+          also_flag:
+            PRES: [CNDC, TEMP]  # Apply the bad flags to CNDC & TEMP too
+          plot: [PRES]  # Plot the outcome for just pressure
+    diagnostics: false
+
+
+# ----------------- Save Processed Data ----------------
+  - name: Data Export
+    parameters:
+      export_format: "netcdf"  # Format to save processed data. Supported formats are csv, netcdf, hdf5, and parquet
+      output_path: "../examples/data/OG1/VOTO_002_R_processed.nc"   # If blank, use pipeline's "out_directory" in the globals
+      # flag_type: Argo # Allow the user to specify different flagging schema. If so, translate the flag values and update the relevant attributes
+
+
+# ----------------------- Report assembly ---------------------
+  - name: Write Data Report
+    parameters:
+      title: "VOTO Glider Data Pipeline Report" # Goes on the title page
+      fname: "voto_data_report.rst" # Main .rst file Sphinx can build from, RstCloth will write to within pipeline's "out_directory"
+      build: true   #  Whether to run sphinx
+      extent: [7, 25, 54, 65] # Min Max longitude and Min Max latitude for geographic plotting
+      # ext_format: pdf   # Something to eventually support - singletext, html
+      # overwrite: True   # Delete _build from within the "out_directory", if it exists
+      # template: None  # Could define conf.py or report generation orders different from the current base one
+      # figures: png  # Add .svg, .pdf support for vector formats
+      # template: qc  # If using a template, such as a conf.py or other method of report generation
+
+
+### Guiding ideas, brainstorms
+
+# ----------------------- Report assembly ---------------------
+  # - name: Assemble Report
+  #   parameters:
+  #     report_title: "VOTO Glider Data Processing Report"
+  #     source_path: "../examples/reports"
+  #     output_path: "../examples/reports/voto_report.html"
+  #     piece_list: # Basically whatever parts we need to assemble
+  #       - "introduction.rst"
+  #       - "data_overview.rst"
+  #       - "qc_summary.rst"
+  #       - "spikes_analysis.rst"
+  #       - "stuck_values_analysis.rst"
+  #       - "range_test_analysis.rst"
+  #       - "conclusion.rst"
+
+    # - name: Write QC Report
+  #   parameters:
+  #     title: "VOTO Glider QC Report"
+  #     output_path: "../examples/data/voto_qc_report.rst"
+  #     build: true

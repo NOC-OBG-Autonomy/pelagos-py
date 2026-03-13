@@ -17,6 +17,7 @@ class gross_range_test(BaseTest):
     Outside range test similar to IOOS QC gross range test. Not to be confused with `range test`, which flags within a range.
 
     Given two values it checks for data points outside of this range and assigns a corresponding flag as defined in the configuration.
+    The `variable_ranges` parameter is required for this test, but `also_flag` is not.
 
     Target Variable: Any
     Flag Number: Any
@@ -26,28 +27,34 @@ class gross_range_test(BaseTest):
     -------
     gross range test:
         variable_ranges:
-        TEMP:
-            3: [0, 30]  #   Flags temperature data outside of this range as probably bad (3)
-            4: [-2.5, 40]   #   Flags temperature data outside of this range as bad (4)
-        CNDC:
-            3: [5, 42]
-            4: [2, 45]
+            TEMP:
+                3: [0, 30]      #   Flags temperature data outside of this range as probably bad (3)
+                4: [-2.5, 40]   #   Flags temperature data outside of this range as bad (4)
+            CNDC:
+                3: [5, 42]
+                4: [2, 45]
         also_flag:
-        TEMP: [DOXY] #  Flag DOXY based on TEMP flags
+            TEMP: [DOXY] #  Flag DOXY based on TEMP flags
     """
 
     test_name = "gross range test"
     dynamic = True
 
     def __init__(self, data, **kwargs):
-        required_kwargs = {"variable_ranges", "also_flag"}
+        required_kwargs = {"variable_ranges"}   #   Removed also_flag, in case test is intended to be run independently
         if not required_kwargs.issubset(kwargs):
             raise KeyError(
                 f"{required_kwargs - set(kwargs)} missing from gross range test"
             )
-
         self.variable_ranges = kwargs["variable_ranges"]
-        self.also_flag = kwargs["also_flag"]
+        #   Allow the also_flag param to be blank for this test
+        if "also_flag" in kwargs.keys():
+            if kwargs["also_flag"] is None:
+                self.also_flag = dict() 
+            else:
+                self.also_flag = kwargs["also_flag"]
+        else:
+            self.also_flag = dict()
         self.plot = kwargs.get("plot", [])  # Make plotting optional
 
         self.required_variables = list(self.variable_ranges.keys())

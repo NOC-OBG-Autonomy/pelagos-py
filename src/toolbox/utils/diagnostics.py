@@ -14,6 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+A module for diagnostic plotting and data summarization.
+"""
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 import xarray as xr

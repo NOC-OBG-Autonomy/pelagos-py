@@ -45,7 +45,6 @@ class LoadOG1(BaseStep):
     step_name = "Load OG1"
 
     def run(self):
-
         # load data from xarray
         self.data = xr.open_dataset(self.file_path)
         self.log(f"Loaded data from {self.file_path}")
@@ -73,14 +72,14 @@ class LoadOG1(BaseStep):
 
         # TODO: Remove QC column resetting when BODC has properly implemented QC outputs
         # Reset all data variable flags. Set unchecked data flags to 0 and missing data flags to 9
-        cols_to_qc = [
-            var for var in self.data.data_vars
-            if var.isupper() and (var not in self.data.dims) and ("_QC" not in var)
-        ]
-        data_subset = self.data[cols_to_qc]
-        masks = xr.where(data_subset.isnull(), 9, 0).astype(int)
-        masks = masks.rename({var: f"{var}_QC" for var in cols_to_qc})
-        self.data.update(masks)
+        # cols_to_qc = [
+        #     var for var in self.data.data_vars
+        #     if var.isupper() and (var not in self.data.dims) and ("_QC" not in var)
+        # ]
+        # data_subset = self.data[cols_to_qc]
+        # masks = xr.where(data_subset.isnull(), 9, 0).astype(int)
+        # masks = masks.rename({var: f"{var}_QC" for var in cols_to_qc})
+        # self.data.update(masks)
 
         # Generate diagnostics if enabled
         if self.diagnostics:
