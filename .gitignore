@@ -91,3 +91,4 @@ cython_debug/
 .pypirc
 
 
+src/toolbox/_version.py

@@ -11,6 +11,10 @@ on:
 jobs:
   build-docs:
     runs-on: ubuntu-latest
+    
+    # Grant the built-in token permission to push to the repository
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout Repository
@@ -46,9 +50,9 @@ jobs:
         run: touch docs/_build/html/.nojekyll
 
       - name: Deploy to GitHub Pages
+        if: github.event_name == 'push'
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          branch: gh-pages  # Deploy to the root of gh-pages
-          folder: docs/_build/html  # Ensure this points to the html folder
-          token: ${{ secrets.GH_PAT }}
-          clean: true  # Deletes old files before deployment
+          branch: gh-pages
+          folder: docs/_build/html
+          clean: true
