@@ -31,7 +31,7 @@ Key characteristics:
 Pelagos-py is not *yet* and installable package, so for the moment you have to make a local copy to run it:
 ```bash
 git clone https://github.com/NOC-OBG-Autonomy/pelagos-py.git
-cd toolbox
+cd pelagos-py
 # create/activate a virtual environment
 pip install -e . 
 ```

@@ -7,7 +7,7 @@ requires = [
 ]
 
 [project]
-name = "Pelagos-py"
+name = "pelagos-py"
 description = "Customizable processing pipeline for oceanographic data from autonomous assets"
 readme = "README.md"
 maintainers = [

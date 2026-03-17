@@ -1,19 +1,32 @@
+# OS Generated Files
+.DS_Store
 
-# Data Files
+# Project Specific
 *.nc
-\data
+/data/
+/testing/
 
-# Development
-\testing
-
-# ---------------------------------------------------------------------------------------------
-
-# Distribution / packaging / environments / temps / settings
+# Python Core & Compilation
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
+
+# Environments & Dependency Management
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.pdm.toml
+.pdm-python
+.pdm-build/
+__pypackages__/
+
+# Distribution & Packaging
 build/
 develop-eggs/
 dist/
@@ -35,6 +48,8 @@ MANIFEST
 *.spec
 pip-log.txt
 pip-delete-this-directory.txt
+
+# Testing & Coverage
 htmlcov/
 .tox/
 .nox/
@@ -48,38 +63,34 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
-*.mo
-*.pot
+
+# Jupyter & Notebooks
+.ipynb_checkpoints
+profile_default/
+ipython_config.py
+*.sage.py
+
+# Databases & Logs
 *.log
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+
+# Web Frameworks & Background Tasks
 instance/
 .webassets-cache
 .scrapy
 docs/_build/
-.pybuilder/
-target/
-.ipynb_checkpoints
-profile_default/
-ipython_config.py
-.pdm.toml
-.pdm-python
-.pdm-build/
-__pypackages__/
 celerybeat-schedule
 celerybeat.pid
-*.sage.py
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+
+# Editors, IDEs & Tooling
 .spyderproject
 .spyproject
 .ropeproject
+.idea/
+.pybuilder/
+target/
 /site
 .mypy_cache/
 .dmypy.json
@@ -87,7 +98,7 @@ dmypy.json
 .pyre/
 .pytype/
 cython_debug/
-.idea/
 .pypirc
-
-
+*.mo
+*.pot
+src/toolbox/_version.py

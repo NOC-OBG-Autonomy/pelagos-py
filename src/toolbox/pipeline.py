@@ -348,3 +348,11 @@ class Pipeline(ConfigMirrorMixin):
         # ensure _parameters is up to date
         self._parameters.update(self.generate_config())
         super().save_config(path)
+
+    def get_data(self):
+        """
+        Returns data from the current pipeline context.
+        """
+        if self._context and "data" in self._context:
+            return self._context["data"]
+        return None
