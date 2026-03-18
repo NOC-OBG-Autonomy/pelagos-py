@@ -37,7 +37,9 @@ def find_profiles(
     use_only_pit_vel=False,
     backfill_segments=False,
     back_fill_mod=1,
+    force_split_up_down_casts=False,  #newline17112025
 ):
+
     """
     Identifies vertical profiles in oceanographic or similar data by analyzing depth gradients over time.
 
@@ -272,6 +274,72 @@ def find_profiles(
                     - 1
                 ).alias("profile_num_new")
             )
+
+    # --- OPTIONAL: force splits between downcasts and upcasts -----------------  #newline17112025
+    # This section modifies ONLY the final profile numbering when                 #newline17112025
+    # 'force_split_up_down_casts' is True and pitch is available.                #newline17112025
+    #                                                                            #newline17112025
+    # Strategy (simpler and more robust):                                        #newline17112025
+    #   - Use the sign of the smoothed pitch (smooth_INTERP_pitch).              #newline17112025
+    #   - While inside a profile (is_profile == True), start a new profile       #newline17112025
+    #     whenever that sign flips.                                              #newline17112025
+    #   - Also start a new profile when we first enter a profile segment.        #newline17112025
+    #                                                                            #newline17112025
+    # This guarantees that a downcast followed by an upcast will always be       #newline17112025
+    # given two different profile_num_new values, even if backfill has made      #newline17112025
+    # is_profile a single continuous block.                                      #newline17112025
+    if force_split_up_down_casts and (cust_col == 'pitch'):                       #newline17112025
+        # 1) Instantaneous pitch sign from smoothed pitch                         #newline17112025
+        df = df.with_columns(                                                     #newline17112025
+            pl.when(pl.col(f"smooth_INTERP_{cust_col}") >= 0)                     #newline17112025
+              .then(pl.lit(1))                                                    #newline17112025
+              .otherwise(pl.lit(-1))                                              #newline17112025
+              .alias("pitch_sign")                                                #newline17112025
+        )                                                                          #newline17112025
+                                                                                    #newline17112025
+        # 2) Previous state for profile mask and pitch sign                       #newline17112025
+        df = df.with_columns([                                                    #newline17112025
+            pl.col("is_profile").shift(1).fill_null(False).alias("prev_is_profile"), #newline17112025
+            pl.col("pitch_sign").shift(1).alias("prev_pitch_sign")                #newline17112025
+        ])                                                                         #newline17112025
+                                                                                    #newline17112025
+        # 3) Segment starts:                                                      #newline17112025
+        #    - entering a profile (False -> True), OR                             #newline17112025
+        #    - staying in a profile but pitch sign flips.                         #newline17112025
+        df = df.with_columns(                                                     #newline17112025
+            pl.when(                                                              #newline17112025
+                pl.col("is_profile") &                                            #newline17112025
+                (                                                                 #newline17112025
+                    (~pl.col("prev_is_profile")) |                                #newline17112025
+                    (pl.col("prev_is_profile") &                                  #newline17112025
+                     (pl.col("pitch_sign") != pl.col("prev_pitch_sign")).fill_null(False)) #newline17112025
+                )                                                                 #newline17112025
+            )                                                                     #newline17112025
+            .then(1)                                                              #newline17112025
+            .otherwise(0)                                                         #newline17112025
+            .alias("cast_start_flag")                                             #newline17112025
+        )                                                                          #newline17112025
+                                                                                    #newline17112025
+        # 4) Rebuild profile_num_new from these starts.                           #newline17112025
+        #    Each cast_start_flag == 1 increments the cast index; we subtract     #newline17112025
+        #    1 so the first profile has ID 0, next has ID 1, etc.                 #newline17112025
+        df = df.with_columns(                                                     #newline17112025
+            pl.when(pl.col("is_profile"))                                         #newline17112025
+              .then(                                                              #newline17112025
+                  pl.col("cast_start_flag")                                       #newline17112025
+                    .cast(pl.Int64)                                               #newline17112025
+                    .cum_sum()                                                    #newline17112025
+                    - 1                                                           #newline17112025
+              )                                                                   #newline17112025
+              .otherwise(pl.lit(-1))                                              #newline17112025
+              .alias("profile_num_new")                                           #newline17112025
+        )                                                                          #newline17112025
+                                                                                    #newline17112025
+    elif force_split_up_down_casts and (cust_col != 'pitch'):                      #newline17112025
+        # No-op: user requested pitch-based splitting, but no pitch column        #newline17112025
+        # is available. We deliberately do nothing to avoid breaking workflows.   #newline17112025
+        pass                                                                        #newline17112025
+    # ---------------------------------------------------------------------------  #newline17112025
 
     # Rolling min and max of depth over the transect window duration
     df = df.with_columns([
