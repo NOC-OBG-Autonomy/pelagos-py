@@ -14,179 +14,231 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Class definition for finding profiles and their direction."""
+"""Class definition for exporting data steps."""
 
 #### Mandatory imports ####
 from toolbox.steps.base_step import BaseStep, register_step
 from toolbox.utils.qc_handling import QCHandlingMixin
 import toolbox.utils.diagnostics as diag
 
-#### Custom imports ####
 import pandas as pd
+import numpy as np
+import xarray as xr
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import tkinter as tk
-import numpy as np
+from scipy.signal import savgol_filter
 
+# --- Tweakable Variables ---
+DEFAULT_RESAMPLE_CADENCE = "1min"
+DEFAULT_DEPTH_MEDIAN_WIN = 1
+DEFAULT_DEPTH_MEAN_WIN = 2
+DEFAULT_SAVGOL_WINDOW = 5
+DEFAULT_SAVGOL_POLY = 2
+DEFAULT_VELOCITY_THRESHOLD = 0.05
+DEFAULT_MIN_VALID_DEPTH = -0.5
+DEFAULT_MIN_PROFILE_DEPTH = 15
+DEFAULT_MIN_POINTS_IN_PROFILE = 10
+DEFAULT_MAX_DEPTH_GAP = 15
 
-# --- Configurable Variables ---
-PLOT_FIGSIZE = (18, 10)
-PLOT_MARKER_SIZE = 1
-COLOUR_ASCENDING = "tab:blue"
-COLOUR_DESCENDING = "teal"
-COLOUR_NOT_PROFILE = "tab:red"
-COLOUR_RAW_VELOCITY = "k"
-COLOUR_RAW_ALPHA = 0.1
-COLOUR_THRESHOLDS = "gray"
-TURN_BUFFER_SIZE = 5
-# ------------------------------
+# Plotting Aesthetics
+COLOUR_UP = "tab:blue"
+COLOUR_DOWN = "tab:green"
+COLOUR_TURNING = "tab:orange"
+COLOUR_VELOCITY = "tab:red"
+COLOUR_TREND = "black"
+RAW_ALPHA = 0.6
+MARKER_SIZE = 2
+LINE_WIDTH = 1.5
+# ---------------------------
 
-
-def find_profiles(
-    df,
-    gradient_thresholds: list,
-    filter_win_sizes=["20s", "10s"],
-    time_col="TIME",
-    depth_col="DEPTH",
-):
+def find_profiles_beta(df_sorted, cadence, med_win, mean_win, sg_win, sg_poly, vel_thresh, min_depth, min_prof_depth, min_points, max_gap, depth_col):
     """
-    Identifies vertical profiles and their direction by analysing depth gradients over time.
+    Identifies vertical profiles using centered smoothing, Savitzky-Golay velocity 
+    filtering, and secondary segment validation.
 
-    This function processes depth-time data to identify periods where an instrument is performing
-    vertical profiling based on gradient thresholds. It handles data interpolation, calculates vertical
-    velocities, applies median filtering, and assigns unique profile numbers and directions.
+    This function processes depth-time data to identify discrete profiling events. 
+    It applies a multi-stage smoothing process to velocity, identifies potential 
+    profile boundaries, and then performs a secondary validation pass to split 
+    profiles containing large data gaps or remove segments that do not meet 
+    physical requirements.
 
     Parameters
     ----------
-    df : pandas.DataFrame
-        Input dataframe containing time and depth measurements.
-    gradient_thresholds : list
-        Two-element list [positive_threshold, negative_threshold] defining the vertical velocity
-        range (in metres/second) that is NOT considered part of a profile. Typical values are around [0.02, -0.02].
-    filter_win_sizes : list, default=['20s', '10s']
-        Window sizes for the compound filter applied to gradient calculations, in Pandas duration format.
-        Index 0 controls the rolling median window size and index 1 controls the rolling mean window size.
-    time_col : str, default='TIME'
-        Name of the column containing timestamp data.
-    depth_col : str, default='DEPTH'
-        Name of the column containing depth measurements.
+    df_sorted : pandas.DataFrame
+        Input dataframe containing time-indexed depth measurements.
+    cadence : str
+        Resampling frequency (e.g., '1min') used for initial smoothing and 
+        velocity calculations.
+    med_win, mean_win : int
+        Rolling window sizes for median and mean smoothing applied to the 
+        resampled depth data.
+    sg_win, sg_poly : int
+        Window size and polynomial order for the Savitzky-Golay filter 
+        applied to vertical velocity.
+    vel_thresh : float
+        Velocity threshold (m/s) below which the glider is considered to be 
+        turning or at a standstill.
+    min_depth : float
+        Depth threshold (m) below which data is considered surface noise 
+        and excluded from profiles.
+    min_prof_depth : float
+        Minimum total vertical distance (m) a segment must cover to be 
+        validated as a profile.
+    min_points : int
+        Minimum number of raw data points required within a segment to be 
+        validated as a profile.
+    max_gap : float
+        Maximum allowable vertical gap (m) between consecutive points within 
+         a single profile. Exceeding this splits the profile.
+    depth_col : str
+        The name of the column containing depth/pressure data.
 
     Returns
     -------
-    pandas.DataFrame
-        Dataframe with additional columns:
-        - 'dt': Time difference between consecutive points (seconds)
-        - 'dz': Depth difference between consecutive points (metres)
-        - 'grad': Vertical velocity (dz/dt, metres/second)
-        - 'smooth_grad': Median-filtered vertical velocity
-        - 'is_profile': Boolean indicating if a point belongs to a profile
-        - 'profile_num': Unique identifier for each identified profile (NaN for non-profile points)
-        - 'profile_dir': 1 for Ascending, -1 for Descending (NaN for non-profile points)
-
-    Notes
-    -----
-    - The function considers a point part of a profile when its smoothed vertical velocity
-      falls outside the range specified by gradient_thresholds, utilising hysteresis to prevent
-      fragmentation from noise.
+    df_out : pandas.DataFrame
+        The original dataframe with added columns:
+        - 'PROFILE_ID': Unique integer ID for each profile (-1 for non-profile).
+        - 'DIRECTION': 1 for Ascending, -1 for Descending, NaN for Turning.
+        - 'GRADIENT': Average vertical velocity (m/s) calculated via linear fit.
+        - 'is_turning': Boolean indicating turning points or gaps.
+    df_smooth : pandas.DataFrame
+        The resampled/smoothed diagnostic data used for processing.
     """
-    df = df.copy()
-    df[time_col] = pd.to_datetime(df[time_col])
-    
-    df_indexed = df.set_index(time_col).copy()
-    
-    df_indexed[f"INTERP_{depth_col}"] = df_indexed[depth_col].replace([np.inf, -np.inf], np.nan)
-    df_indexed[f"INTERP_{depth_col}"] = df_indexed[f"INTERP_{depth_col}"].interpolate(method='time')
-    
-    df_valid = df_indexed.dropna(subset=[f"INTERP_{depth_col}"]).copy()
-    
-    dt = df_valid.index.to_series().diff().dt.total_seconds()
-    dz = df_valid[f"INTERP_{depth_col}"].diff()
-    
-    df_valid["dt"] = dt
-    df_valid["dz"] = dz
-    df_valid["grad"] = df_valid["dz"] / df_valid["dt"]
-    
-    df_grad = df_valid.dropna(subset=["grad"]).copy()
-    
-    df_grad["smooth_grad"] = (
-        df_grad["grad"]
-        .rolling(window=filter_win_sizes[0], center=True).median()
-        .rolling(window=filter_win_sizes[1], center=True).mean()
+    df = df_sorted[depth_col].resample(cadence).mean().to_frame()
+    df[depth_col] = df[depth_col].interpolate(method='linear')
+
+    df["SMOOTH_DEPTH"] = (
+        df[depth_col]
+        .rolling(window=med_win, center=True).median()
+        .rolling(window=mean_win, center=True).mean()
     )
+
+    dt = pd.Timedelta(cadence).total_seconds()
+    df["RAW_VEL"] = np.gradient(df["SMOOTH_DEPTH"]) / dt
+    df["RAW_VEL"] = df["RAW_VEL"].fillna(0)
     
-    pos_grad, neg_grad = gradient_thresholds
+    df["SMOOTH_VELOCITY"] = savgol_filter(df["RAW_VEL"], sg_win, sg_poly)
+    vel_crosses_zero = (df["SMOOTH_VELOCITY"] * df["SMOOTH_VELOCITY"].shift(1)) < 0
     
-    is_outside = ~df_grad["smooth_grad"].between(neg_grad, pos_grad)
+    df["is_turning"] = (
+        (df["SMOOTH_VELOCITY"].abs() <= vel_thresh) | 
+        (df["SMOOTH_DEPTH"] < min_depth) |
+        vel_crosses_zero
+    )
+
+    is_profile = ~df["is_turning"]
+    profile_starts = is_profile & ~is_profile.shift(1, fill_value=False)
+    df["PROFILE_ID"] = profile_starts.cumsum()
+    df.loc[df["is_turning"], "PROFILE_ID"] = np.nan
+
+    df_features = df[["PROFILE_ID", "is_turning", "SMOOTH_VELOCITY"]]
     
-    direction = pd.Series(np.nan, index=df_grad.index)
-    direction.loc[df_grad["smooth_grad"] > pos_grad] = -1  # Descending (depth increasing)
-    direction.loc[df_grad["smooth_grad"] < neg_grad] = 1   # Ascending (depth decreasing)
-    direction = direction.ffill().fillna(0)
+    df_out = pd.merge_asof(
+        df_sorted, 
+        df_features, 
+        left_index=True, 
+        right_index=True, 
+        direction="nearest", 
+        tolerance=pd.Timedelta(cadence)
+    )
+
+    df_out["VALID_PROFILE"] = np.nan
+    df_out["DIRECTION"] = np.nan
+    df_out["GRADIENT"] = np.nan
     
-    direction_change = direction != direction.shift(1)
-    direction_change.iloc[0] = False 
+    valid_pid_counter = 1
     
-    turn_regions = ~is_outside
-    turn_regions = turn_regions | direction_change | direction_change.shift(-1, fill_value=False)
-    turn_regions = turn_regions.rolling(window=TURN_BUFFER_SIZE, center=True, min_periods=1).max().astype(bool)
-    
-    is_profile = ~turn_regions
-    
-    new_profile_starts = is_profile & ~is_profile.shift(1, fill_value=False)
-    profile_blocks = new_profile_starts.cumsum()
-    
-    df_grad["is_profile"] = is_profile
-    df_grad["profile_num"] = profile_blocks.where(is_profile, np.nan)
-    df_grad["profile_dir"] = direction.where(is_profile, np.nan)
-    
-    result_df = df.set_index(time_col).join(
-        df_grad[["dt", "dz", "grad", "smooth_grad", "is_profile", "profile_num", "profile_dir"]],
-        how="left"
-    ).reset_index()
-    
-    result_df[f"INTERP_{depth_col}"] = df_indexed[f"INTERP_{depth_col}"].values
-    
-    return result_df
+    for pid, group in df_out.dropna(subset=["PROFILE_ID"]).groupby("PROFILE_ID"):
+        depth_diffs = group[depth_col].diff().abs()
+        sub_groups = (depth_diffs > max_gap).fillna(False).cumsum()
+        
+        for sub_id, sub_group in group.groupby(sub_groups):
+            depth_span = sub_group[depth_col].max() - sub_group[depth_col].min()
+            point_count = len(sub_group)
+            
+            if depth_span >= min_prof_depth and point_count >= min_points:
+                df_out.loc[sub_group.index, "VALID_PROFILE"] = valid_pid_counter
+                x = (sub_group.index - sub_group.index[0]).total_seconds().values
+                
+                if len(x) > 1:
+                    m, _ = np.polyfit(x, sub_group[depth_col].values, 1)
+                    df_out.loc[sub_group.index, "GRADIENT"] = m
+                    df_out.loc[sub_group.index, "DIRECTION"] = 1 if m < 0 else -1
+                    
+                valid_pid_counter += 1
+            else:
+                df_out.loc[sub_group.index, "is_turning"] = True
+
+    df_out = df_out.drop(columns=["PROFILE_ID"])
+    df_out = df_out.rename(columns={"VALID_PROFILE": "PROFILE_ID"})
+    df_out["PROFILE_ID"] = df_out["PROFILE_ID"].fillna(-1)
+
+    return df_out, df
 
 
 @register_step
-class FindProfilesStep(BaseStep, QCHandlingMixin):
-    """
-    Determine profile numbers and whether water profiles are ascending or descending.
-
-    This step processes depth data to segment the dataset into continuous vertical 
-    profiles, calculating both the unique profile number and the direction of travel 
-    (1 for Ascending, -1 for Descending).
-    """
-
-    step_name = "Find Profiles beta"
+class FindProfilesBetaStep(BaseStep, QCHandlingMixin):
+    step_name = "Find Profiles Beta"
 
     def run(self):
-        self.log("Attempting to designate profile numbers and directions")
-
+        self.log("Attempting to designate profile numbers, directions, and gradients")
         self.filter_qc()
 
-        self.thresholds = self.parameters["gradient_thresholds"]
-        self.win_sizes = self.parameters["filter_window_sizes"]
-        self.depth_col = self.parameters["depth_column"]
+        self.depth_col = self.parameters.get("depth_column")
+        if not self.depth_col:
+            if "PRES_ENG" in self.data.variables:
+                self.depth_col = "PRES_ENG"
+                self.log("Automatically selected PRES_ENG as depth variable.")
+            elif "PRES" in self.data.variables:
+                self.depth_col = "PRES"
+                self.log("PRES_ENG not found. Falling back to PRES.")
+            else:
+                raise ValueError("Neither PRES_ENG nor PRES variables found in the dataset.")
+        elif self.depth_col not in self.data.variables:
+            raise ValueError(f"Specified depth column '{self.depth_col}' not found in the dataset.")
+
+        self.cadence = self.parameters.get("resample_cadence", DEFAULT_RESAMPLE_CADENCE)
+        self.med_win = self.parameters.get("depth_median_win", DEFAULT_DEPTH_MEDIAN_WIN)
+        self.mean_win = self.parameters.get("depth_mean_win", DEFAULT_DEPTH_MEAN_WIN)
+        self.sg_win = self.parameters.get("savgol_window", DEFAULT_SAVGOL_WINDOW)
+        self.sg_poly = self.parameters.get("savgol_poly", DEFAULT_SAVGOL_POLY)
+        self.vel_thresh = self.parameters.get("velocity_threshold", DEFAULT_VELOCITY_THRESHOLD)
+        self.min_depth = self.parameters.get("min_valid_depth", DEFAULT_MIN_VALID_DEPTH)
+        self.min_prof_depth = self.parameters.get("min_profile_depth", DEFAULT_MIN_PROFILE_DEPTH)
+        self.min_points = self.parameters.get("min_points_in_profile", DEFAULT_MIN_POINTS_IN_PROFILE)
+        self.max_gap = self.parameters.get("max_depth_gap", DEFAULT_MAX_DEPTH_GAP)
+
+        if self.depth_col == "PRES_ENG" and "PRES" in self.data.variables:
+            pres_max = float(self.data["PRES"].max())
+            eng_max = float(self.data["PRES_ENG"].max())
+            ratio = pres_max / eng_max if eng_max != 0 else 1
+            if 8 < ratio < 12:
+                self.log("Detected PRES_ENG 10x bug. Scaling PRES_ENG by 10.")
+                self.data["PRES_ENG"] = self.data["PRES_ENG"] * 10
 
         if self.diagnostics:
             self.log("Generating diagnostics")
             root = self.generate_diagnostics()
             root.mainloop()
 
-        self._df = self.data[["TIME", self.depth_col]].to_dataframe()
-        if "TIME" not in self._df.columns:
-            self._df = self._df.reset_index()
+        df_raw = self.data[["TIME", self.depth_col]].to_dataframe().reset_index()
+        df_sorted = df_raw.dropna(subset=[self.depth_col, "TIME"]).sort_values("TIME").set_index("TIME")
 
-        self.profile_outputs = find_profiles(
-            self._df, self.thresholds, self.win_sizes, depth_col=self.depth_col
+        df_out, _ = find_profiles_beta(
+            df_sorted, self.cadence, self.med_win, self.mean_win, 
+            self.sg_win, self.sg_poly, self.vel_thresh, self.min_depth,
+            self.min_prof_depth, self.min_points, self.max_gap, self.depth_col
         )
-        
-        profile_numbers = self.profile_outputs["profile_num"].to_numpy()
-        profile_directions = self.profile_outputs["profile_dir"].to_numpy()
 
-        self.data["PROFILE_NUMBER"] = (("N_MEASUREMENTS",), profile_numbers)
+        df_out = df_out.reset_index()
+        df_final = df_raw.merge(
+            df_out[["N_MEASUREMENTS", "PROFILE_ID", "DIRECTION", "GRADIENT"]], 
+            on="N_MEASUREMENTS", 
+            how="left"
+        )
+
+        self.data["PROFILE_NUMBER"] = (("N_MEASUREMENTS",), df_final["PROFILE_ID"].fillna(-1).to_numpy())
         self.data.PROFILE_NUMBER.attrs = {
             "long_name": "Derived profile number. #=-1 indicates no profile, #>=0 are profiles.",
             "units": "None",
@@ -195,199 +247,142 @@ class FindProfilesStep(BaseStep, QCHandlingMixin):
             "valid_max": np.inf,
         }
 
-        self.data["PROFILE_DIRECTION"] = (("N_MEASUREMENTS",), profile_directions)
+        self.data["PROFILE_DIRECTION"] = (("N_MEASUREMENTS",), df_final["DIRECTION"].to_numpy())
         self.data.PROFILE_DIRECTION.attrs = {
-            "long_name": "Profile direction. 1=Ascending, -1=Descending",
+            "long_name": "Profile Direction (-1: Descending, 1: Ascending, NaN: Not Profile)",
             "units": "None",
-            "standard_name": "Profile Direction",
-            "valid_min": -1,
-            "valid_max": 1,
         }
 
-        self.reconstruct_data()
-        self.update_qc()
+        self.data["PROFILE_GRADIENT"] = (("N_MEASUREMENTS",), df_final["GRADIENT"].to_numpy())
+        self.data.PROFILE_GRADIENT.attrs = {
+            "long_name": "Profile Vertical Gradient",
+            "units": "m/s",
+        }
 
-        self.generate_qc(
-            {
-                "PROFILE_NUMBER_QC": ["TIME_QC", f"{self.depth_col}_QC"],
-                "PROFILE_DIRECTION_QC": ["PROFILE_NUMBER_QC", "TIME_QC", f"{self.depth_col}_QC"],
-            }
-        )
+        self.generate_qc({
+            "PROFILE_NUMBER_QC": ["TIME_QC", f"{self.depth_col}_QC"],
+            "PROFILE_DIRECTION_QC": ["TIME_QC", f"{self.depth_col}_QC"],
+            "PROFILE_GRADIENT_QC": ["TIME_QC", f"{self.depth_col}_QC"]
+        })
 
         self.context["data"] = self.data
         return self.context
 
-    def generate_diagnostics(self):
 
+    def generate_diagnostics(self):
         def generate_plot():
             mpl.use("TkAgg")
 
-            self._df = self.data[["TIME", self.depth_col]].to_dataframe()
-            if "TIME" not in self._df.columns:
-                self._df = self._df.reset_index()
+            df_raw = self.data[["TIME", self.depth_col]].to_dataframe().reset_index()
+            df_sorted = df_raw.dropna(subset=[self.depth_col, "TIME"]).sort_values("TIME").set_index("TIME")
 
-            self.profile_outputs = find_profiles(
-                self._df, self.thresholds, self.win_sizes, depth_col=self.depth_col
+            df_out, df_smooth = find_profiles_beta(
+                df_sorted, self.cadence, self.med_win, self.mean_win, 
+                self.sg_win, self.sg_poly, self.vel_thresh, self.min_depth,
+                self.min_prof_depth, self.min_points, self.max_gap, self.depth_col
             )
 
-            ascending = self.profile_outputs[self.profile_outputs["profile_dir"] == 1]
-            descending = self.profile_outputs[self.profile_outputs["profile_dir"] == -1]
-            not_profiles = self.profile_outputs[self.profile_outputs["is_profile"] != True]
+            fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(15, 10), sharex=True, gridspec_kw={'height_ratios': [3, 2, 1]})
 
-            fig = plt.figure(figsize=PLOT_FIGSIZE)
-            gs = fig.add_gridspec(3, 4, wspace=0.3, hspace=0.3)
+            up_mask = df_out["DIRECTION"] == 1
+            down_mask = df_out["DIRECTION"] == -1
+            turn_mask = df_out["PROFILE_ID"] == -1
+
+            ax1.plot(df_out[turn_mask].index, -df_out[turn_mask][self.depth_col], marker=".", ls="", ms=MARKER_SIZE, color=COLOUR_TURNING, alpha=RAW_ALPHA, label="Turning")
+            ax1.plot(df_out[up_mask].index, -df_out[up_mask][self.depth_col], marker=".", ls="", ms=MARKER_SIZE, color=COLOUR_UP, alpha=RAW_ALPHA, label="Ascending (+1)")
+            ax1.plot(df_out[down_mask].index, -df_out[down_mask][self.depth_col], marker=".", ls="", ms=MARKER_SIZE, color=COLOUR_DOWN, alpha=RAW_ALPHA, label="Descending (-1)")
             
-            ax_depth = fig.add_subplot(gs[0, :3])
-            ax_vel = fig.add_subplot(gs[1, :3], sharex=ax_depth)
-            ax_prof = fig.add_subplot(gs[2, :3], sharex=ax_depth)
+            ax1.set_ylabel(self.depth_col)
+            ax1.set_title("Profile Classification")
+            ax1.legend(loc="upper right", markerscale=5)
 
-            ax_depth.set_ylabel("Interpolated Depth")
-            ax_vel.set_ylabel("Vertical Velocity")
-            ax_prof.set_ylabel("Profile Number")
-            ax_prof.set_xlabel("Time")
-            
-            ax_depth.tick_params(labelbottom=False)
-            ax_vel.tick_params(labelbottom=False)
+            ax2.plot(df_smooth.index, df_smooth["SMOOTH_VELOCITY"], color=COLOUR_VELOCITY, lw=LINE_WIDTH, label="Smoothed Velocity")
+            ax2.axhline(self.vel_thresh, color=COLOUR_TURNING, lw=0.8, ls="--", alpha=0.5)
+            ax2.axhline(-self.vel_thresh, color=COLOUR_TURNING, lw=0.8, ls="--", alpha=0.5)
+            ax2.axhline(0, color="black", lw=0.8)
+            ax2.set_ylabel("Velocity")
+            ax2.legend(loc="upper right")
 
-            for data, col, label in zip(
-                [ascending, descending, not_profiles],
-                [COLOUR_ASCENDING, COLOUR_DESCENDING, COLOUR_NOT_PROFILE],
-                ["Ascending", "Descending", "Not Profile"],
-            ):
-                ax_depth.plot(
-                    data["TIME"],
-                    -data[f"INTERP_{self.depth_col}"],
-                    marker=".",
-                    markersize=PLOT_MARKER_SIZE,
-                    ls="",
-                    c=col,
-                    label=label,
-                )
-                ax_vel.plot(
-                    data["TIME"],
-                    data["smooth_grad"],
-                    marker=".",
-                    markersize=PLOT_MARKER_SIZE,
-                    ls="",
-                    c=col,
-                    label=label,
-                )
+            ax3.plot(df_out.index, df_out["PROFILE_ID"], color="gray")
+            ax3.set_ylabel("Profile ID")
+            ax3.set_xlabel("Time")
 
-            ax_vel.plot(
-                self.profile_outputs["TIME"],
-                self.profile_outputs["grad"],
-                c=COLOUR_RAW_VELOCITY,
-                alpha=COLOUR_RAW_ALPHA,
-                label="Raw Velocity",
-            )
-            for val, label in zip(self.thresholds, ["Gradient Thresholds", None]):
-                ax_vel.axhline(val, ls="--", color=COLOUR_THRESHOLDS, label=label)
-
-            ax_prof.plot(
-                self.profile_outputs["TIME"],
-                self.profile_outputs["profile_num"],
-                c=COLOUR_THRESHOLDS,
-            )
-
-            ax_depth.legend(loc="upper right")
-            ax_vel.legend(loc="upper right")
-
-            valid_profiles = self.profile_outputs["profile_num"].dropna().unique()
-            if len(valid_profiles) > 0:
-                indices = np.linspace(0, len(valid_profiles) - 1, min(3, len(valid_profiles))).astype(int)
-                sample_profs = valid_profiles[indices]
-                
-                zoom_axs = [fig.add_subplot(gs[i, 3]) for i in range(len(sample_profs))]
-                
-                for ax, p_num in zip(zoom_axs, sample_profs):
-                    p_data = self.profile_outputs[self.profile_outputs["profile_num"] == p_num]
-                    
-                    if p_data["profile_dir"].iloc[0] == 1:
-                        p_col = COLOUR_ASCENDING
-                    else:
-                        p_col = COLOUR_DESCENDING
-                        
-                    ax.plot(
-                        p_data["TIME"], 
-                        -p_data[f"INTERP_{self.depth_col}"], 
-                        color=p_col, 
-                        marker=".", 
-                        markersize=3
-                    )
-                    ax.set_title(f"Profile {int(p_num)}")
-                    ax.tick_params(axis='x', rotation=45, labelsize=8)
-
+            plt.tight_layout()
             plt.show(block=False)
 
         root = tk.Tk()
         root.title("Parameter Adjustment")
-        root.geometry(f"380x{50*len(self.parameters)}")
+        root.geometry("450x300")
         entries = {}
 
-        row = 0
-        values = self.thresholds
-        tk.Label(root, text="Gradient Thresholds:").grid(row=row, column=0)
-        for i, label, value in zip(range(2), ["+ve", "-ve"], values):
-            tk.Label(root, text=f"{label}:").grid(row=row + 1, column=2 * i)
-            entry = tk.Entry(root, textvariable=label, width=10)
-            entry.insert(0, value)
-            entry.grid(row=row + 1, column=2 * i + 1)
-            entries[label] = entry
+        params = [
+            ("Depth Column", "depth_column", self.depth_col),
+            ("Velocity Threshold", "velocity_threshold", self.vel_thresh),
+            ("Median Window", "depth_median_win", self.med_win),
+            ("Mean Window", "depth_mean_win", self.mean_win),
+            ("Savgol Window", "savgol_window", self.sg_win),
+            ("Savgol Poly", "savgol_poly", self.sg_poly),
+            ("Min Valid Depth", "min_valid_depth", self.min_depth),
+            ("Min Profile Depth", "min_profile_depth", self.min_prof_depth),
+            ("Min Points", "min_points_in_profile", self.min_points),
+            ("Max Depth Gap", "max_depth_gap", self.max_gap)
+        ]
 
-        row = 2
-        values = self.win_sizes
-        tk.Label(root, text="Filter Window Sizes:").grid(row=row, column=0, pady=(20, 0))
-        for i, label, value in zip(range(2), ["Median Filter", "Mean Filter"], values):
-            tk.Label(root, text=f"{label}:").grid(row=row + 1, column=2 * i)
-            entry = tk.Entry(root, textvariable=label, width=10)
-            entry.insert(0, value)
-            entry.grid(row=row + 1, column=2 * i + 1)
-            entries[label] = entry
+        for i, (label_text, key, val) in enumerate(params):
+            tk.Label(root, text=label_text).grid(row=i//2, column=(i%2)*2, sticky="e", padx=5, pady=2)
+            entry = tk.Entry(root, width=12)
+            entry.insert(0, str(val))
+            entry.grid(row=i//2, column=(i%2)*2+1, padx=5, pady=2)
+            entries[key] = entry
 
-        row = 4
-        value = self.depth_col
-        tk.Label(root, text="Depth column name:").grid(row=row, column=0, pady=(20, 0))
-        entry = tk.Entry(root, textvariable="depth_column")
-        entry.insert(0, value)
-        entry.grid(row=row, column=1, pady=(20, 0))
-        entries["depth_column"] = entry
-
-        def on_cancel():
+        def on_cancel(event=None):
             plt.close('all')
             root.quit()
             root.destroy()
 
-        def on_regenerate():
-            self.thresholds = [float(entries["+ve"].get()), float(entries["-ve"].get())]
-            self.win_sizes = [
-                entries["Median Filter"].get(),
-                entries["Mean Filter"].get(),
-            ]
+        def on_regenerate(event=None):
             self.depth_col = entries["depth_column"].get()
-
+            self.vel_thresh = float(entries["velocity_threshold"].get())
+            self.med_win = int(entries["depth_median_win"].get())
+            self.mean_win = int(entries["depth_mean_win"].get())
+            self.sg_win = int(entries["savgol_window"].get())
+            self.sg_poly = int(entries["savgol_poly"].get())
+            self.min_depth = float(entries["min_valid_depth"].get())
+            self.min_prof_depth = float(entries["min_profile_depth"].get())
+            self.min_points = int(entries["min_points_in_profile"].get())
+            self.max_gap = float(entries["max_depth_gap"].get())
+            
             plt.close('all')
             generate_plot()
 
-        def on_save():
-            self.log(
-                f"continuing with parameters: \n"
-                f"  Gradient Thresholds: {self.thresholds}\n"
-                f"  Filter Window Sizes: {self.win_sizes}\n"
-                f"  Depth column: {self.depth_col}\n"
+        def on_save(event=None):
+            self.update_parameters(
+                depth_column=self.depth_col,
+                velocity_threshold=self.vel_thresh,
+                depth_median_win=self.med_win,
+                depth_mean_win=self.mean_win,
+                savgol_window=self.sg_win,
+                savgol_poly=self.sg_poly,
+                min_valid_depth=self.min_depth,
+                min_profile_depth=self.min_prof_depth,
+                min_points_in_profile=self.min_points,
+                max_depth_gap=self.max_gap
             )
             plt.close('all')
             root.quit()
             root.destroy()
 
-        tk.Button(root, text="Regenerate", command=on_regenerate).grid(
-            row=row + 1, column=0, pady=(20, 0)
-        )
-        tk.Button(root, text="Save", command=on_save).grid(
-            row=row + 1, column=1, pady=(20, 0)
-        )
-        tk.Button(root, text="Cancel", command=on_cancel).grid(
-            row=row + 1, column=2, pady=(20, 0)
-        )
+        btn_frame = tk.Frame(root)
+        btn_frame.grid(row=(len(params)//2)+1, column=0, columnspan=4, pady=15)
+
+        tk.Button(btn_frame, text="Regenerate", command=on_regenerate).pack(side="left", padx=5)
+        tk.Button(btn_frame, text="Save", command=on_save).pack(side="left", padx=5)
+        tk.Button(btn_frame, text="Cancel", command=on_cancel).pack(side="left", padx=5)
+
+        root.bind('<Return>', on_regenerate)
+        root.bind('<Escape>', on_cancel)
+        root.bind('<Command-s>', on_save)
+        root.bind('<Control-s>', on_save)
 
         generate_plot()
         return root
