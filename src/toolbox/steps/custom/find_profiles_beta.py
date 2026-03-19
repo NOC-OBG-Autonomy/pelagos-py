@@ -63,6 +63,49 @@ def _parse_windows(win_sizes, cadence):
     return parsed
 
 def find_profiles_beta(df_sorted, cadence, filter_win_sizes, gradient_thresholds, edge_squeeze, dive_scale, depth_col):
+    """
+    Identifies vertical profiles using compound smoothing, velocity filtering, 
+    and morphological edge squeezing.
+
+    This function processes depth-time data to identify discrete profiling events. 
+    It applies median and mean filters, calculates vertical velocity, and isolates 
+    periods where the instrument is actively profiling based on asymmetric 
+    gradient thresholds. An edge-squeezing mechanism reclaims data points at the 
+    boundaries of turning regions to maximise profile length.
+
+    Parameters
+    ----------
+    df_sorted : pandas.DataFrame
+        Input dataframe containing time-indexed depth measurements.
+    cadence : str
+        Resampling frequency (e.g., '30s') used to regularise the time series.
+    filter_win_sizes : list
+        Two-element list defining the rolling median and mean window sizes. 
+        Accepts integer row counts or time duration strings (e.g., ['20s', '10s']) 
+        which are automatically parsed relative to the cadence.
+    gradient_thresholds : list
+        Two-element list [positive_threshold, negative_threshold] defining the 
+        vertical velocity bounds (m/s). Velocities between these bounds are 
+        classified as turning or at a standstill.
+    edge_squeeze : int
+        Number of points to iteratively erode from the edges of identified turning 
+        regions to push more data into the adjacent ascending/descending profiles.
+    dive_scale : float
+        Minimum total vertical distance (m) a segment must cover to be validated 
+        as a profile. Also acts as the maximum allowable gap between points.
+    depth_col : str
+        Name of the column containing depth or pressure data.
+
+    Returns
+    -------
+    df_out : pandas.DataFrame
+        Dataframe aligned to the original indices with added columns:
+        - 'PROFILE_ID': Unique integer ID for each profile (NaN for turning).
+        - 'DIRECTION': 1 for Ascending, -1 for Descending, NaN for turning.
+        - 'GRADIENT': Average vertical velocity (m/s) via linear fit.
+    df : pandas.DataFrame
+        The resampled and smoothed diagnostic dataframe.
+    """
     df = df_sorted[depth_col].resample(cadence).mean().to_frame()
     df[depth_col] = df[depth_col].interpolate(method='linear')
 
