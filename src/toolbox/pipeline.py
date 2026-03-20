@@ -24,6 +24,7 @@ import os
 import logging
 import datetime as _dt
 from graphviz import Digraph
+import difflib
 
 from toolbox.utils.config_mirror import ConfigMirrorMixin
 from toolbox.utils.valid_config_check import check_pipeline_variables
@@ -146,9 +147,16 @@ class Pipeline(ConfigMirrorMixin):
             REQUIRED_STEPS = STEP_DEPENDENCIES.get(step["name"], [])
             for required_step in REQUIRED_STEPS:
                 if required_step not in STEP_CLASSES:
-                    raise ValueError(
-                        f"Required step '{required_step}' for '{step['name']}' is not found."
-                    )
+                    available_steps = list(STEP_CLASSES.keys())
+                    error_msg = f"Required step '{required_step}' for '{step['name']}' is not found."
+                    
+                    close_matches = difflib.get_close_matches(required_step, available_steps, n=1, cutoff=0.6)
+                    if close_matches:
+                        error_msg += f" Did you mean '{close_matches[0]}'?"
+                        
+                    self.logger.error(error_msg)
+                    raise ValueError(error_msg)
+                    
             self.add_step(
                 step_name=step["name"],
                 parameters=step.get("parameters", {}),
@@ -189,9 +197,20 @@ class Pipeline(ConfigMirrorMixin):
             If the step name is not recognized or a specified parent step is not found.
         """
         if step_name not in STEP_CLASSES:
-            raise ValueError(
-                f"Step '{step_name}' is not recognized or missing @register_step."
-            )
+            available_steps = list(STEP_CLASSES.keys())
+            error_msg = f"Step '{step_name}' is not recognised or missing @register_step."
+            
+            # Look for a typo and suggest the closest match
+            close_matches = difflib.get_close_matches(step_name, available_steps, n=1, cutoff=0.6)
+            if close_matches:
+                error_msg += f" Did you mean '{close_matches[0]}'?"
+            else:
+                # If no close match, show a few available options
+                sample_steps = ", ".join(available_steps[:5])
+                error_msg += f" Some available steps include: {sample_steps}..."
+                
+            self.logger.error(error_msg)
+            raise ValueError(error_msg)
 
         step_config = {
             "name": step_name,
@@ -205,7 +224,23 @@ class Pipeline(ConfigMirrorMixin):
             if parent:
                 parent["substeps"].append(step_config)
             else:
-                raise ValueError(f"Parent step '{parent_name}' not found.")
+                # Gather all currently added step names to find a typo match
+                def get_all_step_names(steps_list):
+                    names = []
+                    for s in steps_list:
+                        names.append(s["name"])
+                        names.extend(get_all_step_names(s.get("substeps", [])))
+                    return names
+                
+                current_steps = get_all_step_names(self.steps)
+                error_msg = f"Parent step '{parent_name}' not found in the pipeline."
+                
+                close_matches = difflib.get_close_matches(parent_name, current_steps, n=1, cutoff=0.6)
+                if close_matches:
+                    error_msg += f" Did you mean '{close_matches[0]}'?"
+                    
+                self.logger.error(error_msg)
+                raise ValueError(error_msg)
         else:
             self.steps.append(step_config)
 
@@ -249,7 +284,12 @@ class Pipeline(ConfigMirrorMixin):
         step_context["global_parameters"] = self.global_parameters
         step = create_step(step_config, step_context)
         self.logger.info(f"Executing: {step.name}")
-        return step.run()
+        
+        try:
+            return step.run()
+        except Exception as e:
+            self.logger.error(f"Fatal error encountered while executing step '{step.name}': {e}")
+            raise RuntimeError(f"Pipeline failed at step '{step.name}': {e}") from e
 
     def run_last_step(self):
         """
