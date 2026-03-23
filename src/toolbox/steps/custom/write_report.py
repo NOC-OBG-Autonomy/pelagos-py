@@ -37,6 +37,16 @@ import numpy as np
 
 from pathlib import Path
 
+#   Stuff that doesn't play well with Sphinx = use math when possible
+REPLACEMENTS = {
+    "α": r"$\alpha$",
+    "β": r"$\beta$",
+    "γ": r"$\gamma$",
+    "σ": r"$\sigma$",
+    "μ": r"$\mu$",
+    "°": r"$^\circ$",
+    "±": r"$\pm$",
+}
 
 def current_info() -> dict:
     """Returns current operator information from when the report is being generated."""
@@ -383,6 +393,22 @@ def add_log(logfile, rs, ncols=4) -> None:
     )
     rs.newline()
 
+def add_cc(ccfile, rs) -> None:
+    """
+    Add the text of the compliance checker step from 'Format Checker'.
+    """
+
+    rs.h2("Compliance Checker results")
+    rs.newline()
+    with open(ccfile, "r") as f:
+        content = f.read()
+    
+    #   Use math substitution to make it clear that the symbol doesn't work in a codeblock
+    for k, v in REPLACEMENTS.items():
+        content = content.replace(k, v)
+
+    rs.codeblock(content)
+    
 
 def qc_section(doc, data: xr.Dataset) -> None:
     """
@@ -451,6 +477,9 @@ def img_rst(doc, fname: str, fields: list = None):
 
 
 def basic_geo(doc, data, g_extent, ext, outdir):
+    """
+    Creates a simple geographic plot using the glider LONGITUDE and LATITUDE.
+    """
     ax0 = plt.axes(projection=ccrs.PlateCarree())
     ax0.set_extent(g_extent, crs=ccrs.PlateCarree())
     ax0.add_feature(cfeature.LAND.with_scale("110m"))
@@ -680,7 +709,7 @@ def make_plots(
     Wrapper for plotting glider QC variables quickly.
 
     There are millions of points per variable, which xarray can plot very quickly
-    in specific ways.
+    in specific ways. Here, geographic and QC histograms are explored.
 
     Parameters
     ----------
@@ -699,8 +728,6 @@ def make_plots(
     """
     doc.h2("Plots")
 
-    # Basic geographic plot
-    # basic_geo(doc, data, g_extent, ext, outdir)
     inset_geo(doc, data, outdir, extent, scale="50m")
 
     qc_vars = [var for var in data.data_vars if "_QC" in var]
@@ -763,6 +790,8 @@ class WriteDataReport(BaseStep):
 
             log_path = odir + self.context["global_parameters"]["log_file"]
             add_log(log_path, doc)
+            cc_path = odir + self.context["global_parameters"]["filename_core"] + "_check.rst"
+            add_cc(cc_path, doc)
 
         #   Run sphinx if user defined in step parameters
         if self.parameters.get("build", True):
@@ -789,6 +818,7 @@ class WriteDataReport(BaseStep):
 ### Legacy code below this line
 
 
+#   Retired for reasons of complexity. Wasn't practical to run Sphinx in two parts.
 # def run_sphinx(source_dir, build_dir=None):
 #     """
 #     Build a PDF from a Sphinx source directory.

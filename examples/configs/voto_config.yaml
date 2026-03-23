@@ -10,8 +10,15 @@ pipeline:
 # To run on Nelson data, comment out lines containing the following: 'CHLA', 'CDOM', 'DOXY', and the spike test (no PROFILE_NUMBER)
 
 # Pipeline steps
-# ------------------------ IMPORT DATA -----------------------
 steps:
+# --------------------- PRELIM DATA CHECK --------------------
+  - name: Format Checker
+    parameters:
+      src: ../examples/data/OG1/sea055_20240628T0856_delayed.nc
+      standards: ['cf','og']
+
+# ------------------------ IMPORT DATA -----------------------
+
   - name: Load OG1
     parameters:
       # file_path: ../examples/data/OG1/sea077_20230316T1019_delayed.nc  # Path to the input NetCDF file

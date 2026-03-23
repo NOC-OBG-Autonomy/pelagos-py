@@ -25,6 +25,7 @@ import xarray as xr
 import pandas as pd
 import numpy as np
 import warnings
+from pathlib import Path
 
 
 @register_step
@@ -47,7 +48,6 @@ class LoadOG1(BaseStep):
     def run(self):
         # load data from xarray
         self.data = xr.open_dataset(self.file_path)
-        self.log(f"Loaded data from {self.file_path}")
 
         # Check that the "TIME" variable is monotonic and nanless - then make it a coordinate
         if "TIME" in self.data.coords:  #   Temporary fix for BODC OG1 files where TIME is a coord
@@ -80,6 +80,8 @@ class LoadOG1(BaseStep):
         # masks = xr.where(data_subset.isnull(), 9, 0).astype(int)
         # masks = masks.rename({var: f"{var}_QC" for var in cols_to_qc})
         # self.data.update(masks)
+        self.log(f"Loaded data from {self.file_path}")
+        self.context["global_parameters"]["filename_core"] = Path(self.file_path).stem  #   Make this available to other steps
 
         # Generate diagnostics if enabled
         if self.diagnostics:
