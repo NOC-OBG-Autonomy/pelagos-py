@@ -1,5 +1,5 @@
 # Pelagos-py
-Copyright 2025 The National Oceanography Centre and The Contributors
+Copyright 2025-2026 The National Oceanography Centre and The Contributors
 
 ## Documentation
 The documentation for this package is available [here](https://noc-obg-autonomy.github.io/pelagos-py/)
