@@ -77,6 +77,19 @@ steps:
     #   Prints a summary of dataset variables and attributes
     diagnostics: false
 
+# -------------------------------------------------------------------------------------------Prelim data check ------------------------------------------------------------------------------------------------
+# Format Checker (src/toolbox/steps/custom/format_check.py)
+#   Runs data format checker for different netCDF/glider standards and saves results to file.
+#   Typically preceeds any data loading/manipulation.
+#   Exports to `out_directory` as specified in pipeline parameters.
+  - name: Format Checker
+    parameters:
+      # [src]:
+      # Source file path for testing.
+      src: "../examples/data/OG1/Nelson_646_R_Processed.nc"
+      # [standards]:
+      # List of string entries for different formats to check.
+      standards: ['cf','og']
 
 # ------------------------------------------------------------------------------------------- Exporting data -------------------------------------------------------------------------------------------
 
