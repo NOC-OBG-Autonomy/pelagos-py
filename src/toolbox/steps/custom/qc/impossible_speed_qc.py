@@ -21,7 +21,7 @@ from toolbox.steps.base_qc import BaseQC, register_qc, flag_cols
 
 #### Custom imports ####
 import matplotlib.pyplot as plt
-import polars as pl
+import pandas as pd
 import xarray as xr
 import numpy as np
 import matplotlib
@@ -42,54 +42,56 @@ class impossible_speed_qc(BaseQC):
     qc_outputs = ["TIME_QC", "LATITUDE_QC", "LONGITUDE_QC"]
 
     def return_qc(self):
-        # Convert to polars
-        self.df = pl.from_pandas(
-            self.data[self.required_variables].to_dataframe(), nan_to_null=False
-        )
+        # Convert to pandas
+        self.df = self.data[self.required_variables].to_dataframe()
 
-        self.df = self.df.with_columns(
-            (pl.col("TIME").diff().cast(pl.Float64) * 1e-9).alias("dt")
-        )
+        # Get time difference in seconds safely
+        self.df["dt"] = self.df["TIME"].diff().dt.total_seconds()
+
+        # Interpolate missing or infinite coordinates
         for label in ["LATITUDE", "LONGITUDE"]:
-            self.df = self.df.with_columns(
-                pl.col(label)
-                .replace([np.inf, -np.inf, np.nan], None)
-                .interpolate_by("TIME")
-                .diff()
-                .alias(f"delta_{label}")
-            )
-            self.df = self.df.with_columns(
-                (pl.col(f"delta_{label}") / pl.col("dt")).alias(f"{label}_speed")
-            )
-        # Define absolute speed
-        self.df = self.df.with_columns(
-            (
-                (pl.col("LATITUDE_speed") ** 2 + pl.col("LONGITUDE_speed") ** 2) ** 0.5
-            ).alias("absolute_speed")
+            self.df[label] = self.df[label].replace([np.inf, -np.inf], np.nan).interpolate()
+
+        # Convert coordinates to radians for Haversine calculation
+        lat_rad = np.radians(self.df["LATITUDE"])
+        lon_rad = np.radians(self.df["LONGITUDE"])
+        
+        # Shift to get previous coordinates
+        prev_lat_rad = lat_rad.shift(1)
+        prev_lon_rad = lon_rad.shift(1)
+        
+        # Haversine formula
+        a = (
+            np.sin((lat_rad - prev_lat_rad) / 2)**2 +
+            np.cos(prev_lat_rad) * np.cos(lat_rad) *
+            np.sin((lon_rad - prev_lon_rad) / 2)**2
         )
+        
+        # Radius of Earth is approx 6371000 metres
+        self.df["distance_m"] = 6371000.0 * 2 * np.arcsin(np.sqrt(a))
+
+        # Calculate absolute speed in metres per second
+        self.df["absolute_speed"] = self.df["distance_m"] / self.df["dt"]
+
+        # First row will be NaN because there is no previous point to calculate speed.
+        # We fill the first NaN with 0.0 so it passes the valid speed check.
+        self.df["absolute_speed"] = self.df["absolute_speed"].fillna(0.0)
 
         # TODO: Does this need a flag for potentially bad data for cases where speed is inf?
-        self.df = self.df.with_columns(
-            (
-                (pl.col("absolute_speed") < 3)  #  Speed threshold
-                & pl.col("absolute_speed").is_not_null()
-                & pl.col("absolute_speed").is_finite()
-            ).alias("speed_is_valid")
+        speed_is_valid = (
+            (self.df["absolute_speed"] < 3.0)  #  Speed threshold
+            & self.df["absolute_speed"].notna()
+            & np.isfinite(self.df["absolute_speed"])
         )
 
         for label in ["LATITUDE", "LONGITUDE", "TIME"]:
-            self.df = self.df.with_columns(
-                pl.when(pl.col("speed_is_valid"))
-                .then(1)
-                .otherwise(4)
-                .alias(f"{label}_QC")
-            )
+            self.df[f"{label}_QC"] = np.where(speed_is_valid, 1, 4)
 
         # Convert back to xarray
-        flags = self.df.select(pl.col("^.*_QC$"))
+        flags = self.df[[f"{col}_QC" for col in self.required_variables]]
         self.flags = xr.Dataset(
             data_vars={
-                col: ("N_MEASUREMENTS", flags[col].to_numpy()) for col in flags.columns
+                col: ("N_MEASUREMENTS", flags[col].values) for col in flags.columns
             },
             coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]},
         )
@@ -102,8 +104,8 @@ class impossible_speed_qc(BaseQC):
 
         for i in range(10):
             # Plot by flag number
-            plot_data = self.df.filter(pl.col("LATITUDE_QC") == i)
-            if len(plot_data) == 0:
+            plot_data = self.df[self.df["LATITUDE_QC"] == i]
+            if plot_data.empty:
                 continue
 
             # Plot the data

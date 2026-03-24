@@ -20,7 +20,8 @@
 from toolbox.steps.base_qc import BaseQC, register_qc, flag_cols
 
 #### Custom imports ####
-import polars as pl
+import pandas as pd
+import numpy as np
 import xarray as xr
 import matplotlib
 import matplotlib.pyplot as plt
@@ -41,28 +42,25 @@ class impossible_location_qc(BaseQC):
     qc_outputs = ["LATITUDE_QC", "LONGITUDE_QC"]
 
     def return_qc(self):
-        # Convert to polars
-        self.df = pl.from_pandas(
-            self.data[self.required_variables].to_dataframe(), nan_to_null=False
-        )
+        # Convert to pandas
+        self.df = self.data[self.required_variables].to_dataframe()
 
         # Check LAT/LONG exist within expected bounds
         # TODO: Add optional bounds via parameters (such as Southern Hemisphere, for example)
         for label, bounds in zip(["LATITUDE", "LONGITUDE"], [(-90, 90), (-180, 180)]):
-            self.df = self.df.with_columns(
-                pl.when(pl.col(label).is_nan())
-                .then(9)
-                .when((pl.col(label) > bounds[0]) & (pl.col(label) < bounds[1]))
-                .then(1)
-                .otherwise(4)
-                .alias(f"{label}_QC")
-            )
+            conditions = [
+                self.df[label].isna(),
+                (self.df[label] > bounds[0]) & (self.df[label] < bounds[1])
+            ]
+            # 9 for NaN, 1 for good, 4 for bad
+            choices = [9, 1]
+            self.df[f"{label}_QC"] = np.select(conditions, choices, default=4)
 
         # Convert back to xarray
-        flags = self.df.select(pl.col("^.*_QC$"))
+        flags = self.df[[f"{col}_QC" for col in self.required_variables]]
         self.flags = xr.Dataset(
             data_vars={
-                col: ("N_MEASUREMENTS", flags[col].to_numpy()) for col in flags.columns
+                col: ("N_MEASUREMENTS", flags[col].values) for col in flags.columns
             },
             coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]},
         )
@@ -73,18 +71,21 @@ class impossible_location_qc(BaseQC):
         matplotlib.use("tkagg")
         fig, axs = plt.subplots(nrows=2, figsize=(8, 6), sharex=True, dpi=200)
 
+        # Add a numeric row index for plotting on the x-axis
+        self.df["row_index"] = np.arange(len(self.df))
+
         for ax, var, bounds in zip(
             axs, ["LATITUDE", "LONGITUDE"], [(-90, 90), (-180, 180)]
         ):
             for i in range(10):
                 # Plot by flag number
-                plot_data = self.df.with_row_index().filter(pl.col(f"{var}_QC") == i)
-                if len(plot_data) == 0:
+                plot_data = self.df[self.df[f"{var}_QC"] == i]
+                if plot_data.empty:
                     continue
 
                 # Plot the data
                 ax.plot(
-                    plot_data["index"],
+                    plot_data["row_index"],
                     plot_data[var],
                     c=flag_cols[i],
                     ls="",

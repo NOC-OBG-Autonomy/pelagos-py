@@ -23,7 +23,8 @@ from toolbox.steps.base_qc import BaseQC, register_qc, flag_cols
 from geodatasets import get_path
 import matplotlib.pyplot as plt
 import shapely as sh
-import polars as pl
+import pandas as pd
+import numpy as np
 import xarray as xr
 import matplotlib
 import geopandas
@@ -44,37 +45,32 @@ class position_on_land_qc(BaseQC):
     qc_outputs = ["LATITUDE_QC", "LONGITUDE_QC"]
 
     def return_qc(self):
-        # Convert to polars
-        self.df = pl.from_pandas(
-            self.data[self.required_variables].to_dataframe(), nan_to_null=False
-        )
+        # Convert to pandas
+        self.df = self.data[self.required_variables].to_dataframe()
 
         # Concat the polygons into a MultiPolygon object
         self.world = geopandas.read_file(get_path("naturalearth.land"))
         land_polygons = sh.ops.unary_union(self.world.geometry)
 
         # Check if lat, long coords fall within the area of the land polygons
-        self.df = self.df.with_columns(
-            pl.struct("LONGITUDE", "LATITUDE")
-            .map_batches(
-                lambda x: sh.contains_xy(
-                    land_polygons,
-                    x.struct.field("LONGITUDE").to_numpy(),
-                    x.struct.field("LATITUDE").to_numpy(),
-                )
-                * 4
-            )
-            .replace({0: 1})
-            .alias("LONGITUDE_QC")
+        # shapely.contains_xy evaluates arrays quickly and returns a boolean array
+        on_land_mask = sh.contains_xy(
+            land_polygons, 
+            self.df["LONGITUDE"].values, 
+            self.df["LATITUDE"].values
         )
+
+        # Apply flags: True (on land) -> 4, False (in water) -> 1
+        self.df["LONGITUDE_QC"] = np.where(on_land_mask, 4, 1)
+        
         # Add the flags to LATITUDE as well.
-        self.df = self.df.with_columns(pl.col("LONGITUDE_QC").alias("LATITUDE_QC"))
+        self.df["LATITUDE_QC"] = self.df["LONGITUDE_QC"]
 
         # Convert back to xarray
-        flags = self.df.select(pl.col("^.*_QC$"))
+        flags = self.df[[f"{col}_QC" for col in self.required_variables]]
         self.flags = xr.Dataset(
             data_vars={
-                col: ("N_MEASUREMENTS", flags[col].to_numpy()) for col in flags.columns
+                col: ("N_MEASUREMENTS", flags[col].values) for col in flags.columns
             },
             coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]},
         )
@@ -90,8 +86,8 @@ class position_on_land_qc(BaseQC):
 
         for i in range(10):
             # Plot by flag number
-            plot_data = self.df.filter(pl.col("LATITUDE_QC") == i)
-            if len(plot_data) == 0:
+            plot_data = self.df[self.df["LATITUDE_QC"] == i]
+            if plot_data.empty:
                 continue
 
             # Plot the data
