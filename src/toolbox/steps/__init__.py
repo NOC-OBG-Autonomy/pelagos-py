@@ -64,8 +64,8 @@ def discover_steps():
         print(f"[Discovery] Registered step: {step_name}")
 
     QC_CLASSES.update(REGISTERED_QC)
-    for test_name in QC_CLASSES:
-        print(f"[Discovery] Registered QC test: {test_name}")
+    for qc_name in QC_CLASSES:
+        print(f"[Discovery] Registered QC test: {qc_name}")
 
 
 # Auto-discover steps when toolbox.steps is imported

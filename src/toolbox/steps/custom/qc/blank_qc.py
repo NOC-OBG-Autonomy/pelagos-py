@@ -17,15 +17,15 @@
 """Example QC test template, using parts of impossible_date_test as a skeleton."""
 
 #### Mandatory imports ####
-# from toolbox.steps.base_test import BaseTest, register_qc, flag_cols # Uncomment when implementing
-from toolbox.steps.base_qc import BaseTest
+# from toolbox.steps.base_test import BaseQC, register_qc, flag_cols # Uncomment when implementing
+from toolbox.steps.base_qc import BaseQC
 
 #### Custom imports ####
 # any additional imports required for the test go here
 
 
 # @register_qc  # Uncomment when implementing
-class blank_qc(BaseTest):
+class blank_qc(BaseQC):
     """
     Example Docstring:
     Target Variable: TIME
@@ -34,7 +34,7 @@ class blank_qc(BaseTest):
     Checks that the datetime of each point is valid.
     """
 
-    test_name = ""
+    qc_name = ""
     expected_parameters = {}
     required_variables = []
     provided_variables = []

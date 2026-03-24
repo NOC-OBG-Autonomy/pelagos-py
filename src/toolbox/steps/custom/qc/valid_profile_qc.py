@@ -17,7 +17,7 @@
 """QC tests for assessing validity of a glider profile, based on different definitions of successful data."""
 
 #### Mandatory imports ####
-from toolbox.steps.base_qc import BaseTest, register_qc, flag_cols
+from toolbox.steps.base_qc import BaseQC, register_qc, flag_cols
 
 #### Custom imports ####
 import matplotlib.pyplot as plt
@@ -27,7 +27,7 @@ import matplotlib
 
 
 @register_qc
-class valid_profile_qc(BaseTest):
+class valid_profile_qc(BaseQC):
     """
     Target Variable: PROFILE_NUMBER
     Flag Number: 4 (bad data), 3 (potentially bad)

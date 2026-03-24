@@ -18,7 +18,7 @@
 
 #### Mandatory imports ####
 import numpy as np
-from toolbox.steps.base_qc import BaseTest, register_qc, flag_cols
+from toolbox.steps.base_qc import BaseQC, register_qc, flag_cols
 
 #### Custom imports ####
 import matplotlib.pyplot as plt
@@ -28,7 +28,7 @@ from tqdm import tqdm
 
 
 @register_qc
-class spike_qc(BaseTest):
+class spike_qc(BaseQC):
     """
     Target Variable: Any
     Flag Number: 4 (bad)
@@ -51,7 +51,7 @@ class spike_qc(BaseTest):
       diagnostics: true
     """
 
-    test_name = "spike qc"
+    qc_name = "spike qc"
 
     # Specify if test target variable is user-defined (if True, __init__ has to be redefined)
     dynamic = True
@@ -61,7 +61,7 @@ class spike_qc(BaseTest):
         required_kwargs = {"variables", "also_flag", "plot"}
         if not required_kwargs.issubset(set(kwargs.keys())):
             raise KeyError(
-                f"{required_kwargs - set(kwargs.keys())} are missing from {self.test_name} settings"
+                f"{required_kwargs - set(kwargs.keys())} are missing from {self.qc_name} settings"
             )
 
         # Specify the tests paramters from kwargs (config)
@@ -164,7 +164,7 @@ class spike_qc(BaseTest):
         # If not plots were specified
         if len(self.plot) == 0:
             print(
-                f"WARNING: In '{self.test_name}', diagnostics were called but no variables were specified for plotting."
+                f"WARNING: In '{self.qc_name}', diagnostics were called but no variables were specified for plotting."
             )
             return
 

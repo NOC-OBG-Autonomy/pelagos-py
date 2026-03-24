@@ -22,7 +22,7 @@ QC tests to identify irregularities in PAR profiles based on La Forgia & Organel
 
 #### Mandatory imports ####
 from IPython.core.pylabtools import figsize
-from toolbox.steps.base_qc import BaseTest, register_qc, flag_cols
+from toolbox.steps.base_qc import BaseQC, register_qc, flag_cols
 
 #### Custom imports ####
 import matplotlib.pyplot as plt
@@ -271,12 +271,12 @@ def qc_par_flagging(pres, par, sun_elev, nei_par=3e-2):
 
 
 @register_qc
-class par_irregularity_qc(BaseTest):
+class par_irregularity_qc(BaseQC):
     """
     Wrapper for qc_par_flagging, defining solar_elevation if it is not provided.
     """
 
-    test_name = "PAR irregularity qc"
+    qc_name = "PAR irregularity qc"
     expected_parameters = {"noise_equivalent_estimate": 3e-2, "plot_profiles": []}
     required_variables = [
         "LATITUDE",

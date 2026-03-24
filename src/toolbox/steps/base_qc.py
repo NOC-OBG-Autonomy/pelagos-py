@@ -35,16 +35,16 @@ flag_cols = {
 
 def register_qc(cls):
     """Decorator to mark QC tests that can be accessed by the ApplyQC step."""
-    test_name = getattr(cls, "test_name", None)
-    if test_name is None:
+    qc_name = getattr(cls, "qc_name", None)
+    if qc_name is None:
         raise ValueError(
-            f"QC test {cls.__name__} is missing required 'test_name' attribute."
+            f"QC test {cls.__name__} is missing required 'qc_name' attribute."
         )
-    REGISTERED_QC[test_name] = cls
+    REGISTERED_QC[qc_name] = cls
     return cls
 
 
-class BaseTest:
+class BaseQC:
     """
     Initializes a base class for quality control, to be further tweaked when inherited.
 
@@ -61,7 +61,7 @@ class BaseTest:
     
     """
 
-    test_name = None
+    qc_name = None
     expected_parameters = {}
     required_variables = []
     qc_outputs = []
@@ -72,7 +72,7 @@ class BaseTest:
         invalid_params = set(kwargs.keys()) - set(self.expected_parameters.keys())
         if invalid_params:
             raise KeyError(
-                f"Unexpected parameters for {self.test_name}: {invalid_params}"
+                f"Unexpected parameters for {self.qc_name}: {invalid_params}"
             )
 
         for k, v in kwargs.items():

@@ -2,7 +2,7 @@
 
 #### Mandatory imports ####
 import numpy as np
-from toolbox.steps.base_qc import BaseTest, register_qc, flag_cols
+from toolbox.steps.base_qc import BaseQC, register_qc, flag_cols
 
 #### Custom imports ####
 import matplotlib.pyplot as plt
@@ -12,7 +12,7 @@ import matplotlib
 
 # TODO: Could be registered within range_test.py
 @register_qc
-class gross_range_qc(BaseTest):
+class gross_range_qc(BaseQC):
     """
     Outside range test similar to IOOS QC gross range test. Not to be confused with `range test`, which flags within a range.
 
@@ -37,7 +37,7 @@ class gross_range_qc(BaseTest):
             TEMP: [DOXY] #  Flag DOXY based on TEMP flags
     """
 
-    test_name = "gross range qc"
+    qc_name = "gross range qc"
     dynamic = True
 
     def __init__(self, data, **kwargs):
