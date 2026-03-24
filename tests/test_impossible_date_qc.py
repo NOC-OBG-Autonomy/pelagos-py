@@ -4,7 +4,7 @@ import polars as pl
 import numpy as np
 import pandas as pd
 from datetime import datetime
-from toolbox.steps.custom.qc.impossible_date_qc import impossible_date_test
+from toolbox.steps.custom.qc.impossible_date_qc import impossible_date_qc
 
 # Helper function to create a test xarray Dataset
 def create_test_dataset(times):
@@ -18,13 +18,13 @@ def create_test_dataset(times):
 def test_all_valid_dates():
     times_good = pd.date_range(start="2000-01-01", periods=10, freq="D")
     data = create_test_dataset(times_good)
-    test = impossible_date_test(data)
+    test = impossible_date_qc(data)
     flags = test.return_qc()
     assert (flags["TIME_QC"] == 1).all()
 
     bad_times = pd.date_range(start="1900-01-01", periods=10, freq="D")
     data = create_test_dataset(bad_times)
-    test = impossible_date_test(data)
+    test = impossible_date_qc(data)
     flags = test.return_qc()
     assert (flags["TIME_QC"] == 4).all()
 
@@ -33,7 +33,7 @@ def test_all_valid_dates():
     )
     expected_flags = np.array([4, 1, 4, 1, 4])
     data = create_test_dataset(others)
-    test = impossible_date_test(data)
+    test = impossible_date_qc(data)
     flags = test.return_qc()
     assert (flags["TIME_QC"] == expected_flags).all()
 

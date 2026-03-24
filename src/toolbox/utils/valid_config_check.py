@@ -51,8 +51,7 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
             raise ValueError(f"Missing config parameters for '{step_name}': {missing_str}.")
         
         req_vars = list(getattr(step_class, "required_variables", []))
-        provided_vars = list(getattr(step_class, "provided_variables", [])) + \
-                        list(getattr(step_class, "qc_outputs", []))
+        provided_vars = getattr(step_class, "provided_variables", []) + getattr(step_class, "qc_outputs", [])
         
         if step_name == "Find Profiles":
             depth_col = parameters.get("depth_column", "DEPTH")
@@ -69,11 +68,8 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
         available_vars.update(provided_vars)
         available_vars.update(parameters.get("to_derive", []))
         available_vars.update(parameters.get("qc_outputs", []))
-        
-        if "substeps" in step_config:
-            check_pipeline_variables(step_config["substeps"], logger, available_vars)
             
-    if available_vars is not None and steps_list and "substeps" not in steps_list[0]:
+    if steps_list:
         logger.info("Pipeline variable check successful.")
         
     return True
