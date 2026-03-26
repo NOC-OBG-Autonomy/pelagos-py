@@ -21,13 +21,13 @@ def test_missing_variables():
     ([95.0, -100.0],[185.0, -185.0], [4, 4],   [4, 4]),  # invalid
     ([np.nan, 45.0],[10.0, np.nan],  [9, 1],   [1, 9]),  # nan
 ])
-def test_locations(lats, lons, expected_lat, expected_lon):
+def test_locations(lats, lons, lat_flags, lon_flags):
     data = create_mock_dataset(lats=lats, lons=lons)
     qc_step = impossible_location_qc(data)
     flags = qc_step.return_qc()
 
-    assert list(flags["LATITUDE_QC"].values) == expected_lat
-    assert list(flags["LONGITUDE_QC"].values) == expected_lon
+    assert list(flags["LATITUDE_QC"].values) == lat_flags
+    assert list(flags["LONGITUDE_QC"].values) == lon_flags
 
 
 @patch("toolbox.steps.custom.qc.impossible_location_qc.plt.show")
