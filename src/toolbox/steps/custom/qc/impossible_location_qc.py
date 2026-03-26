@@ -20,7 +20,7 @@
 from toolbox.steps.base_qc import BaseQC, register_qc, flag_cols
 
 #### Custom imports ####
-import polars as pl
+import numpy as np
 import xarray as xr
 import matplotlib
 import matplotlib.pyplot as plt
@@ -41,31 +41,17 @@ class impossible_location_qc(BaseQC):
     qc_outputs = ["LATITUDE_QC", "LONGITUDE_QC"]
 
     def return_qc(self):
-        # Convert to polars
-        self.df = pl.from_pandas(
-            self.data[self.required_variables].to_dataframe(), nan_to_null=False
-        )
+        self.flags = xr.Dataset(coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]})
 
         # Check LAT/LONG exist within expected bounds
         # TODO: Add optional bounds via parameters (such as Southern Hemisphere, for example)
         for label, bounds in zip(["LATITUDE", "LONGITUDE"], [(-90, 90), (-180, 180)]):
-            self.df = self.df.with_columns(
-                pl.when(pl.col(label).is_nan())
-                .then(9)
-                .when((pl.col(label) > bounds[0]) & (pl.col(label) < bounds[1]))
-                .then(1)
-                .otherwise(4)
-                .alias(f"{label}_QC")
-            )
-
-        # Convert back to xarray
-        flags = self.df.select(pl.col("^.*_QC$"))
-        self.flags = xr.Dataset(
-            data_vars={
-                col: ("N_MEASUREMENTS", flags[col].to_numpy()) for col in flags.columns
-            },
-            coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]},
-        )
+            var_data = self.data[label]
+            
+            qc_var = xr.where((var_data > bounds[0]) & (var_data < bounds[1]), 1, 4)
+            qc_var = xr.where(var_data.isnull(), 9, qc_var)
+            
+            self.flags[f"{label}_QC"] = qc_var
 
         return self.flags
 
@@ -73,19 +59,19 @@ class impossible_location_qc(BaseQC):
         matplotlib.use("tkagg")
         fig, axs = plt.subplots(nrows=2, figsize=(8, 6), sharex=True, dpi=200)
 
+        row_index = np.arange(self.data.sizes["N_MEASUREMENTS"])
+
         for ax, var, bounds in zip(
             axs, ["LATITUDE", "LONGITUDE"], [(-90, 90), (-180, 180)]
         ):
             for i in range(10):
-                # Plot by flag number
-                plot_data = self.df.with_row_index().filter(pl.col(f"{var}_QC") == i)
-                if len(plot_data) == 0:
+                mask = self.flags[f"{var}_QC"] == i
+                if not mask.any():
                     continue
 
-                # Plot the data
                 ax.plot(
-                    plot_data["index"],
-                    plot_data[var],
+                    row_index[mask.values],
+                    self.data[var].values[mask.values],
                     c=flag_cols[i],
                     ls="",
                     marker="o",
