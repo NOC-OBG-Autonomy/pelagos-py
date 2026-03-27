@@ -87,6 +87,10 @@ def compute_optimal_lag(profile_data, filter_window_size, time_col):
          "TEMP"]
     ].dropna(dim="N_MEASUREMENTS", subset=["CNDC"])
 
+    # Guard clause: return NaN lag if this specific profile has no valid data
+    if len(profile_data[time_col]) == 0:
+        return np.nan
+
     # Find the elapsed time in seconds from the start of the profile
     t0 = profile_data[time_col].values[0]
     profile_data["ELAPSED_TIME[s]"] = (profile_data[time_col] - t0).dt.total_seconds()
@@ -175,9 +179,7 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
 
         """
 
-
         self.log(f"Running adjustment...")
-        # TODO: TIME_CTD checking
 
         # Required for plotting later
         self.data_copy = self.data.copy(deep=True)
@@ -244,7 +246,6 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
         # Making a place to store intermediate products. The two column dimentions are (profile number, time lag)
         self.per_profile_optimal_lag = np.full((len(profile_numbers), 2), np.nan)
 
-        # TODO: The following could be optimized using xarray groupby() applying a user defined CTLag function
         # Loop through all good profiles and store the optimal C-T lag for each.
         for i, profile_number in enumerate(tqdm(profile_numbers, colour="green", desc='\033[97mProgress\033[0m', unit="prof")):
             profile = self.data.where((self.data["PROFILE_NUMBER"] == profile_number), drop=True)
@@ -252,12 +253,22 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
                 optimal_lag = compute_optimal_lag(profile, self.filter_window_size, self.time_col)
                 self.per_profile_optimal_lag[i, :] = [profile_number, optimal_lag]
 
-        # Find median optimal time lag across all profiles
-        median_lag = np.nanmedian(self.per_profile_optimal_lag[:, 1])
+        # Get a nanless subset of CNDC data using dropna to avoid uninitialised memory warnings
+        data_subset = self.data[[self.time_col, "CNDC"]].dropna(dim="N_MEASUREMENTS", subset=["CNDC"])
         
-        # Get a nanless subset of CNDC data
-        nan_mask = self.data["CNDC"].isnull()
-        data_subset = self.data[[self.time_col, "CNDC"]].where(~nan_mask, drop=True)
+        # Guard clause to prevent crash if no valid CNDC data is found
+        if len(data_subset[self.time_col]) == 0:
+            self.log("No valid CNDC data found. Skipping CT lag correction.")
+            return
+
+        # Extract only valid calculated lags to compute the median
+        valid_lags = self.per_profile_optimal_lag[~np.isnan(self.per_profile_optimal_lag[:, 1]), 1]
+        
+        if len(valid_lags) == 0:
+            self.log("Could not compute a valid CT lag for any profile. Skipping CT lag correction.")
+            return
+
+        median_lag = np.median(valid_lags)
 
         # Find the elapsed time in seconds
         t0 = data_subset[self.time_col].values[0]
@@ -272,18 +283,23 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
         data_subset["CNDC"][:] = CNDC_from_TIME(data_subset["ELAPSED_TIME[s]"] + median_lag)
         
         # Reinsert the time-shifted data back into self.data
+        nan_mask = self.data["CNDC"].isnull()
         self.data["CNDC"][~nan_mask] = data_subset["CNDC"]
 
     def correct_thermal_lag(self):
 
-        nan_mask = self.data["TEMP"].isnull()
-        data_subset = self.data[[self.time_col, "TEMP", "PRES"]].where(~nan_mask, drop=True)
+        # Use dropna instead of where to avoid uninitialised memory warnings
+        data_subset = self.data[[self.time_col, "TEMP", "PRES"]].dropna(dim="N_MEASUREMENTS", subset=["TEMP"])
+        
+        # Guard clause to prevent crash if no valid TEMP data is found
+        if len(data_subset[self.time_col]) == 0:
+            self.log("No valid TEMP data found. Skipping thermal lag correction.")
+            return
 
         # Find the elapsed time in seconds
         t0 = data_subset[self.time_col].values[0]
         data_subset["ELAPSED_TIME[s]"] = (data_subset[self.time_col] - t0).dt.total_seconds()
 
-        # TODO: Convert to xarray interpolation as interp1d doesn't get updated any more
         # Define a function that can estimate TEMP at any time point
         TEMP_from_TIME = interpolate.interp1d(
             data_subset["ELAPSED_TIME[s]"], 
@@ -330,6 +346,7 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
         data_subset["TEMP"][:] = corrected_TEMP_from_TIME(data_subset["ELAPSED_TIME[s]"])
 
         # Reinsert the corrected data back into self.data
+        nan_mask = self.data["TEMP"].isnull()
         self.data["TEMP"][~nan_mask] = data_subset["TEMP"]
 
     def display_CTLag(self):

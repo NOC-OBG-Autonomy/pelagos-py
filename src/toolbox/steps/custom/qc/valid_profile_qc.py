@@ -36,7 +36,7 @@ class valid_profile_qc(BaseQC):
     and contains points within a specified depth range.
     """
 
-    test_name = "valid profile qc"
+    qc_name = "valid profile qc"
     expected_parameters = {
         "profile_length": 1000,
         "depth_range": (-1000, 0),

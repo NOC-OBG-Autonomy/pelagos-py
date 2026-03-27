@@ -68,6 +68,7 @@ def _parse_windows(win_sizes, cadence):
         else:
             parsed.append(int(w))
     return parsed
+
 def find_profiles_beta(df_sorted, cadence, filter_win_sizes, gradient_thresholds, horiz_grad_thresh, edge_squeeze, dive_scale, max_depth_gap, min_horizontal_duration, min_horizontal_depth, depth_col):
     """
     Identifies and classifies vertical and horizontal profiles from depth-time data.
@@ -114,6 +115,19 @@ def find_profiles_beta(df_sorted, cadence, filter_win_sizes, gradient_thresholds
     df = df_sorted[depth_col].resample(cadence).mean().to_frame()
     df[depth_col] = df[depth_col].interpolate(method='linear')
 
+    min_req_len = max(FIXED_SAVGOL_WINDOW_VERT, FIXED_SAVGOL_WINDOW_HORIZ, 2)
+    if len(df) < min_req_len:
+        df_out = df_sorted.copy()
+        df_out["PROFILE_ID"] = np.nan
+        df_out["DIRECTION"] = np.nan
+        df_out["GRADIENT"] = np.nan
+        
+        df["SMOOTH_DEPTH"] = df[depth_col]
+        df["SMOOTH_VELOCITY"] = 0.0
+        df["SMOOTH_VELOCITY_HORIZ"] = 0.0
+        df["STATE"] = "turning"
+        return df_out, df
+
     windows = _parse_windows(filter_win_sizes, cadence)
     med_win, mean_win = windows[0], windows[1]
     
@@ -139,11 +153,13 @@ def find_profiles_beta(df_sorted, cadence, filter_win_sizes, gradient_thresholds
     df.loc[(df["SMOOTH_VELOCITY_HORIZ"].abs() <= horiz_grad_thresh) & (df["SMOOTH_DEPTH"] >= min_horizontal_depth), "STATE"] = "horizontal"
     df.loc[(df["SMOOTH_DEPTH"] < FIXED_MIN_VALID_DEPTH) | vel_crosses_zero, "STATE"] = "turning"
     
+    # Enforce strictly boolean type to prevent IndexError on arrays containing NaNs
     df["is_turning"] = (
         ((df["SMOOTH_VELOCITY"] >= neg_grad) & (df["SMOOTH_VELOCITY"] <= pos_grad)) | 
         (df["SMOOTH_DEPTH"] < FIXED_MIN_VALID_DEPTH) |
-        vel_crosses_zero
-    )
+        vel_crosses_zero |
+        df["SMOOTH_DEPTH"].isna()
+    ).fillna(True).astype(bool)
 
     turn_mask = df["is_turning"].to_numpy(copy=True)
     if edge_squeeze > 0:
@@ -256,12 +272,10 @@ class FindProfilesBetaStep(BaseStep, QCHandlingMixin):
 
         self.depth_col = self.parameters.get("depth_column")
         if not self.depth_col:
-            if "PRES_ENG" in self.data.variables:
-                self.depth_col = "PRES_ENG"
-            elif "PRES" in self.data.variables:
+            if "PRES" in self.data.variables:
                 self.depth_col = "PRES"
             else:
-                raise ValueError("Neither PRES_ENG nor PRES variables found in the dataset.")
+                raise ValueError("PRES variable not found in the dataset.")
         elif self.depth_col not in self.data.variables:
             raise ValueError(f"Specified depth column '{self.depth_col}' not found in the dataset.")
 
@@ -274,13 +288,6 @@ class FindProfilesBetaStep(BaseStep, QCHandlingMixin):
         self.dive_scale = self.parameters.get("dive_scale", DEFAULT_DIVE_SCALE)
         self.min_horizontal_duration = self.parameters.get("min_horizontal_duration", DEFAULT_MIN_HORIZONTAL_DURATION)
         self.min_horizontal_depth = self.parameters.get("min_horizontal_depth", DEFAULT_MIN_HORIZONTAL_DEPTH)
-
-        if self.depth_col == "PRES_ENG" and "PRES" in self.data.variables:
-            pres_max = float(self.data["PRES"].max())
-            eng_max = float(self.data["PRES_ENG"].max())
-            ratio = pres_max / eng_max if eng_max != 0 else 1
-            if 8 < ratio < 12:
-                self.data["PRES_ENG"] = self.data["PRES_ENG"] * 10
 
         if self.diagnostics:
             root = self.generate_diagnostics()
