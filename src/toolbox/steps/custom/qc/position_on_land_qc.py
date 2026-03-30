@@ -40,10 +40,16 @@ class position_on_land_qc(BaseQC):
 
     qc_name = "position on land qc"
     expected_parameters = {}
-    required_variables = ["LATITUDE", "LONGITUDE"]
+    required_variables = []
     qc_outputs = ["LATITUDE_QC", "LONGITUDE_QC"]
 
     def return_qc(self):
+        self.flags = xr.Dataset(coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]})
+
+        if "LATITUDE" not in self.data or "LONGITUDE" not in self.data:
+            print("Warning: LATITUDE or LONGITUDE missing. Skipping position on land qc.")
+            return self.flags
+
         # Concat the polygons into a MultiPolygon object
         self.world = geopandas.read_file(get_path("naturalearth.land"))
         land_polygons = sh.ops.unary_union(self.world.geometry)
@@ -59,16 +65,15 @@ class position_on_land_qc(BaseQC):
         # Apply flags: True (on land) -> 4, False (in water) -> 1
         flag_values = np.where(on_land_mask, 4, 1)
 
-        self.flags = xr.Dataset(
-            data_vars={
-                f"{col}_QC": ("N_MEASUREMENTS", flag_values) for col in self.required_variables
-            },
-            coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]},
-        )
+        for col in ["LATITUDE", "LONGITUDE"]:
+            self.flags[f"{col}_QC"] = ("N_MEASUREMENTS", flag_values)
 
         return self.flags
 
     def plot_diagnostics(self):
+        if "LATITUDE" not in self.data or "LONGITUDE" not in self.data:
+            return
+
         matplotlib.use("tkagg")
         fig, ax = plt.subplots(figsize=(12, 8), dpi=200)
 
@@ -76,6 +81,9 @@ class position_on_land_qc(BaseQC):
         self.world.plot(ax=ax, facecolor="lightgray", edgecolor="black", alpha=0.3)
 
         for i in range(10):
+            if "LATITUDE_QC" not in self.flags:
+                continue
+                
             # Plot by flag number
             mask = self.flags["LATITUDE_QC"] == i
             if not mask.any():

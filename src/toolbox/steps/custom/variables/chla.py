@@ -33,16 +33,21 @@ def check_chl_variables(self, allowed_requests):
     if user_request not in self.data.data_vars:
         raise KeyError(f"The variable {user_request} does not exist in the data.")
     if user_request not in allowed_requests:
-        raise KeyError(f"The variable {user_request} is not permitted for [{self.step_name}]")
+        raise KeyError(
+            f"The variable {user_request} is not permitted for [{self.step_name}]"
+        )
 
     if f"{user_request}_ADJUSTED" in self.data.data_vars:
-        self.log(f"User requested processing on {user_request} but {user_request}_ADJUSTED already exists. Using {user_request}_ADJUSTED...")
+        self.log(
+            f"User requested processing on {user_request} but {user_request}_ADJUSTED already exists. Using {user_request}_ADJUSTED..."
+        )
         user_request = f"{user_request}_ADJUSTED"
 
     output_as = user_request + ("_ADJUSTED" if "_ADJUSTED" not in user_request else "")
 
     self.log(f"Processing {user_request}...")
     return user_request, output_as
+
 
 @register_step
 class chla_deep_correction(BaseStep, QCHandlingMixin):
@@ -62,20 +67,21 @@ class chla_deep_correction(BaseStep, QCHandlingMixin):
             dark_value: null
             depth_threshold: 200
         diagnostics: true
-
-        Returns
-        -------
-
         """
         self.filter_qc()
+
+        # Save a copy of the pre-corrected data for the diagnostics plot
+        self.data_copy = self.data.copy(deep=True)
 
         # Check this step is being applied to a valid variable
         self.apply_to, self.output_as = check_chl_variables(
             self,
-            ["CHLA",
-             "CHLA_ADJUSTED"
-             "CHLA_FLUORESCENCE",
-             "CHLA_FLUORESCENCE_ADJUSTED"]
+            [
+                "CHLA",
+                "CHLA_ADJUSTED",
+                "CHLA_FLUORESCENCE",
+                "CHLA_FLUORESCENCE_ADJUSTED",
+            ],
         )
 
         self.compute_dark_value()
@@ -84,7 +90,7 @@ class chla_deep_correction(BaseStep, QCHandlingMixin):
         self.reconstruct_data()
         self.update_qc()
 
-        # Generate new QC if a non-adjusted variable was used in processing (this causes an _ADJUSTED variable to be added)"
+        # Generate new QC if a non-adjusted variable was used in processing
         if self.apply_to != self.output_as:
             self.generate_qc({f"{self.output_as}_QC": [f"{self.apply_to}_QC"]})
 
@@ -95,57 +101,43 @@ class chla_deep_correction(BaseStep, QCHandlingMixin):
         return self.context
 
     def compute_dark_value(self):
-        """
-        Compute dark value for chlorophyll-a correction.
-
-        The dark value represents the sensor's baseline reading in the absence of
-        chlorophyll fluorescence. Computed as the median of minimum CHLA values from
-        deep profiles (>= depth_threshold).
-
-        Parameters
-        ----------
-        ds : xarray.Dataset
-            Glider dataset with variables: CHLA, DEPTH (or PRES), PROFILE_NUMBER
-        depth_threshold : float, optional
-            Minimum depth [m] for dark value calculation (default: 200)
-        n_profiles : int, optional
-            Number of deep profiles to use (default: 5)
-        config_path : str or Path, optional
-            Path to config file to check for existing dark value
-
-        Returns
-        -------
-        dark_value : float
-            Computed dark value
-        profile_data : dict
-            Dictionary containing profile information used in calculation
-            Keys are profile numbers, values are dicts with 'depth', 'chla', 'min_value', 'min_depth'
-        """
-
         # Check config file for existing dark value
-        if self.dark_value:
+        if getattr(self, "dark_value", None) is not None:
             self.log(f"Using dark value from config: {self.dark_value}")
             return self.dark_value
-        self.log(f"Computing dark value from profiles reaching >= {self.depth_threshold}m")
+            
+        self.log(
+            f"Computing dark value from profiles reaching >= {self.depth_threshold}m"
+        )
 
-        # Get DEPTH and CHLA data TODO: Refactor below for user input variables
-        missing_vars = {"TIME", "PROFILE_NUMBER", "DEPTH", self.apply_to} - set(self.data.data_vars)
+        missing_vars = {"TIME", "PROFILE_NUMBER", "DEPTH", self.apply_to} - set(
+            self.data.data_vars
+        )
         if missing_vars:
-            raise KeyError(f"[Chla Deep Correction] {missing_vars} could not be found in the data.")
+            raise KeyError(
+                f"[Chla Deep Correction] {missing_vars} could not be found in the data."
+            )
 
-        # Convert to pandas dataframe and interpolate the DEPTH data
-        interp_data = self.data[["TIME", "PROFILE_NUMBER", "DEPTH", self.apply_to]].to_pandas()
-        interp_data["DEPTH"] = interp_data.set_index("TIME")["DEPTH"].interpolate().reset_index(drop=True)
+        interp_data = self.data[
+            ["TIME", "PROFILE_NUMBER", "DEPTH", self.apply_to]
+        ].to_pandas()
+        interp_data["DEPTH"] = (
+            interp_data.set_index("TIME")["DEPTH"].interpolate().reset_index(drop=True)
+        )
         interp_data = interp_data.dropna(subset=[self.apply_to, "PROFILE_NUMBER"])
 
         # Subset the data to only deep measurements
-        interp_data = interp_data[
-            interp_data["DEPTH"] < self.depth_threshold
-        ]
+        interp_data = interp_data[interp_data["DEPTH"] <= self.depth_threshold]
 
-        # Remove profiles that do not have CHLA data below the threshold depth
-        deep_profiles = interp_data.groupby("PROFILE_NUMBER").agg({self.apply_to: "count"}).reset_index()
-        deep_profiles = deep_profiles[deep_profiles[self.apply_to] > 0]["PROFILE_NUMBER"].to_numpy()
+        deep_profiles = (
+            interp_data.groupby("PROFILE_NUMBER")
+            .agg({self.apply_to: "count"})
+            .reset_index()
+        )
+        deep_profiles = deep_profiles[deep_profiles[self.apply_to] > 0][
+            "PROFILE_NUMBER"
+        ].to_numpy()
+        
         if len(deep_profiles) == 0:
             raise ValueError(
                 "[Chla Deep Correction] No deep profiles could be identified. "
@@ -153,13 +145,11 @@ class chla_deep_correction(BaseStep, QCHandlingMixin):
             )
         interp_data = interp_data[interp_data["PROFILE_NUMBER"].isin(deep_profiles)]
 
-        # Extract the profile number, depth and chla data for all chla minima per profile
         self.chla_deep_minima = interp_data.loc[
             interp_data.groupby("PROFILE_NUMBER")[self.apply_to].idxmin(),
-            ["TIME", "PROFILE_NUMBER", "DEPTH", self.apply_to]
+            ["TIME", "PROFILE_NUMBER", "DEPTH", self.apply_to],
         ]
 
-        # Compute median of minimum values
         self.dark_value = np.nanmedian(self.chla_deep_minima[self.apply_to])
         self.log(
             f"\nComputed dark value: {self.dark_value:.6f} "
@@ -169,51 +159,59 @@ class chla_deep_correction(BaseStep, QCHandlingMixin):
         )
 
     def apply_dark_correction(self):
-        """
-        Apply dark value correction to CHLA data.
-        """
-
-        # Create adjusted chlorophyll variable
         self.data[self.output_as] = xr.DataArray(
             self.data[self.apply_to] - self.dark_value,
             dims=self.data[self.apply_to].dims,
             coords=self.data[self.apply_to].coords,
         )
 
-        # Copy and update attributes
-        if hasattr(self.data[self.apply_to], 'attrs'):
+        if hasattr(self.data[self.apply_to], "attrs"):
             self.data[self.output_as].attrs = self.data[self.apply_to].attrs.copy()
-        self.data[self.output_as].attrs["comment"] = (
-            f"{self.apply_to} with dark value correction (dark_value={self.dark_value:.6f})"
-        )
+        self.data[self.output_as].attrs[
+            "comment"
+        ] = f"{self.apply_to} with dark value correction (dark_value={self.dark_value:.6f})"
         self.data[self.output_as].attrs["dark_value"] = self.dark_value
 
     def generate_diagnostics(self):
-
         mpl.use("tkagg")
 
-        fig, ax = plt.subplots(figsize=(12, 8), dpi=200)
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6), dpi=150)
 
-        ax.plot(
-            self.chla_deep_minima[self.apply_to],
-            self.chla_deep_minima["DEPTH"],
-            ls="",
-            marker="o",
-            c="b"
-        )
+        # Panel 1: Histogram of deep minima
+        ax1.hist(self.chla_deep_minima[self.apply_to], bins=30, color="steelblue", edgecolor="black", alpha=0.8)
+        ax1.axvline(self.dark_value, color="red", linestyle="dashed", linewidth=2, 
+                    label=f"Dark Value (Median): {self.dark_value:.4f}")
+        ax1.set_xlabel(f"Minimum {self.apply_to} below {self.depth_threshold}m")
+        ax1.set_ylabel("Frequency (Number of Profiles)")
+        ax1.set_title("Distribution of Deep Minima")
+        ax1.legend()
+        ax1.grid(True, alpha=0.3)
 
-        ax.axhline(self.depth_threshold, ls="--", c="k", label="Depth Threshold")
-        ax.axvline(self.dark_value, ls="--", c="r", label="Dark Value")
-        ax.legend(loc="upper right")
-
-        ax.set(
-            xlabel=f"{self.apply_to}",
-            ylabel="DEPTH",
-            title="Deep Minima Values",
-        )
+        # Panel 2: Before and After Depth Shift
+        ax2.scatter(self.data_copy[self.apply_to], self.data_copy["DEPTH"], 
+                    c="indianred", s=2, alpha=0.3, label="Uncorrected")
+        ax2.scatter(self.data[self.output_as], self.data["DEPTH"], 
+                    c="steelblue", s=2, alpha=0.3, label="Corrected")
+        ax2.axhline(self.depth_threshold, color="black", linestyle="--", label=f"Threshold ({self.depth_threshold}m)")
+        ax2.axvline(0, color="black", linestyle="-", linewidth=1, alpha=0.5)
+        ax2.axvline(self.dark_value, color="red", linestyle=":", label="Dark Value Offset")
+        
+        ax2.set_xlabel(self.apply_to)
+        ax2.set_ylabel("Depth (m)")
+        ax2.set_title("Deployment Profiles: Dark Correction Shift")
+        
+        leg = ax2.legend(loc="lower right")
+        handles = getattr(leg, "legend_handles", getattr(leg, "legendHandles", []))
+        for handle in handles:
+            if hasattr(handle, "set_sizes"):
+                handle.set_sizes([30])
+                handle.set_alpha(1)
+                
+        ax2.grid(True, alpha=0.3)
 
         fig.tight_layout()
         plt.show(block=True)
+
 
 @register_step
 class chla_quenching_correction(BaseStep, QCHandlingMixin):
@@ -239,84 +237,90 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
             plot_profiles: []
           diagnostics: true
         """
-
+        self.pre_qc_data = self.data.copy(deep=True)
         self.filter_qc()
+        self.pre_correction_data = self.data.copy(deep=True)
 
-        # required for plotting the unprocessed data later
-        self.data_copy = self.data.copy(deep=True)
-
-        # Check this step is being applied to a valid variable.
         self.apply_to, self.output_as = check_chl_variables(
             self,
-            ["CHLA",
-             "CHLA_ADJUSTED"
-             "CHLA_FLUORESCENCE",
-             "CHLA_FLUORESCENCE_ADJUSTED"]
+            [
+                "CHLA",
+                "CHLA_ADJUSTED",
+                "CHLA_FLUORESCENCE",
+                "CHLA_FLUORESCENCE_ADJUSTED",
+            ],
         )
-        # If a new "_ADJUSTED" variable will be needed, create it
+        
         if self.apply_to != self.output_as:
             self.data[self.output_as] = self.data[self.apply_to]
 
-        # Get the function call for the specified method
-        methods = {
-            "argo": self.apply_xing2012_quenching_correction
-        }
+        methods = {"argo": self.apply_xing2012_quenching_correction}
         if self.method.lower() not in methods.keys():
             raise KeyError(f"Method {self.method} is not supported")
         method_function = methods[self.method.lower()]
 
-        # if the method required sunlight angle, find the inputs for the sun angle calculation
         if self.method.lower() in ["argo"]:
-            self.sun_args = self.data[
-                ["PROFILE_NUMBER",
-                 "TIME",
-                 "DEPTH",
-                 "LATITUDE",
-                 "LONGITUDE"]
-            ].to_pandas().dropna()
+            sun_df = self.data[
+                ["PROFILE_NUMBER", "TIME", "DEPTH", "LATITUDE", "LONGITUDE"]
+            ].to_pandas()
 
-            # only look at the values nearest the surface and find when and where they were taken
             self.sun_args = (
-                self.sun_args.groupby(["PROFILE_NUMBER"])
-                .apply(lambda x: x.nlargest(50, "DEPTH"))
-                .reset_index(drop=True)
-                .groupby(["PROFILE_NUMBER"]).agg(
-                    {var: "median" for var in ["TIME", "LATITUDE", "LONGITUDE"]}
-                )
+                sun_df.sort_values(["PROFILE_NUMBER", "DEPTH"], ascending=[True, False])
+                .groupby("PROFILE_NUMBER")
+                .head(50)
+                .groupby("PROFILE_NUMBER")
+                .agg({"TIME": "median", "LATITUDE": "median", "LONGITUDE": "median"})
             )
 
-        # Subset the data
         method_variable_requirements = {
             "argo": {
                 "PROFILE_NUMBER",
                 "DEPTH",
                 self.apply_to,
-                self.mld_settings["threshold_on"]
+                self.mld_settings["threshold_on"],
             }
         }
-        data_subset = self.data[
-            list(method_variable_requirements[self.method.lower()])
-        ]
+        data_subset = self.data[list(method_variable_requirements[self.method.lower()])]
 
-        # Apply the checks across individual profiles
         profile_numbers = np.unique(data_subset["PROFILE_NUMBER"].dropna(dim="N_MEASUREMENTS"))
-        for profile_number in tqdm(profile_numbers, colour="green", desc='\033[97mProgress\033[0m', unit="prof"):
+        self.diagnostic_meta = {}
+        self.stats = {
+            "total": len(profile_numbers),
+            "corrected": 0,
+            "skipped_night": 0,
+            "skipped_no_mld": 0,
+            "skipped_no_gps": 0,
+            "skipped_no_data": 0
+        }
 
-            # Subset the data
-            profile = data_subset.where(data_subset["PROFILE_NUMBER"] == profile_number, drop=True)
+        for profile_number in tqdm(
+            profile_numbers, colour="green", desc="\033[97mProgress\033[0m", unit="prof"
+        ):
+            profile = data_subset.where(
+                data_subset["PROFILE_NUMBER"] == profile_number, drop=True
+            )
 
-            corrected_chla = method_function(profile)
+            corrected_chla, meta = method_function(profile)
+            
+            self.diagnostic_meta[profile_number] = meta
+            self.stats[meta["status"]] += 1
 
-            # Stitch back into the full data
             profile_indices = np.where(self.data["PROFILE_NUMBER"] == profile_number)
             self.data[self.output_as][profile_indices] = corrected_chla
 
         self.reconstruct_data()
         self.update_qc()
 
-        # Generate new QC if a non-adjusted variable was used in processing (this causes an _ADJUSTED variable to be added)"
         if self.apply_to != self.output_as:
             self.generate_qc({f"{self.output_as}_QC": [f"{self.apply_to}_QC"]})
+
+        self.log("\n--- Quenching Correction Summary ---")
+        self.log(f"Total profiles evaluated: {self.stats['total']}")
+        self.log(f"Successfully corrected:   {self.stats['corrected']}")
+        self.log(f"Skipped (Night time):     {self.stats['skipped_night']}")
+        self.log(f"Skipped (No valid MLD):   {self.stats['skipped_no_mld']}")
+        self.log(f"Skipped (No CHLA data):   {self.stats['skipped_no_data']}")
+        self.log(f"Skipped (Missing GPS):    {self.stats['skipped_no_gps']}\n")
 
         if self.diagnostics:
             self.generate_diagnostics()
@@ -325,174 +329,234 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         return self.context
 
     def calculate_mld(self, profile):
-
         for k, v in self.mld_settings.items():
             setattr(self, k, v)
 
-        # Only look at values that are below the reference depth
-        # TODO: -DEPTH
         profile_subset = profile.where(
-            profile["DEPTH"] <= self.reference_depth,
-            drop=True
+            profile["DEPTH"] <= self.reference_depth, drop=True
         ).dropna(dim="N_MEASUREMENTS", subset=["DEPTH", self.threshold_on])
 
-        # Check there is still data to work with
         if len(profile_subset["DEPTH"]) == 0:
             return np.nan
 
-        # Find the reference point and return nan if it cant be found near the reference depth
-        # TODO: -DEPTH
         reference_point = profile_subset.isel(
             {"N_MEASUREMENTS": np.nanargmax(profile_subset["DEPTH"])},
         )
+        
         if reference_point["DEPTH"] < 2 * self.reference_depth:
             return np.nan
 
-        # Find the difference from the reference value along the profile
         reference_value = reference_point[self.threshold_on]
         profile_subset["delta"] = profile_subset[self.threshold_on] - reference_value
 
-        # Filter out below-threshold points, then select the first (to pass the threshold)
         profile_subset = profile_subset.where(
-            np.abs(profile_subset["delta"]) >= np.abs(self.threshold),
-            drop=True
+            np.abs(profile_subset["delta"]) >= np.abs(self.threshold), drop=True
         )
 
-        # Return the value if found. Otherwise nan.
         mld_value = np.nan
         if len(profile_subset["DEPTH"]) != 0:
             mld_value = float(profile_subset.isel({"N_MEASUREMENTS": 0})["DEPTH"])
         return mld_value
 
     def apply_xing2012_quenching_correction(self, profile):
-        """
-        Apply non-photochemical quenching (NPQ) correction following
-        Xing et al. (2012, *JGR–Oceans*, 117:C01019).
-
-        The maximum fluorescence within the mixed-layer depth (MLD)
-        is taken as the non-quenched reference. All shallower
-        (PRES < z_qd) values are adjusted upward to that maximum.
-        Correction is only applied when solar elevation > 0°.
-
-        Parameters
-        ----------
-        chlf : array-like of shape (N,)
-            Uncorrected chlorophyll fluorescence profile F_Chl(PRES).
-        pres : array-like of shape (N,)
-            Pressure (dbar), increasing with depth.
-        mld : float
-            Mixed-layer depth (m or dbar).
-        sun_angle : float
-            Solar elevation angle (degrees). NPQ correction is applied
-            only if `sun_angle > 0`.
-
-        Returns
-        -------
-        chl_corr : ndarray of shape (N,)
-            NPQ-corrected fluorescence profile.
-        npq : ndarray of shape (N,)
-            NPQ index = (chl_corr − chlf) / chlf.
-        z_qd : float
-            Quenching depth (dbar): pressure of maximum fluorescence
-            within the MLD. NaN if not computable or if night-time.
-
-        Notes
-        -----
-        • No correction is applied if solar elevation ≤ 0° (nighttime).
-        • Shallower than z_qd → fluorescence set to Fmax (non-quenched reference).
-        • Below MLD → unchanged.
-        """
         chlf = np.asarray(profile[self.apply_to].values, dtype=float)
         depth = np.asarray(profile["DEPTH"].values, dtype=float)
         N = len(chlf)
 
-        # --- Calculate the MLD for this profile
-        # TODO: -DEPTH
-        mld = self.calculate_mld(profile)
+        meta = {
+            "status": "skipped_no_data",
+            "mld": np.nan,
+            "sun_angle": np.nan,
+            "z_qd": np.nan
+        }
 
-        # --- Night-time or invalid inputs: skip correction
-        profile_number = int(profile["PROFILE_NUMBER"][0])
+        if len(profile["PROFILE_NUMBER"]) == 0 or np.isnan(profile["PROFILE_NUMBER"].values[0]):
+            return chlf, meta
+            
+        profile_number = int(profile["PROFILE_NUMBER"].values[0])
+
+        if profile_number not in self.sun_args.index:
+            meta["status"] = "skipped_no_gps"
+            return chlf, meta
+
         time, lat, long = self.sun_args.loc[profile_number].to_numpy()
-        time_utc = pd.to_datetime(time).tz_localize("UTC")
-        solar_position = pvlib.solarposition.get_solarposition(time_utc, lat, long)
-        sun_angle = solar_position["elevation"].values
-        if (
-                sun_angle <= 0
-                or N == 0
-                or len(depth) != N
-                or not np.isfinite(mld)
-                or mld >= 0
-                or np.all(np.isnan(chlf))
-        ):
-            return chlf
 
-        # --- Identify max F_Chl within MLD
-        # TODO: -DEPTH
+        if pd.isna(time) or pd.isna(lat) or pd.isna(long):
+            meta["status"] = "skipped_no_gps"
+            return chlf, meta
+
+        time_utc = pd.to_datetime(time)
+        if time_utc.tzinfo is None:
+            time_utc = time_utc.tz_localize("UTC")
+
+        solar_position = pvlib.solarposition.get_solarposition(time_utc, lat, long)
+        sun_angle = float(solar_position["elevation"].values[0])
+        meta["sun_angle"] = sun_angle
+
+        if sun_angle <= 0:
+            meta["status"] = "skipped_night"
+            return chlf, meta
+
+        mld = self.calculate_mld(profile)
+        meta["mld"] = mld
+
+        if N == 0 or len(depth) != N or np.all(np.isnan(chlf)):
+            return chlf, meta
+            
+        # Ensure mld is valid and negative (below surface)
+        if not np.isfinite(mld) or mld >= 0:
+            meta["status"] = "skipped_no_mld"
+            return chlf, meta
+
         within_mld = depth >= mld
         if not np.any(within_mld):
-            return chlf
+            return chlf, meta
 
         chlf_mld = np.where(within_mld, chlf, np.nan)
+
+        if np.all(np.isnan(chlf_mld)):
+            return chlf, meta
+
         idx_max, chlf_max = np.nanargmax(chlf_mld), np.nanmax(chlf_mld)
         chlf_max_depth = float(depth[idx_max])
+        
+        meta["z_qd"] = chlf_max_depth
+        meta["status"] = "corrected"
 
-        # --- Apply correction: flatten shallower than z_qd
-        #TODO: -DEPTH
         chl_corr = np.copy(chlf)
         chl_corr[(depth >= chlf_max_depth) & (~np.isnan(chlf))] = chlf_max
 
-        return chl_corr
+        return chl_corr, meta
 
     def generate_diagnostics(self):
+        # --- Configurable Plot Variables ---
+        MIN_POINTS_TO_PLOT = 100
+        COLOR_SUN = "orange"
+        COLOR_RAW = "lightgrey"
+        COLOR_UNCORRECTED = "indianred"
+        COLOR_CORRECTED = "steelblue"
+        PLOT_SIZE_OVERVIEW = (14, 8)
+        PLOT_SIZE_PROFILES = (12, 5)
+
         mpl.use("tkagg")
 
+        fig_overview, (ax_sun, ax_chla) = plt.subplots(
+            2, 1, figsize=PLOT_SIZE_OVERVIEW, sharex=True, gridspec_kw={'height_ratios': [1, 3]}, dpi=150
+        )
+        
+        time_vals = self.data["TIME"].values
+        
+        # Sort values chronologically to prevent zigzag plotting artifacts
+        sun_args_sorted = self.sun_args.sort_values(by="TIME")
+        sun_times = pd.to_datetime(sun_args_sorted["TIME"].values)
+        
+        sun_angles = []
+        for t, lat, lon in zip(sun_times, sun_args_sorted["LATITUDE"], sun_args_sorted["LONGITUDE"]):
+            t_utc = t.tz_localize("UTC") if t.tzinfo is None else t
+            sun_angles.append(pvlib.solarposition.get_solarposition(t_utc, lat, lon)["elevation"].values[0])
+            
+        ax_sun.plot(sun_times, sun_angles, color=COLOR_SUN, lw=1.5)
+        ax_sun.axhline(0, color="black", ls="--", lw=1)
+        ax_sun.set_ylabel("Sun Elevation (deg)")
+        ax_sun.set_title("Deployment Overview: Sun Elevation and CHLA Adjustments")
+        ax_sun.grid(True, alpha=0.3)
+        ax_sun.fill_between(sun_times, sun_angles, 0, where=(np.array(sun_angles) > 0), color="yellow", alpha=0.2)
+        ax_sun.fill_between(sun_times, sun_angles, 0, where=(np.array(sun_angles) <= 0), color="grey", alpha=0.2)
+
+        ax_chla.scatter(
+            self.pre_qc_data["TIME"].values, 
+            self.pre_qc_data[self.apply_to].values, 
+            c=COLOR_RAW, s=5, alpha=0.5, label="Raw (Failed QC)"
+        )
+        ax_chla.scatter(
+            time_vals, 
+            self.pre_correction_data[self.apply_to].values, 
+            c=COLOR_UNCORRECTED, s=5, alpha=0.7, label="Uncorrected"
+        )
+        ax_chla.scatter(
+            time_vals, 
+            self.data[self.output_as].values, 
+            c=COLOR_CORRECTED, s=5, alpha=0.7, label="Corrected"
+        )
+        
+        ax_chla.set_ylabel(self.apply_to)
+        ax_chla.set_xlabel("Time")
+        ax_chla.legend(loc="upper right")
+        ax_chla.grid(True, alpha=0.3)
+        
+        fig_overview.tight_layout()
+        fig_overview.show()
+
         if len(self.plot_profiles) == 0:
-            self.log("To see diagnostics, please specify the plot_profiles setting.")
             return
 
-        nrows = int(np.ceil(len(self.plot_profiles) / 3))
-        fig, axs = plt.subplots(nrows=nrows, ncols=3, figsize=(12, nrows * 6), dpi=200)
+        # Find profiles that meet the minimum data point requirement
+        valid_df = self.data[["PROFILE_NUMBER", "DEPTH", self.apply_to]].to_pandas().dropna()
+        counts = valid_df.groupby("PROFILE_NUMBER").size()
+        dense_profiles = counts[counts >= MIN_POINTS_TO_PLOT].index.values
 
-        for profile_number, ax in zip(self.plot_profiles, axs.flatten()):
+        profile_df = self.data[["PROFILE_NUMBER", "PROFILE_DIRECTION"]].to_pandas().drop_duplicates(subset=["PROFILE_NUMBER"]).dropna()
+        
+        # Filter for vertical profiles that are also dense
+        vertical_profiles = profile_df[
+            (profile_df["PROFILE_DIRECTION"] != 0) & 
+            (profile_df["PROFILE_NUMBER"].isin(dense_profiles))
+        ]["PROFILE_NUMBER"].values
+        
+        mapped_plot_profiles = []
+        for requested_prof in self.plot_profiles:
+            idx = requested_prof - 1 
+            if 0 <= idx < len(vertical_profiles):
+                mapped_plot_profiles.append(int(vertical_profiles[idx]))
+            else:
+                self.log(f"Requested profile {requested_prof} is out of bounds for the available dense vertical profiles.")
 
-            for data, var, col, label in zip(
-                    [self.data_copy, self.data],
-                    [self.apply_to, self.output_as],
-                    ["r", "b"],
-                    ["Uncorrected", "Corrected"]
-            ):
-                # Select the raw profile data
-                profile = data.where(
-                    data["PROFILE_NUMBER"] == profile_number,
-                    drop=True
-                ).dropna(dim="N_MEASUREMENTS", subset=[var, "DEPTH"])
+        if not mapped_plot_profiles:
+            self.log("No valid profiles found to plot after mapping.")
+            return
 
-                if len(profile[var]) == 0:
-                    ax.text(0.5, 0.5,
-                            f"Missing Data\n--Prof. {profile_number}--",
-                            ha='center', va='center',
-                            transform=ax.transAxes)
-                    continue
+        nrows = int(np.ceil(len(mapped_plot_profiles) / 3))
+        fig_profs, axs = plt.subplots(nrows=nrows, ncols=3, figsize=(PLOT_SIZE_PROFILES[0], nrows * PLOT_SIZE_PROFILES[1]), dpi=150)
+        
+        if nrows == 1 and len(mapped_plot_profiles) == 1:
+            axs = [axs]
+        else:
+            axs = axs.flatten()
 
-                ax.plot(
-                    profile[var],
-                    profile["DEPTH"],
-                    c=col,
-                    ls="",
-                    marker="o",
-                    label=label
-                )
+        for profile_number, requested_prof, ax in zip(mapped_plot_profiles, self.plot_profiles, axs):
+            meta = self.diagnostic_meta.get(profile_number, {})
+            
+            prof_pre_corr = self.pre_correction_data.where(self.pre_correction_data["PROFILE_NUMBER"] == profile_number, drop=True)
+            prof_post_corr = self.data.where(self.data["PROFILE_NUMBER"] == profile_number, drop=True)
 
-                ax.set(
-                    xlabel=self.apply_to,
-                    ylabel="DEPTH",
-                )
+            if len(prof_pre_corr["DEPTH"].dropna(dim="N_MEASUREMENTS")) == 0:
+                ax.text(0.5, 0.5, f"No Data\nProf: {profile_number} (Old: {requested_prof})", ha="center", va="center")
+                continue
 
-                ax.legend(
-                    title=f"Prof. {profile_number}",
-                    loc="lower right"
-                )
+            ax.plot(
+                prof_pre_corr[self.apply_to], prof_pre_corr["DEPTH"], 
+                c=COLOR_UNCORRECTED, marker="o", ls="-", lw=1, markersize=3, label="Uncorrected", alpha=0.7
+            )
+            ax.plot(
+                prof_post_corr[self.output_as], prof_post_corr["DEPTH"], 
+                c=COLOR_CORRECTED, marker="o", ls="-", lw=1, markersize=3, label="Corrected", alpha=0.8
+            )
 
-        fig.suptitle("Quenching Correction")
-        fig.tight_layout()
+            if pd.notna(meta.get("mld")):
+                ax.axhline(meta["mld"], color="purple", ls="--", lw=1.5, label=f"MLD ({meta['mld']:.1f}m)")
+            if pd.notna(meta.get("z_qd")):
+                ax.axhline(meta["z_qd"], color="green", ls=":", lw=1.5, label=f"Z_qd ({meta['z_qd']:.1f}m)")
+
+            ax.invert_yaxis()
+            ax.set_xlabel(self.apply_to)
+            ax.set_ylabel("Depth (m)")
+            
+            status_text = f"Status: {meta.get('status', 'Unknown')}\nSun: {meta.get('sun_angle', np.nan):.1f} deg"
+            ax.text(0.05, 0.05, status_text, transform=ax.transAxes, fontsize=8,
+                    bbox=dict(facecolor='white', alpha=0.8, edgecolor='none'))
+
+            ax.legend(title=f"Prof {profile_number} (Old {requested_prof})", loc="lower right", fontsize=8)
+
+        fig_profs.suptitle("Quenching Correction: Profile Level Diagnostics")
+        fig_profs.tight_layout()
         plt.show(block=True)
