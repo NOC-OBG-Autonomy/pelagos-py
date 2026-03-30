@@ -45,7 +45,7 @@ class ExportStep(BaseStep):
         },
         "compression_level": {
             "type": int,
-            "default": 4,
+            "default": 6,
             "description": "Zlib compression level from 1 (fastest) to 9 (smallest)"
         }
     }
@@ -79,7 +79,7 @@ class ExportStep(BaseStep):
             # Apply lossless compression if enabled
             if getattr(self, "compress_netcdf", True):
                 self.log("Applying lossless NetCDF compression.")
-                comp_level = getattr(self, "compression_level", 4)
+                comp_level = getattr(self, "compression_level", 6)
                 
                 # Apply zlib compression to all variables
                 encoding_dict = {

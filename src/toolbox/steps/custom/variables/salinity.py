@@ -56,7 +56,6 @@ def running_average_nan(arr: np.ndarray, window_size: int) -> np.ndarray:
 
     return avg
 
-
 def compute_optimal_lag(profile_data, filter_window_size, time_col):
     """
     Calculate the optimal conductivity time lag relative to temperature to reduce salinity spikes for each glider profile.
@@ -73,10 +72,13 @@ def compute_optimal_lag(profile_data, filter_window_size, time_col):
         return np.nan
 
     t0 = profile_data[time_col].values[0]
-    profile_data["ELAPSED_TIME[s]"] = (profile_data[time_col] - t0).dt.total_seconds()
+    elapsed_time = (profile_data[time_col] - t0).dt.total_seconds().values
+    
+    temp_vals = profile_data["TEMP"].values
+    pres_vals = profile_data["PRES"].values
 
     conductivity_from_time = interpolate.interp1d(
-        profile_data["ELAPSED_TIME[s]"].values,
+        elapsed_time,
         profile_data["CNDC"].values,
         bounds_error=False
     )
@@ -87,16 +89,14 @@ def compute_optimal_lag(profile_data, filter_window_size, time_col):
     ).T
 
     for i, lag in enumerate(time_lags[:, 0].copy()):
-        time_shifted_conductivity = conductivity_from_time(
-            profile_data["ELAPSED_TIME[s]"] + lag
-        )
+        time_shifted_conductivity = conductivity_from_time(elapsed_time + lag)
         
         cndc_scaled = time_shifted_conductivity * 10 if np.nanmax(time_shifted_conductivity) < 10 else time_shifted_conductivity
         
         PSAL = gsw.conversions.SP_from_C(
             cndc_scaled,
-            profile_data["TEMP"],
-            profile_data["PRES"]
+            temp_vals,
+            pres_vals
         )
 
         PSAL_Smooth = running_average_nan(PSAL, filter_window_size)
@@ -105,7 +105,6 @@ def compute_optimal_lag(profile_data, filter_window_size, time_col):
 
     best_score_index = np.argmin(time_lags[:, 1])
     return time_lags[best_score_index, 0]
-
 
 @register_step
 class AdjustSalinity(BaseStep, QCHandlingMixin):
@@ -143,6 +142,12 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
 
         self.per_profile_optimal_lag = np.full((len(profile_numbers), 3), np.nan)
 
+        # Extract numpy arrays for fast filtering to avoid Xarray subsetting overhead
+        prof_arr = self.data["PROFILE_NUMBER"].values
+        dir_arr = self.data["PROFILE_DIRECTION"].values
+        time_arr = self.data[self.time_col].values
+        cndc_arr = self.data["CNDC"].values
+
         # Shuffle indices to randomly sample profiles across the dataset
         indices = np.random.permutation(len(profile_numbers))
         
@@ -150,15 +155,21 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
         max_profiles = 50
 
         for i in tqdm(indices, colour="green", desc='\033[97mCT Lag Progress\033[0m', unit="prof"):
-            # Skip the remaining heavy computations if we have enough profiles
+            # Break the loop entirely once we have enough profiles to save computation
             if all(count >= max_profiles for count in processed_counts.values()):
-                continue
+                break
                 
             profile_number = profile_numbers[i]
-            profile = self.data.where((self.data["PROFILE_NUMBER"] == profile_number), drop=True)
             
-            direction_array = profile["PROFILE_DIRECTION"].dropna(dim="N_MEASUREMENTS").values
-            prof_direction = direction_array[0] if len(direction_array) > 0 else np.nan
+            # Fast numpy subsetting
+            prof_indices = np.where(prof_arr == profile_number)[0]
+            
+            if len(prof_indices) == 0:
+                continue
+            
+            dir_subset = dir_arr[prof_indices]
+            valid_dirs = dir_subset[~np.isnan(dir_subset)]
+            prof_direction = valid_dirs[0] if len(valid_dirs) > 0 else np.nan
             
             if np.isnan(prof_direction) or prof_direction not in processed_counts:
                 continue
@@ -166,21 +177,25 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
             if processed_counts[prof_direction] >= max_profiles:
                 continue
             
-            valid_times = profile[self.time_col].dropna(dim="N_MEASUREMENTS").values
+            prof_times = time_arr[prof_indices]
+            valid_times = prof_times[~np.isnat(prof_times)]
             
             if len(valid_times) > 0:
                 duration = valid_times[-1] - valid_times[0]
                 
                 # Check if profile lasted >= 30 minutes and has enough points for the filter
-                if duration >= np.timedelta64(30, 'm') and len(profile[self.time_col]) > 3 * self.filter_window_size:
+                if duration >= np.timedelta64(30, 'm') and len(valid_times) > 3 * self.filter_window_size:
+                    # Only subset Xarray when we know we are calculating the lag
+                    profile = self.data.isel(N_MEASUREMENTS=prof_indices)
                     optimal_lag = compute_optimal_lag(profile, self.filter_window_size, self.time_col)
                     
                     self.per_profile_optimal_lag[i, :] = [profile_number, optimal_lag, prof_direction]
                     processed_counts[prof_direction] += 1
 
-        data_subset = self.data[[self.time_col, "CNDC", "PROFILE_DIRECTION"]].dropna(dim="N_MEASUREMENTS", subset=["CNDC"])
+        # Use numpy mask to extract valid data for interpolation
+        valid_data_mask = (~np.isnan(cndc_arr)) & (~np.isnat(time_arr))
         
-        if len(data_subset[self.time_col]) == 0:
+        if not np.any(valid_data_mask):
             self.log("No valid CNDC data found. Skipping CT lag correction.")
             return
 
@@ -195,51 +210,62 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
             else:
                 self.ct_lag_medians[d] = 0.0  # Default to 0 if no valid profiles survive the 30min check
 
-        t0 = data_subset[self.time_col].values[0]
-        elapsed_time = (data_subset[self.time_col] - t0).dt.total_seconds().values
+        valid_times = time_arr[valid_data_mask]
+        valid_cndc = cndc_arr[valid_data_mask]
+        valid_dirs = dir_arr[valid_data_mask]
+
+        t0 = valid_times[0]
+        elapsed_time = (valid_times - t0) / np.timedelta64(1, 's')
         
         CNDC_from_TIME = interpolate.interp1d(
             elapsed_time, 
-            data_subset["CNDC"].values, 
+            valid_cndc, 
             bounds_error=False
         )
 
-        corrected_cndc = data_subset["CNDC"].values.copy()
+        corrected_cndc = valid_cndc.copy()
 
         for d in [-1, 1, 0]:
-            dir_mask = data_subset["PROFILE_DIRECTION"].values == d
+            dir_mask = valid_dirs == d
             if np.any(dir_mask):
                 shifted_time = elapsed_time[dir_mask] + self.ct_lag_medians[d]
                 corrected_cndc[dir_mask] = CNDC_from_TIME(shifted_time)
         
-        nan_mask = self.data["CNDC"].isnull()
-        self.data["CNDC"][~nan_mask] = corrected_cndc
+        # Apply corrections back to the main array directly
+        final_cndc = cndc_arr.copy()
+        final_cndc[valid_data_mask] = corrected_cndc
+        self.data["CNDC"].values = final_cndc
 
 
     def correct_thermal_lag(self):
         """
         Applies thermal mass correction independently to the downcast, transect, and upcast.
         """
+        import scipy.signal
+
         corrected_temp_array = np.full(len(self.data["TEMP"]), np.nan)
         profile_numbers = np.unique(self.data["PROFILE_NUMBER"].dropna(dim="N_MEASUREMENTS").values)
         
         self.filter_params = {}
         
+        prof_arr = self.data["PROFILE_NUMBER"].values
+        dir_arr = self.data["PROFILE_DIRECTION"].values
+        temp_arr = self.data["TEMP"].values
+        time_arr = self.data[self.time_col].values
+        
+        valid_mask = (~np.isnan(temp_arr)) & (~np.isnan(time_arr))
+        
         for prof in tqdm(profile_numbers, colour="blue", desc='\033[97mThermal Lag Progress\033[0m', unit="prof"):
             for direction in [-1, 1, 0]:
                 
-                mask = (self.data["PROFILE_NUMBER"].values == prof) & \
-                       (self.data["PROFILE_DIRECTION"].values == direction) & \
-                       (~np.isnan(self.data["TEMP"].values)) & \
-                       (~np.isnan(self.data[self.time_col].values))
-                       
+                mask = (prof_arr == prof) & (dir_arr == direction) & valid_mask
                 indices = np.where(mask)[0]
                 
                 if len(indices) < 5:  
                     continue
                     
-                cast_times = self.data[self.time_col].values[indices]
-                cast_temps = self.data["TEMP"].values[indices]
+                cast_times = time_arr[indices]
+                cast_temps = temp_arr[indices]
                 
                 t0 = cast_times[0]
                 elapsed_time = (cast_times - t0) / np.timedelta64(1, 's')
@@ -251,7 +277,6 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
                     continue
                     
                 TEMP_1Hz_sampling = TEMP_from_TIME(TIME_1Hz_sampling)
-                n_resamples = len(TEMP_1Hz_sampling)
 
                 alpha_offset = 0.0135
                 alpha_slope = 0.0264
@@ -268,9 +293,9 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
                 a = 4 * nyquist_frequency * alpha * tau / (1 + 4 * nyquist_frequency * tau)
                 b = 1 - (2 * a / alpha)
 
-                TEMP_correction = np.zeros(n_resamples)
-                for i in range(1, n_resamples):
-                    TEMP_correction[i] = -b * TEMP_correction[i - 1] + a * (TEMP_1Hz_sampling[i] - TEMP_1Hz_sampling[i - 1])
+                delta_TEMP = np.zeros_like(TEMP_1Hz_sampling)
+                delta_TEMP[1:] = np.diff(TEMP_1Hz_sampling)
+                TEMP_correction = scipy.signal.lfilter([a], [1, b], delta_TEMP)
                 
                 corrected_TEMP_1Hz_sampling = TEMP_1Hz_sampling - TEMP_correction
 
@@ -285,7 +310,6 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
 
         final_temp = np.where(np.isnan(corrected_temp_array), self.data["TEMP"].values, corrected_temp_array)
         self.data["TEMP"][:] = final_temp
-
 
     def generate_diagnostics(self):
         COLOUR_RAW = "indianred"
