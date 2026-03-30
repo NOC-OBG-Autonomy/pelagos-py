@@ -78,7 +78,8 @@ class ApplyQC(BaseStep):
                 [7, 1, 2, 3, 4, 5, 6, 7, 8, 9],
                 [8, 8, 8, 3, 4, 8, 8, 8, 8, 9],
                 [9, 9, 9, 9, 9, 9, 9, 9, 9, 9],
-            ]
+            ],
+            dtype=np.int8
         )
 
         # Update existing flag columns
@@ -156,7 +157,7 @@ class ApplyQC(BaseStep):
         self.flag_store = xr.Dataset(coords={"N_MEASUREMENTS": data["N_MEASUREMENTS"]})
         if len(existing_flags) > 0:
             self.log(f"Found existing flags columns {set(existing_flags)} in data.")
-            self.flag_store = data[existing_flags].fillna(9).astype(int)
+            self.flag_store = data[existing_flags].fillna(9).astype(np.int8)
         
         other_existing_qc = set([var for var in data.data_vars if var.endswith("_QC")]) - set(test_qc_outputs_cols)
         if any(other_existing_qc):
@@ -172,7 +173,7 @@ class ApplyQC(BaseStep):
                 f" Double check the configuration file and make sure all variable parameters (like 'also flag' [CHLA]) are present in the data."
             )
         data_subset = data[base]
-        masks = xr.where(data_subset.isnull(), 9, 0).astype(int)
+        masks = xr.where(data_subset.isnull(), 9, 0).astype(np.int8)
         masks = masks.rename({var: f"{var}_QC" for var in base})
         self.flag_store.update(masks)
 
@@ -181,7 +182,10 @@ class ApplyQC(BaseStep):
             # Create an instance of this test step
             self.log(f"Applying: {qc_qc_name}")   # print(f"[Apply QC] Applying: {qc_qc_name}")
             qc_test_instance = QC_CLASSES[qc_qc_name](data, **qc_test_params)
-            returned_flags = qc_test_instance.return_qc()   #   Runs the test, returns the flags
+            
+            # Run the test and force the output to 8-bit integer as a safety net
+            returned_flags = qc_test_instance.return_qc().astype(np.int8) 
+            
             self.organise_flags(returned_flags)
 
             # Update QC history

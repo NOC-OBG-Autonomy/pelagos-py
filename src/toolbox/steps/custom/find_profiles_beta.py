@@ -249,6 +249,9 @@ def find_profiles_beta(df_sorted, cadence, filter_win_sizes, gradient_thresholds
 @register_step
 class FindProfilesBetaStep(BaseStep, QCHandlingMixin):
     step_name = "Find Profiles Beta"
+    required_variables = ["TIME"]
+    provided_variables = ["PROFILE_NUMBER"]
+
 
     def run(self):
         self.log("Attempting to designate profile numbers, directions, and gradients")
