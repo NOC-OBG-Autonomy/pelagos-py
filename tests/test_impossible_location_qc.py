@@ -7,12 +7,16 @@ from toolbox.steps.custom.qc.impossible_location_qc import impossible_location_q
 from utils.test_utils import create_mock_dataset
 
 
-def test_missing_variables():
+def test_missing_variables(capsys):
     data = xr.Dataset({"TEMP": ("N_MEASUREMENTS", [10.0, 12.0])})
     qc_step = impossible_location_qc(data)
     
-    with pytest.raises(KeyError):
-        qc_step.return_qc()
+    flags = qc_step.return_qc()
+    captured = capsys.readouterr()
+    
+    assert "Warning: LATITUDE or LONGITUDE missing" in captured.out
+    assert "LATITUDE_QC" not in flags
+    assert "LONGITUDE_QC" not in flags
 
 
 @pytest.mark.parametrize("lats,lons,lat_flags,lon_flags", [
@@ -31,11 +35,13 @@ def test_locations(lats, lons, lat_flags, lon_flags):
 
 
 @patch("toolbox.steps.custom.qc.impossible_location_qc.plt.show")
-def test_plot_diagnostics(mock_show):
+@patch("toolbox.steps.custom.qc.impossible_location_qc.matplotlib.use")
+def test_plot_diagnostics(mock_use, mock_show):
     data = create_mock_dataset(lats=[45.0, -89.9], lons=[179.9, -179.9])
     qc_step = impossible_location_qc(data)
     
     qc_step.return_qc()
     qc_step.plot_diagnostics()
     
+    mock_use.assert_called_once_with("tkagg")
     mock_show.assert_called_once_with(block=True)

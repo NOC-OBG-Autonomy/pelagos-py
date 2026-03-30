@@ -7,12 +7,16 @@ from toolbox.steps.custom.qc.position_on_land_qc import position_on_land_qc
 from utils.test_utils import create_mock_dataset
 
 
-def test_missing_variables():
+def test_missing_variables(capsys):
     data = xr.Dataset({"TEMP": ("N_MEASUREMENTS", [10.0, 12.0])})
     qc_step = position_on_land_qc(data)
     
-    with pytest.raises(KeyError):
-        qc_step.return_qc()
+    flags = qc_step.return_qc()
+    captured = capsys.readouterr()
+    
+    assert "Warning: LATITUDE or LONGITUDE missing" in captured.out
+    assert "LATITUDE_QC" not in flags
+    assert "LONGITUDE_QC" not in flags
 
 
 @pytest.mark.parametrize(
@@ -34,11 +38,13 @@ def test_locations(lats, lons, expected_flags):
 
 
 @patch("toolbox.steps.custom.qc.position_on_land_qc.plt.show")
-def test_plot_diagnostics(mock_show):
+@patch("toolbox.steps.custom.qc.position_on_land_qc.matplotlib.use")
+def test_plot_diagnostics(mock_use, mock_show):
     data = create_mock_dataset(lats=[0.0, -23.7], lons=[-30.0, 133.8])
     qc_step = position_on_land_qc(data)
     
     qc_step.return_qc()
     qc_step.plot_diagnostics()
     
+    mock_use.assert_called_once_with("tkagg")
     mock_show.assert_called_once_with(block=True)
