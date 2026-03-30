@@ -37,11 +37,15 @@ class impossible_location_qc(BaseQC):
 
     qc_name = "impossible location qc"
     expected_parameters = {}
-    required_variables = ["LATITUDE", "LONGITUDE"]
+    required_variables = []
     qc_outputs = ["LATITUDE_QC", "LONGITUDE_QC"]
 
     def return_qc(self):
         self.flags = xr.Dataset(coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]})
+
+        if "LATITUDE" not in self.data or "LONGITUDE" not in self.data:
+            print("Warning: LATITUDE or LONGITUDE missing. Skipping impossible location qc.")
+            return self.flags
 
         # Check LAT/LONG exist within expected bounds
         # TODO: Add optional bounds via parameters (such as Southern Hemisphere, for example)
@@ -56,6 +60,9 @@ class impossible_location_qc(BaseQC):
         return self.flags
 
     def plot_diagnostics(self):
+        if "LATITUDE" not in self.data or "LONGITUDE" not in self.data:
+            return
+            
         matplotlib.use("tkagg")
         fig, axs = plt.subplots(nrows=2, figsize=(8, 6), sharex=True, dpi=200)
 
@@ -65,6 +72,9 @@ class impossible_location_qc(BaseQC):
             axs, ["LATITUDE", "LONGITUDE"], [(-90, 90), (-180, 180)]
         ):
             for i in range(10):
+                if f"{var}_QC" not in self.flags:
+                    continue
+                    
                 mask = self.flags[f"{var}_QC"] == i
                 if not mask.any():
                     continue

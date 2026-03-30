@@ -431,10 +431,10 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
     def generate_diagnostics(self):
         # --- Configurable Plot Variables ---
         MIN_POINTS_TO_PLOT = 100
-        COLOUR_SUN = "orange"
-        COLOUR_RAW = "lightgrey"
-        COLOUR_UNCORRECTED = "indianred"
-        COLOUR_CORRECTED = "steelblue"
+        COLOR_SUN = "orange"
+        COLOR_RAW = "lightgrey"
+        COLOR_UNCORRECTED = "indianred"
+        COLOR_CORRECTED = "steelblue"
         PLOT_SIZE_OVERVIEW = (14, 8)
         PLOT_SIZE_PROFILES = (12, 5)
 
@@ -446,52 +446,37 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         
         time_vals = self.data["TIME"].values
         
-        # Sort values chronologically
+        # Sort values chronologically to prevent zigzag plotting artifacts
         sun_args_sorted = self.sun_args.sort_values(by="TIME")
         sun_times = pd.to_datetime(sun_args_sorted["TIME"].values)
         
-        # Create a continuous hourly time grid for a smooth sun elevation curve
-        df_loc = pd.DataFrame({
-            "LATITUDE": sun_args_sorted["LATITUDE"].values, 
-            "LONGITUDE": sun_args_sorted["LONGITUDE"].values
-        }, index=sun_times)
-        
-        # Remove any exact duplicate timestamps to allow interpolation
-        df_loc = df_loc[~df_loc.index.duplicated(keep='first')]
-        
-        # Generate an hourly grid from start to end of deployment
-        continuous_times = pd.date_range(start=df_loc.index.min(), end=df_loc.index.max(), freq="1h")
-        
-        # Interpolate the glider's position over this continuous time grid
-        df_loc_continuous = df_loc.reindex(df_loc.index.union(continuous_times)).interpolate(method="time").reindex(continuous_times)
-        
         sun_angles = []
-        for t, lat, lon in zip(df_loc_continuous.index, df_loc_continuous["LATITUDE"], df_loc_continuous["LONGITUDE"]):
+        for t, lat, lon in zip(sun_times, sun_args_sorted["LATITUDE"], sun_args_sorted["LONGITUDE"]):
             t_utc = t.tz_localize("UTC") if t.tzinfo is None else t
             sun_angles.append(pvlib.solarposition.get_solarposition(t_utc, lat, lon)["elevation"].values[0])
             
-        ax_sun.plot(continuous_times, sun_angles, color=COLOUR_SUN, lw=1.5)
+        ax_sun.plot(sun_times, sun_angles, color=COLOR_SUN, lw=1.5)
         ax_sun.axhline(0, color="black", ls="--", lw=1)
         ax_sun.set_ylabel("Sun Elevation (deg)")
         ax_sun.set_title("Deployment Overview: Sun Elevation and CHLA Adjustments")
         ax_sun.grid(True, alpha=0.3)
-        ax_sun.fill_between(continuous_times, sun_angles, 0, where=(np.array(sun_angles) > 0), color="yellow", alpha=0.2)
-        ax_sun.fill_between(continuous_times, sun_angles, 0, where=(np.array(sun_angles) <= 0), color="grey", alpha=0.2)
+        ax_sun.fill_between(sun_times, sun_angles, 0, where=(np.array(sun_angles) > 0), color="yellow", alpha=0.2)
+        ax_sun.fill_between(sun_times, sun_angles, 0, where=(np.array(sun_angles) <= 0), color="grey", alpha=0.2)
 
         ax_chla.scatter(
             self.pre_qc_data["TIME"].values, 
             self.pre_qc_data[self.apply_to].values, 
-            c=COLOUR_RAW, s=5, alpha=0.5, label="Raw (Failed QC)"
+            c=COLOR_RAW, s=5, alpha=0.5, label="Raw (Failed QC)"
         )
         ax_chla.scatter(
             time_vals, 
             self.pre_correction_data[self.apply_to].values, 
-            c=COLOUR_UNCORRECTED, s=5, alpha=0.7, label="Uncorrected"
+            c=COLOR_UNCORRECTED, s=5, alpha=0.7, label="Uncorrected"
         )
         ax_chla.scatter(
             time_vals, 
             self.data[self.output_as].values, 
-            c=COLOUR_CORRECTED, s=5, alpha=0.7, label="Corrected"
+            c=COLOR_CORRECTED, s=5, alpha=0.7, label="Corrected"
         )
         
         ax_chla.set_ylabel(self.apply_to)
@@ -550,11 +535,11 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
 
             ax.plot(
                 prof_pre_corr[self.apply_to], prof_pre_corr["DEPTH"], 
-                c=COLOUR_UNCORRECTED, marker="o", ls="-", lw=1, markersize=3, label="Uncorrected", alpha=0.7
+                c=COLOR_UNCORRECTED, marker="o", ls="-", lw=1, markersize=3, label="Uncorrected", alpha=0.7
             )
             ax.plot(
                 prof_post_corr[self.output_as], prof_post_corr["DEPTH"], 
-                c=COLOUR_CORRECTED, marker="o", ls="-", lw=1, markersize=3, label="Corrected", alpha=0.8
+                c=COLOR_CORRECTED, marker="o", ls="-", lw=1, markersize=3, label="Corrected", alpha=0.8
             )
 
             if pd.notna(meta.get("mld")):
