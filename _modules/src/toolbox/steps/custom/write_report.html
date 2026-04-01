@@ -1,0 +1,1351 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>src.toolbox.steps.custom.write_report &#8212; pelagos-py 0.0.1 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/sphinx-codeautolink.css?v=b2176991" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../../../_static/copybutton.js?v=df1a032d"></script>
+    <script src="../../../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/src/toolbox/steps/custom/write_report';</script>
+    <link rel="canonical" href="https://noc-obg-autonomy.github.io/pelagos-py/_modules/src/toolbox/steps/custom/write_report.html" />
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0.1" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">pelagos-py 0.0.1 documentation</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../steps.html">
+    Steps
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../tests.html">
+    Tests
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../contributing.html">
+    Contributing
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../developer_guide.html">
+    Developer Guide
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../../../../api/src/toolbox/index.html">
+    API Reference
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../steps.html">
+    Steps
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../tests.html">
+    Tests
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../contributing.html">
+    Contributing
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../developer_guide.html">
+    Developer Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../api/src/toolbox/index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../../../index.html" class="nav-link">Module code</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../../toolbox.html" class="nav-link">src.toolbox</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../steps.html" class="nav-link">src.toolbox.steps</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">src.toolbox.steps.custom.write_report</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for src.toolbox.steps.custom.write_report</h1><div class="highlight"><pre>
+<span></span><span class="c1"># This file is part of the NOC Autonomy Toolbox.</span>
+<span class="c1">#</span>
+<span class="c1"># Copyright 2025-2026 National Oceanography Centre and The Contributors</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#    http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="sd">&quot;&quot;&quot;Writes reports on the current data passed through the pipeline.&quot;&quot;&quot;</span>
+
+<span class="c1">#### Mandatory imports ####</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">toolbox.utils.diagnostics</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">di</span>
+
+<span class="c1">#### Custom imports ####</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rstcloth</span><span class="w"> </span><span class="kn">import</span> <span class="n">RstCloth</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">getpass</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">platform</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">importlib.metadata</span><span class="w"> </span><span class="kn">import</span> <span class="n">version</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">cartopy.crs</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ccrs</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">cartopy.feature</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cfeature</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tqdm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+
+<div class="viewcode-block" id="current_info">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/write_report/index.html#src.toolbox.steps.custom.write_report.current_info">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">current_info</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns current operator information from when the report is being generated.&quot;&quot;&quot;</span>
+
+    <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">toolbox_version</span> <span class="o">=</span> <span class="n">version</span><span class="p">(</span><span class="s2">&quot;pelagos-py&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">PackageNotFoundError</span><span class="p">:</span>
+        <span class="n">toolbox_version</span> <span class="o">=</span> <span class="s2">&quot;unknown&quot;</span>
+
+    <span class="n">info</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;timestamp_utc&quot;</span><span class="p">:</span> <span class="n">now</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+        <span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="n">getpass</span><span class="o">.</span><span class="n">getuser</span><span class="p">(),</span>
+        <span class="s2">&quot;toolbox_version&quot;</span><span class="p">:</span> <span class="n">toolbox_version</span><span class="p">,</span>  <span class="c1">#   Normally done with __version__.</span>
+        <span class="s2">&quot;python_version&quot;</span><span class="p">:</span> <span class="n">platform</span><span class="o">.</span><span class="n">python_version</span><span class="p">(),</span>
+        <span class="s2">&quot;system&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">platform</span><span class="o">.</span><span class="n">system</span><span class="p">()</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">platform</span><span class="o">.</span><span class="n">release</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">info</span></div>
+
+
+<div class="viewcode-block" id="write_conf_py">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/write_report/index.html#src.toolbox.steps.custom.write_report.write_conf_py">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">write_conf_py</span><span class="p">(</span>
+    <span class="n">source_dir</span><span class="p">,</span>
+    <span class="n">project</span><span class="o">=</span><span class="s2">&quot;Pipeline Report&quot;</span><span class="p">,</span>
+    <span class="n">author</span><span class="o">=</span><span class="s2">&quot;Unknown&quot;</span><span class="p">,</span>
+    <span class="n">master_doc</span><span class="o">=</span><span class="s2">&quot;index&quot;</span><span class="p">,</span>
+    <span class="n">subtitle</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Write a minimal Sphinx conf.py suitable for PDF builds.</span>
+
+<span class="sd">    To be passed into Sphinx.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    source_dir : str or Path</span>
+<span class="sd">        Directory containing the .rst file(s), where this will be saved.</span>
+<span class="sd">    project : str</span>
+<span class="sd">        Project title.</span>
+<span class="sd">    author : str</span>
+<span class="sd">        Author name.</span>
+<span class="sd">    master_doc : str</span>
+<span class="sd">        Root rst file (without .rst).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1">#   TODO: Add mission</span>
+
+    <span class="c1">#   Save conf.py in same directory as the .rst files</span>
+    <span class="n">source_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">source_dir</span><span class="p">)</span>
+    <span class="n">source_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">conf_py</span> <span class="o">=</span> <span class="n">source_dir</span> <span class="o">/</span> <span class="s2">&quot;conf.py&quot;</span>
+    <span class="n">subtitle_line</span> <span class="o">=</span> <span class="n">subtitle</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="c1"># year = datetime.now(timezone.utc).year</span>
+    <span class="c1"># copyright = &quot;{year}, {author}&quot;</span>
+
+    <span class="n">conf_text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2"># -- Auto-generated Sphinx configuration --</span>
+<span class="s2">#   See https://www.sphinx-doc.org/en/master/usage/configuration.html</span>
+
+<span class="s2">project = </span><span class="si">{</span><span class="n">project</span><span class="si">!r}</span>
+<span class="s2">author = </span><span class="si">{</span><span class="n">author</span><span class="si">!r}</span>
+
+<span class="s2">copyright = &quot;%Y, </span><span class="si">{</span><span class="n">author</span><span class="si">}</span><span class="s2">&quot;</span>
+
+<span class="s2"># version = </span>
+<span class="s2"># release = </span>
+
+<span class="s2">extensions = []</span>
+
+<span class="s2">templates_path = [&quot;_templates&quot;]</span>
+<span class="s2">exclude_patterns = []</span>
+
+<span class="s2">master_doc = </span><span class="si">{</span><span class="n">master_doc</span><span class="si">!r}</span>
+
+<span class="s2"># -- Options for LaTeX output --</span>
+
+<span class="s2">latex_elements = </span><span class="se">{{</span>
+<span class="s2">  &#39;extraclassoptions&#39;: &#39;openany,oneside&#39;,</span>
+<span class="s2">  &#39;papersize&#39;: &#39;a4paper&#39;,</span>
+
+<span class="s2">  &#39;maketitle&#39;: r&#39;&#39;&#39;</span>
+<span class="se">\\</span><span class="s2">begin</span><span class="se">{{</span><span class="s2">titlepage</span><span class="se">}}</span>
+<span class="s2">    </span><span class="se">\\</span><span class="s2">centering</span>
+<span class="s2">    </span><span class="se">\\</span><span class="s2">vspace*</span><span class="se">{{</span><span class="s2">3cm</span><span class="se">}}</span>
+
+<span class="s2">    </span><span class="se">{{\\</span><span class="s2">Huge </span><span class="se">\\</span><span class="s2">bfseries </span><span class="si">{</span><span class="n">project</span><span class="si">}</span><span class="s2"> </span><span class="se">\\</span><span class="s2">par</span><span class="se">}}</span>
+<span class="s2">    </span><span class="se">\\</span><span class="s2">vspace</span><span class="se">{{</span><span class="s2">0.5cm</span><span class="se">}}</span>
+
+<span class="s2">    </span><span class="se">{{\\</span><span class="s2">Large </span><span class="si">{</span><span class="n">subtitle_line</span><span class="si">}</span><span class="s2"> </span><span class="se">\\</span><span class="s2">par</span><span class="se">}}</span>
+<span class="s2">    </span><span class="se">\\</span><span class="s2">vspace</span><span class="se">{{</span><span class="s2">1.5cm</span><span class="se">}}</span>
+
+<span class="s2">    </span><span class="se">{{\\</span><span class="s2">large </span><span class="si">{</span><span class="n">author</span><span class="si">}</span><span class="s2"> </span><span class="se">\\</span><span class="s2">par</span><span class="se">}}</span>
+<span class="s2">    </span><span class="se">\\</span><span class="s2">vfill</span>
+
+<span class="s2">    </span><span class="se">{{\\</span><span class="s2">large </span><span class="se">\\</span><span class="s2">today </span><span class="se">\\</span><span class="s2">par</span><span class="se">}}</span>
+<span class="se">\\</span><span class="s2">end</span><span class="se">{{</span><span class="s2">titlepage</span><span class="se">}}</span>
+<span class="s2">&#39;&#39;&#39;</span>
+<span class="se">}}</span>
+<span class="s2">   # For cutting out blank pages (intended for single-sided printing)</span>
+
+<span class="s2">latex_documents = [</span>
+<span class="s2">    (</span>
+<span class="s2">        master_doc,</span>
+<span class="s2">        &quot;</span><span class="si">{</span><span class="n">project</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;_&quot;</span><span class="p">)</span><span class="si">}</span><span class="s2">.tex&quot;,</span>
+<span class="s2">        project,</span>
+<span class="s2">        author,</span>
+<span class="s2">        &quot;manual&quot;,</span>
+<span class="s2">    ),</span>
+<span class="s2">]</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+    <span class="n">conf_py</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">conf_text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="run_sphinx">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/write_report/index.html#src.toolbox.steps.custom.write_report.run_sphinx">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_sphinx</span><span class="p">(</span><span class="n">source_dir</span><span class="p">,</span> <span class="n">build_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Build a PDF from a Sphinx source directory using the latexpdf builder.</span>
+
+<span class="sd">    This step requires Sphinx binaries to be installed and usable on the current workstation.</span>
+<span class="sd">    Requires a conf.py to be located in the source directory.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    source_dir : str or Path</span>
+<span class="sd">        Directory containing the .rst and conf.py files.</span>
+<span class="sd">    build_dir : str or Path</span>
+<span class="sd">        Directory where Sphinx output can be placed. Defaults to source_dir/_build.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">source_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">source_dir</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>  <span class="c1"># For simlinks</span>
+
+    <span class="n">conf_py</span> <span class="o">=</span> <span class="n">source_dir</span> <span class="o">/</span> <span class="s2">&quot;conf.py&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">conf_py</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="c1"># User needs to run write_conf_py first.</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;conf.py not found in </span><span class="si">{</span><span class="n">source_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">build_dir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">build_dir</span> <span class="o">=</span> <span class="n">source_dir</span> <span class="o">/</span> <span class="s2">&quot;_build&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">build_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">build_dir</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+
+    <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="s2">&quot;sphinx-build&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;-M&quot;</span><span class="p">,</span>  <span class="c1"># Make-mode, to use a builder</span>
+            <span class="s2">&quot;latexpdf&quot;</span><span class="p">,</span>  <span class="c1"># target</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">source_dir</span><span class="p">),</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">build_dir</span><span class="p">),</span>
+            <span class="s2">&quot;-q&quot;</span><span class="p">,</span>  <span class="c1"># quiet, comment this and next 4 lines for logger</span>
+        <span class="p">],</span>
+        <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># If errors, raise an exception</span>
+        <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Suppress terminal output of stdout and stderr</span>
+        <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Get text output</span>
+    <span class="p">)</span>  <span class="c1"># See sphinx docs at https://www.sphinx-doc.org/en/master/man/sphinx-build.html</span></div>
+
+
+
+<div class="viewcode-block" id="build_qc_dict">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/write_report/index.html#src.toolbox.steps.custom.write_report.build_qc_dict">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_qc_dict</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a dictionary of all QC variable names and their corresponding QC attributes.</span>
+
+<span class="sd">    Can be expanded in the future if additional attributes related to testing are added.</span>
+<span class="sd">    Tests are ID&#39;d using `_flag_cts` suffix in variable test parameters</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : Xarray DataSet</span>
+<span class="sd">        The top level data containing all the relevant QC variables.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    qc_dict : dict</span>
+<span class="sd">        Nested dictionaries of QC variables with test names and results.</span>
+
+<span class="sd">        Structure:</span>
+<span class="sd">        {</span>
+<span class="sd">            &quot;VAR_QC&quot;: {</span>
+<span class="sd">                &quot;qc_name&quot;: {</span>
+<span class="sd">                    &quot;params&quot;: {...},</span>
+<span class="sd">                    &quot;flag_counts&quot;: {...},</span>
+<span class="sd">                    &quot;stats&quot;: {...},</span>
+<span class="sd">                },</span>
+<span class="sd">                &quot;qc_name_2&quot;: {</span>
+<span class="sd">                    ...</span>
+<span class="sd">                },</span>
+<span class="sd">            }</span>
+<span class="sd">        }</span>
+<span class="sd">    TODO: Move to utils? Does it belong here?</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">qc_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">var</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_QC&quot;</span><span class="p">):</span>
+            <span class="k">continue</span>
+
+        <span class="n">attrs</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span>
+        <span class="n">qc_dict</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># ID tests that were run for indexing.</span>
+        <span class="c1"># _flag_cts seems like the least standardized name to ID qc with</span>
+        <span class="n">qc_names</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">attr</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_flag_cts&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">attrs</span>
+            <span class="k">if</span> <span class="n">attr</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_flag_cts&quot;</span><span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">test</span> <span class="ow">in</span> <span class="n">qc_names</span><span class="p">:</span>
+            <span class="n">params_key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">test</span><span class="si">}</span><span class="s2">_params&quot;</span>
+            <span class="n">flag_key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">test</span><span class="si">}</span><span class="s2">_flag_cts&quot;</span>
+            <span class="n">stats_key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">test</span><span class="si">}</span><span class="s2">_stats&quot;</span>
+
+            <span class="c1"># Safely load JSON fields if present (how they were likely saved)</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">attrs</span><span class="p">[</span><span class="n">params_key</span><span class="p">])</span> <span class="k">if</span> <span class="n">params_key</span> <span class="ow">in</span> <span class="n">attrs</span> <span class="k">else</span> <span class="p">{}</span>
+            <span class="n">flag_cts</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">attrs</span><span class="p">[</span><span class="n">flag_key</span><span class="p">])</span> <span class="k">if</span> <span class="n">flag_key</span> <span class="ow">in</span> <span class="n">attrs</span> <span class="k">else</span> <span class="p">{}</span>
+            <span class="n">stats</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">attrs</span><span class="p">[</span><span class="n">stats_key</span><span class="p">])</span> <span class="k">if</span> <span class="n">stats_key</span> <span class="ow">in</span> <span class="n">attrs</span> <span class="k">else</span> <span class="p">{}</span>
+
+            <span class="n">qc_dict</span><span class="p">[</span><span class="n">var</span><span class="p">][</span><span class="n">test</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="n">params</span><span class="p">,</span>
+                <span class="s2">&quot;flag_counts&quot;</span><span class="p">:</span> <span class="n">flag_cts</span><span class="p">,</span>
+                <span class="s2">&quot;stats&quot;</span><span class="p">:</span> <span class="n">stats</span><span class="p">,</span>
+            <span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">qc_dict</span></div>
+
+
+
+<div class="viewcode-block" id="flatten_qc_dict">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/write_report/index.html#src.toolbox.steps.custom.write_report.flatten_qc_dict">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">flatten_qc_dict</span><span class="p">(</span><span class="n">qc_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Flatten QC dictionary into list of table rows.</span>
+<span class="sd">    </span>
+<span class="sd">    Intended for use in report metrics (RstCloth).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    qc_dict : dict</span>
+<span class="sd">        Dictionary of QC results.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    rows: list of list</span>
+<span class="sd">        A list of rows suitable for tabular display. Each row is a list:</span>
+<span class="sd">            [qc_var, qc_name, flag, formatted_count]</span>
+<span class="sd">        - `qc_var` : str, the QC variable name</span>
+<span class="sd">        - `qc_name` : str, the name of the QC test</span>
+<span class="sd">        - `flag` : str, QC flag value</span>
+<span class="sd">        - `formatted_count` : str, count formatted with thousands separator</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">qc_var</span><span class="p">,</span> <span class="n">tests</span> <span class="ow">in</span> <span class="n">qc_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">tests</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="k">for</span> <span class="n">qc_name</span><span class="p">,</span> <span class="n">test_data</span> <span class="ow">in</span> <span class="n">tests</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">stats</span> <span class="o">=</span> <span class="n">test_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;stats&quot;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="n">flag_counts</span> <span class="o">=</span> <span class="n">test_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;flag_counts&quot;</span><span class="p">,</span> <span class="p">{})</span>
+
+            <span class="k">for</span> <span class="n">flag</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">flag_counts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">continue</span>
+
+                <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="p">[</span>
+                        <span class="n">qc_var</span><span class="p">,</span>
+                        <span class="n">qc_name</span><span class="p">,</span>
+                        <span class="n">flag</span><span class="p">,</span>
+                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">count</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="p">]</span>
+                <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">rows</span></div>
+
+
+
+<span class="c1">### RST builders</span>
+
+
+<div class="viewcode-block" id="run_info_page">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/write_report/index.html#src.toolbox.steps.custom.write_report.run_info_page">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_info_page</span><span class="p">(</span><span class="n">rs</span><span class="p">,</span> <span class="n">params_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">glatters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Writes a page dedicated to pipeline run information.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    rs : RstCloth</span>
+<span class="sd">        Active RstCloth stream to which the page is written.</span>
+<span class="sd">    params_dict : dict</span>
+<span class="sd">        Dictionary of global pipeline parameters.</span>
+<span class="sd">    glatters : dict</span>
+<span class="sd">        Dictionary describing the glider and mission. OG1 includes &quot;platform_vocabulary&quot; for consistency.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rs</span><span class="o">.</span><span class="n">h2</span><span class="p">(</span><span class="s2">&quot;Pipeline run information&quot;</span><span class="p">)</span>
+
+    <span class="n">run_data</span> <span class="o">=</span> <span class="n">current_info</span><span class="p">()</span>
+
+    <span class="n">rs</span><span class="o">.</span><span class="n">table</span><span class="p">(</span>
+        <span class="n">data</span><span class="o">=</span><span class="p">[[</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)]</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">run_data</span><span class="o">.</span><span class="n">items</span><span class="p">()],</span>
+        <span class="n">header</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;Run metadata&quot;</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="n">rs</span><span class="o">.</span><span class="n">table</span><span class="p">(</span>
+        <span class="n">data</span><span class="o">=</span><span class="p">[[</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)]</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">params_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()],</span>
+        <span class="n">header</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;Pipeline parameter&quot;</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="s2">&quot;platform_vocabulary&quot;</span> <span class="ow">in</span> <span class="n">glatters</span><span class="p">:</span>  <span class="c1">#   May not be in every dataset</span>
+        <span class="n">rs</span><span class="o">.</span><span class="n">table_list</span><span class="p">(</span>
+            <span class="n">data</span><span class="o">=</span><span class="p">[[</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)]</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">glatters</span><span class="o">.</span><span class="n">items</span><span class="p">()],</span>
+            <span class="n">headers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;Glider information&quot;</span><span class="p">],</span>
+            <span class="n">widths</span><span class="o">=</span><span class="p">[</span><span class="mi">30</span><span class="p">,</span> <span class="mi">70</span><span class="p">],</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="add_log">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/write_report/index.html#src.toolbox.steps.custom.write_report.add_log">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_log</span><span class="p">(</span><span class="n">logfile</span><span class="p">,</span> <span class="n">rs</span><span class="p">,</span> <span class="n">ncols</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add and format the logfile as a table.</span>
+
+<span class="sd">    Note: Requires a designated log_file be initialized in the global pipeline configuration parameters.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">rs</span><span class="o">.</span><span class="n">h2</span><span class="p">(</span><span class="s2">&quot;Logfile of run&quot;</span><span class="p">)</span>
+    <span class="n">rs</span><span class="o">.</span><span class="n">newline</span><span class="p">()</span>
+
+    <span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">logfile</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">parts</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; - &quot;</span><span class="p">,</span> <span class="n">maxsplit</span><span class="o">=</span><span class="n">ncols</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">!=</span> <span class="n">ncols</span><span class="p">:</span>
+                <span class="c1"># malformed or unexpected line, skip or log</span>
+                <span class="k">continue</span>
+
+            <span class="n">timestamp</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">message</span> <span class="o">=</span> <span class="n">parts</span>
+            <span class="c1">#   Remove date, toolbox for more space for comment</span>
+            <span class="n">timestamp</span> <span class="o">=</span> <span class="n">timestamp</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">location</span> <span class="o">=</span> <span class="n">location</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="s2">&quot;toolbox.&quot;</span><span class="p">)</span>
+
+            <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">timestamp</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">message</span><span class="p">))</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="c1">#   Apply enough padding to the rows so that the report registers as &quot;long enough&quot; to format correctly</span>
+    <span class="n">minlen</span> <span class="o">=</span> <span class="mi">28</span>  <span class="c1">#   approx for A4 in testing</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">minlen</span><span class="p">:</span>
+        <span class="n">blank_row</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="s2">&quot;&quot;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ncols</span><span class="p">))</span>
+        <span class="n">rows</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">blank_row</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">minlen</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">rows</span><span class="p">)))</span>
+
+    <span class="n">rs</span><span class="o">.</span><span class="n">table_list</span><span class="p">(</span>
+        <span class="n">headers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Time&quot;</span><span class="p">,</span> <span class="s2">&quot;Level&quot;</span><span class="p">,</span> <span class="s2">&quot;Location&quot;</span><span class="p">,</span> <span class="s2">&quot;Message&quot;</span><span class="p">],</span>
+        <span class="n">data</span><span class="o">=</span><span class="n">rows</span><span class="p">,</span>
+        <span class="n">widths</span><span class="o">=</span><span class="p">[</span><span class="mi">11</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">24</span><span class="p">,</span> <span class="mi">55</span><span class="p">],</span>
+        <span class="c1"># width=100</span>
+    <span class="p">)</span>
+    <span class="n">rs</span><span class="o">.</span><span class="n">newline</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="qc_section">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/write_report/index.html#src.toolbox.steps.custom.write_report.qc_section">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">qc_section</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Wrapper for the QC section.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    doc : RstCloth object</span>
+<span class="sd">        The active RstCloth stream to be written to</span>
+<span class="sd">    data : xarray.core.dataset.Dataset</span>
+<span class="sd">        The entire dataset, including attributes</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">doc</span><span class="o">.</span><span class="n">h2</span><span class="p">(</span><span class="s2">&quot;Quality Control Summary&quot;</span><span class="p">)</span>
+    <span class="n">doc</span><span class="o">.</span><span class="n">newline</span><span class="p">()</span>
+
+    <span class="c1">#   Summary of flags from each test</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;QC Variable&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Test&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Flag&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Count&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="n">qc_dict</span> <span class="o">=</span> <span class="n">build_qc_dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="n">flatten_qc_dict</span><span class="p">(</span><span class="n">qc_dict</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">rows</span><span class="p">:</span>
+        <span class="n">doc</span><span class="o">.</span><span class="n">paragraph</span><span class="p">(</span><span class="s2">&quot;No QC tests found.&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="n">doc</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="n">headers</span><span class="p">,</span> <span class="n">rows</span><span class="p">)</span>
+    <span class="n">doc</span><span class="o">.</span><span class="n">newline</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="img_rst">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/write_report/index.html#src.toolbox.steps.custom.write_report.img_rst">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">img_rst</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span> <span class="n">fname</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">fields</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Inserts image information into the .rst using `directive`.</span>
+
+<span class="sd">    See rst directives for image information (https://docutils.sourceforge.io/docs/ref/rst/directives.html#images)</span>
+<span class="sd">    See RstCloth for info about `directive` (https://rstcloth.readthedocs.io/en/latest/rstcloth.html)</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    doc : RstCloth object</span>
+<span class="sd">        The active RstCloth stream to be written to</span>
+<span class="sd">    fname : str</span>
+<span class="sd">        The path or filename</span>
+<span class="sd">    fields : list of tuple</span>
+<span class="sd">        Image parameters to be written below the directive</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    img_rst(doc,</span>
+<span class="sd">            &quot;../examples/data/OG1/testing/fig.png&quot;,</span>
+<span class="sd">            fields=[(&quot;height&quot;,&quot;100px&quot;),(&quot;width&quot;,&quot;100px&quot;)])</span>
+<span class="sd">    would write out</span>
+<span class="sd">    .. image:: fig.*</span>
+<span class="sd">       :height: 100px</span>
+<span class="sd">       :width: 100px</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1">#   Sphinx is constrained to /outdir, lop path and the extension off</span>
+    <span class="n">new_name</span> <span class="o">=</span> <span class="n">fname</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;.*&quot;</span>
+    <span class="n">doc</span><span class="o">.</span><span class="n">directive</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;image&quot;</span><span class="p">,</span> <span class="n">arg</span><span class="o">=</span><span class="n">new_name</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="n">fields</span><span class="p">)</span>
+    <span class="n">doc</span><span class="o">.</span><span class="n">newline</span><span class="p">()</span>
+    <span class="n">doc</span><span class="o">.</span><span class="n">newline</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="basic_geo">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/write_report/index.html#src.toolbox.steps.custom.write_report.basic_geo">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">basic_geo</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">g_extent</span><span class="p">,</span> <span class="n">ext</span><span class="p">,</span> <span class="n">outdir</span><span class="p">):</span>
+    <span class="n">ax0</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">(</span><span class="n">projection</span><span class="o">=</span><span class="n">ccrs</span><span class="o">.</span><span class="n">PlateCarree</span><span class="p">())</span>
+    <span class="n">ax0</span><span class="o">.</span><span class="n">set_extent</span><span class="p">(</span><span class="n">g_extent</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="n">ccrs</span><span class="o">.</span><span class="n">PlateCarree</span><span class="p">())</span>
+    <span class="n">ax0</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="n">cfeature</span><span class="o">.</span><span class="n">LAND</span><span class="o">.</span><span class="n">with_scale</span><span class="p">(</span><span class="s2">&quot;110m&quot;</span><span class="p">))</span>
+    <span class="n">ax0</span><span class="o">.</span><span class="n">gridlines</span><span class="p">(</span><span class="n">draw_labels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dms</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">x_inline</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">y_inline</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">ax0</span><span class="o">.</span><span class="n">coastlines</span><span class="p">(</span><span class="n">resolution</span><span class="o">=</span><span class="s2">&quot;110m&quot;</span><span class="p">)</span>
+    <span class="n">ax0</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">[</span><span class="s2">&quot;LONGITUDE&quot;</span><span class="p">],</span>
+        <span class="n">data</span><span class="p">[</span><span class="s2">&quot;LATITUDE&quot;</span><span class="p">],</span>
+        <span class="n">s</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+        <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span>
+        <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span>
+        <span class="n">transform</span><span class="o">=</span><span class="n">ccrs</span><span class="o">.</span><span class="n">PlateCarree</span><span class="p">(),</span>
+    <span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Glider Track&quot;</span><span class="p">)</span>
+    <span class="n">fname</span> <span class="o">=</span> <span class="n">outdir</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;geographic</span><span class="si">{</span><span class="n">ext</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+    <span class="n">img_rst</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span> <span class="n">fname</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="inset_geo">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/write_report/index.html#src.toolbox.steps.custom.write_report.inset_geo">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">inset_geo</span><span class="p">(</span>
+    <span class="n">doc</span><span class="p">,</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">outdir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;./&quot;</span><span class="p">,</span>
+    <span class="n">g_extent</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[</span><span class="mi">7</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">54</span><span class="p">,</span> <span class="mi">65</span><span class="p">],</span>
+    <span class="n">scale</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;110m&quot;</span><span class="p">,</span>
+    <span class="n">ext</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;.png&quot;</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Creates an inset geographic of two plots for additional positional awareness.</span>
+
+<span class="sd">    Unlike basic_geo(), this function will create an inset to make it clearer</span>
+<span class="sd">    where the glider is operating.</span>
+
+<span class="sd">    If the chart looks chunky, consider increasing the resolution in the `scale` arg.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    doc : RstCloth object</span>
+<span class="sd">        The active RstCloth stream to be written to</span>
+<span class="sd">    data : xarray.core.dataset.Dataset</span>
+<span class="sd">        The entire dataset, including attributes</span>
+<span class="sd">    outdir : str</span>
+<span class="sd">        The path to return figures to. Defaults to current directory.</span>
+<span class="sd">    g_extent : list</span>
+<span class="sd">        Geographic extent for cartopy geographic plot ([lon1, lon2, lat1, lat2]). Defaults to Baltic Sea.</span>
+<span class="sd">    scale: str</span>
+<span class="sd">        Resolution for cartopy to use when adding elements (&quot;10m&quot;, &quot;50m&quot;, &quot;110m&quot;)</span>
+<span class="sd">    ext : str</span>
+<span class="sd">        Image filetype extension (.png, .svg, etc.)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+
+    <span class="n">lon</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;LONGITUDE&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">lat</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;LATITUDE&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">lon_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">lon</span><span class="p">)</span>
+    <span class="n">lon_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">lon</span><span class="p">)</span>
+    <span class="n">lat_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">lat</span><span class="p">)</span>
+    <span class="n">lat_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">lat</span><span class="p">)</span>
+
+    <span class="c1">#   Get the middle of the glider track</span>
+    <span class="n">lon_mid</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">lon_min</span> <span class="o">+</span> <span class="n">lon_max</span><span class="p">)</span>
+    <span class="n">lat_mid</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">lat_min</span> <span class="o">+</span> <span class="n">lat_max</span><span class="p">)</span>
+    <span class="n">pad</span> <span class="o">=</span> <span class="mf">0.1</span>  <span class="c1">#   Add some padding in degrees</span>
+    <span class="n">lon_span</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">lon_max</span> <span class="o">-</span> <span class="n">lon_min</span>
+    <span class="p">)</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">pad</span>  <span class="c1"># Full lat/lon sizes spanning the mission range</span>
+    <span class="n">lat_span</span> <span class="o">=</span> <span class="p">(</span><span class="n">lat_max</span> <span class="o">-</span> <span class="n">lat_min</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">pad</span>
+
+    <span class="c1">#   Use the larger span to force glider image to be a square</span>
+    <span class="n">span</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">lon_span</span><span class="p">,</span> <span class="n">lat_span</span><span class="p">)</span>
+    <span class="n">track_extent</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">lon_mid</span> <span class="o">-</span> <span class="n">span</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="n">lon_mid</span> <span class="o">+</span> <span class="n">span</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="n">lat_mid</span> <span class="o">-</span> <span class="n">span</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="n">lat_mid</span> <span class="o">+</span> <span class="n">span</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="p">]</span>  <span class="c1">#   Glider data track extent</span>
+
+    <span class="c1">#   Glider track on main axes</span>
+    <span class="n">ax_main</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="n">ccrs</span><span class="o">.</span><span class="n">PlateCarree</span><span class="p">())</span>
+    <span class="n">ax_main</span><span class="o">.</span><span class="n">set_extent</span><span class="p">(</span><span class="n">track_extent</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="n">ccrs</span><span class="o">.</span><span class="n">PlateCarree</span><span class="p">())</span>
+
+    <span class="n">ax_main</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+        <span class="n">lon</span><span class="p">,</span>
+        <span class="n">lat</span><span class="p">,</span>
+        <span class="n">s</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+        <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span>
+        <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;+&quot;</span><span class="p">,</span>
+        <span class="n">transform</span><span class="o">=</span><span class="n">ccrs</span><span class="o">.</span><span class="n">PlateCarree</span><span class="p">(),</span>
+    <span class="p">)</span>
+    <span class="n">gl</span> <span class="o">=</span> <span class="n">ax_main</span><span class="o">.</span><span class="n">gridlines</span><span class="p">(</span>
+        <span class="n">draw_labels</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># show tick labels</span>
+        <span class="n">dms</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># degrees, minutes, seconds</span>
+        <span class="n">x_inline</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">y_inline</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">color</span><span class="o">=</span><span class="s2">&quot;gray&quot;</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+        <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">gl</span><span class="o">.</span><span class="n">top_labels</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">gl</span><span class="o">.</span><span class="n">right_labels</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">gl</span><span class="o">.</span><span class="n">bottom_labels</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">gl</span><span class="o">.</span><span class="n">left_labels</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="n">ax_main</span><span class="o">.</span><span class="n">coastlines</span><span class="p">(</span><span class="n">resolution</span><span class="o">=</span><span class="n">scale</span><span class="p">)</span>
+    <span class="n">ax_main</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Glider Track: </span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;dataset_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Inset figure on new axes</span>
+    <span class="n">inset_ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">(</span>
+        <span class="p">[</span><span class="mf">0.23</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">],</span>  <span class="c1"># HA low, VA low, HA hi, VA hi</span>
+        <span class="n">projection</span><span class="o">=</span><span class="n">ccrs</span><span class="o">.</span><span class="n">PlateCarree</span><span class="p">(),</span>
+    <span class="p">)</span>
+
+    <span class="n">inset_ax</span><span class="o">.</span><span class="n">set_extent</span><span class="p">(</span><span class="n">g_extent</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="n">ccrs</span><span class="o">.</span><span class="n">PlateCarree</span><span class="p">())</span>  <span class="c1">#   Default Batlic sea</span>
+    <span class="n">inset_ax</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="n">cfeature</span><span class="o">.</span><span class="n">BORDERS</span><span class="o">.</span><span class="n">with_scale</span><span class="p">(</span><span class="n">scale</span><span class="p">),</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+    <span class="n">inset_ax</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="n">cfeature</span><span class="o">.</span><span class="n">LAND</span><span class="o">.</span><span class="n">with_scale</span><span class="p">(</span><span class="n">scale</span><span class="p">))</span>
+    <span class="n">inset_ax</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="n">cfeature</span><span class="o">.</span><span class="n">LAKES</span><span class="o">.</span><span class="n">with_scale</span><span class="p">(</span><span class="n">scale</span><span class="p">))</span>
+    <span class="n">inset_ax</span><span class="o">.</span><span class="n">coastlines</span><span class="p">(</span><span class="n">resolution</span><span class="o">=</span><span class="n">scale</span><span class="p">)</span>
+
+    <span class="n">inset_ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="n">track_extent</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">track_extent</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">track_extent</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">track_extent</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">track_extent</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="p">],</span>
+        <span class="p">[</span>
+            <span class="n">track_extent</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+            <span class="n">track_extent</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+            <span class="n">track_extent</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
+            <span class="n">track_extent</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
+            <span class="n">track_extent</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+        <span class="p">],</span>
+        <span class="n">transform</span><span class="o">=</span><span class="n">ccrs</span><span class="o">.</span><span class="n">PlateCarree</span><span class="p">(),</span>
+        <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span>
+        <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span>
+    <span class="p">)</span>  <span class="c1"># Draw box on top of inset</span>
+
+    <span class="c1">#   Save the figure and write to .rst</span>
+    <span class="n">fname</span> <span class="o">=</span> <span class="n">outdir</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;geographic</span><span class="si">{</span><span class="n">ext</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+
+    <span class="n">img_rst</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span> <span class="n">fname</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="qc_hist">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/write_report/index.html#src.toolbox.steps.custom.write_report.qc_hist">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">qc_hist</span><span class="p">(</span>
+    <span class="n">doc</span><span class="p">,</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">outdir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">var</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">xlims</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mf">0.6</span><span class="p">,</span> <span class="mf">9.6</span><span class="p">],</span>
+    <span class="n">hislim</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span>
+    <span class="n">bins</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">ext</span><span class="o">=</span><span class="s2">&quot;.png&quot;</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create quick quality control histogram figure.</span>
+
+<span class="sd">    Left axis:  Quick plot of QC variable&#39;s parent</span>
+<span class="sd">    Right axis: Bins of each flag type, labeled with # of points</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    doc : RstCloth object</span>
+<span class="sd">        The active RstCloth stream to be written to</span>
+<span class="sd">    data : xarray.core.dataset.Dataset</span>
+<span class="sd">        The entire dataset, including attributes</span>
+<span class="sd">    var : str</span>
+<span class="sd">        The QC variable as listed in `data`</span>
+<span class="sd">    ext : str</span>
+<span class="sd">        Image filetype extension (.png, .svg, etc.)</span>
+<span class="sd">    hislim : array-like</span>
+<span class="sd">        All potential flags of the selected schema (default Argo = 0 to 9, 10 total)</span>
+<span class="sd">    bins : array-like</span>
+<span class="sd">        The sequence of bin edges for collection, matching the dimension of hislim</span>
+<span class="sd">    xlims : list</span>
+<span class="sd">        Histogram axis bounds. Defaults to Argo (10 flags) with 0.1 padding on each side</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">var_source</span> <span class="o">=</span> <span class="n">var</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span>  <span class="c1">#   TEMP_QC --&gt; TEMP</span>
+
+    <span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">ncols</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">layout</span><span class="o">=</span><span class="s2">&quot;constrained&quot;</span><span class="p">)</span>
+
+    <span class="c1">#   Prepare the histogram</span>
+    <span class="n">ylims</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">])]</span>  <span class="c1">#   Log axis cannot be 0</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">y</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">ylims</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span>
+    <span class="k">if</span> <span class="n">bins</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1">#   If not specified, center the bins around each flag integer</span>
+        <span class="n">bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">hislim</span><span class="p">))</span> <span class="o">-</span> <span class="mf">0.5</span>
+
+    <span class="c1">#   Plot the source variable using xarray.plot for speed.</span>
+    <span class="c1">#   If all NaN, clarify that on the plot.</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">var_source</span><span class="p">])):</span>
+        <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;Data (</span><span class="si">{</span><span class="n">var_source</span><span class="si">}</span><span class="s1">) are NaN&#39;</span><span class="p">,</span>
+            <span class="n">transform</span><span class="o">=</span><span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">data</span><span class="p">[</span><span class="n">var_source</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var_source</span><span class="si">}</span><span class="s2">: n=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">var_source</span><span class="p">])</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;right&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">])):</span>
+        <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;Flags (</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s1">) are NaN&#39;</span><span class="p">,</span>
+            <span class="n">transform</span><span class="o">=</span><span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">transAxes</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span>
+            <span class="n">yscale</span><span class="o">=</span><span class="s2">&quot;log&quot;</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">bins</span><span class="p">,</span> <span class="n">xticks</span><span class="o">=</span><span class="n">hislim</span><span class="p">,</span> <span class="n">xlim</span><span class="o">=</span><span class="n">xlims</span><span class="p">,</span> <span class="n">ylim</span><span class="o">=</span><span class="n">ylims</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">bars</span> <span class="o">=</span> <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">containers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1">#   Number of points in each bin</span>
+        <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">bar_label</span><span class="p">(</span><span class="n">bars</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">label_type</span><span class="o">=</span><span class="s2">&quot;center&quot;</span><span class="p">)</span>
+        <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_yscale</span><span class="p">(</span><span class="s2">&quot;log&quot;</span><span class="p">)</span>
+    <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2"> flag histogram&quot;</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;right&quot;</span><span class="p">)</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">supylabel</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;dataset_id&quot;</span><span class="p">])</span>
+
+    <span class="n">fname</span> <span class="o">=</span> <span class="n">outdir</span> <span class="o">+</span> <span class="n">var</span> <span class="o">+</span> <span class="n">ext</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span>  <span class="c1">#   Save to the outdir</span>
+    <span class="n">img_rst</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span> <span class="n">fname</span><span class="p">)</span>  <span class="c1">#   Pass along doc</span></div>
+
+
+
+<div class="viewcode-block" id="make_plots">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/write_report/index.html#src.toolbox.steps.custom.write_report.make_plots">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">make_plots</span><span class="p">(</span>
+    <span class="n">doc</span><span class="p">,</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">outdir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">extent</span><span class="p">:</span><span class="nb">list</span> <span class="o">=</span> <span class="p">[</span><span class="mi">7</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">54</span><span class="p">,</span> <span class="mi">65</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Wrapper for plotting glider QC variables quickly.</span>
+
+<span class="sd">    There are millions of points per variable, which xarray can plot very quickly</span>
+<span class="sd">    in specific ways.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    doc : RstCloth object</span>
+<span class="sd">        The active RstCloth stream to be written to</span>
+<span class="sd">    data : xarray.core.dataset.Dataset</span>
+<span class="sd">        The entire dataset, including attributes</span>
+<span class="sd">    outdir : str</span>
+<span class="sd">        The path to return figures to</span>
+<span class="sd">    ext : str</span>
+<span class="sd">        Image filetype extension (.png, .svg, etc.)</span>
+<span class="sd">    g_extent : list</span>
+<span class="sd">        Geographic extent for cartopy geographic plot. Defaults to Baltic Sea.</span>
+
+<span class="sd">    TODO: Define long-term storage for this. Is `diagnostics` the right place?</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">doc</span><span class="o">.</span><span class="n">h2</span><span class="p">(</span><span class="s2">&quot;Plots&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Basic geographic plot</span>
+    <span class="c1"># basic_geo(doc, data, g_extent, ext, outdir)</span>
+    <span class="n">inset_geo</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">outdir</span><span class="p">,</span> <span class="n">extent</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="s2">&quot;50m&quot;</span><span class="p">)</span>
+
+    <span class="n">qc_vars</span> <span class="o">=</span> <span class="p">[</span><span class="n">var</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span> <span class="k">if</span> <span class="s2">&quot;_QC&quot;</span> <span class="ow">in</span> <span class="n">var</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span>
+        <span class="n">qc_vars</span><span class="p">,</span>
+        <span class="n">colour</span><span class="o">=</span><span class="s2">&quot;green&quot;</span><span class="p">,</span>
+        <span class="n">desc</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[97mProgress </span><span class="se">\033</span><span class="s2">[0m&quot;</span><span class="p">,</span>
+        <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;vars&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="c1"># Any form of scatter takes ~30 sec, stick with xarray.plot for now (no colorbars, alternative color schemes)</span>
+        <span class="n">qc_hist</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">outdir</span><span class="p">,</span> <span class="n">var</span><span class="p">)</span></div>
+
+
+
+<span class="nd">@register_step</span>
+<div class="viewcode-block" id="WriteDataReport">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/write_report/index.html#src.toolbox.steps.custom.write_report.WriteDataReport">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">WriteDataReport</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Writes a report summarizing the generic plots and statistics of the data.</span>
+
+<span class="sd">    Base template:</span>
+<span class="sd">    * Title page (automatically handled by sphinx)</span>
+<span class="sd">    * Quality control summary</span>
+<span class="sd">    * Basic plots</span>
+<span class="sd">    * Run metadata and pipeline parameters</span>
+<span class="sd">    * Logfile</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    title: str</span>
+<span class="sd">        Name of the report (on title page and filename)</span>
+<span class="sd">    output_path: str</span>
+<span class="sd">        Directory to write the report to (must end with a &quot;/&quot;)</span>
+<span class="sd">    build: bool</span>
+<span class="sd">        Whether to run Sphinx to build the PDF after writing the .rst and conf.py files</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="WriteDataReport.step_name">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/write_report/index.html#src.toolbox.steps.custom.write_report.WriteDataReport.step_name">[docs]</a>
+    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Write Data Report&quot;</span></div>
+
+
+<div class="viewcode-block" id="WriteDataReport.run">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/write_report/index.html#src.toolbox.steps.custom.write_report.WriteDataReport.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
+        <span class="n">odir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;global_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;out_directory&quot;</span><span class="p">]</span>
+        <span class="n">fout</span> <span class="o">=</span> <span class="n">odir</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fname&quot;</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;dataset_id&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">attrs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span><span class="s2">&quot;Dataset ID missing from OG1 file. Reporting with unk platform information.&quot;</span><span class="p">)</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;dataset_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;unknown dataset ID&quot;</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">fout</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">output_file</span><span class="p">:</span>
+            <span class="n">doc</span> <span class="o">=</span> <span class="n">RstCloth</span><span class="p">(</span><span class="n">output_file</span><span class="p">)</span>
+            <span class="n">doc</span><span class="o">.</span><span class="n">h2</span><span class="p">(</span><span class="s2">&quot;RstCloth will consume this h2, some kind of bug.&quot;</span><span class="p">)</span>
+            <span class="n">doc</span><span class="o">.</span><span class="n">newline</span><span class="p">()</span>
+
+            <span class="n">qc_section</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Generating images.&quot;</span><span class="p">)</span>
+            <span class="n">make_plots</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">outdir</span><span class="o">=</span><span class="n">odir</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;extent&quot;</span><span class="p">))</span>
+
+            <span class="n">run_info_page</span><span class="p">(</span>
+                <span class="n">doc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;global_parameters&quot;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span>
+            <span class="p">)</span>
+
+            <span class="n">log_path</span> <span class="o">=</span> <span class="n">odir</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;global_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;log_file&quot;</span><span class="p">]</span>
+            <span class="n">add_log</span><span class="p">(</span><span class="n">log_path</span><span class="p">,</span> <span class="n">doc</span><span class="p">)</span>
+
+        <span class="c1">#   Run sphinx if user defined in step parameters</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;build&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span>
+            <span class="c1"># Sphinx requires a conf.py file to build</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Building PDF report with Sphinx.&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span>
+                <span class="s2">&quot;Lines below this will not be captured in the run report. See logfile if other steps follow this one.&quot;</span>
+            <span class="p">)</span>
+            <span class="n">write_conf_py</span><span class="p">(</span>
+                <span class="n">odir</span><span class="p">,</span>
+                <span class="n">project</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">],</span>
+                <span class="n">author</span><span class="o">=</span><span class="n">current_info</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user&quot;</span><span class="p">),</span>
+                <span class="n">master_doc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fname&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.rst&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+                <span class="n">subtitle</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dataset_id&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">),</span>
+            <span class="p">)</span>
+            <span class="n">run_sphinx</span><span class="p">(</span>
+                <span class="n">odir</span><span class="p">,</span>
+                <span class="n">build_dir</span><span class="o">=</span><span class="n">odir</span> <span class="o">+</span> <span class="s2">&quot;_build&quot;</span><span class="p">,</span>
+            <span class="p">)</span>  <span class="c1"># TODO: Make this more robust and less hardcoded</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
+</div>
+
+
+
+<span class="c1">### Legacy code below this line</span>
+
+
+<span class="c1"># def run_sphinx(source_dir, build_dir=None):</span>
+<span class="c1">#     &quot;&quot;&quot;</span>
+<span class="c1">#     Build a PDF from a Sphinx source directory.</span>
+<span class="c1">#     &quot;&quot;&quot;</span>
+<span class="c1">#     source_dir = Path(source_dir).resolve()</span>
+
+<span class="c1">#     conf_py = source_dir / &quot;conf.py&quot;</span>
+<span class="c1">#     if not conf_py.exists():</span>
+<span class="c1">#         raise RuntimeError(f&quot;conf.py not found in {source_dir}&quot;)</span>
+
+<span class="c1">#     if build_dir is None:</span>
+<span class="c1">#         build_dir = source_dir / &quot;_build&quot;</span>
+<span class="c1">#     else:</span>
+<span class="c1">#         build_dir = Path(build_dir).resolve()</span>
+
+<span class="c1">#     latex_dir = build_dir / &quot;latex&quot;</span>
+
+<span class="c1">#     subprocess.run(</span>
+<span class="c1">#         [</span>
+<span class="c1">#             &quot;sphinx-build&quot;,</span>
+<span class="c1">#             &quot;-q&quot;,   # Run sphinx in quiet mode</span>
+<span class="c1">#             &quot;-c&quot;,</span>
+<span class="c1">#             str(source_dir),  # ← EXPLICIT conf.py location</span>
+<span class="c1">#             &quot;-b&quot;,</span>
+<span class="c1">#             &quot;latex&quot;,</span>
+<span class="c1">#             str(source_dir),</span>
+<span class="c1">#             str(latex_dir),</span>
+<span class="c1">#         ],</span>
+<span class="c1">#         check=True,</span>
+<span class="c1">#     )</span>
+
+<span class="c1">#     ### Temporary: Figuring out make latexpdf</span>
+<span class="c1">#     # makefile = latex_dir / &quot;Makefile&quot;</span>
+<span class="c1">#     # makefile.write_text(</span>
+<span class="c1">#     #     &quot;SPHINXBUILD   = sphinx-build\n&quot;</span>
+<span class="c1">#     #     &quot;SOURCEDIR     = ../..\n&quot;</span>
+<span class="c1">#     #     &quot;BUILDDIR      = .\n&quot;</span>
+<span class="c1">#     #     &quot;CONFDIR       = ../..\n\n&quot;</span>
+<span class="c1">#     #     &quot;.PHONY: latexpdf\n\n&quot;</span>
+<span class="c1">#     #     &quot;latexpdf:\n&quot;</span>
+<span class="c1">#     #     &quot;\t$(SPHINXBUILD) -c $(CONFDIR) -b latexpdf $(SOURCEDIR) $(BUILDDIR)\n&quot;</span>
+<span class="c1">#     # )</span>
+
+<span class="c1">#     tex_file = latex_dir / &quot;Voto_Glider_Data_Pipeline_Report.tex&quot;</span>
+
+<span class="c1">#     subprocess.run(</span>
+<span class="c1">#         [</span>
+<span class="c1">#             &quot;pdflatex&quot;,</span>
+<span class="c1">#             &quot;-q&quot;,</span>
+<span class="c1">#             &quot;-interaction=nonstopmode&quot;,</span>
+<span class="c1">#             tex_file.name</span>
+<span class="c1">#         ],</span>
+<span class="c1">#         cwd=latex_dir,</span>
+<span class="c1">#         check=True,</span>
+<span class="c1">#     )</span>
+
+<span class="c1">#     return latex_dir</span>
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, National Oceanography Centre.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

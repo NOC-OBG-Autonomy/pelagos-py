@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>src.toolbox.steps.custom.load_data &#8212; NOCAT 0.0.0 documentation</title>
+    <title>src.toolbox.steps.custom.load_data &#8212; pelagos-py 0.0.1 documentation</title>
   
   
   
@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../../../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../../../../_static/documentation_options.js?v=7026087e"></script>
+    <script src="../../../../../../_static/documentation_options.js?v=d45e8c67"></script>
     <script src="../../../../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -50,14 +50,14 @@
     <script src="../../../../../../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api/src/toolbox/steps/custom/load_data/index';</script>
-    <link rel="canonical" href="https://noc-obg-autonomy.github.io/toolbox/api/src/toolbox/steps/custom/load_data/index.html" />
+    <link rel="canonical" href="https://noc-obg-autonomy.github.io/pelagos-py/api/src/toolbox/steps/custom/load_data/index.html" />
     <link rel="index" title="Index" href="../../../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../../../search.html" />
     <link rel="next" title="src.toolbox.steps.custom.profile_direction" href="../profile_direction/index.html" />
     <link rel="prev" title="src.toolbox.steps.custom.interpolate_data" href="../interpolate_data/index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.0" />
+  <meta name="docsearch:version" content="0.0.1" />
   </head>
   
   
@@ -119,7 +119,7 @@
   
   
   
-    <p class="title logo__title">NOCAT 0.0.0 documentation</p>
+    <p class="title logo__title">pelagos-py 0.0.1 documentation</p>
   
 </a></div>
     
@@ -133,6 +133,13 @@
 <nav>
   <ul class="bd-navbar-elements navbar-nav">
     
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../../steps.html">
     Steps
@@ -148,25 +155,35 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../../../../../getting_started.html">
-    Getting Started
-  </a>
-</li>
-
-
-<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../../contributing.html">
     Contributing
   </a>
 </li>
 
 
-<li class="nav-item current active">
-  <a class="nav-link nav-internal" href="../../../index.html">
-    src.toolbox
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../developer_guide.html">
+    Developer Guide
   </a>
 </li>
 
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" current active">
+  <a class="nav-link dropdown-item nav-internal" href="../../../index.html">
+    API Reference
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
   </ul>
 </nav></div>
       
@@ -241,6 +258,13 @@
   <ul class="bd-navbar-elements navbar-nav">
     
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../../steps.html">
     Steps
   </a>
@@ -255,22 +279,22 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../../../../../getting_started.html">
-    Getting Started
-  </a>
-</li>
-
-
-<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../../contributing.html">
     Contributing
   </a>
 </li>
 
 
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../developer_guide.html">
+    Developer Guide
+  </a>
+</li>
+
+
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="../../../index.html">
-    src.toolbox
+    API Reference
   </a>
 </li>
 
@@ -305,32 +329,33 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../pipeline/index.html">src.toolbox.pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../pipeline_manager/index.html">src.toolbox.pipeline_manager</a></li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="../../index.html">src.toolbox.steps</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../base_qc/index.html">src.toolbox.steps.base_qc</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../base_step/index.html">src.toolbox.steps.base_step</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../base_test/index.html">src.toolbox.steps.base_test</a></li>
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="../index.html">src.toolbox.steps.custom</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="../apply_qc/index.html">src.toolbox.steps.custom.apply_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../blank_step/index.html">src.toolbox.steps.custom.blank_step</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../derive_ctd/index.html">src.toolbox.steps.custom.derive_ctd</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../export/index.html">src.toolbox.steps.custom.export</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../find_profiles/index.html">src.toolbox.steps.custom.find_profiles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../find_profiles_beta/index.html">src.toolbox.steps.custom.find_profiles_beta</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../gen_data/index.html">src.toolbox.steps.custom.gen_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../interpolate_data/index.html">src.toolbox.steps.custom.interpolate_data</a></li>
 <li class="toctree-l3 current active"><a class="current reference internal" href="#">src.toolbox.steps.custom.load_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../profile_direction/index.html">src.toolbox.steps.custom.profile_direction</a></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../qc/index.html">src.toolbox.steps.custom.qc</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l4"><a class="reference internal" href="../qc/archive/index.html">src.toolbox.steps.custom.qc.archive</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../qc/blank_test/index.html">src.toolbox.steps.custom.qc.blank_test</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/blank_qc/index.html">src.toolbox.steps.custom.qc.blank_qc</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../qc/flag_full_profile/index.html">src.toolbox.steps.custom.qc.flag_full_profile</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../qc/impossible_date_test/index.html">src.toolbox.steps.custom.qc.impossible_date_test</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../qc/impossible_location_test/index.html">src.toolbox.steps.custom.qc.impossible_location_test</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../qc/impossible_speed_test/index.html">src.toolbox.steps.custom.qc.impossible_speed_test</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../qc/par_irregularity_test/index.html">src.toolbox.steps.custom.qc.par_irregularity_test</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../qc/position_on_land_test/index.html">src.toolbox.steps.custom.qc.position_on_land_test</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../qc/range_test/index.html">src.toolbox.steps.custom.qc.range_test</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../qc/range_test_gross/index.html">src.toolbox.steps.custom.qc.range_test_gross</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../qc/spike_test/index.html">src.toolbox.steps.custom.qc.spike_test</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../qc/stuck_value_test/index.html">src.toolbox.steps.custom.qc.stuck_value_test</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../qc/valid_profile_test/index.html">src.toolbox.steps.custom.qc.valid_profile_test</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/gross_range_qc/index.html">src.toolbox.steps.custom.qc.gross_range_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/impossible_date_qc/index.html">src.toolbox.steps.custom.qc.impossible_date_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/impossible_location_qc/index.html">src.toolbox.steps.custom.qc.impossible_location_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/impossible_range_qc/index.html">src.toolbox.steps.custom.qc.impossible_range_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/impossible_speed_qc/index.html">src.toolbox.steps.custom.qc.impossible_speed_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/par_irregularity_qc/index.html">src.toolbox.steps.custom.qc.par_irregularity_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/position_on_land_qc/index.html">src.toolbox.steps.custom.qc.position_on_land_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/spike_qc/index.html">src.toolbox.steps.custom.qc.spike_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/stuck_value_qc/index.html">src.toolbox.steps.custom.qc.stuck_value_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/valid_profile_qc/index.html">src.toolbox.steps.custom.qc.valid_profile_qc</a></li>
 </ul>
 </details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../variables/index.html">src.toolbox.steps.custom.variables</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -340,6 +365,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../variables/salinity/index.html">src.toolbox.steps.custom.variables.salinity</a></li>
 </ul>
 </details></li>
+<li class="toctree-l3"><a class="reference internal" href="../write_report/index.html">src.toolbox.steps.custom.write_report</a></li>
 </ul>
 </details></li>
 </ul>
@@ -351,6 +377,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/processing_utils/index.html">src.toolbox.utils.processing_utils</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/qc_handling/index.html">src.toolbox.utils.qc_handling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/time/index.html">src.toolbox.utils.time</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/valid_config_check/index.html">src.toolbox.utils.valid_config_check</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/validation/index.html">src.toolbox.utils.validation</a></li>
 </ul>
 </details></li>
@@ -422,13 +449,23 @@
                   
   <section id="module-src.toolbox.steps.custom.load_data">
 <span id="src-toolbox-steps-custom-load-data"></span><h1>src.toolbox.steps.custom.load_data<a class="headerlink" href="#module-src.toolbox.steps.custom.load_data" title="Link to this heading">#</a></h1>
-<p>Class definition for loading data steps.</p>
+<section id="attributes">
+<h2>Attributes<a class="headerlink" href="#attributes" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.load_data.MIN_YEAR_FILTER" title="src.toolbox.steps.custom.load_data.MIN_YEAR_FILTER"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MIN_YEAR_FILTER</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
 <section id="classes">
 <h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.load_data.LoadOG1" title="src.toolbox.steps.custom.load_data.LoadOG1"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LoadOG1</span></code></a></p></td>
-<td><p>Step for loading OG1 data.</p></td>
+<td><p>Initialises the LoadOG1 step.</p></td>
 </tr>
 </tbody>
 </table>
@@ -436,25 +473,66 @@
 </section>
 <section id="module-contents">
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">#</a></h2>
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.load_data.MIN_YEAR_FILTER">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.load_data.</span></span><span class="sig-name descname"><span class="pre">MIN_YEAR_FILTER</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'1990-01-01'</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/load_data.html#MIN_YEAR_FILTER"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.load_data.MIN_YEAR_FILTER" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.load_data.LoadOG1">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.load_data.</span></span><span class="sig-name descname"><span class="pre">LoadOG1</span></span><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/load_data.html#LoadOG1"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.load_data.LoadOG1" title="Link to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.load_data.</span></span><span class="sig-name descname"><span class="pre">LoadOG1</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filter_bad_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/load_data.html#LoadOG1"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.load_data.LoadOG1" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">toolbox.steps.base_step.BaseStep</span></code></p>
-<p>Step for loading OG1 data.</p>
-<p>Derived from Phyto-Phys Repo by Obsidian500</p>
-<dl class="simple">
-<dt>Available Parameters:</dt><dd><ul class="simple">
-<li><p>file_path: Path to the OG1 data file.</p></li>
-<li><p>add_meta: Boolean flag to indicate whether to add metadata.</p></li>
-<li><p>add_elapsed_time: Boolean flag to indicate whether to add elapsed time.</p></li>
-<li><p>add_dev_cols: Boolean flag to indicate whether to add development columns.</p></li>
-<li><p>diagnostics: Boolean flag to indicate whether to generate diagnostics.</p></li>
+<p>Initialises the LoadOG1 step.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filter_bad_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – If True (default), REMOVES all timestamps outside the expected time window.</p></li>
+<li><p><strong>data_start</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>np.datetime64</em><em>, </em><em>optional</em>) – The minimum valid timestamp for the data. If not provided, the filter defaults to the DEPLOYMENT_TIME found in the dataset, or 1990-01-01T00:00:00 if no deployment time is found.</p></li>
+<li><p><strong>data_end</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>np.datetime64</em><em>, </em><em>optional</em>) – The maximum valid timestamp for the data. If not provided, it defaults to the current system time when the pipeline is run.</p></li>
+<li><p><strong>configuration</strong> (<em>Example usage in a pipeline</em>)</p></li>
+<li><p><strong>steps</strong> – <ul>
+<li><p>name: Load OG1
+parameters:</p>
+<blockquote>
+<div><p>file_path: “/path/to/your/dataset.nc”
+filter_bad_time: false
+data_start: “2023-05-01T00:00:00”
+data_end: “2024-05-01T00:00:00”</p>
+</div></blockquote>
+</li>
+</ul>
+</p></li>
 </ul>
 </dd>
 </dl>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.load_data.LoadOG1.step_name">
 <span class="sig-name descname"><span class="pre">step_name</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Load</span> <span class="pre">OG1'</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/load_data.html#LoadOG1.step_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.load_data.LoadOG1.step_name" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.load_data.LoadOG1.required_variables">
+<span class="sig-name descname"><span class="pre">required_variables</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[]</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/load_data.html#LoadOG1.required_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.load_data.LoadOG1.required_variables" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.load_data.LoadOG1.provided_variables">
+<span class="sig-name descname"><span class="pre">provided_variables</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['TIME',</span> <span class="pre">'LATITUDE',</span> <span class="pre">'LONGITUDE',</span> <span class="pre">'PRES',</span> <span class="pre">'TEMP',</span> <span class="pre">'CNDC']</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/load_data.html#LoadOG1.provided_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.load_data.LoadOG1.provided_variables" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.load_data.LoadOG1.filter_bad_time">
+<span class="sig-name descname"><span class="pre">filter_bad_time</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/load_data.html#LoadOG1.filter_bad_time"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.load_data.LoadOG1.filter_bad_time" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.load_data.LoadOG1.data_start">
+<span class="sig-name descname"><span class="pre">data_start</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/load_data.html#LoadOG1.data_start"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.load_data.LoadOG1.data_start" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.load_data.LoadOG1.data_end">
+<span class="sig-name descname"><span class="pre">data_end</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/load_data.html#LoadOG1.data_end"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.load_data.LoadOG1.data_end" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -519,10 +597,17 @@
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#attributes">Attributes</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.load_data.MIN_YEAR_FILTER"><code class="docutils literal notranslate"><span class="pre">MIN_YEAR_FILTER</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.load_data.LoadOG1"><code class="docutils literal notranslate"><span class="pre">LoadOG1</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.load_data.LoadOG1.step_name"><code class="docutils literal notranslate"><span class="pre">LoadOG1.step_name</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.load_data.LoadOG1.required_variables"><code class="docutils literal notranslate"><span class="pre">LoadOG1.required_variables</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.load_data.LoadOG1.provided_variables"><code class="docutils literal notranslate"><span class="pre">LoadOG1.provided_variables</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.load_data.LoadOG1.filter_bad_time"><code class="docutils literal notranslate"><span class="pre">LoadOG1.filter_bad_time</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.load_data.LoadOG1.data_start"><code class="docutils literal notranslate"><span class="pre">LoadOG1.data_start</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.load_data.LoadOG1.data_end"><code class="docutils literal notranslate"><span class="pre">LoadOG1.data_end</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.load_data.LoadOG1.run"><code class="docutils literal notranslate"><span class="pre">LoadOG1.run()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.load_data.LoadOG1.generate_diagnostics"><code class="docutils literal notranslate"><span class="pre">LoadOG1.generate_diagnostics()</span></code></a></li>
 </ul>

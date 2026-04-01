@@ -1,0 +1,632 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../../../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>src.toolbox.steps.custom.qc.position_on_land_qc &#8212; pelagos-py 0.0.1 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../../../../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/sphinx-codeautolink.css?v=b2176991" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../../../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../../../../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../../../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../../../../../_static/copybutton.js?v=df1a032d"></script>
+    <script src="../../../../../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api/src/toolbox/steps/custom/qc/position_on_land_qc/index';</script>
+    <link rel="canonical" href="https://noc-obg-autonomy.github.io/pelagos-py/api/src/toolbox/steps/custom/qc/position_on_land_qc/index.html" />
+    <link rel="index" title="Index" href="../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../search.html" />
+    <link rel="next" title="src.toolbox.steps.custom.qc.spike_qc" href="../spike_qc/index.html" />
+    <link rel="prev" title="src.toolbox.steps.custom.qc.par_irregularity_qc" href="../par_irregularity_qc/index.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0.1" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../../../../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">pelagos-py 0.0.1 documentation</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../../steps.html">
+    Steps
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../../tests.html">
+    Tests
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../../contributing.html">
+    Contributing
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../../developer_guide.html">
+    Developer Guide
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" current active">
+  <a class="nav-link dropdown-item nav-internal" href="../../../../index.html">
+    API Reference
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../../steps.html">
+    Steps
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../../tests.html">
+    Tests
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../../contributing.html">
+    Contributing
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../../developer_guide.html">
+    Developer Guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../../../index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../../pipeline/index.html">src.toolbox.pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../pipeline_manager/index.html">src.toolbox.pipeline_manager</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../../../index.html">src.toolbox.steps</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../base_qc/index.html">src.toolbox.steps.base_qc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../base_step/index.html">src.toolbox.steps.base_step</a></li>
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="../../index.html">src.toolbox.steps.custom</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../../apply_qc/index.html">src.toolbox.steps.custom.apply_qc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../blank_step/index.html">src.toolbox.steps.custom.blank_step</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../derive_ctd/index.html">src.toolbox.steps.custom.derive_ctd</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../export/index.html">src.toolbox.steps.custom.export</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../find_profiles/index.html">src.toolbox.steps.custom.find_profiles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../find_profiles_beta/index.html">src.toolbox.steps.custom.find_profiles_beta</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../gen_data/index.html">src.toolbox.steps.custom.gen_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../interpolate_data/index.html">src.toolbox.steps.custom.interpolate_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../load_data/index.html">src.toolbox.steps.custom.load_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../profile_direction/index.html">src.toolbox.steps.custom.profile_direction</a></li>
+<li class="toctree-l3 current active has-children"><a class="reference internal" href="../index.html">src.toolbox.steps.custom.qc</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="../archive/index.html">src.toolbox.steps.custom.qc.archive</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../blank_qc/index.html">src.toolbox.steps.custom.qc.blank_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../flag_full_profile/index.html">src.toolbox.steps.custom.qc.flag_full_profile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../gross_range_qc/index.html">src.toolbox.steps.custom.qc.gross_range_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../impossible_date_qc/index.html">src.toolbox.steps.custom.qc.impossible_date_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../impossible_location_qc/index.html">src.toolbox.steps.custom.qc.impossible_location_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../impossible_range_qc/index.html">src.toolbox.steps.custom.qc.impossible_range_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../impossible_speed_qc/index.html">src.toolbox.steps.custom.qc.impossible_speed_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../par_irregularity_qc/index.html">src.toolbox.steps.custom.qc.par_irregularity_qc</a></li>
+<li class="toctree-l4 current active"><a class="current reference internal" href="#">src.toolbox.steps.custom.qc.position_on_land_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../spike_qc/index.html">src.toolbox.steps.custom.qc.spike_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../stuck_value_qc/index.html">src.toolbox.steps.custom.qc.stuck_value_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../valid_profile_qc/index.html">src.toolbox.steps.custom.qc.valid_profile_qc</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../variables/index.html">src.toolbox.steps.custom.variables</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../variables/bbp/index.html">src.toolbox.steps.custom.variables.bbp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../variables/chla/index.html">src.toolbox.steps.custom.variables.chla</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../variables/oxygen/index.html">src.toolbox.steps.custom.variables.oxygen</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../variables/salinity/index.html">src.toolbox.steps.custom.variables.salinity</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../write_report/index.html">src.toolbox.steps.custom.write_report</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../utils/index.html">src.toolbox.utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../utils/alignment/index.html">src.toolbox.utils.alignment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../utils/config_mirror/index.html">src.toolbox.utils.config_mirror</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../utils/diagnostics/index.html">src.toolbox.utils.diagnostics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../utils/processing_utils/index.html">src.toolbox.utils.processing_utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../utils/qc_handling/index.html">src.toolbox.utils.qc_handling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../utils/time/index.html">src.toolbox.utils.time</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../utils/valid_config_check/index.html">src.toolbox.utils.valid_config_check</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../utils/validation/index.html">src.toolbox.utils.validation</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../../../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../../../index.html" class="nav-link">src.toolbox</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../../index.html" class="nav-link">src.toolbox.steps</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">src.toolbox.steps.custom</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">src.toolbox.steps.custom.qc</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">src.toolbox.steps.custom.qc.position_on_land_qc</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-src.toolbox.steps.custom.qc.position_on_land_qc">
+<span id="src-toolbox-steps-custom-qc-position-on-land-qc"></span><h1>src.toolbox.steps.custom.qc.position_on_land_qc<a class="headerlink" href="#module-src.toolbox.steps.custom.qc.position_on_land_qc" title="Link to this heading">#</a></h1>
+<p>QC test that identifies glider positions not located on land and flags accordingly.</p>
+<section id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.qc.position_on_land_qc.position_on_land_qc" title="src.toolbox.steps.custom.qc.position_on_land_qc.position_on_land_qc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">position_on_land_qc</span></code></a></p></td>
+<td><p>Target Variable: LATITUDE, LONGITUDE</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.position_on_land_qc.position_on_land_qc">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.qc.position_on_land_qc.</span></span><span class="sig-name descname"><span class="pre">position_on_land_qc</span></span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/position_on_land_qc.html#position_on_land_qc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.position_on_land_qc.position_on_land_qc" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">toolbox.steps.base_qc.BaseQC</span></code></p>
+<p>Target Variable: LATITUDE, LONGITUDE
+Flag Number: 4 (bad data)
+Variables Flagged: LATITUDE, LONGITUDE
+Checks that the measurement location is not on land.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.position_on_land_qc.position_on_land_qc.qc_name">
+<span class="sig-name descname"><span class="pre">qc_name</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'position</span> <span class="pre">on</span> <span class="pre">land</span> <span class="pre">qc'</span></em><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/position_on_land_qc.html#position_on_land_qc.qc_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.position_on_land_qc.position_on_land_qc.qc_name" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.position_on_land_qc.position_on_land_qc.expected_parameters">
+<span class="sig-name descname"><span class="pre">expected_parameters</span></span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/position_on_land_qc.html#position_on_land_qc.expected_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.position_on_land_qc.position_on_land_qc.expected_parameters" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.position_on_land_qc.position_on_land_qc.required_variables">
+<span class="sig-name descname"><span class="pre">required_variables</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[]</span></em><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/position_on_land_qc.html#position_on_land_qc.required_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.position_on_land_qc.position_on_land_qc.required_variables" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.position_on_land_qc.position_on_land_qc.qc_outputs">
+<span class="sig-name descname"><span class="pre">qc_outputs</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['LATITUDE_QC',</span> <span class="pre">'LONGITUDE_QC']</span></em><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/position_on_land_qc.html#position_on_land_qc.qc_outputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.position_on_land_qc.position_on_land_qc.qc_outputs" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.position_on_land_qc.position_on_land_qc.return_qc">
+<span class="sig-name descname"><span class="pre">return_qc</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/position_on_land_qc.html#position_on_land_qc.return_qc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.position_on_land_qc.position_on_land_qc.return_qc" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.position_on_land_qc.position_on_land_qc.plot_diagnostics">
+<span class="sig-name descname"><span class="pre">plot_diagnostics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/position_on_land_qc.html#position_on_land_qc.plot_diagnostics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.position_on_land_qc.position_on_land_qc.plot_diagnostics" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../par_irregularity_qc/index.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">src.toolbox.steps.custom.qc.par_irregularity_qc</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../spike_qc/index.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">src.toolbox.steps.custom.qc.spike_qc</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.position_on_land_qc.position_on_land_qc"><code class="docutils literal notranslate"><span class="pre">position_on_land_qc</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.position_on_land_qc.position_on_land_qc.qc_name"><code class="docutils literal notranslate"><span class="pre">position_on_land_qc.qc_name</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.position_on_land_qc.position_on_land_qc.expected_parameters"><code class="docutils literal notranslate"><span class="pre">position_on_land_qc.expected_parameters</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.position_on_land_qc.position_on_land_qc.required_variables"><code class="docutils literal notranslate"><span class="pre">position_on_land_qc.required_variables</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.position_on_land_qc.position_on_land_qc.qc_outputs"><code class="docutils literal notranslate"><span class="pre">position_on_land_qc.qc_outputs</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.position_on_land_qc.position_on_land_qc.return_qc"><code class="docutils literal notranslate"><span class="pre">position_on_land_qc.return_qc()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.position_on_land_qc.position_on_land_qc.plot_diagnostics"><code class="docutils literal notranslate"><span class="pre">position_on_land_qc.plot_diagnostics()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, National Oceanography Centre.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

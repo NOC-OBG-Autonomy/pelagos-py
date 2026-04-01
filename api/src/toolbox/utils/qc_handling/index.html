@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>src.toolbox.utils.qc_handling &#8212; NOCAT 0.0.0 documentation</title>
+    <title>src.toolbox.utils.qc_handling &#8212; pelagos-py 0.0.1 documentation</title>
   
   
   
@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../../../_static/documentation_options.js?v=7026087e"></script>
+    <script src="../../../../../_static/documentation_options.js?v=d45e8c67"></script>
     <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -50,14 +50,14 @@
     <script src="../../../../../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api/src/toolbox/utils/qc_handling/index';</script>
-    <link rel="canonical" href="https://noc-obg-autonomy.github.io/toolbox/api/src/toolbox/utils/qc_handling/index.html" />
+    <link rel="canonical" href="https://noc-obg-autonomy.github.io/pelagos-py/api/src/toolbox/utils/qc_handling/index.html" />
     <link rel="index" title="Index" href="../../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../../search.html" />
     <link rel="next" title="src.toolbox.utils.time" href="../time/index.html" />
     <link rel="prev" title="src.toolbox.utils.processing_utils" href="../processing_utils/index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.0" />
+  <meta name="docsearch:version" content="0.0.1" />
   </head>
   
   
@@ -119,7 +119,7 @@
   
   
   
-    <p class="title logo__title">NOCAT 0.0.0 documentation</p>
+    <p class="title logo__title">pelagos-py 0.0.1 documentation</p>
   
 </a></div>
     
@@ -133,6 +133,13 @@
 <nav>
   <ul class="bd-navbar-elements navbar-nav">
     
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../steps.html">
     Steps
@@ -148,25 +155,35 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../../../../getting_started.html">
-    Getting Started
-  </a>
-</li>
-
-
-<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../contributing.html">
     Contributing
   </a>
 </li>
 
 
-<li class="nav-item current active">
-  <a class="nav-link nav-internal" href="../../index.html">
-    src.toolbox
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../developer_guide.html">
+    Developer Guide
   </a>
 </li>
 
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" current active">
+  <a class="nav-link dropdown-item nav-internal" href="../../index.html">
+    API Reference
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
   </ul>
 </nav></div>
       
@@ -241,6 +258,13 @@
   <ul class="bd-navbar-elements navbar-nav">
     
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../steps.html">
     Steps
   </a>
@@ -255,22 +279,22 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../../../../getting_started.html">
-    Getting Started
-  </a>
-</li>
-
-
-<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../contributing.html">
     Contributing
   </a>
 </li>
 
 
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../developer_guide.html">
+    Developer Guide
+  </a>
+</li>
+
+
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="../../index.html">
-    src.toolbox
+    API Reference
   </a>
 </li>
 
@@ -305,32 +329,33 @@
 <li class="toctree-l1"><a class="reference internal" href="../../pipeline/index.html">src.toolbox.pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../pipeline_manager/index.html">src.toolbox.pipeline_manager</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../steps/index.html">src.toolbox.steps</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../steps/base_qc/index.html">src.toolbox.steps.base_qc</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../steps/base_step/index.html">src.toolbox.steps.base_step</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../steps/base_test/index.html">src.toolbox.steps.base_test</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../steps/custom/index.html">src.toolbox.steps.custom</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../steps/custom/apply_qc/index.html">src.toolbox.steps.custom.apply_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../steps/custom/blank_step/index.html">src.toolbox.steps.custom.blank_step</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../steps/custom/derive_ctd/index.html">src.toolbox.steps.custom.derive_ctd</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../steps/custom/export/index.html">src.toolbox.steps.custom.export</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../steps/custom/find_profiles/index.html">src.toolbox.steps.custom.find_profiles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../steps/custom/find_profiles_beta/index.html">src.toolbox.steps.custom.find_profiles_beta</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../steps/custom/gen_data/index.html">src.toolbox.steps.custom.gen_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../steps/custom/interpolate_data/index.html">src.toolbox.steps.custom.interpolate_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../steps/custom/load_data/index.html">src.toolbox.steps.custom.load_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../steps/custom/profile_direction/index.html">src.toolbox.steps.custom.profile_direction</a></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../../steps/custom/qc/index.html">src.toolbox.steps.custom.qc</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/archive/index.html">src.toolbox.steps.custom.qc.archive</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/blank_test/index.html">src.toolbox.steps.custom.qc.blank_test</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/blank_qc/index.html">src.toolbox.steps.custom.qc.blank_qc</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/flag_full_profile/index.html">src.toolbox.steps.custom.qc.flag_full_profile</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/impossible_date_test/index.html">src.toolbox.steps.custom.qc.impossible_date_test</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/impossible_location_test/index.html">src.toolbox.steps.custom.qc.impossible_location_test</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/impossible_speed_test/index.html">src.toolbox.steps.custom.qc.impossible_speed_test</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/par_irregularity_test/index.html">src.toolbox.steps.custom.qc.par_irregularity_test</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/position_on_land_test/index.html">src.toolbox.steps.custom.qc.position_on_land_test</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/range_test/index.html">src.toolbox.steps.custom.qc.range_test</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/range_test_gross/index.html">src.toolbox.steps.custom.qc.range_test_gross</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/spike_test/index.html">src.toolbox.steps.custom.qc.spike_test</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/stuck_value_test/index.html">src.toolbox.steps.custom.qc.stuck_value_test</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/valid_profile_test/index.html">src.toolbox.steps.custom.qc.valid_profile_test</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/gross_range_qc/index.html">src.toolbox.steps.custom.qc.gross_range_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/impossible_date_qc/index.html">src.toolbox.steps.custom.qc.impossible_date_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/impossible_location_qc/index.html">src.toolbox.steps.custom.qc.impossible_location_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/impossible_range_qc/index.html">src.toolbox.steps.custom.qc.impossible_range_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/impossible_speed_qc/index.html">src.toolbox.steps.custom.qc.impossible_speed_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/par_irregularity_qc/index.html">src.toolbox.steps.custom.qc.par_irregularity_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/position_on_land_qc/index.html">src.toolbox.steps.custom.qc.position_on_land_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/spike_qc/index.html">src.toolbox.steps.custom.qc.spike_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/stuck_value_qc/index.html">src.toolbox.steps.custom.qc.stuck_value_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../steps/custom/qc/valid_profile_qc/index.html">src.toolbox.steps.custom.qc.valid_profile_qc</a></li>
 </ul>
 </details></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../../steps/custom/variables/index.html">src.toolbox.steps.custom.variables</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -340,6 +365,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../steps/custom/variables/salinity/index.html">src.toolbox.steps.custom.variables.salinity</a></li>
 </ul>
 </details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../steps/custom/write_report/index.html">src.toolbox.steps.custom.write_report</a></li>
 </ul>
 </details></li>
 </ul>
@@ -351,6 +377,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../processing_utils/index.html">src.toolbox.utils.processing_utils</a></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">src.toolbox.utils.qc_handling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../time/index.html">src.toolbox.utils.time</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../valid_config_check/index.html">src.toolbox.utils.valid_config_check</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../validation/index.html">src.toolbox.utils.validation</a></li>
 </ul>
 </details></li>

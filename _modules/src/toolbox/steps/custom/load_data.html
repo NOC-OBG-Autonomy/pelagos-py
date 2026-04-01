@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>src.toolbox.steps.custom.load_data &#8212; NOCAT 0.0.0 documentation</title>
+    <title>src.toolbox.steps.custom.load_data &#8212; pelagos-py 0.0.1 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../../../_static/documentation_options.js?v=7026087e"></script>
+    <script src="../../../../../_static/documentation_options.js?v=d45e8c67"></script>
     <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -49,12 +49,12 @@
     <script src="../../../../../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/src/toolbox/steps/custom/load_data';</script>
-    <link rel="canonical" href="https://noc-obg-autonomy.github.io/toolbox/_modules/src/toolbox/steps/custom/load_data.html" />
+    <link rel="canonical" href="https://noc-obg-autonomy.github.io/pelagos-py/_modules/src/toolbox/steps/custom/load_data.html" />
     <link rel="index" title="Index" href="../../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.0" />
+  <meta name="docsearch:version" content="0.0.1" />
   </head>
   
   
@@ -116,7 +116,7 @@
   
   
   
-    <p class="title logo__title">NOCAT 0.0.0 documentation</p>
+    <p class="title logo__title">pelagos-py 0.0.1 documentation</p>
   
 </a></div>
     
@@ -130,6 +130,13 @@
 <nav>
   <ul class="bd-navbar-elements navbar-nav">
     
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../steps.html">
     Steps
@@ -145,13 +152,6 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../../../../getting_started.html">
-    Getting Started
-  </a>
-</li>
-
-
-<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../contributing.html">
     Contributing
   </a>
@@ -159,11 +159,28 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../../../../api/src/toolbox/index.html">
-    src.toolbox
+  <a class="nav-link nav-internal" href="../../../../../developer_guide.html">
+    Developer Guide
   </a>
 </li>
 
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../../../../api/src/toolbox/index.html">
+    API Reference
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
   </ul>
 </nav></div>
       
@@ -236,6 +253,13 @@
   <ul class="bd-navbar-elements navbar-nav">
     
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../steps.html">
     Steps
   </a>
@@ -250,13 +274,6 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../../../../getting_started.html">
-    Getting Started
-  </a>
-</li>
-
-
-<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../contributing.html">
     Contributing
   </a>
@@ -264,8 +281,15 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../developer_guide.html">
+    Developer Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../api/src/toolbox/index.html">
-    src.toolbox
+    API Reference
   </a>
 </li>
 
@@ -369,17 +393,17 @@
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
 
-<span class="sd">&quot;&quot;&quot;Class definition for loading data steps.&quot;&quot;&quot;</span>
-
-<span class="c1">#### Mandatory imports ####</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">toolbox.utils.diagnostics</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">diag</span>
 
-<span class="c1">#### Custom imports ####</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
+<div class="viewcode-block" id="MIN_YEAR_FILTER">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/load_data/index.html#src.toolbox.steps.custom.load_data.MIN_YEAR_FILTER">[docs]</a>
+<span class="n">MIN_YEAR_FILTER</span> <span class="o">=</span> <span class="s2">&quot;1990-01-01&quot;</span></div>
+
 
 
 <span class="nd">@register_step</span>
@@ -387,46 +411,119 @@
 <a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/load_data/index.html#src.toolbox.steps.custom.load_data.LoadOG1">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">LoadOG1</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Step for loading OG1 data.</span>
+<span class="sd">    Initialises the LoadOG1 step.</span>
 
-<span class="sd">    Derived from Phyto-Phys Repo by Obsidian500</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    filter_bad_time : bool, optional</span>
+<span class="sd">        If True (default), REMOVES all timestamps outside the expected time window.</span>
+<span class="sd">    data_start : str or np.datetime64, optional</span>
+<span class="sd">        The minimum valid timestamp for the data. If not provided, the filter defaults to the DEPLOYMENT_TIME found in the dataset, or 1990-01-01T00:00:00 if no deployment time is found.</span>
+<span class="sd">    data_end : str or np.datetime64, optional</span>
+<span class="sd">        The maximum valid timestamp for the data. If not provided, it defaults to the current system time when the pipeline is run.</span>
 
-<span class="sd">    Available Parameters:</span>
-<span class="sd">        - file_path: Path to the OG1 data file.</span>
-<span class="sd">        - add_meta: Boolean flag to indicate whether to add metadata.</span>
-<span class="sd">        - add_elapsed_time: Boolean flag to indicate whether to add elapsed time.</span>
-<span class="sd">        - add_dev_cols: Boolean flag to indicate whether to add development columns.</span>
-<span class="sd">        - diagnostics: Boolean flag to indicate whether to generate diagnostics.</span>
+<span class="sd">    Example usage in a pipeline configuration:</span>
+<span class="sd">    steps:</span>
+<span class="sd">      - name: Load OG1</span>
+<span class="sd">        parameters:</span>
+<span class="sd">          file_path: &quot;/path/to/your/dataset.nc&quot;</span>
+<span class="sd">          filter_bad_time: false</span>
+<span class="sd">          data_start: &quot;2023-05-01T00:00:00&quot;</span>
+<span class="sd">          data_end: &quot;2024-05-01T00:00:00&quot;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="LoadOG1.step_name">
 <a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/load_data/index.html#src.toolbox.steps.custom.load_data.LoadOG1.step_name">[docs]</a>
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Load OG1&quot;</span></div>
 
+<div class="viewcode-block" id="LoadOG1.required_variables">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/load_data/index.html#src.toolbox.steps.custom.load_data.LoadOG1.required_variables">[docs]</a>
+    <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[]</span></div>
+
+<div class="viewcode-block" id="LoadOG1.provided_variables">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/load_data/index.html#src.toolbox.steps.custom.load_data.LoadOG1.provided_variables">[docs]</a>
+    <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">,</span> <span class="s2">&quot;LATITUDE&quot;</span><span class="p">,</span> <span class="s2">&quot;LONGITUDE&quot;</span><span class="p">,</span> <span class="s2">&quot;PRES&quot;</span><span class="p">,</span> <span class="s2">&quot;TEMP&quot;</span><span class="p">,</span> <span class="s2">&quot;CNDC&quot;</span><span class="p">]</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">filter_bad_time</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">data_start</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">data_end</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<div class="viewcode-block" id="LoadOG1.filter_bad_time">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/load_data/index.html#src.toolbox.steps.custom.load_data.LoadOG1.filter_bad_time">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filter_bad_time</span> <span class="o">=</span> <span class="n">filter_bad_time</span></div>
+
+<div class="viewcode-block" id="LoadOG1.data_start">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/load_data/index.html#src.toolbox.steps.custom.load_data.LoadOG1.data_start">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_start</span> <span class="o">=</span> <span class="n">data_start</span></div>
+
+<div class="viewcode-block" id="LoadOG1.data_end">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/load_data/index.html#src.toolbox.steps.custom.load_data.LoadOG1.data_end">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_end</span> <span class="o">=</span> <span class="n">data_end</span></div>
+
 
 <div class="viewcode-block" id="LoadOG1.run">
 <a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/load_data/index.html#src.toolbox.steps.custom.load_data.LoadOG1.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-
         <span class="c1"># load data from xarray</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">open_dataset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loaded data from </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-        <span class="c1"># Check that the &quot;TIME&quot; variable is monotonic and nanless - then make it a coordinate</span>
-        <span class="k">if</span> <span class="s2">&quot;TIME&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">coords</span><span class="p">:</span>  <span class="c1">#   Temporary fix for BODC OG1 files where TIME is a coord</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Loading dataset to RAM...&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter_bad_time</span> <span class="ow">and</span> <span class="p">(</span>
+            <span class="s2">&quot;TIME&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">variables</span> <span class="ow">or</span> <span class="s2">&quot;TIME&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">coords</span>
+        <span class="p">):</span>
+            <span class="n">orig_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">])</span>
+            <span class="n">time_array</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">]</span>
+
+            <span class="n">start_val</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_start</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_start</span>
+                <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span><span class="p">(</span><span class="n">MIN_YEAR_FILTER</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">end_val</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_end</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_end</span>
+                <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="o">.</span><span class="n">now</span><span class="p">())</span>
+            <span class="p">)</span>
+
+            <span class="n">valid_mask</span> <span class="o">=</span> <span class="n">time_array</span> <span class="o">&gt;=</span> <span class="n">start_val</span>
+            <span class="n">valid_mask</span> <span class="o">&amp;=</span> <span class="n">time_array</span> <span class="o">&lt;=</span> <span class="n">end_val</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_start</span> <span class="ow">and</span> <span class="s2">&quot;DEPLOYMENT_TIME&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
+                <span class="n">deploy_time</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;DEPLOYMENT_TIME&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">deploy_time</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">):</span>
+                    <span class="n">deploy_time</span> <span class="o">=</span> <span class="n">deploy_time</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">valid_mask</span> <span class="o">&amp;=</span> <span class="n">time_array</span> <span class="o">&gt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span><span class="p">(</span><span class="n">deploy_time</span><span class="p">)</span>
+
+            <span class="n">time_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">time_dim</span><span class="p">:</span> <span class="n">valid_mask</span><span class="o">.</span><span class="n">values</span><span class="p">})</span>
+            <span class="n">new_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="n">new_len</span> <span class="o">&lt;</span> <span class="n">orig_len</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Removed </span><span class="si">{</span><span class="n">orig_len</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">new_len</span><span class="si">}</span><span class="s2"> records containing invalid or pre-deployment timestamps.&quot;</span>
+                <span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;TIME&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">coords</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">reset_coords</span><span class="p">(</span><span class="s2">&quot;TIME&quot;</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">reset_coords</span><span class="p">(</span><span class="s2">&quot;LATITUDE&quot;</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">reset_coords</span><span class="p">(</span><span class="s2">&quot;LONGITUDE&quot;</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
         <span class="k">if</span> <span class="s2">&quot;TIME&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&#39;TIME&#39; could not be found in the dataset. Pipelines cannot be run without this variable.</span><span class="se">\n</span><span class="s2">&quot;</span>
                 <span class="s2">&quot;If TIME is listed under another name, please rename it to conform to the OG1 format.&quot;</span>
             <span class="p">)</span>
+
         <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">])):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&#39;TIME&#39; has nan values. Pipelines cannot be run without a continuous monotonic time coordinate.</span><span class="se">\n</span><span class="s2">&quot;</span>
                 <span class="s2">&quot;Please remove these values (and their concurrent measurements) from the input.&quot;</span>
             <span class="p">)</span>
+
         <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span>
                 <span class="s2">&quot;&#39;TIME&#39; is not monotonically increasing. This may cause fatal issues in processing. &quot;</span>
@@ -435,20 +532,18 @@
 
         <span class="c1"># TODO: Remove QC column resetting when BODC has properly implemented QC outputs</span>
         <span class="c1"># Reset all data variable flags. Set unchecked data flags to 0 and missing data flags to 9</span>
-        <span class="n">cols_to_qc</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">var</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span>
-            <span class="k">if</span> <span class="n">var</span><span class="o">.</span><span class="n">isupper</span><span class="p">()</span> <span class="ow">and</span> <span class="p">(</span><span class="n">var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">dims</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="s2">&quot;_QC&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">var</span><span class="p">)</span>
-        <span class="p">]</span>
-        <span class="n">data_subset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">cols_to_qc</span><span class="p">]</span>
-        <span class="n">masks</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">data_subset</span><span class="o">.</span><span class="n">isnull</span><span class="p">(),</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-        <span class="n">masks</span> <span class="o">=</span> <span class="n">masks</span><span class="o">.</span><span class="n">rename</span><span class="p">({</span><span class="n">var</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">cols_to_qc</span><span class="p">})</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">masks</span><span class="p">)</span>
+        <span class="c1"># cols_to_qc = [</span>
+        <span class="c1">#     var for var in self.data.data_vars</span>
+        <span class="c1">#     if var.isupper() and (var not in self.data.dims) and (&quot;_QC&quot; not in var)</span>
+        <span class="c1"># ]</span>
+        <span class="c1"># data_subset = self.data[cols_to_qc]</span>
+        <span class="c1"># masks = xr.where(data_subset.isnull(), 9, 0).astype(int)</span>
+        <span class="c1"># masks = masks.rename({var: f&quot;{var}_QC&quot; for var in cols_to_qc})</span>
+        <span class="c1"># self.data.update(masks)</span>
 
-        <span class="c1"># Generate diagnostics if enabled</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
-        <span class="c1"># add data to context</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
 
@@ -456,8 +551,7 @@
 <div class="viewcode-block" id="LoadOG1.generate_diagnostics">
 <a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/load_data/index.html#src.toolbox.steps.custom.load_data.LoadOG1.generate_diagnostics">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Generating diagnostics...&quot;</span><span class="p">)</span>
-        <span class="c1"># self.log summary stats</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Generating diagnostics...&quot;</span><span class="p">)</span>
         <span class="n">diag</span><span class="o">.</span><span class="n">generate_info</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span></div>
 </div>
 

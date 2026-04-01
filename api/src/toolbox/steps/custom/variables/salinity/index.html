@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>src.toolbox.steps.custom.variables.salinity &#8212; NOCAT 0.0.0 documentation</title>
+    <title>src.toolbox.steps.custom.variables.salinity &#8212; pelagos-py 0.0.1 documentation</title>
   
   
   
@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../../../../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../../../../../_static/documentation_options.js?v=7026087e"></script>
+    <script src="../../../../../../../_static/documentation_options.js?v=d45e8c67"></script>
     <script src="../../../../../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -50,14 +50,14 @@
     <script src="../../../../../../../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api/src/toolbox/steps/custom/variables/salinity/index';</script>
-    <link rel="canonical" href="https://noc-obg-autonomy.github.io/toolbox/api/src/toolbox/steps/custom/variables/salinity/index.html" />
+    <link rel="canonical" href="https://noc-obg-autonomy.github.io/pelagos-py/api/src/toolbox/steps/custom/variables/salinity/index.html" />
     <link rel="index" title="Index" href="../../../../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../../../../search.html" />
-    <link rel="next" title="src.toolbox.utils" href="../../../../utils/index.html" />
+    <link rel="next" title="src.toolbox.steps.custom.write_report" href="../../write_report/index.html" />
     <link rel="prev" title="src.toolbox.steps.custom.variables.oxygen" href="../oxygen/index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.0" />
+  <meta name="docsearch:version" content="0.0.1" />
   </head>
   
   
@@ -119,7 +119,7 @@
   
   
   
-    <p class="title logo__title">NOCAT 0.0.0 documentation</p>
+    <p class="title logo__title">pelagos-py 0.0.1 documentation</p>
   
 </a></div>
     
@@ -133,6 +133,13 @@
 <nav>
   <ul class="bd-navbar-elements navbar-nav">
     
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../../../steps.html">
     Steps
@@ -148,25 +155,35 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../../../../../../getting_started.html">
-    Getting Started
-  </a>
-</li>
-
-
-<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../../../contributing.html">
     Contributing
   </a>
 </li>
 
 
-<li class="nav-item current active">
-  <a class="nav-link nav-internal" href="../../../../index.html">
-    src.toolbox
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../../developer_guide.html">
+    Developer Guide
   </a>
 </li>
 
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" current active">
+  <a class="nav-link dropdown-item nav-internal" href="../../../../index.html">
+    API Reference
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
   </ul>
 </nav></div>
       
@@ -241,6 +258,13 @@
   <ul class="bd-navbar-elements navbar-nav">
     
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../../../steps.html">
     Steps
   </a>
@@ -255,22 +279,22 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../../../../../../getting_started.html">
-    Getting Started
-  </a>
-</li>
-
-
-<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../../../contributing.html">
     Contributing
   </a>
 </li>
 
 
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../../developer_guide.html">
+    Developer Guide
+  </a>
+</li>
+
+
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="../../../../index.html">
-    src.toolbox
+    API Reference
   </a>
 </li>
 
@@ -305,32 +329,33 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../../pipeline/index.html">src.toolbox.pipeline</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../pipeline_manager/index.html">src.toolbox.pipeline_manager</a></li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="../../../index.html">src.toolbox.steps</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../base_qc/index.html">src.toolbox.steps.base_qc</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../base_step/index.html">src.toolbox.steps.base_step</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../base_test/index.html">src.toolbox.steps.base_test</a></li>
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="../../index.html">src.toolbox.steps.custom</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="../../apply_qc/index.html">src.toolbox.steps.custom.apply_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../blank_step/index.html">src.toolbox.steps.custom.blank_step</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../derive_ctd/index.html">src.toolbox.steps.custom.derive_ctd</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../export/index.html">src.toolbox.steps.custom.export</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../find_profiles/index.html">src.toolbox.steps.custom.find_profiles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../find_profiles_beta/index.html">src.toolbox.steps.custom.find_profiles_beta</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../gen_data/index.html">src.toolbox.steps.custom.gen_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../interpolate_data/index.html">src.toolbox.steps.custom.interpolate_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../load_data/index.html">src.toolbox.steps.custom.load_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../profile_direction/index.html">src.toolbox.steps.custom.profile_direction</a></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="../../qc/index.html">src.toolbox.steps.custom.qc</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../qc/archive/index.html">src.toolbox.steps.custom.qc.archive</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../qc/blank_test/index.html">src.toolbox.steps.custom.qc.blank_test</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/blank_qc/index.html">src.toolbox.steps.custom.qc.blank_qc</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../qc/flag_full_profile/index.html">src.toolbox.steps.custom.qc.flag_full_profile</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../qc/impossible_date_test/index.html">src.toolbox.steps.custom.qc.impossible_date_test</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../qc/impossible_location_test/index.html">src.toolbox.steps.custom.qc.impossible_location_test</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../qc/impossible_speed_test/index.html">src.toolbox.steps.custom.qc.impossible_speed_test</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../qc/par_irregularity_test/index.html">src.toolbox.steps.custom.qc.par_irregularity_test</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../qc/position_on_land_test/index.html">src.toolbox.steps.custom.qc.position_on_land_test</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../qc/range_test/index.html">src.toolbox.steps.custom.qc.range_test</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../qc/range_test_gross/index.html">src.toolbox.steps.custom.qc.range_test_gross</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../qc/spike_test/index.html">src.toolbox.steps.custom.qc.spike_test</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../qc/stuck_value_test/index.html">src.toolbox.steps.custom.qc.stuck_value_test</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../qc/valid_profile_test/index.html">src.toolbox.steps.custom.qc.valid_profile_test</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/gross_range_qc/index.html">src.toolbox.steps.custom.qc.gross_range_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/impossible_date_qc/index.html">src.toolbox.steps.custom.qc.impossible_date_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/impossible_location_qc/index.html">src.toolbox.steps.custom.qc.impossible_location_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/impossible_range_qc/index.html">src.toolbox.steps.custom.qc.impossible_range_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/impossible_speed_qc/index.html">src.toolbox.steps.custom.qc.impossible_speed_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/par_irregularity_qc/index.html">src.toolbox.steps.custom.qc.par_irregularity_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/position_on_land_qc/index.html">src.toolbox.steps.custom.qc.position_on_land_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/spike_qc/index.html">src.toolbox.steps.custom.qc.spike_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/stuck_value_qc/index.html">src.toolbox.steps.custom.qc.stuck_value_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/valid_profile_qc/index.html">src.toolbox.steps.custom.qc.valid_profile_qc</a></li>
 </ul>
 </details></li>
 <li class="toctree-l3 current active has-children"><a class="reference internal" href="../index.html">src.toolbox.steps.custom.variables</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
@@ -340,6 +365,7 @@
 <li class="toctree-l4 current active"><a class="current reference internal" href="#">src.toolbox.steps.custom.variables.salinity</a></li>
 </ul>
 </details></li>
+<li class="toctree-l3"><a class="reference internal" href="../../write_report/index.html">src.toolbox.steps.custom.write_report</a></li>
 </ul>
 </details></li>
 </ul>
@@ -351,6 +377,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../../utils/processing_utils/index.html">src.toolbox.utils.processing_utils</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../utils/qc_handling/index.html">src.toolbox.utils.qc_handling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../utils/time/index.html">src.toolbox.utils.time</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../utils/valid_config_check/index.html">src.toolbox.utils.valid_config_check</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../utils/validation/index.html">src.toolbox.utils.validation</a></li>
 </ul>
 </details></li>
@@ -461,32 +488,7 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.variables.salinity.compute_optimal_lag">
 <span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.variables.salinity.</span></span><span class="sig-name descname"><span class="pre">compute_optimal_lag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_window_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_col</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/variables/salinity.html#compute_optimal_lag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.variables.salinity.compute_optimal_lag" title="Link to this definition">#</a></dt>
-<dd><p>Calculate the optimal conductivity time lag relative to temperature to reduce salinity spikes for each glider profile.
-Mimimize the standard deviation of the difference between a lagged CNDC and a high-pass filtered CNDC.
-The optimal lag is returned. The lag is chosen from -2 to 2s every 0.1s.
-This correction should reduce salinity spikes that result from the misalignment between conductivity and temperature sensors and from the difference in sensor response times.
-This correction is described in Woo (2019) but the mimimization is done between salinity and high-pass filtered salinity (as done by RBR, <a class="reference external" href="https://bitbucket.org/rbr/pyrsktools/src/master/pyrsktools">https://bitbucket.org/rbr/pyrsktools/src/master/pyrsktools</a>) instead of comparing downcast vs upcast.</p>
-<p>Woo, L.M. (2019). Delayed Mode QA/QC Best Practice Manual Version 2.0. Integrated Marine Observing System. DOI: 10.26198/5c997b5fdc9bd (<a class="reference external" href="http://dx.doi.org/">http://dx.doi.org/</a> 10.26198/5c997b5fdc9bd).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>self.tsr</strong> (<em>xarray.Dataset with raw CTD dataset for one single profile</em><em>, </em><em>which should contain:</em>) – <ul>
-<li><p>TIME_CTD, sci_ctd41cp_timestamp, [numpy.datetime64]</p></li>
-<li><p>PRES: pressure [dbar]</p></li>
-<li><p>CNDC: conductivity [S/m]</p></li>
-<li><p>TEMP: in-situ temperature [de C]</p></li>
-</ul>
-</p></li>
-<li><p><strong>windowLength</strong> (<em>Window length over which the high-pass filter</em><em> of </em><em>conductivity is applied</em><em>, </em><em>21 by default.</em>)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>self.tsr</strong></p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>with lags.</p>
-</dd>
-</dl>
+<dd><p>Calculate the optimal conductivity time lag relative to temperature to reduce salinity spikes for each glider profile.</p>
 </dd></dl>
 
 <dl class="py class">
@@ -498,77 +500,36 @@ This correction is described in Woo (2019) but the mimimization is done between 
 <span class="sig-name descname"><span class="pre">step_name</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Salinity</span> <span class="pre">Adjustment'</span></em><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/variables/salinity.html#AdjustSalinity.step_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.step_name" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.variables.salinity.AdjustSalinity.required_variables">
+<span class="sig-name descname"><span class="pre">required_variables</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['TIME',</span> <span class="pre">'PROFILE_NUMBER',</span> <span class="pre">'CNDC',</span> <span class="pre">'TEMP',</span> <span class="pre">'PRES']</span></em><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/variables/salinity.html#AdjustSalinity.required_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.required_variables" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.variables.salinity.AdjustSalinity.provided_variables">
+<span class="sig-name descname"><span class="pre">provided_variables</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[]</span></em><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/variables/salinity.html#AdjustSalinity.provided_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.provided_variables" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.variables.salinity.AdjustSalinity.run">
 <span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/variables/salinity.html#AdjustSalinity.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.run" title="Link to this definition">#</a></dt>
-<dd><p>Apply the thermal-lag correction for Salinity presented in Morrison et al 1994.
-The temperature is estimated inside the conductivity cell to estimate Salinity.
-This is based on eq.5 of Morrison et al. (1994), which doesn’t require to know the sensitivity of temperature to conductivity (eq.2 of Morrison et al. 1994).
-No attempt is done yet to minimize the coefficients alpha/tau in T/S space, as in Morrison et al. (1994) or Garau et al. (2011).
-The fixed coefficients (alpha and tau) presented in Morrison et al. (1994) are used.
-These coefficients should be valid for pumped SeaBird CTsail as described in Woo (2019) by using their flow rate in the conductivity cell.
-This function should further be adapted to unpumped CTD by taking into account the glider velocity through the water based on the pitch angle or a hydrodynamic flight model.</p>
-<p>Woo, L.M. (2019). Delayed Mode QA/QC Best Practice Manual Version 2.0. Integrated Marine Observing System. DOI: 10.26198/5c997b5fdc9bd (<a class="reference external" href="http://dx.doi.org/10.26198/5c997b5fdc9bd">http://dx.doi.org/10.26198/5c997b5fdc9bd</a>).</p>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.variables.salinity.AdjustSalinity.correct_ct_lag">
+<span class="sig-name descname"><span class="pre">correct_ct_lag</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/variables/salinity.html#AdjustSalinity.correct_ct_lag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.correct_ct_lag" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.variables.salinity.AdjustSalinity.correct_thermal_lag">
+<span class="sig-name descname"><span class="pre">correct_thermal_lag</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/variables/salinity.html#AdjustSalinity.correct_thermal_lag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.correct_thermal_lag" title="Link to this definition">#</a></dt>
+<dd><p>Applies thermal mass correction independently to the downcast, transect, and upcast.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.variables.salinity.AdjustSalinity.generate_diagnostics">
 <span class="sig-name descname"><span class="pre">generate_diagnostics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/variables/salinity.html#AdjustSalinity.generate_diagnostics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.generate_diagnostics" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="src.toolbox.steps.custom.variables.salinity.AdjustSalinity.correct_ct_lag">
-<span class="sig-name descname"><span class="pre">correct_ct_lag</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/variables/salinity.html#AdjustSalinity.correct_ct_lag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.correct_ct_lag" title="Link to this definition">#</a></dt>
-<dd><p>For the full deployment, calculate the optimal conductivity time lag relative to temperature to reduce salinity spikes for each glider profile.
-If more than 300 profiles are present, the optimal lag is estimated every 10 profiles.
-Display the optimal conductivity time lag calculated for each profile, estimate the median of this lag, and apply this median lag to corrected variables (CNDC_ADJ/PSAL_ADJ).
-This correction should reduce salinity spikes that result from the misalignment between conductivity and temperature sensors and from the difference in sensor response times.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>self.tsr</strong> (<em>xarray.Dataset with raw CTD dataset</em><em>, </em><em>which should contain:</em>) – <ul>
-<li><p>PROFILE_NUMBER</p></li>
-<li><p>TIME_CTD, sci_ctd41cp_timestamp, [numpy.datetime64]</p></li>
-<li><p>PRES: pressure [dbar]</p></li>
-<li><p>CNDC: conductivity [mS/cm]</p></li>
-<li><p>TEMP: in-situ temperature [de C]</p></li>
-</ul>
-</p></li>
-<li><p><strong>windowLength</strong> (<em>Window length over which the high-pass filter</em><em> of </em><em>conductivity is applied</em><em>, </em><em>21 by default.</em>)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>self.tsr</strong></p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>with tau and prof_i.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="src.toolbox.steps.custom.variables.salinity.AdjustSalinity.correct_thermal_lag">
-<span class="sig-name descname"><span class="pre">correct_thermal_lag</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/variables/salinity.html#AdjustSalinity.correct_thermal_lag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.correct_thermal_lag" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="src.toolbox.steps.custom.variables.salinity.AdjustSalinity.display_CTLag">
-<span class="sig-name descname"><span class="pre">display_CTLag</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/variables/salinity.html#AdjustSalinity.display_CTLag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.display_CTLag" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="src.toolbox.steps.custom.variables.salinity.AdjustSalinity.display_adj_profiles">
-<span class="sig-name descname"><span class="pre">display_adj_profiles</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/variables/salinity.html#AdjustSalinity.display_adj_profiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.display_adj_profiles" title="Link to this definition">#</a></dt>
-<dd><dl class="simple">
-<dt>Display profiles for ~20 mid profiles of:</dt><dd><ol class="arabic simple">
-<li><p>PSAL: raw salinity</p></li>
-<li><p>PSAL_ADJ: salinity corrected from CTlag</p></li>
-<li><p>PSAL_ADJ: salinity with the thermal lag correction</p></li>
-<li><p>difference between raw and ADJ (CTlag + thermal lag correction) salinity and temperature</p></li>
-</ol>
-</dd>
-</dl>
-</dd></dl>
 
 </dd></dl>
 
@@ -595,11 +556,11 @@ This correction should reduce salinity spikes that result from the misalignment 
       </div>
     </a>
     <a class="right-next"
-       href="../../../../utils/index.html"
+       href="../../write_report/index.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">src.toolbox.utils</p>
+        <p class="prev-next-title">src.toolbox.steps.custom.write_report</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -629,12 +590,12 @@ This correction should reduce salinity spikes that result from the misalignment 
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.variables.salinity.compute_optimal_lag"><code class="docutils literal notranslate"><span class="pre">compute_optimal_lag()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity"><code class="docutils literal notranslate"><span class="pre">AdjustSalinity</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.step_name"><code class="docutils literal notranslate"><span class="pre">AdjustSalinity.step_name</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.required_variables"><code class="docutils literal notranslate"><span class="pre">AdjustSalinity.required_variables</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.provided_variables"><code class="docutils literal notranslate"><span class="pre">AdjustSalinity.provided_variables</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.run"><code class="docutils literal notranslate"><span class="pre">AdjustSalinity.run()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.generate_diagnostics"><code class="docutils literal notranslate"><span class="pre">AdjustSalinity.generate_diagnostics()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.correct_ct_lag"><code class="docutils literal notranslate"><span class="pre">AdjustSalinity.correct_ct_lag()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.correct_thermal_lag"><code class="docutils literal notranslate"><span class="pre">AdjustSalinity.correct_thermal_lag()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.display_CTLag"><code class="docutils literal notranslate"><span class="pre">AdjustSalinity.display_CTLag()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.display_adj_profiles"><code class="docutils literal notranslate"><span class="pre">AdjustSalinity.display_adj_profiles()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.generate_diagnostics"><code class="docutils literal notranslate"><span class="pre">AdjustSalinity.generate_diagnostics()</span></code></a></li>
 </ul>
 </li>
 </ul>

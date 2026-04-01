@@ -5,7 +5,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>Developer Guide — NOCAT 0.0.0 documentation</title>
+<title>Developer Guide — pelagos-py 0.0.1 documentation</title>
 <script data-cfasync="false">
     document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
     document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
@@ -32,7 +32,7 @@
 <!-- Pre-loaded scripts that we'll load fully later -->
 <link as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" rel="preload"/>
 <link as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" rel="preload"/>
-<script src="_static/documentation_options.js?v=7026087e"></script>
+<script src="_static/documentation_options.js?v=d45e8c67"></script>
 <script src="_static/doctools.js?v=9bcbadda"></script>
 <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
 <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -40,12 +40,14 @@
 <script src="_static/design-tabs.js?v=f930bc37"></script>
 <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
 <script>DOCUMENTATION_OPTIONS.pagename = 'developer_guide';</script>
-<link href="https://noc-obg-autonomy.github.io/toolbox/developer_guide.html" rel="canonical"/>
+<link href="https://noc-obg-autonomy.github.io/pelagos-py/developer_guide.html" rel="canonical"/>
 <link href="genindex.html" rel="index" title="Index"/>
 <link href="search.html" rel="search" title="Search"/>
+<link href="api/src/toolbox/index.html" rel="next" title="src.toolbox"/>
+<link href="contributing.html" rel="prev" title="Contributing"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
 <meta content="en" name="docsearch:language"/>
-<meta content="0.0.0" name="docsearch:version"/>
+<meta content="0.0.1" name="docsearch:version"/>
 </head>
 <body data-bs-root-margin="0px 0px -60%" data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-default-mode="" data-offset="180">
 <div class="skip-link d-print-none" id="pst-skip-link"><a href="#main-content">Skip to main content</a></div>
@@ -70,7 +72,7 @@
 <div class="col-lg-3 navbar-header-items__start">
 <div class="navbar-item">
 <a class="navbar-brand logo" href="index.html">
-<p class="title logo__title">NOCAT 0.0.0 documentation</p>
+<p class="title logo__title">pelagos-py 0.0.1 documentation</p>
 </a></div>
 </div>
 <div class="col-lg-9 navbar-header-items">
@@ -78,6 +80,11 @@
 <div class="navbar-item">
 <nav>
 <ul class="bd-navbar-elements navbar-nav">
+<li class="nav-item">
+<a class="nav-link nav-internal" href="getting_started.html">
+    Getting Started
+  </a>
+</li>
 <li class="nav-item">
 <a class="nav-link nav-internal" href="steps.html">
     Steps
@@ -89,19 +96,26 @@
   </a>
 </li>
 <li class="nav-item">
-<a class="nav-link nav-internal" href="getting_started.html">
-    Getting Started
-  </a>
-</li>
-<li class="nav-item">
 <a class="nav-link nav-internal" href="contributing.html">
     Contributing
   </a>
 </li>
-<li class="nav-item">
-<a class="nav-link nav-internal" href="api/src/toolbox/index.html">
-    src.toolbox
+<li class="nav-item current active">
+<a class="nav-link nav-internal" href="#">
+    Developer Guide
   </a>
+</li>
+<li class="nav-item dropdown">
+<button aria-controls="pst-nav-more-links" aria-expanded="false" class="btn dropdown-toggle nav-item" data-bs-toggle="dropdown" type="button">
+                    More
+                </button>
+<ul class="dropdown-menu" id="pst-nav-more-links">
+<li class="">
+<a class="nav-link dropdown-item nav-internal" href="api/src/toolbox/index.html">
+    API Reference
+  </a>
+</li>
+</ul>
 </li>
 </ul>
 </nav></div>
@@ -137,12 +151,17 @@
 <div class="bd-container">
 <div class="bd-container__inner bd-page-width">
 <dialog id="pst-primary-sidebar-modal"></dialog>
-<div class="bd-sidebar-primary bd-sidebar hide-on-wide" id="pst-primary-sidebar">
+<div class="bd-sidebar-primary bd-sidebar" id="pst-primary-sidebar">
 <div class="sidebar-header-items sidebar-primary__section">
 <div class="sidebar-header-items__center">
 <div class="navbar-item">
 <nav>
 <ul class="bd-navbar-elements navbar-nav">
+<li class="nav-item">
+<a class="nav-link nav-internal" href="getting_started.html">
+    Getting Started
+  </a>
+</li>
 <li class="nav-item">
 <a class="nav-link nav-internal" href="steps.html">
     Steps
@@ -154,18 +173,18 @@
   </a>
 </li>
 <li class="nav-item">
-<a class="nav-link nav-internal" href="getting_started.html">
-    Getting Started
-  </a>
-</li>
-<li class="nav-item">
 <a class="nav-link nav-internal" href="contributing.html">
     Contributing
   </a>
 </li>
+<li class="nav-item current active">
+<a class="nav-link nav-internal" href="#">
+    Developer Guide
+  </a>
+</li>
 <li class="nav-item">
 <a class="nav-link nav-internal" href="api/src/toolbox/index.html">
-    src.toolbox
+    API Reference
   </a>
 </li>
 </ul>
@@ -179,6 +198,13 @@
 <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
 </button></div>
 </div>
+</div>
+<div class="sidebar-primary-items__start sidebar-primary__section">
+<div class="sidebar-primary-item">
+<nav aria-label="Section Navigation" class="bd-docs-nav bd-links">
+<p aria-level="1" class="bd-links__title" role="heading">Section Navigation</p>
+<div class="bd-toc-item navbar-nav"></div>
+</nav></div>
 </div>
 <div class="sidebar-primary-items__end sidebar-primary__section">
 <div class="sidebar-primary-item">
@@ -459,6 +485,20 @@ Dataset (self.flags) which can contain any number of data variables, but those w
 </article>
 <footer class="prev-next-footer d-print-none">
 <div class="prev-next-area">
+<a class="left-prev" href="contributing.html" title="previous page">
+<i class="fa-solid fa-angle-left"></i>
+<div class="prev-next-info">
+<p class="prev-next-subtitle">previous</p>
+<p class="prev-next-title">Contributing</p>
+</div>
+</a>
+<a class="right-next" href="api/src/toolbox/index.html" title="next page">
+<div class="prev-next-info">
+<p class="prev-next-subtitle">next</p>
+<p class="prev-next-title">src.toolbox</p>
+</div>
+<i class="fa-solid fa-angle-right"></i>
+</a>
 </div>
 </footer>
 </div>
@@ -479,13 +519,6 @@ Dataset (self.flags) which can contain any number of data variables, but those w
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#how-to-add-a-new-qc-test">How to add a new QC test</a></li>
 </ul>
 </nav></div>
-<div class="sidebar-secondary-item">
-<div aria-label="source link" role="note">
-<h3>This Page</h3>
-<ul class="this-page-menu">
-<li><a href="_sources/developer_guide.md.txt" rel="nofollow">Show Source</a></li>
-</ul>
-</div></div>
 </div></div>
 </div>
 <footer class="bd-footer-content">

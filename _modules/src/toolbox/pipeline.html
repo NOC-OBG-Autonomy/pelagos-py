@@ -7,7 +7,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>src.toolbox.pipeline &#8212; NOCAT 0.0.0 documentation</title>
+    <title>src.toolbox.pipeline &#8212; pelagos-py 0.0.1 documentation</title>
   
   
   
@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../../_static/documentation_options.js?v=7026087e"></script>
+    <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
     <script src="../../../_static/doctools.js?v=9bcbadda"></script>
     <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -49,12 +49,12 @@
     <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/src/toolbox/pipeline';</script>
-    <link rel="canonical" href="https://noc-obg-autonomy.github.io/toolbox/_modules/src/toolbox/pipeline.html" />
+    <link rel="canonical" href="https://noc-obg-autonomy.github.io/pelagos-py/_modules/src/toolbox/pipeline.html" />
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.0" />
+  <meta name="docsearch:version" content="0.0.1" />
   </head>
   
   
@@ -116,7 +116,7 @@
   
   
   
-    <p class="title logo__title">NOCAT 0.0.0 documentation</p>
+    <p class="title logo__title">pelagos-py 0.0.1 documentation</p>
   
 </a></div>
     
@@ -130,6 +130,13 @@
 <nav>
   <ul class="bd-navbar-elements navbar-nav">
     
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../steps.html">
     Steps
@@ -145,13 +152,6 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../../getting_started.html">
-    Getting Started
-  </a>
-</li>
-
-
-<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../contributing.html">
     Contributing
   </a>
@@ -159,11 +159,28 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../../api/src/toolbox/index.html">
-    src.toolbox
+  <a class="nav-link nav-internal" href="../../../developer_guide.html">
+    Developer Guide
   </a>
 </li>
 
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../../api/src/toolbox/index.html">
+    API Reference
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
   </ul>
 </nav></div>
       
@@ -236,6 +253,13 @@
   <ul class="bd-navbar-elements navbar-nav">
     
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../steps.html">
     Steps
   </a>
@@ -250,13 +274,6 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../../getting_started.html">
-    Getting Started
-  </a>
-</li>
-
-
-<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../contributing.html">
     Contributing
   </a>
@@ -264,8 +281,15 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../developer_guide.html">
+    Developer Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../api/src/toolbox/index.html">
-    src.toolbox
+    API Reference
   </a>
 </li>
 
@@ -376,19 +400,20 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">_dt</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">graphviz</span><span class="w"> </span><span class="kn">import</span> <span class="n">Digraph</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">difflib</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.utils.config_mirror</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigMirrorMixin</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.utils.valid_config_check</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_pipeline_variables</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">create_step</span><span class="p">,</span>
-    <span class="n">STEP_CLASSES</span><span class="p">,</span>
-    <span class="n">STEP_DEPENDENCIES</span>
+    <span class="n">STEP_CLASSES</span>
 <span class="p">)</span>
 
 <span class="n">_PIPELINE_LOGGER_NAME</span> <span class="o">=</span> <span class="s2">&quot;toolbox.pipeline&quot;</span>
 <span class="sd">&quot;&quot;&quot;Global logger name for the pipeline. Used to create child loggers for steps.&quot;&quot;&quot;</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_setup_logging</span><span class="p">(</span><span class="n">log_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_setup_logging</span><span class="p">(</span><span class="n">out_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">log_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Set up logging for the entire pipeline.</span>
 
@@ -424,7 +449,7 @@
 
     <span class="c1"># File handler if specified</span>
     <span class="k">if</span> <span class="n">log_file</span><span class="p">:</span>
-        <span class="n">log_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">log_file</span><span class="p">)</span>        <span class="c1"># absolute path</span>
+        <span class="n">log_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span> <span class="ow">or</span> <span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">log_file</span><span class="p">))</span>        <span class="c1"># absolute path</span>
         <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">log_file</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="n">fh</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span><span class="n">log_file</span><span class="p">)</span>
         <span class="n">fh</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
@@ -483,39 +508,33 @@
             <span class="c1"># set convenience alias for user-facing access</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pipeline&quot;</span><span class="p">,</span> <span class="p">{})</span>
             <span class="c1"># build steps from loaded config</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">_setup_logging</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;log_file&quot;</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">_setup_logging</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;out_directory&quot;</span><span class="p">),</span>
+                                         <span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;log_file&quot;</span><span class="p">))</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">build_steps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;steps&quot;</span><span class="p">,</span> <span class="p">[]))</span>
+            <span class="n">check_pipeline_variables</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Pipeline initialised&quot;</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Pipeline.build_steps">
 <a class="viewcode-back" href="../../../api/src/toolbox/pipeline/index.html#src.toolbox.pipeline.Pipeline.build_steps">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">build_steps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">steps_config</span><span class="p">,</span> <span class="n">parent_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_steps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">steps_config</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Recursively build steps from configuration.</span>
+<span class="sd">        Build steps from configuration.</span>
+
+<span class="sd">        Individual steps, including parameters and diagnostics, are saved to self.steps using add_step() for other functions.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        steps_config : list of dict</span>
 <span class="sd">            List of step configurations.</span>
-<span class="sd">        parent_name : str, optional</span>
-<span class="sd">            Name of the parent step, if any.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Assembling steps to run from config.&quot;</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">steps_config</span><span class="p">:</span>
-            <span class="n">REQUIRED_STEPS</span> <span class="o">=</span> <span class="n">STEP_DEPENDENCIES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">step</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">],</span> <span class="p">[])</span>
-            <span class="k">for</span> <span class="n">required_step</span> <span class="ow">in</span> <span class="n">REQUIRED_STEPS</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">required_step</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">STEP_CLASSES</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Required step &#39;</span><span class="si">{</span><span class="n">required_step</span><span class="si">}</span><span class="s2">&#39; for &#39;</span><span class="si">{</span><span class="n">step</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39; is not found.&quot;</span>
-                    <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">add_step</span><span class="p">(</span>
                 <span class="n">step_name</span><span class="o">=</span><span class="n">step</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">],</span>
                 <span class="n">parameters</span><span class="o">=</span><span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;parameters&quot;</span><span class="p">,</span> <span class="p">{}),</span>
                 <span class="n">diagnostics</span><span class="o">=</span><span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
-                <span class="n">parent_name</span><span class="o">=</span><span class="n">parent_name</span><span class="p">,</span>
                 <span class="n">run_immediately</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="k">if</span> <span class="s2">&quot;substeps&quot;</span> <span class="ow">in</span> <span class="n">step</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">build_steps</span><span class="p">(</span><span class="n">step</span><span class="p">[</span><span class="s2">&quot;substeps&quot;</span><span class="p">],</span> <span class="n">parent_name</span><span class="o">=</span><span class="n">step</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">])</span></div>
+            <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Pipeline.add_step">
@@ -525,7 +544,6 @@
         <span class="n">step_name</span><span class="p">,</span>
         <span class="n">parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">diagnostics</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">parent_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">run_immediately</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -539,62 +557,43 @@
 <span class="sd">            Parameters for the step.</span>
 <span class="sd">        diagnostics : bool, optional</span>
 <span class="sd">            Whether to enable diagnostics for this step.</span>
-<span class="sd">        parent_name : str, optional</span>
-<span class="sd">            Name of the parent step, if any.</span>
 <span class="sd">        run_immediately : bool, optional</span>
 <span class="sd">            Whether to run the step immediately after adding it.</span>
 
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
 <span class="sd">        ValueError</span>
-<span class="sd">            If the step name is not recognized or a specified parent step is not found.</span>
+<span class="sd">            If the step name is not recognized.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">step_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">STEP_CLASSES</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Step &#39;</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">&#39; is not recognized or missing @register_step.&quot;</span>
-            <span class="p">)</span>
+            <span class="n">available_steps</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">STEP_CLASSES</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+            <span class="n">error_msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Step &#39;</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">&#39; is not recognised or missing @register_step.&quot;</span>
+            
+            <span class="c1"># Look for a typo and suggest the closest match</span>
+            <span class="n">close_matches</span> <span class="o">=</span> <span class="n">difflib</span><span class="o">.</span><span class="n">get_close_matches</span><span class="p">(</span><span class="n">step_name</span><span class="p">,</span> <span class="n">available_steps</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="mf">0.6</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">close_matches</span><span class="p">:</span>
+                <span class="n">error_msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; Did you mean &#39;</span><span class="si">{</span><span class="n">close_matches</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39;?&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># If no close match, show a few available options</span>
+                <span class="n">sample_steps</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">available_steps</span><span class="p">[:</span><span class="mi">5</span><span class="p">])</span>
+                <span class="n">error_msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; Some available steps include: </span><span class="si">{</span><span class="n">sample_steps</span><span class="si">}</span><span class="s2">...&quot;</span>
+                
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">error_msg</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">error_msg</span><span class="p">)</span>
 
         <span class="n">step_config</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">step_name</span><span class="p">,</span>
             <span class="s2">&quot;parameters&quot;</span><span class="p">:</span> <span class="n">parameters</span> <span class="ow">or</span> <span class="p">{},</span>
             <span class="s2">&quot;diagnostics&quot;</span><span class="p">:</span> <span class="n">diagnostics</span><span class="p">,</span>
-            <span class="s2">&quot;substeps&quot;</span><span class="p">:</span> <span class="p">[],</span>
         <span class="p">}</span>
 
-        <span class="k">if</span> <span class="n">parent_name</span><span class="p">:</span>
-            <span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_step</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">,</span> <span class="n">parent_name</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">parent</span><span class="p">:</span>
-                <span class="n">parent</span><span class="p">[</span><span class="s2">&quot;substeps&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">step_config</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parent step &#39;</span><span class="si">{</span><span class="n">parent_name</span><span class="si">}</span><span class="s2">&#39; not found.&quot;</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">step_config</span><span class="p">)</span>
-
+        <span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">step_config</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Step &#39;</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">&#39; added successfully!&quot;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">run_immediately</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Running step &#39;</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">&#39; immediately.&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute_step</span><span class="p">(</span><span class="n">step_config</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_context</span><span class="p">)</span></div>
 
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_find_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">steps_list</span><span class="p">,</span> <span class="n">step_name</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Recursively find a step by name.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        steps_list : list of dict</span>
-<span class="sd">            List of step configurations.</span>
-<span class="sd">        step_name : str</span>
-<span class="sd">            Name of the step to find.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">steps_list</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">step</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">step_name</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">step</span>
-            <span class="n">found</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_step</span><span class="p">(</span><span class="n">step</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;substeps&quot;</span><span class="p">,</span> <span class="p">[]),</span> <span class="n">step_name</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">found</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">found</span>
-        <span class="k">return</span> <span class="kc">None</span>
 
 <div class="viewcode-block" id="Pipeline.execute_step">
 <a class="viewcode-back" href="../../../api/src/toolbox/pipeline/index.html#src.toolbox.pipeline.Pipeline.execute_step">[docs]</a>
@@ -609,9 +608,16 @@
 <span class="sd">        _context : dict</span>
 <span class="sd">            Current context to pass to the step.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">step</span> <span class="o">=</span> <span class="n">create_step</span><span class="p">(</span><span class="n">step_config</span><span class="p">,</span> <span class="n">_context</span><span class="p">)</span>
+        <span class="n">step_context</span> <span class="o">=</span> <span class="n">_context</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="n">_context</span> <span class="k">else</span> <span class="p">{}</span>
+        <span class="n">step_context</span><span class="p">[</span><span class="s2">&quot;global_parameters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span>
+        <span class="n">step</span> <span class="o">=</span> <span class="n">create_step</span><span class="p">(</span><span class="n">step_config</span><span class="p">,</span> <span class="n">step_context</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Executing: </span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">step</span><span class="o">.</span><span class="n">run</span><span class="p">()</span></div>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">step</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Fatal error encountered while executing step &#39;</span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Pipeline failed at step &#39;</span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span></div>
 
 
 <div class="viewcode-block" id="Pipeline.run_last_step">
@@ -652,8 +658,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
 
-        <span class="k">def</span><span class="w"> </span><span class="nf">add_to_graph</span><span class="p">(</span><span class="n">step_config</span><span class="p">,</span> <span class="n">parent_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">step_order</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;Add a step to the graph, intended for recursive use.&quot;&quot;&quot;</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">add_to_graph</span><span class="p">(</span><span class="n">step_config</span><span class="p">,</span> <span class="n">previous_step_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
             <span class="n">step_name</span> <span class="o">=</span> <span class="n">step_config</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
             <span class="n">diagnostics</span> <span class="o">=</span> <span class="n">step_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
             <span class="n">color</span> <span class="o">=</span> <span class="s2">&quot;red&quot;</span> <span class="k">if</span> <span class="n">diagnostics</span> <span class="k">else</span> <span class="s2">&quot;black&quot;</span>
@@ -664,19 +669,14 @@
                 <span class="n">style</span><span class="o">=</span><span class="s2">&quot;filled&quot;</span><span class="p">,</span>
                 <span class="n">fillcolor</span><span class="o">=</span><span class="s2">&quot;lightblue&quot;</span> <span class="k">if</span> <span class="n">diagnostics</span> <span class="k">else</span> <span class="s2">&quot;white&quot;</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="k">if</span> <span class="n">parent_name</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edge</span><span class="p">(</span><span class="n">parent_name</span><span class="p">,</span> <span class="n">step_name</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">step_order</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">step_order</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">step_order</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edge</span><span class="p">(</span><span class="n">step_order</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">step_order</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
-            <span class="n">substep_order</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">for</span> <span class="n">substep</span> <span class="ow">in</span> <span class="n">step_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;substeps&quot;</span><span class="p">,</span> <span class="p">[]):</span>
-                <span class="n">substep_order</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">substep</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">])</span>
-                <span class="n">add_to_graph</span><span class="p">(</span><span class="n">substep</span><span class="p">,</span> <span class="n">parent_name</span><span class="o">=</span><span class="n">step_name</span><span class="p">,</span> <span class="n">step_order</span><span class="o">=</span><span class="n">substep_order</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">previous_step_name</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edge</span><span class="p">(</span><span class="n">previous_step_name</span><span class="p">,</span> <span class="n">step_name</span><span class="p">)</span>
 
+        <span class="n">prev_step</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">:</span>
-            <span class="n">step_order</span> <span class="o">=</span> <span class="p">[</span><span class="n">step</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]]</span>
-            <span class="n">add_to_graph</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">step_order</span><span class="o">=</span><span class="n">step_order</span><span class="p">)</span>
+            <span class="n">add_to_graph</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">prev_step</span><span class="p">)</span>
+            <span class="n">prev_step</span> <span class="o">=</span> <span class="n">step</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+            
         <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s2">&quot;pipeline_visualisation&quot;</span><span class="p">,</span> <span class="n">view</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
 
@@ -737,6 +737,17 @@
         <span class="c1"># ensure _parameters is up to date</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">generate_config</span><span class="p">())</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">save_config</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Pipeline.get_data">
+<a class="viewcode-back" href="../../../api/src/toolbox/pipeline/index.html#src.toolbox.pipeline.Pipeline.get_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns data from the current pipeline context.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_context</span> <span class="ow">and</span> <span class="s2">&quot;data&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_context</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
 </div>
 
 </pre></div>

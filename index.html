@@ -5,7 +5,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>NOC Autonomy Toolbox Docs — NOCAT 0.0.0 documentation</title>
+<title>NOC Autonomy Toolbox Docs — pelagos-py 0.0.1 documentation</title>
 <script data-cfasync="false">
     document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
     document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
@@ -32,7 +32,7 @@
 <!-- Pre-loaded scripts that we'll load fully later -->
 <link as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" rel="preload"/>
 <link as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" rel="preload"/>
-<script src="_static/documentation_options.js?v=7026087e"></script>
+<script src="_static/documentation_options.js?v=d45e8c67"></script>
 <script src="_static/doctools.js?v=9bcbadda"></script>
 <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
 <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -40,13 +40,13 @@
 <script src="_static/design-tabs.js?v=f930bc37"></script>
 <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
 <script>DOCUMENTATION_OPTIONS.pagename = 'index';</script>
-<link href="https://noc-obg-autonomy.github.io/toolbox/index.html" rel="canonical"/>
+<link href="https://noc-obg-autonomy.github.io/pelagos-py/index.html" rel="canonical"/>
 <link href="genindex.html" rel="index" title="Index"/>
 <link href="search.html" rel="search" title="Search"/>
-<link href="steps.html" rel="next" title="Steps"/>
+<link href="getting_started.html" rel="next" title="Getting Started"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
 <meta content="en" name="docsearch:language"/>
-<meta content="0.0.0" name="docsearch:version"/>
+<meta content="0.0.1" name="docsearch:version"/>
 </head>
 <body data-bs-root-margin="0px 0px -60%" data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-default-mode="" data-offset="180">
 <div class="skip-link d-print-none" id="pst-skip-link"><a href="#main-content">Skip to main content</a></div>
@@ -71,7 +71,7 @@
 <div class="col-lg-3 navbar-header-items__start">
 <div class="navbar-item">
 <a class="navbar-brand logo" href="#">
-<p class="title logo__title">NOCAT 0.0.0 documentation</p>
+<p class="title logo__title">pelagos-py 0.0.1 documentation</p>
 </a></div>
 </div>
 <div class="col-lg-9 navbar-header-items">
@@ -79,6 +79,11 @@
 <div class="navbar-item">
 <nav>
 <ul class="bd-navbar-elements navbar-nav">
+<li class="nav-item">
+<a class="nav-link nav-internal" href="getting_started.html">
+    Getting Started
+  </a>
+</li>
 <li class="nav-item">
 <a class="nav-link nav-internal" href="steps.html">
     Steps
@@ -90,19 +95,26 @@
   </a>
 </li>
 <li class="nav-item">
-<a class="nav-link nav-internal" href="getting_started.html">
-    Getting Started
-  </a>
-</li>
-<li class="nav-item">
 <a class="nav-link nav-internal" href="contributing.html">
     Contributing
   </a>
 </li>
 <li class="nav-item">
-<a class="nav-link nav-internal" href="api/src/toolbox/index.html">
-    src.toolbox
+<a class="nav-link nav-internal" href="developer_guide.html">
+    Developer Guide
   </a>
+</li>
+<li class="nav-item dropdown">
+<button aria-controls="pst-nav-more-links" aria-expanded="false" class="btn dropdown-toggle nav-item" data-bs-toggle="dropdown" type="button">
+                    More
+                </button>
+<ul class="dropdown-menu" id="pst-nav-more-links">
+<li class="">
+<a class="nav-link dropdown-item nav-internal" href="api/src/toolbox/index.html">
+    API Reference
+  </a>
+</li>
+</ul>
 </li>
 </ul>
 </nav></div>
@@ -145,6 +157,11 @@
 <nav>
 <ul class="bd-navbar-elements navbar-nav">
 <li class="nav-item">
+<a class="nav-link nav-internal" href="getting_started.html">
+    Getting Started
+  </a>
+</li>
+<li class="nav-item">
 <a class="nav-link nav-internal" href="steps.html">
     Steps
   </a>
@@ -155,18 +172,18 @@
   </a>
 </li>
 <li class="nav-item">
-<a class="nav-link nav-internal" href="getting_started.html">
-    Getting Started
-  </a>
-</li>
-<li class="nav-item">
 <a class="nav-link nav-internal" href="contributing.html">
     Contributing
   </a>
 </li>
 <li class="nav-item">
+<a class="nav-link nav-internal" href="developer_guide.html">
+    Developer Guide
+  </a>
+</li>
+<li class="nav-item">
 <a class="nav-link nav-internal" href="api/src/toolbox/index.html">
-    src.toolbox
+    API Reference
   </a>
 </li>
 </ul>
@@ -197,7 +214,7 @@
 <h1>NOC Autonomy Toolbox Docs<a class="headerlink" href="#noc-autonomy-toolbox-docs" title="Link to this heading">#</a></h1>
 <section id="welcome">
 <h2>Welcome!<a class="headerlink" href="#welcome" title="Link to this heading">#</a></h2>
-<p>Thanks for checking out this software! The NOC (National Oceanography Centre) Autonomy Toolbox (pending a formal name - maybe “NOCAT”?) is a modular processing pipeline tool designed to operate on raw
+<p>Thanks for checking out this software! The NOC (National Oceanography Centre) Autonomy Toolbox, pelagos-py, is a modular processing pipeline tool designed to operate on raw
 OG1-like format glider/ALR data, outputting “science ready” datasets. The user interfaces with the tool through a single YAML config file, allowing for easy definition and dissemination
 of processing protocols. This allows academics to “standardise” their processing tools and easily share their methods by simply sharing raw data and config files.</p>
 <p>As we hope this tool will be adopted by the glider community, effort has been made to implement a broad range of desirable processing steps, covering a large number of oceanographic
@@ -220,6 +237,11 @@ make sense, let us know so we can improve it.</p>
 <div class="toctree-wrapper compound">
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#example-pipeline">Example Pipeline</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="steps.html">Steps</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="steps.html#what-is-a-step">What is a Step?</a></li>
 <li class="toctree-l2"><a class="reference internal" href="steps.html#step-qc-filters">Step QC Filters</a></li>
@@ -231,13 +253,18 @@ make sense, let us know so we can improve it.</p>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tests.html">Tests</a></li>
-<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="getting_started.html#installation">Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="getting_started.html#example-pipeline">Example Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="developer_guide.html">Developer Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="developer_guide.html#what-is-a-step">What is a “step”?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="developer_guide.html#what-is-a-test">What is a “test”?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="developer_guide.html#how-to-add-a-new-step">How to add a new step</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="developer_guide.html#adding-qc-handling-to-a-step">Adding QC handling to a step</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="api/src/toolbox/index.html">src.toolbox</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="developer_guide.html#how-to-add-a-new-qc-test">How to add a new QC test</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api/src/toolbox/index.html">API Reference</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="api/src/toolbox/index.html#submodules">Submodules</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="api/src/toolbox/pipeline/index.html">src.toolbox.pipeline</a></li>
 <li class="toctree-l3"><a class="reference internal" href="api/src/toolbox/pipeline_manager/index.html">src.toolbox.pipeline_manager</a></li>
@@ -260,10 +287,10 @@ make sense, let us know so we can improve it.</p>
 </article>
 <footer class="prev-next-footer d-print-none">
 <div class="prev-next-area">
-<a class="right-next" href="steps.html" title="next page">
+<a class="right-next" href="getting_started.html" title="next page">
 <div class="prev-next-info">
 <p class="prev-next-subtitle">next</p>
-<p class="prev-next-title">Steps</p>
+<p class="prev-next-title">Getting Started</p>
 </div>
 <i class="fa-solid fa-angle-right"></i>
 </a>
@@ -282,13 +309,6 @@ make sense, let us know so we can improve it.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#contents">Contents</a></li>
 </ul>
 </nav></div>
-<div class="sidebar-secondary-item">
-<div aria-label="source link" role="note">
-<h3>This Page</h3>
-<ul class="this-page-menu">
-<li><a href="_sources/index.rst.txt" rel="nofollow">Show Source</a></li>
-</ul>
-</div></div>
 </div></div>
 </div>
 <footer class="bd-footer-content">

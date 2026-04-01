@@ -1,0 +1,892 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>src.toolbox.steps.custom.find_profiles_beta &#8212; pelagos-py 0.0.1 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../../../../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/sphinx-codeautolink.css?v=b2176991" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../../../../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../../../../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../../../../_static/copybutton.js?v=df1a032d"></script>
+    <script src="../../../../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api/src/toolbox/steps/custom/find_profiles_beta/index';</script>
+    <link rel="canonical" href="https://noc-obg-autonomy.github.io/pelagos-py/api/src/toolbox/steps/custom/find_profiles_beta/index.html" />
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" />
+    <link rel="next" title="src.toolbox.steps.custom.gen_data" href="../gen_data/index.html" />
+    <link rel="prev" title="src.toolbox.steps.custom.find_profiles" href="../find_profiles/index.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0.1" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../../../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">pelagos-py 0.0.1 documentation</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../steps.html">
+    Steps
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../tests.html">
+    Tests
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../contributing.html">
+    Contributing
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../developer_guide.html">
+    Developer Guide
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" current active">
+  <a class="nav-link dropdown-item nav-internal" href="../../../index.html">
+    API Reference
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../steps.html">
+    Steps
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../tests.html">
+    Tests
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../contributing.html">
+    Contributing
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../../../developer_guide.html">
+    Developer Guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../../index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../pipeline/index.html">src.toolbox.pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../pipeline_manager/index.html">src.toolbox.pipeline_manager</a></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="../../index.html">src.toolbox.steps</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../base_qc/index.html">src.toolbox.steps.base_qc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../base_step/index.html">src.toolbox.steps.base_step</a></li>
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="../index.html">src.toolbox.steps.custom</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../apply_qc/index.html">src.toolbox.steps.custom.apply_qc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../blank_step/index.html">src.toolbox.steps.custom.blank_step</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../derive_ctd/index.html">src.toolbox.steps.custom.derive_ctd</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../export/index.html">src.toolbox.steps.custom.export</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../find_profiles/index.html">src.toolbox.steps.custom.find_profiles</a></li>
+<li class="toctree-l3 current active"><a class="current reference internal" href="#">src.toolbox.steps.custom.find_profiles_beta</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../gen_data/index.html">src.toolbox.steps.custom.gen_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../interpolate_data/index.html">src.toolbox.steps.custom.interpolate_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../load_data/index.html">src.toolbox.steps.custom.load_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../profile_direction/index.html">src.toolbox.steps.custom.profile_direction</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../qc/index.html">src.toolbox.steps.custom.qc</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../qc/archive/index.html">src.toolbox.steps.custom.qc.archive</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/blank_qc/index.html">src.toolbox.steps.custom.qc.blank_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/flag_full_profile/index.html">src.toolbox.steps.custom.qc.flag_full_profile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/gross_range_qc/index.html">src.toolbox.steps.custom.qc.gross_range_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/impossible_date_qc/index.html">src.toolbox.steps.custom.qc.impossible_date_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/impossible_location_qc/index.html">src.toolbox.steps.custom.qc.impossible_location_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/impossible_range_qc/index.html">src.toolbox.steps.custom.qc.impossible_range_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/impossible_speed_qc/index.html">src.toolbox.steps.custom.qc.impossible_speed_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/par_irregularity_qc/index.html">src.toolbox.steps.custom.qc.par_irregularity_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/position_on_land_qc/index.html">src.toolbox.steps.custom.qc.position_on_land_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/spike_qc/index.html">src.toolbox.steps.custom.qc.spike_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/stuck_value_qc/index.html">src.toolbox.steps.custom.qc.stuck_value_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/valid_profile_qc/index.html">src.toolbox.steps.custom.qc.valid_profile_qc</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../variables/index.html">src.toolbox.steps.custom.variables</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../variables/bbp/index.html">src.toolbox.steps.custom.variables.bbp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../variables/chla/index.html">src.toolbox.steps.custom.variables.chla</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../variables/oxygen/index.html">src.toolbox.steps.custom.variables.oxygen</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../variables/salinity/index.html">src.toolbox.steps.custom.variables.salinity</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../write_report/index.html">src.toolbox.steps.custom.write_report</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../utils/index.html">src.toolbox.utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/alignment/index.html">src.toolbox.utils.alignment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/config_mirror/index.html">src.toolbox.utils.config_mirror</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/diagnostics/index.html">src.toolbox.utils.diagnostics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/processing_utils/index.html">src.toolbox.utils.processing_utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/qc_handling/index.html">src.toolbox.utils.qc_handling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/time/index.html">src.toolbox.utils.time</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/valid_config_check/index.html">src.toolbox.utils.valid_config_check</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/validation/index.html">src.toolbox.utils.validation</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../../index.html" class="nav-link">src.toolbox</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">src.toolbox.steps</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">src.toolbox.steps.custom</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">src.toolbox.steps.custom.find_profiles_beta</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-src.toolbox.steps.custom.find_profiles_beta">
+<span id="src-toolbox-steps-custom-find-profiles-beta"></span><h1>src.toolbox.steps.custom.find_profiles_beta<a class="headerlink" href="#module-src.toolbox.steps.custom.find_profiles_beta" title="Link to this heading">#</a></h1>
+<section id="attributes">
+<h2>Attributes<a class="headerlink" href="#attributes" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles_beta.DEFAULT_RESAMPLE_CADENCE" title="src.toolbox.steps.custom.find_profiles_beta.DEFAULT_RESAMPLE_CADENCE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DEFAULT_RESAMPLE_CADENCE</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles_beta.DEFAULT_GRADIENT_THRESHOLDS" title="src.toolbox.steps.custom.find_profiles_beta.DEFAULT_GRADIENT_THRESHOLDS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DEFAULT_GRADIENT_THRESHOLDS</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles_beta.DEFAULT_HORIZ_GRADIENT_THRESHOLD" title="src.toolbox.steps.custom.find_profiles_beta.DEFAULT_HORIZ_GRADIENT_THRESHOLD"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DEFAULT_HORIZ_GRADIENT_THRESHOLD</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles_beta.DEFAULT_FILTER_WINDOW_SIZES" title="src.toolbox.steps.custom.find_profiles_beta.DEFAULT_FILTER_WINDOW_SIZES"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DEFAULT_FILTER_WINDOW_SIZES</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles_beta.DEFAULT_EDGE_SQUEEZE" title="src.toolbox.steps.custom.find_profiles_beta.DEFAULT_EDGE_SQUEEZE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DEFAULT_EDGE_SQUEEZE</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles_beta.DEFAULT_DIVE_SCALE" title="src.toolbox.steps.custom.find_profiles_beta.DEFAULT_DIVE_SCALE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DEFAULT_DIVE_SCALE</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles_beta.DEFAULT_MAX_DEPTH_GAP" title="src.toolbox.steps.custom.find_profiles_beta.DEFAULT_MAX_DEPTH_GAP"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DEFAULT_MAX_DEPTH_GAP</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles_beta.DEFAULT_MIN_HORIZONTAL_DURATION" title="src.toolbox.steps.custom.find_profiles_beta.DEFAULT_MIN_HORIZONTAL_DURATION"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DEFAULT_MIN_HORIZONTAL_DURATION</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles_beta.DEFAULT_MIN_HORIZONTAL_DEPTH" title="src.toolbox.steps.custom.find_profiles_beta.DEFAULT_MIN_HORIZONTAL_DEPTH"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DEFAULT_MIN_HORIZONTAL_DEPTH</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles_beta.FIXED_SAVGOL_WINDOW_VERT" title="src.toolbox.steps.custom.find_profiles_beta.FIXED_SAVGOL_WINDOW_VERT"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FIXED_SAVGOL_WINDOW_VERT</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles_beta.FIXED_SAVGOL_WINDOW_HORIZ" title="src.toolbox.steps.custom.find_profiles_beta.FIXED_SAVGOL_WINDOW_HORIZ"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FIXED_SAVGOL_WINDOW_HORIZ</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles_beta.FIXED_SAVGOL_POLY" title="src.toolbox.steps.custom.find_profiles_beta.FIXED_SAVGOL_POLY"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FIXED_SAVGOL_POLY</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles_beta.FIXED_MIN_VALID_DEPTH" title="src.toolbox.steps.custom.find_profiles_beta.FIXED_MIN_VALID_DEPTH"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FIXED_MIN_VALID_DEPTH</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles_beta.FIXED_MIN_POINTS_VERT" title="src.toolbox.steps.custom.find_profiles_beta.FIXED_MIN_POINTS_VERT"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FIXED_MIN_POINTS_VERT</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles_beta.FIXED_MIN_POINTS_HORIZ" title="src.toolbox.steps.custom.find_profiles_beta.FIXED_MIN_POINTS_HORIZ"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FIXED_MIN_POINTS_HORIZ</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles_beta.COLOUR_UP" title="src.toolbox.steps.custom.find_profiles_beta.COLOUR_UP"><code class="xref py py-obj docutils literal notranslate"><span class="pre">COLOUR_UP</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles_beta.COLOUR_DOWN" title="src.toolbox.steps.custom.find_profiles_beta.COLOUR_DOWN"><code class="xref py py-obj docutils literal notranslate"><span class="pre">COLOUR_DOWN</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles_beta.COLOUR_HORIZONTAL" title="src.toolbox.steps.custom.find_profiles_beta.COLOUR_HORIZONTAL"><code class="xref py py-obj docutils literal notranslate"><span class="pre">COLOUR_HORIZONTAL</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles_beta.COLOUR_TURNING" title="src.toolbox.steps.custom.find_profiles_beta.COLOUR_TURNING"><code class="xref py py-obj docutils literal notranslate"><span class="pre">COLOUR_TURNING</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles_beta.COLOUR_VELOCITY" title="src.toolbox.steps.custom.find_profiles_beta.COLOUR_VELOCITY"><code class="xref py py-obj docutils literal notranslate"><span class="pre">COLOUR_VELOCITY</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles_beta.COLOUR_RAW" title="src.toolbox.steps.custom.find_profiles_beta.COLOUR_RAW"><code class="xref py py-obj docutils literal notranslate"><span class="pre">COLOUR_RAW</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles_beta.COLOUR_SMOOTH" title="src.toolbox.steps.custom.find_profiles_beta.COLOUR_SMOOTH"><code class="xref py py-obj docutils literal notranslate"><span class="pre">COLOUR_SMOOTH</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles_beta.MARKER_SIZE" title="src.toolbox.steps.custom.find_profiles_beta.MARKER_SIZE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MARKER_SIZE</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles_beta.LINE_WIDTH" title="src.toolbox.steps.custom.find_profiles_beta.LINE_WIDTH"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LINE_WIDTH</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles_beta.FindProfilesBetaStep" title="src.toolbox.steps.custom.find_profiles_beta.FindProfilesBetaStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FindProfilesBetaStep</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles_beta.find_profiles_beta" title="src.toolbox.steps.custom.find_profiles_beta.find_profiles_beta"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_profiles_beta</span></code></a>(df_sorted, cadence, ...)</p></td>
+<td><p>Identifies and classifies vertical and horizontal profiles from depth-time data.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">#</a></h2>
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.DEFAULT_RESAMPLE_CADENCE">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles_beta.</span></span><span class="sig-name descname"><span class="pre">DEFAULT_RESAMPLE_CADENCE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'30s'</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#DEFAULT_RESAMPLE_CADENCE"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.DEFAULT_RESAMPLE_CADENCE" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.DEFAULT_GRADIENT_THRESHOLDS">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles_beta.</span></span><span class="sig-name descname"><span class="pre">DEFAULT_GRADIENT_THRESHOLDS</span></span><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#DEFAULT_GRADIENT_THRESHOLDS"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.DEFAULT_GRADIENT_THRESHOLDS" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.DEFAULT_HORIZ_GRADIENT_THRESHOLD">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles_beta.</span></span><span class="sig-name descname"><span class="pre">DEFAULT_HORIZ_GRADIENT_THRESHOLD</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.01</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#DEFAULT_HORIZ_GRADIENT_THRESHOLD"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.DEFAULT_HORIZ_GRADIENT_THRESHOLD" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.DEFAULT_FILTER_WINDOW_SIZES">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles_beta.</span></span><span class="sig-name descname"><span class="pre">DEFAULT_FILTER_WINDOW_SIZES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[1,</span> <span class="pre">2]</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#DEFAULT_FILTER_WINDOW_SIZES"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.DEFAULT_FILTER_WINDOW_SIZES" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.DEFAULT_EDGE_SQUEEZE">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles_beta.</span></span><span class="sig-name descname"><span class="pre">DEFAULT_EDGE_SQUEEZE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#DEFAULT_EDGE_SQUEEZE"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.DEFAULT_EDGE_SQUEEZE" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.DEFAULT_DIVE_SCALE">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles_beta.</span></span><span class="sig-name descname"><span class="pre">DEFAULT_DIVE_SCALE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">15</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#DEFAULT_DIVE_SCALE"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.DEFAULT_DIVE_SCALE" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.DEFAULT_MAX_DEPTH_GAP">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles_beta.</span></span><span class="sig-name descname"><span class="pre">DEFAULT_MAX_DEPTH_GAP</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">60.0</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#DEFAULT_MAX_DEPTH_GAP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.DEFAULT_MAX_DEPTH_GAP" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.DEFAULT_MIN_HORIZONTAL_DURATION">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles_beta.</span></span><span class="sig-name descname"><span class="pre">DEFAULT_MIN_HORIZONTAL_DURATION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'20min'</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#DEFAULT_MIN_HORIZONTAL_DURATION"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.DEFAULT_MIN_HORIZONTAL_DURATION" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.DEFAULT_MIN_HORIZONTAL_DEPTH">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles_beta.</span></span><span class="sig-name descname"><span class="pre">DEFAULT_MIN_HORIZONTAL_DEPTH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#DEFAULT_MIN_HORIZONTAL_DEPTH"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.DEFAULT_MIN_HORIZONTAL_DEPTH" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.FIXED_SAVGOL_WINDOW_VERT">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles_beta.</span></span><span class="sig-name descname"><span class="pre">FIXED_SAVGOL_WINDOW_VERT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">5</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#FIXED_SAVGOL_WINDOW_VERT"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.FIXED_SAVGOL_WINDOW_VERT" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.FIXED_SAVGOL_WINDOW_HORIZ">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles_beta.</span></span><span class="sig-name descname"><span class="pre">FIXED_SAVGOL_WINDOW_HORIZ</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#FIXED_SAVGOL_WINDOW_HORIZ"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.FIXED_SAVGOL_WINDOW_HORIZ" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.FIXED_SAVGOL_POLY">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles_beta.</span></span><span class="sig-name descname"><span class="pre">FIXED_SAVGOL_POLY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#FIXED_SAVGOL_POLY"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.FIXED_SAVGOL_POLY" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.FIXED_MIN_VALID_DEPTH">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles_beta.</span></span><span class="sig-name descname"><span class="pre">FIXED_MIN_VALID_DEPTH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">-0.5</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#FIXED_MIN_VALID_DEPTH"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.FIXED_MIN_VALID_DEPTH" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.FIXED_MIN_POINTS_VERT">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles_beta.</span></span><span class="sig-name descname"><span class="pre">FIXED_MIN_POINTS_VERT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">5</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#FIXED_MIN_POINTS_VERT"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.FIXED_MIN_POINTS_VERT" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.FIXED_MIN_POINTS_HORIZ">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles_beta.</span></span><span class="sig-name descname"><span class="pre">FIXED_MIN_POINTS_HORIZ</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">20</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#FIXED_MIN_POINTS_HORIZ"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.FIXED_MIN_POINTS_HORIZ" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.COLOUR_UP">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles_beta.</span></span><span class="sig-name descname"><span class="pre">COLOUR_UP</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'tab:blue'</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#COLOUR_UP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.COLOUR_UP" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.COLOUR_DOWN">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles_beta.</span></span><span class="sig-name descname"><span class="pre">COLOUR_DOWN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'tab:green'</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#COLOUR_DOWN"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.COLOUR_DOWN" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.COLOUR_HORIZONTAL">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles_beta.</span></span><span class="sig-name descname"><span class="pre">COLOUR_HORIZONTAL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'tab:purple'</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#COLOUR_HORIZONTAL"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.COLOUR_HORIZONTAL" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.COLOUR_TURNING">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles_beta.</span></span><span class="sig-name descname"><span class="pre">COLOUR_TURNING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'tab:orange'</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#COLOUR_TURNING"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.COLOUR_TURNING" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.COLOUR_VELOCITY">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles_beta.</span></span><span class="sig-name descname"><span class="pre">COLOUR_VELOCITY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'tab:red'</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#COLOUR_VELOCITY"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.COLOUR_VELOCITY" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.COLOUR_RAW">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles_beta.</span></span><span class="sig-name descname"><span class="pre">COLOUR_RAW</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'tab:gray'</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#COLOUR_RAW"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.COLOUR_RAW" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.COLOUR_SMOOTH">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles_beta.</span></span><span class="sig-name descname"><span class="pre">COLOUR_SMOOTH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'black'</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#COLOUR_SMOOTH"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.COLOUR_SMOOTH" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.MARKER_SIZE">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles_beta.</span></span><span class="sig-name descname"><span class="pre">MARKER_SIZE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#MARKER_SIZE"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.MARKER_SIZE" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.LINE_WIDTH">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles_beta.</span></span><span class="sig-name descname"><span class="pre">LINE_WIDTH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.5</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#LINE_WIDTH"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.LINE_WIDTH" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.find_profiles_beta">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles_beta.</span></span><span class="sig-name descname"><span class="pre">find_profiles_beta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_sorted</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cadence</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_win_sizes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gradient_thresholds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">horiz_grad_thresh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_squeeze</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dive_scale</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_depth_gap</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_horizontal_duration</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_horizontal_depth</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">depth_col</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#find_profiles_beta"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.find_profiles_beta" title="Link to this definition">#</a></dt>
+<dd><p>Identifies and classifies vertical and horizontal profiles from depth-time data.</p>
+<p>This function applies compound smoothing and velocity thresholds to classify
+vehicle movements into descending (+1), ascending (-1), horizontal (0),
+or turning (NaN) segments. Vertical profiles are identified first based on
+steep vertical velocities and depth spans. Unassigned data is then evaluated
+for horizontal profiles based on flatter velocities, minimum depth, and duration.
+Final profile IDs are assigned chronologically.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df_sorted</strong> (<a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v3.0.2)"><em>pandas.DataFrame</em></a>) – Time-indexed dataframe containing the depth measurements.</p></li>
+<li><p><strong>cadence</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Resampling frequency string (e.g., ’30s’) used to regularise the time series.</p></li>
+<li><p><strong>filter_win_sizes</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a>) – Two-element list defining the rolling median and mean window sizes.</p></li>
+<li><p><strong>gradient_thresholds</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a>) – [positive_threshold, negative_threshold] for vertical velocity bounds (m/s).</p></li>
+<li><p><strong>horiz_grad_thresh</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Maximum absolute velocity (m/s) to be considered a horizontal profile.</p></li>
+<li><p><strong>edge_squeeze</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Number of points to iteratively erode from the edges of turning regions.</p></li>
+<li><p><strong>dive_scale</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Minimum total vertical distance (m) required for a valid vertical profile.</p></li>
+<li><p><strong>max_depth_gap</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Maximum allowable depth gap (m) between consecutive points in a profile.</p></li>
+<li><p><strong>min_horizontal_duration</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Minimum time duration string (e.g., ‘20min’) for a horizontal profile.</p></li>
+<li><p><strong>min_horizontal_depth</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Minimum depth (m) required to evaluate a horizontal profile.</p></li>
+<li><p><strong>depth_col</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Name of the column containing depth or pressure data.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>df_out</strong> (<em>pandas.DataFrame</em>) – Dataframe aligned to original indices with added ‘PROFILE_ID’, ‘DIRECTION’, and ‘GRADIENT’.</p></li>
+<li><p><strong>df</strong> (<em>pandas.DataFrame</em>) – The resampled and smoothed diagnostic dataframe.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.FindProfilesBetaStep">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles_beta.</span></span><span class="sig-name descname"><span class="pre">FindProfilesBetaStep</span></span><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#FindProfilesBetaStep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.FindProfilesBetaStep" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">toolbox.steps.base_step.BaseStep</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">toolbox.utils.qc_handling.QCHandlingMixin</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.FindProfilesBetaStep.step_name">
+<span class="sig-name descname"><span class="pre">step_name</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Find</span> <span class="pre">Profiles</span> <span class="pre">Beta'</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#FindProfilesBetaStep.step_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.FindProfilesBetaStep.step_name" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.FindProfilesBetaStep.required_variables">
+<span class="sig-name descname"><span class="pre">required_variables</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['TIME']</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#FindProfilesBetaStep.required_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.FindProfilesBetaStep.required_variables" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.FindProfilesBetaStep.provided_variables">
+<span class="sig-name descname"><span class="pre">provided_variables</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['PROFILE_NUMBER']</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#FindProfilesBetaStep.provided_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.FindProfilesBetaStep.provided_variables" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.FindProfilesBetaStep.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#FindProfilesBetaStep.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.FindProfilesBetaStep.run" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles_beta.FindProfilesBetaStep.generate_diagnostics">
+<span class="sig-name descname"><span class="pre">generate_diagnostics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles_beta.html#FindProfilesBetaStep.generate_diagnostics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles_beta.FindProfilesBetaStep.generate_diagnostics" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../find_profiles/index.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">src.toolbox.steps.custom.find_profiles</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../gen_data/index.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">src.toolbox.steps.custom.gen_data</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#attributes">Attributes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#functions">Functions</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.DEFAULT_RESAMPLE_CADENCE"><code class="docutils literal notranslate"><span class="pre">DEFAULT_RESAMPLE_CADENCE</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.DEFAULT_GRADIENT_THRESHOLDS"><code class="docutils literal notranslate"><span class="pre">DEFAULT_GRADIENT_THRESHOLDS</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.DEFAULT_HORIZ_GRADIENT_THRESHOLD"><code class="docutils literal notranslate"><span class="pre">DEFAULT_HORIZ_GRADIENT_THRESHOLD</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.DEFAULT_FILTER_WINDOW_SIZES"><code class="docutils literal notranslate"><span class="pre">DEFAULT_FILTER_WINDOW_SIZES</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.DEFAULT_EDGE_SQUEEZE"><code class="docutils literal notranslate"><span class="pre">DEFAULT_EDGE_SQUEEZE</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.DEFAULT_DIVE_SCALE"><code class="docutils literal notranslate"><span class="pre">DEFAULT_DIVE_SCALE</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.DEFAULT_MAX_DEPTH_GAP"><code class="docutils literal notranslate"><span class="pre">DEFAULT_MAX_DEPTH_GAP</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.DEFAULT_MIN_HORIZONTAL_DURATION"><code class="docutils literal notranslate"><span class="pre">DEFAULT_MIN_HORIZONTAL_DURATION</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.DEFAULT_MIN_HORIZONTAL_DEPTH"><code class="docutils literal notranslate"><span class="pre">DEFAULT_MIN_HORIZONTAL_DEPTH</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.FIXED_SAVGOL_WINDOW_VERT"><code class="docutils literal notranslate"><span class="pre">FIXED_SAVGOL_WINDOW_VERT</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.FIXED_SAVGOL_WINDOW_HORIZ"><code class="docutils literal notranslate"><span class="pre">FIXED_SAVGOL_WINDOW_HORIZ</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.FIXED_SAVGOL_POLY"><code class="docutils literal notranslate"><span class="pre">FIXED_SAVGOL_POLY</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.FIXED_MIN_VALID_DEPTH"><code class="docutils literal notranslate"><span class="pre">FIXED_MIN_VALID_DEPTH</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.FIXED_MIN_POINTS_VERT"><code class="docutils literal notranslate"><span class="pre">FIXED_MIN_POINTS_VERT</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.FIXED_MIN_POINTS_HORIZ"><code class="docutils literal notranslate"><span class="pre">FIXED_MIN_POINTS_HORIZ</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.COLOUR_UP"><code class="docutils literal notranslate"><span class="pre">COLOUR_UP</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.COLOUR_DOWN"><code class="docutils literal notranslate"><span class="pre">COLOUR_DOWN</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.COLOUR_HORIZONTAL"><code class="docutils literal notranslate"><span class="pre">COLOUR_HORIZONTAL</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.COLOUR_TURNING"><code class="docutils literal notranslate"><span class="pre">COLOUR_TURNING</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.COLOUR_VELOCITY"><code class="docutils literal notranslate"><span class="pre">COLOUR_VELOCITY</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.COLOUR_RAW"><code class="docutils literal notranslate"><span class="pre">COLOUR_RAW</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.COLOUR_SMOOTH"><code class="docutils literal notranslate"><span class="pre">COLOUR_SMOOTH</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.MARKER_SIZE"><code class="docutils literal notranslate"><span class="pre">MARKER_SIZE</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.LINE_WIDTH"><code class="docutils literal notranslate"><span class="pre">LINE_WIDTH</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.find_profiles_beta"><code class="docutils literal notranslate"><span class="pre">find_profiles_beta()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.FindProfilesBetaStep"><code class="docutils literal notranslate"><span class="pre">FindProfilesBetaStep</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.FindProfilesBetaStep.step_name"><code class="docutils literal notranslate"><span class="pre">FindProfilesBetaStep.step_name</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.FindProfilesBetaStep.required_variables"><code class="docutils literal notranslate"><span class="pre">FindProfilesBetaStep.required_variables</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.FindProfilesBetaStep.provided_variables"><code class="docutils literal notranslate"><span class="pre">FindProfilesBetaStep.provided_variables</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.FindProfilesBetaStep.run"><code class="docutils literal notranslate"><span class="pre">FindProfilesBetaStep.run()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles_beta.FindProfilesBetaStep.generate_diagnostics"><code class="docutils literal notranslate"><span class="pre">FindProfilesBetaStep.generate_diagnostics()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../../../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, National Oceanography Centre.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
