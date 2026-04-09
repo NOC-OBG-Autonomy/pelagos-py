@@ -4,7 +4,6 @@ import xarray as xr
 from unittest.mock import patch
 
 from toolbox.steps.custom.qc.ctd_qc import ctd_qc
-from utils.test_utils import create_mock_dataset
 
 
 def create_ctd_dataset(pres=None, temp=None, cndc=None, cndc_units="S/m"):
