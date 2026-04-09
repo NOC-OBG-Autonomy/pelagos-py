@@ -39,6 +39,7 @@ steps:
         impossible location qc: {} # Are the GPS coords within logical bounds?
         position on land qc: {} # Are the coords on land?
         impossible speed qc: {} # Is the horizontal speed reasonable?
+        ctd qc: {} # Are CTD variables within reasonable bounds?
     diagnostics: true # Plot all test outcomes
 
 # Next we will apply QC to the CTD variables. Technically this step can be merged with
