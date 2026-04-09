@@ -475,6 +475,10 @@
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">compute_dark_value</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dark_value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct_data</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">apply_dark_correction</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct_data</span><span class="p">()</span>
@@ -532,10 +536,13 @@
         <span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
         
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">deep_profiles</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;[Chla Deep Correction] No deep profiles could be identified. &quot;</span>
-                <span class="s2">&quot;Try adjusting the &#39;depth_threshold&#39; parameter.&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;WARNING: [Chla Deep Correction] No profiles found below </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">depth_threshold</span><span class="si">}</span><span class="s2">m. &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Skipping dark correction.&quot;</span>
             <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dark_value</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">return</span>
+
         <span class="n">interp_data</span> <span class="o">=</span> <span class="n">interp_data</span><span class="p">[</span><span class="n">interp_data</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">deep_profiles</span><span class="p">)]</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">chla_deep_minima</span> <span class="o">=</span> <span class="n">interp_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span>

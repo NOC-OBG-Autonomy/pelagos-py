@@ -430,23 +430,6 @@
 <span class="sd">    ----------</span>
 <span class="sd">    step_name : str</span>
 <span class="sd">        Identifier for this processing step. Set to &quot;Interpolate Data&quot;.</span>
-
-<span class="sd">    Examples</span>
-<span class="sd">    --------</span>
-<span class="sd">    Example config usage::</span>
-
-<span class="sd">        - name: &quot;Interpolate Data&quot;</span>
-<span class="sd">          parameters:</span>
-<span class="sd">            qc_handling_settings: {</span>
-<span class="sd">              flag_filter_settings: {</span>
-<span class="sd">                &quot;PRES&quot;: [3, 4, 9],</span>
-<span class="sd">                &quot;LATITUDE&quot;: [3, 4, 9],</span>
-<span class="sd">                &quot;LONGITUDE&quot;: [3, 4, 9]</span>
-<span class="sd">              },</span>
-<span class="sd">              reconstruction_behaviour: &quot;replace&quot;,</span>
-<span class="sd">              flag_mapping: { 3: 8, 4: 8, 9: 8 }</span>
-<span class="sd">            }</span>
-<span class="sd">          diagnostics: false</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="InterpolateVariables.step_name">
@@ -461,6 +444,23 @@
 <a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/interpolate_data/index.html#src.toolbox.steps.custom.interpolate_data.InterpolateVariables.provided_variables">[docs]</a>
     <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[]</span></div>
 
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Intercept parameters during initialization to inject default flag mappings </span>
+<span class="sd">        before the QCHandlingMixin sets up its internal state.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">parameters</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;parameters&quot;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="k">if</span> <span class="n">parameters</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">qc_settings</span> <span class="o">=</span> <span class="n">parameters</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;qc_handling_settings&quot;</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="n">flag_map</span> <span class="o">=</span> <span class="n">qc_settings</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;flag_mapping&quot;</span><span class="p">,</span> <span class="p">{})</span>
+            
+            <span class="c1"># Ensure we default to mapping bad/missing data (3, 4, 9) to estimated (8)</span>
+            <span class="k">for</span> <span class="n">bad_flag</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">9</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">bad_flag</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">flag_map</span> <span class="ow">and</span> <span class="nb">str</span><span class="p">(</span><span class="n">bad_flag</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">flag_map</span><span class="p">:</span>
+                    <span class="n">flag_map</span><span class="p">[</span><span class="n">bad_flag</span><span class="p">]</span> <span class="o">=</span> <span class="mi">8</span>
+                    
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
 <div class="viewcode-block" id="InterpolateVariables.run">
 <a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/interpolate_data/index.html#src.toolbox.steps.custom.interpolate_data.InterpolateVariables.run">[docs]</a>
@@ -483,7 +483,7 @@
 <span class="sd">            The updated context dictionary containing the interpolated dataset</span>
 <span class="sd">            under the &quot;data&quot; key.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Interpolating variables...&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Interpolating variables...&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
 

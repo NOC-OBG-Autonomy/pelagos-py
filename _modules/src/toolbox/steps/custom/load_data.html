@@ -524,18 +524,7 @@
                 <span class="s2">&quot;&#39;TIME&#39; is not monotonically increasing. This may cause fatal issues in processing. &quot;</span>
                 <span class="s2">&quot;Please check the quality of your input data.&quot;</span>
             <span class="p">)</span>
-
-        <span class="c1"># TODO: Remove QC column resetting when BODC has properly implemented QC outputs</span>
-        <span class="c1"># Reset all data variable flags. Set unchecked data flags to 0 and missing data flags to 9</span>
-        <span class="c1"># cols_to_qc = [</span>
-        <span class="c1">#     var for var in self.data.data_vars</span>
-        <span class="c1">#     if var.isupper() and (var not in self.data.dims) and (&quot;_QC&quot; not in var)</span>
-        <span class="c1"># ]</span>
-        <span class="c1"># data_subset = self.data[cols_to_qc]</span>
-        <span class="c1"># masks = xr.where(data_subset.isnull(), 9, 0).astype(int)</span>
-        <span class="c1"># masks = masks.rename({var: f&quot;{var}_QC&quot; for var in cols_to_qc})</span>
-        <span class="c1"># self.data.update(masks)</span>
-
+            
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 

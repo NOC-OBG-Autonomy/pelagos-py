@@ -13,22 +13,7 @@
   "api/src/toolbox/steps/custom/find_profiles_beta/index": [],
   "api/src/toolbox/steps/custom/gen_data/index": [],
   "api/src/toolbox/steps/custom/index": [],
-  "api/src/toolbox/steps/custom/interpolate_data/index": [
-    {
-      "source": "- name: \"Interpolate Data\"\n  parameters:\n    qc_handling_settings: {\n      flag_filter_settings: {\n        \"PRES\": [3, 4, 9],\n        \"LATITUDE\": [3, 4, 9],\n        \"LONGITUDE\": [3, 4, 9]\n      },\n      reconstruction_behaviour: \"replace\",\n      flag_mapping: { 3: 8, 4: 8, 9: 8 }\n    }\n  diagnostics: false",
-      "names": [],
-      "example": {
-        "document": "api/src/toolbox/steps/custom/interpolate_data/index",
-        "ref_id": "module-contents",
-        "headings": [
-          "src.toolbox.steps.custom.interpolate_data",
-          "Module Contents",
-          "Examples"
-        ]
-      },
-      "doc_lineno": 58
-    }
-  ],
+  "api/src/toolbox/steps/custom/interpolate_data/index": [],
   "api/src/toolbox/steps/custom/load_data/index": [],
   "api/src/toolbox/steps/custom/profile_direction/index": [
     {
@@ -48,6 +33,7 @@
   ],
   "api/src/toolbox/steps/custom/qc/archive/index": [],
   "api/src/toolbox/steps/custom/qc/blank_qc/index": [],
+  "api/src/toolbox/steps/custom/qc/ctd_qc/index": [],
   "api/src/toolbox/steps/custom/qc/flag_full_profile/index": [],
   "api/src/toolbox/steps/custom/qc/gross_range_qc/index": [],
   "api/src/toolbox/steps/custom/qc/impossible_date_qc/index": [],

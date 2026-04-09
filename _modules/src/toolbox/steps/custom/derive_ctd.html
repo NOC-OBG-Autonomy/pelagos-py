@@ -397,6 +397,30 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">gsw</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+<span class="c1"># Diagnostic plot settings</span>
+<div class="viewcode-block" id="PLOT_SIZE">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/derive_ctd/index.html#src.toolbox.steps.custom.derive_ctd.PLOT_SIZE">[docs]</a>
+<span class="n">PLOT_SIZE</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>  <span class="c1"># Widened slightly to accommodate the external legend</span></div>
+
+<div class="viewcode-block" id="PLOT_COLOURS">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/derive_ctd/index.html#src.toolbox.steps.custom.derive_ctd.PLOT_COLOURS">[docs]</a>
+<span class="n">PLOT_COLOURS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;#00b894&quot;</span><span class="p">,</span> <span class="s2">&quot;#0984e3&quot;</span><span class="p">,</span> <span class="s2">&quot;#d63031&quot;</span><span class="p">,</span> <span class="s2">&quot;#fdcb6e&quot;</span><span class="p">,</span> <span class="s2">&quot;#6c5ce7&quot;</span><span class="p">,</span> <span class="s2">&quot;#e84393&quot;</span><span class="p">,</span> <span class="s2">&quot;#00cec9&quot;</span><span class="p">,</span> <span class="s2">&quot;#e17055&quot;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="FLAGGED_COLOUR">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/derive_ctd/index.html#src.toolbox.steps.custom.derive_ctd.FLAGGED_COLOUR">[docs]</a>
+<span class="n">FLAGGED_COLOUR</span> <span class="o">=</span> <span class="s2">&quot;#b2bec3&quot;</span> <span class="c1"># Grey for flagged/bad data</span></div>
+
+<div class="viewcode-block" id="MARKER_SIZE">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/derive_ctd/index.html#src.toolbox.steps.custom.derive_ctd.MARKER_SIZE">[docs]</a>
+<span class="n">MARKER_SIZE</span> <span class="o">=</span> <span class="mi">1</span></div>
+
+<div class="viewcode-block" id="PLOT_ALPHA">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/derive_ctd/index.html#src.toolbox.steps.custom.derive_ctd.PLOT_ALPHA">[docs]</a>
+<span class="n">PLOT_ALPHA</span> <span class="o">=</span> <span class="mf">0.6</span></div>
+
 
 
 <span class="nd">@register_step</span>
@@ -450,21 +474,19 @@
 <span class="sd">        Raises:</span>
 <span class="sd">            ValueError: If no data is found in the context</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processing CTD...&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Processing CTD...&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
 
-        <span class="c1"># Convert xarray Dataset to Polars DataFrame for efficient numerical processing</span>
-        <span class="c1"># Extract only the variables needed for GSW calculations</span>
+        <span class="c1"># Extract only the required variables that currently exist in the dataset</span>
+        <span class="n">available_vars</span> <span class="o">=</span> <span class="p">[</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span> <span class="k">if</span> <span class="n">col</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">]</span>
+        
+        <span class="c1"># nan_to_null is False to ensure underlying NaN structures are never altered</span>
         <span class="n">df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">from_pandas</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span>
-                <span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">,</span> <span class="s2">&quot;LATITUDE&quot;</span><span class="p">,</span> <span class="s2">&quot;LONGITUDE&quot;</span><span class="p">,</span> <span class="s2">&quot;CNDC&quot;</span><span class="p">,</span> <span class="s2">&quot;PRES&quot;</span><span class="p">,</span> <span class="s2">&quot;TEMP&quot;</span><span class="p">]</span>
-            <span class="p">]</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">(),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">available_vars</span><span class="p">]</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">(),</span>
             <span class="n">nan_to_null</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="c1"># Define GSW (Gibbs SeaWater) function calls for deriving oceanographic variables</span>
-        <span class="c1"># Each tuple contains: (output_variable_name, gsw_function, [required_input_variables])</span>
         <span class="n">gsw_function_calls</span> <span class="o">=</span> <span class="p">(</span>
             <span class="p">(</span><span class="s2">&quot;DEPTH&quot;</span><span class="p">,</span> <span class="n">gsw</span><span class="o">.</span><span class="n">z_from_p</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;PRES&quot;</span><span class="p">,</span> <span class="s2">&quot;LATITUDE&quot;</span><span class="p">]),</span>
             <span class="p">(</span><span class="s2">&quot;PRAC_SALINITY&quot;</span><span class="p">,</span> <span class="n">gsw</span><span class="o">.</span><span class="n">SP_from_C</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;CNDC&quot;</span><span class="p">,</span> <span class="s2">&quot;TEMP&quot;</span><span class="p">,</span> <span class="s2">&quot;PRES&quot;</span><span class="p">]),</span>
@@ -477,80 +499,198 @@
             <span class="p">(</span><span class="s2">&quot;DENSITY&quot;</span><span class="p">,</span> <span class="n">gsw</span><span class="o">.</span><span class="n">rho</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;ABS_SALINITY&quot;</span><span class="p">,</span> <span class="s2">&quot;CONS_TEMP&quot;</span><span class="p">,</span> <span class="s2">&quot;PRES&quot;</span><span class="p">]),</span>
         <span class="p">)</span>
 
-        <span class="c1"># Define metadata for each derived variable following CF conventions</span>
         <span class="n">variable_metadata</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;DEPTH&quot;</span><span class="p">:</span> <span class="p">{</span>
                 <span class="s2">&quot;long_name&quot;</span><span class="p">:</span> <span class="s2">&quot;Depth from surface (negative down as defined by TEOS-10)&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;units&quot;</span><span class="p">:</span> <span class="s2">&quot;meters [m]&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;units&quot;</span><span class="p">:</span> <span class="s2">&quot;m&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;standard_name&quot;</span><span class="p">:</span> <span class="s2">&quot;DEPTH&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;valid_min&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">10925</span><span class="p">,</span>  <span class="c1"># Mariana Trench depth</span>
-                <span class="s2">&quot;valid_max&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>  <span class="c1"># Above sea level</span>
+                <span class="s2">&quot;valid_min&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">10925</span><span class="p">,</span>
+                <span class="s2">&quot;valid_max&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="s2">&quot;PRAC_SALINITY&quot;</span><span class="p">:</span> <span class="p">{</span>
                 <span class="s2">&quot;long_name&quot;</span><span class="p">:</span> <span class="s2">&quot;Practical salinity&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;units&quot;</span><span class="p">:</span> <span class="s2">&quot;unitless&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;units&quot;</span><span class="p">:</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;standard_name&quot;</span><span class="p">:</span> <span class="s2">&quot;PRAC_SALINITY&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;valid_min&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>  <span class="c1"># Extremely fresh water</span>
-                <span class="s2">&quot;valid_max&quot;</span><span class="p">:</span> <span class="mi">42</span><span class="p">,</span>  <span class="c1"># Hypersaline conditions</span>
+                <span class="s2">&quot;valid_min&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+                <span class="s2">&quot;valid_max&quot;</span><span class="p">:</span> <span class="mi">42</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="s2">&quot;ABS_SALINITY&quot;</span><span class="p">:</span> <span class="p">{</span>
                 <span class="s2">&quot;long_name&quot;</span><span class="p">:</span> <span class="s2">&quot;Absolute salinity&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;units&quot;</span><span class="p">:</span> <span class="s2">&quot;g/kg&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;standard_name&quot;</span><span class="p">:</span> <span class="s2">&quot;ABS_SALINITY&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;valid_min&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>  <span class="c1"># Pure water</span>
-                <span class="s2">&quot;valid_max&quot;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>  <span class="c1"># Pure salt (theoretical maximum)</span>
+                <span class="s2">&quot;valid_min&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="s2">&quot;valid_max&quot;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="s2">&quot;CONS_TEMP&quot;</span><span class="p">:</span> <span class="p">{</span>
                 <span class="s2">&quot;long_name&quot;</span><span class="p">:</span> <span class="s2">&quot;Conservative temperature&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;units&quot;</span><span class="p">:</span> <span class="s2">&quot;°C&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;units&quot;</span><span class="p">:</span> <span class="s2">&quot;degC&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;standard_name&quot;</span><span class="p">:</span> <span class="s2">&quot;CONS_TEMP&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;valid_min&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span>  <span class="c1"># Freezing point of seawater</span>
-                <span class="s2">&quot;valid_max&quot;</span><span class="p">:</span> <span class="mi">102</span><span class="p">,</span>  <span class="c1"># Boiling point of seawater</span>
+                <span class="s2">&quot;valid_min&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span>
+                <span class="s2">&quot;valid_max&quot;</span><span class="p">:</span> <span class="mi">102</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="s2">&quot;DENSITY&quot;</span><span class="p">:</span> <span class="p">{</span>
                 <span class="s2">&quot;long_name&quot;</span><span class="p">:</span> <span class="s2">&quot;Density&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;units&quot;</span><span class="p">:</span> <span class="s2">&quot;kg/m3&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;standard_name&quot;</span><span class="p">:</span> <span class="s2">&quot;DENSITY&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;valid_min&quot;</span><span class="p">:</span> <span class="mi">900</span><span class="p">,</span>  <span class="c1"># Warm, low salinity surface water</span>
-                <span class="s2">&quot;valid_max&quot;</span><span class="p">:</span> <span class="mi">1100</span><span class="p">,</span>  <span class="c1"># Cold, high salinity bottom water</span>
+                <span class="s2">&quot;valid_min&quot;</span><span class="p">:</span> <span class="mi">900</span><span class="p">,</span>
+                <span class="s2">&quot;valid_max&quot;</span><span class="p">:</span> <span class="mi">1100</span><span class="p">,</span>
             <span class="p">},</span>
         <span class="p">}</span>
 
-        <span class="c1"># Process each GSW function call to derive new variables</span>
         <span class="k">for</span> <span class="n">var_name</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">args</span> <span class="ow">in</span> <span class="n">gsw_function_calls</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">var_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_derive</span><span class="p">:</span>
                 <span class="k">continue</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Deriving </span><span class="si">{</span><span class="n">var_name</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
 
-            <span class="c1"># Use Polars struct operations to efficiently apply GSW functions</span>
-            <span class="c1"># This approach handles vectorized operations across the entire dataset</span>
-            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
-                <span class="n">pl</span><span class="o">.</span><span class="n">struct</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
-                <span class="o">.</span><span class="n">map_batches</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">struct</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">)))</span>
-                <span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="n">var_name</span><span class="p">)</span>
-            <span class="p">)</span>
+            <span class="c1"># Validate that all required inputs exist for this specific calculation</span>
+            <span class="n">missing_args</span> <span class="o">=</span> <span class="p">[</span><span class="n">arg</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span> <span class="k">if</span> <span class="n">arg</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">missing_args</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Missing required variables </span><span class="si">{</span><span class="n">missing_args</span><span class="si">}</span><span class="s2"> for </span><span class="si">{</span><span class="n">var_name</span><span class="si">}</span><span class="s2">. Skipping.&quot;</span><span class="p">)</span>
+                <span class="k">continue</span>
 
-            <span class="c1"># Convert Polars column back to numpy array and add to xarray Dataset</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,),</span> <span class="n">df</span><span class="p">[</span><span class="n">var_name</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">())</span>
-            <span class="c1"># Attach CF-compliant metadata attributes</span>
+            <span class="c1"># Convert inputs back to pure numpy arrays for GSW</span>
+            <span class="n">input_arrays</span> <span class="o">=</span> <span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="n">arg</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">]</span>
+            <span class="n">derived_values</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">input_arrays</span><span class="p">)</span>
+
+            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">var_name</span><span class="p">,</span> <span class="n">derived_values</span><span class="p">))</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,),</span> <span class="n">derived_values</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var_name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="n">variable_metadata</span><span class="p">[</span><span class="n">var_name</span><span class="p">]</span>
 
-            <span class="c1"># generate QC for the new column</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">(</span>
-                <span class="p">{</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var_name</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">arg</span><span class="si">}</span><span class="s2">_QC&quot;</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">]}</span>
-            <span class="p">)</span>
+            <span class="c1"># Safely generate QC by only passing source columns that actually exist</span>
+            <span class="n">source_qcs</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">arg</span><span class="si">}</span><span class="s2">_QC&quot;</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span> <span class="k">if</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">arg</span><span class="si">}</span><span class="s2">_QC&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">source_qcs</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">({</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var_name</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">:</span> <span class="n">source_qcs</span><span class="p">})</span>
 
-        <span class="c1"># self.log diagnostic information if diagnostics are enabled</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">describe</span><span class="p">(</span><span class="n">percentiles</span><span class="o">=</span><span class="p">[]))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plot_diagnostics</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct_data</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">update_qc</span><span class="p">()</span>
 
-        <span class="c1"># Update the context with the enhanced dataset</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
+
+
+<div class="viewcode-block" id="DeriveCTDVariables.plot_diagnostics">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/derive_ctd/index.html#src.toolbox.steps.custom.derive_ctd.DeriveCTDVariables.plot_diagnostics">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">plot_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s2">&quot;TIME&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Combine physical inputs and derived outputs, filtering for what actually exists</span>
+        <span class="n">target_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;PRES&quot;</span><span class="p">,</span> <span class="s2">&quot;CNDC&quot;</span><span class="p">,</span> <span class="s2">&quot;TEMP&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">provided_variables</span>
+        <span class="n">plot_vars</span> <span class="o">=</span> <span class="p">[</span><span class="n">var</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">target_variables</span> <span class="k">if</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">]</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">plot_vars</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">&quot;tkagg&quot;</span><span class="p">)</span>
+        <span class="n">n_vars</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">plot_vars</span><span class="p">)</span>
+        
+        <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">n_vars</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="n">PLOT_SIZE</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">150</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">n_vars</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">axes</span> <span class="o">=</span> <span class="p">[</span><span class="n">axes</span><span class="p">]</span>
+
+        <span class="n">time_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">var_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">plot_vars</span><span class="p">):</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">colour</span> <span class="o">=</span> <span class="n">PLOT_COLOURS</span><span class="p">[</span><span class="n">i</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">PLOT_COLOURS</span><span class="p">)]</span>
+            <span class="n">data_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var_name</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+            
+            <span class="c1"># Extract units and format cleanly (ignore &quot;1&quot; or missing units)</span>
+            <span class="n">units</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var_name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;units&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">units</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;1&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">,</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]:</span>
+                <span class="n">unit_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">unit_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">[</span><span class="si">{</span><span class="n">units</span><span class="si">}</span><span class="s2">]&quot;</span>
+
+            <span class="c1"># Determine QC status if the QC column exists</span>
+            <span class="n">qc_col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var_name</span><span class="si">}</span><span class="s2">_QC&quot;</span>
+            <span class="k">if</span> <span class="n">qc_col</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+                <span class="n">qc_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">qc_col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+                <span class="c1"># Treat 0 (No QC), 1, 2, 5, 8 as &quot;Good&quot; points</span>
+                <span class="n">good_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">qc_vals</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">8</span><span class="p">])</span>
+                <span class="n">bad_mask</span> <span class="o">=</span> <span class="o">~</span><span class="n">good_mask</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">data_vals</span><span class="p">)</span>
+                <span class="n">good_plot_mask</span> <span class="o">=</span> <span class="n">good_mask</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">data_vals</span><span class="p">)</span>
+                
+                <span class="c1"># Plot bad data first so it sits beneath good data</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">bad_mask</span><span class="p">):</span>
+                    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                        <span class="n">time_data</span><span class="p">[</span><span class="n">bad_mask</span><span class="p">],</span>
+                        <span class="n">data_vals</span><span class="p">[</span><span class="n">bad_mask</span><span class="p">],</span>
+                        <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span>
+                        <span class="n">markersize</span><span class="o">=</span><span class="n">MARKER_SIZE</span><span class="p">,</span>
+                        <span class="n">alpha</span><span class="o">=</span><span class="n">PLOT_ALPHA</span><span class="p">,</span>
+                        <span class="n">c</span><span class="o">=</span><span class="n">FLAGGED_COLOUR</span><span class="p">,</span>
+                        <span class="n">zorder</span><span class="o">=</span><span class="mi">1</span>
+                    <span class="p">)</span>
+                    
+                <span class="c1"># Plot good data on top</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">good_plot_mask</span><span class="p">):</span>
+                    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                        <span class="n">time_data</span><span class="p">[</span><span class="n">good_plot_mask</span><span class="p">],</span>
+                        <span class="n">data_vals</span><span class="p">[</span><span class="n">good_plot_mask</span><span class="p">],</span>
+                        <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                        <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span>
+                        <span class="n">markersize</span><span class="o">=</span><span class="n">MARKER_SIZE</span><span class="p">,</span>
+                        <span class="n">alpha</span><span class="o">=</span><span class="n">PLOT_ALPHA</span><span class="p">,</span>
+                        <span class="n">c</span><span class="o">=</span><span class="n">colour</span><span class="p">,</span>
+                        <span class="n">zorder</span><span class="o">=</span><span class="mi">2</span>
+                    <span class="p">)</span>
+                    
+                <span class="c1"># We calculate stats only on the good data for a cleaner representation</span>
+                <span class="n">stats_data</span> <span class="o">=</span> <span class="n">data_vals</span><span class="p">[</span><span class="n">good_plot_mask</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Fallback if no QC column exists</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                    <span class="n">time_data</span><span class="p">,</span>
+                    <span class="n">data_vals</span><span class="p">,</span>
+                    <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                    <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span>
+                    <span class="n">markersize</span><span class="o">=</span><span class="n">MARKER_SIZE</span><span class="p">,</span>
+                    <span class="n">alpha</span><span class="o">=</span><span class="n">PLOT_ALPHA</span><span class="p">,</span>
+                    <span class="n">c</span><span class="o">=</span><span class="n">colour</span><span class="p">,</span>
+                    <span class="n">zorder</span><span class="o">=</span><span class="mi">2</span>
+                <span class="p">)</span>
+                <span class="n">stats_data</span> <span class="o">=</span> <span class="n">data_vals</span><span class="p">[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">data_vals</span><span class="p">)]</span>
+            
+            <span class="c1"># Calculate robust statistics</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">stats_data</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">v_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">stats_data</span><span class="p">)</span>
+                <span class="n">v_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">stats_data</span><span class="p">)</span>
+                <span class="n">v_mean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">stats_data</span><span class="p">)</span>
+                <span class="n">v_std</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanstd</span><span class="p">(</span><span class="n">stats_data</span><span class="p">)</span>
+                
+                <span class="c1"># Add formatted statistical legend outside the plot area</span>
+                <span class="n">stat_text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Min: </span><span class="si">{</span><span class="n">v_min</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="se">\n</span><span class="s2">Max: </span><span class="si">{</span><span class="n">v_max</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="se">\n</span><span class="s2">Mean: </span><span class="si">{</span><span class="n">v_mean</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="se">\n</span><span class="s2">Std: </span><span class="si">{</span><span class="n">v_std</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([],</span> <span class="p">[],</span> <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">stat_text</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span>
+                    <span class="n">loc</span><span class="o">=</span><span class="s2">&quot;center left&quot;</span><span class="p">,</span> 
+                    <span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mf">1.01</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span> 
+                    <span class="n">fontsize</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> 
+                    <span class="n">framealpha</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> 
+                    <span class="n">fancybox</span><span class="o">=</span><span class="kc">True</span>
+                <span class="p">)</span>
+
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var_name</span><span class="si">}{</span><span class="n">unit_str</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s2">&quot;major&quot;</span><span class="p">,</span> <span class="n">labelsize</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+            
+            <span class="c1"># Invert y-axis for pressure so the ocean surface is at the top of the plot</span>
+            <span class="k">if</span> <span class="n">var_name</span> <span class="o">==</span> <span class="s2">&quot;PRES&quot;</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
+
+        <span class="n">axes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Time&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2"> Diagnostics&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s2">&quot;bold&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># Adjust layout to leave room on the right for the external legends</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">(</span><span class="n">rect</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.88</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 </div>
 
 </pre></div>

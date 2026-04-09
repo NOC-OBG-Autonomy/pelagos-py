@@ -347,6 +347,7 @@
 <li class="toctree-l3 has-children"><a class="reference internal" href="../qc/index.html">src.toolbox.steps.custom.qc</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l4"><a class="reference internal" href="../qc/archive/index.html">src.toolbox.steps.custom.qc.archive</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../qc/blank_qc/index.html">src.toolbox.steps.custom.qc.blank_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/ctd_qc/index.html">src.toolbox.steps.custom.qc.ctd_qc</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../qc/flag_full_profile/index.html">src.toolbox.steps.custom.qc.flag_full_profile</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../qc/gross_range_qc/index.html">src.toolbox.steps.custom.qc.gross_range_qc</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../qc/impossible_date_qc/index.html">src.toolbox.steps.custom.qc.impossible_date_qc</a></li>
@@ -479,41 +480,14 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.apply_qc.ApplyQC.organise_flags">
 <span class="sig-name descname"><span class="pre">organise_flags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_flags</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/apply_qc.html#ApplyQC.organise_flags"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.apply_qc.ApplyQC.organise_flags" title="Link to this definition">#</a></dt>
-<dd><p>Method for taking in new flags (new_flags) and cross checking against existing flags (self.flag_store), including upgrading flags when necessary, following ARGO flagging standards.
-See Wong et al. 2025 pp. 106 (<a class="reference external" href="http://dx.doi.org/10.13155/33951">http://dx.doi.org/10.13155/33951</a>) and Mancini et al. 2021 pp. 43-44 for additional ARGO flag definitions.</p>
-<p>Combinatrix logic:
-0: No QC performed, the initial flag.
-1: Good data. No adjustment needed.
-2: Probably good data.
-3: Probably bad data that are potentially correctable.
-4: Bad data that are not correctable.
-5: Value changed.
-6, 7: Not used.
-8: Estimated by interpolation, extrapolation, or other algorithm.
-9: Missing value.</p>
-<p>The combinatrix defines flagging priority when merging in new flags. The flag value itself acts as a kind of index.
-As an example, if an existing flag is 2 (probably good data) and a new flag is 4 (bad data), the resulting flag will be 4.
-2 (probably good data) + 4 (bad data) -&gt; 4 (bad data)
-3 (probably bad data) + 5 (value changed) -&gt; 3 (probably bad data)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>new_flags</strong> (<em>xarray.Dataset</em>) – Dataset containing new QC flag variables to be merged into the existing flag store.</p>
-</dd>
-</dl>
+<dd><p>Method for taking in new flags (new_flags) and cross checking against existing flags (self.flag_store),
+including upgrading flags when necessary, following ARGO flagging standards.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.apply_qc.ApplyQC.run">
 <span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/apply_qc.html#ApplyQC.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.apply_qc.ApplyQC.run" title="Link to this definition">#</a></dt>
 <dd><p>Run the Apply QC step.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Raises<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.14)"><strong>KeyError</strong></a> – If no QC operations are specified, if requested QC tests are invalid, or esssential variables are missing.</p></li>
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If no data is found in context.</p></li>
-</ul>
-</dd>
-</dl>
 </dd></dl>
 
 </dd></dl>

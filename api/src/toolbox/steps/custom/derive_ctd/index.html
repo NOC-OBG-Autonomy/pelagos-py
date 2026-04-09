@@ -347,6 +347,7 @@
 <li class="toctree-l3 has-children"><a class="reference internal" href="../qc/index.html">src.toolbox.steps.custom.qc</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l4"><a class="reference internal" href="../qc/archive/index.html">src.toolbox.steps.custom.qc.archive</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../qc/blank_qc/index.html">src.toolbox.steps.custom.qc.blank_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/ctd_qc/index.html">src.toolbox.steps.custom.qc.ctd_qc</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../qc/flag_full_profile/index.html">src.toolbox.steps.custom.qc.flag_full_profile</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../qc/gross_range_qc/index.html">src.toolbox.steps.custom.qc.gross_range_qc</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../qc/impossible_date_qc/index.html">src.toolbox.steps.custom.qc.impossible_date_qc</a></li>
@@ -451,6 +452,29 @@
                   
   <section id="module-src.toolbox.steps.custom.derive_ctd">
 <span id="src-toolbox-steps-custom-derive-ctd"></span><h1>src.toolbox.steps.custom.derive_ctd<a class="headerlink" href="#module-src.toolbox.steps.custom.derive_ctd" title="Link to this heading">#</a></h1>
+<section id="attributes">
+<h2>Attributes<a class="headerlink" href="#attributes" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.derive_ctd.PLOT_SIZE" title="src.toolbox.steps.custom.derive_ctd.PLOT_SIZE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PLOT_SIZE</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.derive_ctd.PLOT_COLOURS" title="src.toolbox.steps.custom.derive_ctd.PLOT_COLOURS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PLOT_COLOURS</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.derive_ctd.FLAGGED_COLOUR" title="src.toolbox.steps.custom.derive_ctd.FLAGGED_COLOUR"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FLAGGED_COLOUR</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.derive_ctd.MARKER_SIZE" title="src.toolbox.steps.custom.derive_ctd.MARKER_SIZE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MARKER_SIZE</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.derive_ctd.PLOT_ALPHA" title="src.toolbox.steps.custom.derive_ctd.PLOT_ALPHA"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PLOT_ALPHA</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
 <section id="classes">
 <h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
@@ -464,6 +488,31 @@
 </section>
 <section id="module-contents">
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">#</a></h2>
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.derive_ctd.PLOT_SIZE">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.derive_ctd.</span></span><span class="sig-name descname"><span class="pre">PLOT_SIZE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(10,</span> <span class="pre">8)</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/derive_ctd.html#PLOT_SIZE"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.derive_ctd.PLOT_SIZE" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.derive_ctd.PLOT_COLOURS">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.derive_ctd.</span></span><span class="sig-name descname"><span class="pre">PLOT_COLOURS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['#00b894',</span> <span class="pre">'#0984e3',</span> <span class="pre">'#d63031',</span> <span class="pre">'#fdcb6e',</span> <span class="pre">'#6c5ce7',</span> <span class="pre">'#e84393',</span> <span class="pre">'#00cec9',</span> <span class="pre">'#e17055']</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/derive_ctd.html#PLOT_COLOURS"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.derive_ctd.PLOT_COLOURS" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.derive_ctd.FLAGGED_COLOUR">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.derive_ctd.</span></span><span class="sig-name descname"><span class="pre">FLAGGED_COLOUR</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'#b2bec3'</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/derive_ctd.html#FLAGGED_COLOUR"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.derive_ctd.FLAGGED_COLOUR" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.derive_ctd.MARKER_SIZE">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.derive_ctd.</span></span><span class="sig-name descname"><span class="pre">MARKER_SIZE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/derive_ctd.html#MARKER_SIZE"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.derive_ctd.MARKER_SIZE" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.derive_ctd.PLOT_ALPHA">
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.derive_ctd.</span></span><span class="sig-name descname"><span class="pre">PLOT_ALPHA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.6</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/derive_ctd.html#PLOT_ALPHA"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.derive_ctd.PLOT_ALPHA" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.derive_ctd.DeriveCTDVariables">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.derive_ctd.</span></span><span class="sig-name descname"><span class="pre">DeriveCTDVariables</span></span><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/derive_ctd.html#DeriveCTDVariables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.derive_ctd.DeriveCTDVariables" title="Link to this definition">#</a></dt>
@@ -511,6 +560,11 @@ required: [“TIME”, “LATITUDE”, “LONGITUDE”, “CNDC”, “PRES”, 
 </dd>
 </dl>
 </dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.derive_ctd.DeriveCTDVariables.plot_diagnostics">
+<span class="sig-name descname"><span class="pre">plot_diagnostics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/derive_ctd.html#DeriveCTDVariables.plot_diagnostics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.derive_ctd.DeriveCTDVariables.plot_diagnostics" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 
@@ -564,13 +618,20 @@ required: [“TIME”, “LATITUDE”, “LONGITUDE”, “CNDC”, “PRES”, 
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#attributes">Attributes</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.derive_ctd.PLOT_SIZE"><code class="docutils literal notranslate"><span class="pre">PLOT_SIZE</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.derive_ctd.PLOT_COLOURS"><code class="docutils literal notranslate"><span class="pre">PLOT_COLOURS</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.derive_ctd.FLAGGED_COLOUR"><code class="docutils literal notranslate"><span class="pre">FLAGGED_COLOUR</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.derive_ctd.MARKER_SIZE"><code class="docutils literal notranslate"><span class="pre">MARKER_SIZE</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.derive_ctd.PLOT_ALPHA"><code class="docutils literal notranslate"><span class="pre">PLOT_ALPHA</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.derive_ctd.DeriveCTDVariables"><code class="docutils literal notranslate"><span class="pre">DeriveCTDVariables</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.derive_ctd.DeriveCTDVariables.step_name"><code class="docutils literal notranslate"><span class="pre">DeriveCTDVariables.step_name</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.derive_ctd.DeriveCTDVariables.required_variables"><code class="docutils literal notranslate"><span class="pre">DeriveCTDVariables.required_variables</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.derive_ctd.DeriveCTDVariables.provided_variables"><code class="docutils literal notranslate"><span class="pre">DeriveCTDVariables.provided_variables</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.derive_ctd.DeriveCTDVariables.run"><code class="docutils literal notranslate"><span class="pre">DeriveCTDVariables.run()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.derive_ctd.DeriveCTDVariables.plot_diagnostics"><code class="docutils literal notranslate"><span class="pre">DeriveCTDVariables.plot_diagnostics()</span></code></a></li>
 </ul>
 </li>
 </ul>
