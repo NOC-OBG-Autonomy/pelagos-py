@@ -37,6 +37,8 @@ def get_test_files():
     return [str(f) for f in TEST_DATA_DIR.glob("*.nc")]
 
 @pytest.mark.filterwarnings("ignore:.*monotonically increasing.*")
+@pytest.mark.filterwarnings("ignore:.*Removed.*records containing invalid or pre-deployment timestamps.*")
+@pytest.mark.filterwarnings("ignore:.*Sanitised invalid flags to 0 in.*")
 @pytest.mark.parametrize("file_path", get_test_files())
 def test_full_pipeline_execution(tmp_path, file_path):
     

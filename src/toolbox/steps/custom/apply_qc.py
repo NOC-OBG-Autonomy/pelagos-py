@@ -22,7 +22,6 @@ import toolbox.utils.diagnostics as diag
 from toolbox.steps import QC_CLASSES
 
 #### Custom imports ####
-import polars as pl
 import xarray as xr
 import numpy as np
 import json
@@ -97,6 +96,28 @@ class ApplyQC(BaseStep):
             for column_name in flag_columns_to_add:
                 self.flag_store[column_name] = new_flags[column_name]
 
+    def _sanitise_flags(self, flag_array):
+        """Converts an array of mixed/invalid flags to valid 0-9 integers, defaulting to 0."""
+        clean_vals = np.zeros_like(flag_array, dtype=np.int8)
+        errors_found = False
+        
+        for i, val in enumerate(flag_array):
+            try:
+                num = float(val)
+                if np.isnan(num):
+                    clean_vals[i] = 0
+                    errors_found = True
+                elif 0 <= num <= 9 and num.is_integer():
+                    clean_vals[i] = int(num)
+                else:
+                    clean_vals[i] = 0
+                    errors_found = True
+            except (ValueError, TypeError):
+                clean_vals[i] = 0
+                errors_found = True
+                
+        return clean_vals, errors_found
+    
 
     def run(self):
         """
@@ -149,20 +170,45 @@ class ApplyQC(BaseStep):
                     f"[Apply QC] The data is missing variables: ({set(all_required_variables) - set(data.keys())}) which are required for running QC '{test.qc_name}'."
                     f" Make sure that the variables are present in the data, or use remove tests from the order."
                 )
+        
         # Convert data to polars for fast processing
         # Fetch existing flags from the data and create a place to store them
         existing_flags = [
             flag_col for flag_col in data.data_vars if flag_col in test_qc_outputs_cols
         ]
         self.flag_store = xr.Dataset(coords={"N_MEASUREMENTS": data["N_MEASUREMENTS"]})
+        sanitised_summary = []
+
         if len(existing_flags) > 0:
             self.log(f"Found existing flags columns {set(existing_flags)} in data.")
-            self.flag_store = data[existing_flags].fillna(9).astype(np.int8)
+            for flag_col in existing_flags:
+                clean_flags, errors = self._sanitise_flags(data[flag_col].values)
+                if errors:
+                    sanitised_summary.append(flag_col)
+                self.flag_store[flag_col] = (("N_MEASUREMENTS",), clean_flags)
         
         other_existing_qc = set([var for var in data.data_vars if var.endswith("_QC")]) - set(test_qc_outputs_cols)
         if any(other_existing_qc):
             self.log(f"Found QC columns for untested values: {other_existing_qc}")
-            self.log("These columns will not be modified and are not subject to this step.")
+            self.log("These columns are not subject to tests, but will be sanitised to ensure valid 0-9 format.")
+            for flag_col in other_existing_qc:
+                clean_flags, errors = self._sanitise_flags(data[flag_col].values)
+                if errors:
+                    sanitised_summary.append(flag_col)
+                # Overwrite the dirty NaN column in the dataset directly
+                data[flag_col] = (("N_MEASUREMENTS",), clean_flags)
+
+        if sanitised_summary:
+            self.log_warn(f"Sanitised invalid flags to 0 in {len(sanitised_summary)} existing _QC variables.")
+
+        # Initialize any completely missing _QC columns for variables not subject to tests
+        measurement_vars = [v for v in data.data_vars if "N_MEASUREMENTS" in data[v].dims and not v.endswith("_QC")]
+        for var in measurement_vars:
+            qc_col = f"{var}_QC"
+            if qc_col not in data.data_vars and qc_col not in test_qc_outputs_cols:
+                self.log(f"Creating missing {qc_col} for untested variable.")
+                clean_flags = xr.where(data[var].isnull(), 9, 0).astype(np.int8).values
+                data[qc_col] = (("N_MEASUREMENTS",), clean_flags)
 
         # Initialize the missing flag columns
         mia_qc = test_qc_outputs_cols - set(data.data_vars)
@@ -207,13 +253,16 @@ class ApplyQC(BaseStep):
                 # TODO: Find where columns are initialized, or just run on non-QC'd datasets
                 parent_attrs = data[flagged_var[:-3]].attrs                
                 attrs = self.flag_store[flagged_var].attrs
+                base_long_name = parent_attrs.get('long_name', flagged_var[:-3])
+                base_standard_name = parent_attrs.get('standard_name', flagged_var[:-3].lower())
+
                 attrs["quality_control_conventions"] = "Argo standard flags"
                 attrs["valid_min"] = 0
                 attrs["valid_max"] = 9
                 attrs["flag_values"] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
                 attrs["flag_meanings"] = "NO_QC, GOOD, PROB_GOOD, PROB_BAD, BAD, VALUE_CHANGED, NOT_USED, NOT_USED, ESTIMATED, MISSING"
-                attrs["long_name"] = f"{parent_attrs['long_name']} quality flag"
-                attrs["standard_name"] = f"{parent_attrs['standard_name']}_flag"
+                attrs["long_name"] = f"{base_long_name} quality flag"
+                attrs["standard_name"] = f"{base_standard_name}_flag"
                 attr_test = qc_qc_name.replace(" ", "_").lower()
                 attrs[f"{attr_test}_flag_cts"] = json.dumps({i: int(np.sum(var_flags.to_numpy() == i)) for i in range(10)})
                 attrs[f"{attr_test}_stats"] = json.dumps(var_flags.to_series().describe().round(5).to_dict())
