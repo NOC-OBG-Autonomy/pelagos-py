@@ -54,28 +54,28 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
     ----------
     step_name : str
         Identifier for this processing step. Set to "Interpolate Data".
-
-    Examples
-    --------
-    Example config usage::
-
-        - name: "Interpolate Data"
-          parameters:
-            qc_handling_settings: {
-              flag_filter_settings: {
-                "PRES": [3, 4, 9],
-                "LATITUDE": [3, 4, 9],
-                "LONGITUDE": [3, 4, 9]
-              },
-              reconstruction_behaviour: "replace",
-              flag_mapping: { 3: 8, 4: 8, 9: 8 }
-            }
-          diagnostics: false
     """
 
     step_name = "Interpolate Data"
     required_variables = ["TIME"]
     provided_variables = []
+
+    def __init__(self, *args, **kwargs):
+        """
+        Intercept parameters during initialization to inject default flag mappings 
+        before the QCHandlingMixin sets up its internal state.
+        """
+        parameters = kwargs.get("parameters", {})
+        if parameters is not None:
+            qc_settings = parameters.setdefault("qc_handling_settings", {})
+            flag_map = qc_settings.setdefault("flag_mapping", {})
+            
+            # Ensure we default to mapping bad/missing data (3, 4, 9) to estimated (8)
+            for bad_flag in [3, 4, 9]:
+                if bad_flag not in flag_map and str(bad_flag) not in flag_map:
+                    flag_map[bad_flag] = 8
+                    
+        super().__init__(*args, **kwargs)
 
     def run(self):
         """
@@ -96,7 +96,7 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
             The updated context dictionary containing the interpolated dataset
             under the "data" key.
         """
-        self.log(f"Interpolating variables...")
+        self.log("Interpolating variables...")
 
         self.filter_qc()
 

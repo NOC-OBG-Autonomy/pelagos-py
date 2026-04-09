@@ -3,17 +3,15 @@ import yaml
 import xarray as xr
 from pathlib import Path
 from contextlib import redirect_stdout, redirect_stderr
+from datetime import datetime
 from toolbox.pipeline import Pipeline, _setup_logging
 
 # --- Configuration Variables ---
-INPUT_DIRECTORY = "/Users/orlpru/Desktop/OG1_Data/test_data"
-OUTPUT_DIRECTORY = "/Users/orlpru/Desktop/OG1_Data/test_output"
-FILE_EXTENSION = ".nc"
+# Strictly separate raw data from processed results
+INPUT_DIRECTORY = "input"
+OUTPUT_DIRECTORY = "output"
 
-# Calculates the deep dark value using the deepest 10% of the profile 
-# or a maximum of 550m, whichever is shallower.
-CHLA_DEPTH_RATIO = 0.9 
-DEFAULT_CHLA_DEPTH = 550
+FILE_EXTENSION = ".nc"
 
 BASE_CONFIG_YAML = """
 pipeline:
@@ -33,7 +31,7 @@ steps:
         impossible date qc: {}
         impossible location qc: {}
         position on land qc: {}
-        impossible speed qc: {}
+        ctd qc: {}
     diagnostics: false
 
   - name: Apply QC
@@ -63,10 +61,6 @@ steps:
           LATITUDE: [3, 4, 9]
           LONGITUDE: [3, 4, 9]
         reconstruction_behaviour: replace
-        flag_mapping:
-          3: 8
-          4: 8
-          9: 8
     diagnostics: false
 
   - name: Derive CTD
@@ -162,15 +156,6 @@ def generate_file_config(input_path: Path, output_path: Path, config_path: Path)
         for test in ["impossible location qc", "position on land qc", "impossible speed qc"]:
             qc_settings.pop(test, None)
             
-    # Dynamically scale deep CHLA threshold
-    # Taking the max ensures we pick the shallower (less negative) value
-    calculated_threshold = -int(max_depth * CHLA_DEPTH_RATIO)
-    final_threshold = max(-DEFAULT_CHLA_DEPTH, calculated_threshold)
-    
-    for step in config["steps"]:
-        if step["name"] == "Chla Deep Correction":
-            step["parameters"]["depth_threshold"] = final_threshold
-
     with open(config_path, 'w') as f:
         yaml.dump(config, f, sort_keys=False)
 
@@ -194,21 +179,59 @@ def run_pipeline(config_path: Path) -> str:
     except Exception as e:
         return f"Failed: {e}"
 
-def process_folder(input_dir: str, output_dir: str) -> None:
-    in_dir = Path(input_dir)
-    out_dir = Path(output_dir)
+def get_friendly_date_folder(base_path: Path) -> Path:
+    """Generates a human-readable folder name like '9th Apr 2026' and handles duplicates."""
+    now = datetime.now()
     
-    out_dir.mkdir(parents=True, exist_ok=True)
+    # Add the proper ordinal suffix (st, nd, rd, th)
+    day = now.day
+    if 11 <= (day % 100) <= 13:
+        suffix = 'th'
+    else:
+        suffix = {1: 'st', 2: 'nd', 3: 'rd'}.get(day % 10, 'th')
+        
+    date_str = f"{day}{suffix} {now.strftime('%b %Y')}"
+    
+    # Check for collisions and append [2], [3], etc.
+    target_dir = base_path / date_str
+    counter = 2
+    while target_dir.exists():
+        target_dir = base_path / f"{date_str} [{counter}]"
+        counter += 1
+        
+    target_dir.mkdir(parents=True, exist_ok=True)
+    return target_dir
+
+def process_folder(input_dir: str, base_output_dir: str) -> None:
+    in_dir = Path(input_dir).resolve()
+    base_out_dir = Path(base_output_dir).resolve()
+    
+    # 1. Generate the human-readable master folder for this run
+    run_out_dir = get_friendly_date_folder(base_out_dir)
     
     successful = []
     failed = []
     
-    for input_file in in_dir.glob(f"*{FILE_EXTENSION}"):
+    print(f"Starting batch run. Outputting to: {run_out_dir.name}\n")
+    
+    # 2. Use rglob to recursively find all files in subfolders
+    for input_file in in_dir.rglob(f"*{FILE_EXTENSION}"):
+        
+        # Safety Check: Skip any files that are located inside your output directory
+        if base_out_dir in input_file.parents:
+            continue
+            
+        # 3. Calculate relative path to maintain folder structure (e.g. "BIO-Carbon")
+        relative_subfolder = input_file.parent.relative_to(in_dir)
         file_stem = input_file.stem
         
-        output_file = out_dir / f"{file_stem}_Processed.nc"
-        config_file = out_dir / f"{file_stem}_config.yaml"
-        log_file = out_dir / f"{file_stem}_log.txt"
+        # 4. Create the specific output directory for this file (using original filename)
+        file_out_dir = run_out_dir / relative_subfolder / file_stem
+        file_out_dir.mkdir(parents=True, exist_ok=True)
+        
+        output_file = file_out_dir / f"{file_stem}_Processed.nc"
+        config_file = file_out_dir / f"{file_stem}_config.yaml"
+        log_file = file_out_dir / f"{file_stem}_log.txt"
         
         print(f"Processing {input_file.name}...", end=" ", flush=True)
         

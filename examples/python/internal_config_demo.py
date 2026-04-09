@@ -3,7 +3,7 @@ import numpy as np
 from toolbox.pipeline import Pipeline, _setup_logging
 
 # --- Configuration Variables ---
-FILE_PATH = "/Users/orlpru/Desktop/OG1_Data/Growler_677_R.nc"
+FILE_PATH = "/Users/orlpru/Desktop/OG1_Data/Doombar_648.nc"
 PIPELINE_NAME = "Minimal Test Pipeline"
 
 config = {
@@ -19,8 +19,41 @@ config = {
             "diagnostics": False
         },
         {
+            "name": "Apply QC",
+            "parameters": {
+                "qc_settings": {
+                    "ctd qc": {},
+                    "impossible date qc": {},
+                    "impossible location qc": {},
+                    "position on land qc": {},
+                }
+             },
+             "diagnostics": False
+        },
+{
+            "name": "Interpolate Data",
+            "parameters": {
+                "qc_handling_settings": {
+                    "flag_filter_settings": {
+                        "LATITUDE": [3, 4, 9],
+                        "LONGITUDE": [3, 4, 9]
+                    },
+   
+                    "reconstruction_behaviour": "replace"
+                }
+            },
+            "diagnostics": False
+        },
+        {
+            "name": "Derive CTD",
+            "parameters": {
+                "to_derive": ["DEPTH", "PRAC_SALINITY", "ABS_SALINITY", "CONS_TEMP", "DENSITY"]
+            },
+            "diagnostics": True
+        },
+        {
           "name": "Find Profiles Beta",
-          "diagnostics": True  # Set to False so the plot doesn't block the print statements
+          "diagnostics": False
         }
     ]
 }

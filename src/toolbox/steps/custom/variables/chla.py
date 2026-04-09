@@ -85,6 +85,10 @@ class chla_deep_correction(BaseStep, QCHandlingMixin):
         )
 
         self.compute_dark_value()
+        if self.dark_value is None:
+            self.reconstruct_data()
+            self.context["data"] = self.data
+            return self.context
         self.apply_dark_correction()
 
         self.reconstruct_data()
@@ -139,10 +143,13 @@ class chla_deep_correction(BaseStep, QCHandlingMixin):
         ].to_numpy()
         
         if len(deep_profiles) == 0:
-            raise ValueError(
-                "[Chla Deep Correction] No deep profiles could be identified. "
-                "Try adjusting the 'depth_threshold' parameter."
+            self.log(
+                f"WARNING: [Chla Deep Correction] No profiles found below {self.depth_threshold}m. "
+                f"Skipping dark correction."
             )
+            self.dark_value = None
+            return
+
         interp_data = interp_data[interp_data["PROFILE_NUMBER"].isin(deep_profiles)]
 
         self.chla_deep_minima = interp_data.loc[
