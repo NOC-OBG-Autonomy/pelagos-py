@@ -16,6 +16,7 @@ steps:
     parameters:
       src: ../examples/data/OG1/sea055_20240628T0856_delayed.nc
       standards: ['cf','og']
+      proceed_on_fail: True  # If the dataset does not pass the format checker, halt processing (False).
 
 # ------------------------ IMPORT DATA -----------------------
 

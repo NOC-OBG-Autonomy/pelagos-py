@@ -86,10 +86,13 @@ steps:
     parameters:
       # [src]:
       # Source file path for testing.
-      src: "../examples/data/OG1/Nelson_646_R_Processed.nc"
+      src: "../examples/data/OG1/Cabot_645.nc"
       # [standards]:
       # List of string entries for different formats to check.
       standards: ['cf','og']
+      # [proceed_on_fail]:
+      #   Whether or not to allow the pipeline to continue if the dataset doesn't pass selected standards.
+      proceed_on_fail: True
 
 # ------------------------------------------------------------------------------------------- Exporting data -------------------------------------------------------------------------------------------
 

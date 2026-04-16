@@ -52,6 +52,7 @@ class FormatCheck(BaseStep):
         fname = self.context.get("global_parameters", {}).get("filename_core") or Path(src.strip("*.nc")).stem
         f_out = self.context["global_parameters"]["out_directory"] + fname + "_check.rst"
 
+        #   return_value: True if passes specified checks. errors: True if there were any errors running the CC.
         return_value, errors = ComplianceChecker.run_checker(
             src,
             checker_names = cnames,
@@ -60,6 +61,14 @@ class FormatCheck(BaseStep):
             output_filename = f_out,
             output_format = "text",
         )
+
+        if return_value == False:
+            self.log_warn(
+                f"File {fname} did not pass the file format compliance checker. See the outfile ({f_out})."
+            )
+            if self.parameters.get("proceed_on_fail") == False:
+                self.log("Halting pipeline, 'proceed on fail' parameter from config is set to False.")
+                raise RuntimeError("Compliance check step failed. Check input files and log for details.")
 
         if errors:
             self.log_warn(
