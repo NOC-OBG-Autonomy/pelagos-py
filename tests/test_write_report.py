@@ -454,10 +454,14 @@ def test_make_plots(qc_dataset, tmp_path):
 
 def test_write_data_report(tmp_path, qc_dataset):
     #   Test the whole step with Sphinx enabled to write out
+    rst_file = tmp_path / "glider_test_run_check.rst"   # _check.rst Expected from the CC
+    rst_file.write_text("")
+    
     context = {
         "global_parameters": {
             "out_directory": str(tmp_path) + "/",
             "log_file": "run.log",
+            "filename_core": "glider_test_run",
         },
         "data": qc_dataset,
     }
@@ -484,10 +488,14 @@ def test_write_data_report(tmp_path, qc_dataset):
 
 def test_write_data_report_no_build(tmp_path, qc_dataset):
     #   Repeat above, no build
+    rst_file = tmp_path / "glider_test_run_check.rst"   # _check.rst Expected from the CC
+    rst_file.write_text("")
+
     context = {
         "global_parameters": {
             "out_directory": str(tmp_path) + "/",
             "log_file": "run.log",
+            "filename_core": "glider_test_run",
         },
         "data": qc_dataset,
     }
@@ -522,10 +530,14 @@ def test_write_data_report_missing_dataset_id(tmp_path, qc_dataset):
     qc_dataset = qc_dataset.copy()
     qc_dataset.attrs.pop("dataset_id", None)
 
+    rst_file = tmp_path / "glider_test_run_check.rst"   # _check.rst Expected from the CC
+    rst_file.write_text("")
+
     context = {
         "global_parameters": {
             "out_directory": str(tmp_path) + "/",
             "log_file": "run.log",
+            "filename_core": "glider_test_run", # Manually add this since we aren't loading a dataset.
         },
         "data": qc_dataset,
     }
