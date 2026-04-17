@@ -25,6 +25,9 @@ steps:
       # file_path: ../examples/data/OG1/sea077_20230316T1019_delayed.nc  # Path to the input NetCDF file
       file_path: ../examples/data/OG1/sea055_20240628T0856_delayed.nc
       # file_path: ../examples/data/OG1/Nelson_646_R.nc
+      filter_bad_time: false
+      data_start: 
+      data_end:
     diagnostics: false  # No diagnostics for loading data
 
 # ----------------------- Quality control --------------------

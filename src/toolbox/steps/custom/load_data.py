@@ -53,6 +53,14 @@ class LoadOG1(BaseStep):
     required_variables = []
     provided_variables = ["TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC"]
 
+    def __init__(
+        self, filter_bad_time=True, data_start=None, data_end=None, *args, **kwargs
+    ):
+        super().__init__(*args, **kwargs)
+        self.filter_bad_time = filter_bad_time
+        self.data_start = data_start
+        self.data_end = data_end
+
     def run(self):
         # load data from xarray
         self.data = xr.open_dataset(self.file_path)
