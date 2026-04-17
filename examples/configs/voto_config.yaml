@@ -16,6 +16,7 @@ steps:
     parameters:
       src: ../examples/data/OG1/sea055_20240628T0856_delayed.nc
       standards: ['cf','og']
+      output_type: "json"
       proceed_on_fail: True  # If the dataset does not pass the format checker, halt processing (False).
 
 # ------------------------ IMPORT DATA -----------------------
@@ -102,8 +103,8 @@ steps:
 # ----------------------- Report assembly ---------------------
   - name: Write Data Report
     parameters:
-      title: "VOTO Glider Data Pipeline Report" # Goes on the title page
-      fname: "voto_data_report.rst" # Main .rst file Sphinx can build from, RstCloth will write to within pipeline's "out_directory"
+      title:  # Goes on the title page. Leave it blank or empty to automatically set it to the filename.
+      fname: # Main .rst file Sphinx can build from, RstCloth will write to within pipeline's "out_directory"
       build: true   #  Whether to run sphinx
       extent: [7, 25, 54, 65] # Min Max longitude and Min Max latitude for geographic plotting
       # ext_format: pdf   # Something to eventually support - singletext, html

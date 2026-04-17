@@ -402,14 +402,50 @@ def add_cc(ccfile, rs) -> None:
 
     rs.h2("Compliance Checker results")
     rs.newline()
-    with open(ccfile, "r") as f:
-        content = f.read()
     
-    #   Use math substitution to make it clear that the symbol doesn't work in a codeblock
-    for k, v in REPLACEMENTS.items():
-        content = content.replace(k, v)
+    if ccfile.endswith(".json"):
+        with open(ccfile, mode="r") as f:
+            cc_data = json.load(f)
+            for cname, test_data in cc_data.items():
+                rows = []
+                scored = test_data.get("scored_points")
+                possible = test_data.get("possible_points")
+                rs.h3(f"{cname}: CC score of {scored}/{possible}")
 
-    rs.codeblock(content)
+                seen_names = set()
+                for entry in test_data.get("all_priorities", []):
+                    msgs = entry.get("msgs", [])
+                    if msgs:
+                        name = entry.get("name", "Unknown")
+
+                        for msg in msgs:
+                            for k, v in REPLACEMENTS.items():
+                                msg = msg.replace(k, v)
+                                name = name.replace(k, v)
+                            if name in seen_names:
+                                display_name = ""
+                            else:
+                                display_name = name
+                                seen_names.add(name)
+
+                            rows.append([display_name, msg])
+
+                if rows:
+                    rs.newline()
+                    rs.table_list(
+                        headers=["Name", f"{cname} message"],
+                        data=rows,
+                        widths = [30, 70],
+                    )
+    else:
+        with open(ccfile, "r") as f:
+            content = f.read()
+        
+        #   Use math substitution to make it clear that the symbol doesn't work in a codeblock
+        for k, v in REPLACEMENTS.items():
+            content = content.replace(k, v)
+
+        rs.codeblock(content)
 
 def qc_section(doc, data: xr.Dataset) -> None:
     """
@@ -767,17 +803,29 @@ class WriteDataReport(BaseStep):
     step_name = "Write Data Report"
 
     def run(self) -> xr.DataArray:
+        #   Required inputs for all other steps
         odir = self.context["global_parameters"]["out_directory"]
-        fout = odir + self.parameters.get("fname")
         data = self.context.get("data")
+        fname_core = self.context["global_parameters"]["filename_core"]
+        
+        #   Handle optional parameters
+        fname = self.parameters.get("fname")
+        if not fname:
+            fname = fname_core + ".rst"
+        fout = odir + fname
+
+        title = self.parameters["title"]
+        if not title:
+            title = f"Data report {fname_core.replace("_"," ")}"
 
         if "dataset_id" not in data.attrs:
             self.log_warn("Dataset ID missing from OG1 file. Reporting with unk platform information.")
             data.attrs["dataset_id"] = "unknown dataset ID"
 
+        #   Write the RST source
         with open(fout, "w") as output_file:
             doc = RstCloth(output_file)
-            doc.h2("RstCloth will consume this h2, some kind of bug.")
+            doc.h1(title)   #   Sphinx may glaze over this
             doc.newline()
 
             qc_section(doc, data)
@@ -791,8 +839,10 @@ class WriteDataReport(BaseStep):
 
             log_path = odir + self.context["global_parameters"]["log_file"]
             add_log(log_path, doc)
-            cc_path = odir + self.context["global_parameters"]["filename_core"] + "_check.rst"
-            add_cc(cc_path, doc)
+
+            if "cc_file" in self.context.get("global_parameters", {}):
+                cc_path = self.context["global_parameters"]["cc_file"]
+                add_cc(cc_path, doc)
 
         #   Run sphinx if user defined in step parameters
         if self.parameters.get("build", True):
@@ -803,10 +853,10 @@ class WriteDataReport(BaseStep):
             )
             write_conf_py(
                 odir,
-                project=self.parameters["title"],
+                project=title,
                 author=current_info().get("user"),
-                master_doc=self.parameters.get("fname").replace(".rst", ""),
-                subtitle=data.attrs.get("dataset_id").replace("_", "-"),
+                master_doc=fname.replace(".rst", ""),#.replace("_","-"),
+                subtitle=f"Dataset ID: {data.attrs.get('dataset_id').replace('_', '-')}",
             )
             run_sphinx(
                 odir,
