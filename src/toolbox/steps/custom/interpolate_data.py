@@ -74,6 +74,8 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
     """
 
     step_name = "Interpolate Data"
+    required_variables = ["TIME"]
+    provided_variables = []
 
     def run(self):
         """

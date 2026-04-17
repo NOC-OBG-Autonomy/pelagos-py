@@ -35,11 +35,11 @@ steps:
                           # *Erase* them, reinitializing thereafter
                           # *Merge* them (harder), picking the worst flag from multiple routines to keep and merging the QC attributes
       qc_settings:
-        impossible date test: {}      # Is the date between 1985 and now?
-        impossible location test: {}  # Are the GPS coords within logical bounds?
-        position on land test: {}     # Are the coords on land?
-        impossible speed test: {}     # Is the horizontal speed reasonable?
-        range test:
+        impossible date qc: {}      # Is the date between 1985 and now?
+        impossible location qc: {}  # Are the GPS coords within logical bounds?
+        position on land qc: {}     # Are the coords on land?
+        impossible speed qc: {}     # Is the horizontal speed reasonable?
+        impossible range qc:
           variable_ranges:
             PRES:
               3: [-5, -2.4]  # Pressure in this range is flagged as probably bad (3)
@@ -47,7 +47,7 @@ steps:
           also_flag:
             PRES: [CNDC, TEMP]  # Flag CNDC & TEMP based on PRES flags
           plot: [PRES]  # Plot pressure coloured by flag number
-        gross range test: # TODO: Add functionality if these are blank for a "valid_min" in attr - use that to assign the possible 4s
+        gross range qc: # TODO: Add functionality if these are blank for a "valid_min" in attr - use that to assign the possible 4s
           variable_ranges:
             TEMP:
               3: [0, 30]
@@ -68,7 +68,7 @@ steps:
             PRES: [TEMP, CNDC, DOXY]  # Flag TEMP & CNDC based on PRES flags
             TEMP: [CNDC, DOXY]
             CNDC: [DOXY]
-        spike test:   # Runs across individual profiles, therefore "PROFILE_NUMBER" must be defined # Comment out for Nelson
+        spike qc:   # Runs across individual profiles, therefore "PROFILE_NUMBER" must be defined # Comment out for Nelson
           variables:
             PRES: 5.0
             # TEMP: 2.0 # Spike test is the longest part of the reporting. Test IOOS, Argo, and SBE alternatives for speed and efficacy.
@@ -79,7 +79,7 @@ steps:
             CNDC: [PSAL]
           window_size: 10
           plot: [PRES, TEMP, CNDC]
-        stuck value test:
+        stuck value qc:
           variables:
             PRES: 2  # If pressure is stuck for >2 values, they are flagged as bad
           also_flag:

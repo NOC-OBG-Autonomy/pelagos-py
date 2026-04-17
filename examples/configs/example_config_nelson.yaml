@@ -35,10 +35,10 @@ steps:
   - name: Apply QC
     parameters:
       qc_settings:
-        impossible date test: {}  # Is the date is between 1985 and now?
-        impossible location test: {} # Are the GPS coords within logical bounds?
-        position on land test: {} # Are the coords on land?
-        impossible speed test: {} # Is the horizontal speed reasonable?
+        impossible date qc: {}  # Is the date is between 1985 and now?
+        impossible location qc: {} # Are the GPS coords within logical bounds?
+        position on land qc: {} # Are the coords on land?
+        impossible speed qc: {} # Is the horizontal speed reasonable?
     diagnostics: true # Plot all test outcomes
 
 # Next we will apply QC to the CTD variables. Technically this step can be merged with
@@ -48,7 +48,7 @@ steps:
     parameters:
       qc_settings:
 
-        range test: # Checks for bad data within a given range
+        impossible range qc: # Checks for bad data within a given range
           variable_ranges:
             PRES:
               3: [-5, -2.4] # Pressure in this range is flagged as probably bad (3)
@@ -60,7 +60,7 @@ steps:
             PRES: [CNDC, TEMP]
           plot: [PRES] # Plot pressure coloured by flag number
 
-        stuck value test: # Checks for consecutive same values
+        stuck value qc: # Checks for consecutive same values
           variables:
             PRES: 2 # If pressure is stuck for >2 values, they are flagged as bad
           also_flag:
@@ -115,7 +115,7 @@ steps:
   - name: Apply QC
     parameters:
       qc_settings:
-          valid profile test:
+          valid profile qc:
             profile_length: 50 # Profiles must be at least 100 points long
             depth_range: [-1000, 0] # and must contain data within 0 and 1000 m
     diagnostics: true

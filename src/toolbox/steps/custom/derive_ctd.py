@@ -41,6 +41,8 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
     """
 
     step_name = "Derive CTD"
+    required_variables = ["TIME", "LATITUDE", "LONGITUDE", "CNDC", "PRES", "TEMP"]
+    provided_variables = ["DEPTH", "PRAC_SALINITY", "ABS_SALINITY", "CONS_TEMP", "DENSITY"]
 
     def run(self):
         """

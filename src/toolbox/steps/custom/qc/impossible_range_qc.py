@@ -14,11 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""QC test(s) for flagging stuck, static, or otherwise unchanged data (which should be changing)."""
+"""QC test(s) for flagging based on value ranges."""
 
 #### Mandatory imports ####
 import numpy as np
-from toolbox.steps.base_test import BaseTest, register_qc, flag_cols
+from toolbox.steps.base_qc import BaseQC, register_qc, flag_cols
 
 #### Custom imports ####
 import matplotlib.pyplot as plt
@@ -27,38 +27,39 @@ import matplotlib
 
 
 @register_qc
-class stuck_value_test(BaseTest):
+class impossible_range_qc(BaseQC):
     """
     Target Variable: Any
-    Flag Number: 4 (bad)
+    Flag Number: Any
     Variables Flagged: Any
-    Checks that successive measurements are not frozen.
+    Checks that a meausurement is within a reasonable range.
 
     EXAMPLE
     -------
     - name: "Apply QC"
       parameters:
         qc_settings: {
-            "stuck value test": {
-              "variables": {"PRES": 4, "LATITUDE": 100},
+            "impossible range qc": {
+              "variable_ranges": {"PRES": {3: [-2, 0], 4: [-999, -2]}, "LATITUDE": {4: [-90, 90]}},
               "also_flag": {"PRES": ["CNDC", "TEMP"], "LATITUDE": ["LONGITUDE"]},
               "plot": ["PRES", "LATITUDE"]
+              "test_depth_range": [-100, 0]  # OPTIONAL
             }
         }
       diagnostics: true
     """
 
-    test_name = "stuck value test"
+    qc_name = "impossible range qc"
 
     # Specify if test target variable is user-defined (if True, __init__ has to be redefined)
     dynamic = True
 
     def __init__(self, data, **kwargs):
         # Check the necessary kwargs are available
-        required_kwargs = {"variables", "also_flag", "plot"}
+        required_kwargs = {"variable_ranges", "also_flag", "plot"}
         if not required_kwargs.issubset(set(kwargs.keys())):
             raise KeyError(
-                f"{required_kwargs - set(kwargs.keys())} are missing from {self.test_name} settings"
+                f"{required_kwargs - set(kwargs.keys())} are missing from {self.qc_name} settings"
             )
 
         # Specify the tests paramters from kwargs (config)
@@ -66,10 +67,15 @@ class stuck_value_test(BaseTest):
             k: v for k, v in kwargs.items() if k in required_kwargs
         }
         self.required_variables = list(
-            set(self.expected_parameters["variables"].keys())
+            set(self.expected_parameters["variable_ranges"].keys())
         )
+        self.tested_variables = self.required_variables.copy()
+        if "test_depth_range" in kwargs.keys():
+            self.required_variables.append("DEPTH")
+            self.test_depth_range = kwargs["test_depth_range"]
+
         self.qc_outputs = list(
-            set(f"{var}_QC" for var in self.required_variables)
+            set(f"{var}_QC" for var in self.tested_variables)
             | set(
                 f"{var}_QC"
                 for var in sum(self.expected_parameters["also_flag"].values(), [])
@@ -88,43 +94,42 @@ class stuck_value_test(BaseTest):
         # Subset the data
         self.data = self.data[self.required_variables]
 
+        # If the user specified a depth range, limit the checks to that range
+        if hasattr(self, "test_depth_range"):
+            # TODO: -DEPTH
+            depth_range_mask = (self.data["DEPTH"] >= self.test_depth_range[0]) & (
+                self.data["DEPTH"] <= self.test_depth_range[1]
+            )
+        else:
+            depth_range_mask = True
+
+        # Make the empty QC columns
+        for var in self.tested_variables:
+            self.data[f"{var}_QC"] = (
+                ["N_MEASUREMENTS"],
+                np.full(len(self.data[var]), 0),
+            )
+
         # Generate the variable-specific flags
-        for var, n_stuck in self.variables.items():
-            # remove nans
-            var_data = self.data[var].dropna(dim="N_MEASUREMENTS")
+        for var, meta in self.variable_ranges.items():
+            for flag, bounds in meta.items():
+                self.data[f"{var}_QC"] = xr.where(
+                    (
+                        depth_range_mask
+                        & (self.data[var] > bounds[0])
+                        & (self.data[var] < bounds[1])
+                        & (self.data[f"{var}_QC"] == 0)
+                    ),
+                    flag,
+                    0,
+                )
 
-            # Calculate forward (step=1) and backward (step=-1) differences across the variable
-            backward_diff = np.diff(var_data, append=0)
-            forward_diff = np.diff(var_data[::-1], append=0)[::-1]
-
-            # When either diff is 0 at a given index, then the value is stuck
-            stuck_value_mask = (backward_diff == 0) | (forward_diff == 0)
-
-            # Handle edge cases
-            for index, step in zip([0, -1], [1, -1]):
-                stuck_value_mask[index] = var_data[index] == var_data[index + step]
-
-            # The remaining processing has to be in int dtype
-            stuck_value_mask = stuck_value_mask.astype(int)
-
-            # Find transitions between stuck and unstuck
-            switching_points = np.diff(np.concatenate([[0], stuck_value_mask, [0]]))
-            starts = np.where(switching_points == 1)[0]
-            ends = np.where(switching_points == -1)[0]
-
-            # Replace the value of each element in a group of stuck values with the length of that group
-            for start, end in zip(starts, ends):
-                stuck_value_mask[start:end] = end - start
-
-            # Convert the stuck values mask into flags
-            bad_values = stuck_value_mask > n_stuck
-            stuck_value_mask[bad_values] = 4
-            stuck_value_mask[~bad_values] = 1
-
-            # Insert the flags into the QC column
-            nan_mask = np.isnan(self.data[var])
-            self.data[f"{var}_QC"] = (["N_MEASUREMENTS"], np.where(nan_mask, 9, 1))
-            self.data[f"{var}_QC"][np.where(~nan_mask)] = stuck_value_mask
+            # Replace all remaining 0s (unchecked) with 1s (good)
+            self.data[f"{var}_QC"] = xr.where(
+                depth_range_mask & (self.data[f"{var}_QC"] == 0),
+                1,
+                self.data[f"{var}_QC"],
+            )
 
             # Broadcast the QC found for var into variables specified by "also_flag"
             if extra_vars := self.also_flag.get(var):
@@ -144,14 +149,12 @@ class stuck_value_test(BaseTest):
         # If not plots were specified
         if len(self.plot) == 0:
             print(
-                f"WARNING: In '{self.test_name}', diagnostics were called but no variables were specified for plotting."
+                "WARNING: In 'range test' diagnostics were called but no plots were specified."
             )
             return
 
         # Plot the QC output
-        fig, axs = plt.subplots(
-            nrows=len(self.plot), figsize=(8, 6), sharex=True, dpi=200
-        )
+        fig, axs = plt.subplots(nrows=len(self.plot), figsize=(8, 6), dpi=200)
         if len(self.plot) == 1:
             axs = [axs]
 
@@ -182,10 +185,14 @@ class stuck_value_test(BaseTest):
                     label=f"{i}",
                 )
 
+            for bounds in self.variable_ranges[var].values():
+                for bound in bounds:
+                    ax.axhline(bound, ls="--", c="k")
+
             ax.set(
                 xlabel="Index",
                 ylabel=var,
-                title=f"{var} Stuck Value Test",
+                title=f"{var} Range Test",
             )
 
             ax.legend(title="Flags", loc="upper right")

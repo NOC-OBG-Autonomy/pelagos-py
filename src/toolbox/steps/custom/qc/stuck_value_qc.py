@@ -14,44 +14,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""QC test for flagging using spike/despike detection methods."""
+"""QC test(s) for flagging stuck, static, or otherwise unchanged data (which should be changing)."""
 
 #### Mandatory imports ####
 import numpy as np
-from toolbox.steps.base_test import BaseTest, register_qc, flag_cols
+from toolbox.steps.base_qc import BaseQC, register_qc, flag_cols
 
 #### Custom imports ####
 import matplotlib.pyplot as plt
 import xarray as xr
 import matplotlib
-from tqdm import tqdm
 
 
 @register_qc
-class spike_test(BaseTest):
+class stuck_value_qc(BaseQC):
     """
     Target Variable: Any
     Flag Number: 4 (bad)
     Variables Flagged: Any
-    Checks for spiking in the data using rolling median values compared against the
-    meadian average deviation (MAD).
+    Checks that successive measurements are not frozen.
 
     EXAMPLE
     -------
     - name: "Apply QC"
       parameters:
         qc_settings: {
-            "spike test": {
-              "variables": {"PRES": 2, "LATITUDE": 1},
+            "stuck value test": {
+              "variables": {"PRES": 4, "LATITUDE": 100},
               "also_flag": {"PRES": ["CNDC", "TEMP"], "LATITUDE": ["LONGITUDE"]},
               "plot": ["PRES", "LATITUDE"]
-              "window_size": 10,
             }
         }
       diagnostics: true
     """
 
-    test_name = "spike test"
+    qc_name = "stuck value qc"
 
     # Specify if test target variable is user-defined (if True, __init__ has to be redefined)
     dynamic = True
@@ -61,7 +58,7 @@ class spike_test(BaseTest):
         required_kwargs = {"variables", "also_flag", "plot"}
         if not required_kwargs.issubset(set(kwargs.keys())):
             raise KeyError(
-                f"{required_kwargs - set(kwargs.keys())} are missing from {self.test_name} settings"
+                f"{required_kwargs - set(kwargs.keys())} are missing from {self.qc_name} settings"
             )
 
         # Specify the tests paramters from kwargs (config)
@@ -70,7 +67,7 @@ class spike_test(BaseTest):
         }
         self.required_variables = list(
             set(self.expected_parameters["variables"].keys())
-        ) + ["PROFILE_NUMBER"]
+        )
         self.qc_outputs = list(
             set(f"{var}_QC" for var in self.required_variables)
             | set(
@@ -82,10 +79,8 @@ class spike_test(BaseTest):
         if data is not None:
             self.data = data.copy(deep=True)
 
-        # set attributes
         for k, v in self.expected_parameters.items():
             setattr(self, k, v)
-        self.window_size = kwargs.get("window_size") or 50
 
         self.flags = None
 
@@ -94,57 +89,42 @@ class spike_test(BaseTest):
         self.data = self.data[self.required_variables]
 
         # Generate the variable-specific flags
-        for var, sensitivity in self.variables.items():
-            spike_qc = np.full(len(self.data[var]), 0)
+        for var, n_stuck in self.variables.items():
+            # remove nans
+            var_data = self.data[var].dropna(dim="N_MEASUREMENTS")
 
-            # Apply the checks across individual profiles
-            profile_numbers = np.unique(
-                self.data["PROFILE_NUMBER"].dropna(dim="N_MEASUREMENTS")
-            )
-            for profile_number in tqdm(
-                profile_numbers,
-                colour="green",
-                desc=f"\033[97mProgress [{var}]\033[0m",
-                unit="prof",
-            ):
-                # Subset the data
-                profile = self.data.where(
-                    self.data["PROFILE_NUMBER"] == profile_number, drop=True
-                )
+            # Calculate forward (step=1) and backward (step=-1) differences across the variable
+            backward_diff = np.diff(var_data, append=0)
+            forward_diff = np.diff(var_data[::-1], append=0)[::-1]
 
-                # remove nans
-                var_data = profile[var].dropna(dim="N_MEASUREMENTS")
-                if len(var_data) < self.window_size:
-                    continue
+            # When either diff is 0 at a given index, then the value is stuck
+            stuck_value_mask = (backward_diff == 0) | (forward_diff == 0)
 
-                # Calculate the residules from the running median of the data
-                rolling_median = (
-                    var_data.to_pandas()
-                    .rolling(window=self.window_size, center=True)
-                    .median()
-                    .to_numpy()
-                )
-                residules = var_data - rolling_median
+            # Handle edge cases
+            for index, step in zip([0, -1], [1, -1]):
+                stuck_value_mask[index] = var_data[index] == var_data[index + step]
 
-                # Define the residule threshold
-                threshold = np.nanstd(residules) * sensitivity
+            # The remaining processing has to be in int dtype
+            stuck_value_mask = stuck_value_mask.astype(int)
 
-                # Apply the threshold to residules to get the flags
-                spike_flags = np.where((np.abs(residules) > threshold), 4, 1)
+            # Find transitions between stuck and unstuck
+            switching_points = np.diff(np.concatenate([[0], stuck_value_mask, [0]]))
+            starts = np.where(switching_points == 1)[0]
+            ends = np.where(switching_points == -1)[0]
 
-                # Reinclude the nans as missing (9) flags
-                nan_mask = np.isnan(profile[var])
-                profile_flags = np.where(nan_mask, 9, 1)
-                profile_flags[np.where(~nan_mask)] = spike_flags
+            # Replace the value of each element in a group of stuck values with the length of that group
+            for start, end in zip(starts, ends):
+                stuck_value_mask[start:end] = end - start
 
-                # Stitch the QC results back into the QC container
-                profile_indices = np.where(
-                    self.data["PROFILE_NUMBER"] == profile_number
-                )
-                spike_qc[profile_indices] = profile_flags
+            # Convert the stuck values mask into flags
+            bad_values = stuck_value_mask > n_stuck
+            stuck_value_mask[bad_values] = 4
+            stuck_value_mask[~bad_values] = 1
 
-            # Add the flags to the data
-            self.data[f"{var}_QC"] = (["N_MEASUREMENTS"], spike_qc)
+            # Insert the flags into the QC column
+            nan_mask = np.isnan(self.data[var])
+            self.data[f"{var}_QC"] = (["N_MEASUREMENTS"], np.where(nan_mask, 9, 1))
+            self.data[f"{var}_QC"][np.where(~nan_mask)] = stuck_value_mask
 
             # Broadcast the QC found for var into variables specified by "also_flag"
             if extra_vars := self.also_flag.get(var):
@@ -164,7 +144,7 @@ class spike_test(BaseTest):
         # If not plots were specified
         if len(self.plot) == 0:
             print(
-                f"WARNING: In '{self.test_name}', diagnostics were called but no variables were specified for plotting."
+                f"WARNING: In '{self.qc_name}', diagnostics were called but no variables were specified for plotting."
             )
             return
 
@@ -205,7 +185,7 @@ class spike_test(BaseTest):
             ax.set(
                 xlabel="Index",
                 ylabel=var,
-                title=f"{var} Spike Test",
+                title=f"{var} Stuck Value Test",
             )
 
             ax.legend(title="Flags", loc="upper right")

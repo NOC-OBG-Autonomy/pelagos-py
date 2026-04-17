@@ -147,6 +147,8 @@ def find_profiles(
 class FindProfilesStep(BaseStep, QCHandlingMixin):
 
     step_name = "Find Profiles"
+    required_variables = ["TIME"]
+    provided_variables = ["PROFILE_NUMBER"]
 
     def run(self):
         self.log("Attempting to designate profile numbers")

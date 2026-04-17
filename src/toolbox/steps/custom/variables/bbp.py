@@ -32,6 +32,8 @@ import glidertools as gt
 class BBPFromBeta(BaseStep, QCHandlingMixin):
 
     step_name = "BBP from Beta"
+    required_variables = ["TIME", "DEPTH", "TEMP", "PRAC_SALINITY"]
+    provided_variables = []
 
     def run(self):
         """
@@ -117,6 +119,8 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
 class IsolateBBPSpikes(BaseStep, QCHandlingMixin):
 
     step_name = "Isolate BBP Spikes"
+    required_variables = ["TIME"] 
+    provided_variables = []
 
     def run(self):
         """

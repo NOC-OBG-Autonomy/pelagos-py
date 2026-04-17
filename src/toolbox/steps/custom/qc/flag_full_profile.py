@@ -18,7 +18,7 @@
 
 #### Mandatory imports ####
 import numpy as np
-from toolbox.steps.base_test import BaseTest, register_qc, flag_cols
+from toolbox.steps.base_qc import BaseQC, register_qc, flag_cols
 
 #### Custom imports ####
 import matplotlib.pyplot as plt
@@ -27,7 +27,7 @@ import matplotlib
 
 
 @register_qc
-class flag_full_profile(BaseTest):
+class flag_full_profile(BaseQC):
     """
     Target Variable: Any
     Flag Number: 4
@@ -48,7 +48,10 @@ class flag_full_profile(BaseTest):
       diagnostics: true
     """
 
-    test_name = "flag full profile"
+    qc_name = "flag full profile"
+    required_variables = ["PROFILE_NUMBER"]
+    provided_variables = []
+
 
     # Specify if test target variable is user-defined (if True, __init__ has to be redefined)
     dynamic = True
@@ -58,7 +61,7 @@ class flag_full_profile(BaseTest):
         required_kwargs = {"check_vars"}
         if not required_kwargs.issubset(set(kwargs.keys())):
             raise KeyError(
-                f"{required_kwargs - set(kwargs.keys())} are missing from {self.test_name} settings"
+                f"{required_kwargs - set(kwargs.keys())} are missing from {self.qc_name} settings"
             )
 
         # Specify the tests paramters from kwargs (config)

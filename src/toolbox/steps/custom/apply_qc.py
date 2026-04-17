@@ -135,7 +135,7 @@ class ApplyQC(BaseStep):
         for test in queued_qc:
             if hasattr(test, "dynamic"):
                 # Initialise the test to check its dynamic attributes
-                test_instance = test(None, **self.qc_settings[test.test_name])
+                test_instance = test(None, **self.qc_settings[test.qc_name])
                 all_required_variables.update(test_instance.required_variables)
                 test_qc_outputs_cols.update(test_instance.qc_outputs)
                 del test_instance
@@ -145,7 +145,7 @@ class ApplyQC(BaseStep):
             #   Check that the required variables for the test are in the dataset
             if not set(all_required_variables).issubset(set(data.keys())):
                 raise KeyError(
-                    f"[Apply QC] The data is missing variables: ({set(all_required_variables) - set(data.keys())}) which are required for running QC '{test.test_name}'."
+                    f"[Apply QC] The data is missing variables: ({set(all_required_variables) - set(data.keys())}) which are required for running QC '{test.qc_name}'."
                     f" Make sure that the variables are present in the data, or use remove tests from the order."
                 )
         # Convert data to polars for fast processing
@@ -177,10 +177,10 @@ class ApplyQC(BaseStep):
         self.flag_store.update(masks)
 
         # Run through all of the QC steps and add the flags to flag_store
-        for qc_test_name, qc_test_params in self.qc_settings.items():
+        for qc_qc_name, qc_test_params in self.qc_settings.items():
             # Create an instance of this test step
-            self.log(f"Applying: {qc_test_name}")   # print(f"[Apply QC] Applying: {qc_test_name}")
-            qc_test_instance = QC_CLASSES[qc_test_name](data, **qc_test_params)
+            self.log(f"Applying: {qc_qc_name}")   # print(f"[Apply QC] Applying: {qc_qc_name}")
+            qc_test_instance = QC_CLASSES[qc_qc_name](data, **qc_test_params)
             returned_flags = qc_test_instance.return_qc()   #   Runs the test, returns the flags
             self.organise_flags(returned_flags)
 
@@ -192,11 +192,11 @@ class ApplyQC(BaseStep):
                     var_flags.to_numpy() != 0
                 ).sum() / len(var_flags)
                 if percent_flagged == 0:
-                    self.log_warn(f"All flags for {flagged_var} remain 0 after {qc_test_name}")
+                    self.log_warn(f"All flags for {flagged_var} remain 0 after {qc_qc_name}")
                 # else: #   TODO: Add 'verbose' log option if needed. Might not need to happen at this point.
-                #     self.log(f"{percent_flagged*100:.2f}% of {flagged_var} points accounted for by {qc_test_name}")
+                #     self.log(f"{percent_flagged*100:.2f}% of {flagged_var} points accounted for by {qc_qc_name}")
                 qc_history.setdefault(flagged_var, []).append(
-                    (qc_test_name, percent_flagged)
+                    (qc_qc_name, percent_flagged)
                 )
 
                 # Write additional QC details to _QC variable attributes
@@ -210,7 +210,7 @@ class ApplyQC(BaseStep):
                 attrs["flag_meanings"] = "NO_QC, GOOD, PROB_GOOD, PROB_BAD, BAD, VALUE_CHANGED, NOT_USED, NOT_USED, ESTIMATED, MISSING"
                 attrs["long_name"] = f"{parent_attrs['long_name']} quality flag"
                 attrs["standard_name"] = f"{parent_attrs['standard_name']}_flag"
-                attr_test = qc_test_name.replace(" ", "_").lower()
+                attr_test = qc_qc_name.replace(" ", "_").lower()
                 attrs[f"{attr_test}_flag_cts"] = json.dumps({i: int(np.sum(var_flags.to_numpy() == i)) for i in range(10)})
                 attrs[f"{attr_test}_stats"] = json.dumps(var_flags.to_series().describe().round(5).to_dict())
                 attrs[f"{attr_test}_params"] = json.dumps(qc_test_params)

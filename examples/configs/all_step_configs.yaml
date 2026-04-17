@@ -135,29 +135,29 @@ steps:
         # impossible date test (*/impossible_date_test.py):
         #   Flag: 4 (bad)
         #   Checks that the TIME variable has values between 1985 and now.
-        impossible date test: {},
+        impossible date qc: {},
 
         # impossible location test (*/impossible_location_test.py):
         #   Flag: 4 (bad)
         #   Check that LATITUDE and LONGITUDE are between (-90, 90) and (-180, 180) degress respectively.
-        impossible location test: {},
+        impossible location qc: {},
 
         # position on land test (*/position_on_land_test.py):
         #   Flag: 4 (bad)
         #   Checks if the GPS coords are on land.
-        position on land test: {},
+        position on land qc: {},
 
         # impossible speed test (*/impossible_speed_test.py):
         #   Flag: 4 (bad)
         #   Checks if the horizontal speed derived from LATITUDE, LONGITUDE and TIME is valid.
-        impossible speed test: {},
+        impossible speed qc: {},
 
         # range test (*/range_test.py):
         #   Flag: User-specified
         #   Flags values that lie within the user-specified limits with the user-specified flag.
         #   The results from one variable can be propagated onto other variables using "also_flag".
         #   This test can also be limited to specific depth ranges if DEPTH is in the dataset vars.
-        range test:
+        impossible range qc:
           # [variable_ranges]:
           #   variable: {flag: value range} pairs indicating what value ranges should be flagged.
           #   Multiple variables can be specified - the flag updates are applied top-down.
@@ -177,7 +177,7 @@ steps:
         # stuck value test (*/stuck_value_test.py):
         #   Flag: 4 (bad)
         #   Checks for stuck values defined by N repeats of the same value.
-        stuck value test:
+        stuck value qc:
           # [variables]:
           #   {variable: N} pairs with N being the number of repeats of a value to make it stuck
           variables:
@@ -193,7 +193,7 @@ steps:
         # spike test (*/spike_test.py):
         #   Flag: 4 (bad)
         #   Checks for spiking using deviation from the local median of specified variables.
-        spike test:
+        spike qc:
           # [variables]:
           #   {variable: N} specifying which variables to apply the test to and the outlier threshold multiplier
           #   N, values are flagged if their values exceed (locally) median +- N * standard deviation.
@@ -215,7 +215,7 @@ steps:
         # valid_profile_test (*/valid_profile_test.py):
         #   Flag: 4 (bad), 3 (probably bad)
         #   Checks if profiles have at least N datapoints and contain data in a specific depth range
-        valid profile test:
+        valid profile qc:
           # [profile_length]:
           #   Number of datapoints per profile below which the entire profile will be flagged 4
           profile_length: 1000,
@@ -237,7 +237,7 @@ steps:
         #   Flag: 4 (bad), 3 (probably bad)
         #   Flags each PAR measurement according to the statistical shape of the irradiance profile and
         #   solar elevation. Based on La Forgia & Organelli (2025, L&O Methods, 23:526–542).
-        PAR irregularity test:
+        PAR irregularity qc:
           # [noise_equivalent_estimate]:
           #   The PAR noise floor. If values are found below this they are flagged as probably bad (3).
           noise_equivalent_estimate: 3e-2

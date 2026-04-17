@@ -28,6 +28,9 @@ import toolbox.utils.diagnostics as diag
 class BlankStep(BaseStep, QCHandlingMixin):
 
     step_name = "Blank Step"
+    required_variables = []
+    provided_variables = []
+
 
     def run(self):
         self.filter_qc()

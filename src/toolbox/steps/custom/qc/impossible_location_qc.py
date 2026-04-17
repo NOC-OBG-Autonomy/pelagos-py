@@ -17,7 +17,7 @@
 """QC test to identify impossible locations in LATITUDE and LONGITUDE variables."""
 
 #### Mandatory imports ####
-from toolbox.steps.base_test import BaseTest, register_qc, flag_cols
+from toolbox.steps.base_qc import BaseQC, register_qc, flag_cols
 
 #### Custom imports ####
 import polars as pl
@@ -27,7 +27,7 @@ import matplotlib.pyplot as plt
 
 
 @register_qc
-class impossible_location_test(BaseTest):
+class impossible_location_qc(BaseQC):
     """
     Target Variable: LATITUDE, LONGITUDE
     Flag Number: 4 (bad data)
@@ -35,7 +35,7 @@ class impossible_location_test(BaseTest):
     Checks that the latitude and longitude are valid.
     """
 
-    test_name = "impossible location test"
+    qc_name = "impossible location qc"
     expected_parameters = {}
     required_variables = ["LATITUDE", "LONGITUDE"]
     qc_outputs = ["LATITUDE_QC", "LONGITUDE_QC"]

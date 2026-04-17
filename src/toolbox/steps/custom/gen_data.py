@@ -33,6 +33,8 @@ class GenerateData(BaseStep):
     """
 
     step_name = "Generate Data"
+    required_variables = []
+    provided_variables = ["TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC"]
 
     def run(self):
         # Check if the data is already in the context

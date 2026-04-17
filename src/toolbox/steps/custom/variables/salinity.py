@@ -134,6 +134,8 @@ def compute_optimal_lag(profile_data, filter_window_size, time_col):
 @register_step
 class AdjustSalinity(BaseStep, QCHandlingMixin):
     step_name = "Salinity Adjustment"
+    required_variables = ["TIME", "PROFILE_NUMBER", "CNDC", "TEMP", "PRES"]
+    provided_variables = []
 
     def run(self):
         """

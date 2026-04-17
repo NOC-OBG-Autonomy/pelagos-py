@@ -24,13 +24,14 @@ import os
 import logging
 import datetime as _dt
 from graphviz import Digraph
+import difflib
 
 from toolbox.utils.config_mirror import ConfigMirrorMixin
+from toolbox.utils.valid_config_check import check_pipeline_variables
 
 from toolbox.steps import (
     create_step,
-    STEP_CLASSES,
-    STEP_DEPENDENCIES
+    STEP_CLASSES
 )
 
 _PIPELINE_LOGGER_NAME = "toolbox.pipeline"
@@ -123,46 +124,34 @@ class Pipeline(ConfigMirrorMixin):
             self.logger = _setup_logging(self.global_parameters.get("out_directory"),
                                          self.global_parameters.get("log_file"))
             self.build_steps(self._parameters.get("steps", []))
+            check_pipeline_variables(self.steps, self.logger)
             self.logger.info("Pipeline initialised")
 
-    def build_steps(self, steps_config, parent_name=None):
+    def build_steps(self, steps_config):
         """
-        Recursively build steps from configuration.
+        Build steps from configuration.
 
         Individual steps, including parameters and diagnostics, are saved to self.steps using add_step() for other functions.
-        If "substeps" is a part of the defined step, it recursively builds that child step as a field of the parent.
 
         Parameters
         ----------
         steps_config : list of dict
             List of step configurations.
-        parent_name : str, optional
-            Name of the parent step, if any.
         """
         self.logger.info("Assembling steps to run from config.")
         for step in steps_config:
-            REQUIRED_STEPS = STEP_DEPENDENCIES.get(step["name"], [])
-            for required_step in REQUIRED_STEPS:
-                if required_step not in STEP_CLASSES:
-                    raise ValueError(
-                        f"Required step '{required_step}' for '{step['name']}' is not found."
-                    )
             self.add_step(
                 step_name=step["name"],
                 parameters=step.get("parameters", {}),
                 diagnostics=step.get("diagnostics", False),
-                parent_name=parent_name,
                 run_immediately=False,
             )
-            if "substeps" in step:
-                self.build_steps(step["substeps"], parent_name=step["name"])
 
     def add_step(
         self,
         step_name,
         parameters=None,
         diagnostics=False,
-        parent_name=None,
         run_immediately=False,
     ):
         """
@@ -176,61 +165,42 @@ class Pipeline(ConfigMirrorMixin):
             Parameters for the step.
         diagnostics : bool, optional
             Whether to enable diagnostics for this step.
-        parent_name : str, optional
-            Name of the parent step, if any.
         run_immediately : bool, optional
             Whether to run the step immediately after adding it.
 
         Raises
         ------
         ValueError
-            If the step name is not recognized or a specified parent step is not found.
+            If the step name is not recognized.
         """
         if step_name not in STEP_CLASSES:
-            raise ValueError(
-                f"Step '{step_name}' is not recognized or missing @register_step."
-            )
+            available_steps = list(STEP_CLASSES.keys())
+            error_msg = f"Step '{step_name}' is not recognised or missing @register_step."
+            
+            # Look for a typo and suggest the closest match
+            close_matches = difflib.get_close_matches(step_name, available_steps, n=1, cutoff=0.6)
+            if close_matches:
+                error_msg += f" Did you mean '{close_matches[0]}'?"
+            else:
+                # If no close match, show a few available options
+                sample_steps = ", ".join(available_steps[:5])
+                error_msg += f" Some available steps include: {sample_steps}..."
+                
+            self.logger.error(error_msg)
+            raise ValueError(error_msg)
 
         step_config = {
             "name": step_name,
             "parameters": parameters or {},
             "diagnostics": diagnostics,
-            "substeps": [],
         }
 
-        if parent_name:
-            parent = self._find_step(self.steps, parent_name)
-            if parent:
-                parent["substeps"].append(step_config)
-            else:
-                raise ValueError(f"Parent step '{parent_name}' not found.")
-        else:
-            self.steps.append(step_config)
-
+        self.steps.append(step_config)
         self.logger.info(f"Step '{step_name}' added successfully!")
 
         if run_immediately:
             self.logger.info(f"Running step '{step_name}' immediately.")
             self._context = self.execute_step(step_config, self._context)
-
-    def _find_step(self, steps_list, step_name):
-        """
-        Recursively find a step by name.
-
-        Parameters
-        ----------
-        steps_list : list of dict
-            List of step configurations.
-        step_name : str
-            Name of the step to find.
-        """
-        for step in steps_list:
-            if step["name"] == step_name:
-                return step
-            found = self._find_step(step.get("substeps", []), step_name)
-            if found:
-                return found
-        return None
 
     def execute_step(self, step_config, _context):
         """
@@ -247,7 +217,12 @@ class Pipeline(ConfigMirrorMixin):
         step_context["global_parameters"] = self.global_parameters
         step = create_step(step_config, step_context)
         self.logger.info(f"Executing: {step.name}")
-        return step.run()
+        
+        try:
+            return step.run()
+        except Exception as e:
+            self.logger.error(f"Fatal error encountered while executing step '{step.name}': {e}")
+            raise RuntimeError(f"Pipeline failed at step '{step.name}': {e}") from e
 
     def run_last_step(self):
         """
@@ -279,8 +254,7 @@ class Pipeline(ConfigMirrorMixin):
         """
         self.graph.clear()
 
-        def add_to_graph(step_config, parent_name=None, step_order=None):
-            """Add a step to the graph, intended for recursive use."""
+        def add_to_graph(step_config, previous_step_name=None):
             step_name = step_config["name"]
             diagnostics = step_config.get("diagnostics", False)
             color = "red" if diagnostics else "black"
@@ -291,19 +265,14 @@ class Pipeline(ConfigMirrorMixin):
                 style="filled",
                 fillcolor="lightblue" if diagnostics else "white",
             )
-            if parent_name:
-                self.graph.edge(parent_name, step_name)
-            if step_order and len(step_order) > 1:
-                for i in range(len(step_order) - 1):
-                    self.graph.edge(step_order[i], step_order[i + 1])
-            substep_order = []
-            for substep in step_config.get("substeps", []):
-                substep_order.append(substep["name"])
-                add_to_graph(substep, parent_name=step_name, step_order=substep_order)
+            if previous_step_name:
+                self.graph.edge(previous_step_name, step_name)
 
+        prev_step = None
         for step in self.steps:
-            step_order = [step["name"]]
-            add_to_graph(step, step_order=step_order)
+            add_to_graph(step, prev_step)
+            prev_step = step["name"]
+            
         self.graph.render("pipeline_visualisation", view=True)
 
     def generate_config(self):

@@ -77,6 +77,8 @@ class ProfileDirection(BaseStep, QCHandlingMixin):
 
 
     step_name = "Find Profile Direction"
+    required_variables = ["PROFILE_NUMBER", "PRES", "TIME"]
+    provided_variables = ["PROFILE_DIRECTION"]
 
 
     def run(self):

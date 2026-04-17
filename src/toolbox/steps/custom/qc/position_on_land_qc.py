@@ -17,7 +17,7 @@
 """QC test that identifies glider positions not located on land and flags accordingly."""
 
 #### Mandatory imports ####
-from toolbox.steps.base_test import BaseTest, register_qc, flag_cols
+from toolbox.steps.base_qc import BaseQC, register_qc, flag_cols
 
 #### Custom imports ####
 from geodatasets import get_path
@@ -30,7 +30,7 @@ import geopandas
 
 
 @register_qc
-class position_on_land_test(BaseTest):
+class position_on_land_qc(BaseQC):
     """
     Target Variable: LATITUDE, LONGITUDE
     Flag Number: 4 (bad data)
@@ -38,7 +38,7 @@ class position_on_land_test(BaseTest):
     Checks that the measurement location is not on land.
     """
 
-    test_name = "position on land test"
+    qc_name = "position on land qc"
     expected_parameters = {}
     required_variables = ["LATITUDE", "LONGITUDE"]
     qc_outputs = ["LATITUDE_QC", "LONGITUDE_QC"]

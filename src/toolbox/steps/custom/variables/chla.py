@@ -48,6 +48,8 @@ def check_chl_variables(self, allowed_requests):
 class chla_deep_correction(BaseStep, QCHandlingMixin):
 
     step_name = "Chla Deep Correction"
+    required_variables = ["TIME", "PROFILE_NUMBER", "DEPTH"]
+    provided_variables = []
 
     def run(self):
         """
@@ -217,6 +219,8 @@ class chla_deep_correction(BaseStep, QCHandlingMixin):
 class chla_quenching_correction(BaseStep, QCHandlingMixin):
 
     step_name = "Chla Quenching Correction"
+    required_variables = ["PROFILE_NUMBER", "TIME", "DEPTH", "LATITUDE", "LONGITUDE"]
+    provided_variables = []
 
     def run(self):
         """
