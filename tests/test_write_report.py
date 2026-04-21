@@ -302,7 +302,7 @@ def test_add_cc_json(tmp_path):
                     "children": [],
                 },
                 {
-                    "name": "redundant test",   #   Should be redundant
+                    "name": "redundant test",  #   Should be redundant
                     "msgs": ["message 1", "message 2"],
                 },
                 {
@@ -328,9 +328,11 @@ def test_add_cc_json(tmp_path):
 
     rows = kwargs["data"]
     assert len(rows) == 7
-    assert rows[0] == ['Check for mandatory global attributes', 'Global attribute contributing_institutions is missing']
-    assert rows[-1] == ['', 'message 3']    #   Should have a blank first column
-    
+    assert rows[0] == [
+        "Check for mandatory global attributes",
+        "Global attribute contributing_institutions is missing",
+    ]
+    assert rows[-1] == ["", "message 3"]  #   Should have a blank first column
 
 
 def test_qc_section(qc_dataset):
@@ -621,6 +623,53 @@ def test_write_data_report_no_build(tmp_path, qc_dataset):
 
     mock_conf.assert_not_called()
     mock_sphinx.assert_not_called()
+
+
+def test_write_data_report_with_cc(tmp_path, qc_dataset):
+    #   Since last tests were written, "filename_core" is automatically added to the global context when
+    #   data are loaded and it serves as the default if the user doesn't specify title, fname
+    context = {
+        "global_parameters": {
+            "out_directory": str(tmp_path) + "/",
+            "log_file": "run.log",
+            "filename_core": "test_filename",
+            "cc_file": "cc.json",
+        },
+        "data": qc_dataset,
+    }
+
+    (tmp_path / "run.log").write_text("log line\n")
+
+    step = write_report.WriteDataReport.__new__(write_report.WriteDataReport)
+    step.context = context
+    step.parameters = {
+        "title": None,
+        "fname": None,
+        "build": False,
+    }
+
+    step.log = MagicMock()
+    step.log_warn = MagicMock()
+
+    with (
+        patch.object(write_report, "RstCloth") as mock_rst,
+        patch.object(write_report, "make_plots"),
+        patch.object(write_report, "write_conf_py") as mock_conf,
+        patch.object(write_report, "add_cc") as mock_cc,
+    ):
+        doc = MagicMock()
+        mock_rst.return_value = doc
+        step.run()
+
+    mock_cc.assert_called_once()
+
+    #   Check defaults
+    doc.h1.assert_called_once_with(
+        "Data report test filename"
+    )  #   Underscores should have been removed
+    assert (
+        tmp_path / "test_filename.rst"
+    ).exists()  #   Should default to filename_core
 
 
 def test_write_data_report_missing_dataset_id(tmp_path, qc_dataset):
