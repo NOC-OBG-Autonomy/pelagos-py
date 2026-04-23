@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Class definition for finding vertical and horizontal profiles in depth data."""
+
 from toolbox.steps.base_step import BaseStep, register_step
 from toolbox.utils.qc_handling import QCHandlingMixin
 import toolbox.utils.diagnostics as diag
@@ -29,66 +31,6 @@ from matplotlib.lines import Line2D
 import tkinter as tk
 from scipy.signal import savgol_filter
 
-DEFAULT_RESAMPLE_CADENCE = "30s"
-DEFAULT_GRADIENT_THRESHOLDS = [0.033, -0.033]
-DEFAULT_HORIZ_GRADIENT_THRESHOLD = 0.01
-DEFAULT_FILTER_WINDOW_SIZES = [1, 2]
-DEFAULT_EDGE_SQUEEZE = 0
-DEFAULT_DIVE_SCALE = 15
-DEFAULT_MAX_DEPTH_GAP = 60.0
-DEFAULT_MIN_HORIZONTAL_DURATION = "20min"
-DEFAULT_MIN_HORIZONTAL_DEPTH = 1.0
-
-FIXED_SAVGOL_WINDOW_VERT = 5
-FIXED_SAVGOL_WINDOW_HORIZ = 3
-FIXED_SAVGOL_POLY = 2
-FIXED_MIN_VALID_DEPTH = -0.5
-FIXED_MIN_POINTS_VERT = 5
-FIXED_MIN_POINTS_HORIZ = 20
-
-# Plotting Configuration Variables
-COLOUR_UP = "tab:blue"
-COLOUR_DOWN = "tab:green"
-COLOUR_HORIZONTAL = "tab:purple"
-COLOUR_TURNING = "tab:orange"
-COLOUR_VELOCITY = "tab:red"
-COLOUR_RAW = "tab:gray"
-COLOUR_SMOOTH = "black"
-
-# Scientific Phase Colours
-COLOUR_PHASE_UNKNOWN = "tab:gray"
-COLOUR_PHASE_ASCENT = "tab:blue"
-COLOUR_PHASE_DESCENT = "tab:green"
-COLOUR_PHASE_SURFACING = "tab:cyan"
-COLOUR_PHASE_PARKING = "tab:purple"
-COLOUR_PHASE_INFLECTION = "tab:orange"
-COLOUR_PHASE_PROPELLED = "tab:pink"
-COLOUR_PHASE_TRANSITION = "tab:brown"
-
-MARKER_SIZE = 2
-LINE_WIDTH = 1.5
-
-PHASE_COLOURS = {
-    0: COLOUR_PHASE_UNKNOWN,
-    1: COLOUR_PHASE_ASCENT,
-    2: COLOUR_PHASE_DESCENT,
-    3: COLOUR_PHASE_SURFACING,
-    4: COLOUR_PHASE_PARKING,
-    5: COLOUR_PHASE_INFLECTION,
-    6: COLOUR_PHASE_PROPELLED,
-    7: COLOUR_PHASE_TRANSITION
-}
-
-PHASE_NAMES = {
-    0: "Unknown",
-    1: "Ascent",
-    2: "Descent",
-    3: "Surfacing",
-    4: "Parking",
-    5: "Inflection",
-    6: "Propelled",
-    7: "Transition"
-}
 
 def _parse_windows(win_sizes, cadence):
     cadence_sec = pd.Timedelta(cadence).total_seconds()
@@ -104,7 +46,7 @@ def _parse_windows(win_sizes, cadence):
             parsed.append(int(w))
     return parsed
 
-def find_profiles_beta(df_sorted, cadence, filter_win_sizes, gradient_thresholds, horiz_grad_thresh, edge_squeeze, dive_scale, max_depth_gap, min_horizontal_duration, min_horizontal_depth, depth_col, has_water_vel):
+def find_profiles_beta(df_sorted, cadence, filter_win_sizes, gradient_thresholds, horiz_grad_thresh, dive_scale, min_horizontal_duration, surfacing_depth, inflection_accel_threshold, depth_col, has_water_vel):
     """
     Identifies and classifies vertical and horizontal profiles from depth-time data.
     Also derives continuous cycle numbers and scientific phase flags.
@@ -112,8 +54,7 @@ def find_profiles_beta(df_sorted, cadence, filter_win_sizes, gradient_thresholds
     df = df_sorted[depth_col].resample(cadence).mean().to_frame()
     df[depth_col] = df[depth_col].interpolate(method='linear')
 
-    min_req_len = max(FIXED_SAVGOL_WINDOW_VERT, FIXED_SAVGOL_WINDOW_HORIZ, 2)
-    if len(df) < min_req_len:
+    if len(df) < 5:
         df_out = df_sorted.copy()
         df_out["PROFILE_ID"] = np.nan
         df_out["DIRECTION"] = np.nan
@@ -125,6 +66,7 @@ def find_profiles_beta(df_sorted, cadence, filter_win_sizes, gradient_thresholds
         df["SMOOTH_VELOCITY"] = 0.0
         df["SMOOTH_VELOCITY_HORIZ"] = 0.0
         df["STATE"] = "turning"
+        df["ACCEL"] = 0.0
         return df_out, df
 
     windows = _parse_windows(filter_win_sizes, cadence)
@@ -140,8 +82,9 @@ def find_profiles_beta(df_sorted, cadence, filter_win_sizes, gradient_thresholds
     df["RAW_VEL"] = np.gradient(df["SMOOTH_DEPTH"]) / dt
     df["RAW_VEL"] = df["RAW_VEL"].fillna(0)
     
-    df["SMOOTH_VELOCITY"] = savgol_filter(df["RAW_VEL"], FIXED_SAVGOL_WINDOW_VERT, FIXED_SAVGOL_POLY)
-    df["SMOOTH_VELOCITY_HORIZ"] = savgol_filter(df["RAW_VEL"], FIXED_SAVGOL_WINDOW_HORIZ, FIXED_SAVGOL_POLY)
+    df["SMOOTH_VELOCITY"] = savgol_filter(df["RAW_VEL"], 5, 2)
+    df["SMOOTH_VELOCITY_HORIZ"] = savgol_filter(df["RAW_VEL"], 3, 2)
+    df["ACCEL"] = np.gradient(df["SMOOTH_VELOCITY"]) / dt
     
     vel_crosses_zero = (df["SMOOTH_VELOCITY"] * df["SMOOTH_VELOCITY"].shift(1)) < 0
     pos_grad, neg_grad = gradient_thresholds
@@ -149,37 +92,32 @@ def find_profiles_beta(df_sorted, cadence, filter_win_sizes, gradient_thresholds
     df["STATE"] = "turning"
     df.loc[df["SMOOTH_VELOCITY"] > pos_grad, "STATE"] = "down"
     df.loc[df["SMOOTH_VELOCITY"] < neg_grad, "STATE"] = "up"
-    df.loc[(df["SMOOTH_VELOCITY_HORIZ"].abs() <= horiz_grad_thresh) & (df["SMOOTH_DEPTH"] >= min_horizontal_depth), "STATE"] = "horizontal"
-    df.loc[(df["SMOOTH_DEPTH"] < FIXED_MIN_VALID_DEPTH) | vel_crosses_zero, "STATE"] = "turning"
+    df.loc[(df["SMOOTH_VELOCITY_HORIZ"].abs() <= horiz_grad_thresh) & (df["SMOOTH_DEPTH"] > surfacing_depth), "STATE"] = "horizontal"
+    df.loc[(df["SMOOTH_DEPTH"] < -0.5) | vel_crosses_zero, "STATE"] = "turning"
     
     df["is_turning"] = (
         ((df["SMOOTH_VELOCITY"] >= neg_grad) & (df["SMOOTH_VELOCITY"] <= pos_grad)) | 
-        (df["SMOOTH_DEPTH"] < FIXED_MIN_VALID_DEPTH) |
+        (df["SMOOTH_DEPTH"] < -0.5) |
         vel_crosses_zero |
         df["SMOOTH_DEPTH"].isna()
     ).fillna(True).astype(bool)
 
-    turn_mask = df["is_turning"].to_numpy(copy=True)
-    if edge_squeeze > 0:
-        for _ in range(int(edge_squeeze)):
-            shifted_left = np.roll(turn_mask, -1)
-            shifted_right = np.roll(turn_mask, 1)
-            shifted_left[-1] = turn_mask[-1]
-            shifted_right[0] = turn_mask[0]
-            
-            is_edge = turn_mask & (~shifted_left | ~shifted_right)
-            is_single = turn_mask & ~shifted_left & ~shifted_right
-            
-            to_erode = is_edge & ~is_single
-            turn_mask[to_erode] = False
-            
-    df["is_turning"] = turn_mask
     is_profile = ~df["is_turning"]
     profile_starts = is_profile & ~is_profile.shift(1, fill_value=False)
     df["PROFILE_ID"] = profile_starts.cumsum()
     df.loc[df["is_turning"], "PROFILE_ID"] = np.nan
 
-    df_features = df[["PROFILE_ID", "is_turning", "SMOOTH_VELOCITY", "SMOOTH_VELOCITY_HORIZ", "SMOOTH_DEPTH", "STATE"]]
+    surf_mask = df["SMOOTH_DEPTH"] <= surfacing_depth
+    down_mask = df["STATE"] == "down"
+    
+    state_subset = df.loc[surf_mask | down_mask]
+    is_new_cycle = (state_subset["STATE"] == "down") & (surf_mask.loc[state_subset.index].shift(1) == True)
+    
+    cycle_trigger = pd.Series(0, index=df.index)
+    cycle_trigger.loc[state_subset[is_new_cycle].index] = 1
+    df["CYCLE"] = cycle_trigger.cumsum() + 1
+
+    df_features = df[["PROFILE_ID", "is_turning", "SMOOTH_VELOCITY", "SMOOTH_VELOCITY_HORIZ", "SMOOTH_DEPTH", "STATE", "CYCLE", "ACCEL"]]
     
     df_out = pd.merge_asof(
         df_sorted, 
@@ -193,42 +131,42 @@ def find_profiles_beta(df_sorted, cadence, filter_win_sizes, gradient_thresholds
     df_out["VALID_PROFILE"] = np.nan
     df_out["DIRECTION"] = np.nan
     df_out["GRADIENT"] = np.nan
+    df_out["is_failed_profile"] = False
     
     valid_pid_counter = 1
     
     for pid, group in df_out.dropna(subset=["PROFILE_ID"]).groupby("PROFILE_ID"):
-        depth_diffs = group[depth_col].diff().abs()
-        sub_groups = (depth_diffs > max_depth_gap).fillna(False).cumsum()
+        depth_span = group[depth_col].max() - group[depth_col].min()
+        point_count = len(group)
         
-        for sub_id, sub_group in group.groupby(sub_groups):
-            depth_span = sub_group[depth_col].max() - sub_group[depth_col].min()
-            point_count = len(sub_group)
+        if depth_span >= dive_scale and point_count >= 2:
+            df_out.loc[group.index, "VALID_PROFILE"] = valid_pid_counter
+            x = (group.index - group.index[0]).total_seconds().values
             
-            if depth_span >= dive_scale and point_count >= FIXED_MIN_POINTS_VERT:
-                df_out.loc[sub_group.index, "VALID_PROFILE"] = valid_pid_counter
-                x = (sub_group.index - sub_group.index[0]).total_seconds().values
+            if len(x) > 1:
+                m, _ = np.polyfit(x, group[depth_col].values, 1)
+                df_out.loc[group.index, "GRADIENT"] = m
+                df_out.loc[group.index, "DIRECTION"] = 1 if m < 0 else -1
                 
-                if len(x) > 1:
-                    m, _ = np.polyfit(x, sub_group[depth_col].values, 1)
-                    df_out.loc[sub_group.index, "GRADIENT"] = m
-                    df_out.loc[sub_group.index, "DIRECTION"] = 1 if m < 0 else -1
-                    
-                valid_pid_counter += 1
-            else:
-                df_out.loc[sub_group.index, "is_turning"] = True
+            valid_pid_counter += 1
+        else:
+            df_out.loc[group.index, "is_failed_profile"] = True
+            df_out.loc[group.index, "is_turning"] = False
 
     unassigned_mask = df_out["VALID_PROFILE"].isna()
     df_out["is_horiz_candidate"] = False
     df_out.loc[unassigned_mask, "is_horiz_candidate"] = (
         (df_out.loc[unassigned_mask, "SMOOTH_VELOCITY_HORIZ"].abs() <= horiz_grad_thresh) & 
-        (df_out.loc[unassigned_mask, "SMOOTH_DEPTH"] >= min_horizontal_depth)
+        (df_out.loc[unassigned_mask, "SMOOTH_DEPTH"] > surfacing_depth)
     )
 
     horiz_groups = (~df_out["is_horiz_candidate"]).cumsum()
     duration_threshold = pd.Timedelta(min_horizontal_duration)
 
     for sub_id, sub_group in df_out[df_out["is_horiz_candidate"]].groupby(horiz_groups):
-        if len(sub_group) < FIXED_MIN_POINTS_HORIZ:
+        if len(sub_group) < 2:
+            df_out.loc[sub_group.index, "is_failed_profile"] = True
+            df_out.loc[sub_group.index, "is_turning"] = False
             continue
             
         time_span = sub_group.index[-1] - sub_group.index[0]
@@ -246,6 +184,9 @@ def find_profiles_beta(df_sorted, cadence, filter_win_sizes, gradient_thresholds
             df_out.loc[sub_group.index, "DIRECTION"] = 0
             df_out.loc[sub_group.index, "is_turning"] = False
             valid_pid_counter += 1
+        else:
+            df_out.loc[sub_group.index, "is_failed_profile"] = True
+            df_out.loc[sub_group.index, "is_turning"] = False
 
     valid_mask = df_out["VALID_PROFILE"].notna()
     profile_transitions = valid_mask & (df_out["VALID_PROFILE"] != df_out["VALID_PROFILE"].shift(1))
@@ -256,83 +197,173 @@ def find_profiles_beta(df_sorted, cadence, filter_win_sizes, gradient_thresholds
     df_out = df_out.drop(columns=["PROFILE_ID", "is_horiz_candidate", "VALID_PROFILE"])
     df_out = df_out.rename(columns={"CHRONO_ID": "PROFILE_ID"})
 
-    # --- Scientific Phase Classification ---
     df_out["SCI_PHASE"] = 0 
     
-    surfacing_mask = df_out["SMOOTH_DEPTH"] < min_horizontal_depth
+    surfacing_mask = df_out["SMOOTH_DEPTH"] <= surfacing_depth
     df_out.loc[surfacing_mask, "SCI_PHASE"] = 3
     
     df_out.loc[(df_out["DIRECTION"] == 1) & (df_out["SCI_PHASE"] == 0), "SCI_PHASE"] = 1
     df_out.loc[(df_out["DIRECTION"] == -1) & (df_out["SCI_PHASE"] == 0), "SCI_PHASE"] = 2
     
-    horiz_mask = (df_out["DIRECTION"] == 0) & (df_out["SCI_PHASE"] == 0)
-    if has_water_vel:
-        df_out.loc[horiz_mask, "SCI_PHASE"] = 4
+    horiz_pids = df_out.loc[(df_out["DIRECTION"] == 0) & (df_out["SCI_PHASE"] == 0), "PROFILE_ID"].dropna().unique()
+    for pid in horiz_pids:
+        mask = (df_out["PROFILE_ID"] == pid) & (df_out["SCI_PHASE"] == 0)
+        segment = df_out[mask]
+        
+        if segment.empty:
+            continue
+            
+        has_enough_vel = False
+        if has_water_vel and "WATER_VELOC_FINAL_U" in segment.columns and "WATER_VELOC_FINAL_V" in segment.columns:
+            if segment["WATER_VELOC_FINAL_U"].count() >= 5 and segment["WATER_VELOC_FINAL_V"].count() >= 5:
+                has_enough_vel = True
+                
+        if has_enough_vel:
+            df_out.loc[mask, "SCI_PHASE"] = 4
+        else:
+            duration = segment.index[-1] - segment.index[0]
+            if duration > pd.Timedelta("10min"):
+                df_out.loc[mask, "SCI_PHASE"] = 6
+            else:
+                df_out.loc[mask, "SCI_PHASE"] = 7
+                
+    failed_mask = df_out["is_failed_profile"] & (df_out["SCI_PHASE"] == 0)
+    df_out.loc[failed_mask, "SCI_PHASE"] = 7
     
     turning_mask = df_out["is_turning"] & (df_out["SCI_PHASE"] == 0)
     df_out.loc[turning_mask, "SCI_PHASE"] = 5 
+    
+    # Overwrite transition with inflection if velocity is within turning thresholds
+    vel_mask = (df_out["SCI_PHASE"] == 7) & (df_out["SMOOTH_VELOCITY"] >= neg_grad) & (df_out["SMOOTH_VELOCITY"] <= pos_grad)
+    df_out.loc[vel_mask, "SCI_PHASE"] = 5
 
-    # --- Cycle Derivation ---
-    is_descent = df_out["SCI_PHASE"] == 2
-    is_surfacing = df_out["SCI_PHASE"] == 3
-    
-    state_23 = df_out.loc[is_descent | is_surfacing, "SCI_PHASE"]
-    new_cycle_trigger_idx = state_23[(state_23 == 2) & (state_23.shift(1) == 3)].index
-    
-    cycle_trigger = pd.Series(0, index=df_out.index)
-    cycle_trigger.loc[new_cycle_trigger_idx] = 1
-    df_out["CYCLE"] = cycle_trigger.cumsum() + 1
+    # Overwrite transition with inflection if acceleration is extreme
+    accel_mask = (df_out["SCI_PHASE"] == 7) & (df_out["ACCEL"].abs() > inflection_accel_threshold)
+    df_out.loc[accel_mask, "SCI_PHASE"] = 5
 
     return df_out, df
 
 
 @register_step
 class FindProfilesBetaStep(BaseStep, QCHandlingMixin):
+    """
+    Identifies and classifies vertical and horizontal profiles from depth-time data.
+    Derives continuous cycle numbers and assigns scientific phase flags.
+
+    Parameters
+    ----------
+    depth_column : str, optional
+        Name of the dataset variable to use for vertical depth calculations. Defaults to "PRES".
+    resample_cadence : str, optional
+        Time string for regularising the data via interpolation prior to calculation.
+    gradient_thresholds : list, optional
+        List of [positive, negative] gradient thresholds for identifying descending/ascending motion.
+    horiz_gradient_threshold : float, optional
+        Threshold for gradient variance to qualify a phase as horizontal.
+    filter_window_sizes : list, optional
+        List of sizes [median, mean] for rolling windows to smooth profile gradients.
+    dive_scale : float, optional
+        Minimum vertical depth required to qualify as a valid vertical dive.
+    min_horizontal_duration : str, optional
+        Minimum time required at a fixed depth to classify as a valid horizontal phase.
+    surfacing_depth : float, optional
+        Maximum operational depth boundary indicating the platform is surfaced.
+    inflection_accel_threshold : float, optional
+        Acceleration threshold beyond which a transition phase becomes inflection.
+    """
+    
     step_name = "Find Profiles Beta"
     required_variables = ["TIME"]
     provided_variables = ["PROFILE_NUMBER", "CYCLE", "SCI_PHASE"]
 
+    parameter_schema = {
+        "depth_column": {
+            "type": str,
+            "default": "PRES",
+            "description": "Depth or pressure column name. Defaults to PRES."
+        },
+        "resample_cadence": {
+            "type": str,
+            "default": "30s",
+            "description": "Time cadence to resample for feature extraction."
+        },
+        "gradient_thresholds": {
+            "type": list,
+            "default": [0.033, -0.033],
+            "description": "Positive and negative velocity thresholds."
+        },
+        "horiz_gradient_threshold": {
+            "type": float,
+            "default": 0.01,
+            "description": "Velocity threshold for horizontal phase."
+        },
+        "filter_window_sizes": {
+            "type": list,
+            "default": [1, 2],
+            "description": "Window sizes for median and mean smoothing."
+        },
+        "dive_scale": {
+            "type": float,
+            "default": 15.0,
+            "description": "Minimum depth span to be considered a profile."
+        },
+        "min_horizontal_duration": {
+            "type": str,
+            "default": "20min",
+            "description": "Minimum continuous duration to be classed as horizontal."
+        },
+        "surfacing_depth": {
+            "type": float,
+            "default": 0.8,
+            "description": "Maximum depth indicating the platform is surfaced."
+        },
+        "inflection_accel_threshold": {
+            "type": float,
+            "default": 0.002,
+            "description": "Acceleration threshold beyond which a transition phase becomes inflection."
+        }
+    }
+
     def run(self):
         self.log("Attempting to designate profile numbers, cycles, directions, and phases")
+        self.check_data()
         self.filter_qc()
 
-        self.depth_col = self.parameters.get("depth_column")
-        if not self.depth_col:
-            if "PRES" in self.data.variables:
-                self.depth_col = "PRES"
-            else:
-                raise ValueError("PRES variable not found in the dataset.")
-        elif self.depth_col not in self.data.variables:
+        self.depth_col = getattr(self, "depth_column", "PRES")
+        if self.depth_col not in self.data.variables:
             raise ValueError(f"Specified depth column '{self.depth_col}' not found in the dataset.")
 
-        self.cadence = self.parameters.get("resample_cadence", DEFAULT_RESAMPLE_CADENCE)
-        self.gradient_thresholds = self.parameters.get("gradient_thresholds", DEFAULT_GRADIENT_THRESHOLDS)
-        self.horiz_grad_thresh = self.parameters.get("horiz_gradient_threshold", DEFAULT_HORIZ_GRADIENT_THRESHOLD)
-        self.filter_win_sizes = self.parameters.get("filter_window_sizes", DEFAULT_FILTER_WINDOW_SIZES)
-        self.edge_squeeze = self.parameters.get("edge_squeeze", DEFAULT_EDGE_SQUEEZE)
-        self.max_depth_gap = self.parameters.get("max_depth_gap", DEFAULT_MAX_DEPTH_GAP)
-        self.dive_scale = self.parameters.get("dive_scale", DEFAULT_DIVE_SCALE)
-        self.min_horizontal_duration = self.parameters.get("min_horizontal_duration", DEFAULT_MIN_HORIZONTAL_DURATION)
-        self.min_horizontal_depth = self.parameters.get("min_horizontal_depth", DEFAULT_MIN_HORIZONTAL_DEPTH)
+        self.cadence = getattr(self, "resample_cadence", "30s")
+        self.gradient_thresholds = getattr(self, "gradient_thresholds", [0.033, -0.033])
+        self.horiz_grad_thresh = getattr(self, "horiz_gradient_threshold", 0.01)
+        self.filter_win_sizes = getattr(self, "filter_window_sizes", [1, 2])
+        self.dive_scale = getattr(self, "dive_scale", 15.0)
+        self.min_horizontal_duration = getattr(self, "min_horizontal_duration", "20min")
+        self.surfacing_depth = getattr(self, "surfacing_depth", 0.8)
+        self.inflection_accel_threshold = getattr(self, "inflection_accel_threshold", 0.002)
 
-        self.has_water_vel = ("WATER_VELOCITY_FINAL_U" in self.data.variables and 
-                              "WATER_VELOCITY_FINAL_V" in self.data.variables)
+        self.has_water_vel = ("WATER_VELOC_FINAL_U" in self.data.variables and 
+                              "WATER_VELOC_FINAL_V" in self.data.variables)
         
         if not self.has_water_vel:
-            self.log("Warning: WATER_VELOCITY_FINAL_U and/or WATER_VELOCITY_FINAL_V not found. Parking and Propelled phases could not be determined.")
+            self.log("Warning: WATER_VELOC_FINAL_U and/or WATER_VELOC_FINAL_V not found. Parking will default to Propelled or Transition.")
 
         if self.diagnostics:
             root = self.generate_diagnostics()
             root.mainloop()
 
-        df_raw = self.data[["TIME", self.depth_col]].to_dataframe().reset_index()
+        cols_to_extract = ["TIME", self.depth_col]
+        if self.has_water_vel:
+            cols_to_extract.extend(["WATER_VELOC_FINAL_U", "WATER_VELOC_FINAL_V"])
+
+        df_raw = self.data[cols_to_extract].to_dataframe().reset_index()
         df_sorted = df_raw.dropna(subset=[self.depth_col, "TIME"]).sort_values("TIME").set_index("TIME")
 
         df_out, _ = find_profiles_beta(
             df_sorted, self.cadence, self.filter_win_sizes, 
-            self.gradient_thresholds, self.horiz_grad_thresh, self.edge_squeeze,
-            self.dive_scale, self.max_depth_gap, self.min_horizontal_duration,
-            self.min_horizontal_depth, self.depth_col, self.has_water_vel
+            self.gradient_thresholds, self.horiz_grad_thresh, self.dive_scale, 
+            self.min_horizontal_duration, self.surfacing_depth, self.inflection_accel_threshold, 
+            self.depth_col, self.has_water_vel
         )
 
         df_out = df_out.reset_index()
@@ -341,6 +372,8 @@ class FindProfilesBetaStep(BaseStep, QCHandlingMixin):
             on="N_MEASUREMENTS", 
             how="left"
         )
+        
+        df_final["SCI_PHASE"] = df_final["SCI_PHASE"].fillna(0).astype(int)
 
         self.data["PROFILE_NUMBER"] = (("N_MEASUREMENTS",), df_final["PROFILE_ID"].to_numpy())
         self.data.PROFILE_NUMBER.attrs = {
@@ -397,53 +430,44 @@ class FindProfilesBetaStep(BaseStep, QCHandlingMixin):
         def generate_plot():
             mpl.use("TkAgg")
 
-            df_raw = self.data[["TIME", self.depth_col]].to_dataframe().reset_index()
-            df_sorted = df_raw.dropna(subset=[self.depth_col, "TIME"]).sort_values("TIME").set_index("TIME")
+            cols_to_extract = ["TIME", self.depth_col]
+            if self.has_water_vel:
+                cols_to_extract.extend(["WATER_VELOC_FINAL_U", "WATER_VELOC_FINAL_V"])
 
+            df_raw = self.data[cols_to_extract].to_dataframe().reset_index()
+            df_sorted = df_raw.dropna(subset=[self.depth_col, "TIME"]).sort_values("TIME").set_index("TIME")
+            
             df_out, df_smooth = find_profiles_beta(
-                df_sorted, self.cadence, self.filter_win_sizes, 
-                self.gradient_thresholds, self.horiz_grad_thresh, self.edge_squeeze,
-                self.dive_scale, self.max_depth_gap, self.min_horizontal_duration, 
-                self.min_horizontal_depth, self.depth_col, self.has_water_vel
+                df_sorted, self.cadence, self.filter_win_sizes, self.gradient_thresholds, self.horiz_grad_thresh, 
+                self.dive_scale, self.min_horizontal_duration, self.surfacing_depth, self.inflection_accel_threshold, 
+                self.depth_col, self.has_water_vel
             )
 
             fig_main, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(15, 10), sharex=True, gridspec_kw={'height_ratios': [3, 2, 1]})
 
-            x_num = mdates.date2num(df_smooth.index)
-            points = np.array([x_num, -df_smooth["SMOOTH_DEPTH"].values]).T.reshape(-1, 1, 2)
-            segments = np.concatenate([points[:-1], points[1:]], axis=1)
-            
-            c_map = {"up": COLOUR_UP, "down": COLOUR_DOWN, "horizontal": COLOUR_HORIZONTAL, "turning": COLOUR_TURNING}
-            colours = [c_map[state] for state in df_smooth["STATE"].iloc[:-1]]
-            
-            lc = LineCollection(segments, colors=colours, linewidths=LINE_WIDTH, zorder=0, alpha=0.7)
-            ax1.add_collection(lc)
+            points = np.array([mdates.date2num(df_smooth.index), -df_smooth["SMOOTH_DEPTH"].values]).T.reshape(-1, 1, 2)
+            c_map = {"up": "tab:blue", "down": "tab:green", "horizontal": "tab:purple", "turning": "tab:orange"}
+            ax1.add_collection(LineCollection(np.concatenate([points[:-1], points[1:]], axis=1), colors=[c_map[state] for state in df_smooth["STATE"].iloc[:-1]], linewidths=1.5, zorder=0, alpha=0.7))
 
-            unique_phases = sorted(df_out["SCI_PHASE"].dropna().unique())
-            
-            for phase_val in unique_phases:
-                mask = df_out["SCI_PHASE"] == phase_val
-                c = PHASE_COLOURS.get(phase_val, COLOUR_PHASE_UNKNOWN)
-                ax1.plot(df_out[mask].index, -df_out[mask][self.depth_col], marker=".", ls="", ms=MARKER_SIZE+2, color=c, zorder=3)
+            phase_colours = {0: "tab:gray", 1: "tab:blue", 2: "tab:green", 3: "tab:cyan", 4: "tab:purple", 5: "tab:orange", 6: "tab:pink", 7: "tab:brown"}
+            phase_names = {0: "Unknown", 1: "Ascent", 2: "Descent", 3: "Surfacing", 4: "Parking", 5: "Inflection", 6: "Propelled", 7: "Transition"}
 
-            custom_lines = [Line2D([0], [0], marker='.', color='w', markerfacecolor=PHASE_COLOURS.get(p, COLOUR_PHASE_UNKNOWN), markersize=MARKER_SIZE+6) for p in unique_phases]
-            labels = [PHASE_NAMES.get(p, "Unknown") for p in unique_phases]
-            ax1.legend(custom_lines, labels, loc="upper right")
+            for p in sorted(df_out["SCI_PHASE"].dropna().unique()):
+                mask = df_out["SCI_PHASE"] == p
+                ax1.plot(df_out[mask].index, -df_out[mask][self.depth_col], marker=".", ls="", ms=4, color=phase_colours.get(p, "tab:gray"), zorder=3)
 
-            ax1.set_ylabel(self.depth_col)
-            ax1.set_title("Scientific Phase Overlay")
+            ax1.legend([Line2D([0], [0], marker='.', color='w', markerfacecolor=phase_colours.get(p, "tab:gray"), markersize=8) for p in phase_names], [phase_names.get(p, "Unknown") for p in phase_names], loc="upper right")
+            ax1.set(ylabel=self.depth_col, title="Scientific Phase Overlay")
 
-            ax2.plot(df_smooth.index, df_smooth["SMOOTH_VELOCITY"], color=COLOUR_VELOCITY, lw=LINE_WIDTH, label="Smoothed Velocity (Vert)")
-            ax2.axhline(self.gradient_thresholds[0], color=COLOUR_TURNING, lw=0.8, ls="--", alpha=0.5)
-            ax2.axhline(self.gradient_thresholds[1], color=COLOUR_TURNING, lw=0.8, ls="--", alpha=0.5)
+            ax2.plot(df_smooth.index, df_smooth["SMOOTH_VELOCITY"], color="tab:red", lw=1.5, label="Smoothed Velocity (Vert)")
+            for thresh in self.gradient_thresholds: ax2.axhline(thresh, color="tab:orange", lw=0.8, ls="--", alpha=0.5)
             ax2.axhline(0, color="black", lw=0.8)
-            ax2.set_ylabel("Velocity")
+            ax2.set(ylabel="Velocity")
             ax2.legend(loc="upper right")
 
-            ax3.plot(df_out.index, df_out["PROFILE_ID"], color="gray", marker=".", ls="", ms=MARKER_SIZE, label="Profile ID")
-            ax3.plot(df_out.index, df_out["CYCLE"], color="tab:red", marker=".", ls="", ms=MARKER_SIZE, label="Cycle Number")
-            ax3.set_ylabel("ID / Cycle")
-            ax3.set_xlabel("Time")
+            ax3.plot(df_out.index, df_out["PROFILE_ID"], color="gray", marker=".", ls="", ms=2, label="Profile ID")
+            ax3.plot(df_out.index, df_out["CYCLE"], color="tab:red", marker=".", ls="", ms=2, label="Cycle Number")
+            ax3.set(ylabel="ID / Cycle", xlabel="Time")
             ax3.legend(loc="upper left")
 
             fig_main.tight_layout()
@@ -451,129 +475,68 @@ class FindProfilesBetaStep(BaseStep, QCHandlingMixin):
 
         root = tk.Tk()
         root.title("Parameter Adjustment")
-        
         entries = {}
 
-        tk.Label(root, text="Cadence").grid(row=0, column=0, sticky="e", padx=5, pady=2)
-        ent_cadence = tk.Entry(root, width=8)
-        ent_cadence.insert(0, self.cadence)
-        ent_cadence.grid(row=0, column=1, sticky="w", padx=5, pady=2)
-        entries["resample_cadence"] = ent_cadence
+        ui_fields = [
+            ("Cadence", "resample_cadence", self.cadence, 0, 0), 
+            ("Vert Grad +", "grad_pos", self.gradient_thresholds[0], 0, 2), 
+            ("Vert Grad -", "grad_neg", self.gradient_thresholds[1], 0, 4),
+            ("Win Med", "win_med", self.filter_win_sizes[0], 1, 0), 
+            ("Win Mean", "win_mean", self.filter_win_sizes[1], 1, 2), 
+            ("Dive Scale", "dive_scale", self.dive_scale, 1, 4),
+            ("Horiz Grad", "horiz_gradient_threshold", self.horiz_grad_thresh, 2, 0), 
+            ("Horiz Dur.", "min_horizontal_duration", self.min_horizontal_duration, 2, 2),
+            ("Surfacing Dep.", "surfacing_depth", self.surfacing_depth, 2, 4),
+            ("Accel Thresh.", "inflection_accel_threshold", self.inflection_accel_threshold, 3, 0)
+        ]
 
-        tk.Label(root, text="Vert Grad +/-").grid(row=0, column=2, sticky="e", padx=5, pady=2)
-        ent_grad_pos = tk.Entry(root, width=6)
-        ent_grad_pos.insert(0, str(self.gradient_thresholds[0]))
-        ent_grad_pos.grid(row=0, column=3, sticky="w", padx=5)
-        entries["grad_pos"] = ent_grad_pos
-        
-        ent_grad_neg = tk.Entry(root, width=6)
-        ent_grad_neg.insert(0, str(self.gradient_thresholds[1]))
-        ent_grad_neg.grid(row=0, column=4, sticky="w", padx=5)
-        entries["grad_neg"] = ent_grad_neg
+        for lbl, key, val, r, c in ui_fields:
+            tk.Label(root, text=lbl).grid(row=r, column=c, sticky="e", padx=2, pady=1)
+            ent = tk.Entry(root, width=8)
+            ent.insert(0, str(val))
+            ent.grid(row=r, column=c+1, sticky="w", padx=2, pady=1)
+            entries[key] = ent
 
-        tk.Label(root, text="Win Med/Mean").grid(row=1, column=0, sticky="e", padx=5, pady=2)
-        ent_win_med = tk.Entry(root, width=6)
-        ent_win_med.insert(0, str(self.filter_win_sizes[0]))
-        ent_win_med.grid(row=1, column=1, sticky="w", padx=5)
-        entries["win_med"] = ent_win_med
+        root.bind("<Down>", lambda e: e.widget.tk_focusNext().focus() or "break")
+        root.bind("<Up>", lambda e: e.widget.tk_focusPrev().focus() or "break")
 
-        ent_win_mean = tk.Entry(root, width=6)
-        ent_win_mean.insert(0, str(self.filter_win_sizes[1]))
-        ent_win_mean.grid(row=1, column=2, sticky="w", padx=5)
-        entries["win_mean"] = ent_win_mean
-
-        tk.Label(root, text="Dive Scale").grid(row=1, column=3, sticky="e", padx=5, pady=2)
-        ent_scale = tk.Entry(root, width=6)
-        ent_scale.insert(0, str(self.dive_scale))
-        ent_scale.grid(row=1, column=4, sticky="w", padx=5, pady=2)
-        entries["dive_scale"] = ent_scale
-
-        tk.Label(root, text="Horiz Grad").grid(row=2, column=0, sticky="e", padx=5, pady=2)
-        ent_h_grad = tk.Entry(root, width=6)
-        ent_h_grad.insert(0, str(self.horiz_grad_thresh))
-        ent_h_grad.grid(row=2, column=1, sticky="w", padx=5, pady=2)
-        entries["horiz_gradient_threshold"] = ent_h_grad
-
-        tk.Label(root, text="Horiz Dur.").grid(row=2, column=2, sticky="e", padx=5, pady=2)
-        ent_h_dur = tk.Entry(root, width=8)
-        ent_h_dur.insert(0, self.min_horizontal_duration)
-        ent_h_dur.grid(row=2, column=3, sticky="w", padx=5, pady=2)
-        entries["min_horizontal_duration"] = ent_h_dur
-
-        tk.Label(root, text="Edge Squeeze").grid(row=3, column=0, sticky="e", padx=5, pady=2)
-        ent_squeeze = tk.Entry(root, width=6)
-        ent_squeeze.insert(0, str(self.edge_squeeze))
-        ent_squeeze.grid(row=3, column=1, sticky="w", padx=5, pady=2)
-        entries["edge_squeeze"] = ent_squeeze
-
-        tk.Label(root, text="Max Depth Gap").grid(row=3, column=2, sticky="e", padx=5, pady=2)
-        ent_gap = tk.Entry(root, width=6)
-        ent_gap.insert(0, str(self.max_depth_gap))
-        ent_gap.grid(row=3, column=3, sticky="w", padx=5, pady=2)
-        entries["max_depth_gap"] = ent_gap
-
-        def focus_next(event):
-            event.widget.tk_focusNext().focus()
-            return "break"
-
-        def focus_prev(event):
-            event.widget.tk_focusPrev().focus()
-            return "break"
-
-        root.bind("<Down>", focus_next)
-        root.bind("<Up>", focus_prev)
-
-        def on_cancel(event=None):
+        def close_all(event=None):
             plt.close('all')
             root.quit()
             root.destroy()
 
-        def on_regenerate(event=None):
+        def on_regen(event=None):
             self.cadence = entries["resample_cadence"].get()
+            self.min_horizontal_duration = entries["min_horizontal_duration"].get()
             self.gradient_thresholds = [float(entries["grad_pos"].get()), float(entries["grad_neg"].get())]
             self.horiz_grad_thresh = float(entries["horiz_gradient_threshold"].get())
-            
-            med_val = entries["win_med"].get()
-            mean_val = entries["win_mean"].get()
-            self.filter_win_sizes = [
-                med_val if not med_val.isdigit() else int(med_val), 
-                mean_val if not mean_val.isdigit() else int(mean_val)
-            ]
-            
-            self.edge_squeeze = int(entries["edge_squeeze"].get())
             self.dive_scale = float(entries["dive_scale"].get())
-            self.max_depth_gap = float(entries["max_depth_gap"].get())
-            self.min_horizontal_duration = entries["min_horizontal_duration"].get()
+            self.surfacing_depth = float(entries["surfacing_depth"].get())
+            self.inflection_accel_threshold = float(entries["inflection_accel_threshold"].get())
+            
+            w_med, w_mean = entries["win_med"].get(), entries["win_mean"].get()
+            self.filter_win_sizes = [int(w_med) if w_med.isdigit() else w_med, int(w_mean) if w_mean.isdigit() else w_mean]
             
             plt.close('all')
             generate_plot()
 
         def on_save(event=None):
             self.update_parameters(
-                resample_cadence=self.cadence,
-                gradient_thresholds=self.gradient_thresholds,
-                horiz_gradient_threshold=self.horiz_grad_thresh,
-                filter_window_sizes=self.filter_win_sizes,
-                edge_squeeze=self.edge_squeeze,
-                dive_scale=self.dive_scale,
-                max_depth_gap=self.max_depth_gap,
-                min_horizontal_duration=self.min_horizontal_duration
+                resample_cadence=self.cadence, gradient_thresholds=self.gradient_thresholds, 
+                horiz_gradient_threshold=self.horiz_grad_thresh, filter_window_sizes=self.filter_win_sizes,
+                dive_scale=self.dive_scale, min_horizontal_duration=self.min_horizontal_duration,
+                surfacing_depth=self.surfacing_depth, inflection_accel_threshold=self.inflection_accel_threshold
             )
-            plt.close('all')
-            root.quit()
-            root.destroy()
+            close_all()
 
-        root.bind("<Return>", on_save)
-        root.bind("<Escape>", on_cancel)
-        root.bind("<Control-s>", on_save)
-        root.bind("<Command-s>", on_save)
+        for key in ["<Return>", "<Control-s>", "<Command-s>"]: root.bind(key, on_save)
+        root.bind("<Escape>", close_all)
 
         btn_frame = tk.Frame(root)
-        btn_frame.grid(row=4, column=0, columnspan=5, pady=15)
+        btn_frame.grid(row=4, column=0, columnspan=6, pady=10)
 
-        tk.Button(btn_frame, text="Regenerate", command=on_regenerate).pack(side="left", padx=5)
-        tk.Button(btn_frame, text="Save", command=on_save).pack(side="left", padx=5)
-        tk.Button(btn_frame, text="Cancel", command=on_cancel).pack(side="left", padx=5)
+        for text, cmd in [("Regenerate", on_regen), ("Save", on_save), ("Cancel", close_all)]:
+            tk.Button(btn_frame, text=text, command=cmd).pack(side="left", padx=5)
 
         generate_plot()
         return root
