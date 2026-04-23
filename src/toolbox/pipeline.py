@@ -74,12 +74,15 @@ def _setup_logging(out_dir=None, log_file=None, level=logging.INFO):
     # File handler if specified
     if log_file:
         log_file = os.path.abspath(os.path.join(out_dir or ".", log_file))        # absolute path
-        os.makedirs(os.path.dirname(log_file) or ".", exist_ok=True)
-        fh = logging.FileHandler(log_file)
+        os.makedirs(os.path.dirname(log_file) or ".", exist_ok=True)    #   Builds logfile directory
+        fh = logging.FileHandler(log_file, "w+")  #   Init the logfile
         fh.setLevel(level)
         fh.setFormatter(formatter)
         logger.addHandler(fh)
-        logger.info("Logging to file: %s", log_file)
+        logger.info("Logging to file: %s", log_file)    #   Should not be an empty file at the end of this
+    else:
+        if not os.path.exists(out_dir):
+            os.makedirs(out_dir)
 
     return logger
 
