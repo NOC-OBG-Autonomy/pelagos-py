@@ -25,6 +25,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import matplotlib.dates as mdates
 from matplotlib.collections import LineCollection
+from matplotlib.lines import Line2D
 import tkinter as tk
 from scipy.signal import savgol_filter
 
@@ -45,6 +46,7 @@ FIXED_MIN_VALID_DEPTH = -0.5
 FIXED_MIN_POINTS_VERT = 5
 FIXED_MIN_POINTS_HORIZ = 20
 
+# Plotting Configuration Variables
 COLOUR_UP = "tab:blue"
 COLOUR_DOWN = "tab:green"
 COLOUR_HORIZONTAL = "tab:purple"
@@ -52,8 +54,41 @@ COLOUR_TURNING = "tab:orange"
 COLOUR_VELOCITY = "tab:red"
 COLOUR_RAW = "tab:gray"
 COLOUR_SMOOTH = "black"
+
+# Scientific Phase Colours
+COLOUR_PHASE_UNKNOWN = "tab:gray"
+COLOUR_PHASE_ASCENT = "tab:blue"
+COLOUR_PHASE_DESCENT = "tab:green"
+COLOUR_PHASE_SURFACING = "tab:cyan"
+COLOUR_PHASE_PARKING = "tab:purple"
+COLOUR_PHASE_INFLECTION = "tab:orange"
+COLOUR_PHASE_PROPELLED = "tab:pink"
+COLOUR_PHASE_TRANSITION = "tab:brown"
+
 MARKER_SIZE = 2
 LINE_WIDTH = 1.5
+
+PHASE_COLOURS = {
+    0: COLOUR_PHASE_UNKNOWN,
+    1: COLOUR_PHASE_ASCENT,
+    2: COLOUR_PHASE_DESCENT,
+    3: COLOUR_PHASE_SURFACING,
+    4: COLOUR_PHASE_PARKING,
+    5: COLOUR_PHASE_INFLECTION,
+    6: COLOUR_PHASE_PROPELLED,
+    7: COLOUR_PHASE_TRANSITION
+}
+
+PHASE_NAMES = {
+    0: "Unknown",
+    1: "Ascent",
+    2: "Descent",
+    3: "Surfacing",
+    4: "Parking",
+    5: "Inflection",
+    6: "Propelled",
+    7: "Transition"
+}
 
 def _parse_windows(win_sizes, cadence):
     cadence_sec = pd.Timedelta(cadence).total_seconds()
@@ -69,48 +104,10 @@ def _parse_windows(win_sizes, cadence):
             parsed.append(int(w))
     return parsed
 
-def find_profiles_beta(df_sorted, cadence, filter_win_sizes, gradient_thresholds, horiz_grad_thresh, edge_squeeze, dive_scale, max_depth_gap, min_horizontal_duration, min_horizontal_depth, depth_col):
+def find_profiles_beta(df_sorted, cadence, filter_win_sizes, gradient_thresholds, horiz_grad_thresh, edge_squeeze, dive_scale, max_depth_gap, min_horizontal_duration, min_horizontal_depth, depth_col, has_water_vel):
     """
     Identifies and classifies vertical and horizontal profiles from depth-time data.
-
-    This function applies compound smoothing and velocity thresholds to classify 
-    vehicle movements into descending (+1), ascending (-1), horizontal (0), 
-    or turning (NaN) segments. Vertical profiles are identified first based on 
-    steep vertical velocities and depth spans. Unassigned data is then evaluated 
-    for horizontal profiles based on flatter velocities, minimum depth, and duration.
-    Final profile IDs are assigned chronologically.
-
-    Parameters
-    ----------
-    df_sorted : pandas.DataFrame
-        Time-indexed dataframe containing the depth measurements.
-    cadence : str
-        Resampling frequency string (e.g., '30s') used to regularise the time series.
-    filter_win_sizes : list
-        Two-element list defining the rolling median and mean window sizes.
-    gradient_thresholds : list
-        [positive_threshold, negative_threshold] for vertical velocity bounds (m/s).
-    horiz_grad_thresh : float
-        Maximum absolute velocity (m/s) to be considered a horizontal profile.
-    edge_squeeze : int
-        Number of points to iteratively erode from the edges of turning regions.
-    dive_scale : float
-        Minimum total vertical distance (m) required for a valid vertical profile.
-    max_depth_gap : float
-        Maximum allowable depth gap (m) between consecutive points in a profile.
-    min_horizontal_duration : str
-        Minimum time duration string (e.g., '20min') for a horizontal profile.
-    min_horizontal_depth : float
-        Minimum depth (m) required to evaluate a horizontal profile.
-    depth_col : str
-        Name of the column containing depth or pressure data.
-
-    Returns
-    -------
-    df_out : pandas.DataFrame
-        Dataframe aligned to original indices with added 'PROFILE_ID', 'DIRECTION', and 'GRADIENT'.
-    df : pandas.DataFrame
-        The resampled and smoothed diagnostic dataframe.
+    Also derives continuous cycle numbers and scientific phase flags.
     """
     df = df_sorted[depth_col].resample(cadence).mean().to_frame()
     df[depth_col] = df[depth_col].interpolate(method='linear')
@@ -121,6 +118,8 @@ def find_profiles_beta(df_sorted, cadence, filter_win_sizes, gradient_thresholds
         df_out["PROFILE_ID"] = np.nan
         df_out["DIRECTION"] = np.nan
         df_out["GRADIENT"] = np.nan
+        df_out["CYCLE"] = 1
+        df_out["SCI_PHASE"] = 0
         
         df["SMOOTH_DEPTH"] = df[depth_col]
         df["SMOOTH_VELOCITY"] = 0.0
@@ -153,7 +152,6 @@ def find_profiles_beta(df_sorted, cadence, filter_win_sizes, gradient_thresholds
     df.loc[(df["SMOOTH_VELOCITY_HORIZ"].abs() <= horiz_grad_thresh) & (df["SMOOTH_DEPTH"] >= min_horizontal_depth), "STATE"] = "horizontal"
     df.loc[(df["SMOOTH_DEPTH"] < FIXED_MIN_VALID_DEPTH) | vel_crosses_zero, "STATE"] = "turning"
     
-    # Enforce strictly boolean type to prevent IndexError on arrays containing NaNs
     df["is_turning"] = (
         ((df["SMOOTH_VELOCITY"] >= neg_grad) & (df["SMOOTH_VELOCITY"] <= pos_grad)) | 
         (df["SMOOTH_DEPTH"] < FIXED_MIN_VALID_DEPTH) |
@@ -249,7 +247,6 @@ def find_profiles_beta(df_sorted, cadence, filter_win_sizes, gradient_thresholds
             df_out.loc[sub_group.index, "is_turning"] = False
             valid_pid_counter += 1
 
-    # --- Chronological Sorting ---
     valid_mask = df_out["VALID_PROFILE"].notna()
     profile_transitions = valid_mask & (df_out["VALID_PROFILE"] != df_out["VALID_PROFILE"].shift(1))
     
@@ -259,6 +256,33 @@ def find_profiles_beta(df_sorted, cadence, filter_win_sizes, gradient_thresholds
     df_out = df_out.drop(columns=["PROFILE_ID", "is_horiz_candidate", "VALID_PROFILE"])
     df_out = df_out.rename(columns={"CHRONO_ID": "PROFILE_ID"})
 
+    # --- Scientific Phase Classification ---
+    df_out["SCI_PHASE"] = 0 
+    
+    surfacing_mask = df_out["SMOOTH_DEPTH"] < min_horizontal_depth
+    df_out.loc[surfacing_mask, "SCI_PHASE"] = 3
+    
+    df_out.loc[(df_out["DIRECTION"] == 1) & (df_out["SCI_PHASE"] == 0), "SCI_PHASE"] = 1
+    df_out.loc[(df_out["DIRECTION"] == -1) & (df_out["SCI_PHASE"] == 0), "SCI_PHASE"] = 2
+    
+    horiz_mask = (df_out["DIRECTION"] == 0) & (df_out["SCI_PHASE"] == 0)
+    if has_water_vel:
+        df_out.loc[horiz_mask, "SCI_PHASE"] = 4
+    
+    turning_mask = df_out["is_turning"] & (df_out["SCI_PHASE"] == 0)
+    df_out.loc[turning_mask, "SCI_PHASE"] = 5 
+
+    # --- Cycle Derivation ---
+    is_descent = df_out["SCI_PHASE"] == 2
+    is_surfacing = df_out["SCI_PHASE"] == 3
+    
+    state_23 = df_out.loc[is_descent | is_surfacing, "SCI_PHASE"]
+    new_cycle_trigger_idx = state_23[(state_23 == 2) & (state_23.shift(1) == 3)].index
+    
+    cycle_trigger = pd.Series(0, index=df_out.index)
+    cycle_trigger.loc[new_cycle_trigger_idx] = 1
+    df_out["CYCLE"] = cycle_trigger.cumsum() + 1
+
     return df_out, df
 
 
@@ -266,11 +290,10 @@ def find_profiles_beta(df_sorted, cadence, filter_win_sizes, gradient_thresholds
 class FindProfilesBetaStep(BaseStep, QCHandlingMixin):
     step_name = "Find Profiles Beta"
     required_variables = ["TIME"]
-    provided_variables = ["PROFILE_NUMBER"]
-
+    provided_variables = ["PROFILE_NUMBER", "CYCLE", "SCI_PHASE"]
 
     def run(self):
-        self.log("Attempting to designate profile numbers, directions, and gradients")
+        self.log("Attempting to designate profile numbers, cycles, directions, and phases")
         self.filter_qc()
 
         self.depth_col = self.parameters.get("depth_column")
@@ -292,6 +315,12 @@ class FindProfilesBetaStep(BaseStep, QCHandlingMixin):
         self.min_horizontal_duration = self.parameters.get("min_horizontal_duration", DEFAULT_MIN_HORIZONTAL_DURATION)
         self.min_horizontal_depth = self.parameters.get("min_horizontal_depth", DEFAULT_MIN_HORIZONTAL_DEPTH)
 
+        self.has_water_vel = ("WATER_VELOCITY_FINAL_U" in self.data.variables and 
+                              "WATER_VELOCITY_FINAL_V" in self.data.variables)
+        
+        if not self.has_water_vel:
+            self.log("Warning: WATER_VELOCITY_FINAL_U and/or WATER_VELOCITY_FINAL_V not found. Parking and Propelled phases could not be determined.")
+
         if self.diagnostics:
             root = self.generate_diagnostics()
             root.mainloop()
@@ -303,12 +332,12 @@ class FindProfilesBetaStep(BaseStep, QCHandlingMixin):
             df_sorted, self.cadence, self.filter_win_sizes, 
             self.gradient_thresholds, self.horiz_grad_thresh, self.edge_squeeze,
             self.dive_scale, self.max_depth_gap, self.min_horizontal_duration,
-            self.min_horizontal_depth, self.depth_col
+            self.min_horizontal_depth, self.depth_col, self.has_water_vel
         )
 
         df_out = df_out.reset_index()
         df_final = df_raw.merge(
-            df_out[["N_MEASUREMENTS", "PROFILE_ID", "DIRECTION", "GRADIENT"]], 
+            df_out[["N_MEASUREMENTS", "PROFILE_ID", "DIRECTION", "GRADIENT", "CYCLE", "SCI_PHASE"]], 
             on="N_MEASUREMENTS", 
             how="left"
         )
@@ -334,10 +363,31 @@ class FindProfilesBetaStep(BaseStep, QCHandlingMixin):
             "units": "m/s",
         }
 
+        self.data["CYCLE"] = (("N_MEASUREMENTS",), df_final["CYCLE"].to_numpy())
+        self.data.CYCLE.attrs = {
+            "long_name": "Continuous cycle number derived from surfacing points",
+            "units": "None",
+            "standard_name": "Cycle Number",
+            "valid_min": 1,
+            "valid_max": np.inf,
+        }
+
+        self.data["SCI_PHASE"] = (("N_MEASUREMENTS",), df_final["SCI_PHASE"].to_numpy())
+        self.data.SCI_PHASE.attrs = {
+            "long_name": "Scientific Phase Classification",
+            "units": "None",
+            "valid_min": 0,
+            "valid_max": 7,
+            "flag_values": "0, 1, 2, 3, 4, 5, 6, 7",
+            "flag_meanings": "unknown ascent descent surfacing parking inflection propelled transition"
+        }
+
         self.generate_qc({
             "PROFILE_NUMBER_QC": ["TIME_QC", f"{self.depth_col}_QC"],
             "PROFILE_DIRECTION_QC": ["TIME_QC", f"{self.depth_col}_QC"],
-            "PROFILE_GRADIENT_QC": ["TIME_QC", f"{self.depth_col}_QC"]
+            "PROFILE_GRADIENT_QC": ["TIME_QC", f"{self.depth_col}_QC"],
+            "CYCLE_QC": ["TIME_QC", f"{self.depth_col}_QC"],
+            "SCI_PHASE_QC": ["TIME_QC", f"{self.depth_col}_QC"]
         })
 
         self.context["data"] = self.data
@@ -354,15 +404,10 @@ class FindProfilesBetaStep(BaseStep, QCHandlingMixin):
                 df_sorted, self.cadence, self.filter_win_sizes, 
                 self.gradient_thresholds, self.horiz_grad_thresh, self.edge_squeeze,
                 self.dive_scale, self.max_depth_gap, self.min_horizontal_duration, 
-                self.min_horizontal_depth, self.depth_col
+                self.min_horizontal_depth, self.depth_col, self.has_water_vel
             )
 
             fig_main, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(15, 10), sharex=True, gridspec_kw={'height_ratios': [3, 2, 1]})
-
-            up_mask = df_out["DIRECTION"] == 1
-            down_mask = df_out["DIRECTION"] == -1
-            horiz_mask = df_out["DIRECTION"] == 0
-            turn_mask = df_out["PROFILE_ID"].isna()
 
             x_num = mdates.date2num(df_smooth.index)
             points = np.array([x_num, -df_smooth["SMOOTH_DEPTH"].values]).T.reshape(-1, 1, 2)
@@ -374,31 +419,19 @@ class FindProfilesBetaStep(BaseStep, QCHandlingMixin):
             lc = LineCollection(segments, colors=colours, linewidths=LINE_WIDTH, zorder=0, alpha=0.7)
             ax1.add_collection(lc)
 
-            ax1.plot(df_out[turn_mask].index, -df_out[turn_mask][self.depth_col], marker=".", ls="", ms=MARKER_SIZE, color=COLOUR_RAW, alpha=0.5, zorder=1, label="Unassigned Raw")
+            unique_phases = sorted(df_out["SCI_PHASE"].dropna().unique())
             
-            for pid in df_out["PROFILE_ID"].dropna().unique():
-                mask = df_out["PROFILE_ID"] == pid
-                direction = df_out.loc[mask, "DIRECTION"].iloc[0]
-                if direction == 1:
-                    c = COLOUR_UP
-                elif direction == -1:
-                    c = COLOUR_DOWN
-                else:
-                    c = COLOUR_HORIZONTAL
-                ax1.plot(df_out[mask].index, -df_out[mask][self.depth_col], marker=".", ls="", ms=MARKER_SIZE+1, color=c, zorder=3)
+            for phase_val in unique_phases:
+                mask = df_out["SCI_PHASE"] == phase_val
+                c = PHASE_COLOURS.get(phase_val, COLOUR_PHASE_UNKNOWN)
+                ax1.plot(df_out[mask].index, -df_out[mask][self.depth_col], marker=".", ls="", ms=MARKER_SIZE+2, color=c, zorder=3)
 
-            from matplotlib.lines import Line2D
-            custom_lines = [
-                Line2D([0], [0], color=COLOUR_UP, lw=LINE_WIDTH),
-                Line2D([0], [0], color=COLOUR_DOWN, lw=LINE_WIDTH),
-                Line2D([0], [0], color=COLOUR_HORIZONTAL, lw=LINE_WIDTH),
-                Line2D([0], [0], color=COLOUR_TURNING, lw=LINE_WIDTH),
-                Line2D([0], [0], marker='.', color='w', markerfacecolor=COLOUR_RAW, markersize=MARKER_SIZE+5)
-            ]
-            ax1.legend(custom_lines, ['Intended Ascent', 'Intended Descent', 'Intended Horizontal', 'Intended Turning', 'Unassigned Raw'], loc="upper right")
+            custom_lines = [Line2D([0], [0], marker='.', color='w', markerfacecolor=PHASE_COLOURS.get(p, COLOUR_PHASE_UNKNOWN), markersize=MARKER_SIZE+6) for p in unique_phases]
+            labels = [PHASE_NAMES.get(p, "Unknown") for p in unique_phases]
+            ax1.legend(custom_lines, labels, loc="upper right")
 
             ax1.set_ylabel(self.depth_col)
-            ax1.set_title("Profile Classification Overlay")
+            ax1.set_title("Scientific Phase Overlay")
 
             ax2.plot(df_smooth.index, df_smooth["SMOOTH_VELOCITY"], color=COLOUR_VELOCITY, lw=LINE_WIDTH, label="Smoothed Velocity (Vert)")
             ax2.axhline(self.gradient_thresholds[0], color=COLOUR_TURNING, lw=0.8, ls="--", alpha=0.5)
@@ -407,9 +440,11 @@ class FindProfilesBetaStep(BaseStep, QCHandlingMixin):
             ax2.set_ylabel("Velocity")
             ax2.legend(loc="upper right")
 
-            ax3.plot(df_out.index, df_out["PROFILE_ID"], color="gray", marker=".", ls="", ms=MARKER_SIZE)
-            ax3.set_ylabel("Profile ID")
+            ax3.plot(df_out.index, df_out["PROFILE_ID"], color="gray", marker=".", ls="", ms=MARKER_SIZE, label="Profile ID")
+            ax3.plot(df_out.index, df_out["CYCLE"], color="tab:red", marker=".", ls="", ms=MARKER_SIZE, label="Cycle Number")
+            ax3.set_ylabel("ID / Cycle")
             ax3.set_xlabel("Time")
+            ax3.legend(loc="upper left")
 
             fig_main.tight_layout()
             fig_main.show()

@@ -1,4 +1,5 @@
 import pytest
+import logging
 import numpy as np
 import xarray as xr
 from unittest.mock import patch
@@ -55,9 +56,11 @@ def test_nonzero_values_not_flagged():
 
 
 # --- CNDC Unit Scaling ---
-
-def test_cndc_scaled_when_in_sm(capsys):
+def test_cndc_scaled_when_in_sm(caplog):
     """CNDC in S/m (max < 10) should be scaled x10 to mS/cm when auto_scale=True."""
+    # Tell caplog to capture INFO level messages
+    caplog.set_level(logging.INFO)
+    
     data = create_ctd_dataset(
         pres=[5.0, 10.0],
         temp=[8.0, 8.5],
@@ -66,13 +69,11 @@ def test_cndc_scaled_when_in_sm(capsys):
     )
     step = ctd_qc(data, auto_scale=True)
     step.return_qc()
-    captured = capsys.readouterr()
 
     assert step.scaled is True
-    assert "Converting CNDC from S/m to mS/cm" in captured.out
+    assert "Converting CNDC from S/m to mS/cm" in caplog.text
     assert data["CNDC"].attrs["units"] == "mS/cm"
     np.testing.assert_allclose(data["CNDC"].values, [35.0, 36.0])
-
 
 def test_cndc_not_scaled_when_already_mscm():
     """CNDC already in mS/cm should not be scaled again."""

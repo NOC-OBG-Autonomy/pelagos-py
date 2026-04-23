@@ -19,6 +19,8 @@ from toolbox.utils.config_mirror import ConfigMirrorMixin
 import warnings
 import logging
 import os
+import time
+from functools import wraps
 
 warnings.formatwarning = lambda msg, *args, **kwargs: f"{msg}\n"
 
@@ -42,6 +44,36 @@ class BaseStep(ConfigMirrorMixin):
     Base class for pipeline steps with config-mirroring support.
     Every concrete subclass (registered via @register_step) inherits this.
     """
+
+    def __init_subclass__(cls, **kwargs):
+        """Automatically wraps the run method of all subclasses to include telemetry."""
+        super().__init_subclass__(**kwargs)
+        
+        if not getattr(cls.run, "_is_telemetry_wrapped", False):
+            original_run = cls.run
+            
+            @wraps(original_run)
+            def run_with_telemetry(self, *args, **kwargs):
+                start_time = time.time()
+                
+                result = original_run(self, *args, **kwargs)
+                
+                if getattr(self, "diagnostics", False):
+                    duration = time.time() - start_time
+                    self.log(f"Execution time: {duration:.2f} seconds.")
+                    
+                    try:
+                        import psutil
+                        process = psutil.Process(os.getpid())
+                        mem_info = process.memory_info()
+                        self.log(f"Current memory usage: {mem_info.rss / 1024 ** 2:.2f} MB")
+                    except ImportError:
+                        pass
+                        
+                return result
+            
+            run_with_telemetry._is_telemetry_wrapped = True
+            cls.run = run_with_telemetry
 
     def __init__(self, name, parameters=None, diagnostics=False, context=None):
         # === Core behaviour (same as before) ===
@@ -94,7 +126,7 @@ class BaseStep(ConfigMirrorMixin):
         if "data" not in self.context:
             raise ValueError("No data found in context. Please load data first.")
         else:
-            self.log(f"Data found in context.")
+            self.log("Data found in context.")
 
     # ----------- Config Handling -----------
 
@@ -125,5 +157,5 @@ class BaseStep(ConfigMirrorMixin):
         os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
         with open(path, "w") as f:
             yaml.safe_dump(cfg, f, sort_keys=False)
-        print(f"[{self.name}] Step config saved → {path}")
+        print(f"[{self.name}] Step config saved -> {path}")
         return cfg
