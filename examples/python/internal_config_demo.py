@@ -3,7 +3,7 @@ import numpy as np
 from toolbox.pipeline import Pipeline, _setup_logging
 
 # --- Configuration Variables ---
-FILE_PATH = "/Users/orlpru/Desktop/OG1_Data/Doombar_648.nc"
+FILE_PATH = "/Users/orlpru/Desktop/OG1_Data/input/BIO-Carbon/Churchill_647.nc"
 PIPELINE_NAME = "Minimal Test Pipeline"
 
 config = {
@@ -49,7 +49,7 @@ config = {
             "parameters": {
                 "to_derive": ["DEPTH", "PRAC_SALINITY", "ABS_SALINITY", "CONS_TEMP", "DENSITY"]
             },
-            "diagnostics": True
+            "diagnostics": False
         },
         {
           "name": "Find Profiles Beta",

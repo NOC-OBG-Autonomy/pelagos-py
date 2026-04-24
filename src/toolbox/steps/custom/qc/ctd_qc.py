@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""QC step that flags CTD fill values, corrects CNDC S/m to mS/cm, and cross-flags statistical outliers."""
+"""QC step that flags CTD fill values, corrects CNDC S/m to mS/cm, and applies a hard range filter."""
 
 from toolbox.steps.base_qc import BaseQC, register_qc
 import numpy as np
@@ -27,7 +27,7 @@ import matplotlib.pyplot as plt
 class ctd_qc(BaseQC):
     """
     Target Variable: PRES, TEMP, CNDC
-    Flag Number: 9 (missing/fill value), 4 (gross outlier)
+    Flag Number: 9 (missing/fill value), 4 (out of range)
     Variables Flagged: PRES, TEMP, CNDC
     """
 
@@ -39,7 +39,22 @@ class ctd_qc(BaseQC):
         "auto_scale": {
             "type": bool,
             "default": True,
-            "description": "Automatically scale CNDC from S/m to mS/cm if max < 10.0"
+            "description": "Automatically scale CNDC from S/m to mS/cm if median < 10.0"
+        },
+        "apply_cndc_range": {
+            "type": bool,
+            "default": True,
+            "description": "Apply a hard min/max range check to CNDC."
+        },
+        "cndc_min": {
+            "type": float,
+            "default": 20.0,
+            "description": "Minimum valid CNDC value (evaluated after auto-scaling)."
+        },
+        "cndc_max": {
+            "type": float,
+            "default": 50.0,
+            "description": "Maximum valid CNDC value (evaluated after auto-scaling)."
         }
     }
 
@@ -56,6 +71,9 @@ class ctd_qc(BaseQC):
             }
             
         self.auto_scale = kwargs.get("auto_scale", self.parameter_schema["auto_scale"]["default"])
+        self.apply_cndc_range = kwargs.get("apply_cndc_range", self.parameter_schema["apply_cndc_range"]["default"])
+        self.cndc_min = kwargs.get("cndc_min", self.parameter_schema["cndc_min"]["default"])
+        self.cndc_max = kwargs.get("cndc_max", self.parameter_schema["cndc_max"]["default"])
         self.scaled = False
 
     def return_qc(self):
@@ -73,11 +91,11 @@ class ctd_qc(BaseQC):
                 valid_mask = ~zero_mask & ~np.isnan(vals)
                 
                 if self.auto_scale and np.any(valid_mask):
-                    max_val = np.max(vals[valid_mask])
+                    median_val = np.nanmedian(vals[valid_mask])
                     current_units = str(self.data[var].attrs.get("units", "")).strip().lower()
                     already_mscm = current_units in ["ms/cm", "ms cm-1", "millisiemens/cm", "milli-siemens/cm"]
 
-                    if not already_mscm and max_val < 10.0:
+                    if not already_mscm and median_val < 10.0:
                         self.scaled = True
                         self.log("Converting CNDC from S/m to mS/cm for GSW calculations...")
                         
@@ -87,21 +105,18 @@ class ctd_qc(BaseQC):
 
             qc_arrays[var] = qc
 
-        cndc_vals = self.data["CNDC"].values
-        cndc_valid_mask = (qc_arrays["CNDC"] != 9) & ~np.isnan(cndc_vals)
+        if self.apply_cndc_range:
+            cndc_vals = self.data["CNDC"].values
+            cndc_valid_mask = (qc_arrays["CNDC"] != 9) & ~np.isnan(cndc_vals)
 
-        if np.any(cndc_valid_mask):
-            cndc_mean = np.nanmean(cndc_vals[cndc_valid_mask])
-            cndc_std = np.nanstd(cndc_vals[cndc_valid_mask])
-            
-            if cndc_std > 0:
-                outlier_mask = np.abs(cndc_vals - cndc_mean) > (5.0 * cndc_std)
+            if np.any(cndc_valid_mask):
+                outlier_mask = (cndc_vals < self.cndc_min) | (cndc_vals > self.cndc_max)
                 outlier_mask = outlier_mask & cndc_valid_mask
-                
+
                 outlier_count = np.sum(outlier_mask)
                 if outlier_count > 0:
-                    self.log(f"Found {outlier_count} CNDC anomalies (>5.0 std). Cross-flagging triad as bad (4).")
-                    
+                    self.log(f"Found {outlier_count} CNDC values outside range [{self.cndc_min}, {self.cndc_max}]. Cross-flagging triad as bad (4).")
+
                     for var in self.required_variables:
                         qc_arrays[var] = xr.where(outlier_mask & (qc_arrays[var] == 0), 4, qc_arrays[var])
 
@@ -142,7 +157,7 @@ class ctd_qc(BaseQC):
                 ax.plot(
                     time_data[outlier_mask], 
                     raw_vals[outlier_mask] if var == "CNDC" and self.scaled else valid_vals[outlier_mask],
-                    marker="d", ls="", color="#e17055", markersize=3.5, label="Outliers (>5.0σ)"
+                    marker="d", ls="", color="#e17055", markersize=3.5, label="Out of Range (4)"
                 )
 
             zero_mask = (qc_vals == 9)
@@ -152,6 +167,10 @@ class ctd_qc(BaseQC):
                     ls="", color="#d63031", markersize=3.0, label="Flagged Zeros (9)"
                 )
 
+            if var == "CNDC" and self.apply_cndc_range:
+                ax.axhline(self.cndc_max, color="black", linestyle="--", alpha=0.6, linewidth=1, label=f"Max ({self.cndc_max})")
+                ax.axhline(self.cndc_min, color="black", linestyle="--", alpha=0.6, linewidth=1, label=f"Min ({self.cndc_min})")
+                
             ax.set_ylabel(var, fontsize=8)
             ax.grid(True, alpha=0.3)
             ax.tick_params(axis="both", which="major", labelsize=8)
@@ -161,7 +180,7 @@ class ctd_qc(BaseQC):
             
             ax.legend(loc="center left", bbox_to_anchor=(1.01, 0.5), fontsize=8, framealpha=0.9, fancybox=True)
 
-        title = "CTD Zero Flagging, Unit Verification & Anomaly Detection"
+        title = "CTD Zero Flagging & Range Verification"
         if self.scaled:
             title += "\n(CNDC Magnitude Shifted: x10 to mS/cm)"
         elif not self.auto_scale:

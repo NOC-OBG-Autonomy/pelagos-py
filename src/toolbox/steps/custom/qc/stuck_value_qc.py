@@ -39,7 +39,7 @@ class stuck_value_qc(BaseQC):
     - name: "Apply QC"
       parameters:
         qc_settings: {
-            "stuck value test": {
+            "stuck value qc": {
               "variables": {"PRES": 4, "LATITUDE": 100},
               "also_flag": {"PRES": ["CNDC", "TEMP"], "LATITUDE": ["LONGITUDE"]},
               "plot": ["PRES", "LATITUDE"]
@@ -49,38 +49,31 @@ class stuck_value_qc(BaseQC):
     """
 
     qc_name = "stuck value qc"
-
-    # Specify if test target variable is user-defined (if True, __init__ has to be redefined)
     dynamic = True
 
+    # Define the schema here so BaseQC automatically extracts and assigns them
+    expected_parameters = {
+        "variables": {},
+        "also_flag": {},
+        "plot": []
+    }
+
     def __init__(self, data, **kwargs):
-        # Check the necessary kwargs are available
-        required_kwargs = {"variables", "also_flag", "plot"}
-        if not required_kwargs.issubset(set(kwargs.keys())):
-            raise KeyError(
-                f"{required_kwargs - set(kwargs.keys())} are missing from {self.qc_name} settings"
-            )
+        # 1. Let BaseQC handle data copying, logging setup, and parameter validation
+        super().__init__(data, **kwargs)
 
-        # Specify the tests paramters from kwargs (config)
-        self.expected_parameters = {
-            k: v for k, v in kwargs.items() if k in required_kwargs
-        }
-        self.required_variables = list(
-            set(self.expected_parameters["variables"].keys())
-        )
+        # 2. Safety check for the required dynamic config
+        if not getattr(self, "variables", None):
+            raise KeyError(f"'variables' is required but missing from {self.qc_name} settings")
+
+        # 3. Dynamically construct required variables based on user config
+        self.required_variables = list(self.variables.keys())
+        
+        # 4. Dynamically construct output columns
         self.qc_outputs = list(
-            set(f"{var}_QC" for var in self.required_variables)
-            | set(
-                f"{var}_QC"
-                for var in sum(self.expected_parameters["also_flag"].values(), [])
-            )
+            set(f"{var}_QC" for var in self.required_variables) | 
+            set(f"{var}_QC" for var in sum(self.also_flag.values(), []))
         )
-
-        if data is not None:
-            self.data = data.copy(deep=True)
-
-        for k, v in self.expected_parameters.items():
-            setattr(self, k, v)
 
         self.flags = None
 
@@ -143,9 +136,7 @@ class stuck_value_qc(BaseQC):
 
         # If not plots were specified
         if len(self.plot) == 0:
-            print(
-                f"WARNING: In '{self.qc_name}', diagnostics were called but no variables were specified for plotting."
-            )
+            self.log_warn("Diagnostics were called but no variables were specified for plotting.")
             return
 
         # Plot the QC output
@@ -158,9 +149,7 @@ class stuck_value_qc(BaseQC):
         for ax, var in zip(axs, self.plot):
             # Check that the user specified var exists in the test set
             if f"{var}_QC" not in self.qc_outputs:
-                print(
-                    f"WARNING: Cannot plot {var}_QC as it was not included in this test."
-                )
+                self.log_warn(f"Cannot plot {var}_QC as it was not included in this test.")
                 continue
 
             for i in range(10):

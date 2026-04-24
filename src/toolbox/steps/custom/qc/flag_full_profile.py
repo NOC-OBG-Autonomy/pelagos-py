@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""QC test to flag entire glider profiles based on number of bad flags."""
+"""QC test to flag entire profiles that fail length or depth range requirements."""
 
 #### Mandatory imports ####
 import numpy as np
@@ -24,125 +24,145 @@ from toolbox.steps.base_qc import BaseQC, register_qc, flag_cols
 import matplotlib.pyplot as plt
 import xarray as xr
 import matplotlib
+import pandas as pd
 
 
 @register_qc
-class flag_full_profile(BaseQC):
+class ValidProfileQC(BaseQC):
     """
-    Target Variable: Any
+    Target Variable: PROFILE_NUMBER
     Flag Number: 4
-    Variables Flagged: Any
-    Checks the number of bad (4) flags per profile. If it
-    exceeds the user threshold then all points in the profile
-    are flagged.
+    Variables Flagged: PROFILE_NUMBER
+    
+    Checks each profile to ensure it meets a minimum number of valid data points 
+    and spans a required depth range. Profiles failing these criteria are flagged as bad.
 
     EXAMPLE
     -------
     - name: "Apply QC"
       parameters:
-        qc_settings: {
-            "flag_full_profile": {
-              "check_vars": {"PRES": 10, "CHLA": 20},
-            }
-        }
-      diagnostics: true
+        qc_settings:
+            valid profile qc:
+              profile_length: 50
+              depth_range: [-1000, 0]
+      diagnostics: false
     """
 
-    qc_name = "flag full profile"
+    qc_name = "valid profile qc"
     required_variables = ["PROFILE_NUMBER"]
-    provided_variables = []
+    provided_variables = ["PROFILE_NUMBER_QC"]
 
-
-    # Specify if test target variable is user-defined (if True, __init__ has to be redefined)
     dynamic = True
 
-    def __init__(self, data, **kwargs):
-        # Check the necessary kwargs are available
-        required_kwargs = {"check_vars"}
-        if not required_kwargs.issubset(set(kwargs.keys())):
-            raise KeyError(
-                f"{required_kwargs - set(kwargs.keys())} are missing from {self.qc_name} settings"
-            )
-
-        # Specify the tests paramters from kwargs (config)
-        self.expected_parameters = {
-            k: v for k, v in kwargs.items() if k in required_kwargs
+    parameter_schema = {
+        "profile_length": {
+            "type": int,
+            "default": 50,
+            "description": "Minimum number of data points required for a valid profile."
+        },
+        "depth_range": {
+            "type": list,
+            "default": [-1000, 0],
+            "description": "Required depth range [min, max] that the profile must span."
+        },
+        "depth_column": {
+            "type": str,
+            "default": "PRES",
+            "description": "Depth or pressure column name. Defaults to PRES."
         }
-        self.required_variables = (
-            list(self.expected_parameters["check_vars"].keys())
-            + [f"{k}_QC" for k in self.expected_parameters["check_vars"].keys()]
-            + ["PROFILE_NUMBER"]
-        )
+    }
 
+    def __init__(self, data, **kwargs):
+        self.profile_length = kwargs.get("profile_length", 50)
+        self.depth_range = kwargs.get("depth_range", [-1000, 0])
+        self.depth_col = kwargs.get("depth_column", "PRES")
+        
+        self.required_variables = ["PROFILE_NUMBER", self.depth_col]
+        
         if data is not None:
             self.data = data.copy(deep=True)
-
-        for k, v in self.expected_parameters.items():
-            setattr(self, k, v)
 
         self.flags = None
 
     def return_qc(self):
-        # TODO: Add support for flagging if threshold is a mix of 3 (questionable) and 4 (definitely bad) flags
-        # Subset the data
         self.data = self.data[self.required_variables]
+        
+        df = self.data.to_dataframe()
+        bad_profiles = []
+        
+        for pid, group in df.dropna(subset=["PROFILE_NUMBER"]).groupby("PROFILE_NUMBER"):
+            is_valid = True
+            
+            if len(group) < self.profile_length:
+                is_valid = False
+                
+            elif self.depth_range is not None and len(self.depth_range) == 2:
+                min_req_depth, max_req_depth = sorted(self.depth_range)
+                actual_min = group[self.depth_col].min()
+                actual_max = group[self.depth_col].max()
+                
+                if actual_min > min_req_depth or actual_max < max_req_depth:
+                    is_valid = False
+                    
+            if not is_valid:
+                bad_profiles.append(pid)
 
-        for var, threshold in self.check_vars.items():
-            flag_counts = (
-                (self.data[f"{var}_QC"] == 4).groupby(self.data["PROFILE_NUMBER"]).sum()
-            )  # Default to flag 4 (definitely bad)
-            bad_profiles = flag_counts.where(flag_counts >= threshold, drop=True)[
-                "PROFILE_NUMBER"
-            ]
-            self.data[f"{var}_QC"] = xr.where(
-                self.data[f"PROFILE_NUMBER"].isin(bad_profiles),
-                4,
-                self.data[f"{var}_QC"],
-            )
+        self.data["PROFILE_NUMBER_QC"] = xr.where(
+            self.data["PROFILE_NUMBER"].isin(bad_profiles),
+            4,
+            0
+        )
 
-        # Select just the flags
-        self.flags = self.data[
-            [var_qc for var_qc in self.data.data_vars if "_QC" in var_qc]
-        ]
-
+        self.flags = self.data[["PROFILE_NUMBER_QC"]]
         return self.flags
 
     def plot_diagnostics(self):
         matplotlib.use("tkagg")
 
-        # Plot the QC output
-        n_plots = len(self.check_vars.keys())
-        fig, axs = plt.subplots(nrows=n_plots, figsize=(8, 4 * n_plots), dpi=200)
-        if n_plots == 1:
-            axs = [axs]
+        df = self.data.to_dataframe().reset_index()
+        df_profiles = df.dropna(subset=["PROFILE_NUMBER"])
+        
+        if df_profiles.empty:
+            print("No profiles found to plot.")
+            return
 
-        for ax, var in zip(axs, self.check_vars.keys()):
-            for i in range(10):
-                # Plot by flag number
-                plot_data = self.data[[var, "N_MEASUREMENTS"]].where(
-                    self.data[f"{var}_QC"] == i, drop=True
-                )
+        fig, ax = plt.subplots(figsize=(10, 6), dpi=150)
+        
+        good_mask = df_profiles["PROFILE_NUMBER_QC"] != 4
+        bad_mask = df_profiles["PROFILE_NUMBER_QC"] == 4
 
-                if len(plot_data[var]) == 0:
-                    continue
-
-                # Plot the data
-                ax.plot(
-                    plot_data["N_MEASUREMENTS"],
-                    plot_data[var],
-                    c=flag_cols[i],
-                    ls="",
-                    marker="o",
-                    label=f"{i}",
-                )
-
-            ax.set(
-                xlabel="Index",
-                ylabel=var,
-                title=f"{var} Flag Full Profile",
+        if good_mask.any():
+            ax.plot(
+                df_profiles.loc[good_mask, "N_MEASUREMENTS"],
+                df_profiles.loc[good_mask, self.depth_col],
+                c="tab:blue",
+                ls="",
+                marker="o",
+                markersize=2,
+                label="Valid Profiles",
+                alpha=0.7
             )
 
-            ax.legend(title="Flags", loc="upper right")
+        if bad_mask.any():
+            ax.plot(
+                df_profiles.loc[bad_mask, "N_MEASUREMENTS"],
+                df_profiles.loc[bad_mask, self.depth_col],
+                c="tab:red",
+                ls="",
+                marker="x",
+                markersize=4,
+                label="Failed Profiles",
+                alpha=0.9
+            )
 
+        if self.depth_range:
+            ax.axhline(self.depth_range[0], color="black", linestyle="--", alpha=0.5, label="Depth Limits")
+            ax.axhline(self.depth_range[1], color="black", linestyle="--", alpha=0.5)
+
+        ax.set_ylabel(self.depth_col)
+        ax.set_xlabel("Measurement Index")
+        ax.set_title("Valid Profile QC Diagnostics")
+        ax.legend(loc="upper right")
+        
         fig.tight_layout()
         plt.show(block=True)

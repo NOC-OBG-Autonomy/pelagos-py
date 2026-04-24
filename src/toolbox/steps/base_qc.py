@@ -102,7 +102,7 @@ class BaseQC:
             cls.return_qc = return_qc_with_telemetry
 
     def __init__(self, data, **kwargs):
-        self.data = data.copy(deep=True)
+        self.data = data.copy(deep=True) if data is not None else None
         self.logger = logging.getLogger(f"toolbox.qc.{self.qc_name}")
 
         invalid_params = set(kwargs.keys()) - set(self.expected_parameters.keys())
