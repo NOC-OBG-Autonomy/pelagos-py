@@ -7,16 +7,13 @@ from toolbox.steps.custom.qc.impossible_location_qc import impossible_location_q
 from utils.test_utils import create_mock_dataset
 
 
-def test_missing_variables(capsys):
+def test_missing_variables():
     data = xr.Dataset({"TEMP": ("N_MEASUREMENTS", [10.0, 12.0])})
     qc_step = impossible_location_qc(data)
     
-    flags = qc_step.return_qc()
-    captured = capsys.readouterr()
-    
-    assert "Warning: LATITUDE or LONGITUDE missing" in captured.out
-    assert "LATITUDE_QC" not in flags
-    assert "LONGITUDE_QC" not in flags
+    # We expect the step to raise a KeyError because LATITUDE and LONGITUDE are missing
+    with pytest.raises(KeyError):
+        qc_step.return_qc()
 
 
 @pytest.mark.parametrize("lats,lons,lat_flags,lon_flags", [

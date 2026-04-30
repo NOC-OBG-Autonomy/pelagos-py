@@ -22,8 +22,6 @@ import os
 import time
 from functools import wraps
 
-warnings.formatwarning = lambda msg, *args, **kwargs: f"{msg}\n"
-
 REGISTERED_STEPS = {}
 """Registry of explicitly registered step classes."""
 
@@ -119,7 +117,6 @@ class BaseStep(ConfigMirrorMixin):
     def log_warn(self, message, warning_type=UserWarning):
         """Log a warning-level message with step name prefix."""
         self.logger.warning("[%s] %s", self.name, message)
-        warnings.warn(f"[{self.name}] WARNING: {message}", warning_type)
 
     def check_data(self):
         """Check for data in context for transformer steps."""
