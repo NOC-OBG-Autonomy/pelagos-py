@@ -113,7 +113,9 @@ class ctd_qc(BaseQC):
                 outlier_mask = (cndc_vals < self.cndc_min) | (cndc_vals > self.cndc_max)
                 outlier_mask = outlier_mask & cndc_valid_mask
 
-                outlier_count = np.sum(outlier_mask)
+                # Convert the xarray scalar to a standard integer for clean logging
+                outlier_count = int(np.sum(outlier_mask))
+                
                 if outlier_count > 0:
                     self.log(f"Found {outlier_count} CNDC values outside range [{self.cndc_min}, {self.cndc_max}]. Cross-flagging triad as bad (4).")
 
