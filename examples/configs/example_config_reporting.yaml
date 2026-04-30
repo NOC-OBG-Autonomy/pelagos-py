@@ -63,5 +63,5 @@ steps:
       title:  # Goes on the title page. Leave it blank or empty to automatically set it to the filename.
       fname:  # Main .rst file Sphinx can build from, RstCloth will write to within pipeline's "out_directory".
       build: true   #  Whether to run sphinx, which will build the PDF.
-      extent: [7, 25, 54, 65]
+      extent: [7, 25, 54, 65] # Extent for an inset figure. Optional.
 
