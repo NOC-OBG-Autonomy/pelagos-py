@@ -816,7 +816,7 @@ class WriteDataReport(BaseStep):
 
         title = self.parameters["title"]
         if not title:
-            title = f"Data report {fname_core.replace("_"," ")}"
+            title = f"Data report {fname_core.replace('_',' ')}"
 
         if "dataset_id" not in data.attrs:
             self.log_warn("Dataset ID missing from OG1 file. Reporting with unk platform information.")
