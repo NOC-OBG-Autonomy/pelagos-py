@@ -1,11 +1,4 @@
 # Pelagos-py
-Copyright 2025 The National Oceanography Centre and The Contributors
-
-## Documentation
-The documentation for this package is available [here](https://noc-obg-autonomy.github.io/pelagos-py/)
-> Please note that the documentation is still under construction.
-
-# About
 
 Pelagos-py provides a flexible, modular pipeline framework for defining, executing, and visualising multi-step data-processing
 workflows for oceanographic data.
@@ -13,6 +6,10 @@ workflows for oceanographic data.
 Each pipeline is composed of a series of steps that are automatically built from a central user-defined YAML configuration file. 
 As Pelagos-py only depends on the config file to construct a pipeline, processing can be easily reproduced by others through 
 sharing of configs.
+
+## Documentation
+The documentation for this package is available [here](https://noc-obg-autonomy.github.io/pelagos-py/).
+> Please note that the documentation is still under construction.
 
 ## Overview
 
@@ -61,7 +58,7 @@ See [Getting Started](https://noc-obg-autonomy.github.io/pelagos-py/getting_star
    pipeline.export_config("exported_pipeline.yaml")
    ```
 ## 🧩 Example Configuration
-An example YAML configuration for a simple pipeline. See examples/notebooks/pipeline_demo.ipynb for a full demo
+An example YAML configuration for a simple pipeline. See examples/notebooks/pipeline_demo.ipynb for a full demo.
 ```yaml
  # Pipeline Configuration
  pipeline:
@@ -98,3 +95,5 @@ A full breakdown can be found here: [Developer Guide](https://noc-obg-autonomy.g
 # License
 
 [Apache 2.0 License](LICENSE)
+
+Copyright 2025-2026 The National Oceanography Centre and contributors.
