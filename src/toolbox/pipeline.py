@@ -21,6 +21,7 @@ import pandas as pd
 import numpy as np
 import xarray as xr
 import os
+import time
 import logging
 import datetime as _dt
 from graphviz import Digraph
@@ -219,7 +220,27 @@ class Pipeline(ConfigMirrorMixin):
         self.logger.info(f"Executing: {step.name}")
         
         try:
-            return step.run()
+            start_time = time.time()
+            
+            # Run the actual step
+            result = step.run()
+            
+            # Handle diagnostics centrally
+            if step.diagnostics:
+                duration = time.time() - start_time
+                step.log(f"Execution time: {duration:.2f} seconds.")
+                
+                try:
+                    import psutil
+                    import os
+                    process = psutil.Process(os.getpid())
+                    mem_info = process.memory_info()
+                    step.log(f"Current memory usage: {mem_info.rss / 1024 ** 2:.2f} MB")
+                except ImportError:
+                    pass
+                    
+            return result
+
         except Exception as e:
             self.logger.error(f"Fatal error encountered while executing step '{step.name}': {e}")
             raise RuntimeError(f"Pipeline failed at step '{step.name}': {e}") from e

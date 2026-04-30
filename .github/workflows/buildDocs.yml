@@ -4,9 +4,10 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
+      - dev
+
+permissions:
+  contents: write
 
 jobs:
   build-docs:
@@ -46,9 +47,9 @@ jobs:
         run: touch docs/_build/html/.nojekyll
 
       - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages  # Deploy to the root of gh-pages
           folder: docs/_build/html  # Ensure this points to the html folder
-          token: ${{ secrets.GH_PAT }}
           clean: true  # Deletes old files before deployment
