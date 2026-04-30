@@ -15,10 +15,7 @@
 # limitations under the License.
 """This module defines the base class for QC tests and a registry for QC test classes."""
 
-import time
-import os
 import logging
-from functools import wraps
 
 REGISTERED_QC = {}
 """Registry of explicitly registered QC test classes."""
@@ -51,7 +48,7 @@ def register_qc(cls):
 
 class BaseQC:
     """
-    Initialises a base class for quality control, to be further tweaked when inherited.
+    Initializes a base class for quality control, to be further tweaked when inherited.
 
     Follow the docstring format below when creating new QC tests.
     
@@ -71,39 +68,11 @@ class BaseQC:
     required_variables = []
     qc_outputs = []
 
-    def __init_subclass__(cls, **kwargs):
-        """Automatically wraps the return_qc method of all subclasses to include telemetry."""
-        super().__init_subclass__(**kwargs)
-        
-        if not getattr(cls.return_qc, "_is_telemetry_wrapped", False):
-            original_return_qc = cls.return_qc
-            
-            @wraps(original_return_qc)
-            def return_qc_with_telemetry(self, *args, **kwargs):
-                start_time = time.time()
-                
-                result = original_return_qc(self, *args, **kwargs)
-                
-                if getattr(self, "diagnostics", True):
-                    duration = time.time() - start_time
-                    self.log(f"Execution time: {duration:.2f} seconds.")
-                    
-                    try:
-                        import psutil
-                        process = psutil.Process(os.getpid())
-                        mem_info = process.memory_info()
-                        self.log(f"Current memory usage: {mem_info.rss / 1024 ** 2:.2f} MB")
-                    except ImportError:
-                        pass
-                        
-                return result
-            
-            return_qc_with_telemetry._is_telemetry_wrapped = True
-            cls.return_qc = return_qc_with_telemetry
-
     def __init__(self, data, **kwargs):
-        self.data = data.copy(deep=True) if data is not None else None
-        self.logger = logging.getLogger(f"toolbox.qc.{self.qc_name}")
+        self.data = data.copy(deep=True)
+        
+        # Connect to the main pipeline logging hierarchy
+        self.logger = logging.getLogger(f"toolbox.pipeline.qc.{self.qc_name.replace(' ', '_')}")
 
         invalid_params = set(kwargs.keys()) - set(self.expected_parameters.keys())
         if invalid_params:
@@ -120,8 +89,12 @@ class BaseQC:
         self.flags = None
 
     def log(self, message):
-        """Log an info-level message with QC test name prefix."""
+        """Log an info-level message with the QC name prefix."""
         self.logger.info("[%s] %s", self.qc_name, message)
+
+    def log_warn(self, message):
+        """Log a warning-level message with the QC name prefix."""
+        self.logger.warning("[%s] %s", self.qc_name, message)
 
     def return_qc(self):
         """Representative of QC processing, to be overridden by subclasses.
