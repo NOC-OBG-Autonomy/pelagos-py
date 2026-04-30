@@ -16,9 +16,11 @@
 
 """Class definition for exporting data steps."""
 
+#### Mandatory imports ####
 from toolbox.steps.base_step import BaseStep, register_step
 import toolbox.utils.diagnostics as diag
 import json
+
 
 @register_step
 class ExportStep(BaseStep):
@@ -38,15 +40,10 @@ class ExportStep(BaseStep):
             "default": "./pipeline_output/exported_data.nc", 
             "description": "Path to save the exported data"
         },
-        "compress_netcdf": {
-            "type": bool,
-            "default": True,
-            "description": "Apply lossless zlib compression to NetCDF exports"
-        },
         "compression_level": {
             "type": int,
             "default": 6,
-            "description": "Zlib compression level from 1 (fastest) to 9 (smallest)"
+            "description": "Zlib compression level from 0 (off), 1 (fastest) to 9 (smallest)"
         }
     }
 
@@ -55,13 +52,16 @@ class ExportStep(BaseStep):
             f"Exporting data in {self.export_format} format to {self.output_path}"
         )
 
+        # Check if the data is in the context
         self.check_data()
         data = self.context["data"]
         
+        # Add exiting notes on QC history if available TODO: Move earlier to individual QC steps on each data variable attribute
         if "qc_history" in self.context:
             self.log("QC history found in context.")
             data.attrs["delayed_qc_history"] = json.dumps(self.context["qc_history"])
 
+        # Validate the export format
         if self.export_format not in ["csv", "netcdf", "hdf5", "parquet"]:
             raise ValueError(
                 f"Unsupported export format: {self.export_format}. Supported formats are: csv, netcdf, hdf5, parquet."
@@ -70,25 +70,25 @@ class ExportStep(BaseStep):
         if not self.output_path:
             raise ValueError("Output path must be specified for data export.")
             
+        # Ensure the output path is a string
         if not isinstance(self.output_path, str):
             raise ValueError("Output path must be a string.")
 
+        # Export data based on the specified format
         if self.export_format == "csv":
             data.to_dataframe().to_csv(self.output_path)
         elif self.export_format == "netcdf":
-            # Apply lossless compression if enabled
-            if getattr(self, "compress_netcdf", True):
-                self.log("Applying lossless NetCDF compression.")
-                comp_level = getattr(self, "compression_level", 6)
-                
-                # Apply zlib compression to all variables
+            comp_level = getattr(self, "compression_level", 6)
+            
+            if comp_level > 0:
+                self.log(f"Applying lossless NetCDF compression at level {comp_level}.")
                 encoding_dict = {
                     var_name: {"zlib": True, "complevel": comp_level}
                     for var_name in data.variables
                 }
-                    
                 data.to_netcdf(self.output_path, engine="netcdf4", encoding=encoding_dict)
             else:
+                self.log("Exporting NetCDF without compression.")
                 data.to_netcdf(self.output_path, engine="netcdf4")
                 
         elif self.export_format == "hdf5":
@@ -100,7 +100,7 @@ class ExportStep(BaseStep):
             
         self.log(f"Data exported successfully to {self.output_path}")
         
-        if self.diagnostics and not self.is_web_mode():
+        if getattr(self, "diagnostics", False):
             self.generate_diagnostics()
             
         return self.context

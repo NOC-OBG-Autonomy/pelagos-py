@@ -68,7 +68,7 @@ steps:
       to_derive: [DEPTH]
     diagnostics: false
 
-  - name: Find Profiles Beta
+  - name: Find Profiles
     diagnostics: false
 
   - name: Apply QC

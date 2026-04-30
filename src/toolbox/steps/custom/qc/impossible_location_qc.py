@@ -44,7 +44,7 @@ class impossible_location_qc(BaseQC):
         self.flags = xr.Dataset(coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]})
 
         if "LATITUDE" not in self.data or "LONGITUDE" not in self.data:
-            print("Warning: LATITUDE or LONGITUDE missing. Skipping impossible location qc.")
+            self.log_warn("LATITUDE or LONGITUDE missing. Skipping impossible location qc.")
             return self.flags
 
         # Check LAT/LONG exist within expected bounds

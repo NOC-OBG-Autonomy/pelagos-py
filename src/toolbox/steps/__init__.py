@@ -25,8 +25,12 @@ import os
 import importlib
 import pathlib
 import yaml
+import logging
 from .base_step import REGISTERED_STEPS
 from .base_qc import REGISTERED_QC
+
+# Setup logger for discovery
+logger = logging.getLogger("toolbox.pipeline.discovery")
 
 # Global registries
 STEP_CLASSES = {}
@@ -42,7 +46,7 @@ def discover_steps():
     """
     base_dir = pathlib.Path(__file__).parent.resolve()
     custom_dir = base_dir / "custom"
-    print(f"[Discovery] Scanning for step modules in {custom_dir}")
+    logger.info("Scanning for step modules in %s", custom_dir)
 
     for py_file in custom_dir.rglob("*.py"):
         if py_file.name == "__init__.py":
@@ -53,19 +57,19 @@ def discover_steps():
         module_name = ".".join(("toolbox.steps",) + relative_path.with_suffix("").parts)
 
         try:
-            print(f"[Discovery] Importing step module: {module_name}")
+            logger.info("Importing step module: %s", module_name)
             importlib.import_module(module_name)
         except Exception as e:
-            print(f"[Discovery] Failed to import {module_name}: {e}")
+            logger.error("Failed to import %s: %s", module_name, e)
 
     # Populate global step class map
     STEP_CLASSES.update(REGISTERED_STEPS)
     for step_name in STEP_CLASSES:
-        print(f"[Discovery] Registered step: {step_name}")
+        logger.info("Registered step: %s", step_name)
 
     QC_CLASSES.update(REGISTERED_QC)
     for qc_name in QC_CLASSES:
-        print(f"[Discovery] Registered QC test: {qc_name}")
+        logger.info("Registered QC test: %s", qc_name)
 
 
 # Auto-discover steps when toolbox.steps is imported
@@ -96,7 +100,7 @@ def create_step(step_config, context=None):
         with open(step_config, "r") as f:
             step_config = yaml.safe_load(f) or {}
         if "name" not in step_config:
-            raise ValueError(f"Invalid step YAML: missing 'name' key → {step_config}")
+            raise ValueError(f"Invalid step YAML: missing 'name' key -> {step_config}")
 
     # --- Validate and resolve step class ---
     step_name = step_config.get("name")

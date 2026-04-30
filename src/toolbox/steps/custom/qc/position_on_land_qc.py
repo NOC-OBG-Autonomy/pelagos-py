@@ -47,7 +47,7 @@ class position_on_land_qc(BaseQC):
         self.flags = xr.Dataset(coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]})
 
         if "LATITUDE" not in self.data or "LONGITUDE" not in self.data:
-            print("Warning: LATITUDE or LONGITUDE missing. Skipping position on land qc.")
+            self.log_warn("LATITUDE or LONGITUDE missing. Skipping position on land qc.")
             return self.flags
 
         # Concat the polygons into a MultiPolygon object

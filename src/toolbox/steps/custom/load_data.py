@@ -14,9 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Class definition for loading data steps."""
+
+#### Mandatory imports ####
 from toolbox.steps.base_step import BaseStep, register_step
 import toolbox.utils.diagnostics as diag
 
+#### Custom imports ####
 import xarray as xr
 import pandas as pd
 import numpy as np
@@ -28,6 +32,8 @@ MIN_YEAR_FILTER = "1990-01-01"
 class LoadOG1(BaseStep):
     """
     Initialises the LoadOG1 step.
+
+    Derived from Phyto-Phys Repo by Obsidian500
 
     Parameters
     ----------
@@ -52,13 +58,28 @@ class LoadOG1(BaseStep):
     required_variables = []
     provided_variables = ["TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC"]
 
-    def __init__(
-        self, filter_bad_time=True, data_start=None, data_end=None, *args, **kwargs
-    ):
-        super().__init__(*args, **kwargs)
-        self.filter_bad_time = filter_bad_time
-        self.data_start = data_start
-        self.data_end = data_end
+    parameter_schema = {
+        "file_path": {
+            "type": str,
+            "default": None,
+            "description": "Path to the OG1 data file."
+        },
+        "filter_bad_time": {
+            "type": bool,
+            "default": True,
+            "description": "If True, removes all timestamps outside the expected time window."
+        },
+        "data_start": {
+            "type": str,
+            "default": None,
+            "description": "Minimum valid timestamp (e.g. '2023-05-01T00:00:00'). Defaults to deployment time or 1990."
+        },
+        "data_end": {
+            "type": str,
+            "default": None,
+            "description": "Maximum valid timestamp. Defaults to current system time."
+        }
+    }
 
     def run(self):
         # load data from xarray
@@ -68,27 +89,33 @@ class LoadOG1(BaseStep):
         self.log("Loading dataset to RAM...")
         self.data.load()
 
-        if self.filter_bad_time and (
+        # Fetch parameters safely via getattr falling back to schema defaults
+        filter_bad_time = getattr(self, "filter_bad_time", True)
+        data_start = getattr(self, "data_start", None)
+        data_end = getattr(self, "data_end", None)
+
+        # Filter data to the specified time window
+        if filter_bad_time and (
             "TIME" in self.data.variables or "TIME" in self.data.coords
         ):
             orig_len = len(self.data["TIME"])
             time_array = self.data["TIME"]
 
             start_val = (
-                np.datetime64(self.data_start)
-                if self.data_start
+                np.datetime64(data_start)
+                if data_start
                 else np.datetime64(MIN_YEAR_FILTER)
             )
             end_val = (
-                np.datetime64(self.data_end)
-                if self.data_end
+                np.datetime64(data_end)
+                if data_end
                 else np.datetime64(pd.Timestamp.now())
             )
 
             valid_mask = time_array >= start_val
             valid_mask &= time_array <= end_val
 
-            if not self.data_start and "DEPLOYMENT_TIME" in self.data.variables:
+            if not data_start and "DEPLOYMENT_TIME" in self.data.variables:
                 deploy_time = pd.to_datetime(self.data["DEPLOYMENT_TIME"].values)
                 if isinstance(deploy_time, pd.DatetimeIndex):
                     deploy_time = deploy_time[0]
@@ -114,6 +141,7 @@ class LoadOG1(BaseStep):
                 "If TIME is listed under another name, please rename it to conform to the OG1 format."
             )
 
+        # Check that the "TIME" variable is monotonic and nanless
         if np.any(np.isnan(self.data["TIME"])):
             raise ValueError(
                 "\n'TIME' has nan values. Pipelines cannot be run without a continuous monotonic time coordinate.\n"
@@ -126,9 +154,11 @@ class LoadOG1(BaseStep):
                 "Please check the quality of your input data."
             )
             
+        # Generate diagnostics if enabled
         if self.diagnostics:
             self.generate_diagnostics()
 
+        # add data to context
         self.context["data"] = self.data
         return self.context
 
