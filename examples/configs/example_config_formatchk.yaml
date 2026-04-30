@@ -1,0 +1,76 @@
+# A demo configuration for demonstrating the OG1 format checker step.
+pipeline:
+  name: Format checker demo pipeline
+  description: 
+  visualisation: false
+  out_directory: ../examples/data/OG1/testing/
+  log_file: checker_demo.log
+
+# Pipeline steps
+steps:
+
+# --------------------- PRELIM DATA CHECK --------------------
+  - name: Format Checker
+    parameters:
+      src: ../examples/data/OG1/Nelson_646_R.nc # The source file to check
+      standards: ['og']    # Standards to check
+      output_type: "rst"        # File extension for either ASCII or JSON output.
+      proceed_on_fail: True     # If the dataset does not pass the format checker, halt processing (False).
+
+# ------------------------ IMPORT DATA -----------------------
+
+  - name: Load OG1
+    parameters:
+      file_path: ../examples/data/OG1/Nelson_646_R.nc
+      filter_bad_time: false
+      data_start: 
+      data_end:
+    diagnostics: false  # No diagnostics for loading data
+
+# ----------------------- Quality control --------------------
+# Do some simple quality control to populate the report.
+  - name: Apply QC
+    parameters:
+      qc_settings:
+        impossible date qc: {}      # Is the date between 1985 and now?
+        impossible location qc: {}  # Are the GPS coords within logical bounds?
+        position on land qc: {}     # Are the coords on land?
+        impossible speed qc: {}     # Is the horizontal speed reasonable?
+        gross range qc:
+          variable_ranges:
+            PRES:
+              3: [-5, -2.4]
+              4: [-.inf, -5]
+            TEMP:
+              3: [0, 30]
+              4: [-2.5, 40]
+            CNDC:
+              3: [5, 42]  
+              4: [2, 45]
+          also_flag:
+            PRES: [TEMP, CNDC]
+            TEMP: [CNDC]
+        stuck value qc:
+          variables:
+            PRES: 2
+          also_flag:
+            PRES: [CNDC, TEMP]
+          plot: [PRES]
+    diagnostics: false
+
+
+# ----------------- Save Processed Data ----------------
+  - name: Data Export
+    parameters:
+      export_format: "netcdf"
+      output_path: "../examples/data/OG1/formatchk_demo.nc"
+
+
+# ----------------------- Report assembly ---------------------
+  - name: Write Data Report
+    parameters:
+      title:
+      fname: formatchk_demo.rst
+      build: false
+      extent: [5, -35, 45, 70]
+
