@@ -27,8 +27,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../../../../_static/styles/theme.css?digest=7f76b32a3354e82990f2" rel="stylesheet" />
-<link href="../../../../../../_static/styles/pydata-sphinx-theme.css?digest=7f76b32a3354e82990f2" rel="stylesheet" />
+  <link href="../../../../../../_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+<link href="../../../../../../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=d75fae25" />
     <link rel="stylesheet" type="text/css" href="../../../../../../_static/copybutton.css?v=76b2166b" />
@@ -37,10 +37,10 @@
     <link rel="stylesheet" type="text/css" href="../../../../../../_static/sphinx-design.min.css?v=95c83b7e" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../../../../_static/scripts/fontawesome.js?digest=7f76b32a3354e82990f2"></script>
+  <script defer src="../../../../../../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../../../../_static/scripts/bootstrap.js?digest=7f76b32a3354e82990f2" />
-<link rel="preload" as="script" href="../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=7f76b32a3354e82990f2" />
+  <link rel="preload" as="script" href="../../../../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
+<link rel="preload" as="script" href="../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
     <script src="../../../../../../_static/documentation_options.js?v=d45e8c67"></script>
     <script src="../../../../../../_static/doctools.js?v=9bcbadda"></script>
@@ -76,7 +76,9 @@
   
   <button type="button" class="btn rounded-pill" id="pst-back-to-top">
     <i class="fa-solid fa-arrow-up"></i>Back to top</button>
-
+  
+  
+  
   
   <dialog id="pst-search-dialog">
     
@@ -339,7 +341,6 @@
 <li class="toctree-l3"><a class="reference internal" href="../derive_ctd/index.html">src.toolbox.steps.custom.derive_ctd</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../export/index.html">src.toolbox.steps.custom.export</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../find_profiles/index.html">src.toolbox.steps.custom.find_profiles</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../find_profiles_beta/index.html">src.toolbox.steps.custom.find_profiles_beta</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../gen_data/index.html">src.toolbox.steps.custom.gen_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../interpolate_data/index.html">src.toolbox.steps.custom.interpolate_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../load_data/index.html">src.toolbox.steps.custom.load_data</a></li>
@@ -480,14 +481,41 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.apply_qc.ApplyQC.organise_flags">
 <span class="sig-name descname"><span class="pre">organise_flags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_flags</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/apply_qc.html#ApplyQC.organise_flags"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.apply_qc.ApplyQC.organise_flags" title="Link to this definition">#</a></dt>
-<dd><p>Method for taking in new flags (new_flags) and cross checking against existing flags (self.flag_store),
-including upgrading flags when necessary, following ARGO flagging standards.</p>
+<dd><p>Method for taking in new flags (new_flags) and cross checking against existing flags (self.flag_store), including upgrading flags when necessary, following ARGO flagging standards.
+See Wong et al. 2025 pp. 106 (<a class="reference external" href="http://dx.doi.org/10.13155/33951">http://dx.doi.org/10.13155/33951</a>) and Mancini et al. 2021 pp. 43-44 for additional ARGO flag definitions.</p>
+<p>Combinatrix logic:
+0: No QC performed, the initial flag.
+1: Good data. No adjustment needed.
+2: Probably good data.
+3: Probably bad data that are potentially correctable.
+4: Bad data that are not correctable.
+5: Value changed.
+6, 7: Not used.
+8: Estimated by interpolation, extrapolation, or other algorithm.
+9: Missing value.</p>
+<p>The combinatrix defines flagging priority when merging in new flags. The flag value itself acts as a kind of index.
+As an example, if an existing flag is 2 (probably good data) and a new flag is 4 (bad data), the resulting flag will be 4.
+2 (probably good data) + 4 (bad data) -&gt; 4 (bad data)
+3 (probably bad data) + 5 (value changed) -&gt; 3 (probably bad data)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>new_flags</strong> (<em>xarray.Dataset</em>) – Dataset containing new QC flag variables to be merged into the existing flag store.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.apply_qc.ApplyQC.run">
 <span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/apply_qc.html#ApplyQC.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.apply_qc.ApplyQC.run" title="Link to this definition">#</a></dt>
 <dd><p>Run the Apply QC step.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.14)"><strong>KeyError</strong></a> – If no QC operations are specified, if requested QC tests are invalid, or esssential variables are missing.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If no data is found in context.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
@@ -568,8 +596,8 @@ including upgrading flags when necessary, following ARGO flagging standards.</p>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../../../../_static/scripts/bootstrap.js?digest=7f76b32a3354e82990f2"></script>
-<script defer src="../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=7f76b32a3354e82990f2"></script>
+  <script defer src="../../../../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
+<script defer src="../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -603,7 +631,7 @@ including upgrading flags when necessary, following ARGO flagging standards.</p>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
 </p></div>
       
     </div>

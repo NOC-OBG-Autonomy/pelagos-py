@@ -26,8 +26,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../../../_static/styles/theme.css?digest=7f76b32a3354e82990f2" rel="stylesheet" />
-<link href="../../../../../_static/styles/pydata-sphinx-theme.css?digest=7f76b32a3354e82990f2" rel="stylesheet" />
+  <link href="../../../../../_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+<link href="../../../../../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css?v=d75fae25" />
     <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css?v=76b2166b" />
@@ -36,10 +36,10 @@
     <link rel="stylesheet" type="text/css" href="../../../../../_static/sphinx-design.min.css?v=95c83b7e" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../../../_static/scripts/fontawesome.js?digest=7f76b32a3354e82990f2"></script>
+  <script defer src="../../../../../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../../../_static/scripts/bootstrap.js?digest=7f76b32a3354e82990f2" />
-<link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=7f76b32a3354e82990f2" />
+  <link rel="preload" as="script" href="../../../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
+<link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
     <script src="../../../../../_static/documentation_options.js?v=d45e8c67"></script>
     <script src="../../../../../_static/doctools.js?v=9bcbadda"></script>
@@ -73,7 +73,9 @@
   
   <button type="button" class="btn rounded-pill" id="pst-back-to-top">
     <i class="fa-solid fa-arrow-up"></i>Back to top</button>
-
+  
+  
+  
   
   <dialog id="pst-search-dialog">
     
@@ -421,8 +423,29 @@
 <a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/apply_qc/index.html#src.toolbox.steps.custom.apply_qc.ApplyQC.organise_flags">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">organise_flags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_flags</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Method for taking in new flags (new_flags) and cross checking against existing flags (self.flag_store), </span>
-<span class="sd">        including upgrading flags when necessary, following ARGO flagging standards.</span>
+<span class="sd">        Method for taking in new flags (new_flags) and cross checking against existing flags (self.flag_store), including upgrading flags when necessary, following ARGO flagging standards.</span>
+<span class="sd">        See Wong et al. 2025 pp. 106 (http://dx.doi.org/10.13155/33951) and Mancini et al. 2021 pp. 43-44 for additional ARGO flag definitions.</span>
+
+<span class="sd">        Combinatrix logic:</span>
+<span class="sd">        0: No QC performed, the initial flag.</span>
+<span class="sd">        1: Good data. No adjustment needed.</span>
+<span class="sd">        2: Probably good data.</span>
+<span class="sd">        3: Probably bad data that are potentially correctable.</span>
+<span class="sd">        4: Bad data that are not correctable.</span>
+<span class="sd">        5: Value changed.</span>
+<span class="sd">        6, 7: Not used.</span>
+<span class="sd">        8: Estimated by interpolation, extrapolation, or other algorithm.</span>
+<span class="sd">        9: Missing value.</span>
+
+<span class="sd">        The combinatrix defines flagging priority when merging in new flags. The flag value itself acts as a kind of index.</span>
+<span class="sd">        As an example, if an existing flag is 2 (probably good data) and a new flag is 4 (bad data), the resulting flag will be 4.</span>
+<span class="sd">        2 (probably good data) + 4 (bad data) -&gt; 4 (bad data)</span>
+<span class="sd">        3 (probably bad data) + 5 (value changed) -&gt; 3 (probably bad data)</span>
+
+<span class="sd">        parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        new_flags : xarray.Dataset</span>
+<span class="sd">            Dataset containing new QC flag variables to be merged into the existing flag store.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># Define combinatrix for handling flag upgrade behaviour</span>
@@ -490,34 +513,58 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Run the Apply QC step.</span>
+
+<span class="sd">        raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        KeyError</span>
+<span class="sd">            If no QC operations are specified, if requested QC tests are invalid, or esssential variables are missing.</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If no data is found in context.</span>
 <span class="sd">       &quot;&quot;&quot;</span>
+        <span class="c1"># Defining the order of operations</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qc_settings</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;[Apply QC] No QC operations were specified.&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                <span class="s2">&quot;[Apply QC] No QC operations were specified in an ApplyQC step.&quot;</span>
+            <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
+            <span class="c1">#   Check requested QC tests against valid tests</span>
             <span class="n">invalid_requests</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qc_settings</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">QC_CLASSES</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
             <span class="k">if</span> <span class="n">invalid_requests</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Apply QC] Requested QC tests not found: </span><span class="si">{</span><span class="n">invalid_requests</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;[Apply QC] The following requested QC tests could not be found: </span><span class="si">{</span><span class="n">invalid_requests</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
                 
         <span class="n">queued_qc</span> <span class="o">=</span> <span class="p">[</span><span class="n">QC_CLASSES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">qc_settings</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
 
+        <span class="c1"># Check if the data is in the context</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">check_data</span><span class="p">()</span>
         <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Try and fetch the qc history from context and update it</span>
         <span class="n">qc_history</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;qc_history&quot;</span><span class="p">,</span> <span class="p">{})</span>
 
+        <span class="c1"># Collect all of the required varible names and qc outputs for each test</span>
         <span class="n">all_required_variables</span> <span class="o">=</span> <span class="nb">set</span><span class="p">({})</span>
         <span class="n">test_qc_outputs_cols</span> <span class="o">=</span> <span class="nb">set</span><span class="p">({})</span>
         <span class="k">for</span> <span class="n">test</span> <span class="ow">in</span> <span class="n">queued_qc</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="s2">&quot;dynamic&quot;</span><span class="p">):</span>
+                <span class="c1"># Initialise the test to check its dynamic attributes</span>
                 <span class="n">test_instance</span> <span class="o">=</span> <span class="n">test</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">qc_settings</span><span class="p">[</span><span class="n">test</span><span class="o">.</span><span class="n">qc_name</span><span class="p">])</span>
                 <span class="n">all_required_variables</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">test_instance</span><span class="o">.</span><span class="n">required_variables</span><span class="p">)</span>
                 <span class="n">test_qc_outputs_cols</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">test_instance</span><span class="o">.</span><span class="n">qc_outputs</span><span class="p">)</span>
+                <span class="k">del</span> <span class="n">test_instance</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">all_required_variables</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">test</span><span class="o">.</span><span class="n">required_variables</span><span class="p">)</span>
                 <span class="n">test_qc_outputs_cols</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">test</span><span class="o">.</span><span class="n">qc_outputs</span><span class="p">)</span>
             
+            <span class="c1">#   Check that the required variables for the test are in the dataset</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">(</span><span class="n">all_required_variables</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())):</span>
-                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Apply QC] Missing variables: </span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="n">all_required_variables</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">set</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;[Apply QC] The data is missing variables: (</span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="n">all_required_variables</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">set</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">) which are required for running QC &#39;</span><span class="si">{</span><span class="n">test</span><span class="o">.</span><span class="n">qc_name</span><span class="si">}</span><span class="s2">&#39;.&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; Make sure that the variables are present in the data, or use remove tests from the order.&quot;</span>
+                <span class="p">)</span>
         
+        <span class="c1"># Fetch existing flags from the data and create a place to store them</span>
         <span class="c1"># Only fetch flags that exist and have the correct measurement dimension</span>
         <span class="n">existing_flags</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">flag_col</span> <span class="k">for</span> <span class="n">flag_col</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span> 
@@ -542,6 +589,8 @@
         <span class="p">])</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">test_qc_outputs_cols</span><span class="p">)</span>
         
         <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">other_existing_qc</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found QC columns for untested values: </span><span class="si">{</span><span class="n">other_existing_qc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;These columns will not be modified and are not subject to this step.&quot;</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">flag_col</span> <span class="ow">in</span> <span class="n">other_existing_qc</span><span class="p">:</span>
                 <span class="n">clean_flags</span><span class="p">,</span> <span class="n">errors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sanitise_flags</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">flag_col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">errors</span><span class="p">:</span>
@@ -559,29 +608,43 @@
                 <span class="n">clean_flags</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">isnull</span><span class="p">(),</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span><span class="o">.</span><span class="n">values</span>
                 <span class="n">data</span><span class="p">[</span><span class="n">qc_col</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,),</span> <span class="n">clean_flags</span><span class="p">)</span>
 
-        <span class="c1"># Build placeholders for variables about to be tested</span>
+        <span class="c1"># Initialize the missing flag columns</span>
         <span class="n">mia_qc</span> <span class="o">=</span> <span class="n">test_qc_outputs_cols</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">)</span>
         <span class="n">base</span> <span class="o">=</span> <span class="p">[</span><span class="n">var</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">mia_qc</span><span class="p">]</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">(</span><span class="n">base</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())):</span>
-            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Apply QC] Data missing: </span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="n">base</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">set</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">(</span><span class="n">base</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())):</span>    <span class="c1">#   Confirm that the required QC columns exist</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;[Apply QC] The data is missing: (</span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="n">base</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">set</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">), which is/are defined in the config as a variable to flag or use during one of the tests.&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot; Double check the configuration file and make sure all variable parameters (like &#39;also flag&#39; [CHLA]) are present in the data.&quot;</span>
+            <span class="p">)</span>
         
         <span class="n">data_subset</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">base</span><span class="p">]</span>
         <span class="n">masks</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">data_subset</span><span class="o">.</span><span class="n">isnull</span><span class="p">(),</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span>
         <span class="n">masks</span> <span class="o">=</span> <span class="n">masks</span><span class="o">.</span><span class="n">rename</span><span class="p">({</span><span class="n">var</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">base</span><span class="p">})</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">masks</span><span class="p">)</span>
 
+        <span class="c1"># Run through all of the QC steps and add the flags to flag_store</span>
         <span class="k">for</span> <span class="n">qc_qc_name</span><span class="p">,</span> <span class="n">qc_test_params</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">qc_settings</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Applying: </span><span class="si">{</span><span class="n">qc_qc_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="c1"># Create an instance of this test step</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Applying: </span><span class="si">{</span><span class="n">qc_qc_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>   <span class="c1"># print(f&quot;[Apply QC] Applying: {qc_qc_name}&quot;)</span>
             <span class="n">qc_test_instance</span> <span class="o">=</span> <span class="n">QC_CLASSES</span><span class="p">[</span><span class="n">qc_qc_name</span><span class="p">](</span><span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">qc_test_params</span><span class="p">)</span>
-            <span class="n">returned_flags</span> <span class="o">=</span> <span class="n">qc_test_instance</span><span class="o">.</span><span class="n">return_qc</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span> 
+            <span class="n">returned_flags</span> <span class="o">=</span> <span class="n">qc_test_instance</span><span class="o">.</span><span class="n">return_qc</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span>    <span class="c1">#   Runs the test, returns the flags</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">organise_flags</span><span class="p">(</span><span class="n">returned_flags</span><span class="p">)</span>
 
+            <span class="c1"># Update QC history</span>
             <span class="k">for</span> <span class="n">flagged_var</span> <span class="ow">in</span> <span class="n">returned_flags</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+                <span class="c1">#   Track percent of flags no longer 0 (following ARGO convention)</span>
                 <span class="n">var_flags</span> <span class="o">=</span> <span class="n">returned_flags</span><span class="p">[</span><span class="n">flagged_var</span><span class="p">]</span>
                 <span class="n">percent_flagged</span> <span class="o">=</span> <span class="p">(</span><span class="n">var_flags</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">var_flags</span><span class="p">)</span>
                 
+                <span class="k">if</span> <span class="n">percent_flagged</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;All flags for </span><span class="si">{</span><span class="n">flagged_var</span><span class="si">}</span><span class="s2"> remain 0 after </span><span class="si">{</span><span class="n">qc_qc_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="c1"># else: #   TODO: Add &#39;verbose&#39; log option if needed. Might not need to happen at this point.</span>
+                <span class="c1">#     self.log(f&quot;{percent_flagged*100:.2f}% of {flagged_var} points accounted for by {qc_qc_name}&quot;)</span>
+                
                 <span class="n">qc_history</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">flagged_var</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">qc_qc_name</span><span class="p">,</span> <span class="n">percent_flagged</span><span class="p">))</span>
 
+                <span class="c1"># Write additional QC details to _QC variable attributes</span>
+                <span class="c1"># TODO: Find where columns are initialized, or just run on non-QC&#39;d datasets</span>
                 <span class="n">parent_attrs</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">flagged_var</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]]</span><span class="o">.</span><span class="n">attrs</span>                
                 <span class="n">attrs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="p">[</span><span class="n">flagged_var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span>
                 <span class="n">base_long_name</span> <span class="o">=</span> <span class="n">parent_attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;long_name&#39;</span><span class="p">,</span> <span class="n">flagged_var</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">])</span>
@@ -599,11 +662,24 @@
                 <span class="c1"># Fast counting for attributes</span>
                 <span class="n">counts</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">var_flags</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span> <span class="o">==</span> <span class="n">i</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)}</span>
                 <span class="n">attrs</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">attr_test</span><span class="si">}</span><span class="s2">_flag_cts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">counts</span><span class="p">)</span>
+                <span class="n">attrs</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">attr_test</span><span class="si">}</span><span class="s2">_params&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">qc_test_params</span><span class="p">)</span>
+                <span class="c1"># Can get indices of 3/4 with np.where(var_flags.to_numpy() == 3)[0] for future reference</span>
 
+            <span class="c1"># Diagnostic plotting</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
                 <span class="n">qc_test_instance</span><span class="o">.</span><span class="n">plot_diagnostics</span><span class="p">()</span>
 
+            <span class="c1"># Once finished, remove the test instance from memory</span>
+            <span class="k">del</span> <span class="n">qc_test_instance</span>
+
+        <span class="c1"># Append the flags from self.flag_store to the xarray data and push back into context</span>
         <span class="k">for</span> <span class="n">flag_column</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="p">[</span><span class="n">flag_column</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">flag_column</span><span class="si">}</span><span class="s2"> is all 0 after running all QC steps. Check intended QC variables and test requirements.&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="p">[</span><span class="n">flag_column</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                <span class="n">n_zero</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="p">[</span><span class="n">flag_column</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">flag_column</span><span class="si">}</span><span class="s2"> (length=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="p">[</span><span class="n">flag_column</span><span class="p">])</span><span class="si">}</span><span class="s2">) has </span><span class="si">{</span><span class="n">n_zero</span><span class="si">}</span><span class="s2"> zero QC values following all QC steps.&quot;</span><span class="p">)</span>
+
             <span class="n">data</span><span class="p">[</span><span class="n">flag_column</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,),</span> <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="p">[</span><span class="n">flag_column</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">())</span>
             <span class="n">data</span><span class="p">[</span><span class="n">flag_column</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="p">[</span><span class="n">flag_column</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
             
@@ -642,8 +718,8 @@
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../../../_static/scripts/bootstrap.js?digest=7f76b32a3354e82990f2"></script>
-<script defer src="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=7f76b32a3354e82990f2"></script>
+  <script defer src="../../../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
+<script defer src="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -677,7 +753,7 @@
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
 </p></div>
       
     </div>

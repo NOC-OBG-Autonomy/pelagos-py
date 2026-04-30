@@ -27,8 +27,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../../../../_static/styles/theme.css?digest=7f76b32a3354e82990f2" rel="stylesheet" />
-<link href="../../../../../../_static/styles/pydata-sphinx-theme.css?digest=7f76b32a3354e82990f2" rel="stylesheet" />
+  <link href="../../../../../../_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+<link href="../../../../../../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=d75fae25" />
     <link rel="stylesheet" type="text/css" href="../../../../../../_static/copybutton.css?v=76b2166b" />
@@ -37,10 +37,10 @@
     <link rel="stylesheet" type="text/css" href="../../../../../../_static/sphinx-design.min.css?v=95c83b7e" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../../../../_static/scripts/fontawesome.js?digest=7f76b32a3354e82990f2"></script>
+  <script defer src="../../../../../../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../../../../_static/scripts/bootstrap.js?digest=7f76b32a3354e82990f2" />
-<link rel="preload" as="script" href="../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=7f76b32a3354e82990f2" />
+  <link rel="preload" as="script" href="../../../../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
+<link rel="preload" as="script" href="../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
     <script src="../../../../../../_static/documentation_options.js?v=d45e8c67"></script>
     <script src="../../../../../../_static/doctools.js?v=9bcbadda"></script>
@@ -54,7 +54,7 @@
     <link rel="canonical" href="https://noc-obg-autonomy.github.io/pelagos-py/api/src/toolbox/steps/custom/find_profiles/index.html" />
     <link rel="index" title="Index" href="../../../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../../../search.html" />
-    <link rel="next" title="src.toolbox.steps.custom.find_profiles_beta" href="../find_profiles_beta/index.html" />
+    <link rel="next" title="src.toolbox.steps.custom.gen_data" href="../gen_data/index.html" />
     <link rel="prev" title="src.toolbox.steps.custom.export" href="../export/index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -76,7 +76,9 @@
   
   <button type="button" class="btn rounded-pill" id="pst-back-to-top">
     <i class="fa-solid fa-arrow-up"></i>Back to top</button>
-
+  
+  
+  
   
   <dialog id="pst-search-dialog">
     
@@ -339,7 +341,6 @@
 <li class="toctree-l3"><a class="reference internal" href="../derive_ctd/index.html">src.toolbox.steps.custom.derive_ctd</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../export/index.html">src.toolbox.steps.custom.export</a></li>
 <li class="toctree-l3 current active"><a class="current reference internal" href="#">src.toolbox.steps.custom.find_profiles</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../find_profiles_beta/index.html">src.toolbox.steps.custom.find_profiles_beta</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../gen_data/index.html">src.toolbox.steps.custom.gen_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../interpolate_data/index.html">src.toolbox.steps.custom.interpolate_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../load_data/index.html">src.toolbox.steps.custom.load_data</a></li>
@@ -452,13 +453,13 @@
                   
   <section id="module-src.toolbox.steps.custom.find_profiles">
 <span id="src-toolbox-steps-custom-find-profiles"></span><h1>src.toolbox.steps.custom.find_profiles<a class="headerlink" href="#module-src.toolbox.steps.custom.find_profiles" title="Link to this heading">#</a></h1>
-<p>Class definition for exporting data steps.</p>
+<p>Class definition for finding vertical and horizontal profiles in depth data.</p>
 <section id="classes">
 <h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles.FindProfilesStep" title="src.toolbox.steps.custom.find_profiles.FindProfilesStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FindProfilesStep</span></code></a></p></td>
-<td><p></p></td>
+<td><p>Identifies and classifies vertical and horizontal profiles from depth-time data.</p></td>
 </tr>
 </tbody>
 </table>
@@ -468,8 +469,8 @@
 <h2>Functions<a class="headerlink" href="#functions" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles.find_profiles" title="src.toolbox.steps.custom.find_profiles.find_profiles"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_profiles</span></code></a>(df, gradient_thresholds[, ...])</p></td>
-<td><p>Identifies vertical profiles in oceanographic or similar data by analyzing depth gradients over time.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.find_profiles.find_profiles" title="src.toolbox.steps.custom.find_profiles.find_profiles"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_profiles</span></code></a>(df_sorted, cadence, filter_win_sizes, ...)</p></td>
+<td><p>Identifies and classifies vertical and horizontal profiles from depth-time data.</p></td>
 </tr>
 </tbody>
 </table>
@@ -479,52 +480,32 @@
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">#</a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles.find_profiles">
-<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles.</span></span><span class="sig-name descname"><span class="pre">find_profiles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gradient_thresholds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_win_sizes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['20s',</span> <span class="pre">'10s']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'TIME'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">depth_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'DEPTH'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles.html#find_profiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles.find_profiles" title="Link to this definition">#</a></dt>
-<dd><p>Identifies vertical profiles in oceanographic or similar data by analyzing depth gradients over time.</p>
-<p>This function processes depth-time data to identify periods where an instrument is performing
-vertical profiling based on gradient thresholds. It handles data interpolation, calculates vertical
-velocities, applies median filtering, and assigns unique profile numbers to identified profiles.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>df</strong> (<em>polars.DataFrame</em>) – Input dataframe containing time and depth measurements</p></li>
-<li><p><strong>gradient_thresholds</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a>) – Two-element list [positive_threshold, negative_threshold] defining the vertical velocity
-range (in meters/second) that is NOT considered part of a profile. typical values are around [0.02, -0.02]</p></li>
-<li><p><strong>filter_win_sizes</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>, </em><em>default=</em><em> [</em><em>'20s'</em><em>, </em><em>'10s'</em><em>]</em>) – Window sizes for the compound filter applied to gradient calculations, in Polars duration format.
-index 0 controls the rolling median window size and index 1 controls the rolling mean window size.</p></li>
-<li><p><strong>time_col</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default='TIME'</em>) – Name of the column containing timestamp data</p></li>
-<li><p><strong>depth_col</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>default='DEPTH'</em>) – Name of the column containing depth measurements</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Dataframe with additional columns:
-- ‘dt’: Time difference between consecutive points (seconds)
-- ‘dz’: Depth difference between consecutive points (meters)
-- ‘grad’: Vertical velocity (dz/dt, meters/second)
-- ‘smooth_grad’: Median-filtered vertical velocity
-- ‘is_profile’: Boolean indicating if a point belongs to a profile
-- ‘profile_num’: Unique identifier for each identified profile (0 for non-profile points)</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>polars.DataFrame</p>
-</dd>
-</dl>
-<div class="admonition-notes admonition">
-<p class="admonition-title">Notes</p>
-<ul class="simple">
-<li><p>The function considers a point part of a profile when its smoothed vertical velocity
-falls outside the range specified by gradient_thresholds.</p></li>
-<li><p>‘depth_col’ does not strictly have to be a depth measurement, any variable which follows
-the profile shape (such as pressure) could also be used, though this would change the units
-and interpretation of grad.</p></li>
-</ul>
-</div>
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles.</span></span><span class="sig-name descname"><span class="pre">find_profiles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_sorted</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cadence</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_win_sizes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gradient_thresholds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">horiz_grad_thresh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dive_scale</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_horizontal_duration</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surfacing_depth</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inflection_accel_threshold</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">depth_col</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">has_water_vel</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles.html#find_profiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles.find_profiles" title="Link to this definition">#</a></dt>
+<dd><p>Identifies and classifies vertical and horizontal profiles from depth-time data.
+Also derives continuous cycle numbers and scientific phase flags.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles.FindProfilesStep">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.find_profiles.</span></span><span class="sig-name descname"><span class="pre">FindProfilesStep</span></span><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles.html#FindProfilesStep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles.FindProfilesStep" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">toolbox.steps.base_step.BaseStep</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">toolbox.utils.qc_handling.QCHandlingMixin</span></code></p>
+<p>Identifies and classifies vertical and horizontal profiles from depth-time data.
+Derives continuous cycle numbers and assigns scientific phase flags.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>depth_column</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Name of the dataset variable to use for vertical depth calculations. Defaults to “PRES”.</p></li>
+<li><p><strong>resample_cadence</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Time string for regularising the data via interpolation prior to calculation.</p></li>
+<li><p><strong>gradient_thresholds</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>, </em><em>optional</em>) – List of [positive, negative] gradient thresholds for identifying descending/ascending motion.</p></li>
+<li><p><strong>horiz_gradient_threshold</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Threshold for gradient variance to qualify a phase as horizontal.</p></li>
+<li><p><strong>filter_window_sizes</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>, </em><em>optional</em>) – List of sizes [median, mean] for rolling windows to smooth profile gradients.</p></li>
+<li><p><strong>dive_scale</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Minimum vertical depth required to qualify as a valid vertical dive.</p></li>
+<li><p><strong>min_horizontal_duration</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Minimum time required at a fixed depth to classify as a valid horizontal phase.</p></li>
+<li><p><strong>surfacing_depth</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Maximum operational depth boundary indicating the platform is surfaced.</p></li>
+<li><p><strong>inflection_accel_threshold</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Acceleration threshold beyond which a transition phase becomes inflection.</p></li>
+</ul>
+</dd>
+</dl>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles.FindProfilesStep.step_name">
 <span class="sig-name descname"><span class="pre">step_name</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Find</span> <span class="pre">Profiles'</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles.html#FindProfilesStep.step_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles.FindProfilesStep.step_name" title="Link to this definition">#</a></dt>
@@ -537,7 +518,12 @@ and interpretation of grad.</p></li>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles.FindProfilesStep.provided_variables">
-<span class="sig-name descname"><span class="pre">provided_variables</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['PROFILE_NUMBER']</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles.html#FindProfilesStep.provided_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles.FindProfilesStep.provided_variables" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">provided_variables</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['PROFILE_NUMBER',</span> <span class="pre">'CYCLE',</span> <span class="pre">'SCI_PHASE']</span></em><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles.html#FindProfilesStep.provided_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles.FindProfilesStep.provided_variables" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.find_profiles.FindProfilesStep.parameter_schema">
+<span class="sig-name descname"><span class="pre">parameter_schema</span></span><a class="reference internal" href="../../../../../../_modules/src/toolbox/steps/custom/find_profiles.html#FindProfilesStep.parameter_schema"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.find_profiles.FindProfilesStep.parameter_schema" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -575,11 +561,11 @@ and interpretation of grad.</p></li>
       </div>
     </a>
     <a class="right-next"
-       href="../find_profiles_beta/index.html"
+       href="../gen_data/index.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">src.toolbox.steps.custom.find_profiles_beta</p>
+        <p class="prev-next-title">src.toolbox.steps.custom.gen_data</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -610,6 +596,7 @@ and interpretation of grad.</p></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles.FindProfilesStep.step_name"><code class="docutils literal notranslate"><span class="pre">FindProfilesStep.step_name</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles.FindProfilesStep.required_variables"><code class="docutils literal notranslate"><span class="pre">FindProfilesStep.required_variables</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles.FindProfilesStep.provided_variables"><code class="docutils literal notranslate"><span class="pre">FindProfilesStep.provided_variables</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles.FindProfilesStep.parameter_schema"><code class="docutils literal notranslate"><span class="pre">FindProfilesStep.parameter_schema</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles.FindProfilesStep.run"><code class="docutils literal notranslate"><span class="pre">FindProfilesStep.run()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.find_profiles.FindProfilesStep.generate_diagnostics"><code class="docutils literal notranslate"><span class="pre">FindProfilesStep.generate_diagnostics()</span></code></a></li>
 </ul>
@@ -632,8 +619,8 @@ and interpretation of grad.</p></li>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../../../../_static/scripts/bootstrap.js?digest=7f76b32a3354e82990f2"></script>
-<script defer src="../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=7f76b32a3354e82990f2"></script>
+  <script defer src="../../../../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
+<script defer src="../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -667,7 +654,7 @@ and interpretation of grad.</p></li>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
 </p></div>
       
     </div>

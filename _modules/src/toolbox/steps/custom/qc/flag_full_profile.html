@@ -26,8 +26,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../../../../_static/styles/theme.css?digest=7f76b32a3354e82990f2" rel="stylesheet" />
-<link href="../../../../../../_static/styles/pydata-sphinx-theme.css?digest=7f76b32a3354e82990f2" rel="stylesheet" />
+  <link href="../../../../../../_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+<link href="../../../../../../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css?v=d75fae25" />
     <link rel="stylesheet" type="text/css" href="../../../../../../_static/copybutton.css?v=76b2166b" />
@@ -36,10 +36,10 @@
     <link rel="stylesheet" type="text/css" href="../../../../../../_static/sphinx-design.min.css?v=95c83b7e" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../../../../_static/scripts/fontawesome.js?digest=7f76b32a3354e82990f2"></script>
+  <script defer src="../../../../../../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../../../../_static/scripts/bootstrap.js?digest=7f76b32a3354e82990f2" />
-<link rel="preload" as="script" href="../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=7f76b32a3354e82990f2" />
+  <link rel="preload" as="script" href="../../../../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
+<link rel="preload" as="script" href="../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
     <script src="../../../../../../_static/documentation_options.js?v=d45e8c67"></script>
     <script src="../../../../../../_static/doctools.js?v=9bcbadda"></script>
@@ -73,7 +73,9 @@
   
   <button type="button" class="btn rounded-pill" id="pst-back-to-top">
     <i class="fa-solid fa-arrow-up"></i>Back to top</button>
-
+  
+  
+  
   
   <dialog id="pst-search-dialog">
     
@@ -388,7 +390,7 @@
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
 
-<span class="sd">&quot;&quot;&quot;QC test to flag entire glider profiles based on number of bad flags.&quot;&quot;&quot;</span>
+<span class="sd">&quot;&quot;&quot;QC test to flag entire profiles that fail length or depth range requirements.&quot;&quot;&quot;</span>
 
 <span class="c1">#### Mandatory imports ####</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -398,151 +400,180 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
 
 <span class="nd">@register_qc</span>
-<div class="viewcode-block" id="flag_full_profile">
-<a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/flag_full_profile/index.html#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">flag_full_profile</span><span class="p">(</span><span class="n">BaseQC</span><span class="p">):</span>
+<div class="viewcode-block" id="ValidProfileQC">
+<a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/flag_full_profile/index.html#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ValidProfileQC</span><span class="p">(</span><span class="n">BaseQC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Target Variable: Any</span>
+<span class="sd">    Target Variable: PROFILE_NUMBER</span>
 <span class="sd">    Flag Number: 4</span>
-<span class="sd">    Variables Flagged: Any</span>
-<span class="sd">    Checks the number of bad (4) flags per profile. If it</span>
-<span class="sd">    exceeds the user threshold then all points in the profile</span>
-<span class="sd">    are flagged.</span>
+<span class="sd">    Variables Flagged: PROFILE_NUMBER</span>
+<span class="sd">    </span>
+<span class="sd">    Checks each profile to ensure it meets a minimum number of valid data points </span>
+<span class="sd">    and spans a required depth range. Profiles failing these criteria are flagged as bad.</span>
 
 <span class="sd">    EXAMPLE</span>
 <span class="sd">    -------</span>
 <span class="sd">    - name: &quot;Apply QC&quot;</span>
 <span class="sd">      parameters:</span>
-<span class="sd">        qc_settings: {</span>
-<span class="sd">            &quot;flag_full_profile&quot;: {</span>
-<span class="sd">              &quot;check_vars&quot;: {&quot;PRES&quot;: 10, &quot;CHLA&quot;: 20},</span>
-<span class="sd">            }</span>
-<span class="sd">        }</span>
-<span class="sd">      diagnostics: true</span>
+<span class="sd">        qc_settings:</span>
+<span class="sd">            valid profile qc:</span>
+<span class="sd">              profile_length: 50</span>
+<span class="sd">              depth_range: [-1000, 0]</span>
+<span class="sd">      diagnostics: false</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="flag_full_profile.qc_name">
-<a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/flag_full_profile/index.html#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.qc_name">[docs]</a>
-    <span class="n">qc_name</span> <span class="o">=</span> <span class="s2">&quot;flag full profile&quot;</span></div>
+<div class="viewcode-block" id="ValidProfileQC.qc_name">
+<a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/flag_full_profile/index.html#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.qc_name">[docs]</a>
+    <span class="n">qc_name</span> <span class="o">=</span> <span class="s2">&quot;valid profile qc&quot;</span></div>
 
-<div class="viewcode-block" id="flag_full_profile.required_variables">
-<a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/flag_full_profile/index.html#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.required_variables">[docs]</a>
+<div class="viewcode-block" id="ValidProfileQC.required_variables">
+<a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/flag_full_profile/index.html#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.required_variables">[docs]</a>
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span></div>
 
-<div class="viewcode-block" id="flag_full_profile.provided_variables">
-<a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/flag_full_profile/index.html#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.provided_variables">[docs]</a>
-    <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[]</span></div>
+<div class="viewcode-block" id="ValidProfileQC.provided_variables">
+<a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/flag_full_profile/index.html#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.provided_variables">[docs]</a>
+    <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER_QC&quot;</span><span class="p">]</span></div>
 
 
-
-    <span class="c1"># Specify if test target variable is user-defined (if True, __init__ has to be redefined)</span>
-<div class="viewcode-block" id="flag_full_profile.dynamic">
-<a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/flag_full_profile/index.html#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.dynamic">[docs]</a>
+<div class="viewcode-block" id="ValidProfileQC.dynamic">
+<a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/flag_full_profile/index.html#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.dynamic">[docs]</a>
     <span class="n">dynamic</span> <span class="o">=</span> <span class="kc">True</span></div>
 
 
+<div class="viewcode-block" id="ValidProfileQC.parameter_schema">
+<a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/flag_full_profile/index.html#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.parameter_schema">[docs]</a>
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;profile_length&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Minimum number of data points required for a valid profile.&quot;</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;depth_range&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Required depth range [min, max] that the profile must span.&quot;</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;depth_column&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;PRES&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Depth or pressure column name. Defaults to PRES.&quot;</span>
+        <span class="p">}</span>
+    <span class="p">}</span></div>
+
+
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="c1"># Check the necessary kwargs are available</span>
-        <span class="n">required_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;check_vars&quot;</span><span class="p">}</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">required_kwargs</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">())):</span>
-            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">required_kwargs</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">set</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2"> are missing from </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">qc_name</span><span class="si">}</span><span class="s2"> settings&quot;</span>
-            <span class="p">)</span>
+<div class="viewcode-block" id="ValidProfileQC.profile_length">
+<a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/flag_full_profile/index.html#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.profile_length">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">profile_length</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;profile_length&quot;</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span></div>
 
-        <span class="c1"># Specify the tests paramters from kwargs (config)</span>
-<div class="viewcode-block" id="flag_full_profile.expected_parameters">
-<a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/flag_full_profile/index.html#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.expected_parameters">[docs]</a>
-        <span class="bp">self</span><span class="o">.</span><span class="n">expected_parameters</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">required_kwargs</span>
-        <span class="p">}</span></div>
+<div class="viewcode-block" id="ValidProfileQC.depth_range">
+<a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/flag_full_profile/index.html#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.depth_range">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">depth_range</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;depth_range&quot;</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span></div>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expected_parameters</span><span class="p">[</span><span class="s2">&quot;check_vars&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-            <span class="o">+</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">_QC&quot;</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">expected_parameters</span><span class="p">[</span><span class="s2">&quot;check_vars&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
-            <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span>
-        <span class="p">)</span>
+<div class="viewcode-block" id="ValidProfileQC.depth_col">
+<a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/flag_full_profile/index.html#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.depth_col">[docs]</a>
+        <span class="bp">self</span><span class="o">.</span><span class="n">depth_col</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;depth_column&quot;</span><span class="p">,</span> <span class="s2">&quot;PRES&quot;</span><span class="p">)</span></div>
 
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth_col</span><span class="p">]</span>
+        
         <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">expected_parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
-
-<div class="viewcode-block" id="flag_full_profile.flags">
-<a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/flag_full_profile/index.html#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.flags">[docs]</a>
+<div class="viewcode-block" id="ValidProfileQC.flags">
+<a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/flag_full_profile/index.html#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.flags">[docs]</a>
         <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
-<div class="viewcode-block" id="flag_full_profile.return_qc">
-<a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/flag_full_profile/index.html#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.return_qc">[docs]</a>
+<div class="viewcode-block" id="ValidProfileQC.return_qc">
+<a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/flag_full_profile/index.html#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.return_qc">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">return_qc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="c1"># TODO: Add support for flagging if threshold is a mix of 3 (questionable) and 4 (definitely bad) flags</span>
-        <span class="c1"># Subset the data</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span><span class="p">]</span>
+        
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
+        <span class="n">bad_profiles</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="k">for</span> <span class="n">pid</span><span class="p">,</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">):</span>
+            <span class="n">is_valid</span> <span class="o">=</span> <span class="kc">True</span>
+            
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">group</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile_length</span><span class="p">:</span>
+                <span class="n">is_valid</span> <span class="o">=</span> <span class="kc">False</span>
+                
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth_range</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">depth_range</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">min_req_depth</span><span class="p">,</span> <span class="n">max_req_depth</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">depth_range</span><span class="p">)</span>
+                <span class="n">actual_min</span> <span class="o">=</span> <span class="n">group</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">depth_col</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+                <span class="n">actual_max</span> <span class="o">=</span> <span class="n">group</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">depth_col</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+                
+                <span class="k">if</span> <span class="n">actual_min</span> <span class="o">&gt;</span> <span class="n">min_req_depth</span> <span class="ow">or</span> <span class="n">actual_max</span> <span class="o">&lt;</span> <span class="n">max_req_depth</span><span class="p">:</span>
+                    <span class="n">is_valid</span> <span class="o">=</span> <span class="kc">False</span>
+                    
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_valid</span><span class="p">:</span>
+                <span class="n">bad_profiles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
 
-        <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">threshold</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_vars</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="n">flag_counts</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
-            <span class="p">)</span>  <span class="c1"># Default to flag 4 (definitely bad)</span>
-            <span class="n">bad_profiles</span> <span class="o">=</span> <span class="n">flag_counts</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">flag_counts</span> <span class="o">&gt;=</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span>
-                <span class="s2">&quot;PROFILE_NUMBER&quot;</span>
-            <span class="p">]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">bad_profiles</span><span class="p">),</span>
-                <span class="mi">4</span><span class="p">,</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">],</span>
-            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER_QC&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">bad_profiles</span><span class="p">),</span>
+            <span class="mi">4</span><span class="p">,</span>
+            <span class="mi">0</span>
+        <span class="p">)</span>
 
-        <span class="c1"># Select just the flags</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span>
-            <span class="p">[</span><span class="n">var_qc</span> <span class="k">for</span> <span class="n">var_qc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span> <span class="k">if</span> <span class="s2">&quot;_QC&quot;</span> <span class="ow">in</span> <span class="n">var_qc</span><span class="p">]</span>
-        <span class="p">]</span>
-
+        <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[[</span><span class="s2">&quot;PROFILE_NUMBER_QC&quot;</span><span class="p">]]</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">flags</span></div>
 
 
-<div class="viewcode-block" id="flag_full_profile.plot_diagnostics">
-<a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/flag_full_profile/index.html#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.plot_diagnostics">[docs]</a>
+<div class="viewcode-block" id="ValidProfileQC.plot_diagnostics">
+<a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/qc/flag_full_profile/index.html#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.plot_diagnostics">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">plot_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">&quot;tkagg&quot;</span><span class="p">)</span>
 
-        <span class="c1"># Plot the QC output</span>
-        <span class="n">n_plots</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">check_vars</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-        <span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="n">n_plots</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">n_plots</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">n_plots</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">axs</span> <span class="o">=</span> <span class="p">[</span><span class="n">axs</span><span class="p">]</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+        <span class="n">df_profiles</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">])</span>
+        
+        <span class="k">if</span> <span class="n">df_profiles</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No profiles found to plot.&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
 
-        <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_vars</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
-            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
-                <span class="c1"># Plot by flag number</span>
-                <span class="n">plot_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[[</span><span class="n">var</span><span class="p">,</span> <span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">i</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span>
-                <span class="p">)</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">150</span><span class="p">)</span>
+        
+        <span class="n">good_mask</span> <span class="o">=</span> <span class="n">df_profiles</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER_QC&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">4</span>
+        <span class="n">bad_mask</span> <span class="o">=</span> <span class="n">df_profiles</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER_QC&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">4</span>
 
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">plot_data</span><span class="p">[</span><span class="n">var</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="k">continue</span>
-
-                <span class="c1"># Plot the data</span>
-                <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-                    <span class="n">plot_data</span><span class="p">[</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">],</span>
-                    <span class="n">plot_data</span><span class="p">[</span><span class="n">var</span><span class="p">],</span>
-                    <span class="n">c</span><span class="o">=</span><span class="n">flag_cols</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
-                    <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-                    <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span>
-                    <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-                <span class="p">)</span>
-
-            <span class="n">ax</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
-                <span class="n">xlabel</span><span class="o">=</span><span class="s2">&quot;Index&quot;</span><span class="p">,</span>
-                <span class="n">ylabel</span><span class="o">=</span><span class="n">var</span><span class="p">,</span>
-                <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2"> Flag Full Profile&quot;</span><span class="p">,</span>
+        <span class="k">if</span> <span class="n">good_mask</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                <span class="n">df_profiles</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">good_mask</span><span class="p">,</span> <span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">],</span>
+                <span class="n">df_profiles</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">good_mask</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth_col</span><span class="p">],</span>
+                <span class="n">c</span><span class="o">=</span><span class="s2">&quot;tab:blue&quot;</span><span class="p">,</span>
+                <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span>
+                <span class="n">markersize</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Valid Profiles&quot;</span><span class="p">,</span>
+                <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span>
             <span class="p">)</span>
 
-            <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Flags&quot;</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">&quot;upper right&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">bad_mask</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                <span class="n">df_profiles</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">bad_mask</span><span class="p">,</span> <span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">],</span>
+                <span class="n">df_profiles</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">bad_mask</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth_col</span><span class="p">],</span>
+                <span class="n">c</span><span class="o">=</span><span class="s2">&quot;tab:red&quot;</span><span class="p">,</span>
+                <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+                <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;x&quot;</span><span class="p">,</span>
+                <span class="n">markersize</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+                <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Failed Profiles&quot;</span><span class="p">,</span>
+                <span class="n">alpha</span><span class="o">=</span><span class="mf">0.9</span>
+            <span class="p">)</span>
 
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth_range</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">depth_range</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Depth Limits&quot;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">depth_range</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">depth_col</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Measurement Index&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Valid Profile QC Diagnostics&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;upper right&quot;</span><span class="p">)</span>
+        
         <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 </div>
@@ -576,8 +607,8 @@
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../../../../_static/scripts/bootstrap.js?digest=7f76b32a3354e82990f2"></script>
-<script defer src="../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=7f76b32a3354e82990f2"></script>
+  <script defer src="../../../../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
+<script defer src="../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -611,7 +642,7 @@
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
 </p></div>
       
     </div>

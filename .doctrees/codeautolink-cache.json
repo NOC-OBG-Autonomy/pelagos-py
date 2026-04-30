@@ -10,7 +10,6 @@
   "api/src/toolbox/steps/custom/derive_ctd/index": [],
   "api/src/toolbox/steps/custom/export/index": [],
   "api/src/toolbox/steps/custom/find_profiles/index": [],
-  "api/src/toolbox/steps/custom/find_profiles_beta/index": [],
   "api/src/toolbox/steps/custom/gen_data/index": [],
   "api/src/toolbox/steps/custom/index": [],
   "api/src/toolbox/steps/custom/interpolate_data/index": [],

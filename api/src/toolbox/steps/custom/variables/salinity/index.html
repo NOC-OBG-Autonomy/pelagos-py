@@ -27,8 +27,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../../../../../_static/styles/theme.css?digest=7f76b32a3354e82990f2" rel="stylesheet" />
-<link href="../../../../../../../_static/styles/pydata-sphinx-theme.css?digest=7f76b32a3354e82990f2" rel="stylesheet" />
+  <link href="../../../../../../../_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+<link href="../../../../../../../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../../../../../_static/pygments.css?v=d75fae25" />
     <link rel="stylesheet" type="text/css" href="../../../../../../../_static/copybutton.css?v=76b2166b" />
@@ -37,10 +37,10 @@
     <link rel="stylesheet" type="text/css" href="../../../../../../../_static/sphinx-design.min.css?v=95c83b7e" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../../../../../_static/scripts/fontawesome.js?digest=7f76b32a3354e82990f2"></script>
+  <script defer src="../../../../../../../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../../../../../_static/scripts/bootstrap.js?digest=7f76b32a3354e82990f2" />
-<link rel="preload" as="script" href="../../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=7f76b32a3354e82990f2" />
+  <link rel="preload" as="script" href="../../../../../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
+<link rel="preload" as="script" href="../../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
     <script src="../../../../../../../_static/documentation_options.js?v=d45e8c67"></script>
     <script src="../../../../../../../_static/doctools.js?v=9bcbadda"></script>
@@ -76,7 +76,9 @@
   
   <button type="button" class="btn rounded-pill" id="pst-back-to-top">
     <i class="fa-solid fa-arrow-up"></i>Back to top</button>
-
+  
+  
+  
   
   <dialog id="pst-search-dialog">
     
@@ -339,7 +341,6 @@
 <li class="toctree-l3"><a class="reference internal" href="../../derive_ctd/index.html">src.toolbox.steps.custom.derive_ctd</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../export/index.html">src.toolbox.steps.custom.export</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../find_profiles/index.html">src.toolbox.steps.custom.find_profiles</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../find_profiles_beta/index.html">src.toolbox.steps.custom.find_profiles_beta</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../gen_data/index.html">src.toolbox.steps.custom.gen_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../interpolate_data/index.html">src.toolbox.steps.custom.interpolate_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../load_data/index.html">src.toolbox.steps.custom.load_data</a></li>
@@ -490,8 +491,36 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.variables.salinity.compute_optimal_lag">
-<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.variables.salinity.</span></span><span class="sig-name descname"><span class="pre">compute_optimal_lag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_window_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_col</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/variables/salinity.html#compute_optimal_lag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.variables.salinity.compute_optimal_lag" title="Link to this definition">#</a></dt>
-<dd><p>Calculate the optimal conductivity time lag relative to temperature to reduce salinity spikes for each glider profile.</p>
+<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.variables.salinity.</span></span><span class="sig-name descname"><span class="pre">compute_optimal_lag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_window_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_col</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_cost_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/variables/salinity.html#compute_optimal_lag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.variables.salinity.compute_optimal_lag" title="Link to this definition">#</a></dt>
+<dd><p>Calculate the optimal conductivity time lag relative to temperature to reduce salinity spikes for each glider profile.
+Minimise the standard deviation of the difference between a lagged CNDC and a high-pass filtered CNDC.
+The optimal lag is returned. The lag is chosen from -2 to 2s every 0.1s.
+This correction should reduce salinity spikes that result from the misalignment between conductivity and temperature sensors and from the difference in sensor response times.
+This correction is described in Woo (2019) but the minimisation is done between salinity and high-pass filtered salinity (as done by RBR, <a class="reference external" href="https://bitbucket.org/rbr/pyrsktools/src/master/pyrsktools">https://bitbucket.org/rbr/pyrsktools/src/master/pyrsktools</a>) instead of comparing downcast vs upcast.</p>
+<p>Woo, L.M. (2019). Delayed Mode QA/QC Best Practice Manual Version 2.0. Integrated Marine Observing System. DOI: 10.26198/5c997b5fdc9bd (<a class="reference external" href="http://dx.doi.org/">http://dx.doi.org/</a> 10.26198/5c997b5fdc9bd).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>profile_data</strong> (<em>xarray.Dataset with raw CTD dataset for one single profile</em><em>, </em><em>which should contain:</em>) – <ul>
+<li><p>TIME_CTD, sci_ctd41cp_timestamp, [numpy.datetime64]</p></li>
+<li><p>PRES: pressure [dbar]</p></li>
+<li><p>CNDC: conductivity [S/m]</p></li>
+<li><p>TEMP: in-situ temperature [deg C]</p></li>
+</ul>
+</p></li>
+<li><p><strong>filter_window_size</strong> (<em>Window length over which the high-pass filter</em><em> of </em><em>conductivity is applied</em><em>, </em><em>21 by default.</em>)</p></li>
+<li><p><strong>time_col</strong> (<em>Name</em><em> of </em><em>the time coordinate to use.</em>)</p></li>
+<li><p><strong>return_cost_data</strong> (<em>Boolean flag to return intermediate optimization data for diagnostics plotting.</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>best_lag</strong> (<em>Optimal lag time in seconds.</em>)</p></li>
+<li><p><strong>cost_data</strong> (<em>(Optional) Dictionary containing optimisation curve data.</em>)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py class">
@@ -513,26 +542,47 @@
 <span class="sig-name descname"><span class="pre">provided_variables</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[]</span></em><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/variables/salinity.html#AdjustSalinity.provided_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.provided_variables" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.variables.salinity.AdjustSalinity.parameter_schema">
+<span class="sig-name descname"><span class="pre">parameter_schema</span></span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/variables/salinity.html#AdjustSalinity.parameter_schema"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.parameter_schema" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.variables.salinity.AdjustSalinity.run">
 <span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/variables/salinity.html#AdjustSalinity.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.run" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Apply the thermal-lag correction for Salinity presented in Morrison et al 1994.
+The temperature is estimated inside the conductivity cell to estimate Salinity.
+This is based on eq.5 of Morrison et al. (1994), which doesn’t require to know the sensitivity of temperature to conductivity (eq.2 of Morrison et al. 1994).
+No attempt is done yet to minimise the coefficients alpha/tau in T/S space, as in Morrison et al. (1994) or Garau et al. (2011).
+The fixed coefficients (alpha and tau) presented in Morrison et al. (1994) are used.
+These coefficients should be valid for pumped SeaBird CTsail as described in Woo (2019) by using their flow rate in the conductivity cell.
+This function should further be adapted to unpumped CTD by taking into account the glider velocity through the water based on the pitch angle or a hydrodynamic flight model.</p>
+<p>Woo, L.M. (2019). Delayed Mode QA/QC Best Practice Manual Version 2.0. Integrated Marine Observing System. DOI: 10.26198/5c997b5fdc9bd (<a class="reference external" href="http://dx.doi.org/10.26198/5c997b5fdc9bd">http://dx.doi.org/10.26198/5c997b5fdc9bd</a>).</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.variables.salinity.AdjustSalinity.correct_ct_lag">
 <span class="sig-name descname"><span class="pre">correct_ct_lag</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/variables/salinity.html#AdjustSalinity.correct_ct_lag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.correct_ct_lag" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Calculate the optimal conductivity time lag relative to temperature to reduce salinity spikes.
+Selects a random sample of up to 50 profiles per direction (Upcast, Downcast, Transect).
+Estimates the median of this lag per direction and applies it to correct the CNDC variables.
+This correction should reduce salinity spikes that result from the misalignment between conductivity and temperature sensors and from the difference in sensor response times.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.variables.salinity.AdjustSalinity.correct_thermal_lag">
 <span class="sig-name descname"><span class="pre">correct_thermal_lag</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/variables/salinity.html#AdjustSalinity.correct_thermal_lag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.correct_thermal_lag" title="Link to this definition">#</a></dt>
-<dd><p>Applies thermal mass correction independently to the downcast, transect, and upcast.</p>
+<dd><p>Apply the thermal-lag correction for Salinity presented in Morrison et al 1994.
+Uses a recursive filter algorithm across distinct directional casts to estimate
+temperature inside the conductivity cell.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.variables.salinity.AdjustSalinity.generate_diagnostics">
 <span class="sig-name descname"><span class="pre">generate_diagnostics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/variables/salinity.html#AdjustSalinity.generate_diagnostics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.generate_diagnostics" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Displays a comprehensive diagnostics dashboard detailing applied adjustments
+to conductivity and temperature, along with overall impacts on the dataset.</p>
+</dd></dl>
 
 </dd></dl>
 
@@ -595,6 +645,7 @@
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.step_name"><code class="docutils literal notranslate"><span class="pre">AdjustSalinity.step_name</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.required_variables"><code class="docutils literal notranslate"><span class="pre">AdjustSalinity.required_variables</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.provided_variables"><code class="docutils literal notranslate"><span class="pre">AdjustSalinity.provided_variables</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.parameter_schema"><code class="docutils literal notranslate"><span class="pre">AdjustSalinity.parameter_schema</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.run"><code class="docutils literal notranslate"><span class="pre">AdjustSalinity.run()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.correct_ct_lag"><code class="docutils literal notranslate"><span class="pre">AdjustSalinity.correct_ct_lag()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.variables.salinity.AdjustSalinity.correct_thermal_lag"><code class="docutils literal notranslate"><span class="pre">AdjustSalinity.correct_thermal_lag()</span></code></a></li>
@@ -619,8 +670,8 @@
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../../../../../_static/scripts/bootstrap.js?digest=7f76b32a3354e82990f2"></script>
-<script defer src="../../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=7f76b32a3354e82990f2"></script>
+  <script defer src="../../../../../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
+<script defer src="../../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -654,7 +705,7 @@
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
 </p></div>
       
     </div>

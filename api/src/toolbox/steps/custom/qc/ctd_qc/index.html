@@ -27,8 +27,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../../../../../_static/styles/theme.css?digest=7f76b32a3354e82990f2" rel="stylesheet" />
-<link href="../../../../../../../_static/styles/pydata-sphinx-theme.css?digest=7f76b32a3354e82990f2" rel="stylesheet" />
+  <link href="../../../../../../../_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+<link href="../../../../../../../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../../../../../_static/pygments.css?v=d75fae25" />
     <link rel="stylesheet" type="text/css" href="../../../../../../../_static/copybutton.css?v=76b2166b" />
@@ -37,10 +37,10 @@
     <link rel="stylesheet" type="text/css" href="../../../../../../../_static/sphinx-design.min.css?v=95c83b7e" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../../../../../_static/scripts/fontawesome.js?digest=7f76b32a3354e82990f2"></script>
+  <script defer src="../../../../../../../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../../../../../_static/scripts/bootstrap.js?digest=7f76b32a3354e82990f2" />
-<link rel="preload" as="script" href="../../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=7f76b32a3354e82990f2" />
+  <link rel="preload" as="script" href="../../../../../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
+<link rel="preload" as="script" href="../../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
     <script src="../../../../../../../_static/documentation_options.js?v=d45e8c67"></script>
     <script src="../../../../../../../_static/doctools.js?v=9bcbadda"></script>
@@ -76,7 +76,9 @@
   
   <button type="button" class="btn rounded-pill" id="pst-back-to-top">
     <i class="fa-solid fa-arrow-up"></i>Back to top</button>
-
+  
+  
+  
   
   <dialog id="pst-search-dialog">
     
@@ -339,7 +341,6 @@
 <li class="toctree-l3"><a class="reference internal" href="../../derive_ctd/index.html">src.toolbox.steps.custom.derive_ctd</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../export/index.html">src.toolbox.steps.custom.export</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../find_profiles/index.html">src.toolbox.steps.custom.find_profiles</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../find_profiles_beta/index.html">src.toolbox.steps.custom.find_profiles_beta</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../gen_data/index.html">src.toolbox.steps.custom.gen_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../interpolate_data/index.html">src.toolbox.steps.custom.interpolate_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../load_data/index.html">src.toolbox.steps.custom.load_data</a></li>
@@ -455,40 +456,7 @@
                   
   <section id="module-src.toolbox.steps.custom.qc.ctd_qc">
 <span id="src-toolbox-steps-custom-qc-ctd-qc"></span><h1>src.toolbox.steps.custom.qc.ctd_qc<a class="headerlink" href="#module-src.toolbox.steps.custom.qc.ctd_qc" title="Link to this heading">#</a></h1>
-<p>QC step that flags CTD fill values, corrects CNDC S/m to mS/cm, and cross-flags statistical outliers.</p>
-<p>This QC could become redundant if all incoming data was fixed at source</p>
-<section id="attributes">
-<h2>Attributes<a class="headerlink" href="#attributes" title="Link to this heading">#</a></h2>
-<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.qc.ctd_qc.PLOT_SIZE" title="src.toolbox.steps.custom.qc.ctd_qc.PLOT_SIZE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PLOT_SIZE</span></code></a></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.qc.ctd_qc.COLOR_RAW" title="src.toolbox.steps.custom.qc.ctd_qc.COLOR_RAW"><code class="xref py py-obj docutils literal notranslate"><span class="pre">COLOR_RAW</span></code></a></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.qc.ctd_qc.COLOR_CORRECTED" title="src.toolbox.steps.custom.qc.ctd_qc.COLOR_CORRECTED"><code class="xref py py-obj docutils literal notranslate"><span class="pre">COLOR_CORRECTED</span></code></a></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.qc.ctd_qc.COLOR_FLAGGED" title="src.toolbox.steps.custom.qc.ctd_qc.COLOR_FLAGGED"><code class="xref py py-obj docutils literal notranslate"><span class="pre">COLOR_FLAGGED</span></code></a></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.qc.ctd_qc.COLOR_OUTLIER" title="src.toolbox.steps.custom.qc.ctd_qc.COLOR_OUTLIER"><code class="xref py py-obj docutils literal notranslate"><span class="pre">COLOR_OUTLIER</span></code></a></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.qc.ctd_qc.MARKER_SIZE" title="src.toolbox.steps.custom.qc.ctd_qc.MARKER_SIZE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MARKER_SIZE</span></code></a></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.qc.ctd_qc.PLOT_ALPHA" title="src.toolbox.steps.custom.qc.ctd_qc.PLOT_ALPHA"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PLOT_ALPHA</span></code></a></p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.qc.ctd_qc.SIGMA_THRESHOLD" title="src.toolbox.steps.custom.qc.ctd_qc.SIGMA_THRESHOLD"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SIGMA_THRESHOLD</span></code></a></p></td>
-<td><p></p></td>
-</tr>
-</tbody>
-</table>
-</div>
-</section>
+<p>QC step that flags CTD fill values, corrects CNDC S/m to mS/cm, and applies a hard range filter.</p>
 <section id="classes">
 <h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
@@ -502,66 +470,16 @@
 </section>
 <section id="module-contents">
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">#</a></h2>
-<dl class="py data">
-<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.ctd_qc.PLOT_SIZE">
-<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.qc.ctd_qc.</span></span><span class="sig-name descname"><span class="pre">PLOT_SIZE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(10,</span> <span class="pre">8)</span></em><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/ctd_qc.html#PLOT_SIZE"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.ctd_qc.PLOT_SIZE" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py data">
-<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.ctd_qc.COLOR_RAW">
-<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.qc.ctd_qc.</span></span><span class="sig-name descname"><span class="pre">COLOR_RAW</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'#b2bec3'</span></em><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/ctd_qc.html#COLOR_RAW"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.ctd_qc.COLOR_RAW" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py data">
-<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.ctd_qc.COLOR_CORRECTED">
-<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.qc.ctd_qc.</span></span><span class="sig-name descname"><span class="pre">COLOR_CORRECTED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'#0984e3'</span></em><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/ctd_qc.html#COLOR_CORRECTED"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.ctd_qc.COLOR_CORRECTED" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py data">
-<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.ctd_qc.COLOR_FLAGGED">
-<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.qc.ctd_qc.</span></span><span class="sig-name descname"><span class="pre">COLOR_FLAGGED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'#d63031'</span></em><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/ctd_qc.html#COLOR_FLAGGED"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.ctd_qc.COLOR_FLAGGED" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py data">
-<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.ctd_qc.COLOR_OUTLIER">
-<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.qc.ctd_qc.</span></span><span class="sig-name descname"><span class="pre">COLOR_OUTLIER</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'#e17055'</span></em><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/ctd_qc.html#COLOR_OUTLIER"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.ctd_qc.COLOR_OUTLIER" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py data">
-<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.ctd_qc.MARKER_SIZE">
-<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.qc.ctd_qc.</span></span><span class="sig-name descname"><span class="pre">MARKER_SIZE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.5</span></em><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/ctd_qc.html#MARKER_SIZE"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.ctd_qc.MARKER_SIZE" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py data">
-<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.ctd_qc.PLOT_ALPHA">
-<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.qc.ctd_qc.</span></span><span class="sig-name descname"><span class="pre">PLOT_ALPHA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.7</span></em><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/ctd_qc.html#PLOT_ALPHA"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.ctd_qc.PLOT_ALPHA" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py data">
-<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.ctd_qc.SIGMA_THRESHOLD">
-<span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.qc.ctd_qc.</span></span><span class="sig-name descname"><span class="pre">SIGMA_THRESHOLD</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">5.0</span></em><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/ctd_qc.html#SIGMA_THRESHOLD"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.ctd_qc.SIGMA_THRESHOLD" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
-
 <dl class="py class">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.ctd_qc.ctd_qc">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.qc.ctd_qc.</span></span><span class="sig-name descname"><span class="pre">ctd_qc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/ctd_qc.html#ctd_qc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.ctd_qc.ctd_qc" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">toolbox.steps.base_qc.BaseQC</span></code></p>
 <p>Target Variable: PRES, TEMP, CNDC
-Flag Number: 9 (missing/fill value), 4 (gross outlier)
+Flag Number: 9 (missing/fill value), 4 (out of range)
 Variables Flagged: PRES, TEMP, CNDC</p>
-<p>Checks for fill values of exactly 0.000 across the CTD variables
-and flags them as 9. Evaluates valid CNDC data, applies unit scaling
-if auto_scale is True (S/m to mS/cm), and identifies statistical outliers
-(&gt; 5 std deviations from the mean). Flags these outliers as 4 across
-all three CTD variables simultaneously.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.qc_name">
 <span class="sig-name descname"><span class="pre">qc_name</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ctd</span> <span class="pre">qc'</span></em><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/ctd_qc.html#ctd_qc.qc_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.qc_name" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.expected_parameters">
-<span class="sig-name descname"><span class="pre">expected_parameters</span></span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/ctd_qc.html#ctd_qc.expected_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.expected_parameters" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -575,8 +493,33 @@ all three CTD variables simultaneously.</p>
 <dd></dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.parameter_schema">
+<span class="sig-name descname"><span class="pre">parameter_schema</span></span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/ctd_qc.html#ctd_qc.parameter_schema"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.parameter_schema" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.expected_parameters">
+<span class="sig-name descname"><span class="pre">expected_parameters</span></span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/ctd_qc.html#ctd_qc.expected_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.expected_parameters" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.auto_scale">
 <span class="sig-name descname"><span class="pre">auto_scale</span></span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/ctd_qc.html#ctd_qc.auto_scale"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.auto_scale" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.apply_cndc_range">
+<span class="sig-name descname"><span class="pre">apply_cndc_range</span></span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/ctd_qc.html#ctd_qc.apply_cndc_range"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.apply_cndc_range" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.cndc_min">
+<span class="sig-name descname"><span class="pre">cndc_min</span></span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/ctd_qc.html#ctd_qc.cndc_min"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.cndc_min" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.cndc_max">
+<span class="sig-name descname"><span class="pre">cndc_max</span></span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/ctd_qc.html#ctd_qc.cndc_max"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.cndc_max" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -646,23 +589,18 @@ all three CTD variables simultaneously.</p>
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#attributes">Attributes</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.ctd_qc.PLOT_SIZE"><code class="docutils literal notranslate"><span class="pre">PLOT_SIZE</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.ctd_qc.COLOR_RAW"><code class="docutils literal notranslate"><span class="pre">COLOR_RAW</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.ctd_qc.COLOR_CORRECTED"><code class="docutils literal notranslate"><span class="pre">COLOR_CORRECTED</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.ctd_qc.COLOR_FLAGGED"><code class="docutils literal notranslate"><span class="pre">COLOR_FLAGGED</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.ctd_qc.COLOR_OUTLIER"><code class="docutils literal notranslate"><span class="pre">COLOR_OUTLIER</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.ctd_qc.MARKER_SIZE"><code class="docutils literal notranslate"><span class="pre">MARKER_SIZE</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.ctd_qc.PLOT_ALPHA"><code class="docutils literal notranslate"><span class="pre">PLOT_ALPHA</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.ctd_qc.SIGMA_THRESHOLD"><code class="docutils literal notranslate"><span class="pre">SIGMA_THRESHOLD</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.ctd_qc.ctd_qc"><code class="docutils literal notranslate"><span class="pre">ctd_qc</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.qc_name"><code class="docutils literal notranslate"><span class="pre">ctd_qc.qc_name</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.expected_parameters"><code class="docutils literal notranslate"><span class="pre">ctd_qc.expected_parameters</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.required_variables"><code class="docutils literal notranslate"><span class="pre">ctd_qc.required_variables</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.qc_outputs"><code class="docutils literal notranslate"><span class="pre">ctd_qc.qc_outputs</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.parameter_schema"><code class="docutils literal notranslate"><span class="pre">ctd_qc.parameter_schema</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.expected_parameters"><code class="docutils literal notranslate"><span class="pre">ctd_qc.expected_parameters</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.auto_scale"><code class="docutils literal notranslate"><span class="pre">ctd_qc.auto_scale</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.apply_cndc_range"><code class="docutils literal notranslate"><span class="pre">ctd_qc.apply_cndc_range</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.cndc_min"><code class="docutils literal notranslate"><span class="pre">ctd_qc.cndc_min</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.cndc_max"><code class="docutils literal notranslate"><span class="pre">ctd_qc.cndc_max</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.scaled"><code class="docutils literal notranslate"><span class="pre">ctd_qc.scaled</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.return_qc"><code class="docutils literal notranslate"><span class="pre">ctd_qc.return_qc()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.ctd_qc.ctd_qc.plot_diagnostics"><code class="docutils literal notranslate"><span class="pre">ctd_qc.plot_diagnostics()</span></code></a></li>
@@ -686,8 +624,8 @@ all three CTD variables simultaneously.</p>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../../../../../_static/scripts/bootstrap.js?digest=7f76b32a3354e82990f2"></script>
-<script defer src="../../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=7f76b32a3354e82990f2"></script>
+  <script defer src="../../../../../../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
+<script defer src="../../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -721,7 +659,7 @@ all three CTD variables simultaneously.</p>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
 </p></div>
       
     </div>
