@@ -26,3 +26,5 @@ pytest
 rstcloth
 cartopy
 pyyaml
+cc-plugin-ncei
+cc-plugin-og

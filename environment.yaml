@@ -48,4 +48,6 @@ dependencies:
   - pip:
     - glidertools
     - rstcloth
+    - compliance-checker
+    - cc-plugin-og
     - -e .

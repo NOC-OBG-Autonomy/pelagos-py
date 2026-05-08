@@ -1,0 +1,67 @@
+# A demo configuration for highlighting the report generation notebook.
+pipeline:
+  name: Report demonstration pipeline
+  description: 
+  visualisation: false
+  out_directory: ../examples/data/OG1/testing/
+  log_file: demo.log
+
+# Pipeline steps
+steps:
+# ------------------------ IMPORT DATA -----------------------
+
+  - name: Load OG1
+    parameters:
+      file_path: ../examples/data/OG1/Nelson_646_R.nc
+      filter_bad_time: false
+      data_start: 
+      data_end:
+    diagnostics: false  # No diagnostics for loading data
+
+# ----------------------- Quality control --------------------
+# Do some simple quality control to populate the report.
+  - name: Apply QC
+    parameters:
+      qc_settings:
+        impossible date qc: {}      # Is the date between 1985 and now?
+        impossible location qc: {}  # Are the GPS coords within logical bounds?
+        position on land qc: {}     # Are the coords on land?
+        impossible speed qc: {}     # Is the horizontal speed reasonable?
+        gross range qc:
+          variable_ranges:
+            PRES:
+              3: [-5, -2.4]
+              4: [-.inf, -5]
+            TEMP:
+              3: [0, 30]
+              4: [-2.5, 40]
+            CNDC:
+              3: [5, 42]  
+              4: [2, 45]
+          also_flag:
+            PRES: [TEMP, CNDC]
+            TEMP: [CNDC]
+        stuck value qc:
+          variables:
+            PRES: 2
+          also_flag:
+            PRES: [CNDC, TEMP]
+          plot: [PRES]
+    diagnostics: false
+
+
+# ----------------- Save Processed Data ----------------
+  - name: Data Export
+    parameters:
+      export_format: "netcdf"
+      output_path: "../examples/data/OG1/report_demo.nc"
+
+
+# ----------------------- Report assembly ---------------------
+  - name: Write Data Report
+    parameters:
+      title:  # Goes on the title page. Leave it blank or empty to automatically set it to the filename.
+      fname:  # Main .rst file Sphinx can build from, RstCloth will write to within pipeline's "out_directory".
+      build: true   #  Whether to run sphinx, which will build the PDF.
+      extent: [7, 25, 54, 65] # Extent for an inset figure. Optional.
+

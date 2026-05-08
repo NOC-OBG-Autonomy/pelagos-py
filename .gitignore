@@ -3,7 +3,9 @@
 
 # Project Specific
 *.nc
+data/
 /data/
+testing/
 /testing/
 
 # Python Core & Compilation
@@ -102,3 +104,4 @@ cython_debug/
 *.mo
 *.pot
 src/toolbox/_version.py
+.vscode/
