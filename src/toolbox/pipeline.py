@@ -30,13 +30,11 @@ import difflib
 from toolbox.utils.config_mirror import ConfigMirrorMixin
 from toolbox.utils.valid_config_check import check_pipeline_variables
 
-from toolbox.steps import (
-    create_step,
-    STEP_CLASSES
-)
+from toolbox.steps import create_step, STEP_CLASSES
 
 _PIPELINE_LOGGER_NAME = "toolbox.pipeline"
 """Global logger name for the pipeline. Used to create child loggers for steps."""
+
 
 def _setup_logging(out_dir=None, log_file=None, level=logging.INFO):
     """
@@ -74,7 +72,9 @@ def _setup_logging(out_dir=None, log_file=None, level=logging.INFO):
 
     # File handler if specified
     if log_file:
-        log_file = os.path.abspath(os.path.join(out_dir or ".", log_file))        # absolute path
+        log_file = os.path.abspath(
+            os.path.join(out_dir or ".", log_file)
+        )  # absolute path
         os.makedirs(os.path.dirname(log_file) or ".", exist_ok=True)
         fh = logging.FileHandler(log_file)
         fh.setLevel(level)
@@ -84,10 +84,11 @@ def _setup_logging(out_dir=None, log_file=None, level=logging.INFO):
 
     return logger
 
+
 class Pipeline(ConfigMirrorMixin):
     """
     Pipeline that manages a sequence of processing steps.
-    
+
     Config-aware pipeline that can:
       - Load config YAML into private self._parameters
       - Keep global_parameters mirrored to _parameters['pipeline']
@@ -97,13 +98,13 @@ class Pipeline(ConfigMirrorMixin):
     ----------
     ConfigMirrorMixin : Class
         Class to handle configuration
-    
+
     """
 
     def __init__(self, config_path=None):
         """
         Initialize pipeline with optional config file.
-        
+
         Parameters
         ----------
         config_path : str, optional
@@ -122,8 +123,10 @@ class Pipeline(ConfigMirrorMixin):
             # set convenience alias for user-facing access
             self.global_parameters = self._parameters.get("pipeline", {})
             # build steps from loaded config
-            self.logger = _setup_logging(self.global_parameters.get("out_directory"),
-                                         self.global_parameters.get("log_file"))
+            self.logger = _setup_logging(
+                self.global_parameters.get("out_directory"),
+                self.global_parameters.get("log_file"),
+            )
             self.build_steps(self._parameters.get("steps", []))
             check_pipeline_variables(self.steps, self.logger)
             self.logger.info("Pipeline initialised")
@@ -176,17 +179,21 @@ class Pipeline(ConfigMirrorMixin):
         """
         if step_name not in STEP_CLASSES:
             available_steps = list(STEP_CLASSES.keys())
-            error_msg = f"Step '{step_name}' is not recognised or missing @register_step."
-            
+            error_msg = (
+                f"Step '{step_name}' is not recognised or missing @register_step."
+            )
+
             # Look for a typo and suggest the closest match
-            close_matches = difflib.get_close_matches(step_name, available_steps, n=1, cutoff=0.6)
+            close_matches = difflib.get_close_matches(
+                step_name, available_steps, n=1, cutoff=0.6
+            )
             if close_matches:
                 error_msg += f" Did you mean '{close_matches[0]}'?"
             else:
                 # If no close match, show a few available options
                 sample_steps = ", ".join(available_steps[:5])
                 error_msg += f" Some available steps include: {sample_steps}..."
-                
+
             self.logger.error(error_msg)
             raise ValueError(error_msg)
 
@@ -218,31 +225,35 @@ class Pipeline(ConfigMirrorMixin):
         step_context["global_parameters"] = self.global_parameters
         step = create_step(step_config, step_context)
         self.logger.info(f"Executing: {step.name}")
-        
+
         try:
-            start_time = time.time()
-            
-            # Run the actual step
-            result = step.run()
-            
-            # Handle diagnostics centrally
             if step.diagnostics:
+                start_time = time.time()
+
+                # Run the actual step
+                result = step.run()
+
                 duration = time.time() - start_time
                 step.log(f"Execution time: {duration:.2f} seconds.")
-                
+
                 try:
                     import psutil
                     import os
+
                     process = psutil.Process(os.getpid())
                     mem_info = process.memory_info()
                     step.log(f"Current memory usage: {mem_info.rss / 1024 ** 2:.2f} MB")
                 except ImportError:
                     pass
-                    
+            else:
+                result = step.run()
+
             return result
 
         except Exception as e:
-            self.logger.error(f"Fatal error encountered while executing step '{step.name}': {e}")
+            self.logger.error(
+                f"Fatal error encountered while executing step '{step.name}': {e}"
+            )
             raise RuntimeError(f"Pipeline failed at step '{step.name}': {e}") from e
 
     def run_last_step(self):
@@ -293,13 +304,13 @@ class Pipeline(ConfigMirrorMixin):
         for step in self.steps:
             add_to_graph(step, prev_step)
             prev_step = step["name"]
-            
+
         self.graph.render("pipeline_visualisation", view=True)
 
     def generate_config(self):
         """
         Generate a configuration dictionary from the current pipeline setup.
-        
+
         returns
         -------
         dict
@@ -316,12 +327,12 @@ class Pipeline(ConfigMirrorMixin):
     def export_config(self, output_path="generated_pipeline.yaml"):
         """
         Write current config to file (respects private _parameters)
-        
+
         parameters
         ----------
         output_path : str
             Path to save the exported configuration YAML file.
-        
+
         returns
         -------
         dict

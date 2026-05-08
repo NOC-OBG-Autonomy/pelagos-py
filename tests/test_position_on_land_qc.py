@@ -21,7 +21,7 @@ def test_missing_variables():
     [
         ([0.0, 0.0],          [-30.0, -140.0], [1, 1]),  # Ocean coordinates (Mid Atlantic, Central Pacific)
         ([39.0, -23.7],       [-98.0, 133.8],  [4, 4]),  # Land coordinates (Kansas USA, Alice Springs AUS)
-        ([np.nan, 39.0],      [-30.0, np.nan], [1, 1]),  # Missing or invalid coordinates
+        ([np.nan, 39.0],      [-30.0, np.nan], [9, 9]),  # Missing or invalid coordinates
     ],
     ids=["water", "land", "nan_coords"],
 )

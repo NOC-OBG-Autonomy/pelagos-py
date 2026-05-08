@@ -39,41 +39,51 @@ class ctd_qc(BaseQC):
         "auto_scale": {
             "type": bool,
             "default": True,
-            "description": "Automatically scale CNDC from S/m to mS/cm if median < 10.0"
+            "description": "Automatically scale CNDC from S/m to mS/cm if median < 10.0",
         },
         "apply_cndc_range": {
             "type": bool,
             "default": True,
-            "description": "Apply a hard min/max range check to CNDC."
+            "description": "Apply a hard min/max range check to CNDC.",
         },
         "cndc_min": {
             "type": float,
             "default": 20.0,
-            "description": "Minimum valid CNDC value (evaluated after auto-scaling)."
+            "description": "Minimum valid CNDC value (evaluated after auto-scaling).",
         },
         "cndc_max": {
             "type": float,
             "default": 50.0,
-            "description": "Maximum valid CNDC value (evaluated after auto-scaling)."
-        }
+            "description": "Maximum valid CNDC value (evaluated after auto-scaling).",
+        },
     }
 
     def __init__(self, data, **kwargs):
-        self.expected_parameters = {k: v["type"] for k, v in self.parameter_schema.items()}
+        self.expected_parameters = {
+            k: v["type"] for k, v in self.parameter_schema.items()
+        }
         super().__init__(data, **kwargs)
-        
+
         if data is not None:
             self.data = data
             self._raw_data = {
                 "PRES": data["PRES"].values.copy(),
                 "TEMP": data["TEMP"].values.copy(),
-                "CNDC": data["CNDC"].values.copy()
+                "CNDC": data["CNDC"].values.copy(),
             }
-            
-        self.auto_scale = kwargs.get("auto_scale", self.parameter_schema["auto_scale"]["default"])
-        self.apply_cndc_range = kwargs.get("apply_cndc_range", self.parameter_schema["apply_cndc_range"]["default"])
-        self.cndc_min = kwargs.get("cndc_min", self.parameter_schema["cndc_min"]["default"])
-        self.cndc_max = kwargs.get("cndc_max", self.parameter_schema["cndc_max"]["default"])
+
+        self.auto_scale = kwargs.get(
+            "auto_scale", self.parameter_schema["auto_scale"]["default"]
+        )
+        self.apply_cndc_range = kwargs.get(
+            "apply_cndc_range", self.parameter_schema["apply_cndc_range"]["default"]
+        )
+        self.cndc_min = kwargs.get(
+            "cndc_min", self.parameter_schema["cndc_min"]["default"]
+        )
+        self.cndc_max = kwargs.get(
+            "cndc_max", self.parameter_schema["cndc_max"]["default"]
+        )
         self.scaled = False
 
     def return_qc(self):
@@ -84,21 +94,30 @@ class ctd_qc(BaseQC):
             vals = self.data[var].values
             qc = xr.zeros_like(self.data[var], dtype=int)
 
-            zero_mask = (vals == 0.0)
+            zero_mask = vals == 0.0
             qc = xr.where(zero_mask, 9, qc)
 
             if var == "CNDC":
                 valid_mask = ~zero_mask & ~np.isnan(vals)
-                
+
                 if self.auto_scale and np.any(valid_mask):
                     median_val = np.nanmedian(vals[valid_mask])
-                    current_units = str(self.data[var].attrs.get("units", "")).strip().lower()
-                    already_mscm = current_units in ["ms/cm", "ms cm-1", "millisiemens/cm", "milli-siemens/cm"]
+                    current_units = (
+                        str(self.data[var].attrs.get("units", "")).strip().lower()
+                    )
+                    already_mscm = current_units in [
+                        "ms/cm",
+                        "ms cm-1",
+                        "millisiemens/cm",
+                        "milli-siemens/cm",
+                    ]
 
                     if not already_mscm and median_val < 10.0:
                         self.scaled = True
-                        self.log("Converting CNDC from S/m to mS/cm for GSW calculations...")
-                        
+                        self.log(
+                            "Converting CNDC from S/m to mS/cm for GSW calculations..."
+                        )
+
                         vals[valid_mask] = vals[valid_mask] * 10.0
                         self.data[var].values = vals
                         self.data[var].attrs["units"] = "mS/cm"
@@ -115,12 +134,16 @@ class ctd_qc(BaseQC):
 
                 # Convert the xarray scalar to a standard integer for clean logging
                 outlier_count = int(np.sum(outlier_mask))
-                
+
                 if outlier_count > 0:
-                    self.log(f"Found {outlier_count} CNDC values outside range [{self.cndc_min}, {self.cndc_max}]. Cross-flagging triad as bad (4).")
+                    self.log(
+                        f"Found {outlier_count} CNDC values outside range [{self.cndc_min}, {self.cndc_max}]. Cross-flagging triad as bad (4)."
+                    )
 
                     for var in self.required_variables:
-                        qc_arrays[var] = xr.where(outlier_mask & (qc_arrays[var] == 0), 4, qc_arrays[var])
+                        qc_arrays[var] = xr.where(
+                            outlier_mask & (qc_arrays[var] == 0), 4, qc_arrays[var]
+                        )
 
         for var in self.required_variables:
             self.flags[f"{var}_QC"] = qc_arrays[var]
@@ -133,7 +156,7 @@ class ctd_qc(BaseQC):
 
         matplotlib.use("tkagg")
         fig, axes = plt.subplots(3, 1, sharex=True, figsize=(10, 8), dpi=150)
-        
+
         time_data = self.data["TIME"].values
 
         for ax, var in zip(axes, self.required_variables):
@@ -143,44 +166,93 @@ class ctd_qc(BaseQC):
 
             if var == "CNDC" and self.scaled:
                 ax.plot(
-                    time_data, raw_vals, marker="o", ls="", color="#b2bec3",
-                    markersize=1.5, alpha=0.7, label="Raw (S/m)"
+                    time_data,
+                    raw_vals,
+                    marker="o",
+                    ls="",
+                    color="#b2bec3",
+                    markersize=1.5,
+                    alpha=0.7,
+                    label="Raw (S/m)",
                 )
 
-            label_str = f"Valid {var} (mS/cm)" if var == "CNDC" and self.scaled else f"Valid {var}"
-
-            ax.plot(
-                time_data, valid_vals, marker="o", ls="", color="#0984e3",
-                markersize=1.5, alpha=0.7, label=label_str
+            label_str = (
+                f"Valid {var} (mS/cm)"
+                if var == "CNDC" and self.scaled
+                else f"Valid {var}"
             )
 
-            outlier_mask = (qc_vals == 4)
+            ax.plot(
+                time_data,
+                valid_vals,
+                marker="o",
+                ls="",
+                color="#0984e3",
+                markersize=1.5,
+                alpha=0.7,
+                label=label_str,
+            )
+
+            outlier_mask = qc_vals == 4
             if np.any(outlier_mask):
                 ax.plot(
-                    time_data[outlier_mask], 
-                    raw_vals[outlier_mask] if var == "CNDC" and self.scaled else valid_vals[outlier_mask],
-                    marker="d", ls="", color="#e17055", markersize=3.5, label="Out of Range (4)"
+                    time_data[outlier_mask],
+                    (
+                        raw_vals[outlier_mask]
+                        if var == "CNDC" and self.scaled
+                        else valid_vals[outlier_mask]
+                    ),
+                    marker="d",
+                    ls="",
+                    color="#e17055",
+                    markersize=3.5,
+                    label="Out of Range (4)",
                 )
 
-            zero_mask = (qc_vals == 9)
+            zero_mask = qc_vals == 9
             if np.any(zero_mask):
                 ax.plot(
-                    time_data[zero_mask], raw_vals[zero_mask], marker="x",
-                    ls="", color="#d63031", markersize=3.0, label="Flagged Zeros (9)"
+                    time_data[zero_mask],
+                    raw_vals[zero_mask],
+                    marker="x",
+                    ls="",
+                    color="#d63031",
+                    markersize=3.0,
+                    label="Flagged Zeros (9)",
                 )
 
             if var == "CNDC" and self.apply_cndc_range:
-                ax.axhline(self.cndc_max, color="black", linestyle="--", alpha=0.6, linewidth=1, label=f"Max ({self.cndc_max})")
-                ax.axhline(self.cndc_min, color="black", linestyle="--", alpha=0.6, linewidth=1, label=f"Min ({self.cndc_min})")
-                
+                ax.axhline(
+                    self.cndc_max,
+                    color="black",
+                    linestyle="--",
+                    alpha=0.6,
+                    linewidth=1,
+                    label=f"Max ({self.cndc_max})",
+                )
+                ax.axhline(
+                    self.cndc_min,
+                    color="black",
+                    linestyle="--",
+                    alpha=0.6,
+                    linewidth=1,
+                    label=f"Min ({self.cndc_min})",
+                )
+
             ax.set_ylabel(var, fontsize=8)
             ax.grid(True, alpha=0.3)
             ax.tick_params(axis="both", which="major", labelsize=8)
-            
+
             if var == "PRES":
                 ax.invert_yaxis()
-            
-            ax.legend(loc="center left", bbox_to_anchor=(1.01, 0.5), fontsize=8, framealpha=0.9, fancybox=True)
+
+            ax.legend(
+                loc="center left",
+                bbox_to_anchor=(1.01, 0.5),
+                fontsize=8,
+                framealpha=0.9,
+                fancybox=True,
+            )
 
         title = "CTD Zero Flagging & Range Verification"
         if self.scaled:
