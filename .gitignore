@@ -3,7 +3,9 @@
 
 # Project Specific
 *.nc
+data/
 /data/
+testing/
 /testing/
 
 # Keep test data (these are reduced size .nc files for unit testing)
