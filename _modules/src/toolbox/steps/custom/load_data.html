@@ -153,7 +153,7 @@
 
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../tests.html">
-    Quality Control
+    Tests
   </a>
 </li>
 
@@ -265,7 +265,7 @@
 
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../tests.html">
-    Quality Control
+    Tests
   </a>
 </li>
 
@@ -390,16 +390,13 @@
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
 
-<span class="sd">&quot;&quot;&quot;Class definition for loading data steps.&quot;&quot;&quot;</span>
-
-<span class="c1">#### Mandatory imports ####</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">toolbox.utils.diagnostics</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">diag</span>
 
-<span class="c1">#### Custom imports ####</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
 <div class="viewcode-block" id="MIN_YEAR_FILTER">
 <a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/load_data/index.html#src.toolbox.steps.custom.load_data.MIN_YEAR_FILTER">[docs]</a>
@@ -536,10 +533,10 @@
                 <span class="s2">&quot;If TIME is listed under another name, please rename it to conform to the OG1 format.&quot;</span>
             <span class="p">)</span>
 
-        <span class="c1"># Check that the &quot;TIME&quot; variable is monotonic and nanless</span>
-        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">])):</span>
+        <span class="c1"># Check that the &quot;TIME&quot; variable is monotonic and has no missing values</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&#39;TIME&#39; has nan values. Pipelines cannot be run without a continuous monotonic time coordinate.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&#39;TIME&#39; has NaT values. Pipelines cannot be run without a continuous monotonic time coordinate.</span><span class="se">\n</span><span class="s2">&quot;</span>
                 <span class="s2">&quot;Please remove these values (and their concurrent measurements) from the input.&quot;</span>
             <span class="p">)</span>
 
@@ -550,10 +547,13 @@
             <span class="p">)</span>
             
         <span class="c1"># Generate diagnostics if enabled</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loaded data from </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;global_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;filename_core&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">)</span><span class="o">.</span><span class="n">stem</span>  <span class="c1">#   Make this available to other steps</span>
+
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
-        <span class="c1"># add data to context</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
 

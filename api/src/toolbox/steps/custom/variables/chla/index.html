@@ -156,7 +156,7 @@
 
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../../../tests.html">
-    Quality Control
+    Tests
   </a>
 </li>
 
@@ -270,7 +270,7 @@
 
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../../../tests.html">
-    Quality Control
+    Tests
   </a>
 </li>
 
@@ -341,6 +341,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../derive_ctd/index.html">src.toolbox.steps.custom.derive_ctd</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../export/index.html">src.toolbox.steps.custom.export</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../find_profiles/index.html">src.toolbox.steps.custom.find_profiles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../format_check/index.html">src.toolbox.steps.custom.format_check</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../gen_data/index.html">src.toolbox.steps.custom.gen_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../interpolate_data/index.html">src.toolbox.steps.custom.interpolate_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../load_data/index.html">src.toolbox.steps.custom.load_data</a></li>
@@ -348,7 +349,6 @@
 <li class="toctree-l3 has-children"><a class="reference internal" href="../../qc/index.html">src.toolbox.steps.custom.qc</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../qc/archive/index.html">src.toolbox.steps.custom.qc.archive</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../qc/blank_qc/index.html">src.toolbox.steps.custom.qc.blank_qc</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../qc/ctd_qc/index.html">src.toolbox.steps.custom.qc.ctd_qc</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../qc/flag_full_profile/index.html">src.toolbox.steps.custom.qc.flag_full_profile</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../qc/gross_range_qc/index.html">src.toolbox.steps.custom.qc.gross_range_qc</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../qc/impossible_date_qc/index.html">src.toolbox.steps.custom.qc.impossible_date_qc</a></li>
@@ -529,12 +529,35 @@ depth_threshold: 200</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.variables.chla.chla_deep_correction.compute_dark_value">
 <span class="sig-name descname"><span class="pre">compute_dark_value</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/variables/chla.html#chla_deep_correction.compute_dark_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.variables.chla.chla_deep_correction.compute_dark_value" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Compute dark value for chlorophyll-a correction.</p>
+<p>The dark value represents the sensor’s baseline reading in the absence of
+chlorophyll fluorescence. Computed as the median of minimum CHLA values from
+deep profiles (&gt;= depth_threshold).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ds</strong> (<em>xarray.Dataset</em>) – Glider dataset with variables: CHLA, DEPTH (or PRES), PROFILE_NUMBER</p></li>
+<li><p><strong>depth_threshold</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Minimum depth [m] for dark value calculation (default: 200)</p></li>
+<li><p><strong>n_profiles</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Number of deep profiles to use (default: 5)</p></li>
+<li><p><strong>config_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><em>Path</em><em>, </em><em>optional</em>) – Path to config file to check for existing dark value</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>dark_value</strong> (<em>float</em>) – Computed dark value</p></li>
+<li><p><strong>profile_data</strong> (<em>dict</em>) – Dictionary containing profile information used in calculation
+Keys are profile numbers, values are dicts with ‘depth’, ‘chla’, ‘min_value’, ‘min_depth’</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.variables.chla.chla_deep_correction.apply_dark_correction">
 <span class="sig-name descname"><span class="pre">apply_dark_correction</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/variables/chla.html#chla_deep_correction.apply_dark_correction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.variables.chla.chla_deep_correction.apply_dark_correction" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Apply dark value correction to CHLA data.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.variables.chla.chla_deep_correction.generate_diagnostics">
@@ -596,7 +619,41 @@ mld_settings: {</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.variables.chla.chla_quenching_correction.apply_xing2012_quenching_correction">
 <span class="sig-name descname"><span class="pre">apply_xing2012_quenching_correction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/variables/chla.html#chla_quenching_correction.apply_xing2012_quenching_correction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.variables.chla.chla_quenching_correction.apply_xing2012_quenching_correction" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Apply non-photochemical quenching (NPQ) correction following
+Xing et al. (2012, <em>JGR–Oceans</em>, 117:C01019).</p>
+<p>The maximum fluorescence within the mixed-layer depth (MLD)
+is taken as the non-quenched reference. All shallower
+(PRES &lt; z_qd) values are adjusted upward to that maximum.
+Correction is only applied when solar elevation &gt; 0°.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>chlf</strong> (<em>array-like</em><em> of </em><em>shape</em><em> (</em><em>N</em><em>,</em><em>)</em>) – Uncorrected chlorophyll fluorescence profile F_Chl(PRES).</p></li>
+<li><p><strong>pres</strong> (<em>array-like</em><em> of </em><em>shape</em><em> (</em><em>N</em><em>,</em><em>)</em>) – Pressure (dbar), increasing with depth.</p></li>
+<li><p><strong>mld</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Mixed-layer depth (m or dbar).</p></li>
+<li><p><strong>sun_angle</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Solar elevation angle (degrees). NPQ correction is applied
+only if <cite>sun_angle &gt; 0</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>chl_corr</strong> (<em>ndarray of shape (N,)</em>) – NPQ-corrected fluorescence profile.</p></li>
+<li><p><strong>npq</strong> (<em>ndarray of shape (N,)</em>) – NPQ index = (chl_corr − chlf) / chlf.</p></li>
+<li><p><strong>z_qd</strong> (<em>float</em>) – Quenching depth (dbar): pressure of maximum fluorescence
+within the MLD. NaN if not computable or if night-time.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<div class="admonition-notes admonition">
+<p class="admonition-title">Notes</p>
+<ul class="simple">
+<li><p>No correction is applied if solar elevation ≤ 0° (nighttime).</p></li>
+<li><p>Shallower than z_qd → fluorescence set to Fmax (non-quenched reference).</p></li>
+<li><p>Below MLD → unchanged.</p></li>
+</ul>
+</div>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="src.toolbox.steps.custom.variables.chla.chla_quenching_correction.generate_diagnostics">

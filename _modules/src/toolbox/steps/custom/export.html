@@ -153,7 +153,7 @@
 
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../tests.html">
-    Quality Control
+    Tests
   </a>
 </li>
 
@@ -265,7 +265,7 @@
 
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../tests.html">
-    Quality Control
+    Tests
   </a>
 </li>
 
@@ -393,10 +393,9 @@
 <span class="sd">&quot;&quot;&quot;Class definition for exporting data steps.&quot;&quot;&quot;</span>
 
 <span class="c1">#### Mandatory imports ####</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">toolbox.utils.diagnostics</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">diag</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
-
 
 <span class="nd">@register_step</span>
 <div class="viewcode-block" id="ExportStep">
@@ -410,85 +409,47 @@
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Data Export&quot;</span></div>
 
 
-<div class="viewcode-block" id="ExportStep.parameter_schema">
-<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/export/index.html#src.toolbox.steps.custom.export.ExportStep.parameter_schema">[docs]</a>
-    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;export_format&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
-            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;netcdf&quot;</span><span class="p">,</span> 
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Format to export data (csv, netcdf, hdf5, parquet)&quot;</span>
-        <span class="p">},</span>
-        <span class="s2">&quot;output_path&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> 
-            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;./pipeline_output/exported_data.nc&quot;</span><span class="p">,</span> 
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Path to save the exported data&quot;</span>
-        <span class="p">},</span>
-        <span class="s2">&quot;compression_level&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="mi">6</span><span class="p">,</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Zlib compression level from 0 (off), 1 (fastest) to 9 (smallest)&quot;</span>
-        <span class="p">}</span>
-    <span class="p">}</span></div>
-
-
 <div class="viewcode-block" id="ExportStep.run">
 <a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/export/index.html#src.toolbox.steps.custom.export.ExportStep.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Exporting data in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">export_format</span><span class="si">}</span><span class="s2"> format to </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Exporting data in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;export_format&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> format to </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;output_path&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="p">)</span>
 
         <span class="c1"># Check if the data is in the context</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">check_data</span><span class="p">()</span>
         <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
-        
         <span class="c1"># Add exiting notes on QC history if available TODO: Move earlier to individual QC steps on each data variable attribute</span>
         <span class="k">if</span> <span class="s2">&quot;qc_history&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;QC history found in context.&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;QC history found in context.&quot;</span><span class="p">)</span>
             <span class="n">data</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;delayed_qc_history&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;qc_history&quot;</span><span class="p">])</span>
 
+        <span class="n">export_format</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;export_format&quot;</span><span class="p">]</span>
+        <span class="n">output_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;output_path&quot;</span><span class="p">]</span>
+
         <span class="c1"># Validate the export format</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">export_format</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;csv&quot;</span><span class="p">,</span> <span class="s2">&quot;netcdf&quot;</span><span class="p">,</span> <span class="s2">&quot;hdf5&quot;</span><span class="p">,</span> <span class="s2">&quot;parquet&quot;</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">export_format</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;csv&quot;</span><span class="p">,</span> <span class="s2">&quot;netcdf&quot;</span><span class="p">,</span> <span class="s2">&quot;hdf5&quot;</span><span class="p">,</span> <span class="s2">&quot;parquet&quot;</span><span class="p">]:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Unsupported export format: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">export_format</span><span class="si">}</span><span class="s2">. Supported formats are: csv, netcdf, hdf5, parquet.&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Unsupported export format: </span><span class="si">{</span><span class="n">export_format</span><span class="si">}</span><span class="s2">. Supported formats are: csv, netcdf, hdf5, parquet.&quot;</span>
             <span class="p">)</span>
-            
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_path</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">output_path</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Output path must be specified for data export.&quot;</span><span class="p">)</span>
-            
         <span class="c1"># Ensure the output path is a string</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_path</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Output path must be a string.&quot;</span><span class="p">)</span>
 
         <span class="c1"># Export data based on the specified format</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">export_format</span> <span class="o">==</span> <span class="s2">&quot;csv&quot;</span><span class="p">:</span>
-            <span class="n">data</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_path</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">export_format</span> <span class="o">==</span> <span class="s2">&quot;netcdf&quot;</span><span class="p">:</span>
-            <span class="n">comp_level</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;compression_level&quot;</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
-            
-            <span class="k">if</span> <span class="n">comp_level</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Applying lossless NetCDF compression at level </span><span class="si">{</span><span class="n">comp_level</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
-                <span class="n">encoding_dict</span> <span class="o">=</span> <span class="p">{</span>
-                    <span class="n">var_name</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;zlib&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;complevel&quot;</span><span class="p">:</span> <span class="n">comp_level</span><span class="p">}</span>
-                    <span class="k">for</span> <span class="n">var_name</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">variables</span>
-                <span class="p">}</span>
-                <span class="n">data</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_path</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s2">&quot;netcdf4&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="n">encoding_dict</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Exporting NetCDF without compression.&quot;</span><span class="p">)</span>
-                <span class="n">data</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_path</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s2">&quot;netcdf4&quot;</span><span class="p">)</span>
-                
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">export_format</span> <span class="o">==</span> <span class="s2">&quot;hdf5&quot;</span><span class="p">:</span>
-            <span class="n">data</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_path</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s2">&quot;h5netcdf&quot;</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">export_format</span> <span class="o">==</span> <span class="s2">&quot;parquet&quot;</span><span class="p">:</span>
-            <span class="n">data</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">to_parquet</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">export_format</span> <span class="o">==</span> <span class="s2">&quot;csv&quot;</span><span class="p">:</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">export_format</span> <span class="o">==</span> <span class="s2">&quot;netcdf&quot;</span><span class="p">:</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s2">&quot;netcdf4&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">export_format</span> <span class="o">==</span> <span class="s2">&quot;hdf5&quot;</span><span class="p">:</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s2">&quot;h5netcdf&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">export_format</span> <span class="o">==</span> <span class="s2">&quot;parquet&quot;</span><span class="p">:</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">to_parquet</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported export format: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">export_format</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            
-        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Data exported successfully to </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        
-        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
-            
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported export format: </span><span class="si">{</span><span class="n">export_format</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Data exported successfully to </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
 
 
@@ -496,11 +457,11 @@
 <a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/export/index.html#src.toolbox.steps.custom.export.ExportStep.generate_diagnostics">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Generate diagnostics for the export step natively.</span>
+<span class="sd">        Generate diagnostics for the export step.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Generating diagnostics for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="n">diag</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Diagnostics generated successfully.&quot;</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Diagnostics generated successfully.&quot;</span><span class="p">)</span></div>
 </div>
 
 </pre></div>

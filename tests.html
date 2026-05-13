@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Quality Control &#8212; pelagos-py 0.0.1 documentation</title>
+    <title>Tests &#8212; pelagos-py 0.0.1 documentation</title>
   
   
   
@@ -156,7 +156,7 @@
 
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="#">
-    Quality Control
+    Tests
   </a>
 </li>
 
@@ -224,10 +224,6 @@
   
 
   
-    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
-      <span class="fa-solid fa-outdent"></span>
-    </button>
-  
 </div>
 
     </header>
@@ -270,7 +266,7 @@
 
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="#">
-    Quality Control
+    Tests
   </a>
 </li>
 
@@ -368,7 +364,7 @@
         <i class="fa-solid fa-home"></i>
       </a>
     </li>
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Quality Control</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Tests</span></li>
   </ul>
 </nav>
 </div>
@@ -385,62 +381,9 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="quality-control">
-<h1>Quality Control<a class="headerlink" href="#quality-control" title="Link to this heading">#</a></h1>
-<p>Quality control (QC) are sub-steps run within the <code class="docutils literal notranslate"><span class="pre">Apply</span> <span class="pre">QC</span></code> process. These do not modify your data values: they update a corresponding QC column (e.g. <code class="docutils literal notranslate"><span class="pre">TEMP_QC</span></code>) to indicate the reliability of each measurement.</p>
-<p>The Toolbox follows the standardised Argo flagging system:</p>
-<ul class="simple">
-<li><p><strong>0</strong>: No QC performed.</p></li>
-<li><p><strong>1</strong>: Good data.</p></li>
-<li><p><strong>2</strong>: Probably good data.</p></li>
-<li><p><strong>3</strong>: Probably bad data (potentially correctable).</p></li>
-<li><p><strong>4</strong>: Bad data (not correctable).</p></li>
-<li><p><strong>9</strong>: Missing value.</p></li>
-</ul>
-<section id="configuration">
-<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h2>
-<p>QC os defined inside the <code class="docutils literal notranslate"><span class="pre">qc_settings</span></code> block of the <code class="docutils literal notranslate"><span class="pre">Apply</span> <span class="pre">QC</span></code> step. You can specify parameters for each QC, such as thresholds or which variables to target.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Apply</span><span class="nv"> </span><span class="s">QC&quot;</span>
-<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">qc_settings</span><span class="p">:</span>
-<span class="w">      </span><span class="s">&quot;impossible</span><span class="nv"> </span><span class="s">range</span><span class="nv"> </span><span class="s">qc&quot;</span><span class="p p-Indicator">:</span>
-<span class="w">        </span><span class="nt">variable_ranges</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&quot;TEMP&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">4</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">-2</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">35</span><span class="p p-Indicator">]}}</span>
-<span class="w">        </span><span class="nt">also_flag</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&quot;TEMP&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;CNDC&quot;</span><span class="p p-Indicator">]}</span>
-</pre></div>
-</div>
-</section>
-<section id="available-qc">
-<h2>Available QC<a class="headerlink" href="#available-qc" title="Link to this heading">#</a></h2>
-<section id="spatiotemporal-checks">
-<h3>Spatiotemporal Checks<a class="headerlink" href="#spatiotemporal-checks" title="Link to this heading">#</a></h3>
-<p>These verify that the data was collected at a logical time and place.</p>
-<ul class="simple">
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/qc/impossible_date_qc/index.html"><span class="doc">Impossible Date</span></a>: Checks that the timestamps fall within a realistic range (typically from 1985 to the present day).</p></li>
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/qc/impossible_location_qc/index.html"><span class="doc">Impossible Location</span></a>: Verifies that latitude and longitude coordinates are within global bounds.</p></li>
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/qc/impossible_speed_qc/index.html"><span class="doc">Impossible Speed</span></a>: Calculates the velocity between points to ensure the platform is not moving at unphysical speeds.</p></li>
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/qc/position_on_land_qc/index.html"><span class="doc">Position on Land</span></a>: Uses a bathymetry mask to check if coordinates incorrectly place the platform on land.</p></li>
-</ul>
-</section>
-<section id="range-and-value-checks">
-<h3>Range and Value Checks<a class="headerlink" href="#range-and-value-checks" title="Link to this heading">#</a></h3>
-<p>These identify data points that fall outside expected physical or sensor limits.</p>
-<ul class="simple">
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/qc/gross_range_qc/index.html"><span class="doc">Gross Range</span></a>: Applies broad, non-configurable physical limits to catch extreme sensor failures.</p></li>
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/qc/impossible_range_qc/index.html"><span class="doc">Impossible Range</span></a>: Allows users to define specific, narrower thresholds for any variable.</p></li>
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/qc/stuck_value_qc/index.html"><span class="doc">Stuck Value</span></a>: Identifies sensor “freezing” by looking for sequences of identical values where variation is expected.</p></li>
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/qc/spike_qc/index.html"><span class="doc">Spike</span></a>: Detects sudden, unrealistic jumps in data values between adjacent measurements.</p></li>
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/qc/par_irregularity_qc/index.html"><span class="doc">PAR Irregularity</span></a>: A specialised check for Photosynthetically Active Radiation sensors to identify inconsistent light readings.</p></li>
-</ul>
-</section>
-<section id="profile-integrity">
-<h3>Profile Integrity<a class="headerlink" href="#profile-integrity" title="Link to this heading">#</a></h3>
-<p>These assess the quality of a vertical profile as a whole.</p>
-<ul class="simple">
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/qc/valid_profile_qc/index.html"><span class="doc">Valid Profile</span></a>: Ensures a profile contains enough data points or covers a sufficient depth range to be useful.</p></li>
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/qc/flag_full_profile/index.html"><span class="doc">Flag Full Profile</span></a>: If a certain percentage of points in a profile are flagged as bad, this qc can be configured to flag the entire profile.</p></li>
-</ul>
-</section>
-</section>
+  <section id="tests">
+<h1>Tests<a class="headerlink" href="#tests" title="Link to this heading">#</a></h1>
+<p>Under construction…</p>
 </section>
 
 
@@ -477,30 +420,6 @@
             </div>
             
             
-              
-                <dialog id="pst-secondary-sidebar-modal"></dialog>
-                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
-
-
-  <div class="sidebar-secondary-item">
-<div
-    id="pst-page-navigation-heading-2"
-    class="page-toc tocsection onthispage">
-    <i class="fa-solid fa-list"></i> On this page
-  </div>
-  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
-    <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#configuration">Configuration</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#available-qc">Available QC</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#spatiotemporal-checks">Spatiotemporal Checks</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#range-and-value-checks">Range and Value Checks</a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#profile-integrity">Profile Integrity</a></li>
-</ul>
-</li>
-</ul>
-  </nav></div>
-
-</div></div>
               
             
           </div>

@@ -153,7 +153,7 @@
 
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../tests.html">
-    Quality Control
+    Tests
   </a>
 </li>
 
@@ -265,7 +265,7 @@
 
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../tests.html">
-    Quality Control
+    Tests
   </a>
 </li>
 
@@ -398,9 +398,9 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps</span><span class="w"> </span><span class="kn">import</span> <span class="n">QC_CLASSES</span>
 
 <span class="c1">#### Custom imports ####</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 
 
@@ -461,8 +461,7 @@
                 <span class="p">[</span><span class="mi">7</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">],</span>
                 <span class="p">[</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">],</span>
                 <span class="p">[</span><span class="mi">9</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">9</span><span class="p">],</span>
-            <span class="p">],</span>
-            <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span>
+            <span class="p">]</span>
         <span class="p">)</span>
 
         <span class="c1"># Update existing flag columns</span>
@@ -481,32 +480,6 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_flags</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span></div>
 
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_sanitise_flags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flag_array</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Converts an array of mixed/invalid flags to valid 0-9 integers using vectorized operations.</span>
-<span class="sd">        </span>
-<span class="sd">        This method replaces Python loops with fast NumPy/Pandas operations to handle</span>
-<span class="sd">        large datasets (millions of rows) efficiently.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Convert everything to numeric (coercing strings/errors to NaN)</span>
-        <span class="n">numeric_flags</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_numeric</span><span class="p">(</span><span class="n">flag_array</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s1">&#39;coerce&#39;</span><span class="p">)</span>
-        
-        <span class="c1"># Identify values that are NaN or outside the valid ARGO 0-9 range</span>
-        <span class="c1"># np.mod(x, 1) != 0 identifies non-integers like 1.5</span>
-        <span class="n">invalid_mask</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">numeric_flags</span><span class="p">)</span> <span class="o">|</span> 
-            <span class="p">(</span><span class="n">numeric_flags</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">|</span> 
-            <span class="p">(</span><span class="n">numeric_flags</span> <span class="o">&gt;</span> <span class="mi">9</span><span class="p">)</span> <span class="o">|</span> 
-            <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">numeric_flags</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="p">)</span>
-        
-        <span class="n">errors_found</span> <span class="o">=</span> <span class="n">invalid_mask</span><span class="o">.</span><span class="n">any</span><span class="p">()</span>
-        
-        <span class="c1"># Create a clean integer array, defaulting invalid values to 0</span>
-        <span class="n">clean_vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">invalid_mask</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">numeric_flags</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span>
-        
-        <span class="k">return</span> <span class="n">clean_vals</span><span class="p">,</span> <span class="n">errors_found</span>
-    
 
 <div class="viewcode-block" id="ApplyQC.run">
 <a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/apply_qc/index.html#src.toolbox.steps.custom.apply_qc.ApplyQC.run">[docs]</a>
@@ -533,7 +506,6 @@
                 <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;[Apply QC] The following requested QC tests could not be found: </span><span class="si">{</span><span class="n">invalid_requests</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="p">)</span>
-                
         <span class="n">queued_qc</span> <span class="o">=</span> <span class="p">[</span><span class="n">QC_CLASSES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">qc_settings</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
 
         <span class="c1"># Check if the data is in the context</span>
@@ -556,57 +528,26 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">all_required_variables</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">test</span><span class="o">.</span><span class="n">required_variables</span><span class="p">)</span>
                 <span class="n">test_qc_outputs_cols</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">test</span><span class="o">.</span><span class="n">qc_outputs</span><span class="p">)</span>
-            
             <span class="c1">#   Check that the required variables for the test are in the dataset</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">(</span><span class="n">all_required_variables</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())):</span>
                 <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;[Apply QC] The data is missing variables: (</span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="n">all_required_variables</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">set</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">) which are required for running QC &#39;</span><span class="si">{</span><span class="n">test</span><span class="o">.</span><span class="n">qc_name</span><span class="si">}</span><span class="s2">&#39;.&quot;</span>
                     <span class="sa">f</span><span class="s2">&quot; Make sure that the variables are present in the data, or use remove tests from the order.&quot;</span>
                 <span class="p">)</span>
-        
+        <span class="c1"># Convert data to polars for fast processing</span>
         <span class="c1"># Fetch existing flags from the data and create a place to store them</span>
-        <span class="c1"># Only fetch flags that exist and have the correct measurement dimension</span>
         <span class="n">existing_flags</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">flag_col</span> <span class="k">for</span> <span class="n">flag_col</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span> 
-            <span class="k">if</span> <span class="n">flag_col</span> <span class="ow">in</span> <span class="n">test_qc_outputs_cols</span> <span class="ow">and</span> <span class="s2">&quot;N_MEASUREMENTS&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="n">flag_col</span><span class="p">]</span><span class="o">.</span><span class="n">dims</span>
+            <span class="n">flag_col</span> <span class="k">for</span> <span class="n">flag_col</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span> <span class="k">if</span> <span class="n">flag_col</span> <span class="ow">in</span> <span class="n">test_qc_outputs_cols</span>
         <span class="p">]</span>
-        
         <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">coords</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">]})</span>
-        <span class="n">sanitised_summary</span> <span class="o">=</span> <span class="p">[]</span>
-
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">existing_flags</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found existing flags columns </span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="n">existing_flags</span><span class="p">)</span><span class="si">}</span><span class="s2"> in data.&quot;</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">flag_col</span> <span class="ow">in</span> <span class="n">existing_flags</span><span class="p">:</span>
-                <span class="n">clean_flags</span><span class="p">,</span> <span class="n">errors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sanitise_flags</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">flag_col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">errors</span><span class="p">:</span>
-                    <span class="n">sanitised_summary</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">flag_col</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="p">[</span><span class="n">flag_col</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,),</span> <span class="n">clean_flags</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">existing_flags</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">9</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
         
-        <span class="c1"># Sanitise other QC columns that aren&#39;t subject to the current tests</span>
-        <span class="n">other_existing_qc</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span>
-            <span class="n">var</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span> 
-            <span class="k">if</span> <span class="n">var</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_QC&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">&quot;N_MEASUREMENTS&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">dims</span>
-        <span class="p">])</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">test_qc_outputs_cols</span><span class="p">)</span>
-        
+        <span class="n">other_existing_qc</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">var</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span> <span class="k">if</span> <span class="n">var</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_QC&quot;</span><span class="p">)])</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">test_qc_outputs_cols</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">other_existing_qc</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found QC columns for untested values: </span><span class="si">{</span><span class="n">other_existing_qc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;These columns will not be modified and are not subject to this step.&quot;</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">flag_col</span> <span class="ow">in</span> <span class="n">other_existing_qc</span><span class="p">:</span>
-                <span class="n">clean_flags</span><span class="p">,</span> <span class="n">errors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sanitise_flags</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">flag_col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">errors</span><span class="p">:</span>
-                    <span class="n">sanitised_summary</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">flag_col</span><span class="p">)</span>
-                <span class="n">data</span><span class="p">[</span><span class="n">flag_col</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,),</span> <span class="n">clean_flags</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">sanitised_summary</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sanitised invalid flags to 0 in </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">sanitised_summary</span><span class="p">)</span><span class="si">}</span><span class="s2"> existing _QC variables.&quot;</span><span class="p">)</span>
-
-        <span class="c1"># Initialise missing _QC columns</span>
-        <span class="n">measurement_vars</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span> <span class="k">if</span> <span class="s2">&quot;N_MEASUREMENTS&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="n">v</span><span class="p">]</span><span class="o">.</span><span class="n">dims</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">v</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_QC&quot;</span><span class="p">)]</span>
-        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">measurement_vars</span><span class="p">:</span>
-            <span class="n">qc_col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span>
-            <span class="k">if</span> <span class="n">qc_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span> <span class="ow">and</span> <span class="n">qc_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">test_qc_outputs_cols</span><span class="p">:</span>
-                <span class="n">clean_flags</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">isnull</span><span class="p">(),</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span><span class="o">.</span><span class="n">values</span>
-                <span class="n">data</span><span class="p">[</span><span class="n">qc_col</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,),</span> <span class="n">clean_flags</span><span class="p">)</span>
 
         <span class="c1"># Initialize the missing flag columns</span>
         <span class="n">mia_qc</span> <span class="o">=</span> <span class="n">test_qc_outputs_cols</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">)</span>
@@ -616,9 +557,8 @@
                 <span class="sa">f</span><span class="s2">&quot;[Apply QC] The data is missing: (</span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="n">base</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">set</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">), which is/are defined in the config as a variable to flag or use during one of the tests.&quot;</span>
                 <span class="sa">f</span><span class="s2">&quot; Double check the configuration file and make sure all variable parameters (like &#39;also flag&#39; [CHLA]) are present in the data.&quot;</span>
             <span class="p">)</span>
-        
         <span class="n">data_subset</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">base</span><span class="p">]</span>
-        <span class="n">masks</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">data_subset</span><span class="o">.</span><span class="n">isnull</span><span class="p">(),</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span>
+        <span class="n">masks</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">data_subset</span><span class="o">.</span><span class="n">isnull</span><span class="p">(),</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
         <span class="n">masks</span> <span class="o">=</span> <span class="n">masks</span><span class="o">.</span><span class="n">rename</span><span class="p">({</span><span class="n">var</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">base</span><span class="p">})</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">masks</span><span class="p">)</span>
 
@@ -627,41 +567,38 @@
             <span class="c1"># Create an instance of this test step</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Applying: </span><span class="si">{</span><span class="n">qc_qc_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>   <span class="c1"># print(f&quot;[Apply QC] Applying: {qc_qc_name}&quot;)</span>
             <span class="n">qc_test_instance</span> <span class="o">=</span> <span class="n">QC_CLASSES</span><span class="p">[</span><span class="n">qc_qc_name</span><span class="p">](</span><span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">qc_test_params</span><span class="p">)</span>
-            <span class="n">returned_flags</span> <span class="o">=</span> <span class="n">qc_test_instance</span><span class="o">.</span><span class="n">return_qc</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span>    <span class="c1">#   Runs the test, returns the flags</span>
+            <span class="n">returned_flags</span> <span class="o">=</span> <span class="n">qc_test_instance</span><span class="o">.</span><span class="n">return_qc</span><span class="p">()</span>   <span class="c1">#   Runs the test, returns the flags</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">organise_flags</span><span class="p">(</span><span class="n">returned_flags</span><span class="p">)</span>
 
             <span class="c1"># Update QC history</span>
             <span class="k">for</span> <span class="n">flagged_var</span> <span class="ow">in</span> <span class="n">returned_flags</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
                 <span class="c1">#   Track percent of flags no longer 0 (following ARGO convention)</span>
                 <span class="n">var_flags</span> <span class="o">=</span> <span class="n">returned_flags</span><span class="p">[</span><span class="n">flagged_var</span><span class="p">]</span>
-                <span class="n">percent_flagged</span> <span class="o">=</span> <span class="p">(</span><span class="n">var_flags</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">var_flags</span><span class="p">)</span>
-                
+                <span class="n">percent_flagged</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">var_flags</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">var_flags</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">percent_flagged</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;All flags for </span><span class="si">{</span><span class="n">flagged_var</span><span class="si">}</span><span class="s2"> remain 0 after </span><span class="si">{</span><span class="n">qc_qc_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
                 <span class="c1"># else: #   TODO: Add &#39;verbose&#39; log option if needed. Might not need to happen at this point.</span>
                 <span class="c1">#     self.log(f&quot;{percent_flagged*100:.2f}% of {flagged_var} points accounted for by {qc_qc_name}&quot;)</span>
-                
-                <span class="n">qc_history</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">flagged_var</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">qc_qc_name</span><span class="p">,</span> <span class="n">percent_flagged</span><span class="p">))</span>
+                <span class="n">qc_history</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">flagged_var</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="p">(</span><span class="n">qc_qc_name</span><span class="p">,</span> <span class="n">percent_flagged</span><span class="p">)</span>
+                <span class="p">)</span>
 
                 <span class="c1"># Write additional QC details to _QC variable attributes</span>
                 <span class="c1"># TODO: Find where columns are initialized, or just run on non-QC&#39;d datasets</span>
                 <span class="n">parent_attrs</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">flagged_var</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]]</span><span class="o">.</span><span class="n">attrs</span>                
                 <span class="n">attrs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="p">[</span><span class="n">flagged_var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span>
-                <span class="n">base_long_name</span> <span class="o">=</span> <span class="n">parent_attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;long_name&#39;</span><span class="p">,</span> <span class="n">flagged_var</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">])</span>
-                <span class="n">base_standard_name</span> <span class="o">=</span> <span class="n">parent_attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;standard_name&#39;</span><span class="p">,</span> <span class="n">flagged_var</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
-
                 <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;quality_control_conventions&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Argo standard flags&quot;</span>
                 <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;valid_min&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
                 <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;valid_max&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">9</span>
                 <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;flag_values&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">]</span>
                 <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;flag_meanings&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;NO_QC, GOOD, PROB_GOOD, PROB_BAD, BAD, VALUE_CHANGED, NOT_USED, NOT_USED, ESTIMATED, MISSING&quot;</span>
-                <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;long_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base_long_name</span><span class="si">}</span><span class="s2"> quality flag&quot;</span>
-                <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;standard_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base_standard_name</span><span class="si">}</span><span class="s2">_flag&quot;</span>
-                
+                <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;long_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">parent_attrs</span><span class="p">[</span><span class="s1">&#39;long_name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> quality flag&quot;</span>
+                <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;standard_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">parent_attrs</span><span class="p">[</span><span class="s1">&#39;standard_name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">_flag&quot;</span>
                 <span class="n">attr_test</span> <span class="o">=</span> <span class="n">qc_qc_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-                <span class="c1"># Fast counting for attributes</span>
-                <span class="n">counts</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">var_flags</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span> <span class="o">==</span> <span class="n">i</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)}</span>
-                <span class="n">attrs</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">attr_test</span><span class="si">}</span><span class="s2">_flag_cts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">counts</span><span class="p">)</span>
+                <span class="n">attrs</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">attr_test</span><span class="si">}</span><span class="s2">_flag_cts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">var_flags</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span> <span class="o">==</span> <span class="n">i</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)})</span>
+                <span class="n">attrs</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">attr_test</span><span class="si">}</span><span class="s2">_stats&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">var_flags</span><span class="o">.</span><span class="n">to_series</span><span class="p">()</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
                 <span class="n">attrs</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">attr_test</span><span class="si">}</span><span class="s2">_params&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">qc_test_params</span><span class="p">)</span>
                 <span class="c1"># Can get indices of 3/4 with np.where(var_flags.to_numpy() == 3)[0] for future reference</span>
 
@@ -680,9 +617,11 @@
                 <span class="n">n_zero</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="p">[</span><span class="n">flag_column</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">flag_column</span><span class="si">}</span><span class="s2"> (length=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="p">[</span><span class="n">flag_column</span><span class="p">])</span><span class="si">}</span><span class="s2">) has </span><span class="si">{</span><span class="n">n_zero</span><span class="si">}</span><span class="s2"> zero QC values following all QC steps.&quot;</span><span class="p">)</span>
 
-            <span class="n">data</span><span class="p">[</span><span class="n">flag_column</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,),</span> <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="p">[</span><span class="n">flag_column</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">())</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">flag_column</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="p">(</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="p">[</span><span class="n">flag_column</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span>
+            <span class="p">)</span>
             <span class="n">data</span><span class="p">[</span><span class="n">flag_column</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="p">[</span><span class="n">flag_column</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-            
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;qc_history&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">qc_history</span>
 

@@ -55,7 +55,7 @@
     <link rel="index" title="Index" href="../../../../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../../../../search.html" />
     <link rel="next" title="src.toolbox.steps.custom.qc.gross_range_qc" href="../gross_range_qc/index.html" />
-    <link rel="prev" title="src.toolbox.steps.custom.qc.ctd_qc" href="../ctd_qc/index.html" />
+    <link rel="prev" title="src.toolbox.steps.custom.qc.blank_qc" href="../blank_qc/index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="0.0.1" />
@@ -156,7 +156,7 @@
 
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../../../tests.html">
-    Quality Control
+    Tests
   </a>
 </li>
 
@@ -270,7 +270,7 @@
 
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../../../tests.html">
-    Quality Control
+    Tests
   </a>
 </li>
 
@@ -341,6 +341,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../derive_ctd/index.html">src.toolbox.steps.custom.derive_ctd</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../export/index.html">src.toolbox.steps.custom.export</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../find_profiles/index.html">src.toolbox.steps.custom.find_profiles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../format_check/index.html">src.toolbox.steps.custom.format_check</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../gen_data/index.html">src.toolbox.steps.custom.gen_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../interpolate_data/index.html">src.toolbox.steps.custom.interpolate_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../load_data/index.html">src.toolbox.steps.custom.load_data</a></li>
@@ -348,7 +349,6 @@
 <li class="toctree-l3 current active has-children"><a class="reference internal" href="../index.html">src.toolbox.steps.custom.qc</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l4"><a class="reference internal" href="../archive/index.html">src.toolbox.steps.custom.qc.archive</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../blank_qc/index.html">src.toolbox.steps.custom.qc.blank_qc</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../ctd_qc/index.html">src.toolbox.steps.custom.qc.ctd_qc</a></li>
 <li class="toctree-l4 current active"><a class="current reference internal" href="#">src.toolbox.steps.custom.qc.flag_full_profile</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../gross_range_qc/index.html">src.toolbox.steps.custom.qc.gross_range_qc</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../impossible_date_qc/index.html">src.toolbox.steps.custom.qc.impossible_date_qc</a></li>
@@ -456,13 +456,13 @@
                   
   <section id="module-src.toolbox.steps.custom.qc.flag_full_profile">
 <span id="src-toolbox-steps-custom-qc-flag-full-profile"></span><h1>src.toolbox.steps.custom.qc.flag_full_profile<a class="headerlink" href="#module-src.toolbox.steps.custom.qc.flag_full_profile" title="Link to this heading">#</a></h1>
-<p>QC test to flag entire profiles that fail length or depth range requirements.</p>
+<p>QC test to flag entire glider profiles based on number of bad flags.</p>
 <section id="classes">
 <h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC" title="src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ValidProfileQC</span></code></a></p></td>
-<td><p>Target Variable: PROFILE_NUMBER</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile" title="src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">flag_full_profile</span></code></a></p></td>
+<td><p>Target Variable: Any</p></td>
 </tr>
 </tbody>
 </table>
@@ -471,86 +471,73 @@
 <section id="module-contents">
 <h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">#</a></h2>
 <dl class="py class">
-<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.qc.flag_full_profile.</span></span><span class="sig-name descname"><span class="pre">ValidProfileQC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/flag_full_profile.html#ValidProfileQC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.toolbox.steps.custom.qc.flag_full_profile.</span></span><span class="sig-name descname"><span class="pre">flag_full_profile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/flag_full_profile.html#flag_full_profile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">toolbox.steps.base_qc.BaseQC</span></code></p>
-<p>Target Variable: PROFILE_NUMBER
+<p>Target Variable: Any
 Flag Number: 4
-Variables Flagged: PROFILE_NUMBER</p>
-<p>Checks each profile to ensure it meets a minimum number of valid data points
-and spans a required depth range. Profiles failing these criteria are flagged as bad.</p>
+Variables Flagged: Any
+Checks the number of bad (4) flags per profile. If it
+exceeds the user threshold then all points in the profile
+are flagged.</p>
 <div class="admonition-example admonition">
 <p class="admonition-title">Example</p>
 <ul>
 <li><p>name: “Apply QC”
 parameters:</p>
 <blockquote>
-<div><dl class="simple">
-<dt>qc_settings:</dt><dd><dl class="simple">
-<dt>valid profile qc:</dt><dd><p>profile_length: 50
-depth_range: [-1000, 0]</p>
+<div><dl>
+<dt>qc_settings: {</dt><dd><dl class="simple">
+<dt>“flag_full_profile”: {</dt><dd><p>“check_vars”: {“PRES”: 10, “CHLA”: 20},</p>
 </dd>
 </dl>
+<p>}</p>
 </dd>
 </dl>
+<p>}</p>
 </div></blockquote>
-<p>diagnostics: false</p>
+<p>diagnostics: true</p>
 </li>
 </ul>
 </div>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.qc_name">
-<span class="sig-name descname"><span class="pre">qc_name</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'valid</span> <span class="pre">profile</span> <span class="pre">qc'</span></em><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/flag_full_profile.html#ValidProfileQC.qc_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.qc_name" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.qc_name">
+<span class="sig-name descname"><span class="pre">qc_name</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'flag</span> <span class="pre">full</span> <span class="pre">profile'</span></em><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/flag_full_profile.html#flag_full_profile.qc_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.qc_name" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.required_variables">
-<span class="sig-name descname"><span class="pre">required_variables</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['PROFILE_NUMBER']</span></em><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/flag_full_profile.html#ValidProfileQC.required_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.required_variables" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.required_variables">
+<span class="sig-name descname"><span class="pre">required_variables</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['PROFILE_NUMBER']</span></em><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/flag_full_profile.html#flag_full_profile.required_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.required_variables" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.provided_variables">
-<span class="sig-name descname"><span class="pre">provided_variables</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['PROFILE_NUMBER_QC']</span></em><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/flag_full_profile.html#ValidProfileQC.provided_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.provided_variables" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.provided_variables">
+<span class="sig-name descname"><span class="pre">provided_variables</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[]</span></em><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/flag_full_profile.html#flag_full_profile.provided_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.provided_variables" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.dynamic">
-<span class="sig-name descname"><span class="pre">dynamic</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/flag_full_profile.html#ValidProfileQC.dynamic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.dynamic" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.dynamic">
+<span class="sig-name descname"><span class="pre">dynamic</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/flag_full_profile.html#flag_full_profile.dynamic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.dynamic" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.parameter_schema">
-<span class="sig-name descname"><span class="pre">parameter_schema</span></span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/flag_full_profile.html#ValidProfileQC.parameter_schema"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.parameter_schema" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.expected_parameters">
+<span class="sig-name descname"><span class="pre">expected_parameters</span></span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/flag_full_profile.html#flag_full_profile.expected_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.expected_parameters" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.profile_length">
-<span class="sig-name descname"><span class="pre">profile_length</span></span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/flag_full_profile.html#ValidProfileQC.profile_length"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.profile_length" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.depth_range">
-<span class="sig-name descname"><span class="pre">depth_range</span></span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/flag_full_profile.html#ValidProfileQC.depth_range"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.depth_range" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.depth_col">
-<span class="sig-name descname"><span class="pre">depth_col</span></span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/flag_full_profile.html#ValidProfileQC.depth_col"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.depth_col" title="Link to this definition">#</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.flags">
-<span class="sig-name descname"><span class="pre">flags</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/flag_full_profile.html#ValidProfileQC.flags"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.flags" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.flags">
+<span class="sig-name descname"><span class="pre">flags</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/flag_full_profile.html#flag_full_profile.flags"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.flags" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.return_qc">
-<span class="sig-name descname"><span class="pre">return_qc</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/flag_full_profile.html#ValidProfileQC.return_qc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.return_qc" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.return_qc">
+<span class="sig-name descname"><span class="pre">return_qc</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/flag_full_profile.html#flag_full_profile.return_qc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.return_qc" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.plot_diagnostics">
-<span class="sig-name descname"><span class="pre">plot_diagnostics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/flag_full_profile.html#ValidProfileQC.plot_diagnostics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.plot_diagnostics" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.plot_diagnostics">
+<span class="sig-name descname"><span class="pre">plot_diagnostics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../../../_modules/src/toolbox/steps/custom/qc/flag_full_profile.html#flag_full_profile.plot_diagnostics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.plot_diagnostics" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -569,12 +556,12 @@ depth_range: [-1000, 0]</p>
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="../ctd_qc/index.html"
+       href="../blank_qc/index.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">src.toolbox.steps.custom.qc.ctd_qc</p>
+        <p class="prev-next-title">src.toolbox.steps.custom.qc.blank_qc</p>
       </div>
     </a>
     <a class="right-next"
@@ -607,18 +594,15 @@ depth_range: [-1000, 0]</p>
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC"><code class="docutils literal notranslate"><span class="pre">ValidProfileQC</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.qc_name"><code class="docutils literal notranslate"><span class="pre">ValidProfileQC.qc_name</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.required_variables"><code class="docutils literal notranslate"><span class="pre">ValidProfileQC.required_variables</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.provided_variables"><code class="docutils literal notranslate"><span class="pre">ValidProfileQC.provided_variables</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.dynamic"><code class="docutils literal notranslate"><span class="pre">ValidProfileQC.dynamic</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.parameter_schema"><code class="docutils literal notranslate"><span class="pre">ValidProfileQC.parameter_schema</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.profile_length"><code class="docutils literal notranslate"><span class="pre">ValidProfileQC.profile_length</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.depth_range"><code class="docutils literal notranslate"><span class="pre">ValidProfileQC.depth_range</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.depth_col"><code class="docutils literal notranslate"><span class="pre">ValidProfileQC.depth_col</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.flags"><code class="docutils literal notranslate"><span class="pre">ValidProfileQC.flags</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.return_qc"><code class="docutils literal notranslate"><span class="pre">ValidProfileQC.return_qc()</span></code></a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.flag_full_profile.ValidProfileQC.plot_diagnostics"><code class="docutils literal notranslate"><span class="pre">ValidProfileQC.plot_diagnostics()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile"><code class="docutils literal notranslate"><span class="pre">flag_full_profile</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.qc_name"><code class="docutils literal notranslate"><span class="pre">flag_full_profile.qc_name</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.required_variables"><code class="docutils literal notranslate"><span class="pre">flag_full_profile.required_variables</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.provided_variables"><code class="docutils literal notranslate"><span class="pre">flag_full_profile.provided_variables</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.dynamic"><code class="docutils literal notranslate"><span class="pre">flag_full_profile.dynamic</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.expected_parameters"><code class="docutils literal notranslate"><span class="pre">flag_full_profile.expected_parameters</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.flags"><code class="docutils literal notranslate"><span class="pre">flag_full_profile.flags</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.return_qc"><code class="docutils literal notranslate"><span class="pre">flag_full_profile.return_qc()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.toolbox.steps.custom.qc.flag_full_profile.flag_full_profile.plot_diagnostics"><code class="docutils literal notranslate"><span class="pre">flag_full_profile.plot_diagnostics()</span></code></a></li>
 </ul>
 </li>
 </ul>

@@ -153,7 +153,7 @@
 
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../../tests.html">
-    Quality Control
+    Tests
   </a>
 </li>
 
@@ -265,7 +265,7 @@
 
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../../tests.html">
-    Quality Control
+    Tests
   </a>
 </li>
 
@@ -430,7 +430,7 @@
 <span class="sd">        -------</span>
 <span class="sd">        - name: &quot;BBP from Beta&quot;</span>
 <span class="sd">          parameters:</span>
-<span class="sd">            apply_to: &quot;BETA_BACKSCATTERING700&quot;</span>
+<span class="sd">            apply_to: &quot;BBP700&quot;</span>
 <span class="sd">            output_as: &quot;BBP700&quot;</span>
 <span class="sd">            theta: 124</span>
 <span class="sd">            xfactor: 1.076</span>
@@ -442,62 +442,43 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
 
-        <span class="n">apply_to</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;apply_to&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="n">output_as</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;output_as&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;theta&quot;</span><span class="p">,</span> <span class="mi">124</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">xfactor</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;xfactor&quot;</span><span class="p">,</span> <span class="mf">1.076</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">process_list</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">apply_to</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
-                <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">var</span><span class="p">)</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;BETA_BACKSCATTERING&quot;</span><span class="p">):</span>
-                    <span class="n">suffix</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">var</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;BETA_BACKSCATTERING&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">process_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="nb">str</span><span class="p">(</span><span class="n">var</span><span class="p">),</span> <span class="sa">f</span><span class="s2">&quot;BBP</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">))</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">process_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">apply_to</span><span class="p">,</span> <span class="n">output_as</span><span class="p">))</span>
-
-        <span class="c1"># Get the required variables and interpolate DEPTH, TEMP and PRAC_SALINITY</span>
+        <span class="c1"># Get the required variables</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data_subset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span>
             <span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">,</span>
              <span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,</span>
              <span class="s2">&quot;DEPTH&quot;</span><span class="p">,</span>
              <span class="s2">&quot;TEMP&quot;</span><span class="p">,</span>
-             <span class="s2">&quot;PRAC_SALINITY&quot;</span><span class="p">]</span>
+             <span class="s2">&quot;PRAC_SALINITY&quot;</span><span class="p">,</span>
+             <span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="p">]</span>
         <span class="p">]</span>
 
+        <span class="c1"># Interp DEPTH, TEMP and PRAC_SALINITY</span>
         <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;DEPTH&quot;</span><span class="p">,</span> <span class="s2">&quot;TEMP&quot;</span><span class="p">,</span> <span class="s2">&quot;PRAC_SALINITY&quot;</span><span class="p">]:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">data_subset</span><span class="p">[</span><span class="n">var</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">interpolate_nans</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">data_subset</span><span class="p">[</span><span class="n">var</span><span class="p">],</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">data_subset</span><span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">]</span>
             <span class="p">)</span>
 
-        <span class="c1"># Apply the correction for all identified variables</span>
-        <span class="k">for</span> <span class="n">current_apply_to</span><span class="p">,</span> <span class="n">current_output_as</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_list</span><span class="p">:</span>
-            <span class="n">wavelength</span> <span class="o">=</span> <span class="mi">700</span>
-            <span class="n">suffix</span> <span class="o">=</span> <span class="n">current_apply_to</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;BETA_BACKSCATTERING&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">suffix</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
-                <span class="n">wavelength</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">suffix</span><span class="p">)</span>
+        <span class="c1"># Apply the correction</span>
+        <span class="n">bbp_corrected</span> <span class="o">=</span> <span class="n">gt</span><span class="o">.</span><span class="n">flo_functions</span><span class="o">.</span><span class="n">flo_bback_total</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data_subset</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data_subset</span><span class="p">[</span><span class="s2">&quot;TEMP&quot;</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data_subset</span><span class="p">[</span><span class="s2">&quot;PRAC_SALINITY&quot;</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span>
+            <span class="mi">700</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">xfactor</span><span class="p">)</span>
 
-            <span class="n">bbp_corrected</span> <span class="o">=</span> <span class="n">gt</span><span class="o">.</span><span class="n">flo_functions</span><span class="o">.</span><span class="n">flo_bback_total</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">current_apply_to</span><span class="p">],</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">data_subset</span><span class="p">[</span><span class="s2">&quot;TEMP&quot;</span><span class="p">],</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">data_subset</span><span class="p">[</span><span class="s2">&quot;PRAC_SALINITY&quot;</span><span class="p">],</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span>
-                <span class="n">wavelength</span><span class="p">,</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">xfactor</span><span class="p">)</span>
-
-            <span class="c1"># Stitch back into the data</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">current_output_as</span><span class="p">]</span> <span class="o">=</span> <span class="n">bbp_corrected</span>
+        <span class="c1"># Stitch back into the data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">output_as</span><span class="p">]</span> <span class="o">=</span> <span class="n">bbp_corrected</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct_data</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">update_qc</span><span class="p">()</span>
 
         <span class="c1"># Generate QC if a new variable is added. Otherwise warn the user that input is being overwritten.</span>
-        <span class="k">for</span> <span class="n">current_apply_to</span><span class="p">,</span> <span class="n">current_output_as</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_list</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">current_apply_to</span> <span class="o">!=</span> <span class="n">current_output_as</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">({</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">current_output_as</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">current_apply_to</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">]})</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;apply_to&#39; and &#39;output_as&#39; are the same. This will cause </span><span class="si">{</span><span class="n">current_apply_to</span><span class="si">}</span><span class="s2"> to be overwritten.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_as</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">({</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">output_as</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">]})</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&#39;apply_to&#39; and &#39;output_as&#39; are the same. This will cause </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="si">}</span><span class="s2"> to be overwritten.&quot;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
@@ -509,62 +490,23 @@
 <div class="viewcode-block" id="BBPFromBeta.generate_diagnostics">
 <a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/variables/bbp/index.html#src.toolbox.steps.custom.variables.bbp.BBPFromBeta.generate_diagnostics">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="c1"># --- Configurable Plot Variables ---</span>
-        <span class="n">COLOUR_BETA</span> <span class="o">=</span> <span class="s2">&quot;indianred&quot;</span>
-        <span class="n">COLOUR_BBP</span> <span class="o">=</span> <span class="s2">&quot;steelblue&quot;</span>
-        <span class="n">PLOT_SIZE</span> <span class="o">=</span> <span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
-        <span class="n">MARKER_SIZE</span> <span class="o">=</span> <span class="mi">2</span>
-        
         <span class="n">mpl</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">&quot;tkagg&quot;</span><span class="p">)</span>
-        
-        <span class="k">for</span> <span class="n">current_apply_to</span><span class="p">,</span> <span class="n">current_output_as</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_list</span><span class="p">:</span>
-            <span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax_box</span><span class="p">,</span> <span class="n">ax_scatter</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="n">PLOT_SIZE</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">150</span><span class="p">)</span>
-            
-            <span class="c1"># Clean both datasets for the boxplot to remove extreme outliers</span>
-            <span class="n">beta_clean</span> <span class="o">=</span> <span class="n">remove_outliers</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">current_apply_to</span><span class="p">])</span>
-            <span class="n">bbp_clean</span> <span class="o">=</span> <span class="n">remove_outliers</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">current_output_as</span><span class="p">])</span>
 
-            <span class="c1"># Panel 1: Boxplots</span>
-            <span class="n">bplot</span> <span class="o">=</span> <span class="n">ax_box</span><span class="o">.</span><span class="n">boxplot</span><span class="p">(</span>
-                <span class="p">[</span><span class="n">beta_clean</span><span class="p">,</span> <span class="n">bbp_clean</span><span class="p">],</span>
-                <span class="n">vert</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">patch_artist</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Raw Beta&quot;</span><span class="p">,</span> <span class="s2">&quot;Particulate BBP&quot;</span><span class="p">]</span>
-            <span class="p">)</span>
-            
-            <span class="n">bplot</span><span class="p">[</span><span class="s1">&#39;boxes&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="n">COLOUR_BETA</span><span class="p">)</span>
-            <span class="n">bplot</span><span class="p">[</span><span class="s1">&#39;boxes&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="n">COLOUR_BBP</span><span class="p">)</span>
-            
-            <span class="n">ax_box</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;1. Data Distribution Comparison (</span><span class="si">{</span><span class="n">current_apply_to</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
-            <span class="n">ax_box</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Value&quot;</span><span class="p">)</span>
-            <span class="n">ax_box</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span><span class="p">)</span>
+        <span class="c1"># Clean both datasets</span>
+        <span class="n">beta_clean</span> <span class="o">=</span> <span class="n">remove_outliers</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_subset</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="p">])</span>
+        <span class="n">bbp_clean</span> <span class="o">=</span> <span class="n">remove_outliers</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">output_as</span><span class="p">])</span>
 
-            <span class="c1"># Add statistical text box</span>
-            <span class="n">stats_text</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Raw Beta Mean: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">beta_clean</span><span class="p">)</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;Particulate BBP Mean: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">bbp_clean</span><span class="p">)</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;Scale Multiplier: ~</span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">bbp_clean</span><span class="p">)</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">beta_clean</span><span class="p">)</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">x&quot;</span>
-            <span class="p">)</span>
-            <span class="n">ax_box</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="n">stats_text</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">ax_box</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span> 
-                        <span class="n">va</span><span class="o">=</span><span class="s1">&#39;top&#39;</span><span class="p">,</span> <span class="n">bbox</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;white&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">))</span>
+        <span class="c1"># Plot</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">boxplot</span><span class="p">([</span><span class="n">beta_clean</span><span class="p">,</span> <span class="n">bbp_clean</span><span class="p">],</span>
+                    <span class="n">vert</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">patch_artist</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Beta&quot;</span><span class="p">,</span> <span class="s2">&quot;BBP&quot;</span><span class="p">])</span>
 
-            <span class="c1"># Panel 2: Converted BBP over Depth</span>
-            <span class="n">ax_scatter</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">current_output_as</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;DEPTH&quot;</span><span class="p">],</span> 
-                     <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">COLOUR_BBP</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="n">MARKER_SIZE</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
-            
-            <span class="c1"># Force 0m to the top of the axis</span>
-            <span class="n">depth_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;DEPTH&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">skipna</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
-            <span class="n">ax_scatter</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">depth_min</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-            
-            <span class="n">ax_scatter</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Particulate Backscatter (</span><span class="si">{</span><span class="n">current_output_as</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
-            <span class="n">ax_scatter</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Depth (m)&quot;</span><span class="p">)</span>
-            <span class="n">ax_scatter</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;2. Converted Profile&quot;</span><span class="p">)</span>
-            <span class="n">ax_scatter</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
-            
-            <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Optical Backscatter Conversion Statistics: </span><span class="si">{</span><span class="n">current_apply_to</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">current_output_as</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
-            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Beta vs BBP&quot;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Value&quot;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 </div>
-
 
 
 <span class="nd">@register_step</span>
@@ -578,7 +520,7 @@
 
 <div class="viewcode-block" id="IsolateBBPSpikes.required_variables">
 <a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/variables/bbp/index.html#src.toolbox.steps.custom.variables.bbp.IsolateBBPSpikes.required_variables">[docs]</a>
-    <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">,</span> <span class="s2">&quot;DEPTH&quot;</span><span class="p">]</span> </div>
+    <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">]</span> </div>
 
 <div class="viewcode-block" id="IsolateBBPSpikes.provided_variables">
 <a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/variables/bbp/index.html#src.toolbox.steps.custom.variables.bbp.IsolateBBPSpikes.provided_variables">[docs]</a>
@@ -604,45 +546,25 @@
 <span class="sd">         &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
 
-        <span class="n">apply_to</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;apply_to&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;window_size&quot;</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;method&quot;</span><span class="p">,</span> <span class="s2">&quot;median&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">baseline</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spikes</span> <span class="o">=</span> <span class="n">gt</span><span class="o">.</span><span class="n">cleaning</span><span class="o">.</span><span class="n">despike</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span>
+            <span class="n">spike_method</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span>
+        <span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">process_list</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">apply_to</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
-                <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">var</span><span class="p">)</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;BBP&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">str</span><span class="p">(</span><span class="n">var</span><span class="p">)</span><span class="o">.</span><span class="n">endswith</span><span class="p">((</span><span class="s2">&quot;QC&quot;</span><span class="p">,</span> <span class="s2">&quot;BASELINE&quot;</span><span class="p">,</span> <span class="s2">&quot;SPIKES&quot;</span><span class="p">)):</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">process_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">var</span><span class="p">))</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">process_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">apply_to</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">baselines</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">spikes</span> <span class="o">=</span> <span class="p">{}</span>
-
-        <span class="k">for</span> <span class="n">current_apply_to</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_list</span><span class="p">:</span>
-            <span class="n">baseline</span><span class="p">,</span> <span class="n">spikes</span> <span class="o">=</span> <span class="n">gt</span><span class="o">.</span><span class="n">cleaning</span><span class="o">.</span><span class="n">despike</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">current_apply_to</span><span class="p">],</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span>
-                <span class="n">spike_method</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span>
-            <span class="p">)</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">current_apply_to</span><span class="si">}</span><span class="s2">_BASELINE&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">baseline</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">current_apply_to</span><span class="si">}</span><span class="s2">_SPIKES&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">spikes</span>
-            
-            <span class="bp">self</span><span class="o">.</span><span class="n">baselines</span><span class="p">[</span><span class="n">current_apply_to</span><span class="p">]</span> <span class="o">=</span> <span class="n">baseline</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">spikes</span><span class="p">[</span><span class="n">current_apply_to</span><span class="p">]</span> <span class="o">=</span> <span class="n">spikes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="si">}</span><span class="s2">_BASELINE&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">baseline</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="si">}</span><span class="s2">_SPIKES&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spikes</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct_data</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">update_qc</span><span class="p">()</span>
 
         <span class="c1"># Generate QC if a new variable is added. Otherwise warn the user that input is being overwritten.</span>
-        <span class="k">for</span> <span class="n">current_apply_to</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_list</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">(</span>
-                <span class="p">{</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">current_apply_to</span><span class="si">}</span><span class="s2">_BASELINE_QC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">current_apply_to</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">],</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">current_apply_to</span><span class="si">}</span><span class="s2">_SPIKES_QC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">current_apply_to</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">],</span>
-                <span class="p">}</span>
-            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="si">}</span><span class="s2">_BASELINE_QC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">],</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="si">}</span><span class="s2">_SPIKES_QC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">],</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
@@ -654,62 +576,37 @@
 <div class="viewcode-block" id="IsolateBBPSpikes.generate_diagnostics">
 <a class="viewcode-back" href="../../../../../../api/src/toolbox/steps/custom/variables/bbp/index.html#src.toolbox.steps.custom.variables.bbp.IsolateBBPSpikes.generate_diagnostics">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="c1"># --- Configurable Plot Variables ---</span>
-        <span class="n">COLOUR_RAW</span> <span class="o">=</span> <span class="s2">&quot;lightgrey&quot;</span>
-        <span class="n">COLOUR_BASELINE</span> <span class="o">=</span> <span class="s2">&quot;steelblue&quot;</span>
-        <span class="n">COLOUR_SPIKES</span> <span class="o">=</span> <span class="s2">&quot;indianred&quot;</span>
-        <span class="n">PLOT_SIZE</span> <span class="o">=</span> <span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
-        <span class="n">MARKER_SIZE</span> <span class="o">=</span> <span class="mi">3</span>
-        
         <span class="n">mpl</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">&quot;tkagg&quot;</span><span class="p">)</span>
-        
-        <span class="n">time_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-        <span class="n">depth_vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;DEPTH&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-        
-        <span class="k">for</span> <span class="n">current_apply_to</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_list</span><span class="p">:</span>
-            <span class="n">raw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">current_apply_to</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-            <span class="n">baseline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">baselines</span><span class="p">[</span><span class="n">current_apply_to</span><span class="p">]</span>
-            <span class="n">spikes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spikes</span><span class="p">[</span><span class="n">current_apply_to</span><span class="p">]</span>
-            
-            <span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="n">PLOT_SIZE</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">150</span><span class="p">)</span>
-            
-            <span class="c1"># Panel 1: Raw vs Baseline over Time</span>
-            <span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time_vals</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">COLOUR_RAW</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="n">MARKER_SIZE</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Raw BBP&quot;</span><span class="p">)</span>
-            <span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time_vals</span><span class="p">,</span> <span class="n">baseline</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">COLOUR_BASELINE</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="n">MARKER_SIZE</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Baseline (Background)&quot;</span><span class="p">)</span>
-            <span class="n">ax1</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">current_apply_to</span><span class="p">)</span>
-            <span class="n">ax1</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Time&quot;</span><span class="p">)</span>
-            <span class="n">ax1</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;1. Baseline Extraction&quot;</span><span class="p">)</span>
-            <span class="n">ax1</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;upper right&quot;</span><span class="p">)</span>
-            <span class="n">ax1</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
-            
-            <span class="c1"># Panel 2: Spikes over Depth</span>
-            <span class="n">ax2</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">spikes</span><span class="p">,</span> <span class="n">depth_vals</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">COLOUR_SPIKES</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="n">MARKER_SIZE</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Isolated Spikes&quot;</span><span class="p">)</span>
-            
-            <span class="c1"># Add statistical text box</span>
-            <span class="n">valid_raw</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">raw</span><span class="p">))</span>
-            <span class="n">valid_spikes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">spikes</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">spikes</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">))</span>
-            
-            <span class="n">stats_text</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Total Data Points: </span><span class="si">{</span><span class="n">valid_raw</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;Spikes Isolated: </span><span class="si">{</span><span class="n">valid_spikes</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;Max Spike Value: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">spikes</span><span class="p">)</span><span class="si">:</span><span class="s2">.5f</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span>
-            <span class="n">ax2</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="n">stats_text</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">ax2</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span> 
-                     <span class="n">va</span><span class="o">=</span><span class="s1">&#39;bottom&#39;</span><span class="p">,</span> <span class="n">bbox</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;white&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">))</span>
-            
-            <span class="c1"># Force 0m to the top of the axis</span>
-            <span class="n">depth_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">depth_vals</span><span class="p">))</span>
-            <span class="n">ax2</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">depth_min</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-            
-            <span class="n">ax2</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Spike Magnitude&quot;</span><span class="p">)</span>
-            <span class="n">ax2</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Depth (m)&quot;</span><span class="p">)</span>
-            <span class="n">ax2</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;2. Marine Snow / Spike Depth Distribution&quot;</span><span class="p">)</span>
-            <span class="n">ax2</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;upper right&quot;</span><span class="p">)</span>
-            <span class="n">ax2</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
-            
-            <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">current_apply_to</span><span class="si">}</span><span class="s2"> Despiking Diagnostics&quot;</span><span class="p">)</span>
-            <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
-            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+        <span class="n">raw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="p">]</span>
+
+        <span class="c1"># Plot</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span> <span class="n">height_ratios</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Plot original and baseline time series</span>
+        <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">][</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">raw</span><span class="p">)],</span>
+                <span class="n">raw</span><span class="p">[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">raw</span><span class="p">)],</span>
+                <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;gray&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Raw&quot;</span><span class="p">)</span>
+        <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">][</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">baseline</span><span class="p">)],</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">baseline</span><span class="p">[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">baseline</span><span class="p">)],</span>
+                <span class="n">c</span><span class="o">=</span><span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Baseline&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Plot spike points</span>
+        <span class="n">axs</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">][</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spikes</span><span class="p">)],</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">spikes</span><span class="p">[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spikes</span><span class="p">)],</span>
+                <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Spikes&quot;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axs</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;upper right&quot;</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
+            <span class="n">xlabel</span><span class="o">=</span><span class="s2">&quot;Time&quot;</span><span class="p">,</span>
+            <span class="n">ylabel</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="p">,</span>
+            <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="si">}</span><span class="s2">: Baseline Timeseries &amp; Spikes&quot;</span>
+        <span class="p">)</span>
+
+        <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 </div>
 
 </pre></div>

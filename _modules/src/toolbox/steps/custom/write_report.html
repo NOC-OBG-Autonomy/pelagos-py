@@ -153,7 +153,7 @@
 
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../tests.html">
-    Quality Control
+    Tests
   </a>
 </li>
 
@@ -265,7 +265,7 @@
 
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../../../tests.html">
-    Quality Control
+    Tests
   </a>
 </li>
 
@@ -403,7 +403,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">platform</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">importlib.metadata</span><span class="w"> </span><span class="kn">import</span> <span class="n">version</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">importlib.metadata</span><span class="w"> </span><span class="kn">import</span> <span class="n">version</span><span class="p">,</span> <span class="n">PackageNotFoundError</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">cartopy.crs</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ccrs</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">cartopy.feature</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cfeature</span>
@@ -412,6 +412,19 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="c1">#   Handle Sphinx-incompatible items with math</span>
+<div class="viewcode-block" id="REPLACEMENTS">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/write_report/index.html#src.toolbox.steps.custom.write_report.REPLACEMENTS">[docs]</a>
+<span class="n">REPLACEMENTS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;α&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;$\alpha$&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;β&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;$\beta$&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;γ&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;$\gamma$&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;σ&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;$\sigma$&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;μ&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;$\mu$&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;°&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;$^\circ$&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;±&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;$\pm$&quot;</span><span class="p">,</span>
+<span class="p">}</span></div>
 
 
 <div class="viewcode-block" id="current_info">
@@ -782,6 +795,60 @@
     <span class="n">rs</span><span class="o">.</span><span class="n">newline</span><span class="p">()</span></div>
 
 
+<div class="viewcode-block" id="add_cc">
+<a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/write_report/index.html#src.toolbox.steps.custom.write_report.add_cc">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_cc</span><span class="p">(</span><span class="n">ccfile</span><span class="p">,</span> <span class="n">rs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Add the text of the compliance checker step from &#39;Format Checker&#39;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">rs</span><span class="o">.</span><span class="n">h2</span><span class="p">(</span><span class="s2">&quot;Compliance Checker results&quot;</span><span class="p">)</span>
+    <span class="n">rs</span><span class="o">.</span><span class="n">newline</span><span class="p">()</span>
+    
+    <span class="k">if</span> <span class="n">ccfile</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.json&quot;</span><span class="p">):</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">ccfile</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">cc_data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">cname</span><span class="p">,</span> <span class="n">test_data</span> <span class="ow">in</span> <span class="n">cc_data</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">scored</span> <span class="o">=</span> <span class="n">test_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;scored_points&quot;</span><span class="p">)</span>
+                <span class="n">possible</span> <span class="o">=</span> <span class="n">test_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;possible_points&quot;</span><span class="p">)</span>
+                <span class="n">rs</span><span class="o">.</span><span class="n">h3</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cname</span><span class="si">}</span><span class="s2">: CC score of </span><span class="si">{</span><span class="n">scored</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">possible</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                <span class="n">seen_names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">test_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;all_priorities&quot;</span><span class="p">,</span> <span class="p">[]):</span>
+                    <span class="n">msgs</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;msgs&quot;</span><span class="p">,</span> <span class="p">[])</span>
+                    <span class="k">if</span> <span class="n">msgs</span><span class="p">:</span>
+                        <span class="n">name</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;Unknown&quot;</span><span class="p">)</span>
+
+                        <span class="k">for</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">msgs</span><span class="p">:</span>
+                            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">REPLACEMENTS</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                                <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+                                <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">seen_names</span><span class="p">:</span>
+                                <span class="n">display_name</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="n">display_name</span> <span class="o">=</span> <span class="n">name</span>
+                                <span class="n">seen_names</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+                            <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">display_name</span><span class="p">,</span> <span class="n">msg</span><span class="p">])</span>
+
+                <span class="k">if</span> <span class="n">rows</span><span class="p">:</span>
+                    <span class="n">rs</span><span class="o">.</span><span class="n">newline</span><span class="p">()</span>
+                    <span class="n">rs</span><span class="o">.</span><span class="n">table_list</span><span class="p">(</span>
+                        <span class="n">headers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Name&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cname</span><span class="si">}</span><span class="s2"> message&quot;</span><span class="p">],</span>
+                        <span class="n">data</span><span class="o">=</span><span class="n">rows</span><span class="p">,</span>
+                        <span class="n">widths</span> <span class="o">=</span> <span class="p">[</span><span class="mi">30</span><span class="p">,</span> <span class="mi">70</span><span class="p">],</span>
+                    <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">ccfile</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        
+        <span class="c1">#   Use math substitution to make it clear that the symbol doesn&#39;t work in a codeblock</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">REPLACEMENTS</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="n">content</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+
+        <span class="n">rs</span><span class="o">.</span><span class="n">codeblock</span><span class="p">(</span><span class="n">content</span><span class="p">)</span></div>
+
 
 <div class="viewcode-block" id="qc_section">
 <a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/write_report/index.html#src.toolbox.steps.custom.write_report.qc_section">[docs]</a>
@@ -858,6 +925,9 @@
 <div class="viewcode-block" id="basic_geo">
 <a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/write_report/index.html#src.toolbox.steps.custom.write_report.basic_geo">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">basic_geo</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">g_extent</span><span class="p">,</span> <span class="n">ext</span><span class="p">,</span> <span class="n">outdir</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Creates a simple geographic plot using the glider LONGITUDE and LATITUDE.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">ax0</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">(</span><span class="n">projection</span><span class="o">=</span><span class="n">ccrs</span><span class="o">.</span><span class="n">PlateCarree</span><span class="p">())</span>
     <span class="n">ax0</span><span class="o">.</span><span class="n">set_extent</span><span class="p">(</span><span class="n">g_extent</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="n">ccrs</span><span class="o">.</span><span class="n">PlateCarree</span><span class="p">())</span>
     <span class="n">ax0</span><span class="o">.</span><span class="n">add_feature</span><span class="p">(</span><span class="n">cfeature</span><span class="o">.</span><span class="n">LAND</span><span class="o">.</span><span class="n">with_scale</span><span class="p">(</span><span class="s2">&quot;110m&quot;</span><span class="p">))</span>
@@ -1096,7 +1166,7 @@
 <span class="sd">    Wrapper for plotting glider QC variables quickly.</span>
 
 <span class="sd">    There are millions of points per variable, which xarray can plot very quickly</span>
-<span class="sd">    in specific ways.</span>
+<span class="sd">    in specific ways. Here, geographic and QC histograms are explored.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -1115,8 +1185,6 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">doc</span><span class="o">.</span><span class="n">h2</span><span class="p">(</span><span class="s2">&quot;Plots&quot;</span><span class="p">)</span>
 
-    <span class="c1"># Basic geographic plot</span>
-    <span class="c1"># basic_geo(doc, data, g_extent, ext, outdir)</span>
     <span class="n">inset_geo</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">outdir</span><span class="p">,</span> <span class="n">extent</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="s2">&quot;50m&quot;</span><span class="p">)</span>
 
     <span class="n">qc_vars</span> <span class="o">=</span> <span class="p">[</span><span class="n">var</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span> <span class="k">if</span> <span class="s2">&quot;_QC&quot;</span> <span class="ow">in</span> <span class="n">var</span><span class="p">]</span>
@@ -1163,17 +1231,29 @@
 <div class="viewcode-block" id="WriteDataReport.run">
 <a class="viewcode-back" href="../../../../../api/src/toolbox/steps/custom/write_report/index.html#src.toolbox.steps.custom.write_report.WriteDataReport.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
+        <span class="c1">#   Required inputs for all other steps</span>
         <span class="n">odir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;global_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;out_directory&quot;</span><span class="p">]</span>
-        <span class="n">fout</span> <span class="o">=</span> <span class="n">odir</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fname&quot;</span><span class="p">)</span>
         <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+        <span class="n">fname_core</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;global_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;filename_core&quot;</span><span class="p">]</span>
+        
+        <span class="c1">#   Handle optional parameters</span>
+        <span class="n">fname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fname&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">fname</span><span class="p">:</span>
+            <span class="n">fname</span> <span class="o">=</span> <span class="n">fname_core</span> <span class="o">+</span> <span class="s2">&quot;.rst&quot;</span>
+        <span class="n">fout</span> <span class="o">=</span> <span class="n">odir</span> <span class="o">+</span> <span class="n">fname</span>
+
+        <span class="n">title</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">title</span><span class="p">:</span>
+            <span class="n">title</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Data report </span><span class="si">{</span><span class="n">fname_core</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span><span class="s1">&#39; &#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
 
         <span class="k">if</span> <span class="s2">&quot;dataset_id&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">attrs</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span><span class="s2">&quot;Dataset ID missing from OG1 file. Reporting with unk platform information.&quot;</span><span class="p">)</span>
             <span class="n">data</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;dataset_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;unknown dataset ID&quot;</span>
 
+        <span class="c1">#   Write the RST source</span>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">fout</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">output_file</span><span class="p">:</span>
             <span class="n">doc</span> <span class="o">=</span> <span class="n">RstCloth</span><span class="p">(</span><span class="n">output_file</span><span class="p">)</span>
-            <span class="n">doc</span><span class="o">.</span><span class="n">h2</span><span class="p">(</span><span class="s2">&quot;RstCloth will consume this h2, some kind of bug.&quot;</span><span class="p">)</span>
+            <span class="n">doc</span><span class="o">.</span><span class="n">h1</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>   <span class="c1">#   Sphinx may glaze over this</span>
             <span class="n">doc</span><span class="o">.</span><span class="n">newline</span><span class="p">()</span>
 
             <span class="n">qc_section</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
@@ -1188,6 +1268,10 @@
             <span class="n">log_path</span> <span class="o">=</span> <span class="n">odir</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;global_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;log_file&quot;</span><span class="p">]</span>
             <span class="n">add_log</span><span class="p">(</span><span class="n">log_path</span><span class="p">,</span> <span class="n">doc</span><span class="p">)</span>
 
+            <span class="k">if</span> <span class="s2">&quot;cc_file&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;global_parameters&quot;</span><span class="p">,</span> <span class="p">{}):</span>
+                <span class="n">cc_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;global_parameters&quot;</span><span class="p">][</span><span class="s2">&quot;cc_file&quot;</span><span class="p">]</span>
+                <span class="n">add_cc</span><span class="p">(</span><span class="n">cc_path</span><span class="p">,</span> <span class="n">doc</span><span class="p">)</span>
+
         <span class="c1">#   Run sphinx if user defined in step parameters</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;build&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span>
             <span class="c1"># Sphinx requires a conf.py file to build</span>
@@ -1197,10 +1281,10 @@
             <span class="p">)</span>
             <span class="n">write_conf_py</span><span class="p">(</span>
                 <span class="n">odir</span><span class="p">,</span>
-                <span class="n">project</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">],</span>
+                <span class="n">project</span><span class="o">=</span><span class="n">title</span><span class="p">,</span>
                 <span class="n">author</span><span class="o">=</span><span class="n">current_info</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user&quot;</span><span class="p">),</span>
-                <span class="n">master_doc</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;fname&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.rst&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
-                <span class="n">subtitle</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dataset_id&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span><span class="p">),</span>
+                <span class="n">master_doc</span><span class="o">=</span><span class="n">fname</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.rst&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span><span class="c1">#.replace(&quot;_&quot;,&quot;-&quot;),</span>
+                <span class="n">subtitle</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Dataset ID: </span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;dataset_id&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;-&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">run_sphinx</span><span class="p">(</span>
                 <span class="n">odir</span><span class="p">,</span>
@@ -1215,6 +1299,7 @@
 <span class="c1">### Legacy code below this line</span>
 
 
+<span class="c1">#   Retired for reasons of complexity. Wasn&#39;t practical to run Sphinx in two parts.</span>
 <span class="c1"># def run_sphinx(source_dir, build_dir=None):</span>
 <span class="c1">#     &quot;&quot;&quot;</span>
 <span class="c1">#     Build a PDF from a Sphinx source directory.</span>

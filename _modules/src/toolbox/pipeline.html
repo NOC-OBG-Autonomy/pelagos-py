@@ -153,7 +153,7 @@
 
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../tests.html">
-    Quality Control
+    Tests
   </a>
 </li>
 
@@ -265,7 +265,7 @@
 
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../tests.html">
-    Quality Control
+    Tests
   </a>
 </li>
 
@@ -403,13 +403,11 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.utils.config_mirror</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigMirrorMixin</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.utils.valid_config_check</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_pipeline_variables</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">create_step</span><span class="p">,</span>
-    <span class="n">STEP_CLASSES</span>
-<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_step</span><span class="p">,</span> <span class="n">STEP_CLASSES</span>
 
 <span class="n">_PIPELINE_LOGGER_NAME</span> <span class="o">=</span> <span class="s2">&quot;toolbox.pipeline&quot;</span>
 <span class="sd">&quot;&quot;&quot;Global logger name for the pipeline. Used to create child loggers for steps.&quot;&quot;&quot;</span>
+
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_setup_logging</span><span class="p">(</span><span class="n">out_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">log_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -447,22 +445,32 @@
 
     <span class="c1"># File handler if specified</span>
     <span class="k">if</span> <span class="n">log_file</span><span class="p">:</span>
-        <span class="n">log_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span> <span class="ow">or</span> <span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">log_file</span><span class="p">))</span>        <span class="c1"># absolute path</span>
-        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">log_file</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">fh</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span><span class="n">log_file</span><span class="p">)</span>
+        <span class="n">log_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out_dir</span> <span class="ow">or</span> <span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">log_file</span><span class="p">)</span>
+        <span class="p">)</span>  <span class="c1"># absolute path</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">log_file</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>  <span class="c1">#   Builds logfile directory</span>
+        <span class="n">fh</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span><span class="n">log_file</span><span class="p">,</span> <span class="s2">&quot;w+&quot;</span><span class="p">)</span>  <span class="c1">#   Init the logfile</span>
         <span class="n">fh</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
         <span class="n">fh</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">formatter</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">fh</span><span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Logging to file: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">log_file</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">&quot;Logging to file: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">log_file</span>
+        <span class="p">)</span>  <span class="c1">#   Should not be an empty file at the end of this</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">out_dir</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">out_dir</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">logger</span>
+
 
 <div class="viewcode-block" id="Pipeline">
 <a class="viewcode-back" href="../../../api/src/toolbox/pipeline/index.html#src.toolbox.pipeline.Pipeline">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Pipeline</span><span class="p">(</span><span class="n">ConfigMirrorMixin</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Pipeline that manages a sequence of processing steps.</span>
-<span class="sd">    </span>
+
 <span class="sd">    Config-aware pipeline that can:</span>
 <span class="sd">      - Load config YAML into private self._parameters</span>
 <span class="sd">      - Keep global_parameters mirrored to _parameters[&#39;pipeline&#39;]</span>
@@ -472,13 +480,13 @@
 <span class="sd">    ----------</span>
 <span class="sd">    ConfigMirrorMixin : Class</span>
 <span class="sd">        Class to handle configuration</span>
-<span class="sd">    </span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialize pipeline with optional config file.</span>
-<span class="sd">        </span>
+
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        config_path : str, optional</span>
@@ -506,8 +514,10 @@
             <span class="c1"># set convenience alias for user-facing access</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pipeline&quot;</span><span class="p">,</span> <span class="p">{})</span>
             <span class="c1"># build steps from loaded config</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">_setup_logging</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;out_directory&quot;</span><span class="p">),</span>
-                                         <span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;log_file&quot;</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">_setup_logging</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;out_directory&quot;</span><span class="p">),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;log_file&quot;</span><span class="p">),</span>
+            <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">build_steps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;steps&quot;</span><span class="p">,</span> <span class="p">[]))</span>
             <span class="n">check_pipeline_variables</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Pipeline initialised&quot;</span><span class="p">)</span>
@@ -565,17 +575,21 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">step_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">STEP_CLASSES</span><span class="p">:</span>
             <span class="n">available_steps</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">STEP_CLASSES</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-            <span class="n">error_msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Step &#39;</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">&#39; is not recognised or missing @register_step.&quot;</span>
-            
+            <span class="n">error_msg</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Step &#39;</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2">&#39; is not recognised or missing @register_step.&quot;</span>
+            <span class="p">)</span>
+
             <span class="c1"># Look for a typo and suggest the closest match</span>
-            <span class="n">close_matches</span> <span class="o">=</span> <span class="n">difflib</span><span class="o">.</span><span class="n">get_close_matches</span><span class="p">(</span><span class="n">step_name</span><span class="p">,</span> <span class="n">available_steps</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="mf">0.6</span><span class="p">)</span>
+            <span class="n">close_matches</span> <span class="o">=</span> <span class="n">difflib</span><span class="o">.</span><span class="n">get_close_matches</span><span class="p">(</span>
+                <span class="n">step_name</span><span class="p">,</span> <span class="n">available_steps</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="mf">0.6</span>
+            <span class="p">)</span>
             <span class="k">if</span> <span class="n">close_matches</span><span class="p">:</span>
                 <span class="n">error_msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; Did you mean &#39;</span><span class="si">{</span><span class="n">close_matches</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39;?&quot;</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="c1"># If no close match, show a few available options</span>
                 <span class="n">sample_steps</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">available_steps</span><span class="p">[:</span><span class="mi">5</span><span class="p">])</span>
                 <span class="n">error_msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; Some available steps include: </span><span class="si">{</span><span class="n">sample_steps</span><span class="si">}</span><span class="s2">...&quot;</span>
-                
+
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">error_msg</span><span class="p">)</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">error_msg</span><span class="p">)</span>
 
@@ -610,31 +624,35 @@
         <span class="n">step_context</span><span class="p">[</span><span class="s2">&quot;global_parameters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span>
         <span class="n">step</span> <span class="o">=</span> <span class="n">create_step</span><span class="p">(</span><span class="n">step_config</span><span class="p">,</span> <span class="n">step_context</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Executing: </span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        
+
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-            
-            <span class="c1"># Run the actual step</span>
-            <span class="n">result</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
-            
-            <span class="c1"># Handle diagnostics centrally</span>
             <span class="k">if</span> <span class="n">step</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
+                <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+                <span class="c1"># Run the actual step</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
                 <span class="n">duration</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
                 <span class="n">step</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Execution time: </span><span class="si">{</span><span class="n">duration</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> seconds.&quot;</span><span class="p">)</span>
-                
+
                 <span class="k">try</span><span class="p">:</span>
                     <span class="kn">import</span><span class="w"> </span><span class="nn">psutil</span>
                     <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
                     <span class="n">process</span> <span class="o">=</span> <span class="n">psutil</span><span class="o">.</span><span class="n">Process</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">())</span>
                     <span class="n">mem_info</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">memory_info</span><span class="p">()</span>
                     <span class="n">step</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Current memory usage: </span><span class="si">{</span><span class="n">mem_info</span><span class="o">.</span><span class="n">rss</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="w"> </span><span class="o">**</span><span class="w"> </span><span class="mi">2</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> MB&quot;</span><span class="p">)</span>
                 <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
                     <span class="k">pass</span>
-                    
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
             <span class="k">return</span> <span class="n">result</span>
 
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Fatal error encountered while executing step &#39;</span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Fatal error encountered while executing step &#39;</span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Pipeline failed at step &#39;</span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span></div>
 
 
@@ -694,7 +712,7 @@
         <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">:</span>
             <span class="n">add_to_graph</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">prev_step</span><span class="p">)</span>
             <span class="n">prev_step</span> <span class="o">=</span> <span class="n">step</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
-            
+
         <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="s2">&quot;pipeline_visualisation&quot;</span><span class="p">,</span> <span class="n">view</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
 
@@ -703,7 +721,7 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Generate a configuration dictionary from the current pipeline setup.</span>
-<span class="sd">        </span>
+
 <span class="sd">        returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        dict</span>
@@ -723,12 +741,12 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">export_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;generated_pipeline.yaml&quot;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Write current config to file (respects private _parameters)</span>
-<span class="sd">        </span>
+
 <span class="sd">        parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        output_path : str</span>
 <span class="sd">            Path to save the exported configuration YAML file.</span>
-<span class="sd">        </span>
+
 <span class="sd">        returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        dict</span>
