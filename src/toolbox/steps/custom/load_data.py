@@ -138,10 +138,10 @@ class LoadOG1(BaseStep):
                 "If TIME is listed under another name, please rename it to conform to the OG1 format."
             )
 
-        # Check that the "TIME" variable is monotonic and nanless
-        if np.any(np.isnan(self.data["TIME"])):
+        # Check that the "TIME" variable is monotonic and has no missing values
+        if np.any(np.isnat(self.data["TIME"].values)):
             raise ValueError(
-                "\n'TIME' has nan values. Pipelines cannot be run without a continuous monotonic time coordinate.\n"
+                "\n'TIME' has NaT values. Pipelines cannot be run without a continuous monotonic time coordinate.\n"
                 "Please remove these values (and their concurrent measurements) from the input."
             )
 
