@@ -15,6 +15,8 @@
 # limitations under the License.
 """This module defines the base class for QC tests and a registry for QC test classes."""
 
+import logging
+
 REGISTERED_QC = {}
 """Registry of explicitly registered QC test classes."""
 
@@ -68,6 +70,9 @@ class BaseQC:
 
     def __init__(self, data, **kwargs):
         self.data = data.copy(deep=True)
+        
+        # Connect to the main pipeline logging hierarchy
+        self.logger = logging.getLogger(f"toolbox.pipeline.qc.{self.qc_name.replace(' ', '_')}")
 
         invalid_params = set(kwargs.keys()) - set(self.expected_parameters.keys())
         if invalid_params:
@@ -82,6 +87,14 @@ class BaseQC:
             setattr(self, k, v)
 
         self.flags = None
+
+    def log(self, message):
+        """Log an info-level message with the QC name prefix."""
+        self.logger.info("[%s] %s", self.qc_name, message)
+
+    def log_warn(self, message):
+        """Log a warning-level message with the QC name prefix."""
+        self.logger.warning("[%s] %s", self.qc_name, message)
 
     def return_qc(self):
         """Representative of QC processing, to be overridden by subclasses.

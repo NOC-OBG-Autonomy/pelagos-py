@@ -8,6 +8,9 @@ data/
 testing/
 /testing/
 
+# Keep test data (these are reduced size .nc files for unit testing)
+!tests/test_data/*.nc 
+
 # Python Core & Compilation
 __pycache__/
 *.py[cod]
