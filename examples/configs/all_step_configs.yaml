@@ -18,19 +18,19 @@
 # These are passed into the data object as global attributes, making them accessible from all steps
 pipeline:
  # [name]: "Short string name"
- # A name for the pipeline, helpful to distinguish specific tasks
+ #   A name for the pipeline, helpful to distinguish specific tasks
  name: "Data Processing Pipeline"
  # [description]: "Longer string describing describing pipeline purpse"
  description: "A pipeline for processing and analyzing multi-dimensional data"
  # [visualisation]: true/false
- # Enable visualisation of the pipeline in Pipeline.visualise_pipeline()
+ #   Enable visualisation of the pipeline in Pipeline.visualise_pipeline()
  visualisation: false 
  # [out_directory]: string or path
- # Output directory for any generated files (logs, reports, figures, etc.)
+ #   Output directory for any generated files (logs, reports, figures, etc.)
  out_directory: ./examples/data/
  # [log_file]: string name for the log file
- # The name intended for the log file, helpful if running different pipelines and tracking performance.
- # Default behavior overwrites the previous log file
+ #   The name intended for the log file, helpful if running different pipelines and tracking performance.
+ #   Default behavior overwrites the previous log file
  log_file: last_run.log
 
 # All step configs
@@ -73,10 +73,38 @@ steps:
       # [file_path]:
       #   Path to the input NetCDF file
       file_path: "../examples/data/OG1/Cabot_645.nc"
+      # [filter_bad_time]:
+      #   Remove data outside of the expected time window, demarcated in data_start and _end.
+      filter_bad_time: false
+      # [data_start]:
+      #   Minimum valid timestamp for trimming. Keep blank to default to "DEPLOYMENT_TIME"
+      data_start: "2023-05-01T00:00:00"
+      # [data_end]:
+      #   Maximum valid timestamp for trimming. Keep blank to default to the time the pipeline is run.
+      data_end: "2024-05-01T00:00:00"
     # [diagnostics]:
     #   Prints a summary of dataset variables and attributes
     diagnostics: false
 
+# -------------------------------------------------------------------------------------------Prelim data check ------------------------------------------------------------------------------------------------
+# Format Checker (src/toolbox/steps/custom/format_check.py)
+#   Runs data format checker for different netCDF/glider standards and saves results to file.
+#   Typically preceeds any data loading/manipulation.
+#   Exports to `out_directory` as specified in pipeline parameters.
+  - name: Format Checker
+    parameters:
+      # [src]:
+      #   Source file path for testing.
+      src: "../examples/data/OG1/Cabot_645.nc"
+      # [standards]:
+      #   List of string entries for different formats to check.
+      standards: ['cf','og']
+      # [output_type]:
+      #   The extension for the CC to write out to. Use 'json' for high detail, 'rst' or other ASCII for low detail.
+      output_type: "rst"
+      # [proceed_on_fail]:
+      #   Whether or not to allow the pipeline to continue if the dataset doesn't pass selected standards.
+      proceed_on_fail: true
 
 # ------------------------------------------------------------------------------------------- Exporting data -------------------------------------------------------------------------------------------
 
@@ -519,18 +547,19 @@ steps:
   - name: Write Data Report
     parameters:
       # [title]: string of the title
-      # The title of the report, which will go on the title page
+      #   The title of the report, which will go on the title page
+      #   If left blank, it will use the filename core.
       title: "Data Pipeline Report"
       # [fname]: string of the .rst filename
-      # The filename of the main .rst file which will be written to within the pipeline's 
-      # `out_directory`.
+      #   The filename of the main .rst file which will be written to within the pipeline's 
+      #   `out_directory`. If left blank, it will use the filename core.
       fname: "data_report.rst"
       # [build]: true/false
-      # Whether to run Sphinx on the .rst at the end and generate the specified PDF
+      #   Whether to run Sphinx on the .rst at the end and generate the specified PDF
       build: false
       # [extent]: list of lat/lon
-      # This is for use on the geographic extent of the inset figure. Helpful for providing
-      # context to each glider mission, which can vary. Defaults to the Baltic Sea.
+      #   This is for use on the geographic extent of the inset figure. Helpful for providing
+      #   context to each glider mission, which can vary. Defaults to the Baltic Sea.
       extent: [min_lon max_lon min_lat max_lon]
 
       ### Below are additional reporting parameters for the future

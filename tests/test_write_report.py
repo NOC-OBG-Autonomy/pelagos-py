@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 import xarray as xr
 import json
 import numpy as np
+from importlib.metadata import PackageNotFoundError
 
 
 @pytest.fixture
@@ -61,6 +62,22 @@ def test_current_info():
         "python_version": "3.14.2",
         "system": "Linux: 6.17.0-8-generic",
     }
+
+    assert result == expected
+
+    #   Do it again, but throw the PackageNotFoundError
+    with (
+        patch.object(write_report, "datetime") as mock_datetime,
+        patch.object(write_report.getpass, "getuser", return_value="aaron-mau"),
+        patch.object(write_report, "version", side_effect=PackageNotFoundError),
+        patch.object(write_report.platform, "python_version", return_value="3.14.2"),
+        patch.object(write_report.platform, "system", return_value="Linux"),
+        patch.object(write_report.platform, "release", return_value="6.17.0-8-generic"),
+    ):
+        mock_datetime.now.return_value = fixed_now
+        result = write_report.current_info()
+
+    expected["toolbox_version"] = "unknown"
 
     assert result == expected
 
@@ -233,6 +250,89 @@ def test_add_log(tmp_path):
     rows = kwargs["data"]
     # Only padding rows should be present
     assert all(all(cell == "" for cell in row) for row in rows)
+
+
+def test_add_cc_ascii(tmp_path):
+    #   Make sure the bad chars get replaced
+    ascii_content = """\
+
+
+--------------------------------------------------------------------------------
+                         IOOS Compliance Checker Report                         
+                                 Version X.Y.Z                                  
+                     Report generated 2026-01-01T00:00:00Z                      
+                                     og:1.0                                     
+  https://oceangliderscommunity.github.io/OG-format-user-manual/OG_Format.html  
+--------------------------------------------------------------------------------
+                               Corrective Actions                               
+Replace these characters: α, β, γ, σ, μ, °, ±
+"""
+    # json_content =
+    cc_file = tmp_path / "example_check.rst"
+    cc_file.write_text(ascii_content)
+    doc = MagicMock()
+
+    write_report.add_cc(str(cc_file), doc)
+    doc.h2.assert_called_once_with("Compliance Checker results")
+    doc.codeblock.assert_called_once()
+
+    codeblock_out = doc.codeblock.call_args.args[0]  #   Extract the actual text
+    assert "oceangliderscommunity" in codeblock_out
+    for k, v in write_report.REPLACEMENTS.items():
+        if k in ascii_content:
+            assert v in codeblock_out
+
+
+def test_add_cc_json(tmp_path):
+    cc_data = {
+        "og": {
+            "scored_points": 478,
+            "possible_points": 524,
+            "all_priorities": [
+                {
+                    "name": "Check for mandatory global attributes",
+                    "weight": 3,
+                    "value": [13, 17],
+                    "msgs": [
+                        "Global attribute contributing_institutions is missing",
+                        "Global attribute contributing_institutions_role is missing",
+                        "Global attribute contributing_institutions_role_vocabulary is missing",
+                        "Global attribute start_date is missing",
+                    ],
+                    "children": [],
+                },
+                {
+                    "name": "redundant test",  #   Should be redundant
+                    "msgs": ["message 1", "message 2"],
+                },
+                {
+                    "name": "redundant test",
+                    "msgs": ["message 3"],
+                },
+            ],
+        }
+    }
+
+    ccfile = tmp_path / "cc.json"
+    ccfile.write_text(json.dumps(cc_data))
+
+    doc = MagicMock()
+
+    write_report.add_cc(str(ccfile), doc)
+    doc.h2.assert_called_once_with("Compliance Checker results")
+    doc.h3.assert_called_once_with("og: CC score of 478/524")
+
+    # Break the table out
+    kwargs = doc.table_list.call_args.kwargs
+    assert kwargs["headers"] == ["Name", "og message"]
+
+    rows = kwargs["data"]
+    assert len(rows) == 7
+    assert rows[0] == [
+        "Check for mandatory global attributes",
+        "Global attribute contributing_institutions is missing",
+    ]
+    assert rows[-1] == ["", "message 3"]  #   Should have a blank first column
 
 
 def test_qc_section(qc_dataset):
@@ -454,10 +554,14 @@ def test_make_plots(qc_dataset, tmp_path):
 
 def test_write_data_report(tmp_path, qc_dataset):
     #   Test the whole step with Sphinx enabled to write out
+    rst_file = tmp_path / "glider_test_run_check.rst"  # _check.rst Expected from the CC
+    rst_file.write_text("")
+
     context = {
         "global_parameters": {
             "out_directory": str(tmp_path) + "/",
             "log_file": "run.log",
+            "filename_core": "glider_test_run",
         },
         "data": qc_dataset,
     }
@@ -484,10 +588,14 @@ def test_write_data_report(tmp_path, qc_dataset):
 
 def test_write_data_report_no_build(tmp_path, qc_dataset):
     #   Repeat above, no build
+    rst_file = tmp_path / "glider_test_run_check.rst"  # _check.rst Expected from the CC
+    rst_file.write_text("")
+
     context = {
         "global_parameters": {
             "out_directory": str(tmp_path) + "/",
             "log_file": "run.log",
+            "filename_core": "glider_test_run",
         },
         "data": qc_dataset,
     }
@@ -517,15 +625,66 @@ def test_write_data_report_no_build(tmp_path, qc_dataset):
     mock_sphinx.assert_not_called()
 
 
+def test_write_data_report_with_cc(tmp_path, qc_dataset):
+    #   Since last tests were written, "filename_core" is automatically added to the global context when
+    #   data are loaded and it serves as the default if the user doesn't specify title, fname
+    context = {
+        "global_parameters": {
+            "out_directory": str(tmp_path) + "/",
+            "log_file": "run.log",
+            "filename_core": "test_filename",
+            "cc_file": "cc.json",
+        },
+        "data": qc_dataset,
+    }
+
+    (tmp_path / "run.log").write_text("log line\n")
+
+    step = write_report.WriteDataReport.__new__(write_report.WriteDataReport)
+    step.context = context
+    step.parameters = {
+        "title": None,
+        "fname": None,
+        "build": False,
+    }
+
+    step.log = MagicMock()
+    step.log_warn = MagicMock()
+
+    with (
+        patch.object(write_report, "RstCloth") as mock_rst,
+        patch.object(write_report, "make_plots"),
+        patch.object(write_report, "write_conf_py") as mock_conf,
+        patch.object(write_report, "add_cc") as mock_cc,
+    ):
+        doc = MagicMock()
+        mock_rst.return_value = doc
+        step.run()
+
+    mock_cc.assert_called_once()
+
+    #   Check defaults
+    doc.h1.assert_called_once_with(
+        "Data report test filename"
+    )  #   Underscores should have been removed
+    assert (
+        tmp_path / "test_filename.rst"
+    ).exists()  #   Should default to filename_core
+
+
 def test_write_data_report_missing_dataset_id(tmp_path, qc_dataset):
     #   Test again without dataset_id
     qc_dataset = qc_dataset.copy()
     qc_dataset.attrs.pop("dataset_id", None)
 
+    rst_file = tmp_path / "glider_test_run_check.rst"  # _check.rst Expected from the CC
+    rst_file.write_text("")
+
     context = {
         "global_parameters": {
             "out_directory": str(tmp_path) + "/",
             "log_file": "run.log",
+            "filename_core": "glider_test_run",  # Manually add this since we aren't loading a dataset.
         },
         "data": qc_dataset,
     }
@@ -556,7 +715,7 @@ def test_write_data_report_missing_dataset_id(tmp_path, qc_dataset):
         "Dataset ID missing from OG1 file. Reporting with unk platform information."
     )
     _, kwargs = mock_conf.call_args
-    assert kwargs["subtitle"] == "unknown dataset ID"
+    assert kwargs["subtitle"] == "Dataset ID: unknown dataset ID"
     assert (
         qc_dataset.attrs["dataset_id"] == "unknown dataset ID"
     )  #   This also should have changed

@@ -55,16 +55,20 @@ class position_on_land_qc(BaseQC):
 
         # Check if lat, long coords fall within the area of the land polygons
         self.df = self.df.with_columns(
-            pl.struct("LONGITUDE", "LATITUDE")
-            .map_batches(
-                lambda x: sh.contains_xy(
-                    land_polygons,
-                    x.struct.field("LONGITUDE").to_numpy(),
-                    x.struct.field("LATITUDE").to_numpy(),
+            pl.when(pl.col("LONGITUDE").is_nan() | pl.col("LATITUDE").is_nan())
+            .then(9)
+            .otherwise(
+                pl.struct("LONGITUDE", "LATITUDE")
+                .map_batches(
+                    lambda x: sh.contains_xy(
+                        land_polygons,
+                        x.struct.field("LONGITUDE").to_numpy(),
+                        x.struct.field("LATITUDE").to_numpy(),
+                    )
+                    * 4
                 )
-                * 4
+                .replace({0: 1})
             )
-            .replace({0: 1})
             .alias("LONGITUDE_QC")
         )
         # Add the flags to LATITUDE as well.

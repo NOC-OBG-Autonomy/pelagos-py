@@ -3,8 +3,13 @@
 
 # Project Specific
 *.nc
+data/
 /data/
+testing/
 /testing/
+
+# Keep test data (these are reduced size .nc files for unit testing)
+!tests/test_data/*.nc 
 
 # Python Core & Compilation
 __pycache__/
@@ -102,3 +107,4 @@ cython_debug/
 *.mo
 *.pot
 src/toolbox/_version.py
+.vscode/
