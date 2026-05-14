@@ -22,7 +22,6 @@ steps:
         impossible date qc: {}
         impossible location qc: {}
         position on land qc: {}
-        ctd qc: {}
     diagnostics: false
 
   - name: Apply QC
