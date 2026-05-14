@@ -8,7 +8,7 @@
             "name": "Python Debugger: main.py File",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/src/toolbox/main.py",
+            "program": "${workspaceFolder}/src/pelagos_py/main.py",
             "console": "integratedTerminal"
         }
     ]

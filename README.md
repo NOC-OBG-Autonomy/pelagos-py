@@ -39,7 +39,7 @@ See [Getting Started](https://noc-obg-autonomy.github.io/pelagos-py/getting_star
 1. ### Initialization
    Import the 'Pipeline' class and create a pipeline using your config (see below for example)
    ```python
-    from toolbox.pipeline import Pipeline
+    from pelagos_py.pipeline import Pipeline
     pipeline = Pipeline(config_path="my_pipeline.yaml")
    ```
 2. ### Pipeline Execution

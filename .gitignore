@@ -106,5 +106,5 @@ cython_debug/
 .pypirc
 *.mo
 *.pot
-src/toolbox/_version.py
+src/pelagos_py/_version.py
 .vscode/

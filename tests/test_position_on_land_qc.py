@@ -3,7 +3,7 @@ import xarray as xr
 import numpy as np
 from unittest.mock import patch
 
-from toolbox.steps.custom.qc.position_on_land_qc import position_on_land_qc
+from pelagos_py.steps.custom.qc.position_on_land_qc import position_on_land_qc
 from utils.test_utils import create_mock_dataset
 
 
@@ -34,8 +34,8 @@ def test_locations(lats, lons, expected_flags):
     assert list(flags["LONGITUDE_QC"].values) == expected_flags
 
 
-@patch("toolbox.steps.custom.qc.position_on_land_qc.plt.show")
-@patch("toolbox.steps.custom.qc.position_on_land_qc.matplotlib.use")
+@patch("pelagos_py.steps.custom.qc.position_on_land_qc.plt.show")
+@patch("pelagos_py.steps.custom.qc.position_on_land_qc.matplotlib.use")
 def test_plot_diagnostics(mock_use, mock_show):
     data = create_mock_dataset(lats=[0.0, -23.7], lons=[-30.0, 133.8])
     qc_step = position_on_land_qc(data)

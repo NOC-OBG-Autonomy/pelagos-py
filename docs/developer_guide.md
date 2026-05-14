@@ -1,11 +1,11 @@
 # Developer Guide
 
-This page explains how to add new **steps** and **tests** to the Toolbox.
+This page explains how to add new **steps** and **tests** to pelagos_py.
 
 ## What is a “step”?
 A step is a stage in the pipeline that can be defined via Python, and configured via the Pipelines Config file. Examples of steps include:
-- I/O Steps (e.g. reading in data using `Load OG1`->[load_data.py](https://noc-obg-autonomy.github.io/toolbox/api/toolbox/steps/custom/load_data/index.html))
-- Variable Processing Steps (e.g. Adjusting existing salinity measurements using `Salinity Adjustment`->[salinity.py](https://noc-obg-autonomy.github.io/toolbox/api/toolbox/steps/custom/variables/salinity/index.html))
+- I/O Steps (e.g. reading in data using `Load OG1`->[load_data.py](https://noc-obg-autonomy.github.io/pelagos_py/api/pelagos_py/steps/custom/load_data/index.html))
+- Variable Processing Steps (e.g. Adjusting existing salinity measurements using `Salinity Adjustment`->[salinity.py](https://noc-obg-autonomy.github.io/pelagos_py/api/pelagos_py/steps/custom/variables/salinity/index.html))
 
 Steps are not limited to one per file - in fact, a single file can contain multiple steps. This also is true for configs. Any step can be called multiple
 times in a single config.
@@ -25,12 +25,12 @@ See [all_step_config.yaml]() to see in more detail how the config for tests is d
 ## How to add a new step
 A template for new data processing steps can be found in [blank_step.py]() however it is reccomended that you read the following steps to avoid implementation issues.
 
-1. Create a new Python file in the appropriate directory under `src/toolbox/steps/custom/`.<br>
+1. Create a new Python file in the appropriate directory under `src/pelagos_py/steps/custom/`.<br>
    **NOTE**: if you are creating a step for specific vairables then it should go in the `variables` subdirectory.
 2. Define a new class for your step, inheriting from `BaseStep` and adding the @register_step decorator. This ensures that the step is discoverable by the Pipeline Manager, 
    as well as allowing you do define other classes in the same file without registering them.
    ```python
-   from toolbox.steps.base_step import BaseStep, register_step
+   from pelagos_py.steps.base_step import BaseStep, register_step
    
    @register_step
    class MyNewStep(BaseStep):
@@ -38,7 +38,7 @@ A template for new data processing steps can be found in [blank_step.py]() howev
    ```
 3. Define the step_name attribute, which is the name that will be used in the Pipelines Config file to refer to this step.
    ```python
-   from toolbox.steps.base_step import BaseStep, register_step
+   from pelagos_py.steps.base_step import BaseStep, register_step
    
    @register_step
    class MyNewStep(BaseStep):
@@ -47,7 +47,7 @@ A template for new data processing steps can be found in [blank_step.py]() howev
    ```
 4. Implement the `run` method, which contains the logic for your step. This method should take no arguments other than `self`, and should return a `self.context` object.
    ```python
-   from toolbox.steps.base_step import BaseStep, register_step
+   from pelagos_py.steps.base_step import BaseStep, register_step
    
    @register_step
    class MyNewStep(BaseStep):
@@ -59,7 +59,7 @@ A template for new data processing steps can be found in [blank_step.py]() howev
     ```
 5. Optionally, implement the `generate_diagnostics` method if your step produces any diagnostic plots or outputs.
    ```python
-   from toolbox.steps.base_step import BaseStep, register_step
+   from pelagos_py.steps.base_step import BaseStep, register_step
    
    @register_step
    class MyNewStep(BaseStep):
@@ -73,7 +73,7 @@ A template for new data processing steps can be found in [blank_step.py]() howev
            # Your diagnostics logic here
            pass
     ```
-    There are already default methods for generating common diagnostics, such as time series plots and scatter plots. See the [diagnostics documentation](https://noc-obg-autonomy.github.io/toolbox/api/toolbox/utils/diagnostics/index.html) for more information.
+    There are already default methods for generating common diagnostics, such as time series plots and scatter plots. See the [diagnostics documentation](https://noc-obg-autonomy.github.io/pelagos_py/api/pelagos_py/utils/diagnostics/index.html) for more information.
 
 6. Add the step to your Pipelines Config file, using the `step_name` you defined in step 3.
    ```yaml
@@ -90,14 +90,14 @@ A template for new data processing steps can be found in [blank_step.py]() howev
         param2: value2
    ```
 7. Any parameters defined in the `parameters` section of the config file will be passed to your step as attributes. You can access them in your `run` method using `self.param1`, `self.param2`, etc. <br>
-   **NOTE** This is handled automatically by the `BaseStep` class. More information can be found in the [BaseStep documentation](https://noc-obg-autonomy.github.io/toolbox/_modules/toolbox/steps.html).  
+   **NOTE** This is handled automatically by the `BaseStep` class. More information can be found in the [BaseStep documentation](https://noc-obg-autonomy.github.io/pelagos_py/_modules/pelagos_py/steps.html).  
 
 ### Adding QC handling to a step
 If you would like your step to have QC handling (pre-step filtering) then add the `QCHandlerMixin` from [qc_handling.py]() to your step class inheritance. Additionally you
    will have to include the `self.filter_qc()`, `self.reconstruct_data()`, `self.update_qc()` and `self.generate_qc({<QC_child>: [*<QC_parents>]})` methods as follows.
    ```python
-   from toolbox.steps.base_step import BaseStep, register_step
-   from toolbox.utils.qc_handling import QCHandlingMixin
+   from pelagos_py.steps.base_step import BaseStep, register_step
+   from pelagos_py.utils.qc_handling import QCHandlingMixin
 
    @register_step
    class MyNewStep(BaseStep):
@@ -173,11 +173,11 @@ dynamics tests can be found in [range_test.py]() and [stuck_value_test.py]().
 
 An example template for a static test can be found in [blank_test.py](), however again it is recommended that you read the instructions below as well.
 
-1. create your test file in the `src/toolbox/steps/custom/qc`.
+1. create your test file in the `src/pelagos_py/steps/custom/qc`.
 2. Import the necessary parent classes and define your test class. Make sure it inherits from `BaseTest` and have the `@register_qc` decorator. This will allow the
     pipeline to find and register the test.
     ```python
-    from toolbox.steps.base_test import BaseTest, register_qc, flag_cols
+    from pelagos_py.steps.base_test import BaseTest, register_qc, flag_cols
 
     @register_qc
     class MyNewTest(BaseTest):
@@ -185,7 +185,7 @@ An example template for a static test can be found in [blank_test.py](), however
     ```
 3. Specify the following attributes:
     ```python
-    from toolbox.steps.base_test import BaseTest, register_qc, flag_cols
+    from pelagos_py.steps.base_test import BaseTest, register_qc, flag_cols
 
     @register_qc
     class MyNewTest(BaseTest):
@@ -197,7 +197,7 @@ An example template for a static test can be found in [blank_test.py](), however
 4. Add the `return_qc()` method which is where you will implement your test algorithm. Optionally add the `plot_diagnostics()` method if you would like the test 
     to generate plots when diagnostics is true in the config.
     ```python
-    from toolbox.steps.base_test import BaseTest, register_qc, flag_cols
+    from pelagos_py.steps.base_test import BaseTest, register_qc, flag_cols
 
     @register_qc
     class MyNewTest(BaseTest):

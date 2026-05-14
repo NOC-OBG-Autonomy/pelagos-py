@@ -1,5 +1,5 @@
 import yaml
-from toolbox.pipeline import Pipeline, _setup_logging
+from pelagos_py.pipeline import Pipeline, _setup_logging
 
 # --- Configuration Variables ---
 INPUT_FILE = "/Users/orlpru/Desktop/OG1_Data/input/BIO-Carbon/Cabot_645.nc"

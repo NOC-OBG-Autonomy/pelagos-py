@@ -3,7 +3,7 @@ Quality Control
 
 Quality control (QC) are sub-steps run within the ``Apply QC`` process. These do not modify your data values: they update a corresponding QC column (e.g. ``TEMP_QC``) to indicate the reliability of each measurement.
 
-The Toolbox follows the standardised Argo flagging system:
+The pelagos_py follows the standardised Argo flagging system:
 
 * **0**: No QC performed.
 * **1**: Good data.
@@ -34,26 +34,26 @@ Spatiotemporal Checks
 
 These verify that the data was collected at a logical time and place.
 
-* :doc:`Impossible Date <api/src/toolbox/steps/custom/qc/impossible_date_qc/index>`: Checks that the timestamps fall within a realistic range (typically from 1985 to the present day).
-* :doc:`Impossible Location <api/src/toolbox/steps/custom/qc/impossible_location_qc/index>`: Verifies that latitude and longitude coordinates are within global bounds.
-* :doc:`Impossible Speed <api/src/toolbox/steps/custom/qc/impossible_speed_qc/index>`: Calculates the velocity between points to ensure the platform is not moving at unphysical speeds.
-* :doc:`Position on Land <api/src/toolbox/steps/custom/qc/position_on_land_qc/index>`: Uses a bathymetry mask to check if coordinates incorrectly place the platform on land.
+* :doc:`Impossible Date <api/src/pelagos_py/steps/custom/qc/impossible_date_qc/index>`: Checks that the timestamps fall within a realistic range (typically from 1985 to the present day).
+* :doc:`Impossible Location <api/src/pelagos_py/steps/custom/qc/impossible_location_qc/index>`: Verifies that latitude and longitude coordinates are within global bounds.
+* :doc:`Impossible Speed <api/src/pelagos_py/steps/custom/qc/impossible_speed_qc/index>`: Calculates the velocity between points to ensure the platform is not moving at unphysical speeds.
+* :doc:`Position on Land <api/src/pelagos_py/steps/custom/qc/position_on_land_qc/index>`: Uses a bathymetry mask to check if coordinates incorrectly place the platform on land.
 
 Range and Value Checks
 ~~~~~~~~~~~~~~~~~~~~~~
 
 These identify data points that fall outside expected physical or sensor limits.
 
-* :doc:`Gross Range <api/src/toolbox/steps/custom/qc/gross_range_qc/index>`: Applies broad, non-configurable physical limits to catch extreme sensor failures.
-* :doc:`Impossible Range <api/src/toolbox/steps/custom/qc/impossible_range_qc/index>`: Allows users to define specific, narrower thresholds for any variable.
-* :doc:`Stuck Value <api/src/toolbox/steps/custom/qc/stuck_value_qc/index>`: Identifies sensor "freezing" by looking for sequences of identical values where variation is expected.
-* :doc:`Spike <api/src/toolbox/steps/custom/qc/spike_qc/index>`: Detects sudden, unrealistic jumps in data values between adjacent measurements.
-* :doc:`PAR Irregularity <api/src/toolbox/steps/custom/qc/par_irregularity_qc/index>`: A specialised check for Photosynthetically Active Radiation sensors to identify inconsistent light readings.
+* :doc:`Gross Range <api/src/pelagos_py/steps/custom/qc/gross_range_qc/index>`: Applies broad, non-configurable physical limits to catch extreme sensor failures.
+* :doc:`Impossible Range <api/src/pelagos_py/steps/custom/qc/impossible_range_qc/index>`: Allows users to define specific, narrower thresholds for any variable.
+* :doc:`Stuck Value <api/src/pelagos_py/steps/custom/qc/stuck_value_qc/index>`: Identifies sensor "freezing" by looking for sequences of identical values where variation is expected.
+* :doc:`Spike <api/src/pelagos_py/steps/custom/qc/spike_qc/index>`: Detects sudden, unrealistic jumps in data values between adjacent measurements.
+* :doc:`PAR Irregularity <api/src/pelagos_py/steps/custom/qc/par_irregularity_qc/index>`: A specialised check for Photosynthetically Active Radiation sensors to identify inconsistent light readings.
 
 Profile Integrity
 ~~~~~~~~~~~~~~~~~
 
 These assess the quality of a vertical profile as a whole.
 
-* :doc:`Valid Profile <api/src/toolbox/steps/custom/qc/valid_profile_qc/index>`: Ensures a profile contains enough data points or covers a sufficient depth range to be useful.
-* :doc:`Flag Full Profile <api/src/toolbox/steps/custom/qc/flag_full_profile/index>`: If a certain percentage of points in a profile are flagged as bad, this qc can be configured to flag the entire profile.
+* :doc:`Valid Profile <api/src/pelagos_py/steps/custom/qc/valid_profile_qc/index>`: Ensures a profile contains enough data points or covers a sufficient depth range to be useful.
+* :doc:`Flag Full Profile <api/src/pelagos_py/steps/custom/qc/flag_full_profile/index>`: If a certain percentage of points in a profile are flagged as bad, this qc can be configured to flag the entire profile.

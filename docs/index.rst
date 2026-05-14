@@ -1,9 +1,9 @@
-NOC Autonomy Toolbox Docs
+pelagos_py docs
 =========================
 
 Welcome!
 --------
-Thanks for checking out this software! The NOC (National Oceanography Centre) Autonomy Toolbox, pelagos-py, is a modular processing pipeline tool designed to operate on raw
+Thanks for checking out this software! The NOC (National Oceanography Centre) Autonomy Toolbox, pelagos_py, is a modular processing pipeline tool designed to operate on raw
 OG1-like format glider/ALR data, outputting "science ready" datasets. The user interfaces with the tool through a single YAML config file, allowing for easy definition and dissemination 
 of processing protocols. This allows academics to "standardise" their processing tools and easily share their methods by simply sharing raw data and config files.
 
@@ -36,4 +36,4 @@ Contents
    tests
    contributing
    developer_guide
-   API Reference <api/src/toolbox/index>
+   API Reference <api/src/pelagos_py/index>

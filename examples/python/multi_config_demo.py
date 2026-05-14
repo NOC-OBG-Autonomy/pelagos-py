@@ -4,7 +4,7 @@ import xarray as xr
 from pathlib import Path
 from contextlib import redirect_stdout, redirect_stderr
 from datetime import datetime
-from toolbox.pipeline import Pipeline, _setup_logging
+from pelagos_py.pipeline import Pipeline, _setup_logging
 
 # --- Configuration Variables ---
 # Strictly separate raw data from processed results

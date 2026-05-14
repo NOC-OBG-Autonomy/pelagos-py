@@ -1,7 +1,7 @@
 Contributing
 ============
 
-We welcome contributions to the NOC Autonomy Toolbox. To maintain code quality and stability, we use a specific workflow involving a development branch.
+We welcome contributions to pelagos_py. To maintain code quality and stability, we use a specific workflow involving a development branch.
 
 Development Workflow
 --------------------
@@ -16,7 +16,7 @@ All new features and bug fixes should be submitted to the ``dev`` branch rather 
 Code Quality and Testing
 ------------------------
 
-To ensure the toolbox remains reliable, we enforce the following requirements:
+To ensure pelagos_py remains reliable, we enforce the following requirements:
 
 * **Automated Testing**: Once a PR is submitted, automated tests will run. Code must pass these tests to be considered for the ``dev`` branch.
 * **Review Process**: Code in the ``dev`` branch is further reviewed and tested before it is merged into the stable ``main`` branch.
