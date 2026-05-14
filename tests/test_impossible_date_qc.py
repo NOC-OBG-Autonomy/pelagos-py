@@ -5,8 +5,9 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 
-from toolbox.steps.custom.qc.impossible_date_qc import impossible_date_qc
 from utils.test_utils import create_mock_dataset
+from pelagos_py.steps.custom.qc.impossible_date_qc import impossible_date_qc
+
 
 
 @pytest.mark.parametrize("times, expected_flags", [

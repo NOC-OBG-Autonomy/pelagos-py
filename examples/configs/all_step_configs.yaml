@@ -1,4 +1,4 @@
-# This file is part of the NOC Autonomy Toolbox.
+# This file is part of pelagos_py.
 #
 # Copyright 2025-2026 National Oceanography Centre and The Contributors
 #
@@ -47,7 +47,7 @@ pipeline:
 steps:
 # ------------------------------------------------------------------------------------------- Importing/Generating data -------------------------------------------------------------------------------------------
 
-# Generate Data (src/toolbox/steps/custom/gen_data.py):
+# Generate Data (src/pelagos_py/steps/custom/gen_data.py):
 #   Generates random data for pipeline input. Typically used for testing
   - name: "Generate Data"
     parameters:
@@ -66,7 +66,7 @@ steps:
     #   No diagnostic output defined
     diagnostics: false
 
-# Load OG1 (src/toolbox/steps/custom/load_data.py):
+# Load OG1 (src/pelagos_py/steps/custom/load_data.py):
 #   Loads netCDF (*.nc) data files into the pipeline
   - name: "Load OG1"
     parameters:
@@ -87,7 +87,7 @@ steps:
     diagnostics: false
 
 # -------------------------------------------------------------------------------------------Prelim data check ------------------------------------------------------------------------------------------------
-# Format Checker (src/toolbox/steps/custom/format_check.py)
+# Format Checker (src/pelagos_py/steps/custom/format_check.py)
 #   Runs data format checker for different netCDF/glider standards and saves results to file.
 #   Typically preceeds any data loading/manipulation.
 #   Exports to `out_directory` as specified in pipeline parameters.
@@ -108,7 +108,7 @@ steps:
 
 # ------------------------------------------------------------------------------------------- Exporting data -------------------------------------------------------------------------------------------
 
-# Data Export (src/toolbox/steps/custom/export.py):
+# Data Export (src/pelagos_py/steps/custom/export.py):
 # Saves the current xarray dataset stored in pipeline._context["data"]
   - name: "Data Export"
     parameters:
@@ -126,9 +126,9 @@ steps:
 # This updates the QC columns (<var>_QC) of the data depending on the test output. If Apply QC is called
 # then qc_history will be added to the pipeline context which tracks which variables have been tested by
 # which tests. Apply QC can be called multiple times, so any test can be run multiple times at different
-# stages in the processing. All QC test src can be found in: * = src/toolbox/steps/custom/qc
+# stages in the processing. All QC test src can be found in: * = src/pelagos_py/steps/custom/qc
 
-# Apply QC (src/toolbox/steps/custom/apply_qc.py)
+# Apply QC (src/pelagos_py/steps/custom/apply_qc.py)
 # Applies the specified tests to data using the Argo flag naming conventions.
   - name: "Apply QC"
     parameters:
@@ -255,11 +255,11 @@ steps:
 # ------------------------------------------------------------------------------------ Filtering & Interpolation ------------------------------------------------------------------------------------------
 
 # Processing steps (not yet formally defined) can filter data inputs by QC flag before it is used in processing.
-# This functionality is inherited from QCHandlingMixin (src/toolbox/utils/qc_handling.py). By default, the QC
+# This functionality is inherited from QCHandlingMixin (src/pelagos_py/utils/qc_handling.py). By default, the QC
 # filter does not look for any flags, however this can be changed through the optional inclusion of
 # qc_handling_settings to the step config - see below.
 
-# QC Handling (src/toolbox/utils/qc_handling.py):
+# QC Handling (src/pelagos_py/utils/qc_handling.py):
 # Allows the user to filter the data before processing steps
   - name: "" # Any step that inherits from QCHandlingMixin
     parameters:
@@ -284,7 +284,7 @@ steps:
           4: 8
           9: 8
 
-# Interpolate Data (src/toolbox/steps/custom/interpolate_data.py):
+# Interpolate Data (src/pelagos_py/steps/custom/interpolate_data.py):
 # Interpolates over nan values. Paired with QC handling allowing "bad data" to be replaced with nans and interpolated over.
   - name: "Interpolate Data"
     parameters:
@@ -305,7 +305,7 @@ steps:
 
 # ------------------------------------------------------------------------------------------- Profile Finding -------------------------------------------------------------------------------------------
 
-# Find Profiles (src/toolbox/steps/custom/find_profiles.py):
+# Find Profiles (src/pelagos_py/steps/custom/find_profiles.py):
 # Adds PROFILE_NUMBER to the data, grouping points using a vertical velocity thresholding method
   - name: "Find Profiles"
     parameters:
@@ -324,7 +324,7 @@ steps:
     #   above parameters to produce the best profile-search criteria.
     diagnostics: false
 
-# Find Profile Direction (src/toolbox/steps/custom/profile_direction.py):
+# Find Profile Direction (src/pelagos_py/steps/custom/profile_direction.py):
 # Determines the profile direction based off of median vertical velocity
   - name: "Find Profile Direction"
     parameters:
@@ -337,7 +337,7 @@ steps:
 
 # CTD processing operates on variables output by the glider CTD (PRES, CNDC, TEMP).
 
-# Derive CTD (src/toolbox/steps/custom/derive_ctd.py):
+# Derive CTD (src/pelagos_py/steps/custom/derive_ctd.py):
 # Derives CTD variables using gsw-python (TEOS-10) from PRES, CNDC & TEMP
   - name: "Derive CTD"
     parameters:
@@ -353,7 +353,7 @@ steps:
     # [diagnostics]: None
     diagnostics: false
 
-# Salinity Adjustment (src/toolbox/steps/custom/variables/salinity.py -> AdjustSalinity):
+# Salinity Adjustment (src/pelagos_py/steps/custom/variables/salinity.py -> AdjustSalinity):
 # Applies the thermal-lag correction for Salinity presented in Morrison et al 1994. It is recomended that this be used with
 # QC filtering as the data is used to optimize adjustment coefficients.
   - name: "Salinity Adjustment"
@@ -374,7 +374,7 @@ steps:
 # Note that the variables added to the dataset by these steps will appear as <input>_ADJUSTED unless
 # <input> already has the _ADJUSTED suffix, in which case, the input will be modified inplace.
 
-# Chla Deep Correction (src/toolbox/steps/custom/variables/chla.py -> chla_deep_correction):
+# Chla Deep Correction (src/pelagos_py/steps/custom/variables/chla.py -> chla_deep_correction):
 # Subtracts a constant value from the data so that deep CHLA values are zeroed.
   - name: "Chla Deep Correction"
     parameters:
@@ -391,7 +391,7 @@ steps:
     #   Create a plot showing CHLA values over depth with lines for the dark value and depth threshold
     diagnostics: false
 
-# Chla Quenching Correction (src/toolbox/steps/custom/variables/chla.py -> chla_quenching_correction):
+# Chla Quenching Correction (src/pelagos_py/steps/custom/variables/chla.py -> chla_quenching_correction):
 # Offers a selection of Non-photochemical quenching correction techniques for removing Chla signal
 # supression caused by phytoplankton quenching.
   - name: "Chla Quenching Correction"
@@ -427,7 +427,7 @@ steps:
 # Note that the variables added to the dataset by these steps will appear as <input>_ADJUSTED unless
 # <input> already has the _ADJUSTED suffix, in which case, the input will be modified inplace.
 
-# BBP from Beta (src/toolbox/steps/custom/variables/bbp.py -> BBPFromBeta):
+# BBP from Beta (src/pelagos_py/steps/custom/variables/bbp.py -> BBPFromBeta):
 # Converts from units of beta to BBP
   - name: "BBP from Beta"
     parameters:
@@ -449,7 +449,7 @@ steps:
     #   Creates a box plot comparing value ranges before and after conversion
     diagnostics: false
 
-# Isolate BBP Spikes (src/toolbox/steps/custom/variables/bbp.py -> IsolateBBPSpikes):
+# Isolate BBP Spikes (src/pelagos_py/steps/custom/variables/bbp.py -> IsolateBBPSpikes):
 # Uses a running median/minmax filter to separate baseline and spike BBP data.
   - name: "Isolate BBP Spikes"
     parameters:

@@ -1,6 +1,6 @@
 import pytest
 import yaml
-from toolbox.pipeline import Pipeline
+from pelagos_py.pipeline import Pipeline
 
 GENERATE_YAML = """
 pipeline:

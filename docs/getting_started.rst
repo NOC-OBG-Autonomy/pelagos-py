@@ -37,7 +37,7 @@ Once you have cloned the repository, navigate into the project folder to install
 
 **Using Anaconda**
 
-If you prefer using conda, you can create a dedicated environment using the provided ``environment.yaml`` file. This environment includes all packages required to run the toolbox and the example notebooks.
+If you prefer using conda, you can create a dedicated environment using the provided ``environment.yaml`` file. This environment includes all packages required to run pelagos_py and the example notebooks.
 
 .. code-block:: bash
 

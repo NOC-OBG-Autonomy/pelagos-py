@@ -1,7 +1,7 @@
 """Tests the step 'Write Report'"""
 
 #   Test module import
-from toolbox.steps.custom import write_report
+from pelagos_py.steps.custom import write_report
 import pytest
 from unittest.mock import (
     patch,
@@ -58,7 +58,7 @@ def test_current_info():
     expected = {
         "timestamp_utc": fixed_now.isoformat(),
         "user": "aaron-mau",
-        "toolbox_version": "0.1.dev318+gdaacfb0d8",
+        "version": "0.1.dev318+gdaacfb0d8",
         "python_version": "3.14.2",
         "system": "Linux: 6.17.0-8-generic",
     }
@@ -77,7 +77,7 @@ def test_current_info():
         mock_datetime.now.return_value = fixed_now
         result = write_report.current_info()
 
-    expected["toolbox_version"] = "unknown"
+    expected["version"] = "unknown"
 
     assert result == expected
 
@@ -200,12 +200,12 @@ def test_flatten_qc_dict(qc_dataset):
 
 def test_add_log(tmp_path):
     log_content = """\
-2026-02-17 12:56:08 - INFO - toolbox.pipeline - Logging to file: /toolbox/examples/data/OG1/testing/processing.log
-2026-02-17 12:56:08 - INFO - toolbox.pipeline - Assembling steps to run from config.
-2026-02-17 12:56:08 - INFO - toolbox.pipeline - Step 'Load OG1' added successfully!
+2026-02-17 12:56:08 - INFO - pelagos_py.pipeline - Logging to file: /pelagos_py/examples/data/OG1/testing/processing.log
+2026-02-17 12:56:08 - INFO - pelagos_py.pipeline - Assembling steps to run from config.
+2026-02-17 12:56:08 - INFO - pelagos_py.pipeline - Step 'Load OG1' added successfully!
 
-2026-02-17 12:56:18 - WARNING - toolbox.pipeline.step.Apply QC - [Apply QC] PROFILE_NUMBER_QC is all 0 after running all QC steps. Check intended QC variables and test requirements.
-2026-02-17 12:56:23 - WARNING - toolbox.pipeline.step.Write Data Report - [Write Data Report] Lines below this will not be captured in the run report. See logfile if other steps follow this one.
+2026-02-17 12:56:18 - WARNING - pelagos_py.pipeline.step.Apply QC - [Apply QC] PROFILE_NUMBER_QC is all 0 after running all QC steps. Check intended QC variables and test requirements.
+2026-02-17 12:56:23 - WARNING - pelagos_py.pipeline.step.Write Data Report - [Write Data Report] Lines below this will not be captured in the run report. See logfile if other steps follow this one.
 """  #   Blank line should get ignored
 
     logfile = tmp_path / "processing.log"
@@ -225,7 +225,7 @@ def test_add_log(tmp_path):
         "12:56:08",  #  Shouldn't have a date on it
         "INFO",
         "pipeline",  #  Prefix should be removed
-        "Logging to file: /toolbox/examples/data/OG1/testing/processing.log",
+        "Logging to file: /pelagos_py/examples/data/OG1/testing/processing.log",
     )
 
     # Check WARNING row with deeper path
@@ -566,7 +566,7 @@ def test_write_data_report(tmp_path, qc_dataset):
         "data": qc_dataset,
     }
     (tmp_path / "run.log").write_text(
-        "2026-02-17 12:00:00 - INFO - toolbox.pipeline - Test message\n"
+        "2026-02-17 12:00:00 - INFO - pelagos_py.pipeline - Test message\n"
     )
 
     step = write_report.WriteDataReport.__new__(write_report.WriteDataReport)
@@ -600,7 +600,7 @@ def test_write_data_report_no_build(tmp_path, qc_dataset):
         "data": qc_dataset,
     }
     (tmp_path / "run.log").write_text(
-        "2026-02-17 12:00:00 - INFO - toolbox.pipeline - Test message\n"
+        "2026-02-17 12:00:00 - INFO - pelagos_py.pipeline - Test message\n"
     )
 
     step = write_report.WriteDataReport.__new__(write_report.WriteDataReport)
@@ -689,7 +689,7 @@ def test_write_data_report_missing_dataset_id(tmp_path, qc_dataset):
         "data": qc_dataset,
     }
     (tmp_path / "run.log").write_text(
-        "2026-02-17 12:00:00 - INFO - toolbox.pipeline - Test message\n"
+        "2026-02-17 12:00:00 - INFO - pelagos_py.pipeline - Test message\n"
     )
 
     step = write_report.WriteDataReport.__new__(write_report.WriteDataReport)

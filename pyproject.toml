@@ -7,7 +7,7 @@ requires = [
 ]
 
 [project]
-name = "pelagos-py"
+name = "pelagos_py"
 description = "Customizable processing pipeline for oceanographic data from autonomous assets"
 readme = "README.md"
 maintainers = [
@@ -36,8 +36,11 @@ dependencies = { file = [
   "requirements.txt",
 ] }
 
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [tool.setuptools_scm]
-write_to = "src/toolbox/_version.py"
+write_to = "src/pelagos_py/_version.py"
 write_to_template = "__version__ = '{version}'"
 tag_regex = "^(?P<prefix>v)?(?P<version>[^\\+]+)(?P<suffix>.*)?$"
 

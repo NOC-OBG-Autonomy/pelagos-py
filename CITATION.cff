@@ -2,7 +2,7 @@
 # Visit https://bit.ly/cffinit to generate yours today!
 
 cff-version: 1.2.0
-title: Autonomy Toolbox
+title: Pelagos_py
 message: >-
   If you use this software, please cite it using the
   metadata from this file.
@@ -47,5 +47,5 @@ authors:
   - given-names: Aaron
     family-names: Mau
     affiliation: Voice of the Ocean Foundation
-repository-code: 'https://github.com/NOC-OBG-Autonomy/toolbox'
+repository-code: 'https://github.com/NOC-OBG-Autonomy/pelagos_py'
 license: Apache-2.0

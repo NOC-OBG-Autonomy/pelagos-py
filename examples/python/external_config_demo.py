@@ -1,5 +1,5 @@
 import yaml
-from toolbox.pipeline import Pipeline, _setup_logging
+from pelagos_py.pipeline import Pipeline, _setup_logging
 
 # --- Configuration Variables ---
 CONFIG_FILE_PATH = "/Users/orlpru/Desktop/OG1_Data/configs/example_config_Growler_677_R.yaml"

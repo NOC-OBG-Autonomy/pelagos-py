@@ -1,7 +1,7 @@
 """Tests the step 'Format Checker"""
 
 #   Test module import
-from toolbox.steps.custom import format_check
+from pelagos_py.steps.custom import format_check
 
 import pytest
 from unittest.mock import (
@@ -15,8 +15,8 @@ FormatCheck = format_check.FormatCheck
 
 def test_format_checker_run_success(tmp_path):
     # Mock both the CheckSuite and run_checker from the compliance checker runner.
-    with patch("toolbox.steps.custom.format_check.CheckSuite") as mock_checksuite, \
-         patch("toolbox.steps.custom.format_check.ComplianceChecker.run_checker") as mock_run_checker:
+    with patch("pelagos_py.steps.custom.format_check.CheckSuite") as mock_checksuite, \
+         patch("pelagos_py.steps.custom.format_check.ComplianceChecker.run_checker") as mock_run_checker:
         mock_suite_instance = MagicMock()
         mock_run_checker.return_value = (True, False)
         mock_checksuite.return_value = mock_suite_instance
@@ -44,8 +44,8 @@ def test_format_checker_run_success(tmp_path):
 
 
 def test_format_checker_run_failure_raises(tmp_path):
-    with patch("toolbox.steps.custom.format_check.CheckSuite") as mock_checksuite, \
-         patch("toolbox.steps.custom.format_check.ComplianceChecker.run_checker") as mock_run_checker:
+    with patch("pelagos_py.steps.custom.format_check.CheckSuite") as mock_checksuite, \
+         patch("pelagos_py.steps.custom.format_check.ComplianceChecker.run_checker") as mock_run_checker:
         mock_suite_instance = MagicMock()
         mock_run_checker.return_value = (False, False)
         mock_checksuite.return_value = mock_suite_instance
@@ -74,8 +74,8 @@ def test_format_checker_run_failure_raises(tmp_path):
 
 
 def test_format_checker_errors(tmp_path):
-    with patch("toolbox.steps.custom.format_check.CheckSuite") as mock_checksuite, \
-         patch("toolbox.steps.custom.format_check.ComplianceChecker.run_checker") as mock_run_checker:
+    with patch("pelagos_py.steps.custom.format_check.CheckSuite") as mock_checksuite, \
+         patch("pelagos_py.steps.custom.format_check.ComplianceChecker.run_checker") as mock_run_checker:
         mock_suite_instance = MagicMock()
         mock_run_checker.return_value = (True, True)
         mock_checksuite.return_value = mock_suite_instance
@@ -106,8 +106,8 @@ def test_format_checker_errors(tmp_path):
 
 
 def test_format_checker_json_output(tmp_path):
-    with patch("toolbox.steps.custom.format_check.CheckSuite") as mock_checksuite, \
-         patch("toolbox.steps.custom.format_check.ComplianceChecker.run_checker") as mock_run_checker:
+    with patch("pelagos_py.steps.custom.format_check.CheckSuite") as mock_checksuite, \
+         patch("pelagos_py.steps.custom.format_check.ComplianceChecker.run_checker") as mock_run_checker:
 
         mock_suite_instance = MagicMock()
         mock_run_checker.return_value = (True, False)
