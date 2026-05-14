@@ -156,7 +156,7 @@
 
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="tests.html">
-    Tests
+    Quality Control
   </a>
 </li>
 
@@ -270,7 +270,7 @@
 
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="tests.html">
-    Tests
+    Quality Control
   </a>
 </li>
 
@@ -389,18 +389,41 @@
 <h1>Getting Started<a class="headerlink" href="#getting-started" title="Link to this heading">#</a></h1>
 <section id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Link to this heading">#</a></h2>
-<p>Unfortunately, this software is not yet available as an installable package. We hope to change this soon. If you would like to use in now however, you are welcome to clone/copy the
-repository onto your own device. The requirements for the toolbox can be installed using <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-r</span> <span class="pre">requirements.txt</span></code>.</p>
-<p>If using Anaconda, the <code class="docutils literal notranslate"><span class="pre">environment.yaml</span></code> file can be used to create a conda environment using:</p>
-<p><code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">env</span> <span class="pre">create</span> <span class="pre">-f</span> <span class="pre">environment.yaml</span></code>.</p>
-<p>This should include all of the packages required to operate the software and run the example notebooks.</p>
+<p>The NOC Autonomy Toolbox, <strong>pelagos-py</strong>, is not yet available as an installable package via PyPI. To use the software, you should clone the repository directly from GitHub.</p>
+<p>You can choose between the stable version or the latest development features.</p>
+<p><strong>Stable Version (Main)</strong></p>
+<p>This is the recommended version for most users. It contains the most thoroughly tested code.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/NOC-OBG-Autonomy/pelagos-py.git
+</pre></div>
+</div>
+<p><strong>Development Version (Dev)</strong></p>
+<p>If you want to access the latest features or contribute to the project, use the development branch. Note that this code may be subject to frequent changes.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>-b<span class="w"> </span>dev<span class="w"> </span>https://github.com/NOC-OBG-Autonomy/pelagos-py.git
+</pre></div>
+</div>
+</section>
+<section id="dependencies">
+<h2>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading">#</a></h2>
+<p>Once you have cloned the repository, navigate into the project folder to install the required dependencies.</p>
+<p><strong>Using pip</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+</pre></div>
+</div>
+<p><strong>Using Anaconda</strong></p>
+<p>If you prefer using conda, you can create a dedicated environment using the provided <code class="docutils literal notranslate"><span class="pre">environment.yaml</span></code> file. This environment includes all packages required to run the toolbox and the example notebooks.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>env<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>environment.yaml
+</pre></div>
+</div>
 </section>
 <section id="example-pipeline">
 <h2>Example Pipeline<a class="headerlink" href="#example-pipeline" title="Link to this heading">#</a></h2>
-<p>If you are new here, we recommend that you check out the <code class="docutils literal notranslate"><span class="pre">example/notebooks/pipeline_demo.ipynb</span></code> jupyter notebook. This presents an example use case of processing CTD measurements from freely
-available glider data hosted by the British Oceanographic Data Centre (BODC). A fully commented config file is also used for this processing, so make sure you check it out!</p>
-<p>The details of how each step works can be found in the documentation (see below). This is currently a work in progress so some steps may be missing or badly formatted. If you spot any mistakes
-or would like a specific steps documentation to be prioritized, please leave an issue in the <a class="reference external" href="https://github.com/NOC-OBG-Autonomy/toolbox/issues">github issues page</a>.</p>
+<p>If you are new here, we recommend checking out the <code class="docutils literal notranslate"><span class="pre">example/notebooks/pipeline_demo.ipynb</span></code> Jupyter notebook. This provides an example use case for processing CTD measurements from glider data hosted by the British Oceanographic Data Centre (BODC).</p>
+<p>A fully commented configuration file is used for this process, which serves as an excellent template for your own projects.</p>
+</section>
+<section id="documentation-and-feedback">
+<h2>Documentation and Feedback<a class="headerlink" href="#documentation-and-feedback" title="Link to this heading">#</a></h2>
+<p>The details of how each step works can be found in the following sections of this documentation. Please note that this is a work in progress. Some steps may be missing or require further formatting.</p>
+<p>If you spot any mistakes or would like specific documentation to be prioritised, please open an issue on the <a class="reference external" href="https://github.com/NOC-OBG-Autonomy/pelagos-py/issues">GitHub issues page</a>.</p>
 </section>
 </section>
 
@@ -452,7 +475,9 @@ or would like a specific steps documentation to be prioritized, please leave an 
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installation">Installation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dependencies">Dependencies</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example-pipeline">Example Pipeline</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#documentation-and-feedback">Documentation and Feedback</a></li>
 </ul>
   </nav></div>
 
