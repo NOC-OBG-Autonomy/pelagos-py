@@ -20,18 +20,18 @@
     </style>
 </noscript>
 <!-- Loaded before other Sphinx assets -->
-<link href="_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet"/>
-<link href="_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet"/>
+<link href="_static/styles/theme.css?digest=0790524f97105ba85085" rel="stylesheet"/>
+<link href="_static/styles/pydata-sphinx-theme.css?digest=0790524f97105ba85085" rel="stylesheet"/>
 <link href="_static/pygments.css?v=d75fae25" rel="stylesheet" type="text/css"/>
 <link href="_static/copybutton.css?v=76b2166b" rel="stylesheet" type="text/css"/>
 <link href="_static/graphviz.css?v=4ae1632d" rel="stylesheet" type="text/css"/>
 <link href="_static/sphinx-codeautolink.css?v=b2176991" rel="stylesheet" type="text/css"/>
 <link href="_static/sphinx-design.min.css?v=95c83b7e" rel="stylesheet" type="text/css"/>
 <!-- So that users can add custom icons -->
-<script defer="" src="_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
+<script defer="" src="_static/scripts/fontawesome.js?digest=0790524f97105ba85085"></script>
 <!-- Pre-loaded scripts that we'll load fully later -->
-<link as="script" href="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" rel="preload"/>
-<link as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" rel="preload"/>
+<link as="script" href="_static/scripts/bootstrap.js?digest=0790524f97105ba85085" rel="preload"/>
+<link as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085" rel="preload"/>
 <script src="_static/documentation_options.js?v=d45e8c67"></script>
 <script src="_static/doctools.js?v=9bcbadda"></script>
 <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
@@ -44,7 +44,7 @@
 <link href="https://noc-obg-autonomy.github.io/pelagos-py/developer_guide.html" rel="canonical"/>
 <link href="genindex.html" rel="index" title="Index"/>
 <link href="search.html" rel="search" title="Search"/>
-<link href="api/src/toolbox/index.html" rel="next" title="src.toolbox"/>
+<link href="api/src/pelagos_py/index.html" rel="next" title="src.pelagos_py"/>
 <link href="contributing.html" rel="prev" title="Contributing"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
 <meta content="en" name="docsearch:language"/>
@@ -110,7 +110,7 @@
   </a>
 </li>
 <li class="nav-item">
-<a class="nav-link nav-internal" href="api/src/toolbox/index.html">
+<a class="nav-link nav-internal" href="api/src/pelagos_py/index.html">
     API Reference
   </a>
 </li>
@@ -126,11 +126,18 @@
 </button>
 </div>
 <div class="navbar-item">
-<button aria-label="Color mode" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" data-bs-placement="bottom" data-bs-title="Color mode" data-bs-toggle="tooltip">
-<i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
-<i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
-<i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
-</button></div>
+<div class="theme-switch-container dropdown pst-js-only" data-bs-placement="bottom" data-bs-toggle="tooltip" title="Color mode">
+<button aria-label="Color mode" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" data-bs-toggle="dropdown">
+<i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+<i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+<i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+</button>
+<ul class="dropdown-menu dropdown-menu-end">
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+</ul>
+</div></div>
 </div>
 </div>
 <div class="navbar-persistent--mobile">
@@ -180,7 +187,7 @@
   </a>
 </li>
 <li class="nav-item">
-<a class="nav-link nav-internal" href="api/src/toolbox/index.html">
+<a class="nav-link nav-internal" href="api/src/pelagos_py/index.html">
     API Reference
   </a>
 </li>
@@ -189,11 +196,18 @@
 </div>
 <div class="sidebar-header-items__end">
 <div class="navbar-item">
-<button aria-label="Color mode" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" data-bs-placement="bottom" data-bs-title="Color mode" data-bs-toggle="tooltip">
-<i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
-<i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
-<i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
-</button></div>
+<div class="theme-switch-container dropdown pst-js-only" data-bs-placement="bottom" data-bs-toggle="tooltip" title="Color mode">
+<button aria-label="Color mode" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" data-bs-toggle="dropdown">
+<i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+<i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+<i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+</button>
+<ul class="dropdown-menu dropdown-menu-end">
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+</ul>
+</div></div>
 </div>
 </div>
 <div class="sidebar-primary-items__start sidebar-primary__section">
@@ -240,13 +254,13 @@
 <article class="bd-article">
 <section id="developer-guide">
 <h1>Developer Guide<a class="headerlink" href="#developer-guide" title="Link to this heading">#</a></h1>
-<p>This page explains how to add new <strong>steps</strong> and <strong>tests</strong> to the Toolbox.</p>
+<p>This page explains how to add new <strong>steps</strong> and <strong>tests</strong> to pelagos_py.</p>
 <section id="what-is-a-step">
 <h2>What is a “step”?<a class="headerlink" href="#what-is-a-step" title="Link to this heading">#</a></h2>
 <p>A step is a stage in the pipeline that can be defined via Python, and configured via the Pipelines Config file. Examples of steps include:</p>
 <ul class="simple">
-<li><p>I/O Steps (e.g. reading in data using <code class="docutils literal notranslate"><span class="pre">Load</span> <span class="pre">OG1</span></code>-&gt;<a class="reference external" href="https://noc-obg-autonomy.github.io/toolbox/api/toolbox/steps/custom/load_data/index.html">load_data.py</a>)</p></li>
-<li><p>Variable Processing Steps (e.g. Adjusting existing salinity measurements using <code class="docutils literal notranslate"><span class="pre">Salinity</span> <span class="pre">Adjustment</span></code>-&gt;<a class="reference external" href="https://noc-obg-autonomy.github.io/toolbox/api/toolbox/steps/custom/variables/salinity/index.html">salinity.py</a>)</p></li>
+<li><p>I/O Steps (e.g. reading in data using <code class="docutils literal notranslate"><span class="pre">Load</span> <span class="pre">OG1</span></code>-&gt;<a class="reference external" href="https://noc-obg-autonomy.github.io/pelagos_py/api/pelagos_py/steps/custom/load_data/index.html">load_data.py</a>)</p></li>
+<li><p>Variable Processing Steps (e.g. Adjusting existing salinity measurements using <code class="docutils literal notranslate"><span class="pre">Salinity</span> <span class="pre">Adjustment</span></code>-&gt;<a class="reference external" href="https://noc-obg-autonomy.github.io/pelagos_py/api/pelagos_py/steps/custom/variables/salinity/index.html">salinity.py</a>)</p></li>
 </ul>
 <p>Steps are not limited to one per file - in fact, a single file can contain multiple steps. This also is true for configs. Any step can be called multiple
 times in a single config.</p>
@@ -268,11 +282,11 @@ See <a class="reference internal" href="#"><span class="xref myst">all_step_conf
 <h2>How to add a new step<a class="headerlink" href="#how-to-add-a-new-step" title="Link to this heading">#</a></h2>
 <p>A template for new data processing steps can be found in <a class="reference internal" href="#"><span class="xref myst">blank_step.py</span></a> however it is reccomended that you read the following steps to avoid implementation issues.</p>
 <ol class="arabic">
-<li><p>Create a new Python file in the appropriate directory under <code class="docutils literal notranslate"><span class="pre">src/toolbox/steps/custom/</span></code>.<br/>
+<li><p>Create a new Python file in the appropriate directory under <code class="docutils literal notranslate"><span class="pre">src/pelagos_py/steps/custom/</span></code>.<br/>
 <strong>NOTE</strong>: if you are creating a step for specific vairables then it should go in the <code class="docutils literal notranslate"><span class="pre">variables</span></code> subdirectory.</p></li>
 <li><p>Define a new class for your step, inheriting from <code class="docutils literal notranslate"><span class="pre">BaseStep</span></code> and adding the @register_step decorator. This ensures that the step is discoverable by the Pipeline Manager,
 as well as allowing you do define other classes in the same file without registering them.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
 
 <span class="nd">@register_step</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
@@ -281,7 +295,7 @@ as well as allowing you do define other classes in the same file without registe
 </div>
 </li>
 <li><p>Define the step_name attribute, which is the name that will be used in the Pipelines Config file to refer to this step.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
 
 <span class="nd">@register_step</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
@@ -291,7 +305,7 @@ as well as allowing you do define other classes in the same file without registe
 </div>
 </li>
 <li><p>Implement the <code class="docutils literal notranslate"><span class="pre">run</span></code> method, which contains the logic for your step. This method should take no arguments other than <code class="docutils literal notranslate"><span class="pre">self</span></code>, and should return a <code class="docutils literal notranslate"><span class="pre">self.context</span></code> object.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
 
 <span class="nd">@register_step</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
@@ -304,7 +318,7 @@ as well as allowing you do define other classes in the same file without registe
 </div>
 </li>
 <li><p>Optionally, implement the <code class="docutils literal notranslate"><span class="pre">generate_diagnostics</span></code> method if your step produces any diagnostic plots or outputs.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
 
 <span class="nd">@register_step</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
@@ -319,7 +333,7 @@ as well as allowing you do define other classes in the same file without registe
         <span class="k">pass</span>
 </pre></div>
 </div>
-<p>There are already default methods for generating common diagnostics, such as time series plots and scatter plots. See the <a class="reference external" href="https://noc-obg-autonomy.github.io/toolbox/api/toolbox/utils/diagnostics/index.html">diagnostics documentation</a> for more information.</p>
+<p>There are already default methods for generating common diagnostics, such as time series plots and scatter plots. See the <a class="reference external" href="https://noc-obg-autonomy.github.io/pelagos_py/api/pelagos_py/utils/diagnostics/index.html">diagnostics documentation</a> for more information.</p>
 </li>
 <li><p>Add the step to your Pipelines Config file, using the <code class="docutils literal notranslate"><span class="pre">step_name</span></code> you defined in step 3.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="w"> </span><span class="c1"># Pipeline Configuration &lt;- This section is only needed once at the top of the yaml file</span>
@@ -337,14 +351,14 @@ as well as allowing you do define other classes in the same file without registe
 </div>
 </li>
 <li><p>Any parameters defined in the <code class="docutils literal notranslate"><span class="pre">parameters</span></code> section of the config file will be passed to your step as attributes. You can access them in your <code class="docutils literal notranslate"><span class="pre">run</span></code> method using <code class="docutils literal notranslate"><span class="pre">self.param1</span></code>, <code class="docutils literal notranslate"><span class="pre">self.param2</span></code>, etc. <br/>
-<strong>NOTE</strong> This is handled automatically by the <code class="docutils literal notranslate"><span class="pre">BaseStep</span></code> class. More information can be found in the <a class="reference external" href="https://noc-obg-autonomy.github.io/toolbox/_modules/toolbox/steps.html">BaseStep documentation</a>.</p></li>
+<strong>NOTE</strong> This is handled automatically by the <code class="docutils literal notranslate"><span class="pre">BaseStep</span></code> class. More information can be found in the <a class="reference external" href="https://noc-obg-autonomy.github.io/pelagos_py/_modules/pelagos_py/steps.html">BaseStep documentation</a>.</p></li>
 </ol>
 <section id="adding-qc-handling-to-a-step">
 <h3>Adding QC handling to a step<a class="headerlink" href="#adding-qc-handling-to-a-step" title="Link to this heading">#</a></h3>
 <p>If you would like your step to have QC handling (pre-step filtering) then add the <code class="docutils literal notranslate"><span class="pre">QCHandlerMixin</span></code> from <a class="reference internal" href="#"><span class="xref myst">qc_handling.py</span></a> to your step class inheritance. Additionally you
 will have to include the <code class="docutils literal notranslate"><span class="pre">self.filter_qc()</span></code>, <code class="docutils literal notranslate"><span class="pre">self.reconstruct_data()</span></code>, <code class="docutils literal notranslate"><span class="pre">self.update_qc()</span></code> and <code class="docutils literal notranslate"><span class="pre">self.generate_qc({&lt;QC_child&gt;:</span> <span class="pre">[*&lt;QC_parents&gt;]})</span></code> methods as follows.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.utils.qc_handling</span><span class="w"> </span><span class="kn">import</span> <span class="n">QCHandlingMixin</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.qc_handling</span><span class="w"> </span><span class="kn">import</span> <span class="n">QCHandlingMixin</span>
 
 <span class="nd">@register_step</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
@@ -421,10 +435,10 @@ responsible for transfering the individual test results onto the existing QC col
 dynamics tests can be found in <a class="reference internal" href="#"><span class="xref myst">range_test.py</span></a> and <a class="reference internal" href="#"><span class="xref myst">stuck_value_test.py</span></a>.</p>
 <p>An example template for a static test can be found in <a class="reference internal" href="#"><span class="xref myst">blank_test.py</span></a>, however again it is recommended that you read the instructions below as well.</p>
 <ol class="arabic">
-<li><p>create your test file in the <code class="docutils literal notranslate"><span class="pre">src/toolbox/steps/custom/qc</span></code>.</p></li>
+<li><p>create your test file in the <code class="docutils literal notranslate"><span class="pre">src/pelagos_py/steps/custom/qc</span></code>.</p></li>
 <li><p>Import the necessary parent classes and define your test class. Make sure it inherits from <code class="docutils literal notranslate"><span class="pre">BaseTest</span></code> and have the <code class="docutils literal notranslate"><span class="pre">@register_qc</span></code> decorator. This will allow the
 pipeline to find and register the test.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base_test</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseTest</span><span class="p">,</span> <span class="n">register_qc</span><span class="p">,</span> <span class="n">flag_cols</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_test</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseTest</span><span class="p">,</span> <span class="n">register_qc</span><span class="p">,</span> <span class="n">flag_cols</span>
 
 <span class="nd">@register_qc</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">MyNewTest</span><span class="p">(</span><span class="n">BaseTest</span><span class="p">):</span>
@@ -433,7 +447,7 @@ pipeline to find and register the test.</p>
 </div>
 </li>
 <li><p>Specify the following attributes:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base_test</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseTest</span><span class="p">,</span> <span class="n">register_qc</span><span class="p">,</span> <span class="n">flag_cols</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_test</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseTest</span><span class="p">,</span> <span class="n">register_qc</span><span class="p">,</span> <span class="n">flag_cols</span>
 
 <span class="nd">@register_qc</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">MyNewTest</span><span class="p">(</span><span class="n">BaseTest</span><span class="p">):</span>
@@ -446,7 +460,7 @@ pipeline to find and register the test.</p>
 </li>
 <li><p>Add the <code class="docutils literal notranslate"><span class="pre">return_qc()</span></code> method which is where you will implement your test algorithm. Optionally add the <code class="docutils literal notranslate"><span class="pre">plot_diagnostics()</span></code> method if you would like the test
 to generate plots when diagnostics is true in the config.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">toolbox.steps.base_test</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseTest</span><span class="p">,</span> <span class="n">register_qc</span><span class="p">,</span> <span class="n">flag_cols</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_test</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseTest</span><span class="p">,</span> <span class="n">register_qc</span><span class="p">,</span> <span class="n">flag_cols</span>
 
 <span class="nd">@register_qc</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">MyNewTest</span><span class="p">(</span><span class="n">BaseTest</span><span class="p">):</span>
@@ -495,10 +509,10 @@ Dataset (self.flags) which can contain any number of data variables, but those w
 <p class="prev-next-title">Contributing</p>
 </div>
 </a>
-<a class="right-next" href="api/src/toolbox/index.html" title="next page">
+<a class="right-next" href="api/src/pelagos_py/index.html" title="next page">
 <div class="prev-next-info">
 <p class="prev-next-subtitle">next</p>
-<p class="prev-next-title">src.toolbox</p>
+<p class="prev-next-title">src.pelagos_py</p>
 </div>
 <i class="fa-solid fa-angle-right"></i>
 </a>
@@ -530,8 +544,8 @@ Dataset (self.flags) which can contain any number of data variables, but those w
 </div>
 </div>
 <!-- Scripts loaded after <body> so the DOM is not blocked -->
-<script defer="" src="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
-<script defer="" src="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
+<script defer="" src="_static/scripts/bootstrap.js?digest=0790524f97105ba85085"></script>
+<script defer="" src="_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085"></script>
 <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
 <div class="footer-items__start">
@@ -553,7 +567,7 @@ Dataset (self.flags) which can contain any number of data variables, but those w
 <div class="footer-item">
 <p class="theme-version">
 <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.18.0.
 </p></div>
 </div>
 </div>

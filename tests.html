@@ -27,8 +27,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
-<link href="_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+  <link href="_static/styles/theme.css?digest=0790524f97105ba85085" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=0790524f97105ba85085" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -37,10 +37,10 @@
     <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
+  <script defer src="_static/scripts/fontawesome.js?digest=0790524f97105ba85085"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
-<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=0790524f97105ba85085" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085" />
 
     <script src="_static/documentation_options.js?v=d45e8c67"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
@@ -176,7 +176,7 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="api/src/toolbox/index.html">
+  <a class="nav-link nav-internal" href="api/src/pelagos_py/index.html">
     API Reference
   </a>
 </li>
@@ -202,11 +202,18 @@
       
         <div class="navbar-item">
 
-<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
-  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
-  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
-  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
-</button></div>
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
       
     </div>
     
@@ -290,7 +297,7 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="api/src/toolbox/index.html">
+  <a class="nav-link nav-internal" href="api/src/pelagos_py/index.html">
     API Reference
   </a>
 </li>
@@ -307,11 +314,18 @@
         
           <div class="navbar-item">
 
-<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
-  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
-  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
-  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
-</button></div>
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
         
       </div>
     
@@ -388,7 +402,7 @@
   <section id="quality-control">
 <h1>Quality Control<a class="headerlink" href="#quality-control" title="Link to this heading">#</a></h1>
 <p>Quality control (QC) are sub-steps run within the <code class="docutils literal notranslate"><span class="pre">Apply</span> <span class="pre">QC</span></code> process. These do not modify your data values: they update a corresponding QC column (e.g. <code class="docutils literal notranslate"><span class="pre">TEMP_QC</span></code>) to indicate the reliability of each measurement.</p>
-<p>The Toolbox follows the standardised Argo flagging system:</p>
+<p>The pelagos_py follows the standardised Argo flagging system:</p>
 <ul class="simple">
 <li><p><strong>0</strong>: No QC performed.</p></li>
 <li><p><strong>1</strong>: Good data.</p></li>
@@ -415,29 +429,29 @@
 <h3>Spatiotemporal Checks<a class="headerlink" href="#spatiotemporal-checks" title="Link to this heading">#</a></h3>
 <p>These verify that the data was collected at a logical time and place.</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/qc/impossible_date_qc/index.html"><span class="doc">Impossible Date</span></a>: Checks that the timestamps fall within a realistic range (typically from 1985 to the present day).</p></li>
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/qc/impossible_location_qc/index.html"><span class="doc">Impossible Location</span></a>: Verifies that latitude and longitude coordinates are within global bounds.</p></li>
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/qc/impossible_speed_qc/index.html"><span class="doc">Impossible Speed</span></a>: Calculates the velocity between points to ensure the platform is not moving at unphysical speeds.</p></li>
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/qc/position_on_land_qc/index.html"><span class="doc">Position on Land</span></a>: Uses a bathymetry mask to check if coordinates incorrectly place the platform on land.</p></li>
+<li><p><a class="reference internal" href="api/src/pelagos_py/steps/custom/qc/impossible_date_qc/index.html"><span class="doc">Impossible Date</span></a>: Checks that the timestamps fall within a realistic range (typically from 1985 to the present day).</p></li>
+<li><p><a class="reference internal" href="api/src/pelagos_py/steps/custom/qc/impossible_location_qc/index.html"><span class="doc">Impossible Location</span></a>: Verifies that latitude and longitude coordinates are within global bounds.</p></li>
+<li><p><a class="reference internal" href="api/src/pelagos_py/steps/custom/qc/impossible_speed_qc/index.html"><span class="doc">Impossible Speed</span></a>: Calculates the velocity between points to ensure the platform is not moving at unphysical speeds.</p></li>
+<li><p><a class="reference internal" href="api/src/pelagos_py/steps/custom/qc/position_on_land_qc/index.html"><span class="doc">Position on Land</span></a>: Uses a bathymetry mask to check if coordinates incorrectly place the platform on land.</p></li>
 </ul>
 </section>
 <section id="range-and-value-checks">
 <h3>Range and Value Checks<a class="headerlink" href="#range-and-value-checks" title="Link to this heading">#</a></h3>
 <p>These identify data points that fall outside expected physical or sensor limits.</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/qc/gross_range_qc/index.html"><span class="doc">Gross Range</span></a>: Applies broad, non-configurable physical limits to catch extreme sensor failures.</p></li>
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/qc/impossible_range_qc/index.html"><span class="doc">Impossible Range</span></a>: Allows users to define specific, narrower thresholds for any variable.</p></li>
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/qc/stuck_value_qc/index.html"><span class="doc">Stuck Value</span></a>: Identifies sensor “freezing” by looking for sequences of identical values where variation is expected.</p></li>
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/qc/spike_qc/index.html"><span class="doc">Spike</span></a>: Detects sudden, unrealistic jumps in data values between adjacent measurements.</p></li>
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/qc/par_irregularity_qc/index.html"><span class="doc">PAR Irregularity</span></a>: A specialised check for Photosynthetically Active Radiation sensors to identify inconsistent light readings.</p></li>
+<li><p><a class="reference internal" href="api/src/pelagos_py/steps/custom/qc/gross_range_qc/index.html"><span class="doc">Gross Range</span></a>: Applies broad, non-configurable physical limits to catch extreme sensor failures.</p></li>
+<li><p><a class="reference internal" href="api/src/pelagos_py/steps/custom/qc/impossible_range_qc/index.html"><span class="doc">Impossible Range</span></a>: Allows users to define specific, narrower thresholds for any variable.</p></li>
+<li><p><a class="reference internal" href="api/src/pelagos_py/steps/custom/qc/stuck_value_qc/index.html"><span class="doc">Stuck Value</span></a>: Identifies sensor “freezing” by looking for sequences of identical values where variation is expected.</p></li>
+<li><p><a class="reference internal" href="api/src/pelagos_py/steps/custom/qc/spike_qc/index.html"><span class="doc">Spike</span></a>: Detects sudden, unrealistic jumps in data values between adjacent measurements.</p></li>
+<li><p><a class="reference internal" href="api/src/pelagos_py/steps/custom/qc/par_irregularity_qc/index.html"><span class="doc">PAR Irregularity</span></a>: A specialised check for Photosynthetically Active Radiation sensors to identify inconsistent light readings.</p></li>
 </ul>
 </section>
 <section id="profile-integrity">
 <h3>Profile Integrity<a class="headerlink" href="#profile-integrity" title="Link to this heading">#</a></h3>
 <p>These assess the quality of a vertical profile as a whole.</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/qc/valid_profile_qc/index.html"><span class="doc">Valid Profile</span></a>: Ensures a profile contains enough data points or covers a sufficient depth range to be useful.</p></li>
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/qc/flag_full_profile/index.html"><span class="doc">Flag Full Profile</span></a>: If a certain percentage of points in a profile are flagged as bad, this qc can be configured to flag the entire profile.</p></li>
+<li><p><a class="reference internal" href="api/src/pelagos_py/steps/custom/qc/valid_profile_qc/index.html"><span class="doc">Valid Profile</span></a>: Ensures a profile contains enough data points or covers a sufficient depth range to be useful.</p></li>
+<li><p><a class="reference internal" href="api/src/pelagos_py/steps/custom/qc/flag_full_profile/index.html"><span class="doc">Flag Full Profile</span></a>: If a certain percentage of points in a profile are flagged as bad, this qc can be configured to flag the entire profile.</p></li>
 </ul>
 </section>
 </section>
@@ -513,8 +527,8 @@
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
-<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
+  <script defer src="_static/scripts/bootstrap.js?digest=0790524f97105ba85085"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -548,7 +562,7 @@
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.18.0.
 </p></div>
       
     </div>

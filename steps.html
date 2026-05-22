@@ -27,8 +27,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
-<link href="_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+  <link href="_static/styles/theme.css?digest=0790524f97105ba85085" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=0790524f97105ba85085" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -37,10 +37,10 @@
     <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
+  <script defer src="_static/scripts/fontawesome.js?digest=0790524f97105ba85085"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
-<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=0790524f97105ba85085" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085" />
 
     <script src="_static/documentation_options.js?v=d45e8c67"></script>
     <script src="_static/doctools.js?v=9bcbadda"></script>
@@ -176,7 +176,7 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="api/src/toolbox/index.html">
+  <a class="nav-link nav-internal" href="api/src/pelagos_py/index.html">
     API Reference
   </a>
 </li>
@@ -202,11 +202,18 @@
       
         <div class="navbar-item">
 
-<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
-  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
-  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
-  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
-</button></div>
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
       
     </div>
     
@@ -290,7 +297,7 @@
 
 
 <li class="nav-item ">
-  <a class="nav-link nav-internal" href="api/src/toolbox/index.html">
+  <a class="nav-link nav-internal" href="api/src/pelagos_py/index.html">
     API Reference
   </a>
 </li>
@@ -307,11 +314,18 @@
         
           <div class="navbar-item">
 
-<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
-  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
-  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
-  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
-</button></div>
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
         
       </div>
     
@@ -392,24 +406,23 @@
 <h2>Non-specific Steps<a class="headerlink" href="#non-specific-steps" title="Link to this heading">#</a></h2>
 <p>These steps are general utility tools used for data management, preparation, and export. They are not tied to a specific sensor or variable.</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/apply_qc/index.html"><span class="doc">Apply QC</span></a>: A container step used to run various quality control.</p></li>
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/derive_ctd/index.html"><span class="doc">Derive CTD</span></a>: Calculates derived physical properties such as density or potential temperature.</p></li>
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/export/index.html"><span class="doc">Export</span></a>: Saves the final processed dataset to a specified format.</p></li>
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/find_profiles/index.html"><span class="doc">Find Profiles</span></a>: Segments a time series into individual vertical profiles.</p></li>
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/gen_data/index.html"><span class="doc">Generate Data</span></a>: Creates synthetic data for testing and validation purposes.</p></li>
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/interpolate_data/index.html"><span class="doc">Interpolate Data</span></a>: Fills gaps in variables using mathematical interpolation.</p></li>
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/load_data/index.html"><span class="doc">Load Data</span></a>: The entry point for importing data into the toolbox.</p></li>
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/profile_direction/index.html"><span class="doc">Find Profile Direction</span></a>: Identifies whether data was collected during an ascent or descent.</p></li>
+<li><p><a class="reference internal" href="api/src/pelagos_py/steps/custom/apply_qc/index.html"><span class="doc">Apply QC</span></a>: A container step used to run various quality control.</p></li>
+<li><p><a class="reference internal" href="api/src/pelagos_py/steps/custom/derive_ctd/index.html"><span class="doc">Derive CTD</span></a>: Calculates derived physical properties such as density or potential temperature.</p></li>
+<li><p><a class="reference internal" href="api/src/pelagos_py/steps/custom/export/index.html"><span class="doc">Export</span></a>: Saves the final processed dataset to a specified format.</p></li>
+<li><p><a class="reference internal" href="api/src/pelagos_py/steps/custom/find_profiles/index.html"><span class="doc">Find Profiles</span></a>: Segments a time series into individual vertical profiles.</p></li>
+<li><p><a class="reference internal" href="api/src/pelagos_py/steps/custom/gen_data/index.html"><span class="doc">Generate Data</span></a>: Creates synthetic data for testing and validation purposes.</p></li>
+<li><p><a class="reference internal" href="api/src/pelagos_py/steps/custom/interpolate_data/index.html"><span class="doc">Interpolate Data</span></a>: Fills gaps in variables using mathematical interpolation.</p></li>
+<li><p><a class="reference internal" href="api/src/pelagos_py/steps/custom/load_data/index.html"><span class="doc">Load Data</span></a>: The entry point for importing data into the pelagos_py.</p></li>
+<li><p><a class="reference internal" href="api/src/pelagos_py/steps/custom/profile_direction/index.html"><span class="doc">Find Profile Direction</span></a>: Identifies whether data was collected during an ascent or descent.</p></li>
 </ul>
 </section>
 <section id="variable-specific-steps">
 <h2>Variable Specific Steps<a class="headerlink" href="#variable-specific-steps" title="Link to this heading">#</a></h2>
-<p>These steps contain logic tailored to specific oceanographic instruments or variables.</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/variables/salinity/index.html"><span class="doc">CTD</span></a>: Specialised adjustments for Conductivity, Temperature, and Depth data.</p></li>
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/variables/oxygen/index.html"><span class="doc">Oxygen</span></a>: Corrections and calibrations for dissolved oxygen sensors.</p></li>
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/variables/chla/index.html"><span class="doc">Chlorophyll</span></a>: Processing steps for fluorescence and chlorophyll-a concentration.</p></li>
-<li><p><a class="reference internal" href="api/src/toolbox/steps/custom/variables/bbp/index.html"><span class="doc">Backscatter</span></a>: Optical backscatter processing and scaling.</p></li>
+<li><p><a class="reference internal" href="api/src/pelagos_py/steps/custom/variables/salinity/index.html"><span class="doc">CTD</span></a>: Specialised adjustments for Conductivity, Temperature, and Depth data.</p></li>
+<li><p><a class="reference internal" href="api/src/pelagos_py/steps/custom/variables/oxygen/index.html"><span class="doc">Oxygen</span></a>: Corrections and calibrations for dissolved oxygen sensors.</p></li>
+<li><p><a class="reference internal" href="api/src/pelagos_py/steps/custom/variables/chla/index.html"><span class="doc">Chlorophyll</span></a>: Processing steps for fluorescence and chlorophyll-a concentration.</p></li>
+<li><p><a class="reference internal" href="api/src/pelagos_py/steps/custom/variables/bbp/index.html"><span class="doc">Backscatter</span></a>: Optical backscatter processing and scaling.</p></li>
 </ul>
 </section>
 <section id="quality-control-qc">
@@ -491,8 +504,8 @@
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
-<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
+  <script defer src="_static/scripts/bootstrap.js?digest=0790524f97105ba85085"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -526,7 +539,7 @@
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.18.0.
 </p></div>
       
     </div>

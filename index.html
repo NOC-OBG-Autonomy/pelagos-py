@@ -5,7 +5,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>NOC Autonomy Toolbox Docs — pelagos-py 0.0.1 documentation</title>
+<title>pelagos_py docs — pelagos-py 0.0.1 documentation</title>
 <script data-cfasync="false">
     document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
     document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
@@ -20,18 +20,18 @@
     </style>
 </noscript>
 <!-- Loaded before other Sphinx assets -->
-<link href="_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet"/>
-<link href="_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet"/>
+<link href="_static/styles/theme.css?digest=0790524f97105ba85085" rel="stylesheet"/>
+<link href="_static/styles/pydata-sphinx-theme.css?digest=0790524f97105ba85085" rel="stylesheet"/>
 <link href="_static/pygments.css?v=d75fae25" rel="stylesheet" type="text/css"/>
 <link href="_static/copybutton.css?v=76b2166b" rel="stylesheet" type="text/css"/>
 <link href="_static/graphviz.css?v=4ae1632d" rel="stylesheet" type="text/css"/>
 <link href="_static/sphinx-codeautolink.css?v=b2176991" rel="stylesheet" type="text/css"/>
 <link href="_static/sphinx-design.min.css?v=95c83b7e" rel="stylesheet" type="text/css"/>
 <!-- So that users can add custom icons -->
-<script defer="" src="_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
+<script defer="" src="_static/scripts/fontawesome.js?digest=0790524f97105ba85085"></script>
 <!-- Pre-loaded scripts that we'll load fully later -->
-<link as="script" href="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" rel="preload"/>
-<link as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" rel="preload"/>
+<link as="script" href="_static/scripts/bootstrap.js?digest=0790524f97105ba85085" rel="preload"/>
+<link as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085" rel="preload"/>
 <script src="_static/documentation_options.js?v=d45e8c67"></script>
 <script src="_static/doctools.js?v=9bcbadda"></script>
 <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
@@ -109,7 +109,7 @@
   </a>
 </li>
 <li class="nav-item">
-<a class="nav-link nav-internal" href="api/src/toolbox/index.html">
+<a class="nav-link nav-internal" href="api/src/pelagos_py/index.html">
     API Reference
   </a>
 </li>
@@ -125,11 +125,18 @@
 </button>
 </div>
 <div class="navbar-item">
-<button aria-label="Color mode" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" data-bs-placement="bottom" data-bs-title="Color mode" data-bs-toggle="tooltip">
-<i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
-<i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
-<i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
-</button></div>
+<div class="theme-switch-container dropdown pst-js-only" data-bs-placement="bottom" data-bs-toggle="tooltip" title="Color mode">
+<button aria-label="Color mode" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" data-bs-toggle="dropdown">
+<i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+<i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+<i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+</button>
+<ul class="dropdown-menu dropdown-menu-end">
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+</ul>
+</div></div>
 </div>
 </div>
 <div class="navbar-persistent--mobile">
@@ -179,7 +186,7 @@
   </a>
 </li>
 <li class="nav-item">
-<a class="nav-link nav-internal" href="api/src/toolbox/index.html">
+<a class="nav-link nav-internal" href="api/src/pelagos_py/index.html">
     API Reference
   </a>
 </li>
@@ -188,11 +195,18 @@
 </div>
 <div class="sidebar-header-items__end">
 <div class="navbar-item">
-<button aria-label="Color mode" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" data-bs-placement="bottom" data-bs-title="Color mode" data-bs-toggle="tooltip">
-<i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
-<i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
-<i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
-</button></div>
+<div class="theme-switch-container dropdown pst-js-only" data-bs-placement="bottom" data-bs-toggle="tooltip" title="Color mode">
+<button aria-label="Color mode" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" data-bs-toggle="dropdown">
+<i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+<i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+<i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+</button>
+<ul class="dropdown-menu dropdown-menu-end">
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+</ul>
+</div></div>
 </div>
 </div>
 <div class="sidebar-primary-items__end sidebar-primary__section">
@@ -207,11 +221,11 @@
 <div class="bd-header-article d-print-none"></div>
 <div id="searchbox"></div>
 <article class="bd-article">
-<section id="noc-autonomy-toolbox-docs">
-<h1>NOC Autonomy Toolbox Docs<a class="headerlink" href="#noc-autonomy-toolbox-docs" title="Link to this heading">#</a></h1>
+<section id="pelagos-py-docs">
+<h1>pelagos_py docs<a class="headerlink" href="#pelagos-py-docs" title="Link to this heading">#</a></h1>
 <section id="welcome">
 <h2>Welcome!<a class="headerlink" href="#welcome" title="Link to this heading">#</a></h2>
-<p>Thanks for checking out this software! The NOC (National Oceanography Centre) Autonomy Toolbox, pelagos-py, is a modular processing pipeline tool designed to operate on raw
+<p>Thanks for checking out this software! The NOC (National Oceanography Centre) Autonomy Toolbox, pelagos_py, is a modular processing pipeline tool designed to operate on raw
 OG1-like format glider/ALR data, outputting “science ready” datasets. The user interfaces with the tool through a single YAML config file, allowing for easy definition and dissemination
 of processing protocols. This allows academics to “standardise” their processing tools and easily share their methods by simply sharing raw data and config files.</p>
 <p>As we hope this tool will be adopted by the glider community, effort has been made to implement a broad range of desirable processing steps, covering a large number of oceanographic
@@ -273,18 +287,17 @@ make sense, let us know so we can improve it.</p>
 <li class="toctree-l2"><a class="reference internal" href="developer_guide.html#how-to-add-a-new-qc-test">How to add a new QC test</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="api/src/toolbox/index.html">API Reference</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api/src/toolbox/index.html#submodules">Submodules</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="api/src/toolbox/pipeline/index.html">src.toolbox.pipeline</a></li>
-<li class="toctree-l3"><a class="reference internal" href="api/src/toolbox/pipeline_manager/index.html">src.toolbox.pipeline_manager</a></li>
-<li class="toctree-l3"><a class="reference internal" href="api/src/toolbox/steps/index.html">src.toolbox.steps</a></li>
-<li class="toctree-l3"><a class="reference internal" href="api/src/toolbox/utils/index.html">src.toolbox.utils</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/src/pelagos_py/index.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/src/pelagos_py/index.html#submodules">Submodules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/src/pelagos_py/pipeline/index.html">src.pelagos_py.pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/src/pelagos_py/pipeline_manager/index.html">src.pelagos_py.pipeline_manager</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/src/pelagos_py/steps/index.html">src.pelagos_py.steps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/src/pelagos_py/utils/index.html">src.pelagos_py.utils</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="api/src/toolbox/index.html#attributes">Attributes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/src/toolbox/index.html#package-contents">Package Contents</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="api/src/toolbox/index.html#src.toolbox.__author__"><code class="docutils literal notranslate"><span class="pre">__author__</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="api/src/toolbox/index.html#src.toolbox.__credits__"><code class="docutils literal notranslate"><span class="pre">__credits__</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/src/pelagos_py/index.html#attributes">Attributes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/src/pelagos_py/index.html#package-contents">Package Contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/src/pelagos_py/index.html#src.pelagos_py.__credits__"><code class="docutils literal notranslate"><span class="pre">__credits__</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -326,8 +339,8 @@ make sense, let us know so we can improve it.</p>
 </div>
 </div>
 <!-- Scripts loaded after <body> so the DOM is not blocked -->
-<script defer="" src="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
-<script defer="" src="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
+<script defer="" src="_static/scripts/bootstrap.js?digest=0790524f97105ba85085"></script>
+<script defer="" src="_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085"></script>
 <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
 <div class="footer-items__start">
@@ -349,7 +362,7 @@ make sense, let us know so we can improve it.</p>
 <div class="footer-item">
 <p class="theme-version">
 <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.18.0.
 </p></div>
 </div>
 </div>

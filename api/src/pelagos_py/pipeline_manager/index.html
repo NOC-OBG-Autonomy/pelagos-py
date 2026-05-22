@@ -1,0 +1,779 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>src.pelagos_py.pipeline_manager &#8212; pelagos-py 0.0.1 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../_static/styles/theme.css?digest=0790524f97105ba85085" rel="stylesheet" />
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=0790524f97105ba85085" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-codeautolink.css?v=b2176991" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../../../_static/scripts/fontawesome.js?digest=0790524f97105ba85085"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=0790524f97105ba85085" />
+<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085" />
+
+    <script src="../../../../_static/documentation_options.js?v=d45e8c67"></script>
+    <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../../_static/copybutton.js?v=df1a032d"></script>
+    <script src="../../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api/src/pelagos_py/pipeline_manager/index';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="canonical" href="https://noc-obg-autonomy.github.io/pelagos-py/api/src/pelagos_py/pipeline_manager/index.html" />
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link rel="next" title="src.pelagos_py.steps" href="../steps/index.html" />
+    <link rel="prev" title="src.pelagos_py.pipeline" href="../pipeline/index.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0.1" />
+  
+    
+    <script src="../../../../_static/searchtools.js"></script>
+    <script src="../../../../_static/language_data.js"></script>
+    <script src="../../../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">pelagos-py 0.0.1 documentation</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../steps.html">
+    Steps
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../tests.html">
+    Quality Control
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../contributing.html">
+    Contributing
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../developer_guide.html">
+    Developer Guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../steps.html">
+    Steps
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../tests.html">
+    Quality Control
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../contributing.html">
+    Contributing
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../developer_guide.html">
+    Developer Guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../index.html">
+    API Reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar"><svg class="pst-icon svg-inline--fa" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../pipeline/index.html">src.pelagos_py.pipeline</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">src.pelagos_py.pipeline_manager</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../steps/index.html">src.pelagos_py.steps</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../steps/base_qc/index.html">src.pelagos_py.steps.base_qc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../steps/base_step/index.html">src.pelagos_py.steps.base_step</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../steps/custom/index.html">src.pelagos_py.steps.custom</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="../steps/custom/apply_qc/index.html">src.pelagos_py.steps.custom.apply_qc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../steps/custom/blank_step/index.html">src.pelagos_py.steps.custom.blank_step</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../steps/custom/derive_ctd/index.html">src.pelagos_py.steps.custom.derive_ctd</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../steps/custom/export/index.html">src.pelagos_py.steps.custom.export</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../steps/custom/find_profiles/index.html">src.pelagos_py.steps.custom.find_profiles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../steps/custom/format_check/index.html">src.pelagos_py.steps.custom.format_check</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../steps/custom/gen_data/index.html">src.pelagos_py.steps.custom.gen_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../steps/custom/interpolate_data/index.html">src.pelagos_py.steps.custom.interpolate_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../steps/custom/load_data/index.html">src.pelagos_py.steps.custom.load_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../steps/custom/profile_direction/index.html">src.pelagos_py.steps.custom.profile_direction</a></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../steps/custom/qc/index.html">src.pelagos_py.steps.custom.qc</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../steps/custom/qc/archive/index.html">src.pelagos_py.steps.custom.qc.archive</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../steps/custom/qc/blank_qc/index.html">src.pelagos_py.steps.custom.qc.blank_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../steps/custom/qc/flag_full_profile/index.html">src.pelagos_py.steps.custom.qc.flag_full_profile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../steps/custom/qc/gross_range_qc/index.html">src.pelagos_py.steps.custom.qc.gross_range_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../steps/custom/qc/impossible_date_qc/index.html">src.pelagos_py.steps.custom.qc.impossible_date_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../steps/custom/qc/impossible_location_qc/index.html">src.pelagos_py.steps.custom.qc.impossible_location_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../steps/custom/qc/impossible_range_qc/index.html">src.pelagos_py.steps.custom.qc.impossible_range_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../steps/custom/qc/impossible_speed_qc/index.html">src.pelagos_py.steps.custom.qc.impossible_speed_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../steps/custom/qc/par_irregularity_qc/index.html">src.pelagos_py.steps.custom.qc.par_irregularity_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../steps/custom/qc/position_on_land_qc/index.html">src.pelagos_py.steps.custom.qc.position_on_land_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../steps/custom/qc/spike_qc/index.html">src.pelagos_py.steps.custom.qc.spike_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../steps/custom/qc/stuck_value_qc/index.html">src.pelagos_py.steps.custom.qc.stuck_value_qc</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../steps/custom/qc/valid_profile_qc/index.html">src.pelagos_py.steps.custom.qc.valid_profile_qc</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../steps/custom/variables/index.html">src.pelagos_py.steps.custom.variables</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="../steps/custom/variables/bbp/index.html">src.pelagos_py.steps.custom.variables.bbp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../steps/custom/variables/chla/index.html">src.pelagos_py.steps.custom.variables.chla</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../steps/custom/variables/oxygen/index.html">src.pelagos_py.steps.custom.variables.oxygen</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../steps/custom/variables/salinity/index.html">src.pelagos_py.steps.custom.variables.salinity</a></li>
+</ul>
+</details></li>
+<li class="toctree-l3"><a class="reference internal" href="../steps/custom/write_report/index.html">src.pelagos_py.steps.custom.write_report</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../utils/index.html">src.pelagos_py.utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../utils/alignment/index.html">src.pelagos_py.utils.alignment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/config_mirror/index.html">src.pelagos_py.utils.config_mirror</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/diagnostics/index.html">src.pelagos_py.utils.diagnostics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/processing_utils/index.html">src.pelagos_py.utils.processing_utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/qc_handling/index.html">src.pelagos_py.utils.qc_handling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/time/index.html">src.pelagos_py.utils.time</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/valid_config_check/index.html">src.pelagos_py.utils.valid_config_check</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/validation/index.html">src.pelagos_py.utils.validation</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">src.pelagos_py</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">src.pelagos_py.pipeline_manager</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-src.pelagos_py.pipeline_manager">
+<span id="src-pelagos-py-pipeline-manager"></span><h1>src.pelagos_py.pipeline_manager<a class="headerlink" href="#module-src.pelagos_py.pipeline_manager" title="Link to this heading">#</a></h1>
+<section id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#src.pelagos_py.pipeline_manager.PipelineManager" title="src.pelagos_py.pipeline_manager.PipelineManager"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PipelineManager</span></code></a></p></td>
+<td><p>A class enabling the execution of multiple pipelines in sequence.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.pelagos_py.pipeline_manager.PipelineManager">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">src.pelagos_py.pipeline_manager.</span></span><span class="sig-name descname"><span class="pre">PipelineManager</span></span><a class="reference internal" href="../../../../_modules/src/pelagos_py/pipeline_manager.html#PipelineManager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.pelagos_py.pipeline_manager.PipelineManager" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">pelagos_py.utils.config_mirror.ConfigMirrorMixin</span></code></p>
+<p>A class enabling the execution of multiple pipelines in sequence.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.pelagos_py.pipeline_manager.PipelineManager.pipelines">
+<span class="sig-name descname"><span class="pre">pipelines</span></span><a class="reference internal" href="../../../../_modules/src/pelagos_py/pipeline_manager.html#PipelineManager.pipelines"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.pelagos_py.pipeline_manager.PipelineManager.pipelines" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.pelagos_py.pipeline_manager.PipelineManager.alignment_map">
+<span class="sig-name descname"><span class="pre">alignment_map</span></span><a class="reference internal" href="../../../../_modules/src/pelagos_py/pipeline_manager.html#PipelineManager.alignment_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.pelagos_py.pipeline_manager.PipelineManager.alignment_map" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.pelagos_py.pipeline_manager.PipelineManager.settings">
+<span class="sig-name descname"><span class="pre">settings</span></span><a class="reference internal" href="../../../../_modules/src/pelagos_py/pipeline_manager.html#PipelineManager.settings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.pelagos_py.pipeline_manager.PipelineManager.settings" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.pelagos_py.pipeline_manager.PipelineManager.load_mission_control">
+<span class="sig-name descname"><span class="pre">load_mission_control</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mirror_keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/src/pelagos_py/pipeline_manager.html#PipelineManager.load_mission_control"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.pelagos_py.pipeline_manager.PipelineManager.load_mission_control" title="Link to this definition">#</a></dt>
+<dd><p>Load MissionControl YAML into private self._parameters.
+- Builds pipelines
+- Builds alignment_map
+- Mirrors selected keys as attributes (e.g., ‘settings’)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.pelagos_py.pipeline_manager.PipelineManager.add_pipeline">
+<span class="sig-name descname"><span class="pre">add_pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/src/pelagos_py/pipeline_manager.html#PipelineManager.add_pipeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.pelagos_py.pipeline_manager.PipelineManager.add_pipeline" title="Link to this definition">#</a></dt>
+<dd><p>Add a single pipeline with a unique name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.pelagos_py.pipeline_manager.PipelineManager.save_manager_config">
+<span class="sig-name descname"><span class="pre">save_manager_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/src/pelagos_py/pipeline_manager.html#PipelineManager.save_manager_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.pelagos_py.pipeline_manager.PipelineManager.save_manager_config" title="Link to this definition">#</a></dt>
+<dd><p>Save MissionControl/Manager config from self._parameters.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.pelagos_py.pipeline_manager.PipelineManager.save_pipeline_configs">
+<span class="sig-name descname"><span class="pre">save_pipeline_configs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">out_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'{name}.yaml'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/src/pelagos_py/pipeline_manager.html#PipelineManager.save_pipeline_configs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.pelagos_py.pipeline_manager.PipelineManager.save_pipeline_configs" title="Link to this definition">#</a></dt>
+<dd><p>Ask each Pipeline to write its private config to YAML.
+The pipeline file content comes from pipeline._parameters (including its steps).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.pelagos_py.pipeline_manager.PipelineManager.save_all_configs">
+<span class="sig-name descname"><span class="pre">save_all_configs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">manager_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">pipelines_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">pipeline_filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'{name}.yaml'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/src/pelagos_py/pipeline_manager.html#PipelineManager.save_all_configs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.pelagos_py.pipeline_manager.PipelineManager.save_all_configs" title="Link to this definition">#</a></dt>
+<dd><p>Convenience: save manager config and all pipeline configs.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.pelagos_py.pipeline_manager.PipelineManager.run_all">
+<span class="sig-name descname"><span class="pre">run_all</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/src/pelagos_py/pipeline_manager.html#PipelineManager.run_all"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.pelagos_py.pipeline_manager.PipelineManager.run_all" title="Link to this definition">#</a></dt>
+<dd><p>Run all registered pipelines and cache the resulting contexts.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.pelagos_py.pipeline_manager.PipelineManager.get_contexts">
+<span class="sig-name descname"><span class="pre">get_contexts</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/src/pelagos_py/pipeline_manager.html#PipelineManager.get_contexts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.pelagos_py.pipeline_manager.PipelineManager.get_contexts" title="Link to this definition">#</a></dt>
+<dd><p>Retrieve the context dictionary from each pipeline.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.pelagos_py.pipeline_manager.PipelineManager.load_data">
+<span class="sig-name descname"><span class="pre">load_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filepath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">platform_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/src/pelagos_py/pipeline_manager.html#PipelineManager.load_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.pelagos_py.pipeline_manager.PipelineManager.load_data" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.pelagos_py.pipeline_manager.PipelineManager.summarise_all_profiles">
+<span class="sig-name descname"><span class="pre">summarise_all_profiles</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html#pandas.DataFrame" title="(in pandas v3.0.3)"><span class="pre">pandas.DataFrame</span></a></span></span><a class="reference internal" href="../../../../_modules/src/pelagos_py/pipeline_manager.html#PipelineManager.summarise_all_profiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.pelagos_py.pipeline_manager.PipelineManager.summarise_all_profiles" title="Link to this definition">#</a></dt>
+<dd><p>For all pipelines, summarise profiles and plot glider-to-glider distance time series.
+This includes:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Computing median TIME, LATITUDE, LONGITUDE per profile</p></li>
+<li><p>Matching each profile to its closest in time from another source</p></li>
+<li><p>Plotting a distance grid comparing all gliders</p></li>
+</ul>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Concatenated summary of all glider profiles, with closest match info appended.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.pelagos_py.pipeline_manager.PipelineManager.preview_alignment">
+<span class="sig-name descname"><span class="pre">preview_alignment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'None'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/src/pelagos_py/pipeline_manager.html#PipelineManager.preview_alignment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.pelagos_py.pipeline_manager.PipelineManager.preview_alignment" title="Link to this definition">#</a></dt>
+<dd><p>Align all datasets to a target dataset and compute R² against ancillary sources.</p>
+<p>This version:
+- Renames each pipeline’s variables to the standard names (from alignment_map)
+- Runs interpolate + aggregate ONCE per pipeline and caches the results
+- Uses the cached medians for pairing/merging/R²
+- Populates exportable handles for raw/processed/lite data</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.pelagos_py.pipeline_manager.PipelineManager.fit_and_save_to_target">
+<span class="sig-name descname"><span class="pre">fit_and_save_to_target</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">variable_r2_criteria</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_time_hr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_dist_km</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ancillaries</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_plots</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/src/pelagos_py/pipeline_manager.html#PipelineManager.fit_and_save_to_target"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.pelagos_py.pipeline_manager.PipelineManager.fit_and_save_to_target" title="Link to this definition">#</a></dt>
+<dd><p>Fit ancillary variables to target datasets using profile-pair medians and per-variable R² criteria.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.pelagos_py.pipeline_manager.PipelineManager.validate_with_device">
+<span class="sig-name descname"><span class="pre">validate_with_device</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'None'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">overrides</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/src/pelagos_py/pipeline_manager.html#PipelineManager.validate_with_device"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.pelagos_py.pipeline_manager.PipelineManager.validate_with_device" title="Link to this definition">#</a></dt>
+<dd><p>Run the validation workflow using settings[‘validation’].
+Optionally pass keyword overrides (e.g., show_plots=False) for this call only.</p>
+<dl class="simple">
+<dt>Examples:</dt><dd><p>mngr.validate_with_device(“Doombar”)
+mngr.validate_with_device(“Doombar”, show_plots=False, apply_and_save=True)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.pelagos_py.pipeline_manager.PipelineManager.fit_to_device">
+<span class="sig-name descname"><span class="pre">fit_to_device</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'None'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/src/pelagos_py/pipeline_manager.html#PipelineManager.fit_to_device"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.pelagos_py.pipeline_manager.PipelineManager.fit_to_device" title="Link to this definition">#</a></dt>
+<dd><p>Fit TARGET variables to a validation device using profile-pair medians and per-variable R² criteria.
+The mapping is fit as: device = slope * target + intercept, then applied to the FULL target dataset
+to create new variables <cite>{VAR}_ALIGNED_TO_{DEVICE}</cite>.</p>
+<p>Reads options from self.settings[‘validation’]:
+validation:</p>
+<blockquote>
+<div><p>device_name: “&lt;device label&gt;”
+variable_names: [“CNDC”,”TEMP”, …]        # optional; defaults to alignment_map keys
+variable_r2_criteria: {CNDC: 0.95, TEMP: 0.9, …}
+max_time_threshold: &lt;float&gt;
+max_distance_threshold: &lt;float&gt;
+save_plots: &lt;bool&gt;
+show_plots: &lt;bool&gt;
+plot_output_path: “&lt;file or dir&gt;”
+apply_and_save: &lt;bool&gt;
+output_path: “&lt;dir or empty for timestamped dir&gt;”</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><em>dict with</em></p></li>
+<li><p><strong>- “path”</strong> (<em>output NetCDF (if saved)</em>)</p></li>
+<li><p><strong>- “fits”</strong> (<em>{var: {slope, intercept, r2, n}, …}</em>)</p></li>
+<li><p><strong>- “device_name”</strong> (<em>device label used</em>)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.pelagos_py.pipeline_manager.PipelineManager.apply_adjustment">
+<span class="sig-name descname"><span class="pre">apply_adjustment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/src/pelagos_py/pipeline_manager.html#PipelineManager.apply_adjustment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.pelagos_py.pipeline_manager.PipelineManager.apply_adjustment" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.pelagos_py.pipeline_manager.PipelineManager.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/src/pelagos_py/pipeline_manager.html#PipelineManager.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.pelagos_py.pipeline_manager.PipelineManager.save" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../pipeline/index.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">src.pelagos_py.pipeline</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="../steps/index.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">src.pelagos_py.steps</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#classes">Classes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-contents">Module Contents</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#src.pelagos_py.pipeline_manager.PipelineManager"><code class="docutils literal notranslate"><span class="pre">PipelineManager</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.pelagos_py.pipeline_manager.PipelineManager.pipelines"><code class="docutils literal notranslate"><span class="pre">PipelineManager.pipelines</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.pelagos_py.pipeline_manager.PipelineManager.alignment_map"><code class="docutils literal notranslate"><span class="pre">PipelineManager.alignment_map</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.pelagos_py.pipeline_manager.PipelineManager.settings"><code class="docutils literal notranslate"><span class="pre">PipelineManager.settings</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.pelagos_py.pipeline_manager.PipelineManager.load_mission_control"><code class="docutils literal notranslate"><span class="pre">PipelineManager.load_mission_control()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.pelagos_py.pipeline_manager.PipelineManager.add_pipeline"><code class="docutils literal notranslate"><span class="pre">PipelineManager.add_pipeline()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.pelagos_py.pipeline_manager.PipelineManager.save_manager_config"><code class="docutils literal notranslate"><span class="pre">PipelineManager.save_manager_config()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.pelagos_py.pipeline_manager.PipelineManager.save_pipeline_configs"><code class="docutils literal notranslate"><span class="pre">PipelineManager.save_pipeline_configs()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.pelagos_py.pipeline_manager.PipelineManager.save_all_configs"><code class="docutils literal notranslate"><span class="pre">PipelineManager.save_all_configs()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.pelagos_py.pipeline_manager.PipelineManager.run_all"><code class="docutils literal notranslate"><span class="pre">PipelineManager.run_all()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.pelagos_py.pipeline_manager.PipelineManager.get_contexts"><code class="docutils literal notranslate"><span class="pre">PipelineManager.get_contexts()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.pelagos_py.pipeline_manager.PipelineManager.load_data"><code class="docutils literal notranslate"><span class="pre">PipelineManager.load_data()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.pelagos_py.pipeline_manager.PipelineManager.summarise_all_profiles"><code class="docutils literal notranslate"><span class="pre">PipelineManager.summarise_all_profiles()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.pelagos_py.pipeline_manager.PipelineManager.preview_alignment"><code class="docutils literal notranslate"><span class="pre">PipelineManager.preview_alignment()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.pelagos_py.pipeline_manager.PipelineManager.fit_and_save_to_target"><code class="docutils literal notranslate"><span class="pre">PipelineManager.fit_and_save_to_target()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.pelagos_py.pipeline_manager.PipelineManager.validate_with_device"><code class="docutils literal notranslate"><span class="pre">PipelineManager.validate_with_device()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.pelagos_py.pipeline_manager.PipelineManager.fit_to_device"><code class="docutils literal notranslate"><span class="pre">PipelineManager.fit_to_device()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.pelagos_py.pipeline_manager.PipelineManager.apply_adjustment"><code class="docutils literal notranslate"><span class="pre">PipelineManager.apply_adjustment()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#src.pelagos_py.pipeline_manager.PipelineManager.save"><code class="docutils literal notranslate"><span class="pre">PipelineManager.save()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../../_static/scripts/bootstrap.js?digest=0790524f97105ba85085"></script>
+<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, National Oceanography Centre.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.18.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
