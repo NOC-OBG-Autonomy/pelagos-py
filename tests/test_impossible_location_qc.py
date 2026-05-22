@@ -3,7 +3,7 @@ import xarray as xr
 import numpy as np
 from unittest.mock import patch
 
-from toolbox.steps.custom.qc.impossible_location_qc import impossible_location_qc
+from pelagos_py.steps.custom.qc.impossible_location_qc import impossible_location_qc
 from utils.test_utils import create_mock_dataset
 
 
@@ -31,8 +31,8 @@ def test_locations(lats, lons, lat_flags, lon_flags):
     assert list(flags["LONGITUDE_QC"].values) == lon_flags
 
 
-@patch("toolbox.steps.custom.qc.impossible_location_qc.plt.show")
-@patch("toolbox.steps.custom.qc.impossible_location_qc.matplotlib.use")
+@patch("pelagos_py.steps.custom.qc.impossible_location_qc.plt.show")
+@patch("pelagos_py.steps.custom.qc.impossible_location_qc.matplotlib.use")
 def test_plot_diagnostics(mock_use, mock_show):
     data = create_mock_dataset(lats=[45.0, -89.9], lons=[179.9, -179.9])
     qc_step = impossible_location_qc(data)

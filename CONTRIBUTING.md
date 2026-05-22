@@ -1,5 +1,5 @@
 <!-- omit in toc -->
-# Contributing to The Autonomy Toolbox
+# Contributing to pelagos_py
 
 First off, thanks for taking the time to contribute!
 
@@ -14,11 +14,11 @@ All types of contributions are encouraged and valued. Please make sure to read t
 
 ## I Have a Question
 
-Before you ask a question, it is best to search for existing [Issues](https://github.com/NOC-OBG-Autonomy/toolbox/issues) that might help you. In case you have found a suitable issue and still need clarification, you can write your question in this issue. It is also advisable to search the internet for answers first.
+Before you ask a question, it is best to search for existing [Issues](https://github.com/NOC-OBG-Autonomy/pelagos_py/issues) that might help you. In case you have found a suitable issue and still need clarification, you can write your question in this issue. It is also advisable to search the internet for answers first.
 
 If you then still feel the need to ask a question and need clarification, we recommend the following:
 
-- Open an [Issue](https://github.com/NOC-OBG-Autonomy/toolbox/issues/new).
+- Open an [Issue](https://github.com/NOC-OBG-Autonomy/pelagos_py/issues/new).
 - Provide as much context as you can about what you're running into.
 - Provide project, Python version and details of your Python environment (pip/conda and versions of dependencies).
 
@@ -38,7 +38,7 @@ A good bug report shouldn't leave others needing to chase you up for more inform
 
 - Make sure that you are using the latest version.
 - Determine if your bug is really a bug and not an error on your side e.g. using incompatible environment components/versions.
-- To see if other users have experienced (and potentially already solved) the same issue you are having, check if there is not already a bug report existing for your bug or error in the [bug tracker](https://github.com/NOC-OBG-Autonomy/toolbox/issues?q=label%3Abug).
+- To see if other users have experienced (and potentially already solved) the same issue you are having, check if there is not already a bug report existing for your bug or error in the [bug tracker](https://github.com/NOC-OBG-Autonomy/pelagos_py/issues?q=label%3Abug).
 - Collect information about the bug:
 - Stack trace (Traceback)
 - OS, Platform and Version (Windows, Linux, macOS, x86, ARM)
@@ -51,7 +51,7 @@ A good bug report shouldn't leave others needing to chase you up for more inform
 
 We use GitHub issues to track bugs and errors. If you run into an issue with the project:
 
-- Open an [Issue](https://github.com/NOC-OBG-Autonomy/toolbox/issues/new). (Since we can't be sure at this point whether it is a bug or not, we ask you not to talk about a bug yet and not to label the issue.)
+- Open an [Issue](https://github.com/NOC-OBG-Autonomy/pelagos_py/issues/new). (Since we can't be sure at this point whether it is a bug or not, we ask you not to talk about a bug yet and not to label the issue.)
 - Explain the behavior you would expect and the actual behavior.
 - Please provide as much context as possible and describe the *reproduction steps* that someone else can follow to recreate the issue on their own. This usually includes your code. For good bug reports you should isolate the problem and create a reduced test case.
 - Provide the information you collected in the previous section.

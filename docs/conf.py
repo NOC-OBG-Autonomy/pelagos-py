@@ -63,7 +63,7 @@ napoleon_use_rtype = True
 
 # -- Use autoapi.extension to run sphinx-apidoc -------
 
-autoapi_dirs = ["../src/toolbox"]
+autoapi_dirs = ["../src/pelagos_py"]
 autoapi_root = "api"
 
 autoapi_keep_files = False
@@ -78,7 +78,7 @@ autoapi_options = [
 ]
 
 # autoapi_ignore = [
-#     "toolboxpy.metadata_parser.metadata_parser",  # Exclude it as a submodule
+#     "pelagos_pypy.metadata_parser.metadata_parser",  # Exclude it as a submodule
 # ]
 
 # -- Options for HTML output ----------------------------------------------
