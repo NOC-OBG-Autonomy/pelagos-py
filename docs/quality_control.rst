@@ -3,6 +3,15 @@ Quality Control
 
 Quality control (QC) are sub-steps run within the ``Apply QC`` process. These do not modify your data values: they update a corresponding QC column (e.g. ``TEMP_QC``) to indicate the reliability of each measurement.
 
+Every QC check is run through the ``Apply QC`` step, which transfers the individual results onto the existing QC columns. A given check can only be called once per ``Apply QC``, but you can include multiple ``Apply QC`` steps in a single config.
+
+QC checks come in two types:
+
+* **Static** checks always operate on the same variable(s) and produce the same QC outputs — e.g. :doc:`Impossible Date <api/src/pelagos_py/steps/custom/qc/impossible_date_qc/index>` always checks ``TIME``.
+* **Dynamic** checks let the user choose which variables they apply to, so the QC output is not pre-determined — e.g. :doc:`Impossible Range <api/src/pelagos_py/steps/custom/qc/impossible_range_qc/index>` and :doc:`Stuck Value <api/src/pelagos_py/steps/custom/qc/stuck_value_qc/index>`.
+
+To add your own QC check, see :doc:`Extending pelagos_py <user_guide>`.
+
 The pelagos_py follows the standardised Argo flagging system:
 
 * **0**: No QC performed.

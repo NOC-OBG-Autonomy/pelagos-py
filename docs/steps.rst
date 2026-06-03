@@ -3,6 +3,15 @@ Steps
 
 Steps are the individual operations that make up a pipeline. They are executed in the order they appear in your configuration file. Each step can be customised with parameters to suit your specific dataset.
 
+A step is defined in Python and configured through the pipeline config file. Examples include:
+
+* **I/O steps** — e.g. reading in data with :doc:`Load Data <api/src/pelagos_py/steps/custom/load_data/index>`.
+* **Variable processing steps** — e.g. adjusting existing salinity measurements with the :doc:`salinity <api/src/pelagos_py/steps/custom/variables/salinity/index>` step.
+
+Steps are not limited to one per file — a single module can define multiple steps — and any step can be called multiple times within a single config.
+
+Some steps can filter out bad data before processing, using the QC handling mechanism. The pipeline preserves the original dataset dimensions, so filtered data is either replaced or reinserted once the step completes. For how to build a step with this behaviour, see :doc:`Extending pelagos_py <user_guide>`.
+
 Non-specific Steps
 ------------------
 
