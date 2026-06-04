@@ -5,7 +5,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>pelagos_py docs — pelagos-py 0.0.1 documentation</title>
+<title>Pelagos-Py documentation — Pelagos-Py</title>
 <script data-cfasync="false">
     document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
     document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
@@ -27,12 +27,13 @@
 <link href="_static/graphviz.css?v=4ae1632d" rel="stylesheet" type="text/css"/>
 <link href="_static/sphinx-codeautolink.css?v=b2176991" rel="stylesheet" type="text/css"/>
 <link href="_static/sphinx-design.min.css?v=95c83b7e" rel="stylesheet" type="text/css"/>
+<link href="_static/custom.css?v=31c74f31" rel="stylesheet" type="text/css"/>
 <!-- So that users can add custom icons -->
 <script defer="" src="_static/scripts/fontawesome.js?digest=0790524f97105ba85085"></script>
 <!-- Pre-loaded scripts that we'll load fully later -->
 <link as="script" href="_static/scripts/bootstrap.js?digest=0790524f97105ba85085" rel="preload"/>
 <link as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085" rel="preload"/>
-<script src="_static/documentation_options.js?v=d45e8c67"></script>
+<script src="_static/documentation_options.js?v=0b8c961e"></script>
 <script src="_static/doctools.js?v=9bcbadda"></script>
 <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
 <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -42,12 +43,13 @@
 <script>DOCUMENTATION_OPTIONS.pagename = 'index';</script>
 <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
 <link href="https://noc-obg-autonomy.github.io/pelagos-py/index.html" rel="canonical"/>
+<link href="_static/favicon.svg" rel="icon"/>
 <link href="genindex.html" rel="index" title="Index"/>
 <link href="search.html" rel="search" title="Search"/>
 <link href="getting_started.html" rel="next" title="Getting Started"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
 <meta content="en" name="docsearch:language"/>
-<meta content="0.0.1" name="docsearch:version"/>
+<meta content="0.0" name="docsearch:version"/>
 <script src="_static/searchtools.js"></script>
 <script src="_static/language_data.js"></script>
 <script src="searchindex.js"></script>
@@ -75,7 +77,9 @@
 <div class="col-lg-3 navbar-header-items__start">
 <div class="navbar-item">
 <a class="navbar-brand logo" href="#">
-<p class="title logo__title">pelagos-py 0.0.1 documentation</p>
+<img alt="" class="logo__image only-light" src="_static/pelagos_logo.png"/>
+<img alt="" class="logo__image only-dark pst-js-only" src="_static/pelagos_logo.png"/>
+<p class="title logo__title">Pelagos-Py</p>
 </a></div>
 </div>
 <div class="col-lg-9 navbar-header-items">
@@ -89,28 +93,18 @@
   </a>
 </li>
 <li class="nav-item">
-<a class="nav-link nav-internal" href="steps.html">
-    Steps
+<a class="nav-link nav-internal" href="user_guide.html">
+    User Guide
   </a>
 </li>
 <li class="nav-item">
-<a class="nav-link nav-internal" href="tests.html">
-    Quality Control
-  </a>
-</li>
-<li class="nav-item">
-<a class="nav-link nav-internal" href="contributing.html">
-    Contributing
-  </a>
-</li>
-<li class="nav-item">
-<a class="nav-link nav-internal" href="developer_guide.html">
-    Developer Guide
-  </a>
-</li>
-<li class="nav-item">
-<a class="nav-link nav-internal" href="api/src/pelagos_py/index.html">
+<a class="nav-link nav-internal" href="api_reference.html">
     API Reference
+  </a>
+</li>
+<li class="nav-item">
+<a class="nav-link nav-internal" href="development.html">
+    Development
   </a>
 </li>
 </ul>
@@ -137,6 +131,11 @@
 <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
 </ul>
 </div></div>
+<div class="navbar-item"><ul aria-label="Icon Links" class="navbar-icon-links">
+<li class="nav-item">
+<a class="nav-link pst-navbar-icon" data-bs-placement="bottom" data-bs-toggle="tooltip" href="https://github.com/NOC-OBG-Autonomy/pelagos-py" rel="noopener" target="_blank" title="GitHub"><i aria-hidden="true" class="fa-brands fa-github fa-lg"></i><span class="visually-hidden">GitHub</span></a>
+</li>
+</ul></div>
 </div>
 </div>
 <div class="navbar-persistent--mobile">
@@ -146,9 +145,6 @@
 <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
 </button>
 </div>
-<button aria-label="On this page" class="pst-navbar-icon sidebar-toggle secondary-toggle">
-<span class="fa-solid fa-outdent"></span>
-</button>
 </div>
 </header>
 <div class="bd-container">
@@ -166,28 +162,18 @@
   </a>
 </li>
 <li class="nav-item">
-<a class="nav-link nav-internal" href="steps.html">
-    Steps
+<a class="nav-link nav-internal" href="user_guide.html">
+    User Guide
   </a>
 </li>
 <li class="nav-item">
-<a class="nav-link nav-internal" href="tests.html">
-    Quality Control
-  </a>
-</li>
-<li class="nav-item">
-<a class="nav-link nav-internal" href="contributing.html">
-    Contributing
-  </a>
-</li>
-<li class="nav-item">
-<a class="nav-link nav-internal" href="developer_guide.html">
-    Developer Guide
-  </a>
-</li>
-<li class="nav-item">
-<a class="nav-link nav-internal" href="api/src/pelagos_py/index.html">
+<a class="nav-link nav-internal" href="api_reference.html">
     API Reference
+  </a>
+</li>
+<li class="nav-item">
+<a class="nav-link nav-internal" href="development.html">
+    Development
   </a>
 </li>
 </ul>
@@ -207,6 +193,11 @@
 <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
 </ul>
 </div></div>
+<div class="navbar-item"><ul aria-label="Icon Links" class="navbar-icon-links">
+<li class="nav-item">
+<a class="nav-link pst-navbar-icon" data-bs-placement="bottom" data-bs-toggle="tooltip" href="https://github.com/NOC-OBG-Autonomy/pelagos-py" rel="noopener" target="_blank" title="GitHub"><i aria-hidden="true" class="fa-brands fa-github fa-lg"></i><span class="visually-hidden">GitHub</span></a>
+</li>
+</ul></div>
 </div>
 </div>
 <div class="sidebar-primary-items__end sidebar-primary__section">
@@ -221,16 +212,19 @@
 <div class="bd-header-article d-print-none"></div>
 <div id="searchbox"></div>
 <article class="bd-article">
-<section id="pelagos-py-docs">
-<h1>pelagos_py docs<a class="headerlink" href="#pelagos-py-docs" title="Link to this heading">#</a></h1>
-<section id="welcome">
-<h2>Welcome!<a class="headerlink" href="#welcome" title="Link to this heading">#</a></h2>
-<p>Thanks for checking out this software! The NOC (National Oceanography Centre) Autonomy Toolbox, pelagos_py, is a modular processing pipeline tool designed to operate on raw
+<section id="pelagos-py-documentation">
+<h1>Pelagos-Py documentation<a class="headerlink" href="#pelagos-py-documentation" title="Link to this heading">#</a></h1>
+<dl class="field-list simple">
+<dt class="field-odd">Version<span class="colon">:</span></dt>
+<dd class="field-odd"><p>0.0.0+unknown</p>
+</dd>
+</dl>
+<p>The NOC (National Oceanography Centre) Autonomy Toolbox, pelagos_py, is a modular processing pipeline tool designed to operate on raw
 OG1-like format glider/ALR data, outputting “science ready” datasets. The user interfaces with the tool through a single YAML config file, allowing for easy definition and dissemination
 of processing protocols. This allows academics to “standardise” their processing tools and easily share their methods by simply sharing raw data and config files.</p>
 <p>As we hope this tool will be adopted by the glider community, effort has been made to implement a broad range of desirable processing steps, covering a large number of oceanographic
 variables which continue to grow. We are always welcome to new suggestions and for those who want to get their hands dirty, we have attempted to make implementation of custom steps as
-simple as possible. See <a class="reference internal" href="contributing.html"><span class="doc">Contributing</span></a> for more details.</p>
+simple as possible. See <a class="reference internal" href="development.html"><span class="doc">Development</span></a> for more details.</p>
 <p>Whilst the tool itself is written in python, interfacing with it requires little prior knowledge of the language. In most cases, processing is achieved through a few lines of code:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create the pipeline using the specified config</span>
 <span class="n">Pipe</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">(</span>
@@ -242,96 +236,68 @@ simple as possible. See <a class="reference internal" href="contributing.html"><
 <p>The only involved part is defining your <code class="docutils literal notranslate"><span class="pre">config.yaml</span></code> which determines the details of how your raw data will be processed. YAML files are designed to be “human readable” so it should
 be fairly intuitive to set them up. We have provided extensive details in <code class="docutils literal notranslate"><span class="pre">examples/configs/all_step_configs.yaml</span></code> which should help you - but if you see anything that doesn’t
 make sense, let us know so we can improve it.</p>
-</section>
-<section id="contents">
-<h2>Contents<a class="headerlink" href="#contents" title="Link to this heading">#</a></h2>
-<div class="toctree-wrapper compound">
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="getting_started.html#installation">Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="getting_started.html#dependencies">Dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="getting_started.html#example-pipeline">Example Pipeline</a></li>
-<li class="toctree-l2"><a class="reference internal" href="getting_started.html#documentation-and-feedback">Documentation and Feedback</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="steps.html">Steps</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="steps.html#non-specific-steps">Non-specific Steps</a></li>
-<li class="toctree-l2"><a class="reference internal" href="steps.html#variable-specific-steps">Variable Specific Steps</a></li>
-<li class="toctree-l2"><a class="reference internal" href="steps.html#quality-control-qc">Quality Control (QC)</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="tests.html">Quality Control</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tests.html#configuration">Configuration</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tests.html#available-qc">Available QC</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="tests.html#spatiotemporal-checks">Spatiotemporal Checks</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tests.html#range-and-value-checks">Range and Value Checks</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tests.html#profile-integrity">Profile Integrity</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="contributing.html#development-workflow">Development Workflow</a></li>
-<li class="toctree-l2"><a class="reference internal" href="contributing.html#code-quality-and-testing">Code Quality and Testing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="contributing.html#common-commands">Common Commands</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="developer_guide.html">Developer Guide</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="developer_guide.html#what-is-a-step">What is a “step”?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="developer_guide.html#what-is-a-test">What is a “test”?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="developer_guide.html#how-to-add-a-new-step">How to add a new step</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="developer_guide.html#adding-qc-handling-to-a-step">Adding QC handling to a step</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="developer_guide.html#how-to-add-a-new-qc-test">How to add a new QC test</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="api/src/pelagos_py/index.html">API Reference</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api/src/pelagos_py/index.html#submodules">Submodules</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="api/src/pelagos_py/pipeline/index.html">src.pelagos_py.pipeline</a></li>
-<li class="toctree-l3"><a class="reference internal" href="api/src/pelagos_py/pipeline_manager/index.html">src.pelagos_py.pipeline_manager</a></li>
-<li class="toctree-l3"><a class="reference internal" href="api/src/pelagos_py/steps/index.html">src.pelagos_py.steps</a></li>
-<li class="toctree-l3"><a class="reference internal" href="api/src/pelagos_py/utils/index.html">src.pelagos_py.utils</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="api/src/pelagos_py/index.html#attributes">Attributes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="api/src/pelagos_py/index.html#package-contents">Package Contents</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="api/src/pelagos_py/index.html#src.pelagos_py.__credits__"><code class="docutils literal notranslate"><span class="pre">__credits__</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
+<hr class="docutils"/>
+<div class="sd-container-fluid sd-sphinx-override sd-mb-4 docutils">
+<div class="sd-row sd-row-cols-1 sd-row-cols-xs-1 sd-row-cols-sm-2 sd-row-cols-md-2 sd-row-cols-lg-2 sd-g-3 sd-g-xs-3 sd-g-sm-3 sd-g-md-3 sd-g-lg-3 docutils">
+<div class="sd-col sd-d-flex-row docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm sd-text-center docutils">
+<div class="sd-card-body docutils">
+<a class="only-light card-svg reference internal image-reference" href="_images/index_getting_started.svg"><img alt="_images/index_getting_started.svg" class="only-light card-svg" src="_images/index_getting_started.svg" style="height: 80px;"/>
+</a>
+<a class="only-dark card-svg reference internal image-reference" href="_images/index_getting_started_dark.svg"><img alt="_images/index_getting_started_dark.svg" class="only-dark card-svg" src="_images/index_getting_started_dark.svg" style="height: 80px;"/>
+</a>
+<p class="sd-card-text"><strong>Getting started</strong></p>
+<p class="sd-card-text">New to pelagos-py? Start here with our installation instructions and a brief overview of the tool.</p>
+<p class="sd-card-text"><span class="sd-d-grid"><a class="sd-sphinx-override sd-btn sd-text-wrap sd-btn-primary sd-stretched-link reference internal" href="getting_started.html"><span class="doc">To the getting started guide</span></a></span></p>
 </div>
-</section>
+</div>
+</div>
+<div class="sd-col sd-d-flex-row docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm sd-text-center docutils">
+<div class="sd-card-body docutils">
+<a class="only-light card-svg reference internal image-reference" href="_images/index_user_guide.svg"><img alt="_images/index_user_guide.svg" class="only-light card-svg" src="_images/index_user_guide.svg" style="height: 80px;"/>
+</a>
+<a class="only-dark card-svg reference internal image-reference" href="_images/index_user_guide_dark.svg"><img alt="_images/index_user_guide_dark.svg" class="only-dark card-svg" src="_images/index_user_guide_dark.svg" style="height: 80px;"/>
+</a>
+<p class="sd-card-text"><strong>User guide</strong></p>
+<p class="sd-card-text">Ready to deepen your understanding? Visit the user guide for detailed explanations of the processing steps and how to configure them.</p>
+<p class="sd-card-text"><span class="sd-d-grid"><a class="sd-sphinx-override sd-btn sd-text-wrap sd-btn-primary sd-stretched-link reference internal" href="user_guide.html"><span class="doc">To the user guide</span></a></span></p>
+</div>
+</div>
+</div>
+<div class="sd-col sd-d-flex-row docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm sd-text-center docutils">
+<div class="sd-card-body docutils">
+<a class="only-light card-svg reference internal image-reference" href="_images/index_api.svg"><img alt="_images/index_api.svg" class="only-light card-svg" src="_images/index_api.svg" style="height: 80px;"/>
+</a>
+<a class="only-dark card-svg reference internal image-reference" href="_images/index_api_dark.svg"><img alt="_images/index_api_dark.svg" class="only-dark card-svg" src="_images/index_api_dark.svg" style="height: 80px;"/>
+</a>
+<p class="sd-card-text"><strong>API reference</strong></p>
+<p class="sd-card-text">Need to learn more about a specific function? Review the documentation of all public functions and classes.</p>
+<p class="sd-card-text"><span class="sd-d-grid"><a class="sd-sphinx-override sd-btn sd-text-wrap sd-btn-primary sd-stretched-link reference internal" href="api_reference.html"><span class="doc">To the API reference</span></a></span></p>
+</div>
+</div>
+</div>
+<div class="sd-col sd-d-flex-row docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm sd-text-center docutils">
+<div class="sd-card-body docutils">
+<a class="only-light card-svg reference internal image-reference" href="_images/index_contribute.svg"><img alt="_images/index_contribute.svg" class="only-light card-svg" src="_images/index_contribute.svg" style="height: 80px;"/>
+</a>
+<a class="only-dark card-svg reference internal image-reference" href="_images/index_contribute_dark.svg"><img alt="_images/index_contribute_dark.svg" class="only-dark card-svg" src="_images/index_contribute_dark.svg" style="height: 80px;"/>
+</a>
+<p class="sd-card-text"><strong>Development</strong></p>
+<p class="sd-card-text">Saw a typo in the documentation? Want to improve existing functionalities? Please review our guide on contributing.</p>
+<p class="sd-card-text"><span class="sd-d-grid"><a class="sd-sphinx-override sd-btn sd-text-wrap sd-btn-primary sd-stretched-link reference internal" href="development.html"><span class="doc">To the development guide</span></a></span></p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="toctree-wrapper compound">
+</div>
 </section>
 </article>
-<footer class="prev-next-footer d-print-none">
-<div class="prev-next-area">
-<a class="right-next" href="getting_started.html" title="next page">
-<div class="prev-next-info">
-<p class="prev-next-subtitle">next</p>
-<p class="prev-next-title">Getting Started</p>
 </div>
-<i class="fa-solid fa-angle-right"></i>
-</a>
-</div>
-</footer>
-</div>
-<dialog id="pst-secondary-sidebar-modal"></dialog>
-<div class="bd-sidebar-secondary bd-toc" id="pst-secondary-sidebar"><div class="sidebar-secondary-items sidebar-secondary__inner">
-<div class="sidebar-secondary-item">
-<div class="page-toc tocsection onthispage" id="pst-page-navigation-heading-2">
-<i class="fa-solid fa-list"></i> On this page
-  </div>
-<nav aria-labelledby="pst-page-navigation-heading-2" class="page-toc" id="pst-page-toc-nav">
-<ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#welcome">Welcome!</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#contents">Contents</a></li>
-</ul>
-</nav></div>
-</div></div>
 </div>
 <footer class="bd-footer-content">
 </footer>
