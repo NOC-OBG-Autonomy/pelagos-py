@@ -36,16 +36,18 @@ class stuck_value_qc(BaseQC):
 
     EXAMPLE
     -------
-    - name: "Apply QC"
-      parameters:
-        qc_settings: {
-            "stuck value test": {
-              "variables": {"PRES": 4, "LATITUDE": 100},
-              "also_flag": {"PRES": ["CNDC", "TEMP"], "LATITUDE": ["LONGITUDE"]},
-              "plot": ["PRES", "LATITUDE"]
+    ::
+
+        - name: "Apply QC"
+          parameters:
+            qc_settings: {
+                "stuck value test": {
+                  "variables": {"PRES": 4, "LATITUDE": 100},
+                  "also_flag": {"PRES": ["CNDC", "TEMP"], "LATITUDE": ["LONGITUDE"]},
+                  "plot": ["PRES", "LATITUDE"]
+                }
             }
-        }
-      diagnostics: true
+          diagnostics: true
     """
 
     qc_name = "stuck value qc"

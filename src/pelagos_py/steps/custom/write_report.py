@@ -220,19 +220,21 @@ def build_qc_dict(data: xr.Dataset) -> dict:
     qc_dict : dict
         Nested dictionaries of QC variables with test names and results.
 
-        Structure:
-        {
-            "VAR_QC": {
-                "qc_name": {
-                    "params": {...},
-                    "flag_counts": {...},
-                    "stats": {...},
-                },
-                "qc_name_2": {
-                    ...
-                },
+        Structure::
+
+            {
+                "VAR_QC": {
+                    "qc_name": {
+                        "params": {...},
+                        "flag_counts": {...},
+                        "stats": {...},
+                    },
+                    "qc_name_2": {
+                        ...
+                    },
+                }
             }
-        }
+
     TODO: Move to utils? Does it belong here?
     """
     qc_dict = {}
@@ -284,8 +286,10 @@ def flatten_qc_dict(qc_dict: dict) -> list:
     Returns
     -------
     rows: list of list
-        A list of rows suitable for tabular display. Each row is a list:
+        A list of rows suitable for tabular display. Each row is a list::
+
             [qc_var, qc_name, flag, formatted_count]
+
         - `qc_var` : str, the QC variable name
         - `qc_name` : str, the name of the QC test
         - `flag` : str, QC flag value
@@ -499,13 +503,17 @@ def img_rst(doc, fname: str, fields: list = None):
 
     Example
     -------
-    img_rst(doc,
-            "../examples/data/OG1/testing/fig.png",
-            fields=[("height","100px"),("width","100px")])
-    would write out
-    .. image:: fig.*
-       :height: 100px
-       :width: 100px
+    ::
+
+        img_rst(doc,
+                "../examples/data/OG1/testing/fig.png",
+                fields=[("height","100px"),("width","100px")])
+
+    would write out::
+
+        .. image:: fig.*
+           :height: 100px
+           :width: 100px
     """
     #   Sphinx is constrained to /outdir, lop path and the extension off
     new_name = fname.split("/")[-1].split(".")[0] + ".*"

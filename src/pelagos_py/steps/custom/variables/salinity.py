@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Pipeline step for adjusting and deriving salinity from conductivity, temperature and pressure."""
+
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
 from pelagos_py.utils.qc_handling import QCHandlingMixin

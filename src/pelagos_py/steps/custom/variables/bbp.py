@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Pipeline steps for deriving particulate backscatter (BBP) from beta and isolating BBP spikes."""
+
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
 from pelagos_py.utils.qc_handling import QCHandlingMixin
@@ -39,13 +41,15 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
         """
         Example
         -------
-        - name: "BBP from Beta"
-          parameters:
-            apply_to: "BBP700"
-            output_as: "BBP700"
-            theta: 124
-            xfactor: 1.076
-          diagnostics: false
+        ::
+
+            - name: "BBP from Beta"
+              parameters:
+                apply_to: "BBP700"
+                output_as: "BBP700"
+                theta: 124
+                xfactor: 1.076
+              diagnostics: false
 
         Returns
         -------
@@ -127,12 +131,14 @@ class IsolateBBPSpikes(BaseStep, QCHandlingMixin):
         """
         Example
         -------
-        - name: "Isolate BBP Spikes"
-          parameters:
-            apply_to: "BBP700"
-            window_size: 50
-            method: "median"
-          diagnostics: false
+        ::
+
+            - name: "Isolate BBP Spikes"
+              parameters:
+                apply_to: "BBP700"
+                window_size: 50
+                method: "median"
+              diagnostics: false
 
         Returns
         -------

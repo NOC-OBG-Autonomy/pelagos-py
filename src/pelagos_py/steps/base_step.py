@@ -70,12 +70,26 @@ class BaseStep(ConfigMirrorMixin):
         super().__init__()
 
     def run(self):
-        """To be implemented by subclasses."""
+        """
+        Run the step and return the updated pipeline context.
+
+        Subclasses override this with their processing logic; the base
+        implementation only enforces that they do so.
+
+        :meta private:
+        """
         raise NotImplementedError(f"Step '{self.name}' must implement a run() method.")
         return self.context
 
     def generate_diagnostics(self):
-        """Hook for diagnostics (optional)."""
+        """
+        Optional hook for emitting step diagnostics.
+
+        Subclasses override this to log or plot information about their output;
+        the base implementation does nothing.
+
+        :meta private:
+        """
         pass
 
     def log(self, message):
@@ -98,7 +112,9 @@ class BaseStep(ConfigMirrorMixin):
     def update_parameters(self, **kwargs):
         """
         Update parameter values both in attributes and in private store.
-        Example:
+
+        Example::
+
             self.update_parameters(file_path='newfile.nc', add_meta=False)
         """
         for k, v in kwargs.items():

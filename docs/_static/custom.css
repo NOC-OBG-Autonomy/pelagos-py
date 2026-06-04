@@ -1,0 +1,106 @@
+/* === Pelagos-Py colour palette === */
+:root {
+  --pelagos-dark-blue: rgb(17, 38, 85);
+  --pelagos-teal: #00695c;
+  --pelagos-teal-light: #4db6ac;
+}
+
+html[data-theme="light"] {
+  --pst-color-primary: var(--pelagos-dark-blue);
+  --pst-color-primary-highlight: rgb(10, 25, 60);
+  --pst-color-secondary: var(--pelagos-teal);
+  --pst-color-secondary-highlight: #004d40;
+  --pst-color-accent: #0097a7;
+  --pst-color-link: var(--pelagos-dark-blue);
+  --pst-color-link-hover: rgb(10, 25, 60);
+}
+
+html[data-theme="dark"] {
+  --pst-color-primary: #7bafd4;
+  --pst-color-primary-highlight: #9ec5e8;
+  --pst-color-secondary: var(--pelagos-teal-light);
+  --pst-color-secondary-highlight: #80cbc4;
+  --pst-color-accent: #80deea;
+  --pst-color-link: #7bafd4;
+  --pst-color-link-hover: #9ec5e8;
+}
+
+/* === Navbar logo text === */
+p.logo__title {
+  color: var(--pelagos-dark-blue) !important;
+  font-weight: 700 !important;
+  font-size: 1.3rem !important;
+  letter-spacing: -0.06em;
+  text-transform: lowercase;
+  font-stretch: condensed;
+}
+
+html[data-theme="dark"] p.logo__title {
+  color: rgb(106, 166, 244) !important;
+}
+
+/* === Cards (shared) === */
+.sd-card {
+  border: 1px solid #dde !important;
+  box-shadow: 0 2px 8px rgba(17, 38, 85, 0.08) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+}
+
+.sd-card-body {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 !important;
+}
+
+/* Button is wrapped in the last <p> — push it to the card bottom */
+.sd-card-body > p.sd-card-text:last-child {
+  margin-top: auto !important;
+  padding-top: 0.75rem;
+}
+
+/* Bold title style (used on homepage via **text**) */
+.sd-card-body strong {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--pelagos-dark-blue);
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+html[data-theme="dark"] .sd-card-body strong {
+  color: #7bafd4;
+}
+
+/* Fixed-height icon area so titles align across homepage cards */
+.card-svg {
+  height: 80px;
+  width: auto;
+  display: block;
+  margin: 0.75rem auto 0.5rem;
+}
+
+/* Inline FA icon style (used on user guide cards) */
+.sd-card-body .card-icon {
+  font-size: 3rem;
+  color: var(--pelagos-dark-blue);
+  display: block;
+  margin: 0.5rem 0 0.4rem;
+}
+
+html[data-theme="dark"] .sd-card-body .card-icon {
+  color: #7bafd4;
+}
+
+.sd-card-body .card-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--pelagos-dark-blue);
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+html[data-theme="dark"] .sd-card-body .card-title {
+  color: #7bafd4;
+}

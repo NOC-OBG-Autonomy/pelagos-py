@@ -33,25 +33,33 @@ class LoadOG1(BaseStep):
     """
     Initialises the LoadOG1 step.
 
-    Derived from Phyto-Phys Repo by Obsidian500
+    Derived from Phyto-Phys Repo by Obsidian500.
 
     Parameters
     ----------
     filter_bad_time : bool, optional
-        If True (default), REMOVES all timestamps outside the expected time window.
+        If True (default), removes all timestamps outside the expected time window.
     data_start : str or np.datetime64, optional
-        The minimum valid timestamp for the data. If not provided, the filter defaults to the DEPLOYMENT_TIME found in the dataset, or 1990-01-01T00:00:00 if no deployment time is found.
+        The minimum valid timestamp for the data. If not provided, the filter defaults 
+        to the DEPLOYMENT_TIME found in the dataset, or 1990-01-01T00:00:00 if no 
+        deployment time is found.
     data_end : str or np.datetime64, optional
-        The maximum valid timestamp for the data. If not provided, it defaults to the current system time when the pipeline is run.
+        The maximum valid timestamp for the data. If not provided, it defaults to 
+        the current system time when the pipeline is run.
 
+    Examples
+    --------
     Example usage in a pipeline configuration:
-    steps:
-      - name: Load OG1
-        parameters:
-          file_path: "/path/to/your/dataset.nc"
-          filter_bad_time: false
-          data_start: "2023-05-01T00:00:00"
-          data_end: "2024-05-01T00:00:00"
+
+    .. code-block:: yaml
+
+        steps:
+          - name: Load OG1
+            parameters:
+              file_path: "/path/to/your/dataset.nc"
+              filter_bad_time: false
+              data_start: "2023-05-01T00:00:00"
+              data_end: "2024-05-01T00:00:00"
     """
 
     step_name = "Load OG1"
@@ -157,7 +165,7 @@ class LoadOG1(BaseStep):
         # Generate diagnostics if enabled
 
         self.log(f"Loaded data from {self.file_path}")
-        self.context["global_parameters"]["filename_core"] = Path(self.file_path).stem  #   Make this available to other steps
+        self.context["global_parameters"]["filename_core"] = Path(self.file_path).stem  # Make this available to other steps
 
         if self.diagnostics:
             self.generate_diagnostics()
@@ -166,5 +174,15 @@ class LoadOG1(BaseStep):
         return self.context
 
     def generate_diagnostics(self):
+        """
+        Print a structural summary of the loaded dataset.
+
+        Called automatically at the end of :meth:`run` when ``diagnostics`` is
+        enabled. Delegates to
+        :func:`pelagos_py.utils.diagnostics.generate_info`, which prints the
+        dataset's dimensions, variables and global attributes (via
+        :meth:`xarray.Dataset.info`) to stdout — a quick check that the data
+        was loaded as expected.
+        """
         self.log("Generating diagnostics...")
         diag.generate_info(self.data)

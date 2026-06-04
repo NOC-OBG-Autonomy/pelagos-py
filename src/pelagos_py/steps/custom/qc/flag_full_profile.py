@@ -38,14 +38,16 @@ class flag_full_profile(BaseQC):
 
     EXAMPLE
     -------
-    - name: "Apply QC"
-      parameters:
-        qc_settings: {
-            "flag_full_profile": {
-              "check_vars": {"PRES": 10, "CHLA": 20},
+    ::
+
+        - name: "Apply QC"
+          parameters:
+            qc_settings: {
+                "flag_full_profile": {
+                  "check_vars": {"PRES": 10, "CHLA": 20},
+                }
             }
-        }
-      diagnostics: true
+          diagnostics: true
     """
 
     qc_name = "flag full profile"

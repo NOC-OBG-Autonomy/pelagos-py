@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Pipeline steps for processing dissolved-oxygen optode data (uncalibrated phase and optode temperature)."""
+
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
 from pelagos_py.utils.qc_handling import QCHandlingMixin
@@ -43,13 +45,15 @@ class DeriveUncalibratedPhase(BaseStep, QCHandlingMixin):
         """
         Example
         -------
-        - name: "Derive Uncalibrated Phase"
-          parameters:
-            #  <MANDATORY>
-            blue_phase_name: "BPHASE_DOXY"
-            # <OPTIONAL>
-            red_phase_name: "RPHASE_DOXY"
-          diagnostics: false
+        ::
+
+            - name: "Derive Uncalibrated Phase"
+              parameters:
+                #  <MANDATORY>
+                blue_phase_name: "BPHASE_DOXY"
+                # <OPTIONAL>
+                red_phase_name: "RPHASE_DOXY"
+              diagnostics: false
 
         Returns
         -------
@@ -100,11 +104,13 @@ class DeriveOptodeTemperature(BaseStep, QCHandlingMixin):
         """
         Example
         -------
-        - name: "Derive Optode Temperature"
-          parameters:
-            temp_voltage_name: "TEMP_VOLTAGE_DOXY"
-            calib_coefficients: [0, 1, 0, 0, 0, 0]
-          diagnostics: false
+        ::
+
+            - name: "Derive Optode Temperature"
+              parameters:
+                temp_voltage_name: "TEMP_VOLTAGE_DOXY"
+                calib_coefficients: [0, 1, 0, 0, 0, 0]
+              diagnostics: false
 
         Returns
         -------
@@ -159,11 +165,13 @@ class PhasePressureCorrection(BaseStep, QCHandlingMixin):
         """
         Example
         -------
-        - name: "Phase Pressure Correction"
-          parameters:
-            optode_pressure_name: "PRES"
-            correction_coefficient: 0.1
-          diagnostics: false
+        ::
+
+            - name: "Phase Pressure Correction"
+              parameters:
+                optode_pressure_name: "PRES"
+                correction_coefficient: 0.1
+              diagnostics: false
 
         Returns
         -------
@@ -216,11 +224,13 @@ class DeriveCalibratedPhase(BaseStep, QCHandlingMixin):
         """
         Example
         -------
-        - name: "Derive Calibrated Phase"
-          parameters:
-            uncalibrated_phase_name: "UNCAL_PHASE_DOXY"
-            calib_coefficients: [0, 1, 0, 0]
-          diagnostics: false
+        ::
+
+            - name: "Derive Calibrated Phase"
+              parameters:
+                uncalibrated_phase_name: "UNCAL_PHASE_DOXY"
+                calib_coefficients: [0, 1, 0, 0]
+              diagnostics: false
 
         Returns
         -------
@@ -325,21 +335,23 @@ class DeriveOxygenConcentration(BaseStep, QCHandlingMixin):
         """
         Example
         -------
-        - name: "Derive Oxygen Concentration"
-          parameters:
-            # <MANDATORY>
-            method: "poly"
-            # <METHOD DEPENDENT>
-            # The following params are for "poly" method
-            temperature_name: "TEMP"
-            calib_coefficient_matrix: [
-              [0, 1, 0, 0],
-              [0, 1, 0, 0],
-              [0, 1, 0, 0],
-              [0, 1, 0, 0],
-              [0, 1, 0, 0]
-            ]
-          diagnostics: false
+        ::
+
+            - name: "Derive Oxygen Concentration"
+              parameters:
+                # <MANDATORY>
+                method: "poly"
+                # <METHOD DEPENDENT>
+                # The following params are for "poly" method
+                temperature_name: "TEMP"
+                calib_coefficient_matrix: [
+                  [0, 1, 0, 0],
+                  [0, 1, 0, 0],
+                  [0, 1, 0, 0],
+                  [0, 1, 0, 0],
+                  [0, 1, 0, 0]
+                ]
+              diagnostics: false
 
         Returns
         -------
@@ -450,14 +462,16 @@ class MolarDOXYSalinityCorrection(BaseStep, QCHandlingMixin):
         """
         Example
         -------
-        - name: "Molar DOXY Salinity Correction"
-          parameters:
-            # <MANDATORY>
-            salinity_name: "PRAC_SALINITY"
-            temperature_name: "TEMP"
-            # <OPTIONAL>
-            reference_salinity: 0
-          diagnostics: false
+        ::
+
+            - name: "Molar DOXY Salinity Correction"
+              parameters:
+                # <MANDATORY>
+                salinity_name: "PRAC_SALINITY"
+                temperature_name: "TEMP"
+                # <OPTIONAL>
+                reference_salinity: 0
+              diagnostics: false
 
         Returns
         -------
@@ -523,14 +537,16 @@ class MolarDOXYPressureCorrection(BaseStep, QCHandlingMixin):
         """
         Example
         -------
-        - name: "Molar DOXY Pressure Correction"
-          parameters:
-            # <MANDATORY>
-            pressure_name: "PRES"
-            temperature_name: "TEMP"
-            molar_doxy_name: "MOLAR_DOXY_PSAL"
-            uncalibrated_phase_correction_applied: true
-          diagnostics: false
+        ::
+
+            - name: "Molar DOXY Pressure Correction"
+              parameters:
+                # <MANDATORY>
+                pressure_name: "PRES"
+                temperature_name: "TEMP"
+                molar_doxy_name: "MOLAR_DOXY_PSAL"
+                uncalibrated_phase_correction_applied: true
+              diagnostics: false
 
         Returns
         -------

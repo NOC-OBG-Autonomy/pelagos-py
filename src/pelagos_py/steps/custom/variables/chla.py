@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Pipeline steps for correcting chlorophyll-a fluorescence (deep correction and non-photochemical quenching)."""
+
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
 from pelagos_py.utils.qc_handling import QCHandlingMixin
@@ -61,13 +63,14 @@ class chla_deep_correction(BaseStep, QCHandlingMixin):
         """
         Example
         -------
+        ::
 
-        - name: "Chla Deep Correction"
-          parameters:
-            apply_to: "CHLA"
-            dark_value: null
-            depth_threshold: 200
-        diagnostics: true
+            - name: "Chla Deep Correction"
+              parameters:
+                apply_to: "CHLA"
+                dark_value: null
+                depth_threshold: 200
+              diagnostics: true
 
         Returns
         -------
@@ -244,18 +247,19 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         """
         Example
         -------
+        ::
 
-        - name: "Chla Quenching Correction"
-          parameters:
-            method: "Argo"
-            apply_to: "CHLA"
-            mld_settings: {
-              "threshold_on": "TEMP",
-              "reference_depth": 10,
-              "threshold": 0.2
-              }
-            plot_profiles: []
-          diagnostics: true
+            - name: "Chla Quenching Correction"
+              parameters:
+                method: "Argo"
+                apply_to: "CHLA"
+                mld_settings: {
+                  "threshold_on": "TEMP",
+                  "reference_depth": 10,
+                  "threshold": 0.2
+                  }
+                plot_profiles: []
+              diagnostics: true
         """
 
         self.filter_qc()

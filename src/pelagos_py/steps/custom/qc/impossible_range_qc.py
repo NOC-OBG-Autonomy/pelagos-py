@@ -36,17 +36,19 @@ class impossible_range_qc(BaseQC):
 
     EXAMPLE
     -------
-    - name: "Apply QC"
-      parameters:
-        qc_settings: {
-            "impossible range qc": {
-              "variable_ranges": {"PRES": {3: [-2, 0], 4: [-999, -2]}, "LATITUDE": {4: [-90, 90]}},
-              "also_flag": {"PRES": ["CNDC", "TEMP"], "LATITUDE": ["LONGITUDE"]},
-              "plot": ["PRES", "LATITUDE"]
-              "test_depth_range": [-100, 0]  # OPTIONAL
+    ::
+
+        - name: "Apply QC"
+          parameters:
+            qc_settings: {
+                "impossible range qc": {
+                  "variable_ranges": {"PRES": {3: [-2, 0], 4: [-999, -2]}, "LATITUDE": {4: [-90, 90]}},
+                  "also_flag": {"PRES": ["CNDC", "TEMP"], "LATITUDE": ["LONGITUDE"]},
+                  "plot": ["PRES", "LATITUDE"]
+                  "test_depth_range": [-100, 0]  # OPTIONAL
+                }
             }
-        }
-      diagnostics: true
+          diagnostics: true
     """
 
     qc_name = "impossible range qc"

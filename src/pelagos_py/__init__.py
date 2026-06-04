@@ -16,4 +16,15 @@
 
 """pelagos_py base package."""
 
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _get_version
+
+try:
+    # Resolved from the installed distribution metadata, which setuptools-scm
+    # derives from the latest git tag at build/install time.
+    __version__ = _get_version("pelagos_py")
+except PackageNotFoundError:
+    # Running from a source checkout that was never installed/built.
+    __version__ = "0.0.0+unknown"
+
 __credits__ = "National Oceanography Centre"

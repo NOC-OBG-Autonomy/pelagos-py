@@ -1,3 +1,6 @@
+import sys, os
+sys.path.insert(0, os.path.abspath("../src"))
+
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
@@ -8,9 +11,28 @@
 
 project = "pelagos-py"
 copyright = "2025, National Oceanography Centre"
-author = "Adam Ward & Daniel Bangay, National Oceanography Centre"
-version = "0.0.1"
-release = version
+author = "National Oceanography Centre"
+
+# Single-source the version from setuptools-scm (i.e. the latest git tag).
+# ``release`` is the full version (e.g. "2.4.1.dev3+gabc1234"); ``version`` is
+# the short X.Y form shown in the docs. Both feed the |release| / |version|
+# substitutions used on the index page.
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _get_version
+
+try:
+    release = _get_version("pelagos_py")
+except PackageNotFoundError:
+    # Package not installed in the build env; read the version straight from
+    # the git tree so local `make html` still shows a real number.
+    try:
+        from setuptools_scm import get_version
+
+        release = get_version(root="..", relative_to=__file__)
+    except Exception:
+        release = "0.0.0+unknown"
+
+version = ".".join(release.split(".")[:2])
 
 # -- General configuration ------------------------------------------------
 
@@ -63,19 +85,44 @@ napoleon_use_rtype = True
 
 # -- Use autoapi.extension to run sphinx-apidoc -------
 
-autoapi_dirs = ["../src/pelagos_py"]
+autoapi_dirs = ["../src"]
 autoapi_root = "api"
 
 autoapi_keep_files = False
+
+# Visibility is driven entirely by whether a member has a docstring. With
+# "undoc-members" removed, anything without a docstring is hidden automatically
+# (e.g. ``run``, ``step_name``, ``parameter_schema``), giving the clean,
+# scipy-like pages where the class docstring is the description and only the
+# methods you choose to document (e.g. ``generate_diagnostics``) appear.
 autoapi_options = [
-    "members",  # Include all members (methods, attributes)
-    "undoc-members",  # Include undocumented members
-    "show-inheritance",  # Show class inheritance
-    "show-module-summary",  # Show module summary
-    "special-members",  # Include special members (e.g., __init__)
-    "imported-members",  # Include imported members (if applicable)
-    "no-private-members",  # Exclude private members (optional)
+    "members",  # Include members (methods, attributes)...
+    "show-inheritance",  # ...and show the base classes.
+    # Deliberately NOT enabled: "undoc-members" (hides docstring-less noise),
+    # "special-members" (hides __init__ etc.), "imported-members" (hides
+    # re-imported names like xr/pd/np/BaseStep), "show-module-summary" (the
+    # custom template below renders members directly, no summary table).
 ]
+
+# Use our trimmed module template (docs/_templates/autoapi/python/module.rst):
+# module pages show just the title + the documented class, dropping the module
+# docstring, the summary table, and the "Module Contents" heading.
+autoapi_template_dir = "_templates/autoapi"
+
+
+# AutoAPI parses source *statically* (it never imports your package), so a
+# runtime marker set by a decorator -- e.g. ``obj.__nodoc__ = True`` -- is
+# invisible at build time. The supported escape hatch is the skip event below:
+# put ``:meta private:`` anywhere in a docstring to force-hide that object even
+# though it is documented.
+def _autoapi_skip_member(app, what, name, obj, skip, options):
+    if getattr(obj, "docstring", "") and ":meta private:" in obj.docstring:
+        return True
+    return skip
+
+
+def setup(app):
+    app.connect("autoapi-skip-member", _autoapi_skip_member)
 
 # autoapi_ignore = [
 #     "pelagos_pypy.metadata_parser.metadata_parser",  # Exclude it as a submodule
@@ -93,6 +140,32 @@ html_baseurl = "https://noc-obg-autonomy.github.io/pelagos-py/"
 html_static_path = ["_static"]
 html_last_updated_fmt = "%b %d, %Y"
 html_show_sourcelink = False
+html_title = "Pelagos-Py"
+html_favicon = "_static/favicon.svg"
+html_css_files = ["custom.css"]
+
+# Pages with no sub-navigation — remove empty left sidebar
+html_sidebars = {
+    "getting_started": [],
+    "development": [],
+}
+
+html_theme_options = {
+    "logo": {
+        "image_light": "_static/pelagos_logo.png",
+        "image_dark": "_static/pelagos_logo.png",
+        "text": "Pelagos-Py",
+    },
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/NOC-OBG-Autonomy/pelagos-py",
+            "icon": "fa-brands fa-github",
+        }
+    ],
+    "navbar_end": ["theme-switcher", "navbar-icon-links"],
+    "show_prev_next": False,
+}
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.

@@ -38,17 +38,19 @@ class spike_qc(BaseQC):
 
     EXAMPLE
     -------
-    - name: "Apply QC"
-      parameters:
-        qc_settings: {
-            "spike test": {
-              "variables": {"PRES": 2, "LATITUDE": 1},
-              "also_flag": {"PRES": ["CNDC", "TEMP"], "LATITUDE": ["LONGITUDE"]},
-              "plot": ["PRES", "LATITUDE"]
-              "window_size": 10,
+    ::
+
+        - name: "Apply QC"
+          parameters:
+            qc_settings: {
+                "spike test": {
+                  "variables": {"PRES": 2, "LATITUDE": 1},
+                  "also_flag": {"PRES": ["CNDC", "TEMP"], "LATITUDE": ["LONGITUDE"]},
+                  "plot": ["PRES", "LATITUDE"]
+                  "window_size": 10,
+                }
             }
-        }
-      diagnostics: true
+          diagnostics: true
     """
 
     qc_name = "spike qc"
