@@ -1,4 +1,4 @@
-name: gliders_test
+name: pelagos
 channels:
   - conda-forge
 dependencies:
@@ -36,6 +36,9 @@ dependencies:
   - sphinx
   - sphinx-autoapi
   - sphinx-rtd-theme
+  - pydata-sphinx-theme
+  - nbsphinx
+  - numpydoc
   - sphinxcontrib-napoleon
   - sphinxcontrib-serializinghtml
   - myst-parser
@@ -50,4 +53,9 @@ dependencies:
     - rstcloth
     - compliance-checker
     - cc-plugin-og
+    - autoapi
+    - sphinx_copybutton
+    - sphinx_last_updated_by_git
+    - sphinx_codeautolink
+    - sphinx_design
     - -e .
