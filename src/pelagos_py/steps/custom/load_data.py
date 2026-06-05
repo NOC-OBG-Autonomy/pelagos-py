@@ -31,9 +31,15 @@ MIN_YEAR_FILTER = "1990-01-01"
 @register_step
 class LoadOG1(BaseStep):
     """
-    Initialises the LoadOG1 step.
+    Loads NetCDF files from ``file_path``. 
+    
+    If ``filter_bad_times`` is set then measurements made
+    outside of the time range specified by ``data_start`` and ``data_end`` are removed before 
+    further processing.
 
-    Derived from Phyto-Phys Repo by Obsidian500.
+    Time values are expected to be stored under the "TIME" variable name in the NetCDF file 
+    (corresponding to OG1 format). If "TIME" is not monotonically increasing, or has missing values
+    (NaT) then this will raise an error.
 
     Parameters
     ----------

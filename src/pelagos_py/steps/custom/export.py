@@ -25,7 +25,26 @@ import json
 @register_step
 class ExportStep(BaseStep):
     """
-    Step to export data in various formats.
+    Exports the the data output by the previous step. 
+
+    Parameters
+    ----------
+    output_path : str
+        Path and file name to output to. The file extension should be included.
+    export_format : str
+        Either "netcdf", "csv", "hdf5" or "parquet"
+
+    Examples
+    --------
+    Example usage in a pipeline configuration:
+
+    .. code-block:: yaml
+
+        steps:
+          - name: Data Export
+            parameters:
+                output_path: "save/my/data/here.nc"
+                export_format: "netcdf"
     """
 
     step_name = "Data Export"
@@ -46,7 +65,7 @@ class ExportStep(BaseStep):
         export_format = self.parameters["export_format"]
         output_path = self.parameters["output_path"]
 
-        # Validate the export format
+        # Validate the export format  # TODO: have all of these file types been tested?
         if export_format not in ["csv", "netcdf", "hdf5", "parquet"]:
             raise ValueError(
                 f"Unsupported export format: {export_format}. Supported formats are: csv, netcdf, hdf5, parquet."
