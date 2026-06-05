@@ -32,14 +32,37 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
     """
     A processing step class for deriving oceanographic variables from CTD data.
 
-    This class processes Conductivity, Temperature, and Depth (CTD) data to derive
-    additional oceanographic variables such as salinity, density, and depth using
-    the Gibbs SeaWater (GSW) Oceanographic Toolbox functions.
+    TEOS-10 implementation provided through Gibbs SeaWater (GSW) Oceanographic Toolbox functions.
+    This step requires that "TIME", "LATITUDE", "LONGITUDE", "CNDC", "PRES" and "TEMP" are present 
+    in the dataset variables.
 
-    Inherits from BaseStep and processes data stored in the context dictionary.
+    Parameters
+    ----------
+    to_derive : list
+        list of variables to derive
+        The following variables are supported:
+            - "DEPTH"
+            - "PRAC_SALINITY" (practical salinity)
+            - "ABS_SALINITY" (absolute salinity)
+            - "CONS_TEMP" (conservative temperature)
+            - "DENSITY
 
-    Attributes:
-        step_name (str): Identifier for this processing step ("Derive CTD")
+    Examples
+    --------
+    Example usage in a pipeline configuration:
+
+    .. code-block:: yaml
+
+        steps:
+          - name: "Derive CTD"
+            parameters:
+                to_derive: [
+                    DEPTH,
+                    PRAC_SALINITY,
+                    ABS_SALINITY,
+                    CONS_TEMP,
+                    DENSITY
+                ]
     """
 
     step_name = "Derive CTD"
@@ -53,24 +76,6 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
     ]
 
     def run(self):
-        """
-        Execute the CTD variable derivation process. The following variables are
-        required: ["TIME", "LATITUDE", "LONGITUDE", "CNDC", "PRES", "TEMP"]
-
-        This method performs the following operations:
-        1. Validates that data exists in the context
-        2. Applies unit conversions to raw measurements
-        3. Optionally interpolates missing position data
-        4. Derives oceanographic variables using GSW functions
-        5. Adds metadata to derived variables
-        6. Updates the context with processed data
-
-        Returns:
-            dict: Updated context dictionary containing original and derived variables
-
-        Raises:
-            ValueError: If no data is found in the context
-        """
         self.log(f"Processing CTD...")
 
         self.filter_qc()
