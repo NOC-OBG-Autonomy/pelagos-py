@@ -1,7 +1,7 @@
 """Tests the step 'Format Checker"""
 
 #   Test module import
-from pelagos_py.steps.custom import format_check
+from pelagos_py.steps.input_output import format_check
 
 import pytest
 from unittest.mock import (
@@ -13,10 +13,17 @@ from unittest.mock import (
 
 FormatCheck = format_check.FormatCheck
 
+
 def test_format_checker_run_success(tmp_path):
     # Mock both the CheckSuite and run_checker from the compliance checker runner.
-    with patch("pelagos_py.steps.custom.format_check.CheckSuite") as mock_checksuite, \
-         patch("pelagos_py.steps.custom.format_check.ComplianceChecker.run_checker") as mock_run_checker:
+    with (
+        patch(
+            "pelagos_py.steps.input_output.format_check.CheckSuite"
+        ) as mock_checksuite,
+        patch(
+            "pelagos_py.steps.input_output.format_check.ComplianceChecker.run_checker"
+        ) as mock_run_checker,
+    ):
         mock_suite_instance = MagicMock()
         mock_run_checker.return_value = (True, False)
         mock_checksuite.return_value = mock_suite_instance
@@ -26,14 +33,14 @@ def test_format_checker_run_success(tmp_path):
             parameters={
                 "src": "test_file.nc",
                 "standards": ["og"],
-                "output_type": "ascii"
+                "output_type": "ascii",
             },
             context={
                 "global_parameters": {
                     "out_directory": str(tmp_path) + "/",
-                    "filename_core": "demo_test"
+                    "filename_core": "demo_test",
                 }
-            }
+            },
         )
 
         result = step.run()
@@ -44,8 +51,14 @@ def test_format_checker_run_success(tmp_path):
 
 
 def test_format_checker_run_failure_raises(tmp_path):
-    with patch("pelagos_py.steps.custom.format_check.CheckSuite") as mock_checksuite, \
-         patch("pelagos_py.steps.custom.format_check.ComplianceChecker.run_checker") as mock_run_checker:
+    with (
+        patch(
+            "pelagos_py.steps.input_output.format_check.CheckSuite"
+        ) as mock_checksuite,
+        patch(
+            "pelagos_py.steps.input_output.format_check.ComplianceChecker.run_checker"
+        ) as mock_run_checker,
+    ):
         mock_suite_instance = MagicMock()
         mock_run_checker.return_value = (False, False)
         mock_checksuite.return_value = mock_suite_instance
@@ -61,21 +74,27 @@ def test_format_checker_run_failure_raises(tmp_path):
             context={
                 "global_parameters": {
                     "out_directory": str(tmp_path) + "/",
-                    "filename_core": "demo_test"
+                    "filename_core": "demo_test",
                 }
-            }
+            },
         )
-        step.log_warn = MagicMock() # Mock these to prevent real warnings in pytest
+        step.log_warn = MagicMock()  # Mock these to prevent real warnings in pytest
 
         with pytest.raises(RuntimeError, match="Compliance check step failed"):
             step.run()
-        
+
         step.log_warn.assert_called_once()
 
 
 def test_format_checker_errors(tmp_path):
-    with patch("pelagos_py.steps.custom.format_check.CheckSuite") as mock_checksuite, \
-         patch("pelagos_py.steps.custom.format_check.ComplianceChecker.run_checker") as mock_run_checker:
+    with (
+        patch(
+            "pelagos_py.steps.input_output.format_check.CheckSuite"
+        ) as mock_checksuite,
+        patch(
+            "pelagos_py.steps.input_output.format_check.ComplianceChecker.run_checker"
+        ) as mock_run_checker,
+    ):
         mock_suite_instance = MagicMock()
         mock_run_checker.return_value = (True, True)
         mock_checksuite.return_value = mock_suite_instance
@@ -90,9 +109,9 @@ def test_format_checker_errors(tmp_path):
             context={
                 "global_parameters": {
                     "out_directory": str(tmp_path) + "/",
-                    "filename_core": "demo_test"
+                    "filename_core": "demo_test",
                 }
-            }
+            },
         )
         step.log_warn = MagicMock()
 
@@ -106,8 +125,14 @@ def test_format_checker_errors(tmp_path):
 
 
 def test_format_checker_json_output(tmp_path):
-    with patch("pelagos_py.steps.custom.format_check.CheckSuite") as mock_checksuite, \
-         patch("pelagos_py.steps.custom.format_check.ComplianceChecker.run_checker") as mock_run_checker:
+    with (
+        patch(
+            "pelagos_py.steps.input_output.format_check.CheckSuite"
+        ) as mock_checksuite,
+        patch(
+            "pelagos_py.steps.input_output.format_check.ComplianceChecker.run_checker"
+        ) as mock_run_checker,
+    ):
 
         mock_suite_instance = MagicMock()
         mock_run_checker.return_value = (True, False)
@@ -123,9 +148,9 @@ def test_format_checker_json_output(tmp_path):
             context={
                 "global_parameters": {
                     "out_directory": str(tmp_path) + "/",
-                    "filename_core": "demo_test"
+                    "filename_core": "demo_test",
                 }
-            }
+            },
         )
 
         step.run()

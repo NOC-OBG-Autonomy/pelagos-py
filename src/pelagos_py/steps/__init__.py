@@ -26,8 +26,8 @@ import importlib
 import pathlib
 import yaml
 import logging
-from .base_step import REGISTERED_STEPS
-from .base_qc import REGISTERED_QC
+from pelagos_py.steps.base_step import REGISTERED_STEPS
+from pelagos_py.steps.base_qc import REGISTERED_QC
 
 # Setup logger for discovery
 logger = logging.getLogger("pelagos_py.pipeline.discovery")
@@ -41,14 +41,13 @@ QC_CLASSES = {}
 
 def discover_steps():
     """
-    Dynamically discover and import step modules from the custom directory.
+    Dynamically discover and import step modules from the steps directory.
     This populates the global STEP_CLASSES and QC_CLASSES registries for use elsewhere.
     """
     base_dir = pathlib.Path(__file__).parent.resolve()
-    custom_dir = base_dir / "custom"
-    logger.info("Scanning for step modules in %s", custom_dir)
+    logger.info("Scanning for step modules in %s", base_dir)
 
-    for py_file in custom_dir.rglob("*.py"):
+    for py_file in base_dir.rglob("*.py"):
         if py_file.name == "__init__.py":
             continue
 

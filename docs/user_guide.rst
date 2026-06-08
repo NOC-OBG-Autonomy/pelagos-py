@@ -54,8 +54,8 @@ painless as possible. This section explains how to add new **steps** and **QC
 checks**, including the base-class interfaces and how new functionality is
 registered so the pipeline can discover it.
 
-Templates are provided for both: copy :doc:`blank_step.py <api/pelagos_py/steps/custom/blank_step/index>`
-for a new step, or :doc:`blank_qc.py <api/pelagos_py/steps/custom/qc/blank_qc/index>`
+Templates are provided for both: copy :doc:`blank_step.py <api/pelagos_py/steps/templates/blank_step/index>`
+for a new step, or :doc:`blank_qc.py <api/pelagos_py/steps/templates/blank_qc/index>`
 for a new QC check. It is still recommended that you read the instructions below
 to avoid common implementation issues.
 
@@ -63,7 +63,7 @@ How to add a new step
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 1. Create a new Python file in the appropriate directory under
-   ``src/pelagos_py/steps/custom/``.
+   ``src/pelagos_py/steps/``.
 
    .. note::
       If you are creating a step for specific variables, it should go in the
@@ -254,7 +254,7 @@ QC checks operate exclusively on the QC flags of the data variables. This is
 useful for researchers post-pipeline who want to remove bad or suspicious data,
 or to exclude bad data from specific processing steps (see
 `Adding QC handling to a step`_ above). All checks are run through the
-:doc:`Apply QC <api/pelagos_py/steps/custom/apply_qc/index>` step, which
+:doc:`Apply QC <api/pelagos_py/steps/quality_control/apply_qc/index>` step, which
 transfers the individual results onto the existing QC columns.
 
 As described on the :doc:`Quality Control <quality_control>` page, there are two types of
@@ -268,13 +268,13 @@ check:
 A standard structure for dynamic checks is yet to be settled, so this section
 covers only the implementation of static checks. Examples of dynamic checks can
 be found in
-:doc:`stuck_value_qc.py <api/pelagos_py/steps/custom/qc/stuck_value_qc/index>`
+:doc:`stuck_value_qc.py <api/pelagos_py/steps/quality_control/stuck_value_qc/index>`
 and
-:doc:`impossible_range_qc.py <api/pelagos_py/steps/custom/qc/impossible_range_qc/index>`.
+:doc:`impossible_range_qc.py <api/pelagos_py/steps/quality_control/impossible_range_qc/index>`.
 A template for a static check is provided in
-:doc:`blank_qc.py <api/pelagos_py/steps/custom/qc/blank_qc/index>`.
+:doc:`blank_qc.py <api/pelagos_py/steps/templates/blank_qc/index>`.
 
-1. Create your QC file in ``src/pelagos_py/steps/custom/qc/``.
+1. Create your QC file in ``src/pelagos_py/steps/quality_control/``.
 
 2. Import the parent class and define your QC class. It must inherit from
    ``BaseQC`` and carry the ``@register_qc`` decorator so the pipeline can find

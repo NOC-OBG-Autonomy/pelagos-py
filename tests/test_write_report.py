@@ -1,7 +1,7 @@
 """Tests the step 'Write Report'"""
 
 #   Test module import
-from pelagos_py.steps.custom import write_report
+from pelagos_py.steps.input_output import write_report
 import pytest
 from unittest.mock import (
     patch,

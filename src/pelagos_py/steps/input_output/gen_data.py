@@ -19,7 +19,7 @@
 import polars as pl
 import xarray as xr
 import numpy as np
-from ..base_step import BaseStep, register_step
+from pelagos_py.steps.base_step import BaseStep, register_step
 from datetime import date, timedelta
 
 

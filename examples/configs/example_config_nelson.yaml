@@ -16,9 +16,11 @@
 
 # Pipeline Configuration
 pipeline:
-  name: Example CTD Processing Pipeline
-  description: A pipeline for processing CTD data
+  name: Example processing pipeline
+  description: An example pipeline
   visualisation: false
+  out_directory: ../examples/data/OG1/
+  log_file: example_processing.log
 
 # Steps in the pipeline
 # For further details on step parameters, see all_step_configs.yaml
@@ -39,7 +41,7 @@ steps:
         impossible location qc: {} # Are the GPS coords within logical bounds?
         position on land qc: {} # Are the coords on land?
         impossible speed qc: {} # Is the horizontal speed reasonable?
-    diagnostics: true # Plot all test outcomes
+    diagnostics: false # Plot all test outcomes
 
 # Next we will apply QC to the CTD variables. Technically this step can be merged with
 # the previous into a single Apply QC step, but here they are sepparate to make things
@@ -66,7 +68,7 @@ steps:
           also_flag:
             PRES: [CNDC, TEMP] # Apply the bad flags to CNDC & TEMP too
           plot: [PRES] # Plot the outcome for just pressure
-    diagnostics: true
+    diagnostics: false
 
 # Since we are using near-realtime data there are a lot of missing values. Also, since
 # the GPS and science measurement clocks do not sample at the same rate, there are many
@@ -87,7 +89,7 @@ steps:
           3: 8
           4: 8
           9: 8
-    diagnostics: true # Plot the outcome after interpolation
+    diagnostics: false # Plot the outcome after interpolation
 
 # --------------------- PROFILE FINDING ---------------------
 # We now use the derive CTD step to add the DEPTH variable to the dataset as it
@@ -109,7 +111,7 @@ steps:
       gradient_thresholds: [0.033, -0.033] # Cutoffs for defining minimum velocity for up & downcasts
       filter_window_sizes: [20s, 20s] # Window sizes for median & mean smoothing
       depth_column: DEPTH
-    diagnostics: true # When true, this step plots an interacive window that allows parameter adjustment.
+    diagnostics: false # When true, this step plots an interacive window that allows parameter adjustment.
 
 # Now that profiles have been determined we should flag any that are too short or lack data at depth
   - name: Apply QC
@@ -123,7 +125,7 @@ steps:
 # Finally we add profile direction to the dataset. +1 is ascending and -1 is descending
   - name: Find Profile Direction
     parameters:
-    diagnostics: true
+    diagnostics: false
 
 # ------------------ SALINITY ADJUSTMENT --------------------
 # Now we move onto adjustment of the CNDC variable and subsequent salinity derivations
@@ -141,7 +143,7 @@ steps:
           2: 5
       filter_window_size: 21
       plot_profiles_in_range: [100, 150] # plot profiles 100 through to 150
-    diagnostics: true
+    diagnostics: false
 
 # Finally, derive the remaining CTD variables using another call of Derive CTD
   - name: Derive CTD
