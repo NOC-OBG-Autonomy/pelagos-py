@@ -7,8 +7,8 @@ Every QC check is run through the ``Apply QC`` step, which transfers the individ
 
 QC checks come in two types:
 
-* **Static** checks always operate on the same variable(s) and produce the same QC outputs — e.g. :doc:`Impossible Date <api/pelagos_py/steps/custom/qc/impossible_date_qc/index>` always checks ``TIME``.
-* **Dynamic** checks let the user choose which variables they apply to, so the QC output is not pre-determined — e.g. :doc:`Impossible Range <api/pelagos_py/steps/custom/qc/impossible_range_qc/index>` and :doc:`Stuck Value <api/pelagos_py/steps/custom/qc/stuck_value_qc/index>`.
+* **Static** checks always operate on the same variable(s) and produce the same QC outputs — e.g. :doc:`Impossible Date <api/pelagos_py/steps/quality_control/impossible_date_qc/index>` always checks ``TIME``.
+* **Dynamic** checks let the user choose which variables they apply to, so the QC output is not pre-determined — e.g. :doc:`Impossible Range <api/pelagos_py/steps/quality_control/impossible_range_qc/index>` and :doc:`Stuck Value <api/pelagos_py/steps/quality_control/stuck_value_qc/index>`.
 
 To add your own QC check, see :doc:`Extending pelagos_py <user_guide>`.
 
@@ -43,26 +43,26 @@ Spatiotemporal Checks
 
 These verify that the data was collected at a logical time and place.
 
-* :doc:`Impossible Date <api/pelagos_py/steps/custom/qc/impossible_date_qc/index>`: Checks that the timestamps fall within a realistic range (typically from 1985 to the present day).
-* :doc:`Impossible Location <api/pelagos_py/steps/custom/qc/impossible_location_qc/index>`: Verifies that latitude and longitude coordinates are within global bounds.
-* :doc:`Impossible Speed <api/pelagos_py/steps/custom/qc/impossible_speed_qc/index>`: Calculates the velocity between points to ensure the platform is not moving at unphysical speeds.
-* :doc:`Position on Land <api/pelagos_py/steps/custom/qc/position_on_land_qc/index>`: Uses a bathymetry mask to check if coordinates incorrectly place the platform on land.
+* :doc:`Impossible Date <api/pelagos_py/steps/quality_control/impossible_date_qc/index>`: Checks that the timestamps fall within a realistic range (typically from 1985 to the present day).
+* :doc:`Impossible Location <api/pelagos_py/steps/quality_control/impossible_location_qc/index>`: Verifies that latitude and longitude coordinates are within global bounds.
+* :doc:`Impossible Speed <api/pelagos_py/steps/quality_control/impossible_speed_qc/index>`: Calculates the velocity between points to ensure the platform is not moving at unphysical speeds.
+* :doc:`Position on Land <api/pelagos_py/steps/quality_control/position_on_land_qc/index>`: Uses a bathymetry mask to check if coordinates incorrectly place the platform on land.
 
 Range and Value Checks
 ~~~~~~~~~~~~~~~~~~~~~~
 
 These identify data points that fall outside expected physical or sensor limits.
 
-* :doc:`Gross Range <api/pelagos_py/steps/custom/qc/gross_range_qc/index>`: Applies broad, non-configurable physical limits to catch extreme sensor failures.
-* :doc:`Impossible Range <api/pelagos_py/steps/custom/qc/impossible_range_qc/index>`: Allows users to define specific, narrower thresholds for any variable.
-* :doc:`Stuck Value <api/pelagos_py/steps/custom/qc/stuck_value_qc/index>`: Identifies sensor "freezing" by looking for sequences of identical values where variation is expected.
-* :doc:`Spike <api/pelagos_py/steps/custom/qc/spike_qc/index>`: Detects sudden, unrealistic jumps in data values between adjacent measurements.
-* :doc:`PAR Irregularity <api/pelagos_py/steps/custom/qc/par_irregularity_qc/index>`: A specialised check for Photosynthetically Active Radiation sensors to identify inconsistent light readings.
+* :doc:`Gross Range <api/pelagos_py/steps/quality_control/gross_range_qc/index>`: Applies broad, non-configurable physical limits to catch extreme sensor failures.
+* :doc:`Impossible Range <api/pelagos_py/steps/quality_control/impossible_range_qc/index>`: Allows users to define specific, narrower thresholds for any variable.
+* :doc:`Stuck Value <api/pelagos_py/steps/quality_control/stuck_value_qc/index>`: Identifies sensor "freezing" by looking for sequences of identical values where variation is expected.
+* :doc:`Spike <api/pelagos_py/steps/quality_control/spike_qc/index>`: Detects sudden, unrealistic jumps in data values between adjacent measurements.
+* :doc:`PAR Irregularity <api/pelagos_py/steps/quality_control/par_irregularity_qc/index>`: A specialised check for Photosynthetically Active Radiation sensors to identify inconsistent light readings.
 
 Profile Integrity
 ~~~~~~~~~~~~~~~~~
 
 These assess the quality of a vertical profile as a whole.
 
-* :doc:`Valid Profile <api/pelagos_py/steps/custom/qc/valid_profile_qc/index>`: Ensures a profile contains enough data points or covers a sufficient depth range to be useful.
-* :doc:`Flag Full Profile <api/pelagos_py/steps/custom/qc/flag_full_profile/index>`: If a certain percentage of points in a profile are flagged as bad, this qc can be configured to flag the entire profile.
+* :doc:`Valid Profile <api/pelagos_py/steps/quality_control/valid_profile_qc/index>`: Ensures a profile contains enough data points or covers a sufficient depth range to be useful.
+* :doc:`Flag Full Profile <api/pelagos_py/steps/quality_control/flag_full_profile/index>`: If a certain percentage of points in a profile are flagged as bad, this qc can be configured to flag the entire profile.

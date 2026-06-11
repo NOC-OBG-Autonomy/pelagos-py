@@ -283,15 +283,15 @@
 painless as possible. This section explains how to add new <strong>steps</strong> and <strong>QC
 checks</strong>, including the base-class interfaces and how new functionality is
 registered so the pipeline can discover it.</p>
-<p>Templates are provided for both: copy <a class="reference internal" href="api/pelagos_py/steps/custom/blank_step/index.html"><span class="doc">blank_step.py</span></a>
-for a new step, or <a class="reference internal" href="api/pelagos_py/steps/custom/qc/blank_qc/index.html"><span class="doc">blank_qc.py</span></a>
+<p>Templates are provided for both: copy <a class="reference internal" href="api/pelagos_py/steps/templates/blank_step/index.html"><span class="doc">blank_step.py</span></a>
+for a new step, or <a class="reference internal" href="api/pelagos_py/steps/templates/blank_qc/index.html"><span class="doc">blank_qc.py</span></a>
 for a new QC check. It is still recommended that you read the instructions below
 to avoid common implementation issues.</p>
 <section id="how-to-add-a-new-step">
 <h3>How to add a new step<a class="headerlink" href="#how-to-add-a-new-step" title="Link to this heading">#</a></h3>
 <ol class="arabic">
 <li><p>Create a new Python file in the appropriate directory under
-<code class="docutils literal notranslate"><span class="pre">src/pelagos_py/steps/custom/</span></code>.</p>
+<code class="docutils literal notranslate"><span class="pre">src/pelagos_py/steps/</span></code>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>If you are creating a step for specific variables, it should go in the
@@ -474,7 +474,7 @@ and — if you add new variables — <code class="docutils literal notranslate">
 useful for researchers post-pipeline who want to remove bad or suspicious data,
 or to exclude bad data from specific processing steps (see
 <a class="reference internal" href="#adding-qc-handling-to-a-step">Adding QC handling to a step</a> above). All checks are run through the
-<a class="reference internal" href="api/pelagos_py/steps/custom/apply_qc/index.html"><span class="doc">Apply QC</span></a> step, which
+<a class="reference internal" href="api/pelagos_py/steps/quality_control/apply_qc/index.html"><span class="doc">Apply QC</span></a> step, which
 transfers the individual results onto the existing QC columns.</p>
 <p>As described on the <a class="reference internal" href="quality_control.html"><span class="doc">Quality Control</span></a> page, there are two types of
 check:</p>
@@ -487,13 +487,13 @@ QC output is not pre-determined.</p></li>
 <p>A standard structure for dynamic checks is yet to be settled, so this section
 covers only the implementation of static checks. Examples of dynamic checks can
 be found in
-<a class="reference internal" href="api/pelagos_py/steps/custom/qc/stuck_value_qc/index.html"><span class="doc">stuck_value_qc.py</span></a>
+<a class="reference internal" href="api/pelagos_py/steps/quality_control/stuck_value_qc/index.html"><span class="doc">stuck_value_qc.py</span></a>
 and
-<a class="reference internal" href="api/pelagos_py/steps/custom/qc/impossible_range_qc/index.html"><span class="doc">impossible_range_qc.py</span></a>.
+<a class="reference internal" href="api/pelagos_py/steps/quality_control/impossible_range_qc/index.html"><span class="doc">impossible_range_qc.py</span></a>.
 A template for a static check is provided in
-<a class="reference internal" href="api/pelagos_py/steps/custom/qc/blank_qc/index.html"><span class="doc">blank_qc.py</span></a>.</p>
+<a class="reference internal" href="api/pelagos_py/steps/templates/blank_qc/index.html"><span class="doc">blank_qc.py</span></a>.</p>
 <ol class="arabic">
-<li><p>Create your QC file in <code class="docutils literal notranslate"><span class="pre">src/pelagos_py/steps/custom/qc/</span></code>.</p></li>
+<li><p>Create your QC file in <code class="docutils literal notranslate"><span class="pre">src/pelagos_py/steps/quality_control/</span></code>.</p></li>
 <li><p>Import the parent class and define your QC class. It must inherit from
 <code class="docutils literal notranslate"><span class="pre">BaseQC</span></code> and carry the <code class="docutils literal notranslate"><span class="pre">@register_qc</span></code> decorator so the pipeline can find
 and register it.</p>

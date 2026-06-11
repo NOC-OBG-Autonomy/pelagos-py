@@ -17,124 +17,73 @@
       "doc_lineno": 158
     }
   ],
-  "api/pelagos_py/steps/custom/apply_qc/index": [],
-  "api/pelagos_py/steps/custom/blank_step/index": [],
-  "api/pelagos_py/steps/custom/derive_ctd/index": [],
-  "api/pelagos_py/steps/custom/export/index": [],
-  "api/pelagos_py/steps/custom/find_profiles/index": [],
-  "api/pelagos_py/steps/custom/format_check/index": [],
-  "api/pelagos_py/steps/custom/gen_data/index": [],
-  "api/pelagos_py/steps/custom/index": [],
-  "api/pelagos_py/steps/custom/interpolate_data/index": [
+  "api/pelagos_py/steps/index": [],
+  "api/pelagos_py/steps/input_output/export/index": [],
+  "api/pelagos_py/steps/input_output/format_check/index": [],
+  "api/pelagos_py/steps/input_output/gen_data/index": [],
+  "api/pelagos_py/steps/input_output/index": [],
+  "api/pelagos_py/steps/input_output/load_data/index": [],
+  "api/pelagos_py/steps/input_output/write_report/index": [
     {
-      "source": "- name: \"Interpolate Data\"\n  parameters:\n    qc_handling_settings: {\n      flag_filter_settings: {\n        \"PRES\": [3, 4, 9],\n        \"LATITUDE\": [3, 4, 9],\n        \"LONGITUDE\": [3, 4, 9]\n      },\n      reconstruction_behaviour: \"replace\",\n      flag_mapping: { 3: 8, 4: 8, 9: 8 }\n    }\n  diagnostics: false",
+      "source": "{\n    \"VAR_QC\": {\n        \"qc_name\": {\n            \"params\": {...},\n            \"flag_counts\": {...},\n            \"stats\": {...},\n        },\n        \"qc_name_2\": {\n            ...\n        },\n    }\n}",
       "names": [],
       "example": {
-        "document": "api/pelagos_py/steps/custom/interpolate_data/index",
-        "ref_id": "module-pelagos_py.steps.custom.interpolate_data",
+        "document": "api/pelagos_py/steps/input_output/write_report/index",
+        "ref_id": "module-pelagos_py.steps.input_output.write_report",
         "headings": [
-          "pelagos_py.steps.custom.interpolate_data",
-          "Examples"
+          "pelagos_py.steps.input_output.write_report"
         ]
       },
-      "doc_lineno": 39
-    }
-  ],
-  "api/pelagos_py/steps/custom/load_data/index": [],
-  "api/pelagos_py/steps/custom/profile_direction/index": [
+      "doc_lineno": 107
+    },
     {
-      "source": "direction = -1 * sign(dPRES/dTIME)",
+      "source": "[qc_var, qc_name, flag, formatted_count]",
       "names": [],
       "example": {
-        "document": "api/pelagos_py/steps/custom/profile_direction/index",
-        "ref_id": "module-pelagos_py.steps.custom.profile_direction",
+        "document": "api/pelagos_py/steps/input_output/write_report/index",
+        "ref_id": "module-pelagos_py.steps.input_output.write_report",
         "headings": [
-          "pelagos_py.steps.custom.profile_direction",
-          "Notes"
+          "pelagos_py.steps.input_output.write_report"
         ]
       },
-      "doc_lineno": 47
-    }
-  ],
-  "api/pelagos_py/steps/custom/qc/archive/index": [],
-  "api/pelagos_py/steps/custom/qc/blank_qc/index": [],
-  "api/pelagos_py/steps/custom/qc/flag_full_profile/index": [
+      "doc_lineno": 152
+    },
     {
-      "source": "- name: \"Apply QC\"\n  parameters:\n    qc_settings: {\n        \"flag_full_profile\": {\n          \"check_vars\": {\"PRES\": 10, \"CHLA\": 20},\n        }\n    }\n  diagnostics: true",
+      "source": "img_rst(doc,\n        \"../examples/data/OG1/testing/fig.png\",\n        fields=[(\"height\",\"100px\"),(\"width\",\"100px\")])",
       "names": [],
       "example": {
-        "document": "api/pelagos_py/steps/custom/qc/flag_full_profile/index",
-        "ref_id": "module-pelagos_py.steps.custom.qc.flag_full_profile",
+        "document": "api/pelagos_py/steps/input_output/write_report/index",
+        "ref_id": "module-pelagos_py.steps.input_output.write_report",
         "headings": [
-          "pelagos_py.steps.custom.qc.flag_full_profile",
+          "pelagos_py.steps.input_output.write_report",
           "Example"
         ]
       },
-      "doc_lineno": 23
-    }
-  ],
-  "api/pelagos_py/steps/custom/qc/gross_range_qc/index": [],
-  "api/pelagos_py/steps/custom/qc/impossible_date_qc/index": [],
-  "api/pelagos_py/steps/custom/qc/impossible_location_qc/index": [],
-  "api/pelagos_py/steps/custom/qc/impossible_range_qc/index": [
+      "doc_lineno": 299
+    },
     {
-      "source": "- name: \"Apply QC\"\n  parameters:\n    qc_settings: {\n        \"impossible range qc\": {\n          \"variable_ranges\": {\"PRES\": {3: [-2, 0], 4: [-999, -2]}, \"LATITUDE\": {4: [-90, 90]}},\n          \"also_flag\": {\"PRES\": [\"CNDC\", \"TEMP\"], \"LATITUDE\": [\"LONGITUDE\"]},\n          \"plot\": [\"PRES\", \"LATITUDE\"]\n          \"test_depth_range\": [-100, 0]  # OPTIONAL\n        }\n    }\n  diagnostics: true",
+      "source": ".. image:: fig.*\n   :height: 100px\n   :width: 100px",
       "names": [],
       "example": {
-        "document": "api/pelagos_py/steps/custom/qc/impossible_range_qc/index",
-        "ref_id": "module-pelagos_py.steps.custom.qc.impossible_range_qc",
+        "document": "api/pelagos_py/steps/input_output/write_report/index",
+        "ref_id": "module-pelagos_py.steps.input_output.write_report",
         "headings": [
-          "pelagos_py.steps.custom.qc.impossible_range_qc",
+          "pelagos_py.steps.input_output.write_report",
           "Example"
         ]
       },
-      "doc_lineno": 21
+      "doc_lineno": 305
     }
   ],
-  "api/pelagos_py/steps/custom/qc/impossible_speed_qc/index": [],
-  "api/pelagos_py/steps/custom/qc/index": [],
-  "api/pelagos_py/steps/custom/qc/par_irregularity_qc/index": [],
-  "api/pelagos_py/steps/custom/qc/position_on_land_qc/index": [],
-  "api/pelagos_py/steps/custom/qc/spike_qc/index": [
-    {
-      "source": "- name: \"Apply QC\"\n  parameters:\n    qc_settings: {\n        \"spike test\": {\n          \"variables\": {\"PRES\": 2, \"LATITUDE\": 1},\n          \"also_flag\": {\"PRES\": [\"CNDC\", \"TEMP\"], \"LATITUDE\": [\"LONGITUDE\"]},\n          \"plot\": [\"PRES\", \"LATITUDE\"]\n          \"window_size\": 10,\n        }\n    }\n  diagnostics: true",
-      "names": [],
-      "example": {
-        "document": "api/pelagos_py/steps/custom/qc/spike_qc/index",
-        "ref_id": "module-pelagos_py.steps.custom.qc.spike_qc",
-        "headings": [
-          "pelagos_py.steps.custom.qc.spike_qc",
-          "Example"
-        ]
-      },
-      "doc_lineno": 22
-    }
-  ],
-  "api/pelagos_py/steps/custom/qc/stuck_value_qc/index": [
-    {
-      "source": "- name: \"Apply QC\"\n  parameters:\n    qc_settings: {\n        \"stuck value test\": {\n          \"variables\": {\"PRES\": 4, \"LATITUDE\": 100},\n          \"also_flag\": {\"PRES\": [\"CNDC\", \"TEMP\"], \"LATITUDE\": [\"LONGITUDE\"]},\n          \"plot\": [\"PRES\", \"LATITUDE\"]\n        }\n    }\n  diagnostics: true",
-      "names": [],
-      "example": {
-        "document": "api/pelagos_py/steps/custom/qc/stuck_value_qc/index",
-        "ref_id": "module-pelagos_py.steps.custom.qc.stuck_value_qc",
-        "headings": [
-          "pelagos_py.steps.custom.qc.stuck_value_qc",
-          "Example"
-        ]
-      },
-      "doc_lineno": 21
-    }
-  ],
-  "api/pelagos_py/steps/custom/qc/valid_profile_qc/index": [],
-  "api/pelagos_py/steps/custom/variables/bbp/index": [
+  "api/pelagos_py/steps/processing/bbp/index": [
     {
       "source": "- name: \"BBP from Beta\"\n  parameters:\n    apply_to: \"BBP700\"\n    output_as: \"BBP700\"\n    theta: 124\n    xfactor: 1.076\n  diagnostics: false",
       "names": [],
       "example": {
-        "document": "api/pelagos_py/steps/custom/variables/bbp/index",
-        "ref_id": "module-pelagos_py.steps.custom.variables.bbp",
+        "document": "api/pelagos_py/steps/processing/bbp/index",
+        "ref_id": "module-pelagos_py.steps.processing.bbp",
         "headings": [
-          "pelagos_py.steps.custom.variables.bbp",
+          "pelagos_py.steps.processing.bbp",
           "Example"
         ]
       },
@@ -144,10 +93,10 @@
       "source": "- name: \"Isolate BBP Spikes\"\n  parameters:\n    apply_to: \"BBP700\"\n    window_size: 50\n    method: \"median\"\n  diagnostics: false",
       "names": [],
       "example": {
-        "document": "api/pelagos_py/steps/custom/variables/bbp/index",
-        "ref_id": "module-pelagos_py.steps.custom.variables.bbp",
+        "document": "api/pelagos_py/steps/processing/bbp/index",
+        "ref_id": "module-pelagos_py.steps.processing.bbp",
         "headings": [
-          "pelagos_py.steps.custom.variables.bbp",
+          "pelagos_py.steps.processing.bbp",
           "Example",
           "Example"
         ]
@@ -155,15 +104,15 @@
       "doc_lineno": 100
     }
   ],
-  "api/pelagos_py/steps/custom/variables/chla/index": [
+  "api/pelagos_py/steps/processing/chla/index": [
     {
       "source": "- name: \"Chla Deep Correction\"\n  parameters:\n    apply_to: \"CHLA\"\n    dark_value: null\n    depth_threshold: 200\n  diagnostics: true",
       "names": [],
       "example": {
-        "document": "api/pelagos_py/steps/custom/variables/chla/index",
-        "ref_id": "module-pelagos_py.steps.custom.variables.chla",
+        "document": "api/pelagos_py/steps/processing/chla/index",
+        "ref_id": "module-pelagos_py.steps.processing.chla",
         "headings": [
-          "pelagos_py.steps.custom.variables.chla",
+          "pelagos_py.steps.processing.chla",
           "Example"
         ]
       },
@@ -173,10 +122,10 @@
       "source": "- name: \"Chla Quenching Correction\"\n  parameters:\n    method: \"Argo\"\n    apply_to: \"CHLA\"\n    mld_settings: {\n      \"threshold_on\": \"TEMP\",\n      \"reference_depth\": 10,\n      \"threshold\": 0.2\n      }\n    plot_profiles: []\n  diagnostics: true",
       "names": [],
       "example": {
-        "document": "api/pelagos_py/steps/custom/variables/chla/index",
-        "ref_id": "module-pelagos_py.steps.custom.variables.chla",
+        "document": "api/pelagos_py/steps/processing/chla/index",
+        "ref_id": "module-pelagos_py.steps.processing.chla",
         "headings": [
-          "pelagos_py.steps.custom.variables.chla",
+          "pelagos_py.steps.processing.chla",
           "Example",
           "Example"
         ]
@@ -184,16 +133,33 @@
       "doc_lineno": 163
     }
   ],
-  "api/pelagos_py/steps/custom/variables/index": [],
-  "api/pelagos_py/steps/custom/variables/oxygen/index": [
+  "api/pelagos_py/steps/processing/derive_ctd/index": [],
+  "api/pelagos_py/steps/processing/find_profiles/index": [],
+  "api/pelagos_py/steps/processing/index": [],
+  "api/pelagos_py/steps/processing/interpolate_data/index": [
+    {
+      "source": "- name: \"Interpolate Data\"\n  parameters:\n    qc_handling_settings: {\n      flag_filter_settings: {\n        \"PRES\": [3, 4, 9],\n        \"LATITUDE\": [3, 4, 9],\n        \"LONGITUDE\": [3, 4, 9]\n      },\n      reconstruction_behaviour: \"replace\",\n      flag_mapping: { 3: 8, 4: 8, 9: 8 }\n    }\n  diagnostics: false",
+      "names": [],
+      "example": {
+        "document": "api/pelagos_py/steps/processing/interpolate_data/index",
+        "ref_id": "module-pelagos_py.steps.processing.interpolate_data",
+        "headings": [
+          "pelagos_py.steps.processing.interpolate_data",
+          "Examples"
+        ]
+      },
+      "doc_lineno": 39
+    }
+  ],
+  "api/pelagos_py/steps/processing/oxygen/index": [
     {
       "source": "- name: \"Derive Uncalibrated Phase\"\n  parameters:\n    #  <MANDATORY>\n    blue_phase_name: \"BPHASE_DOXY\"\n    # <OPTIONAL>\n    red_phase_name: \"RPHASE_DOXY\"\n  diagnostics: false",
       "names": [],
       "example": {
-        "document": "api/pelagos_py/steps/custom/variables/oxygen/index",
-        "ref_id": "module-pelagos_py.steps.custom.variables.oxygen",
+        "document": "api/pelagos_py/steps/processing/oxygen/index",
+        "ref_id": "module-pelagos_py.steps.processing.oxygen",
         "headings": [
-          "pelagos_py.steps.custom.variables.oxygen",
+          "pelagos_py.steps.processing.oxygen",
           "Example"
         ]
       },
@@ -203,10 +169,10 @@
       "source": "- name: \"Derive Optode Temperature\"\n  parameters:\n    temp_voltage_name: \"TEMP_VOLTAGE_DOXY\"\n    calib_coefficients: [0, 1, 0, 0, 0, 0]\n  diagnostics: false",
       "names": [],
       "example": {
-        "document": "api/pelagos_py/steps/custom/variables/oxygen/index",
-        "ref_id": "module-pelagos_py.steps.custom.variables.oxygen",
+        "document": "api/pelagos_py/steps/processing/oxygen/index",
+        "ref_id": "module-pelagos_py.steps.processing.oxygen",
         "headings": [
-          "pelagos_py.steps.custom.variables.oxygen",
+          "pelagos_py.steps.processing.oxygen",
           "Example",
           "Example"
         ]
@@ -217,10 +183,10 @@
       "source": "- name: \"Phase Pressure Correction\"\n  parameters:\n    optode_pressure_name: \"PRES\"\n    correction_coefficient: 0.1\n  diagnostics: false",
       "names": [],
       "example": {
-        "document": "api/pelagos_py/steps/custom/variables/oxygen/index",
-        "ref_id": "module-pelagos_py.steps.custom.variables.oxygen",
+        "document": "api/pelagos_py/steps/processing/oxygen/index",
+        "ref_id": "module-pelagos_py.steps.processing.oxygen",
         "headings": [
-          "pelagos_py.steps.custom.variables.oxygen",
+          "pelagos_py.steps.processing.oxygen",
           "Example",
           "Example",
           "Example"
@@ -232,10 +198,10 @@
       "source": "- name: \"Derive Calibrated Phase\"\n  parameters:\n    uncalibrated_phase_name: \"UNCAL_PHASE_DOXY\"\n    calib_coefficients: [0, 1, 0, 0]\n  diagnostics: false",
       "names": [],
       "example": {
-        "document": "api/pelagos_py/steps/custom/variables/oxygen/index",
-        "ref_id": "module-pelagos_py.steps.custom.variables.oxygen",
+        "document": "api/pelagos_py/steps/processing/oxygen/index",
+        "ref_id": "module-pelagos_py.steps.processing.oxygen",
         "headings": [
-          "pelagos_py.steps.custom.variables.oxygen",
+          "pelagos_py.steps.processing.oxygen",
           "Example",
           "Example",
           "Example",
@@ -248,10 +214,10 @@
       "source": "- name: \"Derive Oxygen Concentration\"\n  parameters:\n    # <MANDATORY>\n    method: \"poly\"\n    # <METHOD DEPENDENT>\n    # The following params are for \"poly\" method\n    temperature_name: \"TEMP\"\n    calib_coefficient_matrix: [\n      [0, 1, 0, 0],\n      [0, 1, 0, 0],\n      [0, 1, 0, 0],\n      [0, 1, 0, 0],\n      [0, 1, 0, 0]\n    ]\n  diagnostics: false",
       "names": [],
       "example": {
-        "document": "api/pelagos_py/steps/custom/variables/oxygen/index",
-        "ref_id": "module-pelagos_py.steps.custom.variables.oxygen",
+        "document": "api/pelagos_py/steps/processing/oxygen/index",
+        "ref_id": "module-pelagos_py.steps.processing.oxygen",
         "headings": [
-          "pelagos_py.steps.custom.variables.oxygen",
+          "pelagos_py.steps.processing.oxygen",
           "Example",
           "Example",
           "Example",
@@ -265,10 +231,10 @@
       "source": "- name: \"Molar DOXY Salinity Correction\"\n  parameters:\n    # <MANDATORY>\n    salinity_name: \"PRAC_SALINITY\"\n    temperature_name: \"TEMP\"\n    # <OPTIONAL>\n    reference_salinity: 0\n  diagnostics: false",
       "names": [],
       "example": {
-        "document": "api/pelagos_py/steps/custom/variables/oxygen/index",
-        "ref_id": "module-pelagos_py.steps.custom.variables.oxygen",
+        "document": "api/pelagos_py/steps/processing/oxygen/index",
+        "ref_id": "module-pelagos_py.steps.processing.oxygen",
         "headings": [
-          "pelagos_py.steps.custom.variables.oxygen",
+          "pelagos_py.steps.processing.oxygen",
           "Example",
           "Example",
           "Example",
@@ -283,10 +249,10 @@
       "source": "- name: \"Molar DOXY Pressure Correction\"\n  parameters:\n    # <MANDATORY>\n    pressure_name: \"PRES\"\n    temperature_name: \"TEMP\"\n    molar_doxy_name: \"MOLAR_DOXY_PSAL\"\n    uncalibrated_phase_correction_applied: true\n  diagnostics: false",
       "names": [],
       "example": {
-        "document": "api/pelagos_py/steps/custom/variables/oxygen/index",
-        "ref_id": "module-pelagos_py.steps.custom.variables.oxygen",
+        "document": "api/pelagos_py/steps/processing/oxygen/index",
+        "ref_id": "module-pelagos_py.steps.processing.oxygen",
         "headings": [
-          "pelagos_py.steps.custom.variables.oxygen",
+          "pelagos_py.steps.processing.oxygen",
           "Example",
           "Example",
           "Example",
@@ -299,60 +265,94 @@
       "doc_lineno": 403
     }
   ],
-  "api/pelagos_py/steps/custom/variables/salinity/index": [],
-  "api/pelagos_py/steps/custom/write_report/index": [
+  "api/pelagos_py/steps/processing/profile_direction/index": [
     {
-      "source": "{\n    \"VAR_QC\": {\n        \"qc_name\": {\n            \"params\": {...},\n            \"flag_counts\": {...},\n            \"stats\": {...},\n        },\n        \"qc_name_2\": {\n            ...\n        },\n    }\n}",
+      "source": "direction = -1 * sign(dPRES/dTIME)",
       "names": [],
       "example": {
-        "document": "api/pelagos_py/steps/custom/write_report/index",
-        "ref_id": "module-pelagos_py.steps.custom.write_report",
+        "document": "api/pelagos_py/steps/processing/profile_direction/index",
+        "ref_id": "module-pelagos_py.steps.processing.profile_direction",
         "headings": [
-          "pelagos_py.steps.custom.write_report"
+          "pelagos_py.steps.processing.profile_direction",
+          "Notes"
         ]
       },
-      "doc_lineno": 107
-    },
-    {
-      "source": "[qc_var, qc_name, flag, formatted_count]",
-      "names": [],
-      "example": {
-        "document": "api/pelagos_py/steps/custom/write_report/index",
-        "ref_id": "module-pelagos_py.steps.custom.write_report",
-        "headings": [
-          "pelagos_py.steps.custom.write_report"
-        ]
-      },
-      "doc_lineno": 152
-    },
-    {
-      "source": "img_rst(doc,\n        \"../examples/data/OG1/testing/fig.png\",\n        fields=[(\"height\",\"100px\"),(\"width\",\"100px\")])",
-      "names": [],
-      "example": {
-        "document": "api/pelagos_py/steps/custom/write_report/index",
-        "ref_id": "module-pelagos_py.steps.custom.write_report",
-        "headings": [
-          "pelagos_py.steps.custom.write_report",
-          "Example"
-        ]
-      },
-      "doc_lineno": 299
-    },
-    {
-      "source": ".. image:: fig.*\n   :height: 100px\n   :width: 100px",
-      "names": [],
-      "example": {
-        "document": "api/pelagos_py/steps/custom/write_report/index",
-        "ref_id": "module-pelagos_py.steps.custom.write_report",
-        "headings": [
-          "pelagos_py.steps.custom.write_report",
-          "Example"
-        ]
-      },
-      "doc_lineno": 305
+      "doc_lineno": 47
     }
   ],
-  "api/pelagos_py/steps/index": [],
+  "api/pelagos_py/steps/processing/salinity/index": [],
+  "api/pelagos_py/steps/quality_control/apply_qc/index": [],
+  "api/pelagos_py/steps/quality_control/flag_full_profile/index": [
+    {
+      "source": "- name: \"Apply QC\"\n  parameters:\n    qc_settings: {\n        \"flag_full_profile\": {\n          \"check_vars\": {\"PRES\": 10, \"CHLA\": 20},\n        }\n    }\n  diagnostics: true",
+      "names": [],
+      "example": {
+        "document": "api/pelagos_py/steps/quality_control/flag_full_profile/index",
+        "ref_id": "module-pelagos_py.steps.quality_control.flag_full_profile",
+        "headings": [
+          "pelagos_py.steps.quality_control.flag_full_profile",
+          "Example"
+        ]
+      },
+      "doc_lineno": 23
+    }
+  ],
+  "api/pelagos_py/steps/quality_control/gross_range_qc/index": [],
+  "api/pelagos_py/steps/quality_control/impossible_date_qc/index": [],
+  "api/pelagos_py/steps/quality_control/impossible_location_qc/index": [],
+  "api/pelagos_py/steps/quality_control/impossible_range_qc/index": [
+    {
+      "source": "- name: \"Apply QC\"\n  parameters:\n    qc_settings: {\n        \"impossible range qc\": {\n          \"variable_ranges\": {\"PRES\": {3: [-2, 0], 4: [-999, -2]}, \"LATITUDE\": {4: [-90, 90]}},\n          \"also_flag\": {\"PRES\": [\"CNDC\", \"TEMP\"], \"LATITUDE\": [\"LONGITUDE\"]},\n          \"plot\": [\"PRES\", \"LATITUDE\"]\n          \"test_depth_range\": [-100, 0]  # OPTIONAL\n        }\n    }\n  diagnostics: true",
+      "names": [],
+      "example": {
+        "document": "api/pelagos_py/steps/quality_control/impossible_range_qc/index",
+        "ref_id": "module-pelagos_py.steps.quality_control.impossible_range_qc",
+        "headings": [
+          "pelagos_py.steps.quality_control.impossible_range_qc",
+          "Example"
+        ]
+      },
+      "doc_lineno": 21
+    }
+  ],
+  "api/pelagos_py/steps/quality_control/impossible_speed_qc/index": [],
+  "api/pelagos_py/steps/quality_control/index": [],
+  "api/pelagos_py/steps/quality_control/par_irregularity_qc/index": [],
+  "api/pelagos_py/steps/quality_control/position_on_land_qc/index": [],
+  "api/pelagos_py/steps/quality_control/spike_qc/index": [
+    {
+      "source": "- name: \"Apply QC\"\n  parameters:\n    qc_settings: {\n        \"spike test\": {\n          \"variables\": {\"PRES\": 2, \"LATITUDE\": 1},\n          \"also_flag\": {\"PRES\": [\"CNDC\", \"TEMP\"], \"LATITUDE\": [\"LONGITUDE\"]},\n          \"plot\": [\"PRES\", \"LATITUDE\"]\n          \"window_size\": 10,\n        }\n    }\n  diagnostics: true",
+      "names": [],
+      "example": {
+        "document": "api/pelagos_py/steps/quality_control/spike_qc/index",
+        "ref_id": "module-pelagos_py.steps.quality_control.spike_qc",
+        "headings": [
+          "pelagos_py.steps.quality_control.spike_qc",
+          "Example"
+        ]
+      },
+      "doc_lineno": 22
+    }
+  ],
+  "api/pelagos_py/steps/quality_control/stuck_value_qc/index": [
+    {
+      "source": "- name: \"Apply QC\"\n  parameters:\n    qc_settings: {\n        \"stuck value test\": {\n          \"variables\": {\"PRES\": 4, \"LATITUDE\": 100},\n          \"also_flag\": {\"PRES\": [\"CNDC\", \"TEMP\"], \"LATITUDE\": [\"LONGITUDE\"]},\n          \"plot\": [\"PRES\", \"LATITUDE\"]\n        }\n    }\n  diagnostics: true",
+      "names": [],
+      "example": {
+        "document": "api/pelagos_py/steps/quality_control/stuck_value_qc/index",
+        "ref_id": "module-pelagos_py.steps.quality_control.stuck_value_qc",
+        "headings": [
+          "pelagos_py.steps.quality_control.stuck_value_qc",
+          "Example"
+        ]
+      },
+      "doc_lineno": 21
+    }
+  ],
+  "api/pelagos_py/steps/quality_control/valid_profile_qc/index": [],
+  "api/pelagos_py/steps/templates/blank_qc/index": [],
+  "api/pelagos_py/steps/templates/blank_step/index": [],
+  "api/pelagos_py/steps/templates/index": [],
   "api/pelagos_py/utils/diagnostics/index": [],
   "api/pelagos_py/utils/index": [],
   "api/pelagos_py/utils/qc_handling/index": [],

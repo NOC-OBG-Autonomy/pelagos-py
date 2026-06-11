@@ -423,8 +423,8 @@
 <p>Steps are the individual operations that make up a pipeline. They are executed in the order they appear in your configuration file. Each step can be customised with parameters to suit your specific dataset.</p>
 <p>A step is defined in Python and configured through the pipeline config file. Examples include:</p>
 <ul class="simple">
-<li><p><strong>I/O steps</strong> — e.g. reading in data with <a class="reference internal" href="api/pelagos_py/steps/custom/load_data/index.html"><span class="doc">Load Data</span></a>.</p></li>
-<li><p><strong>Variable processing steps</strong> — e.g. adjusting existing salinity measurements with the <a class="reference internal" href="api/pelagos_py/steps/custom/variables/salinity/index.html"><span class="doc">salinity</span></a> step.</p></li>
+<li><p><strong>I/O steps</strong> — e.g. reading in data with <a class="reference internal" href="api/pelagos_py/steps/input_output/load_data/index.html"><span class="doc">Load Data</span></a>.</p></li>
+<li><p><strong>Variable processing steps</strong> — e.g. adjusting existing salinity measurements with the <a class="reference internal" href="api/pelagos_py/steps/processing/salinity/index.html"><span class="doc">salinity</span></a> step.</p></li>
 </ul>
 <p>Steps are not limited to one per file — a single module can define multiple steps — and any step can be called multiple times within a single config.</p>
 <p>Some steps can filter out bad data before processing, using the QC handling mechanism. The pipeline preserves the original dataset dimensions, so filtered data is either replaced or reinserted once the step completes. For how to build a step with this behaviour, see <a class="reference internal" href="user_guide.html"><span class="doc">Extending pelagos_py</span></a>.</p>
@@ -432,23 +432,23 @@
 <h2>Non-specific Steps<a class="headerlink" href="#non-specific-steps" title="Link to this heading">#</a></h2>
 <p>These steps are general utility tools used for data management, preparation, and export. They are not tied to a specific sensor or variable.</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="api/pelagos_py/steps/custom/apply_qc/index.html"><span class="doc">Apply QC</span></a>: A container step used to run various quality control.</p></li>
-<li><p><a class="reference internal" href="api/pelagos_py/steps/custom/derive_ctd/index.html"><span class="doc">Derive CTD</span></a>: Calculates derived physical properties such as density or potential temperature.</p></li>
-<li><p><a class="reference internal" href="api/pelagos_py/steps/custom/export/index.html"><span class="doc">Export</span></a>: Saves the final processed dataset to a specified format.</p></li>
-<li><p><a class="reference internal" href="api/pelagos_py/steps/custom/find_profiles/index.html"><span class="doc">Find Profiles</span></a>: Segments a time series into individual vertical profiles.</p></li>
-<li><p><a class="reference internal" href="api/pelagos_py/steps/custom/gen_data/index.html"><span class="doc">Generate Data</span></a>: Creates synthetic data for testing and validation purposes.</p></li>
-<li><p><a class="reference internal" href="api/pelagos_py/steps/custom/interpolate_data/index.html"><span class="doc">Interpolate Data</span></a>: Fills gaps in variables using mathematical interpolation.</p></li>
-<li><p><a class="reference internal" href="api/pelagos_py/steps/custom/load_data/index.html"><span class="doc">Load Data</span></a>: The entry point for importing data into the pelagos_py.</p></li>
-<li><p><a class="reference internal" href="api/pelagos_py/steps/custom/profile_direction/index.html"><span class="doc">Find Profile Direction</span></a>: Identifies whether data was collected during an ascent or descent.</p></li>
+<li><p><a class="reference internal" href="api/pelagos_py/steps/quality_control/apply_qc/index.html"><span class="doc">Apply QC</span></a>: A container step used to run various quality control.</p></li>
+<li><p><a class="reference internal" href="api/pelagos_py/steps/processing/derive_ctd/index.html"><span class="doc">Derive CTD</span></a>: Calculates derived physical properties such as density or potential temperature.</p></li>
+<li><p><a class="reference internal" href="api/pelagos_py/steps/input_output/export/index.html"><span class="doc">Export</span></a>: Saves the final processed dataset to a specified format.</p></li>
+<li><p><a class="reference internal" href="api/pelagos_py/steps/processing/find_profiles/index.html"><span class="doc">Find Profiles</span></a>: Segments a time series into individual vertical profiles.</p></li>
+<li><p><a class="reference internal" href="api/pelagos_py/steps/input_output/gen_data/index.html"><span class="doc">Generate Data</span></a>: Creates synthetic data for testing and validation purposes.</p></li>
+<li><p><a class="reference internal" href="api/pelagos_py/steps/processing/interpolate_data/index.html"><span class="doc">Interpolate Data</span></a>: Fills gaps in variables using mathematical interpolation.</p></li>
+<li><p><a class="reference internal" href="api/pelagos_py/steps/input_output/load_data/index.html"><span class="doc">Load Data</span></a>: The entry point for importing data into the pelagos_py.</p></li>
+<li><p><a class="reference internal" href="api/pelagos_py/steps/processing/profile_direction/index.html"><span class="doc">Find Profile Direction</span></a>: Identifies whether data was collected during an ascent or descent.</p></li>
 </ul>
 </section>
 <section id="variable-specific-steps">
 <h2>Variable Specific Steps<a class="headerlink" href="#variable-specific-steps" title="Link to this heading">#</a></h2>
 <ul class="simple">
-<li><p><a class="reference internal" href="api/pelagos_py/steps/custom/variables/salinity/index.html"><span class="doc">CTD</span></a>: Specialised adjustments for Conductivity, Temperature, and Depth data.</p></li>
-<li><p><a class="reference internal" href="api/pelagos_py/steps/custom/variables/oxygen/index.html"><span class="doc">Oxygen</span></a>: Corrections and calibrations for dissolved oxygen sensors.</p></li>
-<li><p><a class="reference internal" href="api/pelagos_py/steps/custom/variables/chla/index.html"><span class="doc">Chlorophyll</span></a>: Processing steps for fluorescence and chlorophyll-a concentration.</p></li>
-<li><p><a class="reference internal" href="api/pelagos_py/steps/custom/variables/bbp/index.html"><span class="doc">Backscatter</span></a>: Optical backscatter processing and scaling.</p></li>
+<li><p><a class="reference internal" href="api/pelagos_py/steps/processing/salinity/index.html"><span class="doc">CTD</span></a>: Specialised adjustments for Conductivity, Temperature, and Depth data.</p></li>
+<li><p><a class="reference internal" href="api/pelagos_py/steps/processing/oxygen/index.html"><span class="doc">Oxygen</span></a>: Corrections and calibrations for dissolved oxygen sensors.</p></li>
+<li><p><a class="reference internal" href="api/pelagos_py/steps/processing/chla/index.html"><span class="doc">Chlorophyll</span></a>: Processing steps for fluorescence and chlorophyll-a concentration.</p></li>
+<li><p><a class="reference internal" href="api/pelagos_py/steps/processing/bbp/index.html"><span class="doc">Backscatter</span></a>: Optical backscatter processing and scaling.</p></li>
 </ul>
 </section>
 <section id="quality-control-qc">

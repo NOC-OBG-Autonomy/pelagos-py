@@ -424,8 +424,8 @@
 <p>Every QC check is run through the <code class="docutils literal notranslate"><span class="pre">Apply</span> <span class="pre">QC</span></code> step, which transfers the individual results onto the existing QC columns. A given check can only be called once per <code class="docutils literal notranslate"><span class="pre">Apply</span> <span class="pre">QC</span></code>, but you can include multiple <code class="docutils literal notranslate"><span class="pre">Apply</span> <span class="pre">QC</span></code> steps in a single config.</p>
 <p>QC checks come in two types:</p>
 <ul class="simple">
-<li><p><strong>Static</strong> checks always operate on the same variable(s) and produce the same QC outputs — e.g. <a class="reference internal" href="api/pelagos_py/steps/custom/qc/impossible_date_qc/index.html"><span class="doc">Impossible Date</span></a> always checks <code class="docutils literal notranslate"><span class="pre">TIME</span></code>.</p></li>
-<li><p><strong>Dynamic</strong> checks let the user choose which variables they apply to, so the QC output is not pre-determined — e.g. <a class="reference internal" href="api/pelagos_py/steps/custom/qc/impossible_range_qc/index.html"><span class="doc">Impossible Range</span></a> and <a class="reference internal" href="api/pelagos_py/steps/custom/qc/stuck_value_qc/index.html"><span class="doc">Stuck Value</span></a>.</p></li>
+<li><p><strong>Static</strong> checks always operate on the same variable(s) and produce the same QC outputs — e.g. <a class="reference internal" href="api/pelagos_py/steps/quality_control/impossible_date_qc/index.html"><span class="doc">Impossible Date</span></a> always checks <code class="docutils literal notranslate"><span class="pre">TIME</span></code>.</p></li>
+<li><p><strong>Dynamic</strong> checks let the user choose which variables they apply to, so the QC output is not pre-determined — e.g. <a class="reference internal" href="api/pelagos_py/steps/quality_control/impossible_range_qc/index.html"><span class="doc">Impossible Range</span></a> and <a class="reference internal" href="api/pelagos_py/steps/quality_control/stuck_value_qc/index.html"><span class="doc">Stuck Value</span></a>.</p></li>
 </ul>
 <p>To add your own QC check, see <a class="reference internal" href="user_guide.html"><span class="doc">Extending pelagos_py</span></a>.</p>
 <p>The pelagos_py follows the standardised Argo flagging system:</p>
@@ -455,29 +455,29 @@
 <h3>Spatiotemporal Checks<a class="headerlink" href="#spatiotemporal-checks" title="Link to this heading">#</a></h3>
 <p>These verify that the data was collected at a logical time and place.</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="api/pelagos_py/steps/custom/qc/impossible_date_qc/index.html"><span class="doc">Impossible Date</span></a>: Checks that the timestamps fall within a realistic range (typically from 1985 to the present day).</p></li>
-<li><p><a class="reference internal" href="api/pelagos_py/steps/custom/qc/impossible_location_qc/index.html"><span class="doc">Impossible Location</span></a>: Verifies that latitude and longitude coordinates are within global bounds.</p></li>
-<li><p><a class="reference internal" href="api/pelagos_py/steps/custom/qc/impossible_speed_qc/index.html"><span class="doc">Impossible Speed</span></a>: Calculates the velocity between points to ensure the platform is not moving at unphysical speeds.</p></li>
-<li><p><a class="reference internal" href="api/pelagos_py/steps/custom/qc/position_on_land_qc/index.html"><span class="doc">Position on Land</span></a>: Uses a bathymetry mask to check if coordinates incorrectly place the platform on land.</p></li>
+<li><p><a class="reference internal" href="api/pelagos_py/steps/quality_control/impossible_date_qc/index.html"><span class="doc">Impossible Date</span></a>: Checks that the timestamps fall within a realistic range (typically from 1985 to the present day).</p></li>
+<li><p><a class="reference internal" href="api/pelagos_py/steps/quality_control/impossible_location_qc/index.html"><span class="doc">Impossible Location</span></a>: Verifies that latitude and longitude coordinates are within global bounds.</p></li>
+<li><p><a class="reference internal" href="api/pelagos_py/steps/quality_control/impossible_speed_qc/index.html"><span class="doc">Impossible Speed</span></a>: Calculates the velocity between points to ensure the platform is not moving at unphysical speeds.</p></li>
+<li><p><a class="reference internal" href="api/pelagos_py/steps/quality_control/position_on_land_qc/index.html"><span class="doc">Position on Land</span></a>: Uses a bathymetry mask to check if coordinates incorrectly place the platform on land.</p></li>
 </ul>
 </section>
 <section id="range-and-value-checks">
 <h3>Range and Value Checks<a class="headerlink" href="#range-and-value-checks" title="Link to this heading">#</a></h3>
 <p>These identify data points that fall outside expected physical or sensor limits.</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="api/pelagos_py/steps/custom/qc/gross_range_qc/index.html"><span class="doc">Gross Range</span></a>: Applies broad, non-configurable physical limits to catch extreme sensor failures.</p></li>
-<li><p><a class="reference internal" href="api/pelagos_py/steps/custom/qc/impossible_range_qc/index.html"><span class="doc">Impossible Range</span></a>: Allows users to define specific, narrower thresholds for any variable.</p></li>
-<li><p><a class="reference internal" href="api/pelagos_py/steps/custom/qc/stuck_value_qc/index.html"><span class="doc">Stuck Value</span></a>: Identifies sensor “freezing” by looking for sequences of identical values where variation is expected.</p></li>
-<li><p><a class="reference internal" href="api/pelagos_py/steps/custom/qc/spike_qc/index.html"><span class="doc">Spike</span></a>: Detects sudden, unrealistic jumps in data values between adjacent measurements.</p></li>
-<li><p><a class="reference internal" href="api/pelagos_py/steps/custom/qc/par_irregularity_qc/index.html"><span class="doc">PAR Irregularity</span></a>: A specialised check for Photosynthetically Active Radiation sensors to identify inconsistent light readings.</p></li>
+<li><p><a class="reference internal" href="api/pelagos_py/steps/quality_control/gross_range_qc/index.html"><span class="doc">Gross Range</span></a>: Applies broad, non-configurable physical limits to catch extreme sensor failures.</p></li>
+<li><p><a class="reference internal" href="api/pelagos_py/steps/quality_control/impossible_range_qc/index.html"><span class="doc">Impossible Range</span></a>: Allows users to define specific, narrower thresholds for any variable.</p></li>
+<li><p><a class="reference internal" href="api/pelagos_py/steps/quality_control/stuck_value_qc/index.html"><span class="doc">Stuck Value</span></a>: Identifies sensor “freezing” by looking for sequences of identical values where variation is expected.</p></li>
+<li><p><a class="reference internal" href="api/pelagos_py/steps/quality_control/spike_qc/index.html"><span class="doc">Spike</span></a>: Detects sudden, unrealistic jumps in data values between adjacent measurements.</p></li>
+<li><p><a class="reference internal" href="api/pelagos_py/steps/quality_control/par_irregularity_qc/index.html"><span class="doc">PAR Irregularity</span></a>: A specialised check for Photosynthetically Active Radiation sensors to identify inconsistent light readings.</p></li>
 </ul>
 </section>
 <section id="profile-integrity">
 <h3>Profile Integrity<a class="headerlink" href="#profile-integrity" title="Link to this heading">#</a></h3>
 <p>These assess the quality of a vertical profile as a whole.</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="api/pelagos_py/steps/custom/qc/valid_profile_qc/index.html"><span class="doc">Valid Profile</span></a>: Ensures a profile contains enough data points or covers a sufficient depth range to be useful.</p></li>
-<li><p><a class="reference internal" href="api/pelagos_py/steps/custom/qc/flag_full_profile/index.html"><span class="doc">Flag Full Profile</span></a>: If a certain percentage of points in a profile are flagged as bad, this qc can be configured to flag the entire profile.</p></li>
+<li><p><a class="reference internal" href="api/pelagos_py/steps/quality_control/valid_profile_qc/index.html"><span class="doc">Valid Profile</span></a>: Ensures a profile contains enough data points or covers a sufficient depth range to be useful.</p></li>
+<li><p><a class="reference internal" href="api/pelagos_py/steps/quality_control/flag_full_profile/index.html"><span class="doc">Flag Full Profile</span></a>: If a certain percentage of points in a profile are flagged as bad, this qc can be configured to flag the entire profile.</p></li>
 </ul>
 </section>
 </section>

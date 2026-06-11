@@ -12,7 +12,7 @@ This page documents the public API of pelagos_py. The library is organised into 
    * - :doc:`pipeline_manager <api/pelagos_py/pipeline_manager/index>`
      - The :class:`~pelagos_py.pipeline_manager.PipelineManager` class — runs multiple pipelines in sequence and handles cross-calibration alignment between them.
    * - :doc:`steps <api/pelagos_py/steps/index>`
-     - All built-in processing steps and the base classes used to define custom ones.
+     - All built-in steps and the base classes used to define them.
    * - :doc:`utils <api/pelagos_py/utils/index>`
      - Shared utility functions for data alignment, QC handling, validation, and more.
 
