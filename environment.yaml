@@ -1,4 +1,4 @@
-name: pelagos
+name: pelagos_py
 channels:
   - conda-forge
 dependencies:
