@@ -477,34 +477,41 @@
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.custom.derive_ctd.</span></span><span class="sig-name descname"><span class="pre">DeriveCTDVariables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/custom/derive_ctd.html#DeriveCTDVariables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.custom.derive_ctd.DeriveCTDVariables" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="../../base_step/index.html#pelagos_py.steps.base_step.BaseStep" title="pelagos_py.steps.base_step.BaseStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pelagos_py.steps.base_step.BaseStep</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">pelagos_py.utils.qc_handling.QCHandlingMixin</span></code></p>
 <p>A processing step class for deriving oceanographic variables from CTD data.</p>
-<p>This class processes Conductivity, Temperature, and Depth (CTD) data to derive
-additional oceanographic variables such as salinity, density, and depth using
-the Gibbs SeaWater (GSW) Oceanographic Toolbox functions.</p>
-<p>Inherits from BaseStep and processes data stored in the context dictionary.</p>
-<dl class="simple">
-<dt>Attributes:</dt><dd><p>step_name (str): Identifier for this processing step (“Derive CTD”)</p>
+<p>TEOS-10 implementation provided through Gibbs SeaWater (GSW) Oceanographic Toolbox functions.
+This step requires that “TIME”, “LATITUDE”, “LONGITUDE”, “CNDC”, “PRES” and “TEMP” are present
+in the dataset variables.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>to_derive</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a>) – <p>list of variables to derive
+The following variables are supported:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>”DEPTH”</p></li>
+<li><p>”PRAC_SALINITY” (practical salinity)</p></li>
+<li><p>”ABS_SALINITY” (absolute salinity)</p></li>
+<li><p>”CONS_TEMP” (conservative temperature)</p></li>
+<li><p>”DENSITY</p></li>
+</ul>
+</div></blockquote>
+</p>
 </dd>
 </dl>
-<dl class="py method">
-<dt class="sig sig-object py" id="pelagos_py.steps.custom.derive_ctd.DeriveCTDVariables.run">
-<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/custom/derive_ctd.html#DeriveCTDVariables.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.custom.derive_ctd.DeriveCTDVariables.run" title="Link to this definition">#</a></dt>
-<dd><p>Execute the CTD variable derivation process. The following variables are
-required: [“TIME”, “LATITUDE”, “LONGITUDE”, “CNDC”, “PRES”, “TEMP”]</p>
-<p>This method performs the following operations:
-1. Validates that data exists in the context
-2. Applies unit conversions to raw measurements
-3. Optionally interpolates missing position data
-4. Derives oceanographic variables using GSW functions
-5. Adds metadata to derived variables
-6. Updates the context with processed data</p>
-<dl class="simple">
-<dt>Returns:</dt><dd><p>dict: Updated context dictionary containing original and derived variables</p>
-</dd>
-<dt>Raises:</dt><dd><p>ValueError: If no data is found in the context</p>
-</dd>
-</dl>
-</dd></dl>
-
+<div class="admonition-examples admonition">
+<p class="admonition-title">Examples</p>
+<p>Example usage in a pipeline configuration:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Derive</span><span class="nv"> </span><span class="s">CTD&quot;</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">to_derive</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span>
+<span class="w">            </span><span class="nv">DEPTH</span><span class="p p-Indicator">,</span>
+<span class="w">            </span><span class="nv">PRAC_SALINITY</span><span class="p p-Indicator">,</span>
+<span class="w">            </span><span class="nv">ABS_SALINITY</span><span class="p p-Indicator">,</span>
+<span class="w">            </span><span class="nv">CONS_TEMP</span><span class="p p-Indicator">,</span>
+<span class="w">            </span><span class="nv">DENSITY</span>
+<span class="w">        </span><span class="p p-Indicator">]</span>
+</pre></div>
+</div>
+</div>
 </dd></dl>
 
 </section>
@@ -532,10 +539,7 @@ required: [“TIME”, “LATITUDE”, “LONGITUDE”, “CNDC”, “PRES”, 
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.custom.derive_ctd.DeriveCTDVariables"><code class="docutils literal notranslate"><span class="pre">DeriveCTDVariables</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.custom.derive_ctd.DeriveCTDVariables.run"><code class="docutils literal notranslate"><span class="pre">DeriveCTDVariables.run()</span></code></a></li>
-</ul>
-</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.custom.derive_ctd.DeriveCTDVariables"><code class="docutils literal notranslate"><span class="pre">DeriveCTDVariables</span></code></a></li>
 </ul>
   </nav></div>
 

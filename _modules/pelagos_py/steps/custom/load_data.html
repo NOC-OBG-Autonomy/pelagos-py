@@ -432,9 +432,15 @@
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/custom/load_data/index.html#pelagos_py.steps.custom.load_data.LoadOG1">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">LoadOG1</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Initialises the LoadOG1 step.</span>
+<span class="sd">    Loads NetCDF files from ``file_path``. </span>
+<span class="sd">    </span>
+<span class="sd">    If ``filter_bad_times`` is set then measurements made</span>
+<span class="sd">    outside of the time range specified by ``data_start`` and ``data_end`` are removed before </span>
+<span class="sd">    further processing.</span>
 
-<span class="sd">    Derived from Phyto-Phys Repo by Obsidian500.</span>
+<span class="sd">    Time values are expected to be stored under the &quot;TIME&quot; variable name in the NetCDF file </span>
+<span class="sd">    (corresponding to OG1 format). If &quot;TIME&quot; is not monotonically increasing, or has missing values</span>
+<span class="sd">    (NaT) then this will raise an error.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>

@@ -433,14 +433,37 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A processing step class for deriving oceanographic variables from CTD data.</span>
 
-<span class="sd">    This class processes Conductivity, Temperature, and Depth (CTD) data to derive</span>
-<span class="sd">    additional oceanographic variables such as salinity, density, and depth using</span>
-<span class="sd">    the Gibbs SeaWater (GSW) Oceanographic Toolbox functions.</span>
+<span class="sd">    TEOS-10 implementation provided through Gibbs SeaWater (GSW) Oceanographic Toolbox functions.</span>
+<span class="sd">    This step requires that &quot;TIME&quot;, &quot;LATITUDE&quot;, &quot;LONGITUDE&quot;, &quot;CNDC&quot;, &quot;PRES&quot; and &quot;TEMP&quot; are present </span>
+<span class="sd">    in the dataset variables.</span>
 
-<span class="sd">    Inherits from BaseStep and processes data stored in the context dictionary.</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    to_derive : list</span>
+<span class="sd">        list of variables to derive</span>
+<span class="sd">        The following variables are supported:</span>
+<span class="sd">            - &quot;DEPTH&quot;</span>
+<span class="sd">            - &quot;PRAC_SALINITY&quot; (practical salinity)</span>
+<span class="sd">            - &quot;ABS_SALINITY&quot; (absolute salinity)</span>
+<span class="sd">            - &quot;CONS_TEMP&quot; (conservative temperature)</span>
+<span class="sd">            - &quot;DENSITY</span>
 
-<span class="sd">    Attributes:</span>
-<span class="sd">        step_name (str): Identifier for this processing step (&quot;Derive CTD&quot;)</span>
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    Example usage in a pipeline configuration:</span>
+
+<span class="sd">    .. code-block:: yaml</span>
+
+<span class="sd">        steps:</span>
+<span class="sd">          - name: &quot;Derive CTD&quot;</span>
+<span class="sd">            parameters:</span>
+<span class="sd">                to_derive: [</span>
+<span class="sd">                    DEPTH,</span>
+<span class="sd">                    PRAC_SALINITY,</span>
+<span class="sd">                    ABS_SALINITY,</span>
+<span class="sd">                    CONS_TEMP,</span>
+<span class="sd">                    DENSITY</span>
+<span class="sd">                ]</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Derive CTD&quot;</span>
@@ -453,27 +476,7 @@
         <span class="s2">&quot;DENSITY&quot;</span><span class="p">,</span>
     <span class="p">]</span>
 
-<div class="viewcode-block" id="DeriveCTDVariables.run">
-<a class="viewcode-back" href="../../../../api/pelagos_py/steps/custom/derive_ctd/index.html#pelagos_py.steps.custom.derive_ctd.DeriveCTDVariables.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Execute the CTD variable derivation process. The following variables are</span>
-<span class="sd">        required: [&quot;TIME&quot;, &quot;LATITUDE&quot;, &quot;LONGITUDE&quot;, &quot;CNDC&quot;, &quot;PRES&quot;, &quot;TEMP&quot;]</span>
-
-<span class="sd">        This method performs the following operations:</span>
-<span class="sd">        1. Validates that data exists in the context</span>
-<span class="sd">        2. Applies unit conversions to raw measurements</span>
-<span class="sd">        3. Optionally interpolates missing position data</span>
-<span class="sd">        4. Derives oceanographic variables using GSW functions</span>
-<span class="sd">        5. Adds metadata to derived variables</span>
-<span class="sd">        6. Updates the context with processed data</span>
-
-<span class="sd">        Returns:</span>
-<span class="sd">            dict: Updated context dictionary containing original and derived variables</span>
-
-<span class="sd">        Raises:</span>
-<span class="sd">            ValueError: If no data is found in the context</span>
-<span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processing CTD...&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
@@ -573,7 +576,6 @@
         <span class="c1"># Update the context with the enhanced dataset</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
-</div>
 
 </pre></div>
 

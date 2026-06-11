@@ -426,7 +426,26 @@
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/custom/export/index.html#pelagos_py.steps.custom.export.ExportStep">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ExportStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Step to export data in various formats.</span>
+<span class="sd">    Exports the the data output by the previous step. </span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    output_path : str</span>
+<span class="sd">        Path and file name to output to. The file extension should be included.</span>
+<span class="sd">    export_format : str</span>
+<span class="sd">        Either &quot;netcdf&quot;, &quot;csv&quot;, &quot;hdf5&quot; or &quot;parquet&quot;</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    Example usage in a pipeline configuration:</span>
+
+<span class="sd">    .. code-block:: yaml</span>
+
+<span class="sd">        steps:</span>
+<span class="sd">          - name: Data Export</span>
+<span class="sd">            parameters:</span>
+<span class="sd">                output_path: &quot;save/my/data/here.nc&quot;</span>
+<span class="sd">                export_format: &quot;netcdf&quot;</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Data Export&quot;</span>
@@ -447,7 +466,7 @@
         <span class="n">export_format</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;export_format&quot;</span><span class="p">]</span>
         <span class="n">output_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;output_path&quot;</span><span class="p">]</span>
 
-        <span class="c1"># Validate the export format</span>
+        <span class="c1"># Validate the export format  # TODO: have all of these file types been tested?</span>
         <span class="k">if</span> <span class="n">export_format</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;csv&quot;</span><span class="p">,</span> <span class="s2">&quot;netcdf&quot;</span><span class="p">,</span> <span class="s2">&quot;hdf5&quot;</span><span class="p">,</span> <span class="s2">&quot;parquet&quot;</span><span class="p">]:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Unsupported export format: </span><span class="si">{</span><span class="n">export_format</span><span class="si">}</span><span class="s2">. Supported formats are: csv, netcdf, hdf5, parquet.&quot;</span>
