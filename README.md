@@ -13,52 +13,84 @@ The documentation for this package is available [here](https://noc-obg-autonomy.
 
 ## Overview
 
-The `Pipeline` class orchestrates the flow of data through a sequence of modular “steps.”
+The `Pipeline` class orchestrates the flow of data through a sequence of modular "steps."
 Each step performs a specific processing task (e.g., data loading, quality control, profile detection, export).
 
 Key characteristics:
 | Component                    | Description                                                                                             |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------- |
-| **Configuration-driven**     | Users define the workflow in a YAML file describing each step, its parameters, and diagnostics options. |
-| **In-build Quality Control** | Pre-build quality control tests can be specified in the config by the user to flag bad data.            |
-| **Diagnostics**              | Where possible, data is can be visualized to see the effect of each component of the pipeline.          |
+| **Configuration-driven** | Users define the workflow in a YAML file describing each step, its parameters, and diagnostics options. |
+| **In-built Quality Control** | Pre-built quality control tests can be specified in the config by the user to flag bad data.            |
+| **Diagnostics** | Where possible, data can be visualized to see the effect of each component of the pipeline.             |
 
 ### Installation
 
-Pelagos-py is not *yet* and installable package, so for the moment you have to make a local copy to run it:
+The easiest way to install Pelagos-py is via pip:
 ```bash
-git clone https://github.com/NOC-OBG-Autonomy/pelagos-py.git
+pip install pelagos-py
+
+```
+
+Alternatively, you can install directly from the source using git:
+
+```bash
+git clone [https://github.com/NOC-OBG-Autonomy/pelagos-py.git](https://github.com/NOC-OBG-Autonomy/pelagos-py.git)
 cd pelagos-py
 # create/activate a virtual environment
 pip install -e . 
+
 ```
+
 See [Getting Started](https://noc-obg-autonomy.github.io/pelagos-py/getting_started.html) for more details.
 
 ## How to run
 
 1. ### Initialization
-   Import the 'Pipeline' class and create a pipeline using your config (see below for example)
-   ```python
-    from pelagos_py.pipeline import Pipeline
-    pipeline = Pipeline(config_path="my_pipeline.yaml")
-   ```
+
+
+Import the 'Pipeline' class and create a pipeline using your config (see below for example)
+```python
+ from pelagos_py.pipeline import Pipeline
+ pipeline = Pipeline(config_path="my_pipeline.yaml")
+
+```
+
+
 2. ### Pipeline Execution
-   Running the pipeline executes each step defined by the config in order
-   ```python
-    results = pipeline.run()
-   ```
+
+
+Running the pipeline executes each step defined by the config in order
+```python
+ results = pipeline.run()
+
+```
+
+
 3. ### Diagnostics & Visualization
-   Steps can optionally include diagnostic plots or summaries by setting:
-   ```yaml
-    diagnostics: true
-   ```
+
+
+Steps can optionally include diagnostic plots or summaries by setting:
+```yaml
+ diagnostics: true
+
+```
+
+
 4. ### Exporting Pipeline Configuration
-   The entire pipeline configuration can be exported to a YAML file for reproducibility:
-   ```python
-   pipeline.export_config("exported_pipeline.yaml")
-   ```
-## 🧩 Example Configuration
+
+
+The entire pipeline configuration can be exported to a YAML file for reproducibility:
+```python
+pipeline.export_config("exported_pipeline.yaml")
+
+```
+
+
+
+## Example Configuration
+
 An example YAML configuration for a simple pipeline. See examples/notebooks/pipeline_demo.ipynb for a full demo.
+
 ```yaml
  # Pipeline Configuration
  pipeline:
@@ -87,13 +119,15 @@ An example YAML configuration for a simple pipeline. See examples/notebooks/pipe
      parameters:
        export_format: "netcdf"
        output_path: "../examples/data/OG1/Nelson_646_R_Processed.nc"
+
 ```
 
-## 🔁 Extending the Pipeline
+## Extending the Pipeline
+
 A full breakdown can be found here: [Developer Guide](https://noc-obg-autonomy.github.io/pelagos-py/developer_guide.html).
 
 # License
 
-[Apache 2.0 License](LICENSE)
+[Apache 2.0 License](https://www.google.com/search?q=LICENSE)
 
 Copyright 2025-2026 The National Oceanography Centre and contributors.

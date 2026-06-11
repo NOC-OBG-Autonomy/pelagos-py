@@ -8,9 +8,13 @@ Each pipeline is composed of a series of steps that are automatically built from
 Installation
 ------------
 
-.. note::
+The easiest way to install **pelagos-py** is via pip:
 
-   **pelagos-py** is not yet available on PyPI — pip install support is coming soon. For now, install directly from GitHub:
+.. code-block:: bash
+
+   pip install pelagos-py
+
+Alternatively, you can install directly from the source using git:
 
 .. code-block:: bash
 

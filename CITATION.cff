@@ -47,5 +47,8 @@ authors:
   - given-names: Aaron
     family-names: Mau
     affiliation: Voice of the Ocean Foundation
-repository-code: 'https://github.com/NOC-OBG-Autonomy/pelagos_py'
+  - given-names: Orlando
+    family-names: Prugel-Bennett
+    affiliation: National Oceanography Centre
+repository-code: 'https://github.com/NOC-OBG-Autonomy/pelagos-py'
 license: Apache-2.0
