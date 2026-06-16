@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/_static/NOC_logo.svg" alt="NOC logo" width="120" />
+</p>
+
 # Pelagos-py
 
 Pelagos-py provides a flexible, modular pipeline framework for defining, executing, and visualising multi-step data-processing
