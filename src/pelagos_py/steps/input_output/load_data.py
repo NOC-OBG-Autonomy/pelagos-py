@@ -75,7 +75,7 @@ class LoadOG1(BaseStep):
     parameter_schema = {
         "file_path": {
             "type": str,
-            "default": None,
+            "required": True,
             "description": "Path to the OG1 data file."
         },
         "filter_bad_time": {
@@ -103,10 +103,11 @@ class LoadOG1(BaseStep):
         self.log("Loading dataset to RAM...")
         self.data.load()
 
-        # Fetch parameters safely via getattr falling back to schema defaults
-        filter_bad_time = getattr(self, "filter_bad_time", True)
-        data_start = getattr(self, "data_start", None)
-        data_end = getattr(self, "data_end", None)
+        # Parameters are resolved from parameter_schema in BaseStep.__init__,
+        # so every declared attribute is guaranteed to be set.
+        filter_bad_time = self.filter_bad_time
+        data_start = self.data_start
+        data_end = self.data_end
 
         # Filter data to the specified time window
         if filter_bad_time and (

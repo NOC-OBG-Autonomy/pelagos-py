@@ -77,6 +77,10 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
     required_variables = ["TIME"]
     provided_variables = []
 
+    # Takes no step-specific parameters; variables to interpolate are driven entirely
+    # by the framework ``qc_handling_settings`` (flag_filter_settings).
+    parameter_schema = {}
+
     def run(self):
         """
         Execute the interpolation workflow.

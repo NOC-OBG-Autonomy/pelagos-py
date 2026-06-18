@@ -52,7 +52,7 @@ class valid_profile_qc(BaseQC):
     ----------
     profile_length : int, optional
         Minimum number of measurements a profile must contain to be kept. Profiles
-        shorter than this are flagged bad (4). Default ``1000``.
+        shorter than this are flagged bad (4). Default ``100``.
     depth_range : tuple of float, optional
         ``(min, max)`` depth window (in the same units/sign convention as ``DEPTH``,
         i.e. negative downward) that a profile must reach into. A profile with no data
@@ -85,9 +85,17 @@ class valid_profile_qc(BaseQC):
     """
 
     qc_name = "valid profile qc"
-    expected_parameters = {
-        "profile_length": 1000,
-        "depth_range": (-1000, 0),
+    parameter_schema = {
+        "profile_length": {
+            "type": int,
+            "default": 100,
+            "description": "Minimum number of measurements a profile must contain to be kept.",
+        },
+        "depth_range": {
+            "type": list,
+            "default": (-1000, 0),
+            "description": "(min, max) depth window a profile must reach into.",
+        },
     }
     required_variables = ["PROFILE_NUMBER", "DEPTH"]
     qc_outputs = ["PROFILE_NUMBER"]

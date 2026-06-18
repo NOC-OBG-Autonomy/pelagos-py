@@ -14,9 +14,43 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pelagos_py.steps import STEP_CLASSES
+from pelagos_py.steps import STEP_CLASSES, QC_CLASSES
+from pelagos_py.utils import parameter_spec
 
 STANDARD_VARIABLES = {"TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC"}
+
+
+def _missing_required_params(schema, parameters):
+    """Names of required schema parameters absent from the supplied config.
+
+    ``schema`` of ``None`` (a component not yet on the parameter schema, e.g. the
+    oxygen steps) is treated as "no required parameters".
+    """
+    if not schema:
+        return []
+    return [
+        name
+        for name, spec in schema.items()
+        if parameter_spec.is_required(spec) and name not in parameters
+    ]
+
+
+def _unknown_params(schema, parameters, allowed_extra=()):
+    """Names of supplied parameters not declared in the schema.
+
+    Mirrors the reject-unknown behaviour of :func:`parameter_spec.resolve`, but
+    runs up front so config typos are caught before any step executes. ``schema``
+    of ``None`` (a component not yet on the parameter schema) skips the check; an
+    empty ``{}`` schema is strict, so any supplied parameter is unknown.
+    ``allowed_extra`` permits framework keys (e.g. ``qc_handling_settings``).
+    """
+    if schema is None:
+        return []
+    return [
+        name
+        for name in parameters
+        if name not in schema and name not in allowed_extra
+    ]
 
 
 def check_pipeline_variables(steps_list, logger, available_vars=None):
@@ -31,14 +65,12 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
         if not step_class:
             continue
 
-        parameters = step_config.get("parameters", {})
+        parameters = step_config.get("parameters", {}) or {}
+        schema = getattr(step_class, "parameter_schema", None)
+        allowed_extra = getattr(step_class, "framework_parameters", set())
 
-        # Check for missing config parameters
-        expected_params = getattr(step_class, "expected_parameters", [])
-        if isinstance(expected_params, dict):
-            expected_params = list(expected_params.keys())
-
-        missing_params = [p for p in expected_params if p not in parameters]
+        # Check for missing required parameters, driven by the declared schema.
+        missing_params = _missing_required_params(schema, parameters)
         if missing_params:
             missing_str = ", ".join(missing_params)
             logger.error(
@@ -50,13 +82,97 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
                 f"Missing config parameters for '{step_name}': {missing_str}."
             )
 
+        # Check for unknown parameters (config typos), driven by the same schema.
+        unknown_params = _unknown_params(schema, parameters, allowed_extra)
+        if unknown_params:
+            unknown_str = ", ".join(unknown_params)
+            valid_str = ", ".join(sorted(schema)) or "(none)"
+            logger.error(
+                "Validation Failed: '%s' has unknown config parameters: %s. "
+                "Valid parameters: %s.",
+                step_name,
+                unknown_str,
+                valid_str,
+            )
+            raise ValueError(
+                f"Unknown config parameters for '{step_name}': {unknown_str}. "
+                f"Valid parameters: {valid_str}."
+            )
+
+        # Check for type mismatches (e.g. a bool where a float is expected).
+        if schema is not None:
+            bad_types = parameter_spec.type_errors(schema, parameters)
+            if bad_types:
+                bad_str = "; ".join(bad_types)
+                logger.error(
+                    "Validation Failed: '%s' has invalid parameter type(s): %s.",
+                    step_name,
+                    bad_str,
+                )
+                raise ValueError(
+                    f"Invalid parameter type(s) for '{step_name}': {bad_str}."
+                )
+
+        # Apply QC nests each test's settings under qc_settings — validate the
+        # required parameters of every requested test up front. (Their variable
+        # requirements are checked by Apply QC at run time, where _QC columns and
+        # also_flag propagation are resolved.)
+        if step_name == "Apply QC":
+            for qc_name, qc_params in (parameters.get("qc_settings") or {}).items():
+                qc_class = QC_CLASSES.get(qc_name)
+                if qc_class is None:
+                    continue  # Apply QC raises a clear error for unknown tests at run time
+                qc_schema = getattr(qc_class, "parameter_schema", None)
+                qc_allowed_extra = getattr(qc_class, "framework_parameters", set())
+                qc_missing = _missing_required_params(qc_schema, qc_params or {})
+                if qc_missing:
+                    missing_str = ", ".join(qc_missing)
+                    logger.error(
+                        "Validation Failed: QC test '%s' is missing required parameters: %s.",
+                        qc_name,
+                        missing_str,
+                    )
+                    raise ValueError(
+                        f"Missing config parameters for QC test '{qc_name}': {missing_str}."
+                    )
+
+                qc_unknown = _unknown_params(qc_schema, qc_params or {}, qc_allowed_extra)
+                if qc_unknown:
+                    unknown_str = ", ".join(qc_unknown)
+                    valid_str = ", ".join(sorted(qc_schema)) or "(none)"
+                    logger.error(
+                        "Validation Failed: QC test '%s' has unknown parameters: %s. "
+                        "Valid parameters: %s.",
+                        qc_name,
+                        unknown_str,
+                        valid_str,
+                    )
+                    raise ValueError(
+                        f"Unknown config parameters for QC test '{qc_name}': {unknown_str}. "
+                        f"Valid parameters: {valid_str}."
+                    )
+
+                if qc_schema is not None:
+                    qc_bad_types = parameter_spec.type_errors(qc_schema, qc_params or {})
+                    if qc_bad_types:
+                        bad_str = "; ".join(qc_bad_types)
+                        logger.error(
+                            "Validation Failed: QC test '%s' has invalid parameter type(s): %s.",
+                            qc_name,
+                            bad_str,
+                        )
+                        raise ValueError(
+                            f"Invalid parameter type(s) for QC test '{qc_name}': {bad_str}."
+                        )
+
         req_vars = list(getattr(step_class, "required_variables", []))
         provided_vars = getattr(step_class, "provided_variables", []) + getattr(
             step_class, "qc_outputs", []
         )
 
         if step_name == "Find Profiles":
-            depth_col = parameters.get("depth_column", "DEPTH")
+            depth_default = step_class.parameter_schema["depth_column"]["default"]
+            depth_col = parameters.get("depth_column", depth_default)
             if depth_col not in req_vars:
                 req_vars.append(depth_col)
 
@@ -65,7 +181,7 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
         if missing_vars:
             missing_str = ", ".join(missing_vars)
             logger.error(
-                "Validation Failed: '%s' requires %s but they are not provided.",
+                "Validation Failed: '%s' requires %s but they are not provided. Pleaes review the config.",
                 step_name,
                 missing_str,
             )

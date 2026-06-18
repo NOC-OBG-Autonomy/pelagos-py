@@ -31,6 +31,17 @@ class BlankStep(BaseStep, QCHandlingMixin):
     required_variables = []
     provided_variables = []
 
+    # Declare every parameter here (see pelagos_py.utils.parameter_spec). Omit
+    # "default" (or set "required": True) for parameters with no sensible preset.
+    # Resolved values are available as attributes, e.g. self.my_threshold.
+    parameter_schema = {
+        # "my_threshold": {
+        #     "type": float,
+        #     "default": 1.0,
+        #     "description": "What this controls.",
+        # },
+    }
+
     def run(self):
         self.filter_qc()
 

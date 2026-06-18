@@ -811,6 +811,29 @@ class WriteDataReport(BaseStep):
 
     step_name = "Write Data Report"
 
+    parameter_schema = {
+        "title": {
+            "type": str,
+            "default": None,
+            "description": "Report title; defaults to the filename core when blank.",
+        },
+        "fname": {
+            "type": str,
+            "default": None,
+            "description": "Output .rst filename; defaults to the filename core when blank.",
+        },
+        "build": {
+            "type": bool,
+            "default": True,
+            "description": "Whether to run Sphinx to build the PDF after writing the .rst.",
+        },
+        "extent": {
+            "type": list,
+            "default": None,
+            "description": "Geographic [min_lon, max_lon, min_lat, max_lat] for the inset map.",
+        },
+    }
+
     def run(self) -> xr.DataArray:
         #   Required inputs for all other steps
         odir = self.context["global_parameters"]["out_directory"]

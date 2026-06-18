@@ -75,6 +75,21 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
         "DENSITY",
     ]
 
+    parameter_schema = {
+        "to_derive": {
+            "type": list,
+            "required": True,
+            "options": [
+                "DEPTH",
+                "PRAC_SALINITY",
+                "ABS_SALINITY",
+                "CONS_TEMP",
+                "DENSITY",
+            ],
+            "description": "Subset of CTD variables to derive and add to the dataset.",
+        },
+    }
+
     def run(self):
         self.log(f"Processing CTD...")
 

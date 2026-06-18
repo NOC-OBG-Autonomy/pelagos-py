@@ -38,6 +38,17 @@ class ApplyQC(BaseStep):
 
     step_name = "Apply QC"
 
+    parameter_schema = {
+        "qc_settings": {
+            "type": dict,
+            "required": True,
+            "description": (
+                "Mapping of QC test name -> that test's settings. Each test is run "
+                "in order and merges its flags into the dataset's _QC columns."
+            ),
+        },
+    }
+
     def organise_flags(self, new_flags):
         """
         Method for taking in new flags (new_flags) and cross checking against existing flags (self.flag_store), including upgrading flags when necessary, following ARGO flagging standards.

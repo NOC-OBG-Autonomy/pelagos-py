@@ -77,31 +77,25 @@ class flag_full_profile(BaseQC):
     # Specify if test target variable is user-defined (if True, __init__ has to be redefined)
     dynamic = True
 
-    def __init__(self, data, **kwargs):
-        # Check the necessary kwargs are available
-        required_kwargs = {"check_vars"}
-        if not required_kwargs.issubset(set(kwargs.keys())):
-            raise KeyError(
-                f"{required_kwargs - set(kwargs.keys())} are missing from {self.qc_name} settings"
-            )
+    parameter_schema = {
+        "check_vars": {
+            "type": dict,
+            "required": True,
+            "description": (
+                "Mapping of variable -> bad-flag-count threshold, e.g. {'PRES': 10}. "
+                "A profile reaching the threshold has all that variable's points flagged bad."
+            ),
+        },
+    }
 
-        # Specify the tests paramters from kwargs (config)
-        self.expected_parameters = {
-            k: v for k, v in kwargs.items() if k in required_kwargs
-        }
+    def __init__(self, data, **kwargs):
+        super().__init__(data, **kwargs)
+        # Variables required/flagged are derived from the configured check_vars.
         self.required_variables = (
-            list(self.expected_parameters["check_vars"].keys())
-            + [f"{k}_QC" for k in self.expected_parameters["check_vars"].keys()]
+            list(self.check_vars.keys())
+            + [f"{k}_QC" for k in self.check_vars.keys()]
             + ["PROFILE_NUMBER"]
         )
-
-        if data is not None:
-            self.data = data.copy(deep=True)
-
-        for k, v in self.expected_parameters.items():
-            setattr(self, k, v)
-
-        self.flags = None
 
     def return_qc(self):
         # TODO: Add support for flagging if threshold is a mix of 3 (questionable) and 4 (definitely bad) flags

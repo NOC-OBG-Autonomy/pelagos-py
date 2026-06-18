@@ -26,8 +26,15 @@ import numpy as np
 
 
 def check_config(self, expected_params):
+    """Runtime checks beyond the parameter schema.
+
+    Parameter *presence* and defaults are handled by ``parameter_schema``; this
+    additionally (a) catches method-dependent parameters left unset (``None``) and
+    (b) verifies that any ``*_name`` parameter points at a variable that actually
+    exists in the dataset.
+    """
     for param in expected_params:
-        if not hasattr(self, param):
+        if getattr(self, param, None) is None:
             raise KeyError(f"[{self.step_name}] '{param}' is missing from config")
         if "_name" in param:
             if getattr(self, param) not in self.data.data_vars:
@@ -40,6 +47,19 @@ def check_config(self, expected_params):
 class DeriveUncalibratedPhase(BaseStep, QCHandlingMixin):
 
     step_name = "Derive Uncalibrated Phase"
+
+    parameter_schema = {
+        "blue_phase_name": {
+            "type": str,
+            "required": True,
+            "description": "Name of the blue-phase variable in the dataset.",
+        },
+        "red_phase_name": {
+            "type": str,
+            "default": None,
+            "description": "Optional red-phase variable; subtracted from blue phase when given.",
+        },
+    }
 
     def run(self):
         """
@@ -71,7 +91,7 @@ class DeriveUncalibratedPhase(BaseStep, QCHandlingMixin):
 
         # Calculate Uncalibrated phase and specify what QC will be derived from
         qc_parents = [f"{self.blue_phase_name}_QC"]
-        if hasattr(self, "red_phase_name"):
+        if self.red_phase_name is not None:
             check_config(self, ("red_phase_name",))
             self.data["UNCAL_PHASE_DOXY"] = (
                 self.data[self.blue_phase_name] - self.data[self.red_phase_name]
@@ -99,6 +119,19 @@ class DeriveUncalibratedPhase(BaseStep, QCHandlingMixin):
 class DeriveOptodeTemperature(BaseStep, QCHandlingMixin):
 
     step_name = "Derive Optode Temperature"
+
+    parameter_schema = {
+        "temp_voltage_name": {
+            "type": str,
+            "required": True,
+            "description": "Name of the optode temperature-voltage variable in the dataset.",
+        },
+        "calib_coefficients": {
+            "type": list,
+            "required": True,
+            "description": "Polynomial calibration coefficients (at least two).",
+        },
+    }
 
     def run(self):
         """
@@ -161,6 +194,19 @@ class PhasePressureCorrection(BaseStep, QCHandlingMixin):
 
     step_name = "Phase Pressure Correction"
 
+    parameter_schema = {
+        "optode_pressure_name": {
+            "type": str,
+            "required": True,
+            "description": "Name of the pressure variable used for the correction.",
+        },
+        "correction_coefficient": {
+            "type": float,
+            "required": True,
+            "description": "Pressure correction coefficient.",
+        },
+    }
+
     def run(self):
         """
         Example
@@ -219,6 +265,19 @@ class PhasePressureCorrection(BaseStep, QCHandlingMixin):
 class DeriveCalibratedPhase(BaseStep, QCHandlingMixin):
 
     step_name = "Derive Calibrated Phase"
+
+    parameter_schema = {
+        "uncalibrated_phase_name": {
+            "type": str,
+            "required": True,
+            "description": "Name of the uncalibrated-phase variable in the dataset.",
+        },
+        "calib_coefficients": {
+            "type": list,
+            "required": True,
+            "description": "Polynomial calibration coefficients (at least two).",
+        },
+    }
 
     def run(self):
         """
@@ -280,6 +339,30 @@ class DeriveCalibratedPhase(BaseStep, QCHandlingMixin):
 class DeriveOxygenConcentration(BaseStep, QCHandlingMixin):
 
     step_name = "Derive Oxygen Concentration"
+
+    parameter_schema = {
+        "method": {
+            "type": str,
+            "required": True,
+            "options": ["poly", "SVU"],
+            "description": "Conversion method: 'poly' or 'SVU'.",
+        },
+        "temperature_name": {
+            "type": str,
+            "required": True,
+            "description": "Name of the temperature variable in the dataset.",
+        },
+        "calib_coefficient_matrix": {
+            "type": list,
+            "required": True,
+            "description": "Calibration coefficient matrix ((5, 4) for poly, (2, 4) for SVU).",
+        },
+        "temperature_independent_coefficients": {
+            "type": list,
+            "default": None,
+            "description": "[F1, F2] coefficients required by the 'SVU' method.",
+        },
+    }
 
     def func_poly(self):
         # Check the calibration matrix has the right shape
@@ -411,6 +494,24 @@ class MolarDOXYSalinityCorrection(BaseStep, QCHandlingMixin):
 
     step_name = "Molar DOXY Salinity Correction"
 
+    parameter_schema = {
+        "salinity_name": {
+            "type": str,
+            "required": True,
+            "description": "Name of the salinity variable in the dataset.",
+        },
+        "temperature_name": {
+            "type": str,
+            "required": True,
+            "description": "Name of the temperature variable in the dataset.",
+        },
+        "reference_salinity": {
+            "type": float,
+            "default": 0,
+            "description": "Reference salinity the correction is computed relative to.",
+        },
+    }
+
     def oxy_solubility_salinity_correction(self):
         # Get data
         T = self.data[self.temperature_name]
@@ -487,11 +588,6 @@ class MolarDOXYSalinityCorrection(BaseStep, QCHandlingMixin):
                 f"[{self.step_name}] MOLAR_DOXY required but is missing from the data"
             )
 
-        # Update optional reference salinity
-        if not hasattr(self, "reference_salinity"):
-            self.log("No 'reference_salinity' specified, defaulting to 0.")
-            self.reference_salinity = 0
-
         # Calculate factor with partial pressure of water vapour, following Weiss & PRice (1980)
         A = 1013.25 - self.water_vapour_partial_pressure(
             reference_salinity=self.reference_salinity
@@ -532,6 +628,29 @@ class MolarDOXYSalinityCorrection(BaseStep, QCHandlingMixin):
 class MolarDOXYPressureCorrection(BaseStep, QCHandlingMixin):
 
     step_name = "Molar DOXY Pressure Correction"
+
+    parameter_schema = {
+        "pressure_name": {
+            "type": str,
+            "required": True,
+            "description": "Name of the pressure variable in the dataset.",
+        },
+        "temperature_name": {
+            "type": str,
+            "required": True,
+            "description": "Name of the temperature variable in the dataset.",
+        },
+        "molar_doxy_name": {
+            "type": str,
+            "required": True,
+            "description": "Name of the molar oxygen variable to correct.",
+        },
+        "uncalibrated_phase_correction_applied": {
+            "type": bool,
+            "required": True,
+            "description": "Whether the uncalibrated-phase pressure correction was already applied (selects coefficients).",
+        },
+    }
 
     def run(self):
         """

@@ -131,6 +131,19 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
     required_variables = ["TIME", "PROFILE_NUMBER", "CNDC", "TEMP", "PRES"]
     provided_variables = []
 
+    parameter_schema = {
+        "filter_window_size": {
+            "type": int,
+            "default": 21,
+            "description": "Running-average filter size used when computing optimal time lags.",
+        },
+        "plot_profiles_in_range": {
+            "type": list,
+            "default": [0, 100],
+            "description": "Slice [min, max] of profile numbers to include in diagnostic plots.",
+        },
+    }
+
     def run(self):
         """
         Apply the thermal-lag correction for Salinity presented in Morrison et al 1994.

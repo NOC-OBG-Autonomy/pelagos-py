@@ -49,6 +49,20 @@ class ExportStep(BaseStep):
 
     step_name = "Data Export"
 
+    parameter_schema = {
+        "export_format": {
+            "type": str,
+            "required": True,
+            "options": ["csv", "netcdf", "hdf5", "parquet"],
+            "description": "Export format compatible with xarray (csv/netcdf/hdf5/parquet).",
+        },
+        "output_path": {
+            "type": str,
+            "required": True,
+            "description": "Path the dataset will be exported to.",
+        },
+    }
+
     def run(self):
         self.log(
             f"Exporting data in {self.parameters['export_format']} format to {self.parameters['output_path']}"
