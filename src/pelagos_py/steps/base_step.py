@@ -21,6 +21,7 @@ from pelagos_py.utils.log_levels import STOP
 import warnings
 import logging
 import os
+import time
 
 REGISTERED_STEPS = {}
 """Registry of explicitly registered step classes."""
@@ -97,6 +98,10 @@ class BaseStep(ConfigMirrorMixin):
         for key, value in self.parameters.items():
             setattr(self, key, value)
 
+        # Stop the diagnostics timer as soon as diagnostics generation begins, so
+        # the reported time/RAM cover the processing only (not a blocking plot).
+        self._wrap_diagnostics_timing()
+
         # Continue method resolution order
         super().__init__()
 
@@ -132,6 +137,59 @@ class BaseStep(ConfigMirrorMixin):
         :meta private:
         """
         pass
+
+    def _wrap_diagnostics_timing(self):
+        """
+        Wrap the step's diagnostics method so the performance timer stops the
+        moment diagnostics generation begins.
+
+        Steps call ``self.generate_diagnostics()`` (or ``plot_diagnostics()``) as
+        the final action of :meth:`run`, usually a blocking plot. Wrapping it here
+        means the pipeline-reported time/RAM cover the processing only, without
+        every individual step needing to call :meth:`report_performance` itself.
+
+        :meta private:
+        """
+        import functools
+
+        for attr in ("generate_diagnostics", "plot_diagnostics"):
+            method = getattr(self, attr, None)
+            if not callable(method):
+                continue
+
+            @functools.wraps(method)
+            def wrapped(*args, _method=method, **kwargs):
+                self.report_performance()
+                return _method(*args, **kwargs)
+
+            setattr(self, attr, wrapped)
+
+    def report_performance(self):
+        """
+        Log the step's processing time and memory use (diagnostics mode only).
+
+        The pipeline records a start time before :meth:`run` and calls this once
+        afterwards. :meth:`_wrap_diagnostics_timing` also triggers it the moment a
+        step's diagnostics method is entered, so the reported time reflects the
+        processing work only and not how long a blocking plot is left open. The
+        call is idempotent: the first call reports, any later call (including the
+        pipeline's fallback) is a no-op.
+
+        :meta private:
+        """
+        start = getattr(self, "_diagnostics_start", None)
+        if start is None or getattr(self, "_diagnostics_reported", False):
+            return
+        self._diagnostics_reported = True
+
+        self.log(f"Execution time: {time.time() - start:.2f} seconds.")
+        try:
+            import psutil
+
+            mem_info = psutil.Process(os.getpid()).memory_info()
+            self.log(f"Current memory usage: {mem_info.rss / 1024 ** 2:.2f} MB")
+        except ImportError:
+            pass
 
     def log(self, message):
         """Log an info-level message with step name prefix."""

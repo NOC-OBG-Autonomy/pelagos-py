@@ -101,16 +101,7 @@ steps:
 
 # Now we assign profile numbers
   - name: Find Profiles
-    parameters:
-      qc_handling_settings:
-        # Again we are using QC filtering, this time to remove bad DEPTH data. You may
-        # have noticed that we never explicitly tested DEPTH with Apply QC. Instead,
-        # it has inherited QC via a combination of its parent variables QC, PRES & LATITUDE.
-        flag_filter_settings:
-          DEPTH: [3, 4, 9]
-      depth_column: DEPTH
-      velocity_threshold: 0.033 # Minimum vertical velocity (m/s) to flag an up/down cast
-      time_window_seconds: 20 # Window (seconds) for resampling & smoothing depth/velocity
+
     diagnostics: false # When true, this step plots a static phase-map + profile/cycle figure.
 
 # Now that profiles have been determined we should flag any that are too short or lack data at depth
@@ -138,7 +129,6 @@ steps:
           1: 5
           2: 5
       filter_window_size: 21
-      plot_profiles_in_range: [100, 150] # plot profiles 100 through to 150
     diagnostics: false
 
 # Finally, derive the remaining CTD variables using another call of Derive CTD

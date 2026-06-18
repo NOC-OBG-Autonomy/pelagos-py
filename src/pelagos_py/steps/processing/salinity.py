@@ -23,10 +23,12 @@ import pelagos_py.utils.diagnostics as diag
 
 #### Custom imports ####
 import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
 import matplotlib as mpl
 from scipy import interpolate
 from tqdm import tqdm
 import xarray as xr
+import pandas as pd
 import numpy as np
 import gsw
 
@@ -47,14 +49,20 @@ def running_average_nan(arr: np.ndarray, window_size: int) -> np.ndarray:
     sum_vals = np.convolve(np.nan_to_num(padded), kernel, mode="valid")
     count_vals = np.convolve(~np.isnan(padded), kernel, mode="valid")
 
-    # Compute the moving average, handling NaNs properly
-    avg = np.divide(sum_vals, count_vals, where=(count_vals != 0))
-    avg[count_vals == 0] = np.nan  # Set to NaN where all values were NaN
+    # Compute the moving average, handling NaNs properly and preventing unitialised memory warnings
+    avg = np.divide(
+        sum_vals,
+        count_vals,
+        out=np.full_like(sum_vals, np.nan, dtype=float),
+        where=(count_vals != 0),
+    )
 
     return avg
 
 
-def compute_optimal_lag(profile_data, filter_window_size, time_col):
+def compute_optimal_lag(
+    profile_data, filter_window_size, time_col, return_cost_data=False
+):
     """
     Calculate the optimal conductivity time lag relative to temperature to reduce salinity spikes for each glider profile.
     Mimimize the standard deviation of the difference between a lagged CNDC and a high-pass filtered CNDC.
@@ -86,6 +94,11 @@ def compute_optimal_lag(profile_data, filter_window_size, time_col):
         dim="N_MEASUREMENTS", subset=["CNDC"]
     )
 
+    if len(profile_data[time_col]) == 0:
+        if return_cost_data:
+            return np.nan, None
+        return np.nan
+
     # Find the elapsed time in seconds from the start of the profile
     t0 = profile_data[time_col].values[0]
     profile_data["ELAPSED_TIME[s]"] = (profile_data[time_col] - t0).dt.total_seconds()
@@ -100,29 +113,61 @@ def compute_optimal_lag(profile_data, filter_window_size, time_col):
     # Specify the range time lags that the optimum will be found from. Column indexes are: (lag value, lag score)
     time_lags = np.array([np.linspace(-2, 2, 41), np.full(41, np.nan)]).T
 
+    saved_psal = {} if return_cost_data else None
+
     # For each lag find its score and add it to the time_lags array
     for i, lag in enumerate(time_lags[:, 0].copy()):
         # Apply the time shift
         time_shifted_conductivity = conductivity_from_time(
             profile_data["ELAPSED_TIME[s]"] + lag
         )
+
+        # Scale if necessary (handles conductivity supplied in S/m rather than mS/cm)
+        cndc_scaled = (
+            time_shifted_conductivity * 10
+            if np.nanmax(time_shifted_conductivity) < 10
+            else time_shifted_conductivity
+        )
+
         # Derive salinity with the time shifted CNDC (spiking will be minimized when CNDC and TEMP are aligned)
         PSAL = gsw.conversions.SP_from_C(
-            time_shifted_conductivity, profile_data["TEMP"], profile_data["PRES"]
+            cndc_scaled, profile_data["TEMP"], profile_data["PRES"]
         )
 
         # Smooth the salinity profile (to remove spiking)
         PSAL_Smooth = running_average_nan(PSAL, filter_window_size)
 
-        # Subtracting the raw and smoothed salinity gives an idication of "spikiness".
+        # Subtracting the raw and smoothed salinity gives an indication of "spikiness".
         PSAL_Diff = PSAL - PSAL_Smooth
 
         # More spiky data will have higher standard deviation - which is used to score the effectiveness of the applied lag
         time_lags[i, 1] = np.nanstd(PSAL_Diff)
 
-    # return the time lag which has the lowerst score (standard deviation)
+        if return_cost_data:
+            saved_psal[lag] = (PSAL, PSAL_Smooth)
+
+    # return the time lag which has the lowest score (standard deviation)
     best_score_index = np.argmin(time_lags[:, 1])
-    return time_lags[best_score_index, 0]
+    best_lag = time_lags[best_score_index, 0]
+
+    if return_cost_data:
+        zero_idx = int(np.argmin(np.abs(time_lags[:, 0])))
+        zero_lag = time_lags[zero_idx, 0]
+        p_best, p_smooth_best = saved_psal[best_lag]
+        p_zero, p_smooth_zero = saved_psal[zero_lag]
+
+        cost_data = {
+            "lags": time_lags[:, 0],
+            "costs": time_lags[:, 1],
+            "best_lag": best_lag,
+            "zero_lag": zero_lag,
+            "elapsed_time": profile_data["ELAPSED_TIME[s]"].values,
+            "resid_zero": p_zero - p_smooth_zero,
+            "resid_best": p_best - p_smooth_best,
+        }
+        return best_lag, cost_data
+
+    return best_lag
 
 
 @register_step
@@ -136,11 +181,6 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
             "type": int,
             "default": 21,
             "description": "Running-average filter size used when computing optimal time lags.",
-        },
-        "plot_profiles_in_range": {
-            "type": list,
-            "default": [0, 100],
-            "description": "Slice [min, max] of profile numbers to include in diagnostic plots.",
         },
     }
 
@@ -161,7 +201,6 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
           - name: "ADJ: Salinity"
             parameters:
               filter_window_size: 21
-              plot_profiles_in_range: [100, 150]
             diagnostics: false
 
         Parameters
@@ -212,71 +251,97 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
         self.context["data"] = self.data
         return self.context
 
-    def generate_diagnostics(self):
-        self.display_CTLag()
-        self.display_adj_profiles()
-
     def correct_ct_lag(self):
         """
-        For the full deployment, calculate the optimal conductivity time lag relative to temperature to reduce salinity spikes for each glider profile.
-        If more than 300 profiles are present, the optimal lag is estimated every 10 profiles.
+        Calculate the optimal conductivity time lag relative to temperature to reduce salinity spikes for each glider profile.
+        Applies a random sample of up to 100 profiles.
         Display the optimal conductivity time lag calculated for each profile, estimate the median of this lag, and apply this median lag to corrected variables (CNDC_ADJ/PSAL_ADJ).
         This correction should reduce salinity spikes that result from the misalignment between conductivity and temperature sensors and from the difference in sensor response times.
-
-
-        Parameters
-        ----------
-        self.tsr: xarray.Dataset with raw CTD dataset, which should contain:
-            - PROFILE_NUMBER
-            - TIME_CTD, sci_ctd41cp_timestamp, [numpy.datetime64]
-            - PRES: pressure [dbar]
-            - CNDC: conductivity [mS/cm]
-            - TEMP: in-situ temperature [de C]
-
-        windowLength: Window length over which the high-pass filter of conductivity is applied, 21 by default.
-
-        Returns
-        -------
-        self.tsr: with tau and prof_i.
-
         """
-
-        # Estimate the CT lag every profile or 10 profiles for more than 300 profiles.
-        # Note that profile_numbers is not a list of consecutive integers as some profiles may have been filtered out.
         profile_numbers = np.unique(
             self.data["PROFILE_NUMBER"].dropna(dim="N_MEASUREMENTS").values
         )
-        if len(profile_numbers) > 300:
-            profile_numbers = profile_numbers[::10]
 
-        # Making a place to store intermediate products. The two column dimentions are (profile number, time lag)
+        # Making a place to store intermediate products. Column dimensions: (profile number, time lag)
         self.per_profile_optimal_lag = np.full((len(profile_numbers), 2), np.nan)
+        self._ct_cost_data = None
 
-        # TODO: The following could be optimized using xarray groupby() applying a user defined CTLag function
+        prof_arr = self.data["PROFILE_NUMBER"].values
+
+        # Randomly permute to ensure uniform sampling across the dataset
+        indices = np.random.permutation(len(profile_numbers))
+
+        processed_count = 0
+        max_profiles = 100
+        filter_size = self.filter_window_size
+
+        # Only a random sample of up to ``max_profiles`` profiles is processed to estimate
+        # the median lag. Cheaply pre-scan (no salinity/interpolation, just per-profile time
+        # span and count) to find how many profiles qualify, so the bar total matches what
+        # will actually be processed and reaches 100%.
+        time_arr = self.data[self.time_col].values
+        finite = ~pd.isnull(time_arr) & ~np.isnan(prof_arr)
+        grouped_times = pd.Series(time_arr[finite]).groupby(prof_arr[finite])
+        durations = grouped_times.max() - grouped_times.min()
+        counts = grouped_times.count()
+        qualifying = (durations >= pd.Timedelta(hours=1)) & (counts > 3 * filter_size)
+        n_to_process = min(max_profiles, int(qualifying.sum()))
+
+        pbar = tqdm(
+            total=n_to_process,
+            colour="green",
+            desc="\033[97mCT Lag Progress\033[0m",
+            unit="prof",
+        )
+
         # Loop through all good profiles and store the optimal C-T lag for each.
-        for i, profile_number in enumerate(
-            tqdm(
-                profile_numbers,
-                colour="green",
-                desc="\033[97mProgress\033[0m",
-                unit="prof",
-            )
-        ):
-            profile = self.data.where(
-                (self.data["PROFILE_NUMBER"] == profile_number), drop=True
-            )
-            if len(profile[self.time_col]) > 3 * self.filter_window_size:
-                optimal_lag = compute_optimal_lag(
-                    profile, self.filter_window_size, self.time_col
-                )
-                self.per_profile_optimal_lag[i, :] = [profile_number, optimal_lag]
+        for i in indices:
+            if processed_count >= max_profiles:
+                break
 
-        # Find median optimal time lag across all profiles
-        median_lag = np.nanmedian(self.per_profile_optimal_lag[:, 1])
+            profile_number = profile_numbers[i]
+            prof_indices = np.where(prof_arr == profile_number)[0]
 
-        # Get a nanless subset of CNDC data
-        nan_mask = self.data["CNDC"].isnull()
-        data_subset = self.data[[self.time_col, "CNDC"]].where(~nan_mask, drop=True)
+            if len(prof_indices) == 0:
+                continue
+
+            profile = self.data.isel(N_MEASUREMENTS=prof_indices)
+            valid_times = profile[self.time_col].dropna(dim="N_MEASUREMENTS")
+
+            if len(valid_times) > 0:
+                duration = valid_times[-1] - valid_times[0]
+
+                if duration >= np.timedelta64(1, "h") and len(valid_times) > 3 * filter_size:
+                    if getattr(self, "diagnostics", False) and self._ct_cost_data is None:
+                        optimal_lag, cost_data = compute_optimal_lag(
+                            profile, filter_size, self.time_col, return_cost_data=True
+                        )
+                        self._ct_cost_data = cost_data
+                    else:
+                        optimal_lag = compute_optimal_lag(
+                            profile, filter_size, self.time_col
+                        )
+
+                    self.per_profile_optimal_lag[i, :] = [profile_number, optimal_lag]
+                    processed_count += 1
+                    pbar.update(1)
+
+        pbar.close()
+
+        # Apply shifts
+        valid_data_mask = (
+            self.data["CNDC"].notnull() & self.data[self.time_col].notnull()
+        )
+        if not np.any(valid_data_mask):
+            self.log("No valid CNDC data found. Skipping CT lag correction.")
+            return
+
+        lags = self.per_profile_optimal_lag[
+            ~np.isnan(self.per_profile_optimal_lag[:, 1]), 1
+        ]
+        self.ct_lag_median = np.median(lags) if len(lags) > 0 else 0.0
+
+        data_subset = self.data[[self.time_col, "CNDC"]].where(valid_data_mask, drop=True)
 
         # Find the elapsed time in seconds
         t0 = data_subset[self.time_col].values[0]
@@ -284,170 +349,408 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
             data_subset[self.time_col] - t0
         ).dt.total_seconds()
 
-        # Resample the data using a shifted time
         CNDC_from_TIME = interpolate.interp1d(
-            data_subset["ELAPSED_TIME[s]"], data_subset["CNDC"], bounds_error=False
+            data_subset["ELAPSED_TIME[s]"].values,
+            data_subset["CNDC"].values,
+            bounds_error=False,
         )
-        data_subset["CNDC"][:] = CNDC_from_TIME(
-            data_subset["ELAPSED_TIME[s]"] + median_lag
-        )
+        shifted_time = data_subset["ELAPSED_TIME[s]"].values + self.ct_lag_median
+
+        data_subset["CNDC"].values = CNDC_from_TIME(shifted_time)
 
         # Reinsert the time-shifted data back into self.data
-        self.data["CNDC"][~nan_mask] = data_subset["CNDC"]
+        self.data["CNDC"][valid_data_mask] = data_subset["CNDC"]
 
     def correct_thermal_lag(self):
-
-        nan_mask = self.data["TEMP"].isnull()
-        data_subset = self.data[[self.time_col, "TEMP", "PRES"]].where(
-            ~nan_mask, drop=True
+        corrected_temp_array = np.full(len(self.data["TEMP"]), np.nan)
+        profile_numbers = np.unique(
+            self.data["PROFILE_NUMBER"].dropna(dim="N_MEASUREMENTS").values
         )
 
-        # Find the elapsed time in seconds
-        t0 = data_subset[self.time_col].values[0]
-        data_subset["ELAPSED_TIME[s]"] = (
-            data_subset[self.time_col] - t0
-        ).dt.total_seconds()
+        self.filter_params = {}
+        self._thermal_scatter_data = None
 
-        # TODO: Convert to xarray interpolation as interp1d doesn't get updated any more
-        # Define a function that can estimate TEMP at any time point
-        TEMP_from_TIME = interpolate.interp1d(
-            data_subset["ELAPSED_TIME[s]"], data_subset["TEMP"], bounds_error=False
-        )
+        for prof in tqdm(
+            profile_numbers,
+            colour="blue",
+            desc="\033[97mThermal Lag Progress\033[0m",
+            unit="prof",
+        ):
 
-        # Resample the data onto a 1Hz sample rate timeseries
-        TIME_1Hz_sampling = np.arange(0, data_subset["ELAPSED_TIME[s]"][-1], 1)
-        TEMP_1Hz_sampling = TEMP_from_TIME(TIME_1Hz_sampling)
-        n_resamples = len(TEMP_1Hz_sampling)
-
-        # Set up the recursive filter defined in "CTD dynamic performance and corrections through gradients"
-        # Tau and alpha are the fixed coefficients of Morison94 for unpumped cell.
-        # alpha: initial amplitude of the temperature error for a unit step change in ambient temperature [without unit].
-        alpha_offset = 0.0135
-        alpha_slope = 0.0264
-        # tau = beta^-1: time constant of the error, the e-folding time of the temperature error [s].
-        tau_offset = 7.1499
-        tau_slope = 2.7858
-        # flow_rate: The flow rate in the conductivity cell from Woo (2019).
-        flow_rate = 0.4867
-
-        tau = tau_offset + tau_slope / np.sqrt(flow_rate)
-        alpha = alpha_offset + alpha_slope / flow_rate
-
-        # Set the filter coefficients
-        nyquist_frequency = (
-            1 / 2
-        )  # Nyquist frequency for 1 Hz sampling (= sample frequency / 2)
-        a = 4 * nyquist_frequency * alpha * tau / (1 + 4 * nyquist_frequency * tau)
-        b = 1 - (2 * a / alpha)
-
-        # Apply the filter
-        TEMP_correction = np.full(n_resamples, 0.0)
-        for i in range(1, n_resamples):
-            TEMP_correction[i] = -b * TEMP_correction[i - 1] + a * (
-                TEMP_1Hz_sampling[i] - TEMP_1Hz_sampling[i - 1]
+            mask = self.data["PROFILE_NUMBER"] == prof
+            nan_mask = self.data["TEMP"].isnull() | ~mask
+            data_subset = self.data[[self.time_col, "TEMP", "PRES"]].where(
+                ~nan_mask, drop=True
             )
-        corrected_TEMP_1Hz_sampling = TEMP_1Hz_sampling - TEMP_correction
 
-        # Resample the TEMP back onto the original time sampling
-        corrected_TEMP_from_TIME = interpolate.interp1d(
-            TIME_1Hz_sampling, corrected_TEMP_1Hz_sampling, bounds_error=False
-        )
-        data_subset["TEMP"][:] = corrected_TEMP_from_TIME(
-            data_subset["ELAPSED_TIME[s]"]
-        )
+            if len(data_subset[self.time_col]) < 5:
+                continue
+
+            # Find the elapsed time in seconds
+            t0 = data_subset[self.time_col].values[0]
+            data_subset["ELAPSED_TIME[s]"] = (
+                data_subset[self.time_col] - t0
+            ).dt.total_seconds()
+
+            # Define a function that can estimate TEMP at any time point
+            TEMP_from_TIME = interpolate.interp1d(
+                data_subset["ELAPSED_TIME[s]"],
+                data_subset["TEMP"],
+                bounds_error=False,
+                fill_value="extrapolate",
+            )
+
+            # Resample the data onto a 1Hz sample rate timeseries
+            TIME_1Hz_sampling = np.arange(0, data_subset["ELAPSED_TIME[s]"][-1], 1)
+            if len(TIME_1Hz_sampling) < 2:
+                continue
+            TEMP_1Hz_sampling = TEMP_from_TIME(TIME_1Hz_sampling)
+            n_resamples = len(TEMP_1Hz_sampling)
+
+            # Set up the recursive filter defined in "CTD dynamic performance and corrections through gradients"
+            # Tau and alpha are the fixed coefficients of Morison94 for unpumped cell.
+            # alpha: initial amplitude of the temperature error for a unit step change in ambient temperature [without unit].
+            alpha_offset = 0.0135
+            alpha_slope = 0.0264
+            # tau = beta^-1: time constant of the error, the e-folding time of the temperature error [s].
+            tau_offset = 7.1499
+            tau_slope = 2.7858
+            # flow_rate: The flow rate in the conductivity cell from Woo (2019).
+            flow_rate = 0.4867
+
+            tau = tau_offset + tau_slope / np.sqrt(flow_rate)
+            alpha = alpha_offset + alpha_slope / flow_rate
+
+            self.filter_params = {"alpha": alpha, "tau": tau}
+
+            # Set the filter coefficients
+            nyquist_frequency = (
+                1 / 2
+            )  # Nyquist frequency for 1 Hz sampling (= sample frequency / 2)
+            a = 4 * nyquist_frequency * alpha * tau / (1 + 4 * nyquist_frequency * tau)
+            b = 1 - (2 * a / alpha)
+
+            # Apply the filter
+            TEMP_correction = np.full(n_resamples, 0.0)
+            for i in range(1, n_resamples):
+                TEMP_correction[i] = -b * TEMP_correction[i - 1] + a * (
+                    TEMP_1Hz_sampling[i] - TEMP_1Hz_sampling[i - 1]
+                )
+            corrected_TEMP_1Hz_sampling = TEMP_1Hz_sampling - TEMP_correction
+
+            # Resample the TEMP back onto the original time sampling
+            corrected_TEMP_from_TIME = interpolate.interp1d(
+                TIME_1Hz_sampling,
+                corrected_TEMP_1Hz_sampling,
+                bounds_error=False,
+                fill_value="extrapolate",
+            )
+            data_subset["TEMP"][:] = corrected_TEMP_from_TIME(
+                data_subset["ELAPSED_TIME[s]"]
+            )
+
+            # Store adjusted data
+            indices = np.where(~nan_mask)[0]
+            corrected_temp_array[indices] = data_subset["TEMP"].values
+
+            if (
+                getattr(self, "diagnostics", False)
+                and self._thermal_scatter_data is None
+                and TIME_1Hz_sampling[-1] >= 3600
+                and np.nanmax(TEMP_1Hz_sampling) - np.nanmin(TEMP_1Hz_sampling) >= 1.0
+            ):
+                self._thermal_scatter_data = {
+                    "dT_dt": np.gradient(TEMP_1Hz_sampling, TIME_1Hz_sampling),
+                    "correction": TEMP_correction,
+                }
 
         # Reinsert the corrected data back into self.data
-        self.data["TEMP"][~nan_mask] = data_subset["TEMP"]
-
-    def display_CTLag(self):
-        # Display optimal CTlag for each profile
-        mpl.use("tkagg")
-        prof_min, prof_max = np.nanmin(self.per_profile_optimal_lag[:, 0]), np.nanmax(
-            self.per_profile_optimal_lag[:, 0]
+        final_temp = np.where(
+            np.isnan(corrected_temp_array), self.data["TEMP"].values, corrected_temp_array
         )
-        tau_median = np.nanmedian(self.per_profile_optimal_lag[:, 1])
+        self.data["TEMP"][:] = final_temp
 
-        fig, ax = plt.subplots(figsize=(14, 5))
-        ax.plot(
-            [prof_min, prof_max],
-            [tau_median, tau_median],
-            c="indianred",
-            linestyle="--",
-            linewidth=2,
-            label=f"Median CTlag: {tau_median:.2f}s",
-        )
-        ax.plot([prof_min, prof_max], [0, 0], "k")
-        ax.scatter(
-            self.per_profile_optimal_lag[:, 0],
-            self.per_profile_optimal_lag[:, 1],
-            c="k",
-        )
-        ax.legend(prop={"weight": "bold"}, labelcolor="indianred")
-        ax.grid(True, linestyle="--", alpha=0.5)
-        ax.axis([prof_min, prof_max, -1, 1])
-        ax.set_ylabel(
-            "CTlag [s]\n < 0: delay Cond by CTlag\n > 0: advance Cond by CTlag",
-            fontweight="bold",
-        )
-        ax.set_xlabel("Profile Index", fontweight="bold")
-
-        fig.tight_layout()
-        plt.show(block=True)
-
-    def display_adj_profiles(self):
+    def generate_diagnostics(self):
         """
-        Display profiles for ~20 mid profiles of:
-            (1) PSAL: raw salinity
-            (2) PSAL_ADJ: salinity corrected from CTlag
-            (3) PSAL_ADJ: salinity with the thermal lag correction
-            (4) difference between raw and ADJ (CTlag + thermal lag correction) salinity and temperature
-
+        Displays a comprehensive diagnostics dashboard detailing applied adjustments
+        to conductivity and temperature, along with overall impacts on the dataset.
         """
-        self.log("Displaying salinity profiles.")
         mpl.use("tkagg")
 
-        # Get corrected and uncorrected profiles
-        uncorrected_profiles = self.data_copy.where(
-            (self.data["PROFILE_NUMBER"] > self.plot_profiles_in_range[0])
-            & (self.data["PROFILE_NUMBER"] < self.plot_profiles_in_range[1]),
-            drop=True,
-        )
-        corrected_profiles = self.data.where(
-            (self.data["PROFILE_NUMBER"] > self.plot_profiles_in_range[0])
-            & (self.data["PROFILE_NUMBER"] < self.plot_profiles_in_range[1]),
-            drop=True,
-        )
+        # --- Friendly Configuration Variables ---
+        FIG_SIZE = (12, 7)
+        DPI = 120
 
-        fig, axs = plt.subplots(ncols=2, figsize=(8, 8), sharex=True, sharey=True)
+        # Colours
+        COLOUR_CORR_T = "darkred"
+        COLOUR_CORR_C = "darkblue"
+        COLOUR_BEST = "darkorange"
+        COLOUR_SMOOTH = "dimgrey"
+        COLOUR_SCATTER = "tab:purple"
+        COLOUR_COMBINED = "teal"
 
-        for ax, data, title in zip(
-            axs,
-            [uncorrected_profiles, corrected_profiles],
-            ["Uncorrected", "Corrected"],
-        ):
-            for direction, col, label in zip(
-                [-1, 1], ["r", "b"], ["Descending", "Ascending"]
-            ):
-                plot_data = data[
-                    ["DEPTH", "CNDC", "TEMP", "PRES", "PROFILE_DIRECTION"]
-                ].where(data["PROFILE_DIRECTION"] == direction)
-                plot_data["PRAC_SALINITY"] = gsw.conversions.SP_from_C(
-                    plot_data["CNDC"],
-                    plot_data["TEMP"],
-                    plot_data["PRES"],
+        # Text Styles
+        TITLE_SIZE = 9
+        LABEL_SIZE = 8
+
+        # --- Data Preparation ---
+        prof_arr = self.data["PROFILE_NUMBER"].values
+        unique_profs = np.unique(prof_arr[~np.isnan(prof_arr)])
+
+        plot_qc_mask = xr.ones_like(self.data_copy["PROFILE_NUMBER"], dtype=bool)
+        for var in ["TEMP", "CNDC", "PRES", "DEPTH", self.time_col]:
+            qc_col = f"{var}_QC"
+            if qc_col in self.data_copy.data_vars:
+                plot_qc_mask = plot_qc_mask & ~self.data_copy[qc_col].isin([3, 4, 9])
+
+        valid_lags = self.per_profile_optimal_lag[
+            ~np.isnan(self.per_profile_optimal_lag[:, 1])
+        ]
+        processed_profs = valid_lags[:, 0]
+
+        if len(processed_profs) > 0:
+            sample_prof = processed_profs[len(processed_profs) // 2]
+        else:
+            sample_prof = unique_profs[0] if len(unique_profs) > 0 else np.nan
+
+        # --- Main Figure Setup ---
+        fig = plt.figure(figsize=FIG_SIZE, dpi=DPI, constrained_layout=True)
+        gs = fig.add_gridspec(2, 3)
+
+        ax_lag = fig.add_subplot(gs[0, 0:2])
+        ax_cost = fig.add_subplot(gs[0, 2])
+        ax_scatter = fig.add_subplot(gs[1, 0])
+        ax_sal = fig.add_subplot(gs[1, 1])
+        ax_diff = fig.add_subplot(gs[1, 2])
+
+        # (1) Row 1, Col 1-2: Applied Lag Distribution over Profile Index
+        ax_lag.axhline(0, color="black", linestyle="-", lw=1.2, alpha=0.8, zorder=1)
+
+        profs_subset = self.per_profile_optimal_lag[:, 0]
+        lags_subset = self.per_profile_optimal_lag[:, 1]
+        valid_indices = ~np.isnan(lags_subset)
+
+        if np.any(valid_indices):
+            profs_plot = profs_subset[valid_indices]
+            lags_plot = lags_subset[valid_indices]
+
+            label_text = f"Combined (median: {self.ct_lag_median:.2f}s)"
+            ax_lag.scatter(
+                profs_plot,
+                lags_plot,
+                c=COLOUR_COMBINED,
+                s=12,
+                alpha=0.6,
+                label=label_text,
+                zorder=2,
+            )
+            ax_lag.axhline(
+                self.ct_lag_median, color=COLOUR_COMBINED, linestyle="--", lw=1.5, zorder=3
+            )
+
+        ax_lag.set_title("Dataset Lag Distribution by Profile", fontsize=TITLE_SIZE)
+        ax_lag.set_xlabel("Profile Number", fontsize=LABEL_SIZE)
+        ax_lag.set_ylabel("Optimal Lag (s)", fontsize=LABEL_SIZE)
+        ax_lag.tick_params(axis="both", labelsize=LABEL_SIZE)
+        ax_lag.grid(True, alpha=0.2)
+        ax_lag.legend(fontsize=7)
+
+        # (2) Row 1, Col 3: CT Lag Cost Curve
+        if self._ct_cost_data:
+            c = self._ct_cost_data
+            ax_cost.plot(c["lags"], c["costs"], "o-", color=COLOUR_SMOOTH, lw=1, ms=3)
+            ax_cost.axvline(
+                c["best_lag"], color=COLOUR_BEST, ls="--", label=f"Best: {c['best_lag']:.2f}s"
+            )
+            ax_cost.set_xlabel("Trial Lag (s)", fontsize=LABEL_SIZE)
+            ax_cost.set_ylabel("std(PSAL - smooth)", fontsize=LABEL_SIZE)
+            ax_cost.set_title(
+                f"Optimal CT Lag Search (Profile {sample_prof:.0f})", fontsize=TITLE_SIZE
+            )
+            ax_cost.tick_params(axis="both", labelsize=LABEL_SIZE)
+            ax_cost.legend(fontsize=7)
+            ax_cost.grid(True, alpha=0.2)
+
+        # (3) Row 2, Col 1: Thermal Scatter & Parameters Legend
+        if self._thermal_scatter_data:
+            ts = self._thermal_scatter_data
+            finite = np.isfinite(ts["correction"]) & np.isfinite(ts["dT_dt"])
+            ax_scatter.scatter(
+                ts["dT_dt"][finite],
+                ts["correction"][finite],
+                s=4,
+                alpha=0.3,
+                color=COLOUR_SCATTER,
+            )
+            ax_scatter.set_xlabel("dT/dt (°C/s)", fontsize=LABEL_SIZE)
+            ax_scatter.set_ylabel("Corr Amplitude (°C)", fontsize=LABEL_SIZE)
+            ax_scatter.set_title(
+                f"Thermal Mass Verification (Profile {sample_prof:.0f})", fontsize=TITLE_SIZE
+            )
+            ax_scatter.tick_params(axis="both", labelsize=LABEL_SIZE)
+            ax_scatter.grid(True, alpha=0.2)
+
+            alpha_val = self.filter_params.get("alpha", np.nan)
+            tau_val = self.filter_params.get("tau", np.nan)
+            param_text = f"Flow Velocity: ~0.49 m/s\nAlpha (α): {alpha_val:.4f}\nTau (τ): {tau_val:.2f} s"
+            ax_scatter.text(
+                0.05,
+                0.95,
+                param_text,
+                transform=ax_scatter.transAxes,
+                fontsize=7,
+                verticalalignment="top",
+                bbox=dict(boxstyle="round", facecolor="white", alpha=0.8, edgecolor="#ccc"),
+            )
+
+        # (4) Row 2, Col 2: Combined Salinity Profiles
+        mask_range = self.data_copy["PROFILE_NUMBER"].isin(processed_profs)
+        uncorr = self.data_copy.where(mask_range & plot_qc_mask, drop=True)
+        corr = self.data.where(mask_range & plot_qc_mask, drop=True)
+
+        if len(uncorr["DEPTH"].dropna(dim="N_MEASUREMENTS")) > 0:
+            c_raw = uncorr["CNDC"].values
+            c_new = corr["CNDC"].values
+            c_raw = c_raw * 10 if np.nanmax(c_raw) < 10 else c_raw
+            c_new = c_new * 10 if np.nanmax(c_new) < 10 else c_new
+
+            p_raw = gsw.conversions.SP_from_C(
+                c_raw, uncorr["TEMP"].values, uncorr["PRES"].values
+            )
+            p_new = gsw.conversions.SP_from_C(
+                c_new, corr["TEMP"].values, uncorr["PRES"].values
+            )
+
+            ax_sal.plot(
+                p_raw,
+                uncorr["DEPTH"].values,
+                c="grey",
+                ls="",
+                marker=".",
+                ms=1,
+                alpha=0.3,
+                label="Raw",
+            )
+
+            sal_legend = [
+                mlines.Line2D(
+                    [], [], color="grey", marker=".", ls="", markersize=4, label="Raw (All)"
                 )
+            ]
 
-                ax.plot(
-                    plot_data["PRAC_SALINITY"],
-                    plot_data["DEPTH"],
-                    marker="o",
+            ax_sal.plot(
+                p_new,
+                uncorr["DEPTH"].values,
+                c=COLOUR_COMBINED,
+                ls="",
+                marker=".",
+                ms=1.5,
+                alpha=0.7,
+            )
+            sal_legend.append(
+                mlines.Line2D(
+                    [],
+                    [],
+                    color=COLOUR_COMBINED,
+                    marker=".",
                     ls="",
-                    c=col,
-                    label=label,
+                    markersize=4,
+                    label="Corr Combined",
+                )
+            )
+
+            ax_sal.set_title("Combined Result", fontsize=TITLE_SIZE)
+            ax_sal.set_xlabel("Practical Salinity", fontsize=LABEL_SIZE)
+            ax_sal.set_ylabel("Depth (m)", fontsize=LABEL_SIZE)
+            ax_sal.tick_params(axis="both", labelsize=LABEL_SIZE)
+
+            y_min, y_max = ax_sal.get_ylim()
+            if abs(y_max) < abs(y_min):
+                ax_sal.set_ylim(y_min, y_max)
+            else:
+                ax_sal.set_ylim(y_max, y_min)
+
+            ax_sal.grid(True, alpha=0.2)
+            ax_sal.legend(handles=sal_legend, fontsize=7, loc="lower right")
+
+        # (5) Row 2, Col 3: Dataset Adjustments Diff Plot
+        t_all = self.data_copy[self.time_col].values
+
+        valid_t = (
+            ~np.isnat(t_all)
+            & ~np.isnan(self.data_copy["TEMP"].values)
+            & ~np.isnan(self.data_copy["CNDC"].values)
+            & plot_qc_mask.values
+        )
+        sub_step = max(1, np.sum(valid_t) // 50000)
+
+        t_valid = t_all[valid_t][::sub_step]
+        if len(t_valid) > 0:
+            elapsed_days = (t_valid - t_valid[0]) / np.timedelta64(1, "D")
+
+            temp_raw_all = self.data_copy["TEMP"].values[valid_t][::sub_step]
+            temp_corr_all = self.data["TEMP"].values[valid_t][::sub_step]
+            cndc_raw_all = self.data_copy["CNDC"].values[valid_t][::sub_step]
+            cndc_corr_all = self.data["CNDC"].values[valid_t][::sub_step]
+
+            cndc_raw_all = cndc_raw_all * 10 if np.nanmax(cndc_raw_all) < 10 else cndc_raw_all
+            cndc_corr_all = (
+                cndc_corr_all * 10 if np.nanmax(cndc_corr_all) < 10 else cndc_corr_all
+            )
+
+            temp_diff = temp_corr_all - temp_raw_all
+            cndc_diff = cndc_corr_all - cndc_raw_all
+
+            ax_diff_c = ax_diff.twinx()
+
+            ax_diff.plot(
+                elapsed_days,
+                temp_diff,
+                color=COLOUR_CORR_T,
+                marker=".",
+                ls="",
+                ms=1,
+                alpha=0.4,
+                label="Temp Diff",
+            )
+            ax_diff_c.plot(
+                elapsed_days,
+                cndc_diff,
+                color=COLOUR_CORR_C,
+                marker=".",
+                ls="",
+                ms=1,
+                alpha=0.4,
+                label="CNDC Diff",
+            )
+
+            ax_diff.set_xlabel("Elapsed Time (Days)", fontsize=LABEL_SIZE)
+            ax_diff.set_ylabel("Temp Difference (°C)", fontsize=LABEL_SIZE)
+            ax_diff_c.set_ylabel("CNDC Difference (mS/cm)", fontsize=LABEL_SIZE)
+            ax_diff.set_title("Dataset-Wide Adjustments (Corr - Raw)", fontsize=TITLE_SIZE)
+            ax_diff.tick_params(axis="both", labelsize=LABEL_SIZE)
+            ax_diff_c.tick_params(axis="y", labelsize=LABEL_SIZE)
+
+            # Scale both axes symmetrically about zero so the two 0-lines coincide
+            t_absmax = np.nanmax(np.abs(temp_diff))
+            c_absmax = np.nanmax(np.abs(cndc_diff))
+            if np.isfinite(t_absmax) and t_absmax > 0:
+                ax_diff.set_ylim(-t_absmax * 1.05, t_absmax * 1.05)
+            if np.isfinite(c_absmax) and c_absmax > 0:
+                ax_diff_c.set_ylim(-c_absmax * 1.05, c_absmax * 1.05)
+
+            lines1, labels1 = ax_diff.get_legend_handles_labels()
+            lines2, labels2 = ax_diff_c.get_legend_handles_labels()
+
+            leg_handles = []
+            for line in lines1 + lines2:
+                leg_handles.append(
+                    mlines.Line2D([], [], color=line.get_color(), marker=".", ls="", markersize=6)
                 )
 
-            ax.set(xlabel="Practical Salinity", ylabel="Depth", title=title)
-            ax.legend(loc="upper right")
+            ax_diff.legend(leg_handles, labels1 + labels2, loc="best", fontsize=7)
+            ax_diff.grid(True, alpha=0.2)
 
-        fig.tight_layout()
+        # Final Render
+        fig.suptitle("Salinity Adjustment Diagnostics Dashboard", fontsize=11, fontweight="bold")
         plt.show(block=True)
