@@ -19,7 +19,7 @@ pipeline:
   name: Example processing pipeline
   description: An example pipeline
   visualisation: false
-  out_directory: ../examples/data/OG1/
+  out_directory: examples/data/OG1/
   log_file: example_processing.log
 
 # Steps in the pipeline
@@ -28,7 +28,7 @@ pipeline:
 steps:
   - name: Load OG1
     parameters:
-      file_path: ../examples/data/OG1/Nelson_646_R.nc # Path to the input NetCDF file
+      file_path: examples/data/OG1/Nelson_646_R.nc # Path to the input NetCDF file
     diagnostics: false
 
 # ----------------- CORRECT VALUES -----------------

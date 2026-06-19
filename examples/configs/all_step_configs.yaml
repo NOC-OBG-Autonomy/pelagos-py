@@ -30,7 +30,8 @@ pipeline:
  out_directory: ./examples/data/
  # [log_file]: string name for the log file
  #   The name intended for the log file, helpful if running different pipelines and tracking performance.
- #   Default behavior overwrites the previous log file
+ #   Default behavior overwrites the previous log file.
+ #   Console logging is always on. If log_file is not set (or set to None/null), no log file is written.
  log_file: last_run.log
 
 # All step configs

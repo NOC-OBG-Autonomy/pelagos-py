@@ -40,10 +40,19 @@ def _setup_logging(out_dir=None, log_file=None, level=logging.INFO):
     """
     Set up logging for the entire pipeline.
 
+    Console logging is always enabled. A log file is only written when
+    ``log_file`` is set to a real name; if it is omitted, empty, or a
+    "none"/"null" value (including YAML's ``log_file: None``), no file is
+    written and a warning is logged.
+
     Parameters
     ----------
+    out_dir : str, optional
+        Directory the log file is written into. Defaults to the current
+        directory.
     log_file : str, optional
-        Path to the log file. If provided, logs will be written to this file.
+        Name of the log file. If omitted or set to a none-like value, no log
+        file is written (console logging still applies).
     level : int, optional
         Logging level (e.g., logging.INFO, logging.DEBUG).
 
@@ -64,11 +73,22 @@ def _setup_logging(out_dir=None, log_file=None, level=logging.INFO):
         "%Y-%m-%d %H:%M:%S",
     )
 
-    # Console handler
+    # Console handler. Always added so logs reach the console regardless of
+    # whether a log file is configured.
     ch = logging.StreamHandler()
     ch.setLevel(level)
     ch.setFormatter(formatter)
     logger.addHandler(ch)
+
+    # Treat unset / explicit "none"-like values as "no log file". This catches
+    # YAML's `log_file: None`, which parses to the string "None" (truthy), as
+    # well as null/empty values.
+    if isinstance(log_file, str) and log_file.strip().lower() in {
+        "",
+        "none",
+        "null",
+    }:
+        log_file = None
 
     # File handler if specified
     if log_file:
@@ -86,8 +106,12 @@ def _setup_logging(out_dir=None, log_file=None, level=logging.INFO):
             "Logging to file: %s", log_file
         )  #   Should not be an empty file at the end of this
     else:
+        out_dir = out_dir or "."
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
+        logger.warning(
+            "log_file not specified - logging to console only, no log file written."
+        )
 
     return logger
 
@@ -108,14 +132,20 @@ class Pipeline(ConfigMirrorMixin):
 
     """
 
-    def __init__(self, config_path=None):
+    def __init__(self, config_path=None, config=None):
         """
-        Initialize pipeline with optional config file.
+        Initialize pipeline from a config file, an in-memory config dict, or
+        neither (build it up manually with add_step).
 
         Parameters
         ----------
         config_path : str, optional
             Path to the YAML configuration file.
+        config : dict, optional
+            In-memory configuration dictionary (same structure as the YAML
+            file: a ``pipeline`` block and a ``steps`` list). Useful when the
+            config is generated or templated in Python. Mutually exclusive with
+            ``config_path``.
         """
         self.steps = []  # hierarchical step configs
         self.global_parameters = {}  # mirrors _parameters["pipeline"]
@@ -124,15 +154,32 @@ class Pipeline(ConfigMirrorMixin):
         # initialise config mirror system
         self._init_config_mirror()
 
-        if config_path:
+        if config_path is not None and config is not None:
+            raise ValueError(
+                "Provide either config_path or config, not both."
+            )
+
+        has_config = config_path is not None or config is not None
+        if config_path is not None:
             self.load_config_from_file(config_path, mirror_keys=["pipeline"])
+        elif config is not None:
+            self.load_config(config, mirror_keys=["pipeline"])
+
+        if has_config:
             # set convenience alias for user-facing access
             self.global_parameters = self._parameters.get("pipeline", {})
+
+        # Always set up logging so users never have to configure it manually,
+        # whether the pipeline is built from a config file or assembled in
+        # memory. Config (and therefore log_file/out_directory) is loaded above
+        # first, so it is honoured here.
+        self.logger = _setup_logging(
+            self.global_parameters.get("out_directory"),
+            self.global_parameters.get("log_file"),
+        )
+
+        if has_config:
             # build steps from loaded config
-            self.logger = _setup_logging(
-                self.global_parameters.get("out_directory"),
-                self.global_parameters.get("log_file"),
-            )
             self.build_steps(self._parameters.get("steps", []))
             self.logger.info("Pipeline initialised")
 

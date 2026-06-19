@@ -1,19 +1,17 @@
 import yaml
-from pelagos_py.pipeline import Pipeline, _setup_logging
-
-# --- Configuration Variables ---
-INPUT_FILE = "examples/data/OG1/Nelson_646_R.nc"
+from pelagos_py.pipeline import Pipeline
 
 BASE_CONFIG_YAML = """
 pipeline:
   name: Example CTD Processing Pipeline
   description: A pipeline for processing CTD data
   visualisation: false
+  log_file: None
 
 steps:
   - name: Load OG1
     parameters:
-      file_path: PLACEHOLDER
+      file_path: examples/data/OG1/Nelson_646_R.nc
     diagnostics: false
 
   - name: Correct Values
@@ -76,8 +74,6 @@ steps:
       to_derive: [DEPTH]
     diagnostics: true
 
-
-
   - name: Find Profiles
     parameters:
     diagnostics: false
@@ -133,19 +129,8 @@ steps:
     diagnostics: false
 """
 
-try:
-    config = yaml.safe_load(BASE_CONFIG_YAML)
-    
-    for step in config.get("steps", []):
-        if step.get("name") == "Load OG1":
-            step["parameters"]["file_path"] = INPUT_FILE
 
-    p = Pipeline()
-    p.global_parameters = config.get("pipeline", {})
-    p.logger = _setup_logging() 
-    p.build_steps(config.get("steps", []))
-    
-    p.run()
-    
-except Exception as e:
-    print(f"\nPipeline Stopped: {e}")
+demo_config = yaml.safe_load(BASE_CONFIG_YAML)
+
+p = Pipeline(config=demo_config)
+p.run()
