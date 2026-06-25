@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/_static/NOC_logo.svg" alt="NOC logo" width="120" />
+  <img src="https://raw.githubusercontent.com/NOC-OBG-Autonomy/pelagos-py/main/docs/_static/NOC_logo.svg" alt="NOC logo" width="120" />
 </p>
 
 # Pelagos-py
