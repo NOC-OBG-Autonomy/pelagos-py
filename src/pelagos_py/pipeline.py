@@ -233,23 +233,14 @@ class Pipeline(ConfigMirrorMixin):
 
         try:
             if step.diagnostics:
-                start_time = time.time()
-
-                # Run the actual step
+                # Time the processing only. When a step generates diagnostics,
+                # BaseStep stops the timer (report_performance) as plotting
+                # begins, so a blocking plot left open isn't counted. This call
+                # is the idempotent fallback for steps that produce no plot.
+                step._diagnostics_start = time.time()
+                step._diagnostics_reported = False
                 result = step.run()
-
-                duration = time.time() - start_time
-                step.log(f"Execution time: {duration:.2f} seconds.")
-
-                try:
-                    import psutil
-                    import os
-
-                    process = psutil.Process(os.getpid())
-                    mem_info = process.memory_info()
-                    step.log(f"Current memory usage: {mem_info.rss / 1024 ** 2:.2f} MB")
-                except ImportError:
-                    pass
+                step.report_performance()
             else:
                 result = step.run()
 

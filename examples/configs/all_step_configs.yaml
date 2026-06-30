@@ -386,11 +386,8 @@ steps:
       # [filter_window_size]:
       #   Running average filter size used to smooth raw data when computing optimal time lags
       filter_window_size: 21
-      # [plot_profiles_in_range]:
-      #   Slice of profile numbers to include in the diagnostic plotting
-      plot_profiles_in_range: [100, 150]
     # [diagnostics]:
-    #   Generates two plots: 1. optimal thermal lag found, 2. practical salinity before and after correction
+    #   Generates a dashboard summarising the CT-lag and thermal-mass corrections applied
     diagnostics: false
 
 
