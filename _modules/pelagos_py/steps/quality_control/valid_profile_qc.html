@@ -428,11 +428,59 @@
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/quality_control/valid_profile_qc/index.html#pelagos_py.steps.quality_control.valid_profile_qc.valid_profile_qc">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">valid_profile_qc</span><span class="p">(</span><span class="n">BaseQC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Target Variable: PROFILE_NUMBER</span>
-<span class="sd">    Flag Number: 4 (bad data), 3 (potentially bad)</span>
-<span class="sd">    Variables Flagged: PROFILE_NUMBER</span>
-<span class="sd">    Checks that each profile is of a certain length (in number of points)</span>
-<span class="sd">    and contains points within a specified depth range.</span>
+<span class="sd">    Flag whole profiles that are too short or never reach a target depth range.</span>
+
+<span class="sd">    | **Target variable:** ``PROFILE_NUMBER``</span>
+<span class="sd">    | **Variables flagged:** ``PROFILE_NUMBER``</span>
+<span class="sd">    | **Flags applied:** 1 (good), 3 (probably bad), 4 (bad), 9 (missing)</span>
+
+<span class="sd">    Each profile (a group of measurements sharing a ``PROFILE_NUMBER``, as produced</span>
+<span class="sd">    by :doc:`Find Profiles &lt;../processing/find_profiles/index&gt;`) is assessed as a</span>
+<span class="sd">    whole and every row in that profile receives the same ``PROFILE_NUMBER_QC``:</span>
+
+<span class="sd">    - **9 (missing)** — the row has no profile (``PROFILE_NUMBER`` is NaN, e.g.</span>
+<span class="sd">      surfacing rows or data gaps).</span>
+<span class="sd">    - **4 (bad)** — the profile contains fewer than ``profile_length`` measurements.</span>
+<span class="sd">    - **3 (probably bad)** — the profile is long enough but has no measurement whose</span>
+<span class="sd">      ``DEPTH`` falls inside ``depth_range``.</span>
+<span class="sd">    - **1 (good)** — the profile passes both checks.</span>
+
+<span class="sd">    Only ``PROFILE_NUMBER_QC`` is written; the underlying data is never modified.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    profile_length : int, optional</span>
+<span class="sd">        Minimum number of measurements a profile must contain to be kept. Profiles</span>
+<span class="sd">        shorter than this are flagged bad (4). Default ``1000``.</span>
+<span class="sd">    depth_range : tuple of float, optional</span>
+<span class="sd">        ``(min, max)`` depth window (in the same units/sign convention as ``DEPTH``,</span>
+<span class="sd">        i.e. negative downward) that a profile must reach into. A profile with no data</span>
+<span class="sd">        inside this window is flagged probably bad (3). Default ``(-1000, 0)``.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    The check works with its defaults, so the minimal configuration sets no</span>
+<span class="sd">    parameters:</span>
+
+<span class="sd">    .. code-block:: yaml</span>
+
+<span class="sd">        - name: &quot;Apply QC&quot;</span>
+<span class="sd">          parameters:</span>
+<span class="sd">            qc_settings:</span>
+<span class="sd">              valid profile qc: {}</span>
+
+<span class="sd">    Both parameters may be tuned — here profiles must be at least 50 points long and</span>
+<span class="sd">    contain data somewhere between 1000 m depth and the surface:</span>
+
+<span class="sd">    .. code-block:: yaml</span>
+
+<span class="sd">        - name: &quot;Apply QC&quot;</span>
+<span class="sd">          parameters:</span>
+<span class="sd">            qc_settings:</span>
+<span class="sd">              valid profile qc:</span>
+<span class="sd">                profile_length: 50</span>
+<span class="sd">                depth_range: [-1000, 0]</span>
+<span class="sd">          diagnostics: true  # plot DEPTH vs index, coloured by the resulting flag</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">qc_name</span> <span class="o">=</span> <span class="s2">&quot;valid profile qc&quot;</span>
@@ -452,7 +500,9 @@
         <span class="p">)</span>
 
         <span class="c1"># Check profiles are of a given length</span>
-        <span class="n">profile_lengths</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">group_by</span><span class="p">(</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
+        <span class="n">profile_lengths</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">group_by</span><span class="p">(</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">agg</span><span class="p">(</span>
+            <span class="n">pl</span><span class="o">.</span><span class="n">len</span><span class="p">()</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s2">&quot;count&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">profile_lengths</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">)</span>
 
         <span class="c1"># Find profiles that have no data between the sepcified depth ranges</span>

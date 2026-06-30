@@ -428,25 +428,45 @@
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/quality_control/flag_full_profile/index.html#pelagos_py.steps.quality_control.flag_full_profile.flag_full_profile">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">flag_full_profile</span><span class="p">(</span><span class="n">BaseQC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Target Variable: Any</span>
-<span class="sd">    Flag Number: 4</span>
-<span class="sd">    Variables Flagged: Any</span>
-<span class="sd">    Checks the number of bad (4) flags per profile. If it</span>
-<span class="sd">    exceeds the user threshold then all points in the profile</span>
-<span class="sd">    are flagged.</span>
+<span class="sd">    Flag an entire profile once it accumulates too many bad measurements.</span>
 
-<span class="sd">    EXAMPLE</span>
-<span class="sd">    -------</span>
-<span class="sd">    ::</span>
+<span class="sd">    | **Target variable:** user-defined (dynamic)</span>
+<span class="sd">    | **Variables flagged:** the same user-defined variable(s)</span>
+<span class="sd">    | **Flag applied:** 4 (bad)</span>
+
+<span class="sd">    For each variable in ``check_vars``, the number of bad (4) flags in its ``_QC``</span>
+<span class="sd">    column is counted per profile (grouped by ``PROFILE_NUMBER``, as produced by</span>
+<span class="sd">    :doc:`Find Profiles &lt;../processing/find_profiles/index&gt;`). If a profile&#39;s count</span>
+<span class="sd">    reaches the variable&#39;s threshold, **every** measurement of that variable in the</span>
+<span class="sd">    profile is set to bad (4) — the rationale being that a profile riddled with bad</span>
+<span class="sd">    points is untrustworthy as a whole.</span>
+
+<span class="sd">    Each variable is evaluated independently against its own threshold, and only the</span>
+<span class="sd">    listed variables&#39; ``_QC`` columns are modified.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    check_vars : dict</span>
+<span class="sd">        Mapping of variable name to an integer threshold, e.g.</span>
+<span class="sd">        ``{&quot;PRES&quot;: 10, &quot;CHLA&quot;: 20}``. A profile with at least that many bad (4) flags</span>
+<span class="sd">        in ``&lt;variable&gt;_QC`` has all of that variable&#39;s points flagged bad. Required;</span>
+<span class="sd">        each listed variable and its ``_QC`` column must be present in the dataset.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    Flag any profile that contains 10 or more bad pressure points (and, separately,</span>
+<span class="sd">    20 or more bad chlorophyll points):</span>
+
+<span class="sd">    .. code-block:: yaml</span>
 
 <span class="sd">        - name: &quot;Apply QC&quot;</span>
 <span class="sd">          parameters:</span>
-<span class="sd">            qc_settings: {</span>
-<span class="sd">                &quot;flag_full_profile&quot;: {</span>
-<span class="sd">                  &quot;check_vars&quot;: {&quot;PRES&quot;: 10, &quot;CHLA&quot;: 20},</span>
-<span class="sd">                }</span>
-<span class="sd">            }</span>
-<span class="sd">          diagnostics: true</span>
+<span class="sd">            qc_settings:</span>
+<span class="sd">              flag full profile:</span>
+<span class="sd">                check_vars:</span>
+<span class="sd">                  PRES: 10</span>
+<span class="sd">                  CHLA: 20</span>
+<span class="sd">          diagnostics: true  # plot each variable vs index, coloured by flag</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">qc_name</span> <span class="o">=</span> <span class="s2">&quot;flag full profile&quot;</span>

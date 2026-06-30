@@ -373,7 +373,6 @@
 <li class="toctree-l3"><a class="reference internal" href="../../processing/find_profiles/index.html">pelagos_py.steps.processing.find_profiles</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/interpolate_data/index.html">pelagos_py.steps.processing.interpolate_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/oxygen/index.html">pelagos_py.steps.processing.oxygen</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../processing/profile_direction/index.html">pelagos_py.steps.processing.profile_direction</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/salinity/index.html">pelagos_py.steps.processing.salinity</a></li>
 </ul>
 </details></li>
@@ -476,11 +475,57 @@
 <dt class="sig sig-object py" id="pelagos_py.steps.quality_control.valid_profile_qc.valid_profile_qc">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.quality_control.valid_profile_qc.</span></span><span class="sig-name descname"><span class="pre">valid_profile_qc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/quality_control/valid_profile_qc.html#valid_profile_qc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.quality_control.valid_profile_qc.valid_profile_qc" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="../../base_qc/index.html#pelagos_py.steps.base_qc.BaseQC" title="pelagos_py.steps.base_qc.BaseQC"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pelagos_py.steps.base_qc.BaseQC</span></code></a></p>
-<p>Target Variable: PROFILE_NUMBER
-Flag Number: 4 (bad data), 3 (potentially bad)
-Variables Flagged: PROFILE_NUMBER
-Checks that each profile is of a certain length (in number of points)
-and contains points within a specified depth range.</p>
+<p>Flag whole profiles that are too short or never reach a target depth range.</p>
+<div class="line-block">
+<div class="line"><strong>Target variable:</strong> <code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER</span></code></div>
+<div class="line"><strong>Variables flagged:</strong> <code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER</span></code></div>
+<div class="line"><strong>Flags applied:</strong> 1 (good), 3 (probably bad), 4 (bad), 9 (missing)</div>
+</div>
+<p>Each profile (a group of measurements sharing a <code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER</span></code>, as produced
+by <span class="xref std std-doc">Find Profiles</span>) is assessed as a
+whole and every row in that profile receives the same <code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER_QC</span></code>:</p>
+<ul class="simple">
+<li><p><strong>9 (missing)</strong> — the row has no profile (<code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER</span></code> is NaN, e.g.
+surfacing rows or data gaps).</p></li>
+<li><p><strong>4 (bad)</strong> — the profile contains fewer than <code class="docutils literal notranslate"><span class="pre">profile_length</span></code> measurements.</p></li>
+<li><p><strong>3 (probably bad)</strong> — the profile is long enough but has no measurement whose
+<code class="docutils literal notranslate"><span class="pre">DEPTH</span></code> falls inside <code class="docutils literal notranslate"><span class="pre">depth_range</span></code>.</p></li>
+<li><p><strong>1 (good)</strong> — the profile passes both checks.</p></li>
+</ul>
+<p>Only <code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER_QC</span></code> is written; the underlying data is never modified.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>profile_length</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Minimum number of measurements a profile must contain to be kept. Profiles
+shorter than this are flagged bad (4). Default <code class="docutils literal notranslate"><span class="pre">1000</span></code>.</p></li>
+<li><p><strong>depth_range</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">(min,</span> <span class="pre">max)</span></code> depth window (in the same units/sign convention as <code class="docutils literal notranslate"><span class="pre">DEPTH</span></code>,
+i.e. negative downward) that a profile must reach into. A profile with no data
+inside this window is flagged probably bad (3). Default <code class="docutils literal notranslate"><span class="pre">(-1000,</span> <span class="pre">0)</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition-examples admonition">
+<p class="admonition-title">Examples</p>
+<p>The check works with its defaults, so the minimal configuration sets no
+parameters:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Apply</span><span class="nv"> </span><span class="s">QC&quot;</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">qc_settings</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">valid profile qc</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+</pre></div>
+</div>
+<p>Both parameters may be tuned — here profiles must be at least 50 points long and
+contain data somewhere between 1000 m depth and the surface:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Apply</span><span class="nv"> </span><span class="s">QC&quot;</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">qc_settings</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">valid profile qc</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">profile_length</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+<span class="w">        </span><span class="nt">depth_range</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">-1000</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">diagnostics</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">  </span><span class="c1"># plot DEPTH vs index, coloured by the resulting flag</span>
+</pre></div>
+</div>
+</div>
 <dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.quality_control.valid_profile_qc.valid_profile_qc.return_qc">
 <span class="sig-name descname"><span class="pre">return_qc</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/quality_control/valid_profile_qc.html#valid_profile_qc.return_qc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.quality_control.valid_profile_qc.valid_profile_qc.return_qc" title="Link to this definition">#</a></dt>

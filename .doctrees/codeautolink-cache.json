@@ -265,38 +265,9 @@
       "doc_lineno": 403
     }
   ],
-  "api/pelagos_py/steps/processing/profile_direction/index": [
-    {
-      "source": "direction = -1 * sign(dPRES/dTIME)",
-      "names": [],
-      "example": {
-        "document": "api/pelagos_py/steps/processing/profile_direction/index",
-        "ref_id": "module-pelagos_py.steps.processing.profile_direction",
-        "headings": [
-          "pelagos_py.steps.processing.profile_direction",
-          "Notes"
-        ]
-      },
-      "doc_lineno": 47
-    }
-  ],
   "api/pelagos_py/steps/processing/salinity/index": [],
   "api/pelagos_py/steps/quality_control/apply_qc/index": [],
-  "api/pelagos_py/steps/quality_control/flag_full_profile/index": [
-    {
-      "source": "- name: \"Apply QC\"\n  parameters:\n    qc_settings: {\n        \"flag_full_profile\": {\n          \"check_vars\": {\"PRES\": 10, \"CHLA\": 20},\n        }\n    }\n  diagnostics: true",
-      "names": [],
-      "example": {
-        "document": "api/pelagos_py/steps/quality_control/flag_full_profile/index",
-        "ref_id": "module-pelagos_py.steps.quality_control.flag_full_profile",
-        "headings": [
-          "pelagos_py.steps.quality_control.flag_full_profile",
-          "Example"
-        ]
-      },
-      "doc_lineno": 23
-    }
-  ],
+  "api/pelagos_py/steps/quality_control/flag_full_profile/index": [],
   "api/pelagos_py/steps/quality_control/gross_range_qc/index": [],
   "api/pelagos_py/steps/quality_control/impossible_date_qc/index": [],
   "api/pelagos_py/steps/quality_control/impossible_location_qc/index": [],

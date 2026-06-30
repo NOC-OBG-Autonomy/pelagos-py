@@ -373,7 +373,6 @@
 <li class="toctree-l3"><a class="reference internal" href="../../processing/find_profiles/index.html">pelagos_py.steps.processing.find_profiles</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/interpolate_data/index.html">pelagos_py.steps.processing.interpolate_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/oxygen/index.html">pelagos_py.steps.processing.oxygen</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../processing/profile_direction/index.html">pelagos_py.steps.processing.profile_direction</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/salinity/index.html">pelagos_py.steps.processing.salinity</a></li>
 </ul>
 </details></li>
@@ -476,22 +475,40 @@
 <dt class="sig sig-object py" id="pelagos_py.steps.quality_control.flag_full_profile.flag_full_profile">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.quality_control.flag_full_profile.</span></span><span class="sig-name descname"><span class="pre">flag_full_profile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/quality_control/flag_full_profile.html#flag_full_profile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.quality_control.flag_full_profile.flag_full_profile" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="../../base_qc/index.html#pelagos_py.steps.base_qc.BaseQC" title="pelagos_py.steps.base_qc.BaseQC"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pelagos_py.steps.base_qc.BaseQC</span></code></a></p>
-<p>Target Variable: Any
-Flag Number: 4
-Variables Flagged: Any
-Checks the number of bad (4) flags per profile. If it
-exceeds the user threshold then all points in the profile
-are flagged.</p>
-<div class="admonition-example admonition">
-<p class="admonition-title">Example</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="s2">&quot;Apply QC&quot;</span>
-  <span class="n">parameters</span><span class="p">:</span>
-    <span class="n">qc_settings</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">&quot;flag_full_profile&quot;</span><span class="p">:</span> <span class="p">{</span>
-          <span class="s2">&quot;check_vars&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;PRES&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s2">&quot;CHLA&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">},</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-  <span class="n">diagnostics</span><span class="p">:</span> <span class="n">true</span>
+<p>Flag an entire profile once it accumulates too many bad measurements.</p>
+<div class="line-block">
+<div class="line"><strong>Target variable:</strong> user-defined (dynamic)</div>
+<div class="line"><strong>Variables flagged:</strong> the same user-defined variable(s)</div>
+<div class="line"><strong>Flag applied:</strong> 4 (bad)</div>
+</div>
+<p>For each variable in <code class="docutils literal notranslate"><span class="pre">check_vars</span></code>, the number of bad (4) flags in its <code class="docutils literal notranslate"><span class="pre">_QC</span></code>
+column is counted per profile (grouped by <code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER</span></code>, as produced by
+<span class="xref std std-doc">Find Profiles</span>). If a profile’s count
+reaches the variable’s threshold, <strong>every</strong> measurement of that variable in the
+profile is set to bad (4) — the rationale being that a profile riddled with bad
+points is untrustworthy as a whole.</p>
+<p>Each variable is evaluated independently against its own threshold, and only the
+listed variables’ <code class="docutils literal notranslate"><span class="pre">_QC</span></code> columns are modified.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>check_vars</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Mapping of variable name to an integer threshold, e.g.
+<code class="docutils literal notranslate"><span class="pre">{&quot;PRES&quot;:</span> <span class="pre">10,</span> <span class="pre">&quot;CHLA&quot;:</span> <span class="pre">20}</span></code>. A profile with at least that many bad (4) flags
+in <code class="docutils literal notranslate"><span class="pre">&lt;variable&gt;_QC</span></code> has all of that variable’s points flagged bad. Required;
+each listed variable and its <code class="docutils literal notranslate"><span class="pre">_QC</span></code> column must be present in the dataset.</p>
+</dd>
+</dl>
+<div class="admonition-examples admonition">
+<p class="admonition-title">Examples</p>
+<p>Flag any profile that contains 10 or more bad pressure points (and, separately,
+20 or more bad chlorophyll points):</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Apply</span><span class="nv"> </span><span class="s">QC&quot;</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">qc_settings</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">flag full profile</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">check_vars</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">PRES</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">          </span><span class="nt">CHLA</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20</span>
+<span class="w">  </span><span class="nt">diagnostics</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">  </span><span class="c1"># plot each variable vs index, coloured by flag</span>
 </pre></div>
 </div>
 </div>
