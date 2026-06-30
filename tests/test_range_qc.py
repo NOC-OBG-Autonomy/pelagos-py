@@ -86,6 +86,63 @@ def test_ascending_and_descending_mixed_per_variable():
     assert list(flags["TEMP_QC"].values) == [1, 4]  # outside the good band flagged
 
 
+def test_outside_keyword_flags_values_outside_band():
+    """An explicit 'outside' keyword flags data outside the band, regardless of bound order."""
+    data = make_data(TEMP=[-5.0, 10.0, 50.0])  # below, inside, above
+    qc = range_qc(data, variable_ranges={"TEMP": {4: [-2.5, 40, "outside"]}})
+
+    assert list(qc.return_qc()["TEMP_QC"].values) == [4, 1, 4]
+
+
+def test_inside_keyword_flags_values_inside_band():
+    """An explicit 'inside' keyword flags data within the band, regardless of bound order."""
+    data = make_data(PRES=[-10.0, -3.0, 0.0])  # outside, inside, outside
+    qc = range_qc(data, variable_ranges={"PRES": {3: [-5, -2.4, "inside"]}})  # ascending bounds
+
+    assert list(qc.return_qc()["PRES_QC"].values) == [1, 3, 1]
+
+
+def test_keyword_overrides_bound_order():
+    """An explicit keyword wins over the ascending/descending fallback."""
+    # Ascending bounds would mean 'outside' by the fallback, but 'inside' is forced.
+    data = make_data(TEMP=[5.0, 20.0, 50.0])  # below, inside, above
+    qc = range_qc(data, variable_ranges={"TEMP": {4: [10, 30, "inside"]}})
+
+    assert list(qc.return_qc()["TEMP_QC"].values) == [1, 4, 1]
+
+
+@pytest.mark.parametrize("kw", ["outside", "OUT", "o", "O", "Outside"])
+def test_outside_keyword_aliases(kw):
+    data = make_data(TEMP=[-5.0, 10.0, 50.0])
+    qc = range_qc(data, variable_ranges={"TEMP": {4: [-2.5, 40, kw]}})
+    assert list(qc.return_qc()["TEMP_QC"].values) == [4, 1, 4]
+
+
+@pytest.mark.parametrize("kw", ["inside", "IN", "i", "I", "Inside"])
+def test_inside_keyword_aliases(kw):
+    data = make_data(PRES=[-10.0, -3.0, 0.0])
+    qc = range_qc(data, variable_ranges={"PRES": {3: [-5, -2.4, kw]}})
+    assert list(qc.return_qc()["PRES_QC"].values) == [1, 3, 1]
+
+
+def test_multiple_bands_for_one_flag():
+    """A flag can list several bands; a point is flagged if it falls in any of them."""
+    data = make_data(X=[2.5, 5.0, 0.05, 20.0])  # inside [2,3]; clean; outside [0.1,10]; outside
+    qc = range_qc(
+        data,
+        variable_ranges={"X": {4: [[2, 3, "inside"], [0.1, 10, "outside"]]}},
+    )
+
+    assert list(qc.return_qc()["X_QC"].values) == [4, 1, 4, 4]
+
+
+def test_unknown_keyword_raises():
+    data = make_data(TEMP=[10.0])
+    qc = range_qc(data, variable_ranges={"TEMP": {4: [0, 30, "nonsense"]}})
+    with pytest.raises(ValueError, match="Unknown range keyword"):
+        qc.return_qc()
+
+
 def test_also_flag_propagates_to_companions():
     """A bad CNDC point cross-flags its companions; good points are left good."""
     data = make_data(

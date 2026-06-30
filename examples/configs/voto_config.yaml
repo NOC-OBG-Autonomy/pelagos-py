@@ -45,26 +45,26 @@ steps:
         impossible speed qc: {}     # Is the horizontal speed reasonable?
         range qc: # TODO: Add functionality if these are blank for a "valid_min" in attr - use that to assign the possible 4s
           variable_ranges:
-            # PRES bounds are descending -> impossible bands (flag INSIDE). Everything else is
-            # ascending -> a good band (flag OUTSIDE).
+            # PRES uses 'inside' -> impossible bands (flag INSIDE). Everything else uses
+            # 'outside' -> a good band (flag OUTSIDE).
             PRES:
-              3: [-2.4, -5]  # Pressure in this range is flagged as probably bad (3)
-              4: [-5, -.inf]  # and bad (4) in this range.
+              3: [-2.4, -5, inside]  # Pressure in this range is flagged as probably bad (3)
+              4: [-5, -.inf, inside]  # and bad (4) in this range.
             TEMP:
-              3: [0, 30]
-              4: [-2.5, 40]
+              3: [0, 30, outside]
+              4: [-2.5, 40, outside]
             CNDC:
-              3: [5, 42]
-              4: [2, 45]
+              3: [5, 42, outside]
+              4: [2, 45, outside]
             DOXY: # Comment out for Nelson
-              3: [0.01, 425]  # Sensor possibilities
-              4: [0, 500] # Crazy town
+              3: [0.01, 425, outside]  # Sensor possibilities
+              4: [0, 500, outside] # Crazy town
             CHLA:
-              3: [0, 15]
-              4: [-1, 20] # VOTO preexisting, IOOS uses 100 for upper bound
+              3: [0, 15, outside]
+              4: [-1, 20, outside] # VOTO preexisting, IOOS uses 100 for upper bound
             # CDOM:
-            #   3: [0, 5]
-            #   4: [-0.1, 375] # Manufacturer's max
+            #   3: [0, 5, outside]
+            #   4: [-0.1, 375, outside] # Manufacturer's max
           also_flag:
             PRES: [TEMP, CNDC, DOXY]  # Flag TEMP & CNDC based on PRES flags
             TEMP: [CNDC, DOXY]

@@ -36,17 +36,17 @@ steps:
         impossible location qc: {}  # Are the GPS coords within logical bounds?
         position on land qc: {}     # Are the coords on land?
         impossible speed qc: {}     # Is the horizontal speed reasonable?
-        range qc: # ascending bounds -> good bands: data outside them is flagged
+        range qc: # 'outside' -> good bands: data outside them is flagged
           variable_ranges:
             PRES:
-              3: [-5, -2.4]
-              4: [-.inf, -5]
+              3: [-5, -2.4, outside]
+              4: [-.inf, -5, outside]
             TEMP:
-              3: [0, 30]
-              4: [-2.5, 40]
+              3: [0, 30, outside]
+              4: [-2.5, 40, outside]
             CNDC:
-              3: [5, 42]  
-              4: [2, 45]
+              3: [5, 42, outside]
+              4: [2, 45, outside]
           also_flag:
             PRES: [TEMP, CNDC]
             TEMP: [CNDC]

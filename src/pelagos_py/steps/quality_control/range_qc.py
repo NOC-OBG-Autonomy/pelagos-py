@@ -18,12 +18,14 @@
 
 Replaces the old ``gross range qc`` (flag values *outside* a good band) and
 ``impossible range qc`` (flag values *inside* an impossible band) with a single
-test that does both. Which behaviour applies is read from the *order* of each
-range's bounds: an ascending ``[low, high]`` is a good band (flag data outside it),
-a descending ``[high, low]`` is an impossible band (flag data inside it). The test
-can also propagate a variable's flags onto companion variables (e.g. flag PRES and
-TEMP bad whenever CNDC is bad), limit the checks to a DEPTH window, and plot every
-flagged variable when diagnostics are enabled.
+test that does both. Each range carries an explicit ``inside``/``outside`` keyword
+that chooses the behaviour: ``outside`` flags data outside the band (a good band),
+``inside`` flags data within it (an impossible band). When no keyword is given the
+bound *order* is used as a fallback (ascending ``[low, high]`` -> outside, descending
+``[high, low]`` -> inside). A flag may list several ranges so the same flag can cover
+more than one band. The test can also propagate a variable's flags onto companion
+variables (e.g. flag PRES and TEMP bad whenever CNDC is bad), limit the checks to a
+DEPTH window, and plot every flagged variable when diagnostics are enabled.
 """
 
 #### Mandatory imports ####
@@ -76,16 +78,28 @@ class range_qc(BaseQC):
     Flag measurements by value range. A single, configurable replacement for the
     old separate "gross range" and "impossible range" tests.
 
-    How each ``{flag: bounds}`` entry is read depends on the shape of ``bounds``, so
-    no extra parameter is needed:
+    Each ``{flag: bounds}`` entry describes one or more bands. A band is given as a
+    ``[low, high]`` pair with an ``inside``/``outside`` keyword saying which side to
+    flag:
 
-    - **Ascending** ``[low, high]`` — a *good* band; data ``< low`` or ``> high``
-      gets the flag. (The old "gross range" behaviour.)
-    - **Descending** ``[high, low]`` — an *impossible* band; data strictly between
-      the two bounds gets the flag. (The old "impossible range" behaviour.)
+    - **``[low, high, "outside"]``** — a *good* band; data ``< low`` or ``> high``
+      gets the flag. (The old "gross range" behaviour.) Accepts ``outside``, ``out``
+      or ``o`` (any capitalisation).
+    - **``[low, high, "inside"]``** — an *impossible* band; data strictly between the
+      two bounds gets the flag. (The old "impossible range" behaviour.) Accepts
+      ``inside``, ``in`` or ``i`` (any capitalisation).
     - **A single scalar** ``value`` — flags exact matches (``data == value``). Handy
       for fill/filler values, e.g. ``4: 0.0`` to flag a pressure of exactly ``0`` as
       bad.
+
+    The same flag can cover several bands by giving a *list of bands*, e.g.
+    ``4: [[2, 3, "inside"], [0.1, 10, "outside"]]`` — a point is flagged if it falls in
+    *any* of them.
+
+    If the keyword is omitted the bound *order* is used as a fallback: an ascending
+    ``[low, high]`` means ``outside`` (a good band) and a descending ``[high, low]``
+    means ``inside`` (an impossible band). An explicit keyword always wins over the
+    order, so write ``inside``/``outside`` when in doubt.
 
     Within a variable, entries are applied most-severe-flag-first, so on overlap the
     worse flag wins. Anything checked but not flagged is marked good (1).
@@ -103,16 +117,16 @@ class range_qc(BaseQC):
             qc_settings:
               range qc:
                 variable_ranges:
-                  PRES:                 # descending -> impossible band: flag data INSIDE it
-                    3: [-2.4, -5]
-                    4: [-5, -.inf]
-                    9: 0.0              # single scalar -> flag the exact fill value 0.0
-                  TEMP:                 # ascending -> good band: flag data OUTSIDE it
-                    3: [0, 30]
-                    4: [-2.5, 40]
+                  PRES:
+                    3: [-2.4, -5, inside]   # impossible band: flag data INSIDE it
+                    4: [-5, -.inf, inside]
+                    9: 0.0                  # single scalar -> flag the exact fill value 0.0
+                  TEMP:
+                    3: [0, 30, outside]     # good band: flag data OUTSIDE it
+                    4: [-2.5, 40, outside]
                   CNDC:
-                    3: [5, 42]
-                    4: [2, 45]
+                    # one flag, two bands: flag bad both inside [2, 3] and outside [0.1, 10]
+                    4: [[2, 3, inside], [0.1, 10, outside]]
                 also_flag:
                   CNDC: [PRES, TEMP]    # CNDC's flags propagate onto PRES & TEMP (worst wins)
                 test_depth_range: [-100, 0]   # OPTIONAL: only check this DEPTH window
@@ -129,9 +143,10 @@ class range_qc(BaseQC):
         "variable_ranges": {
             "type": dict,
             "required": True,
-            "description": "Per-variable {flag: [low, high]} ranges. An ascending pair is a good "
-                           "band (data outside it is flagged); a descending pair is an impossible "
-                           "band (data within it is flagged).",
+            "description": "Per-variable {flag: band} ranges. A band is [low, high, 'inside'|'outside'] "
+                           "('outside' flags data outside it, 'inside' flags data within it); the keyword "
+                           "may be omitted, in which case an ascending pair means outside and a descending "
+                           "pair means inside. A flag may give a list of bands to cover several ranges.",
         },
         "also_flag": {
             "type": dict,
@@ -165,24 +180,69 @@ class range_qc(BaseQC):
             | {f"{var}_QC" for var in sum(self.also_flag.values(), [])}
         )
 
-    @staticmethod
-    def _band_hit(vals, bounds):
-        """Return a boolean mask of the values a configured ``bounds`` entry flags.
+    # Keyword aliases (any capitalisation) that force a band's behaviour.
+    _OUTSIDE_KEYWORDS = {"outside", "out", "o"}
+    _INSIDE_KEYWORDS = {"inside", "in", "i"}
+
+    @classmethod
+    def _iter_bands(cls, bounds):
+        """Yield each individual band in a flag's configured ``bounds`` entry.
+
+        A flag can carry a single band or a *list* of bands. A list of bands is one
+        whose elements are themselves lists/tuples (e.g. ``[[2, 3], [0.1, 10]]``);
+        anything else (a scalar, or a single ``[low, high(, kw)]`` band) is treated as
+        one band and yielded as-is.
+        """
+        if (
+            isinstance(bounds, (list, tuple))
+            and bounds
+            and all(isinstance(b, (list, tuple)) for b in bounds)
+        ):
+            yield from bounds
+        else:
+            yield bounds
+
+    @classmethod
+    def _band_hit(cls, vals, band):
+        """Return a boolean mask of the values a single configured ``band`` flags.
 
         - A single scalar flags exact matches (e.g. a fill value such as ``0``).
-        - An ascending ``[low, high]`` pair is a good band: values below ``low`` or
-          above ``high`` are flagged.
-        - A descending ``[high, low]`` pair is an impossible band: values strictly
-          between the two bounds are flagged.
+        - ``[low, high, 'outside']`` is a good band: values outside it are flagged.
+        - ``[low, high, 'inside']`` is an impossible band: values strictly between the
+          bounds are flagged.
+        - When no keyword is given the order decides: an ascending ``[low, high]`` is a
+          good band (flag outside), a descending ``[high, low]`` an impossible band
+          (flag inside).
 
-        NaNs compare ``False`` throughout, so missing values are never flagged here.
+        An explicit keyword always wins over the bound order. NaNs compare ``False``
+        throughout, so missing values are never flagged here.
         """
-        if not isinstance(bounds, (list, tuple)):
-            return vals == bounds  # exact-match a single value
-        a, b = bounds
-        if a <= b:
-            return (vals < a) | (vals > b)  # good band -> flag outside
-        return (vals > b) & (vals < a)  # impossible band -> flag inside
+        if not isinstance(band, (list, tuple)):
+            return vals == band  # exact-match a single value
+
+        mode = None  # None -> fall back to bound order
+        nums = list(band)
+        if nums and isinstance(nums[-1], str):
+            kw = nums[-1].strip().lower()
+            if kw in cls._OUTSIDE_KEYWORDS:
+                mode = "outside"
+            elif kw in cls._INSIDE_KEYWORDS:
+                mode = "inside"
+            else:
+                raise ValueError(
+                    f"Unknown range keyword {nums[-1]!r}; expected one of "
+                    f"{sorted(cls._OUTSIDE_KEYWORDS | cls._INSIDE_KEYWORDS)}."
+                )
+            nums = nums[:-1]
+
+        a, b = nums
+        if mode is None:
+            mode = "outside" if a <= b else "inside"
+
+        low, high = (a, b) if a <= b else (b, a)
+        if mode == "outside":
+            return (vals < low) | (vals > high)  # good band -> flag outside
+        return (vals > low) & (vals < high)  # impossible band -> flag inside
 
     def return_qc(self):
         n = len(self.data["N_MEASUREMENTS"])
@@ -202,7 +262,9 @@ class range_qc(BaseQC):
 
             # Most-severe flag first so it wins where ranges overlap.
             for flag in sorted(self.variable_ranges[var], reverse=True):
-                hit = self._band_hit(vals, self.variable_ranges[var][flag])
+                hit = np.zeros(n, dtype=bool)
+                for band in self._iter_bands(self.variable_ranges[var][flag]):
+                    hit |= self._band_hit(vals, band)
                 qc[hit & depth_mask & (qc == 0)] = flag
 
             # Anything checked but unflagged is good.
@@ -279,9 +341,12 @@ class range_qc(BaseQC):
             # scalar is drawn as one line).
             if var in self.variable_ranges:
                 for flag, bounds in self.variable_ranges[var].items():
-                    bound_list = bounds if isinstance(bounds, (list, tuple)) else [bounds]
-                    for bound in bound_list:
-                        if np.isfinite(bound):
+                    for band in self._iter_bands(bounds):
+                        band_list = band if isinstance(band, (list, tuple)) else [band]
+                        for bound in band_list:
+                            # Skip the inside/outside keyword; draw only numeric bounds.
+                            if isinstance(bound, str) or not np.isfinite(bound):
+                                continue
                             ax.axhline(
                                 bound, ls="--", lw=1, alpha=0.6,
                                 color=flag_cols.get(flag, "k"),

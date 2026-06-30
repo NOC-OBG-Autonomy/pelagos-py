@@ -64,15 +64,15 @@ steps:
 
         range qc: # Flags the whole CTD triad (PRES, TEMP, CNDC) by range
           variable_ranges:
-            PRES: # descending bounds -> flag PRES when it falls WITHIN them
-              3: [-2.4, -5] # Pressure in this range is flagged as probably bad (3)
-              4: [-5, -.inf] # and bad (4) in this range.
-            TEMP: # ascending bounds -> flag TEMP when it falls OUTSIDE them
-              3: [0, 30]
-              4: [-2.5, 40]
-            CNDC: 
-              3: [5, 42]
-              4: [2, 45]
+            PRES: # 'inside' -> flag PRES when it falls WITHIN the band
+              3: [-2.4, -5, inside] # Pressure in this range is flagged as probably bad (3)
+              4: [-5, -.inf, inside] # and bad (4) in this range.
+            TEMP: # 'outside' -> flag TEMP when it falls OUTSIDE the band
+              3: [0, 30, outside]
+              4: [-2.5, 40, outside]
+            CNDC:
+              3: [5, 42, outside]
+              4: [2, 45, outside]
           also_flag:
             # Cross-flag the CTD triad: PRES, TEMP & CNDC come from the same instrument, so
             # if one is untrustworthy the others probably are too.

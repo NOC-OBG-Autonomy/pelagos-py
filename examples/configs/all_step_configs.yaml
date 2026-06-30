@@ -186,21 +186,23 @@ steps:
 
         # range test (*/range_qc.py):
         #   Flag: User-specified
-        #   Flags values by range, per variable. The order of each range's bounds chooses the
-        #   behaviour: an ascending [low, high] is a band of GOOD values (data outside it is
-        #   flagged); a descending [high, low] is an IMPOSSIBLE band (data within it is flagged).
+        #   Flags values by range, per variable. Each band carries an inside/outside keyword:
+        #   [low, high, "outside"] is a band of GOOD values (data outside it is flagged);
+        #   [low, high, "inside"] is an IMPOSSIBLE band (data within it is flagged). A flag may
+        #   list several bands, e.g. 4: [[2, 3, inside], [0.1, 10, outside]]. If the keyword is
+        #   omitted, bound order is the fallback (ascending -> outside, descending -> inside).
         #   A single scalar instead of a pair flags exact matches (handy for fill values).
         #   Replaces the old separate 'gross range' (outside) and 'impossible range' (inside) tests.
         #   The results from one variable can be propagated onto other variables using "also_flag".
         #   This test can also be limited to specific depth ranges if DEPTH is in the dataset vars.
         range qc:
           # [variable_ranges]:
-          #   variable: {flag: value range} pairs. Multiple variables can be specified.
-          #   Here PRES bounds are descending, so PRES is flagged when it lies INSIDE them.
+          #   variable: {flag: band} pairs. Multiple variables can be specified.
+          #   Here PRES uses 'inside', so PRES is flagged when it lies WITHIN the band.
           variable_ranges:
             PRES:
-              3: [-2.4, -5]
-              4: [-5, -.inf]
+              3: [-2.4, -5, inside]
+              4: [-5, -.inf, inside]
           # [also_flag]:
           #   Alows the QC result from one variable to be applied to others. eg. Often if PRES fails a
           #   range test, it is assumed that all CTD variables are no longer trustworthy.
