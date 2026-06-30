@@ -141,7 +141,7 @@ html_static_path = ["_static"]
 html_last_updated_fmt = "%b %d, %Y"
 html_show_sourcelink = False
 html_title = "Pelagos-Py"
-html_favicon = "_static/favicon.svg"
+html_favicon = "_static/NOC_logo.svg"
 html_css_files = ["custom.css"]
 
 # Pages with no sub-navigation — remove empty left sidebar
@@ -152,9 +152,8 @@ html_sidebars = {
 
 html_theme_options = {
     "logo": {
-        "image_light": "_static/pelagos_logo.png",
-        "image_dark": "_static/pelagos_logo.png",
-        "text": "Pelagos-Py",
+        "image_light": "_static/pelagos-py-text-logo.png",
+        "image_dark": "_static/pelagos-py-text-logo.png",
     },
     "icon_links": [
         {
@@ -182,7 +181,7 @@ nbsphinx_execute_arguments = [
 nbsphinx_thumbnails = {
     "gallery/thumbnail-from-conf-py": "gallery/a-local-file.png",
     "gallery/*-rst": "images/notebook_icon.png",
-    "orphan": "_static/favicon.svg",
+    "orphan": "_static/NOC_logo.svg",
 }
 
 # -- Options for Intersphinx
