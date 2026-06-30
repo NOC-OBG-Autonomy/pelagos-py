@@ -132,6 +132,6 @@ A full breakdown can be found here: [Developer Guide](https://noc-obg-autonomy.g
 
 # License
 
-[Apache 2.0 License](https://www.google.com/search?q=LICENSE)
+[Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0)
 
 Copyright 2025-2026 The National Oceanography Centre and contributors.
