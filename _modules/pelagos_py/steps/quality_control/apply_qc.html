@@ -437,6 +437,17 @@
 
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Apply QC&quot;</span>
 
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;qc_settings&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
+                <span class="s2">&quot;Mapping of QC test name -&gt; that test&#39;s settings. Each test is run &quot;</span>
+                <span class="s2">&quot;in order and merges its flags into the dataset&#39;s _QC columns.&quot;</span>
+            <span class="p">),</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
+
 <div class="viewcode-block" id="ApplyQC.organise_flags">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/quality_control/apply_qc/index.html#pelagos_py.steps.quality_control.apply_qc.ApplyQC.organise_flags">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">organise_flags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_flags</span><span class="p">):</span>

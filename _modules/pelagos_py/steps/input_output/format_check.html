@@ -439,6 +439,29 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Format Checker&quot;</span>
 
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;src&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Source file path to run the compliance checker against.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;standards&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;cf&quot;</span><span class="p">,</span> <span class="s2">&quot;og&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Standards to check, e.g. [&#39;cf&#39;, &#39;og&#39;].&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;output_type&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;rst&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Output extension: &#39;json&#39; for detail, &#39;rst&#39;/ASCII for a summary.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;proceed_on_fail&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;If False, halt the pipeline when the file fails the checks.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
         <span class="n">check_suite</span> <span class="o">=</span> <span class="n">CheckSuite</span><span class="p">()</span>

@@ -422,6 +422,7 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.config_mirror</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigMirrorMixin</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.valid_config_check</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_pipeline_variables</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.log_levels</span><span class="w"> </span><span class="kn">import</span> <span class="n">STOP</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_step</span><span class="p">,</span> <span class="n">STEP_CLASSES</span>
 
@@ -529,7 +530,6 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;log_file&quot;</span><span class="p">),</span>
             <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">build_steps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;steps&quot;</span><span class="p">,</span> <span class="p">[]))</span>
-            <span class="n">check_pipeline_variables</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Pipeline initialised&quot;</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Pipeline.build_steps">
@@ -689,6 +689,16 @@
 <span class="sd">        If visualisation is specified in the configuration parameters, a visualisation</span>
 <span class="sd">        of the pipeline execution will be generated.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">check_pipeline_variables</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+                <span class="n">STOP</span><span class="p">,</span>
+                <span class="s2">&quot;Pipeline stopped before execution. &quot;</span>
+                <span class="s2">&quot;Resolve the validation error above and re-run.&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+
         <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute_step</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_context</span><span class="p">)</span>
 

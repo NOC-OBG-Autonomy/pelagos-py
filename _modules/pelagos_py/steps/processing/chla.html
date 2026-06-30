@@ -458,6 +458,24 @@
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">,</span> <span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,</span> <span class="s2">&quot;DEPTH&quot;</span><span class="p">]</span>
     <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[]</span>
 
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;apply_to&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;CHLA&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Name of the variable to apply the correction to.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;dark_value&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Dark value to subtract; if null it is computed from the data.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;depth_threshold&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">550</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Only data below this depth is used to compute the dark value.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
+
 <div class="viewcode-block" id="chla_deep_correction.run">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/chla/index.html#pelagos_py.steps.processing.chla.chla_deep_correction.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -653,6 +671,34 @@
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Chla Quenching Correction&quot;</span>
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,</span> <span class="s2">&quot;TIME&quot;</span><span class="p">,</span> <span class="s2">&quot;DEPTH&quot;</span><span class="p">,</span> <span class="s2">&quot;LATITUDE&quot;</span><span class="p">,</span> <span class="s2">&quot;LONGITUDE&quot;</span><span class="p">]</span>
     <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;Argo&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;options&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;Argo&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Quenching correction method (currently only &#39;Argo&#39;, Xing et al. 2012).&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;apply_to&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;CHLA&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Name of the variable to apply the correction to.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;mld_settings&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;threshold_on&quot;</span><span class="p">:</span> <span class="s2">&quot;TEMP&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;reference_depth&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">10</span><span class="p">,</span>
+                <span class="s2">&quot;threshold&quot;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Mixed-layer-depth thresholding settings (threshold_on/reference_depth/threshold).&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;plot_profiles&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Profile numbers to plot in diagnostics.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
 
 <div class="viewcode-block" id="chla_quenching_correction.run">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/chla/index.html#pelagos_py.steps.processing.chla.chla_quenching_correction.run">[docs]</a>

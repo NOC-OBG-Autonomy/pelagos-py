@@ -14,7 +14,7 @@
           "pelagos_py.steps.base_step"
         ]
       },
-      "doc_lineno": 158
+      "doc_lineno": 187
     }
   ],
   "api/pelagos_py/steps/index": [],
@@ -163,7 +163,7 @@
           "Example"
         ]
       },
-      "doc_lineno": 40
+      "doc_lineno": 67
     },
     {
       "source": "- name: \"Derive Optode Temperature\"\n  parameters:\n    temp_voltage_name: \"TEMP_VOLTAGE_DOXY\"\n    calib_coefficients: [0, 1, 0, 0, 0, 0]\n  diagnostics: false",
@@ -177,7 +177,7 @@
           "Example"
         ]
       },
-      "doc_lineno": 100
+      "doc_lineno": 127
     },
     {
       "source": "- name: \"Phase Pressure Correction\"\n  parameters:\n    optode_pressure_name: \"PRES\"\n    correction_coefficient: 0.1\n  diagnostics: false",
@@ -192,7 +192,7 @@
           "Example"
         ]
       },
-      "doc_lineno": 158
+      "doc_lineno": 185
     },
     {
       "source": "- name: \"Derive Calibrated Phase\"\n  parameters:\n    uncalibrated_phase_name: \"UNCAL_PHASE_DOXY\"\n    calib_coefficients: [0, 1, 0, 0]\n  diagnostics: false",
@@ -208,7 +208,7 @@
           "Example"
         ]
       },
-      "doc_lineno": 216
+      "doc_lineno": 243
     },
     {
       "source": "- name: \"Derive Oxygen Concentration\"\n  parameters:\n    # <MANDATORY>\n    method: \"poly\"\n    # <METHOD DEPENDENT>\n    # The following params are for \"poly\" method\n    temperature_name: \"TEMP\"\n    calib_coefficient_matrix: [\n      [0, 1, 0, 0],\n      [0, 1, 0, 0],\n      [0, 1, 0, 0],\n      [0, 1, 0, 0],\n      [0, 1, 0, 0]\n    ]\n  diagnostics: false",
@@ -225,7 +225,7 @@
           "Example"
         ]
       },
-      "doc_lineno": 274
+      "doc_lineno": 301
     },
     {
       "source": "- name: \"Molar DOXY Salinity Correction\"\n  parameters:\n    # <MANDATORY>\n    salinity_name: \"PRAC_SALINITY\"\n    temperature_name: \"TEMP\"\n    # <OPTIONAL>\n    reference_salinity: 0\n  diagnostics: false",
@@ -243,7 +243,7 @@
           "Example"
         ]
       },
-      "doc_lineno": 342
+      "doc_lineno": 369
     },
     {
       "source": "- name: \"Molar DOXY Pressure Correction\"\n  parameters:\n    # <MANDATORY>\n    pressure_name: \"PRES\"\n    temperature_name: \"TEMP\"\n    molar_doxy_name: \"MOLAR_DOXY_PSAL\"\n    uncalibrated_phase_correction_applied: true\n  diagnostics: false",
@@ -262,7 +262,7 @@
           "Example"
         ]
       },
-      "doc_lineno": 403
+      "doc_lineno": 430
     }
   ],
   "api/pelagos_py/steps/processing/salinity/index": [],
@@ -326,6 +326,8 @@
   "api/pelagos_py/steps/templates/index": [],
   "api/pelagos_py/utils/diagnostics/index": [],
   "api/pelagos_py/utils/index": [],
+  "api/pelagos_py/utils/log_levels/index": [],
+  "api/pelagos_py/utils/parameter_spec/index": [],
   "api/pelagos_py/utils/qc_handling/index": [],
   "api_reference": [],
   "development": [

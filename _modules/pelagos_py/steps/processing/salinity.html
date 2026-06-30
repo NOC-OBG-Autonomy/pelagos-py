@@ -536,6 +536,19 @@
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">,</span> <span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,</span> <span class="s2">&quot;CNDC&quot;</span><span class="p">,</span> <span class="s2">&quot;TEMP&quot;</span><span class="p">,</span> <span class="s2">&quot;PRES&quot;</span><span class="p">]</span>
     <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[]</span>
 
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;filter_window_size&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="mi">21</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Running-average filter size used when computing optimal time lags.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;plot_profiles_in_range&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">],</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Slice [min, max] of profile numbers to include in diagnostic plots.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
+
 <div class="viewcode-block" id="AdjustSalinity.run">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/salinity/index.html#pelagos_py.steps.processing.salinity.AdjustSalinity.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>

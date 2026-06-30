@@ -458,6 +458,29 @@
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">,</span> <span class="s2">&quot;LATITUDE&quot;</span><span class="p">,</span> <span class="s2">&quot;LONGITUDE&quot;</span><span class="p">,</span> <span class="s2">&quot;PRES&quot;</span><span class="p">,</span> <span class="s2">&quot;TEMP&quot;</span><span class="p">,</span> <span class="s2">&quot;CNDC&quot;</span><span class="p">]</span>
 
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;sampling_info&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;2025-01-01&quot;</span><span class="p">,</span> <span class="s2">&quot;2025-01-02&quot;</span><span class="p">,</span> <span class="mi">20</span><span class="p">],</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;[start_date (y-m-d), end_date (y-m-d), sample_period (s)].&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;additional_variables&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Extra variables to generate on top of TIME, GPS and raw CTD.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;value_limits&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="p">{},</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Per-variable random sampling range, e.g. {&#39;DENSITY&#39;: [1028, 1032]}.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;gen_fixed_data&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Generate deterministic fixed data instead of random data (testing).&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># Check if the data is already in the context</span>
         <span class="k">if</span> <span class="s2">&quot;data&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">:</span>
@@ -486,10 +509,10 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Generating random data&quot;</span><span class="p">)</span>
             <span class="c1"># Load config parameters</span>
-            <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span> <span class="n">sample_period</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;sampling_info&quot;</span><span class="p">]</span>
-            <span class="n">additional_variables</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;additional_variables&quot;</span><span class="p">]</span>
-            <span class="n">user_value_limits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;value_limits&quot;</span><span class="p">]</span>
-            <span class="n">diagnostics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;diagnostics&quot;</span><span class="p">]</span>
+            <span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span> <span class="n">sample_period</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sampling_info</span>
+            <span class="n">additional_variables</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">additional_variables</span>
+            <span class="n">user_value_limits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">value_limits</span>
+            <span class="n">diagnostics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span>
 
             <span class="c1"># Add aditional variables</span>
             <span class="n">variable_names</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;LATITUDE&quot;</span><span class="p">,</span> <span class="s2">&quot;LONGITUDE&quot;</span><span class="p">,</span> <span class="s2">&quot;PRES&quot;</span><span class="p">,</span> <span class="s2">&quot;TEMP&quot;</span><span class="p">,</span> <span class="s2">&quot;CNDC&quot;</span><span class="p">}</span>

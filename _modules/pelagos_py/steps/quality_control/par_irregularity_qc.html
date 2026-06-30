@@ -682,7 +682,18 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">qc_name</span> <span class="o">=</span> <span class="s2">&quot;PAR irregularity qc&quot;</span>
-    <span class="n">expected_parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;noise_equivalent_estimate&quot;</span><span class="p">:</span> <span class="mf">3e-2</span><span class="p">,</span> <span class="s2">&quot;plot_profiles&quot;</span><span class="p">:</span> <span class="p">[]}</span>
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;noise_equivalent_estimate&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="mf">3e-2</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Sensor noise-equivalent estimate used when flagging PAR irregularities.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;plot_profiles&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Profile numbers to plot in diagnostics.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span>
         <span class="s2">&quot;LATITUDE&quot;</span><span class="p">,</span>
         <span class="s2">&quot;LONGITUDE&quot;</span><span class="p">,</span>

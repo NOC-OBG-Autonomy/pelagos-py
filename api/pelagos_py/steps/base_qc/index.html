@@ -400,6 +400,8 @@
 </details></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../utils/index.html">pelagos_py.utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../utils/diagnostics/index.html">pelagos_py.utils.diagnostics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../utils/log_levels/index.html">pelagos_py.utils.log_levels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../utils/parameter_spec/index.html">pelagos_py.utils.parameter_spec</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../utils/qc_handling/index.html">pelagos_py.utils.qc_handling</a></li>
 </ul>
 </details></li>
@@ -499,6 +501,13 @@ Your description follows here.</p>
 Flag Number:
 Variables Flagged:</p>
 <dl class="py method">
+<dt class="sig sig-object py" id="pelagos_py.steps.base_qc.BaseQC.describe_parameters">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">describe_parameters</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_qc.html#BaseQC.describe_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_qc.BaseQC.describe_parameters" title="Link to this definition">#</a></dt>
+<dd><p>Return a JSON-serialisable description of this QC check’s parameters.</p>
+<p>See <a class="reference internal" href="../../utils/parameter_spec/index.html#pelagos_py.utils.parameter_spec.describe" title="pelagos_py.utils.parameter_spec.describe"><code class="xref py py-func docutils literal notranslate"><span class="pre">pelagos_py.utils.parameter_spec.describe()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.base_qc.BaseQC.log">
 <span class="sig-name descname"><span class="pre">log</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_qc.html#BaseQC.log"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_qc.BaseQC.log" title="Link to this definition">#</a></dt>
 <dd><p>Log an info-level message with the QC name prefix.</p>
@@ -561,6 +570,7 @@ Variables Flagged:</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.base_qc.flag_cols"><code class="docutils literal notranslate"><span class="pre">flag_cols</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.base_qc.register_qc"><code class="docutils literal notranslate"><span class="pre">register_qc()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.base_qc.BaseQC"><code class="docutils literal notranslate"><span class="pre">BaseQC</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.base_qc.BaseQC.describe_parameters"><code class="docutils literal notranslate"><span class="pre">BaseQC.describe_parameters()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.base_qc.BaseQC.log"><code class="docutils literal notranslate"><span class="pre">BaseQC.log()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.base_qc.BaseQC.log_warn"><code class="docutils literal notranslate"><span class="pre">BaseQC.log_warn()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.base_qc.BaseQC.return_qc"><code class="docutils literal notranslate"><span class="pre">BaseQC.return_qc()</span></code></a></li>

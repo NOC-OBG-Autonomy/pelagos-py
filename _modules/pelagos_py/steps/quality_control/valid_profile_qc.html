@@ -451,7 +451,7 @@
 <span class="sd">    ----------</span>
 <span class="sd">    profile_length : int, optional</span>
 <span class="sd">        Minimum number of measurements a profile must contain to be kept. Profiles</span>
-<span class="sd">        shorter than this are flagged bad (4). Default ``1000``.</span>
+<span class="sd">        shorter than this are flagged bad (4). Default ``100``.</span>
 <span class="sd">    depth_range : tuple of float, optional</span>
 <span class="sd">        ``(min, max)`` depth window (in the same units/sign convention as ``DEPTH``,</span>
 <span class="sd">        i.e. negative downward) that a profile must reach into. A profile with no data</span>
@@ -484,9 +484,17 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">qc_name</span> <span class="o">=</span> <span class="s2">&quot;valid profile qc&quot;</span>
-    <span class="n">expected_parameters</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;profile_length&quot;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
-        <span class="s2">&quot;depth_range&quot;</span><span class="p">:</span> <span class="p">(</span><span class="o">-</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;profile_length&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Minimum number of measurements a profile must contain to be kept.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;depth_range&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="p">(</span><span class="o">-</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;(min, max) depth window a profile must reach into.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
     <span class="p">}</span>
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,</span> <span class="s2">&quot;DEPTH&quot;</span><span class="p">]</span>
     <span class="n">qc_outputs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span>

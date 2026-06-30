@@ -414,6 +414,8 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">parameter_spec</span>
+
 <div class="viewcode-block" id="REGISTERED_QC">
 <a class="viewcode-back" href="../../../api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.REGISTERED_QC">[docs]</a>
 <span class="n">REGISTERED_QC</span> <span class="o">=</span> <span class="p">{}</span></div>
@@ -472,29 +474,38 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">qc_name</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">expected_parameters</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">qc_outputs</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        
+        <span class="c1"># data may be None when a test is instantiated  to</span>
+        <span class="c1"># introspect its required/provided variables from its parameters.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+
         <span class="c1"># Connect to the main pipeline logging hierarchy</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;pelagos_py.pipeline.qc.</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">qc_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;_&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-        <span class="n">invalid_params</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expected_parameters</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-        <span class="k">if</span> <span class="n">invalid_params</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Unexpected parameters for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">qc_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">invalid_params</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span>
-
-        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">expected_parameters</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
-
-        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">expected_parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="c1"># Resolve parameters against the schema: applies defaults, enforces required</span>
+        <span class="c1"># parameters, and rejects unknown ones. Resolved values become attributes.</span>
+        <span class="n">resolved</span> <span class="o">=</span> <span class="n">parameter_spec</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parameter_schema</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">qc_name</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">resolved</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="BaseQC.describe_parameters">
+<a class="viewcode-back" href="../../../api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.BaseQC.describe_parameters">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">describe_parameters</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a JSON-serialisable description of this QC check&#39;s parameters.</span>
+
+<span class="sd">        See :func:`pelagos_py.utils.parameter_spec.describe`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">parameter_spec</span><span class="o">.</span><span class="n">describe</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">parameter_schema</span> <span class="ow">or</span> <span class="p">{})</span></div>
+
 
 <div class="viewcode-block" id="BaseQC.log">
 <a class="viewcode-back" href="../../../api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.BaseQC.log">[docs]</a>

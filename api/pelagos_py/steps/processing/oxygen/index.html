@@ -400,6 +400,8 @@
 </details></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../utils/index.html">pelagos_py.utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/diagnostics/index.html">pelagos_py.utils.diagnostics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/log_levels/index.html">pelagos_py.utils.log_levels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/parameter_spec/index.html">pelagos_py.utils.parameter_spec</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/qc_handling/index.html">pelagos_py.utils.qc_handling</a></li>
 </ul>
 </details></li>
@@ -471,6 +473,16 @@
                   
   <section id="module-pelagos_py.steps.processing.oxygen">
 <span id="pelagos-py-steps-processing-oxygen"></span><h1>pelagos_py.steps.processing.oxygen<a class="headerlink" href="#module-pelagos_py.steps.processing.oxygen" title="Link to this heading">#</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="pelagos_py.steps.processing.oxygen.check_config">
+<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.processing.oxygen.</span></span><span class="sig-name descname"><span class="pre">check_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expected_params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/oxygen.html#check_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.oxygen.check_config" title="Link to this definition">#</a></dt>
+<dd><p>Runtime checks beyond the parameter schema.</p>
+<p>Parameter <em>presence</em> and defaults are handled by <code class="docutils literal notranslate"><span class="pre">parameter_schema</span></code>; this
+additionally (a) catches method-dependent parameters left unset (<code class="docutils literal notranslate"><span class="pre">None</span></code>) and
+(b) verifies that any <code class="docutils literal notranslate"><span class="pre">*_name</span></code> parameter points at a variable that actually
+exists in the dataset.</p>
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="pelagos_py.steps.processing.oxygen.DeriveUncalibratedPhase">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.processing.oxygen.</span></span><span class="sig-name descname"><span class="pre">DeriveUncalibratedPhase</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/oxygen.html#DeriveUncalibratedPhase"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.oxygen.DeriveUncalibratedPhase" title="Link to this definition">#</a></dt>
@@ -675,6 +687,7 @@ Every concrete subclass (registered via &#64;register_step) inherits this.</p>
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.oxygen.check_config"><code class="docutils literal notranslate"><span class="pre">check_config()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.oxygen.DeriveUncalibratedPhase"><code class="docutils literal notranslate"><span class="pre">DeriveUncalibratedPhase</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.oxygen.DeriveUncalibratedPhase.run"><code class="docutils literal notranslate"><span class="pre">DeriveUncalibratedPhase.run()</span></code></a></li>
 </ul>

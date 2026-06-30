@@ -474,6 +474,21 @@
         <span class="s2">&quot;DENSITY&quot;</span><span class="p">,</span>
     <span class="p">]</span>
 
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;to_derive&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;options&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">&quot;DEPTH&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;PRAC_SALINITY&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;ABS_SALINITY&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;CONS_TEMP&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;DENSITY&quot;</span><span class="p">,</span>
+            <span class="p">],</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Subset of CTD variables to derive and add to the dataset.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processing CTD...&quot;</span><span class="p">)</span>
 

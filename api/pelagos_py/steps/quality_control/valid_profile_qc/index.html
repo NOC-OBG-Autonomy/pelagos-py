@@ -400,6 +400,8 @@
 </details></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../utils/index.html">pelagos_py.utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/diagnostics/index.html">pelagos_py.utils.diagnostics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/log_levels/index.html">pelagos_py.utils.log_levels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/parameter_spec/index.html">pelagos_py.utils.parameter_spec</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/qc_handling/index.html">pelagos_py.utils.qc_handling</a></li>
 </ul>
 </details></li>
@@ -497,7 +499,7 @@ surfacing rows or data gaps).</p></li>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>profile_length</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Minimum number of measurements a profile must contain to be kept. Profiles
-shorter than this are flagged bad (4). Default <code class="docutils literal notranslate"><span class="pre">1000</span></code>.</p></li>
+shorter than this are flagged bad (4). Default <code class="docutils literal notranslate"><span class="pre">100</span></code>.</p></li>
 <li><p><strong>depth_range</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">(min,</span> <span class="pre">max)</span></code> depth window (in the same units/sign convention as <code class="docutils literal notranslate"><span class="pre">DEPTH</span></code>,
 i.e. negative downward) that a profile must reach into. A profile with no data
 inside this window is flagged probably bad (3). Default <code class="docutils literal notranslate"><span class="pre">(-1000,</span> <span class="pre">0)</span></code>.</p></li>

@@ -436,6 +436,29 @@
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">,</span> <span class="s2">&quot;DEPTH&quot;</span><span class="p">,</span> <span class="s2">&quot;TEMP&quot;</span><span class="p">,</span> <span class="s2">&quot;PRAC_SALINITY&quot;</span><span class="p">]</span>
     <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[]</span>
 
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;apply_to&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;BBP700&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Name of the variable to convert.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;output_as&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;BBP700&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Name for the output variable added to the dataset.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;theta&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="mi">124</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Effective optical backscatter scattering angle (degrees).&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;xfactor&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="mf">1.076</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Chi factor scaling particulate scattering to total backscatter.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
+
 <div class="viewcode-block" id="BBPFromBeta.run">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/bbp/index.html#pelagos_py.steps.processing.bbp.BBPFromBeta.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -531,6 +554,24 @@
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Isolate BBP Spikes&quot;</span>
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">]</span>
     <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;apply_to&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;BBP700&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Name of the variable to filter.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;window_size&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Median/minmax filter window size in samples.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="s2">&quot;median&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Filter method used to determine the baseline.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
 
 <div class="viewcode-block" id="IsolateBBPSpikes.run">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/bbp/index.html#pelagos_py.steps.processing.bbp.IsolateBBPSpikes.run">[docs]</a>

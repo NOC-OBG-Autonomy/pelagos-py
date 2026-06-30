@@ -430,6 +430,17 @@
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[]</span>
 
+    <span class="c1"># Declare every parameter here (see pelagos_py.utils.parameter_spec). Omit</span>
+    <span class="c1"># &quot;default&quot; (or set &quot;required&quot;: True) for parameters with no sensible preset.</span>
+    <span class="c1"># Resolved values are available as attributes, e.g. self.my_threshold.</span>
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="c1"># &quot;my_threshold&quot;: {</span>
+        <span class="c1">#     &quot;type&quot;: float,</span>
+        <span class="c1">#     &quot;default&quot;: 1.0,</span>
+        <span class="c1">#     &quot;description&quot;: &quot;What this controls.&quot;,</span>
+        <span class="c1"># },</span>
+    <span class="p">}</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
 

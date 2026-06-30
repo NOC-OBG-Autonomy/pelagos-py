@@ -479,6 +479,10 @@
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">]</span>
     <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[]</span>
 
+    <span class="c1"># Takes no step-specific parameters; variables to interpolate are driven entirely</span>
+    <span class="c1"># by the framework ``qc_handling_settings`` (flag_filter_settings).</span>
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{}</span>
+
 <div class="viewcode-block" id="InterpolateVariables.run">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/interpolate_data/index.html#pelagos_py.steps.processing.interpolate_data.InterpolateVariables.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>

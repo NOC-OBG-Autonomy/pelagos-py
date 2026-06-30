@@ -422,15 +422,25 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 
+<div class="viewcode-block" id="check_config">
+<a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.check_config">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">check_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expected_params</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Runtime checks beyond the parameter schema.</span>
+
+<span class="sd">    Parameter *presence* and defaults are handled by ``parameter_schema``; this</span>
+<span class="sd">    additionally (a) catches method-dependent parameters left unset (``None``) and</span>
+<span class="sd">    (b) verifies that any ``*_name`` parameter points at a variable that actually</span>
+<span class="sd">    exists in the dataset.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">expected_params</span><span class="p">:</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] &#39;</span><span class="si">{</span><span class="n">param</span><span class="si">}</span><span class="s2">&#39; is missing from config&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="s2">&quot;_name&quot;</span> <span class="ow">in</span> <span class="n">param</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">param</span><span class="p">)</span><span class="si">}</span><span class="s2"> could not be found in the data&quot;</span>
-                <span class="p">)</span>
+                <span class="p">)</span></div>
+
 
 
 <span class="nd">@register_step</span>
@@ -439,6 +449,19 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">DeriveUncalibratedPhase</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
 
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Derive Uncalibrated Phase&quot;</span>
+
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;blue_phase_name&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Name of the blue-phase variable in the dataset.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;red_phase_name&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Optional red-phase variable; subtracted from blue phase when given.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
 
 <div class="viewcode-block" id="DeriveUncalibratedPhase.run">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.DeriveUncalibratedPhase.run">[docs]</a>
@@ -472,7 +495,7 @@
 
         <span class="c1"># Calculate Uncalibrated phase and specify what QC will be derived from</span>
         <span class="n">qc_parents</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">blue_phase_name</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">]</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;red_phase_name&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">red_phase_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">check_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;red_phase_name&quot;</span><span class="p">,))</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;UNCAL_PHASE_DOXY&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">blue_phase_name</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">red_phase_name</span><span class="p">]</span>
@@ -504,6 +527,19 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">DeriveOptodeTemperature</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
 
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Derive Optode Temperature&quot;</span>
+
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;temp_voltage_name&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Name of the optode temperature-voltage variable in the dataset.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;calib_coefficients&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Polynomial calibration coefficients (at least two).&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
 
 <div class="viewcode-block" id="DeriveOptodeTemperature.run">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.DeriveOptodeTemperature.run">[docs]</a>
@@ -572,6 +608,19 @@
 
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Phase Pressure Correction&quot;</span>
 
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;optode_pressure_name&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Name of the pressure variable used for the correction.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;correction_coefficient&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Pressure correction coefficient.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
+
 <div class="viewcode-block" id="PhasePressureCorrection.run">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.PhasePressureCorrection.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -636,6 +685,19 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">DeriveCalibratedPhase</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
 
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Derive Calibrated Phase&quot;</span>
+
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;uncalibrated_phase_name&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Name of the uncalibrated-phase variable in the dataset.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;calib_coefficients&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Polynomial calibration coefficients (at least two).&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
 
 <div class="viewcode-block" id="DeriveCalibratedPhase.run">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.DeriveCalibratedPhase.run">[docs]</a>
@@ -703,6 +765,30 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">DeriveOxygenConcentration</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
 
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Derive Oxygen Concentration&quot;</span>
+
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;options&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;poly&quot;</span><span class="p">,</span> <span class="s2">&quot;SVU&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Conversion method: &#39;poly&#39; or &#39;SVU&#39;.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;temperature_name&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Name of the temperature variable in the dataset.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;calib_coefficient_matrix&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Calibration coefficient matrix ((5, 4) for poly, (2, 4) for SVU).&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;temperature_independent_coefficients&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;[F1, F2] coefficients required by the &#39;SVU&#39; method.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">func_poly</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># Check the calibration matrix has the right shape</span>
@@ -840,6 +926,24 @@
 
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Molar DOXY Salinity Correction&quot;</span>
 
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;salinity_name&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Name of the salinity variable in the dataset.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;temperature_name&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Name of the temperature variable in the dataset.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;reference_salinity&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Reference salinity the correction is computed relative to.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">oxy_solubility_salinity_correction</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># Get data</span>
         <span class="n">T</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">temperature_name</span><span class="p">]</span>
@@ -918,11 +1022,6 @@
                 <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] MOLAR_DOXY required but is missing from the data&quot;</span>
             <span class="p">)</span>
 
-        <span class="c1"># Update optional reference salinity</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;reference_salinity&quot;</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;No &#39;reference_salinity&#39; specified, defaulting to 0.&quot;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">reference_salinity</span> <span class="o">=</span> <span class="mi">0</span>
-
         <span class="c1"># Calculate factor with partial pressure of water vapour, following Weiss &amp; PRice (1980)</span>
         <span class="n">A</span> <span class="o">=</span> <span class="mf">1013.25</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">water_vapour_partial_pressure</span><span class="p">(</span>
             <span class="n">reference_salinity</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">reference_salinity</span>
@@ -967,6 +1066,29 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">MolarDOXYPressureCorrection</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
 
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Molar DOXY Pressure Correction&quot;</span>
+
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;pressure_name&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Name of the pressure variable in the dataset.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;temperature_name&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Name of the temperature variable in the dataset.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;molar_doxy_name&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Name of the molar oxygen variable to correct.&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;uncalibrated_phase_correction_applied&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Whether the uncalibrated-phase pressure correction was already applied (selects coefficients).&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
 
 <div class="viewcode-block" id="MolarDOXYPressureCorrection.run">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.MolarDOXYPressureCorrection.run">[docs]</a>

@@ -413,6 +413,8 @@
 <span class="sd">&quot;&quot;&quot;This module defines the base class for pipeline steps and configurations.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.config_mirror</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigMirrorMixin</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">parameter_spec</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.log_levels</span><span class="w"> </span><span class="kn">import</span> <span class="n">STOP</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
@@ -446,12 +448,41 @@
 <span class="sd">    Every concrete subclass (registered via @register_step) inherits this.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
+    <span class="c1">#: Declarative parameter schema. See :mod:`pelagos_py.utils.parameter_spec`.</span>
+    <span class="c1">#: ``None`` means &quot;not declared yet&quot; and validation is skipped (e.g. the</span>
+    <span class="c1">#: deferred oxygen steps). Any dict — including an empty ``{}`` for a step that</span>
+    <span class="c1">#: genuinely takes no parameters — opts in to strict validation.</span>
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1">#: Parameter keys consumed by framework mixins rather than the schema, and so</span>
+    <span class="c1">#: permitted in a step&#39;s config even when absent from ``parameter_schema``</span>
+    <span class="c1">#: (e.g. ``qc_handling_settings`` handled by :class:`QCHandlingMixin`).</span>
+    <span class="n">framework_parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;qc_handling_settings&quot;</span><span class="p">}</span>
+
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">diagnostics</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="c1"># === Core behaviour (same as before) ===</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="n">parameters</span> <span class="ow">or</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span> <span class="o">=</span> <span class="n">diagnostics</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span> <span class="o">=</span> <span class="n">context</span> <span class="ow">or</span> <span class="p">{}</span>
+
+        <span class="c1"># Resolve the declared parameter schema: fill in defaults for any omitted</span>
+        <span class="c1"># optional parameters and raise on missing required ones. This is the single</span>
+        <span class="c1"># source of parameter defaults — steps read e.g. ``self.velocity_threshold``</span>
+        <span class="c1"># directly, never ``getattr(self, ..., &lt;inline default&gt;)``.</span>
+        <span class="c1"># A step with a declared schema opts in to strict validation (defaults +</span>
+        <span class="c1"># required + reject-unknown). A step that has not declared one yet</span>
+        <span class="c1"># (``parameter_schema is None``, e.g. the deferred oxygen steps) skips</span>
+        <span class="c1"># validation, so its parameters pass through untouched until it is migrated.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter_schema</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">resolved</span> <span class="o">=</span> <span class="n">parameter_spec</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">parameter_schema</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span>
+                <span class="n">label</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="n">allowed_extra</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">framework_parameters</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">resolved</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
         <span class="c1"># Get child logger initialized in pipeline.py</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;pelagos_py.pipeline.step.</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -473,6 +504,19 @@
 
         <span class="c1"># Continue method resolution order</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="BaseStep.describe_parameters">
+<a class="viewcode-back" href="../../../api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep.describe_parameters">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">describe_parameters</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a JSON-serialisable description of this step&#39;s parameters.</span>
+
+<span class="sd">        Introspection surface for external tools (e.g. a dashboard) that need to</span>
+<span class="sd">        render a parameter form without instantiating the step. See</span>
+<span class="sd">        :func:`pelagos_py.utils.parameter_spec.describe`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">parameter_spec</span><span class="o">.</span><span class="n">describe</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">parameter_schema</span> <span class="ow">or</span> <span class="p">{})</span></div>
+
 
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -516,9 +560,16 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">check_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check for data in context for transformer steps.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="s2">&quot;data&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No data found in context. Please load data first.&quot;</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Data found in context.&quot;</span><span class="p">)</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="s2">&quot;[</span><span class="si">%s</span><span class="s2">] No data found in context. Please load data first.&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+                <span class="n">STOP</span><span class="p">,</span>
+                <span class="s2">&quot;Pipeline stopped at step &#39;</span><span class="si">%s</span><span class="s2">&#39;. &quot;</span>
+                <span class="s2">&quot;Add a data-loading step before it and re-run.&quot;</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
 
 
     <span class="c1"># ----------- Config Handling -----------</span>
