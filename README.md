@@ -24,7 +24,7 @@ Key characteristics:
 | Component                    | Description                                                                                             |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------- |
 | **Configuration-driven** | Users define the workflow in a YAML file describing each step, its parameters, and diagnostics options. |
-| **In-built Quality Control** | Pre-built quality control tests can be specified in the config by the user to flag bad data.            |
+| **Built-in Quality Control** | Pre-built quality control tests can be specified in the config by the user to flag bad data.            |
 | **Diagnostics** | Where possible, data can be visualized to see the effect of each component of the pipeline.             |
 
 ### Installation
