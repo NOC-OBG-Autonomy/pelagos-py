@@ -8,7 +8,7 @@ Every QC check is run through the ``Apply QC`` step, which transfers the individ
 QC checks come in two types:
 
 * **Static** checks always operate on the same variable(s) and produce the same QC outputs — e.g. :doc:`Impossible Date <api/pelagos_py/steps/quality_control/impossible_date_qc/index>` always checks ``TIME``.
-* **Dynamic** checks let the user choose which variables they apply to, so the QC output is not pre-determined — e.g. :doc:`Impossible Range <api/pelagos_py/steps/quality_control/impossible_range_qc/index>` and :doc:`Stuck Value <api/pelagos_py/steps/quality_control/stuck_value_qc/index>`.
+* **Dynamic** checks let the user choose which variables they apply to, so the QC output is not pre-determined — e.g. :doc:`Range <api/pelagos_py/steps/quality_control/range_qc/index>` and :doc:`Stuck Value <api/pelagos_py/steps/quality_control/stuck_value_qc/index>`.
 
 To add your own QC check, see :doc:`Extending pelagos_py <user_guide>`.
 
@@ -31,8 +31,8 @@ QC os defined inside the ``qc_settings`` block of the ``Apply QC`` step. You can
    - name: "Apply QC"
      parameters:
        qc_settings:
-         "impossible range qc":
-           variable_ranges: {"TEMP": {4: [-2, 35]}}
+         "range qc":
+           variable_ranges: {"TEMP": {4: [-2, 35, "outside"]}}
            also_flag: {"TEMP": ["CNDC"]}
 
 Available QC
@@ -53,8 +53,7 @@ Range and Value Checks
 
 These identify data points that fall outside expected physical or sensor limits.
 
-* :doc:`Gross Range <api/pelagos_py/steps/quality_control/gross_range_qc/index>`: Applies broad, non-configurable physical limits to catch extreme sensor failures.
-* :doc:`Impossible Range <api/pelagos_py/steps/quality_control/impossible_range_qc/index>`: Allows users to define specific, narrower thresholds for any variable.
+* :doc:`Range <api/pelagos_py/steps/quality_control/range_qc/index>`: Flags values by range, per variable. Each band carries an ``inside``/``outside`` keyword: ``[low, high, "outside"]`` is a band of good values (data outside it is flagged), while ``[low, high, "inside"]`` is an impossible band (data within it is flagged). A flag may list several bands. If the keyword is omitted the bound order is the fallback (ascending → outside, descending → inside). A single scalar flags exact matches (e.g. fill values).
 * :doc:`Stuck Value <api/pelagos_py/steps/quality_control/stuck_value_qc/index>`: Identifies sensor "freezing" by looking for sequences of identical values where variation is expected.
 * :doc:`Spike <api/pelagos_py/steps/quality_control/spike_qc/index>`: Detects sudden, unrealistic jumps in data values between adjacent measurements.
 * :doc:`PAR Irregularity <api/pelagos_py/steps/quality_control/par_irregularity_qc/index>`: A specialised check for Photosynthetically Active Radiation sensors to identify inconsistent light readings.

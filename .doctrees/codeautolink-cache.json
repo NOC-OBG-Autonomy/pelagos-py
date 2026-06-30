@@ -18,6 +18,7 @@
     }
   ],
   "api/pelagos_py/steps/index": [],
+  "api/pelagos_py/steps/input_output/correct_values/index": [],
   "api/pelagos_py/steps/input_output/export/index": [],
   "api/pelagos_py/steps/input_output/format_check/index": [],
   "api/pelagos_py/steps/input_output/gen_data/index": [],
@@ -268,28 +269,27 @@
   "api/pelagos_py/steps/processing/salinity/index": [],
   "api/pelagos_py/steps/quality_control/apply_qc/index": [],
   "api/pelagos_py/steps/quality_control/flag_full_profile/index": [],
-  "api/pelagos_py/steps/quality_control/gross_range_qc/index": [],
   "api/pelagos_py/steps/quality_control/impossible_date_qc/index": [],
   "api/pelagos_py/steps/quality_control/impossible_location_qc/index": [],
-  "api/pelagos_py/steps/quality_control/impossible_range_qc/index": [
-    {
-      "source": "- name: \"Apply QC\"\n  parameters:\n    qc_settings: {\n        \"impossible range qc\": {\n          \"variable_ranges\": {\"PRES\": {3: [-2, 0], 4: [-999, -2]}, \"LATITUDE\": {4: [-90, 90]}},\n          \"also_flag\": {\"PRES\": [\"CNDC\", \"TEMP\"], \"LATITUDE\": [\"LONGITUDE\"]},\n          \"plot\": [\"PRES\", \"LATITUDE\"]\n          \"test_depth_range\": [-100, 0]  # OPTIONAL\n        }\n    }\n  diagnostics: true",
-      "names": [],
-      "example": {
-        "document": "api/pelagos_py/steps/quality_control/impossible_range_qc/index",
-        "ref_id": "module-pelagos_py.steps.quality_control.impossible_range_qc",
-        "headings": [
-          "pelagos_py.steps.quality_control.impossible_range_qc",
-          "Example"
-        ]
-      },
-      "doc_lineno": 21
-    }
-  ],
   "api/pelagos_py/steps/quality_control/impossible_speed_qc/index": [],
   "api/pelagos_py/steps/quality_control/index": [],
   "api/pelagos_py/steps/quality_control/par_irregularity_qc/index": [],
   "api/pelagos_py/steps/quality_control/position_on_land_qc/index": [],
+  "api/pelagos_py/steps/quality_control/range_qc/index": [
+    {
+      "source": "- name: \"Apply QC\"\n  parameters:\n    qc_settings:\n      range qc:\n        variable_ranges:\n          PRES:\n            3: [-2.4, -5, inside]   # impossible band: flag data INSIDE it\n            4: [-5, -.inf, inside]\n            9: 0.0                  # single scalar -> flag the exact fill value 0.0\n          TEMP:\n            3: [0, 30, outside]     # good band: flag data OUTSIDE it\n            4: [-2.5, 40, outside]\n          CNDC:\n            # one flag, two bands: flag bad both inside [2, 3] and outside [0.1, 10]\n            4: [[2, 3, inside], [0.1, 10, outside]]\n        also_flag:\n          CNDC: [PRES, TEMP]    # CNDC's flags propagate onto PRES & TEMP (worst wins)\n        test_depth_range: [-100, 0]   # OPTIONAL: only check this DEPTH window\n  diagnostics: true             # plots every flagged variable, coloured by flag",
+      "names": [],
+      "example": {
+        "document": "api/pelagos_py/steps/quality_control/range_qc/index",
+        "ref_id": "module-pelagos_py.steps.quality_control.range_qc",
+        "headings": [
+          "pelagos_py.steps.quality_control.range_qc",
+          "Example"
+        ]
+      },
+      "doc_lineno": 49
+    }
+  ],
   "api/pelagos_py/steps/quality_control/spike_qc/index": [
     {
       "source": "- name: \"Apply QC\"\n  parameters:\n    qc_settings: {\n        \"spike test\": {\n          \"variables\": {\"PRES\": 2, \"LATITUDE\": 1},\n          \"also_flag\": {\"PRES\": [\"CNDC\", \"TEMP\"], \"LATITUDE\": [\"LONGITUDE\"]},\n          \"plot\": [\"PRES\", \"LATITUDE\"]\n          \"window_size\": 10,\n        }\n    }\n  diagnostics: true",

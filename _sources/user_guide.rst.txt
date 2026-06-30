@@ -270,7 +270,7 @@ covers only the implementation of static checks. Examples of dynamic checks can
 be found in
 :doc:`stuck_value_qc.py <api/pelagos_py/steps/quality_control/stuck_value_qc/index>`
 and
-:doc:`impossible_range_qc.py <api/pelagos_py/steps/quality_control/impossible_range_qc/index>`.
+:doc:`range_qc.py <api/pelagos_py/steps/quality_control/range_qc/index>`.
 A template for a static check is provided in
 :doc:`blank_qc.py <api/pelagos_py/steps/templates/blank_qc/index>`.
 

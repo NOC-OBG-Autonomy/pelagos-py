@@ -434,10 +434,19 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Set up logging for the entire pipeline.</span>
 
+<span class="sd">    Console logging is always enabled. A log file is only written when</span>
+<span class="sd">    ``log_file`` is set to a real name; if it is omitted, empty, or a</span>
+<span class="sd">    &quot;none&quot;/&quot;null&quot; value (including YAML&#39;s ``log_file: None``), no file is</span>
+<span class="sd">    written and a warning is logged.</span>
+
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
+<span class="sd">    out_dir : str, optional</span>
+<span class="sd">        Directory the log file is written into. Defaults to the current</span>
+<span class="sd">        directory.</span>
 <span class="sd">    log_file : str, optional</span>
-<span class="sd">        Path to the log file. If provided, logs will be written to this file.</span>
+<span class="sd">        Name of the log file. If omitted or set to a none-like value, no log</span>
+<span class="sd">        file is written (console logging still applies).</span>
 <span class="sd">    level : int, optional</span>
 <span class="sd">        Logging level (e.g., logging.INFO, logging.DEBUG).</span>
 
@@ -450,19 +459,35 @@
     <span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">propagate</span> <span class="o">=</span> <span class="kc">False</span>
 
-    <span class="k">if</span> <span class="n">logger</span><span class="o">.</span><span class="n">handlers</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">logger</span>  <span class="c1"># already configured</span>
+    <span class="c1"># Reconfigure from scratch each call so the latest pipeline&#39;s config is</span>
+    <span class="c1"># honoured. Without this, a console-only logger configured by an earlier</span>
+    <span class="c1"># Pipeline() in the same process would block a later Pipeline(config_path=...)</span>
+    <span class="c1"># from ever adding its requested file handler.</span>
+    <span class="k">for</span> <span class="n">handler</span> <span class="ow">in</span> <span class="n">logger</span><span class="o">.</span><span class="n">handlers</span><span class="p">[:]:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">removeHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
+        <span class="n">handler</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
     <span class="n">formatter</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span>
         <span class="s2">&quot;</span><span class="si">%(asctime)s</span><span class="s2"> - </span><span class="si">%(levelname)s</span><span class="s2"> - </span><span class="si">%(name)s</span><span class="s2"> - </span><span class="si">%(message)s</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 
-    <span class="c1"># Console handler</span>
+    <span class="c1"># Console handler. Always added so logs reach the console regardless of</span>
+    <span class="c1"># whether a log file is configured.</span>
     <span class="n">ch</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">()</span>
     <span class="n">ch</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
     <span class="n">ch</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">formatter</span><span class="p">)</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">ch</span><span class="p">)</span>
+
+    <span class="c1"># Treat unset / explicit &quot;none&quot;-like values as &quot;no log file&quot;. This catches</span>
+    <span class="c1"># YAML&#39;s `log_file: None`, which parses to the string &quot;None&quot; (truthy), as</span>
+    <span class="c1"># well as null/empty values.</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">log_file</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">log_file</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">{</span>
+        <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;none&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;null&quot;</span><span class="p">,</span>
+    <span class="p">}:</span>
+        <span class="n">log_file</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="c1"># File handler if specified</span>
     <span class="k">if</span> <span class="n">log_file</span><span class="p">:</span>
@@ -480,8 +505,12 @@
             <span class="s2">&quot;Logging to file: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">log_file</span>
         <span class="p">)</span>  <span class="c1">#   Should not be an empty file at the end of this</span>
     <span class="k">else</span><span class="p">:</span>
+        <span class="n">out_dir</span> <span class="o">=</span> <span class="n">out_dir</span> <span class="ow">or</span> <span class="s2">&quot;.&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">out_dir</span><span class="p">):</span>
             <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">out_dir</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s2">&quot;log_file not specified - logging to console only, no log file written.&quot;</span>
+        <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">logger</span>
 
@@ -504,14 +533,20 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Initialize pipeline with optional config file.</span>
+<span class="sd">        Initialize pipeline from a config file, an in-memory config dict, or</span>
+<span class="sd">        neither (build it up manually with add_step).</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        config_path : str, optional</span>
 <span class="sd">            Path to the YAML configuration file.</span>
+<span class="sd">        config : dict, optional</span>
+<span class="sd">            In-memory configuration dictionary (same structure as the YAML</span>
+<span class="sd">            file: a ``pipeline`` block and a ``steps`` list). Useful when the</span>
+<span class="sd">            config is generated or templated in Python. Mutually exclusive with</span>
+<span class="sd">            ``config_path``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">steps</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># hierarchical step configs</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># mirrors _parameters[&quot;pipeline&quot;]</span>
@@ -520,15 +555,32 @@
         <span class="c1"># initialise config mirror system</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_init_config_mirror</span><span class="p">()</span>
 
-        <span class="k">if</span> <span class="n">config_path</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">config_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Provide either config_path or config, not both.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">has_config</span> <span class="o">=</span> <span class="n">config_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">config_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">load_config_from_file</span><span class="p">(</span><span class="n">config_path</span><span class="p">,</span> <span class="n">mirror_keys</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;pipeline&quot;</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="n">config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">load_config</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">mirror_keys</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;pipeline&quot;</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="n">has_config</span><span class="p">:</span>
             <span class="c1"># set convenience alias for user-facing access</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pipeline&quot;</span><span class="p">,</span> <span class="p">{})</span>
+
+        <span class="c1"># Always set up logging so users never have to configure it manually,</span>
+        <span class="c1"># whether the pipeline is built from a config file or assembled in</span>
+        <span class="c1"># memory. Config (and therefore log_file/out_directory) is loaded above</span>
+        <span class="c1"># first, so it is honoured here.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">_setup_logging</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;out_directory&quot;</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;log_file&quot;</span><span class="p">),</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">has_config</span><span class="p">:</span>
             <span class="c1"># build steps from loaded config</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">_setup_logging</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;out_directory&quot;</span><span class="p">),</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;log_file&quot;</span><span class="p">),</span>
-            <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">build_steps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;steps&quot;</span><span class="p">,</span> <span class="p">[]))</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Pipeline initialised&quot;</span><span class="p">)</span>
 
