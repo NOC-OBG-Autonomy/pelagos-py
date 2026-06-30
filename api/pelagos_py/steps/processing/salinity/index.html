@@ -473,104 +473,117 @@
                   
   <section id="module-pelagos_py.steps.processing.salinity">
 <span id="pelagos-py-steps-processing-salinity"></span><h1>pelagos_py.steps.processing.salinity<a class="headerlink" href="#module-pelagos_py.steps.processing.salinity" title="Link to this heading">#</a></h1>
-<dl class="py function">
-<dt class="sig sig-object py" id="pelagos_py.steps.processing.salinity.running_average_nan">
-<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.processing.salinity.</span></span><span class="sig-name descname"><span class="pre">running_average_nan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">numpy.ndarray</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><span class="pre">numpy.ndarray</span></a></span></span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/salinity.html#running_average_nan"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.salinity.running_average_nan" title="Link to this definition">#</a></dt>
-<dd><p>Estimate running average mean</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pelagos_py.steps.processing.salinity.compute_optimal_lag">
-<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.processing.salinity.</span></span><span class="sig-name descname"><span class="pre">compute_optimal_lag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_window_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_col</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/salinity.html#compute_optimal_lag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.salinity.compute_optimal_lag" title="Link to this definition">#</a></dt>
-<dd><p>Calculate the optimal conductivity time lag relative to temperature to reduce salinity spikes for each glider profile.
-Mimimize the standard deviation of the difference between a lagged CNDC and a high-pass filtered CNDC.
-The optimal lag is returned. The lag is chosen from -2 to 2s every 0.1s.
-This correction should reduce salinity spikes that result from the misalignment between conductivity and temperature sensors and from the difference in sensor response times.
-This correction is described in Woo (2019) but the mimimization is done between salinity and high-pass filtered salinity (as done by RBR, <a class="reference external" href="https://bitbucket.org/rbr/pyrsktools/src/master/pyrsktools">https://bitbucket.org/rbr/pyrsktools/src/master/pyrsktools</a>) instead of comparing downcast vs upcast.</p>
-<p>Woo, L.M. (2019). Delayed Mode QA/QC Best Practice Manual Version 2.0. Integrated Marine Observing System. DOI: 10.26198/5c997b5fdc9bd (<a class="reference external" href="http://dx.doi.org/">http://dx.doi.org/</a> 10.26198/5c997b5fdc9bd).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>self.tsr</strong> (<em>xarray.Dataset with raw CTD dataset for one single profile</em><em>, </em><em>which should contain:</em>) – <ul>
-<li><p>TIME_CTD, sci_ctd41cp_timestamp, [numpy.datetime64]</p></li>
-<li><p>PRES: pressure [dbar]</p></li>
-<li><p>CNDC: conductivity [S/m]</p></li>
-<li><p>TEMP: in-situ temperature [de C]</p></li>
-</ul>
-</p></li>
-<li><p><strong>windowLength</strong> (<em>Window length over which the high-pass filter</em><em> of </em><em>conductivity is applied</em><em>, </em><em>21 by default.</em>)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>self.tsr</strong></p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>with lags.</p>
-</dd>
-</dl>
-</dd></dl>
-
 <dl class="py class">
 <dt class="sig sig-object py" id="pelagos_py.steps.processing.salinity.AdjustSalinity">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.processing.salinity.</span></span><span class="sig-name descname"><span class="pre">AdjustSalinity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/salinity.html#AdjustSalinity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.salinity.AdjustSalinity" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="../../base_step/index.html#pelagos_py.steps.base_step.BaseStep" title="pelagos_py.steps.base_step.BaseStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pelagos_py.steps.base_step.BaseStep</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">pelagos_py.utils.qc_handling.QCHandlingMixin</span></code></p>
-<p>Base class for pipeline steps with config-mirroring support.
-Every concrete subclass (registered via &#64;register_step) inherits this.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="pelagos_py.steps.processing.salinity.AdjustSalinity.run">
-<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/salinity.html#AdjustSalinity.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.salinity.AdjustSalinity.run" title="Link to this definition">#</a></dt>
-<dd><p>Apply the thermal-lag correction for Salinity presented in Morrison et al 1994.
-The temperature is estimated inside the conductivity cell to estimate Salinity.
-This is based on eq.5 of Morrison et al. (1994), which doesn’t require to know the sensitivity of temperature to conductivity (eq.2 of Morrison et al. 1994).
-No attempt is done yet to minimize the coefficients alpha/tau in T/S space, as in Morrison et al. (1994) or Garau et al. (2011).
-The fixed coefficients (alpha and tau) presented in Morrison et al. (1994) are used.
-These coefficients should be valid for pumped SeaBird CTsail as described in Woo (2019) by using their flow rate in the conductivity cell.
-This function should further be adapted to unpumped CTD by taking into account the glider velocity through the water based on the pitch angle or a hydrodynamic flight model.</p>
-<p>Woo, L.M. (2019). Delayed Mode QA/QC Best Practice Manual Version 2.0. Integrated Marine Observing System. DOI: 10.26198/5c997b5fdc9bd (<a class="reference external" href="http://dx.doi.org/10.26198/5c997b5fdc9bd">http://dx.doi.org/10.26198/5c997b5fdc9bd</a>).</p>
-</dd></dl>
-
+<p>Corrects conductivity- and temperature-related sensor errors so that salinity
+can be derived cleanly from a glider CTD.</p>
+<p>Two corrections are applied in sequence to the dataset:</p>
+<ul class="simple">
+<li><p><strong>Conductivity-temperature lag (C-T lag).</strong> Conductivity and temperature are
+measured by separate sensors with different response times, so the two records
+are slightly misaligned and produce salinity spikes at sharp gradients.
+<a class="reference internal" href="#pelagos_py.steps.processing.salinity.AdjustSalinity.correct_ct_lag" title="pelagos_py.steps.processing.salinity.AdjustSalinity.correct_ct_lag"><code class="xref py py-meth docutils literal notranslate"><span class="pre">correct_ct_lag()</span></code></a> estimates the optimal time shift between <code class="docutils literal notranslate"><span class="pre">CNDC</span></code> and
+<code class="docutils literal notranslate"><span class="pre">TEMP</span></code> from a sample of profiles and applies the median shift to the whole
+dataset, following Woo (2019) <a class="reference internal" href="#r9a407ee3a2de-3" id="id1">[3]</a>.</p></li>
+<li><p><strong>Thermal-mass (thermal lag) error.</strong> The conductivity cell stores and releases
+heat, so the temperature of the water inside it lags the ambient temperature.
+<a class="reference internal" href="#pelagos_py.steps.processing.salinity.AdjustSalinity.correct_thermal_lag" title="pelagos_py.steps.processing.salinity.AdjustSalinity.correct_thermal_lag"><code class="xref py py-meth docutils literal notranslate"><span class="pre">correct_thermal_lag()</span></code></a> reconstructs the in-cell temperature with the
+recursive filter and fixed coefficients of Morison et al. (1994) <a class="reference internal" href="#r9a407ee3a2de-1" id="id2">[1]</a>.</p></li>
+</ul>
+<p>The thermal-mass coefficients (<code class="docutils literal notranslate"><span class="pre">alpha</span></code>/<code class="docutils literal notranslate"><span class="pre">tau</span></code>) are taken directly from
+Morison et al. (1994) and are not re-optimised in T/S space, as done by
+Morison et al. (1994) or Garau et al. (2011) <a class="reference internal" href="#r9a407ee3a2de-2" id="id3">[2]</a>. They are appropriate for a
+pumped Sea-Bird CT sail at the conductivity-cell flow rate reported by
+Woo (2019); unpumped CTDs would require the flow rate to be derived from the
+glider’s velocity through the water (e.g. from pitch or a flight model).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filter_window_size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><em>optional</em>) – Length, in samples, of the running-average filter used when searching for
+the optimal C-T lag. Must be odd. Default <code class="docutils literal notranslate"><span class="pre">21</span></code>.</p>
+</dd>
+</dl>
+<div class="admonition-examples admonition">
+<p class="admonition-title">Examples</p>
+<p>Example usage in a pipeline configuration:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ADJ:</span><span class="nv"> </span><span class="s">Salinity&quot;</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">filter_window_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">21</span>
+<span class="w">    </span><span class="nt">diagnostics</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</pre></div>
+</div>
+</div>
+<p class="rubric">References</p>
+<div role="list" class="citation-list">
+<div class="citation" id="r9a407ee3a2de-1" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">1</a><span class="fn-bracket">]</span></span>
+<p>Morison, J., Andersen, R., Larson, N., D’Asaro, E., &amp; Boyd, T. (1994).
+The correction for thermal-lag effects in Sea-Bird CTD data. <em>Journal of
+Atmospheric and Oceanic Technology</em>, 11(4), 1151-1164.</p>
+</div>
+<div class="citation" id="r9a407ee3a2de-2" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id3">2</a><span class="fn-bracket">]</span></span>
+<p>Garau, B., Ruiz, S., Zhang, W. G., Pascual, A., Heslop, E., Kerfoot, J.,
+&amp; Tintoré, J. (2011). Thermal lag correction on Slocum CTD glider data.
+<em>Journal of Atmospheric and Oceanic Technology</em>, 28(9), 1065-1071.</p>
+</div>
+<div class="citation" id="r9a407ee3a2de-3" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">3</a><span class="fn-bracket">]</span></span>
+<p>Woo, L. M. (2019). Delayed Mode QA/QC Best Practice Manual Version 2.0.
+Integrated Marine Observing System. DOI: 10.26198/5c997b5fdc9bd
+(<a class="reference external" href="http://dx.doi.org/10.26198/5c997b5fdc9bd">http://dx.doi.org/10.26198/5c997b5fdc9bd</a>).</p>
+</div>
+</div>
 <dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.processing.salinity.AdjustSalinity.correct_ct_lag">
 <span class="sig-name descname"><span class="pre">correct_ct_lag</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/salinity.html#AdjustSalinity.correct_ct_lag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.salinity.AdjustSalinity.correct_ct_lag" title="Link to this definition">#</a></dt>
-<dd><p>For the full deployment, calculate the optimal conductivity time lag relative to temperature to reduce salinity spikes for each glider profile.
-If more than 300 profiles are present, the optimal lag is estimated every 10 profiles.
-Display the optimal conductivity time lag calculated for each profile, estimate the median of this lag, and apply this median lag to corrected variables (CNDC_ADJ/PSAL_ADJ).
-This correction should reduce salinity spikes that result from the misalignment between conductivity and temperature sensors and from the difference in sensor response times.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>self.tsr</strong> (<em>xarray.Dataset with raw CTD dataset</em><em>, </em><em>which should contain:</em>) – <ul>
-<li><p>PROFILE_NUMBER</p></li>
-<li><p>TIME_CTD, sci_ctd41cp_timestamp, [numpy.datetime64]</p></li>
-<li><p>PRES: pressure [dbar]</p></li>
-<li><p>CNDC: conductivity [mS/cm]</p></li>
-<li><p>TEMP: in-situ temperature [de C]</p></li>
-</ul>
-</p></li>
-<li><p><strong>windowLength</strong> (<em>Window length over which the high-pass filter</em><em> of </em><em>conductivity is applied</em><em>, </em><em>21 by default.</em>)</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>self.tsr</strong></p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>with tau and prof_i.</p>
-</dd>
-</dl>
+<dd><p>Align conductivity to temperature to suppress salinity spikes.</p>
+<p>Conductivity and temperature are measured by separate sensors whose physical
+offset and differing response times leave the two records slightly out of
+phase, producing salinity spikes at sharp gradients.</p>
+<p>For a random sample of up to 100 qualifying profiles, the optimal time shift
+of <code class="docutils literal notranslate"><span class="pre">CNDC</span></code> relative to <code class="docutils literal notranslate"><span class="pre">TEMP</span></code> is found by minimising the standard deviation
+of (salinity - running-average salinity) — the approach used by RBR’s
+pyRSKtools — rather than comparing downcast against upcast as originally
+described by Woo (2019). The median of the per-profile lags is then applied
+to <code class="docutils literal notranslate"><span class="pre">CNDC</span></code> across the whole dataset.</p>
+<p>Trial lags run from -2 s to +2 s in 0.1 s steps. Only profiles longer than
+one hour with more than <code class="docutils literal notranslate"><span class="pre">3</span> <span class="pre">*</span> <span class="pre">filter_window_size</span></code> samples contribute to the
+median.</p>
+<div class="admonition-notes admonition">
+<p class="admonition-title">Notes</p>
+<p>Operates in place on <code class="docutils literal notranslate"><span class="pre">self.data</span></code>. <code class="docutils literal notranslate"><span class="pre">self.ct_lag_median</span></code> is stored for the
+diagnostics dashboard.</p>
+</div>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="pelagos_py.steps.processing.salinity.AdjustSalinity.display_adj_profiles">
-<span class="sig-name descname"><span class="pre">display_adj_profiles</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/salinity.html#AdjustSalinity.display_adj_profiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.salinity.AdjustSalinity.display_adj_profiles" title="Link to this definition">#</a></dt>
-<dd><dl class="simple">
-<dt>Display profiles for ~20 mid profiles of:</dt><dd><ol class="arabic simple">
-<li><p>PSAL: raw salinity</p></li>
-<li><p>PSAL_ADJ: salinity corrected from CTlag</p></li>
-<li><p>PSAL_ADJ: salinity with the thermal lag correction</p></li>
-<li><p>difference between raw and ADJ (CTlag + thermal lag correction) salinity and temperature</p></li>
-</ol>
-</dd>
-</dl>
+<dt class="sig sig-object py" id="pelagos_py.steps.processing.salinity.AdjustSalinity.correct_thermal_lag">
+<span class="sig-name descname"><span class="pre">correct_thermal_lag</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/salinity.html#AdjustSalinity.correct_thermal_lag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.salinity.AdjustSalinity.correct_thermal_lag" title="Link to this definition">#</a></dt>
+<dd><p>Correct the thermal-mass error in temperature.</p>
+<p>The conductivity cell stores and releases heat, so the temperature of the
+water inside it lags the ambient temperature and biases the derived salinity.
+This reconstructs the in-cell temperature for each profile using the recursive
+filter of Morison et al. (1994) (their eq. 5), which does not require the
+sensitivity of temperature to conductivity (their eq. 2).</p>
+<p>The amplitude (<code class="docutils literal notranslate"><span class="pre">alpha</span></code>) and time-constant (<code class="docutils literal notranslate"><span class="pre">tau</span></code>) coefficients are the
+fixed values of Morison et al. (1994), scaled by the conductivity-cell flow
+rate reported by Woo (2019); they are not re-optimised in T/S space (cf.
+Garau et al., 2011). Temperature is resampled to 1 Hz for the filter and
+interpolated back onto the original sampling.</p>
+<div class="admonition-notes admonition">
+<p class="admonition-title">Notes</p>
+<p>Operates in place on <code class="docutils literal notranslate"><span class="pre">self.data</span></code>.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pelagos_py.steps.processing.salinity.AdjustSalinity.generate_diagnostics">
+<span class="sig-name descname"><span class="pre">generate_diagnostics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/salinity.html#AdjustSalinity.generate_diagnostics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.salinity.AdjustSalinity.generate_diagnostics" title="Link to this definition">#</a></dt>
+<dd><p>Displays a comprehensive diagnostics dashboard detailing applied adjustments
+to conductivity and temperature, along with overall impacts on the dataset.</p>
 </dd></dl>
 
 </dd></dl>
@@ -600,12 +613,10 @@ This correction should reduce salinity spikes that result from the misalignment 
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.salinity.running_average_nan"><code class="docutils literal notranslate"><span class="pre">running_average_nan()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.salinity.compute_optimal_lag"><code class="docutils literal notranslate"><span class="pre">compute_optimal_lag()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.salinity.AdjustSalinity"><code class="docutils literal notranslate"><span class="pre">AdjustSalinity</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.salinity.AdjustSalinity.run"><code class="docutils literal notranslate"><span class="pre">AdjustSalinity.run()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.salinity.AdjustSalinity.correct_ct_lag"><code class="docutils literal notranslate"><span class="pre">AdjustSalinity.correct_ct_lag()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.salinity.AdjustSalinity.display_adj_profiles"><code class="docutils literal notranslate"><span class="pre">AdjustSalinity.display_adj_profiles()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.salinity.AdjustSalinity.correct_thermal_lag"><code class="docutils literal notranslate"><span class="pre">AdjustSalinity.correct_thermal_lag()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.salinity.AdjustSalinity.generate_diagnostics"><code class="docutils literal notranslate"><span class="pre">AdjustSalinity.generate_diagnostics()</span></code></a></li>
 </ul>
 </li>
 </ul>
