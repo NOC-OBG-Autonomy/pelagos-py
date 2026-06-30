@@ -25,20 +25,6 @@ html[data-theme="dark"] {
   --pst-color-link-hover: #9ec5e8;
 }
 
-/* === Navbar logo text === */
-p.logo__title {
-  color: var(--pelagos-dark-blue) !important;
-  font-weight: 700 !important;
-  font-size: 1.3rem !important;
-  letter-spacing: -0.06em;
-  text-transform: lowercase;
-  font-stretch: condensed;
-}
-
-html[data-theme="dark"] p.logo__title {
-  color: rgb(106, 166, 244) !important;
-}
-
 /* === Cards (shared) === */
 .sd-card {
   border: 1px solid #dde !important;

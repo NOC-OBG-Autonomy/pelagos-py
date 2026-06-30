@@ -20,19 +20,19 @@
     </style>
 </noscript>
 <!-- Loaded before other Sphinx assets -->
-<link href="_static/styles/theme.css?digest=0790524f97105ba85085" rel="stylesheet"/>
-<link href="_static/styles/pydata-sphinx-theme.css?digest=0790524f97105ba85085" rel="stylesheet"/>
+<link href="_static/styles/theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet"/>
+<link href="_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet"/>
 <link href="_static/pygments.css?v=d75fae25" rel="stylesheet" type="text/css"/>
 <link href="_static/copybutton.css?v=76b2166b" rel="stylesheet" type="text/css"/>
 <link href="_static/graphviz.css?v=4ae1632d" rel="stylesheet" type="text/css"/>
 <link href="_static/sphinx-codeautolink.css?v=b2176991" rel="stylesheet" type="text/css"/>
 <link href="_static/sphinx-design.min.css?v=95c83b7e" rel="stylesheet" type="text/css"/>
-<link href="_static/custom.css?v=31c74f31" rel="stylesheet" type="text/css"/>
+<link href="_static/custom.css?v=1376b26a" rel="stylesheet" type="text/css"/>
 <!-- So that users can add custom icons -->
-<script defer="" src="_static/scripts/fontawesome.js?digest=0790524f97105ba85085"></script>
+<script defer="" src="_static/scripts/fontawesome.js?digest=a95f357e85573c9b56d5"></script>
 <!-- Pre-loaded scripts that we'll load fully later -->
-<link as="script" href="_static/scripts/bootstrap.js?digest=0790524f97105ba85085" rel="preload"/>
-<link as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085" rel="preload"/>
+<link as="script" href="_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5" rel="preload"/>
+<link as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5" rel="preload"/>
 <script src="_static/documentation_options.js?v=0b8c961e"></script>
 <script src="_static/doctools.js?v=9bcbadda"></script>
 <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
@@ -43,7 +43,7 @@
 <script>DOCUMENTATION_OPTIONS.pagename = 'development';</script>
 <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
 <link href="https://noc-obg-autonomy.github.io/pelagos-py/development.html" rel="canonical"/>
-<link href="_static/favicon.svg" rel="icon"/>
+<link href="_static/NOC_logo.svg" rel="icon"/>
 <link href="genindex.html" rel="index" title="Index"/>
 <link href="search.html" rel="search" title="Search"/>
 <link href="api/pelagos_py/utils/qc_handling/index.html" rel="prev" title="pelagos_py.utils.qc_handling"/>
@@ -77,9 +77,8 @@
 <div class="col-lg-3 navbar-header-items__start">
 <div class="navbar-item">
 <a class="navbar-brand logo" href="index.html">
-<img alt="" class="logo__image only-light" src="_static/pelagos_logo.png"/>
-<img alt="" class="logo__image only-dark pst-js-only" src="_static/pelagos_logo.png"/>
-<p class="title logo__title">Pelagos-Py</p>
+<img alt="Pelagos-Py - Home" class="logo__image only-light" src="_static/pelagos-py-text-logo.png"/>
+<img alt="Pelagos-Py - Home" class="logo__image only-dark pst-js-only" src="_static/pelagos-py-text-logo.png"/>
 </a></div>
 </div>
 <div class="col-lg-9 navbar-header-items">
@@ -234,8 +233,19 @@
 <article class="bd-article">
 <section id="development">
 <h1>Development<a class="headerlink" href="#development" title="Link to this heading">#</a></h1>
-<p>We welcome contributions to pelagos_py. To maintain code quality and stability, we use a specific workflow involving pull requests to <code class="docutils literal notranslate"><span class="pre">main</span></code>.</p>
+<p>We welcome contributions to pelagos_py. All types of contributions are encouraged and valued. To maintain code quality and stability, we use a specific workflow involving pull requests to <code class="docutils literal notranslate"><span class="pre">main</span></code>.</p>
 <p>If you have a bug report, feature request, or question, please open an issue on the <a class="reference external" href="https://github.com/NOC-OBG-Autonomy/pelagos-py/issues">GitHub issues page</a> — this is also a great way to contribute.</p>
+<section id="i-have-a-question">
+<h2>I Have a Question<a class="headerlink" href="#i-have-a-question" title="Link to this heading">#</a></h2>
+<p>Before you ask a question, it is best to search the existing <a class="reference external" href="https://github.com/NOC-OBG-Autonomy/pelagos-py/issues">Issues</a> that might help you. In case you have found a suitable issue and still need clarification, you can write your question in that issue. It is also advisable to search the internet for answers first.</p>
+<p>If you then still feel the need to ask a question, we recommend the following:</p>
+<ol class="arabic simple">
+<li><p>Open an <a class="reference external" href="https://github.com/NOC-OBG-Autonomy/pelagos-py/issues/new">Issue</a>.</p></li>
+<li><p>Provide as much context as you can about what you’re running into.</p></li>
+<li><p>Provide the project, Python version and details of your Python environment (pip/conda and versions of dependencies).</p></li>
+</ol>
+<p>We will then take care of the issue as soon as possible.</p>
+</section>
 <section id="development-workflow">
 <h2>Development Workflow<a class="headerlink" href="#development-workflow" title="Link to this heading">#</a></h2>
 <p>All new features and bug fixes should be submitted to the <code class="docutils literal notranslate"><span class="pre">main</span></code> branch.</p>
@@ -245,6 +255,43 @@
 <li><p><strong>Create a branch</strong>: Work on a new branch specifically for your changes.</p></li>
 <li><p><strong>Submit a Pull Request</strong>: Direct your Pull Request (PR) from your fork to the <code class="docutils literal notranslate"><span class="pre">main</span></code> branch of the original repository.</p></li>
 </ol>
+<p>See <a class="reference internal" href="#common-commands">Common Commands</a> below for the exact git commands.</p>
+</section>
+<section id="reporting-bugs">
+<h2>Reporting Bugs<a class="headerlink" href="#reporting-bugs" title="Link to this heading">#</a></h2>
+<p><strong>Before submitting a bug report</strong></p>
+<p>A good bug report shouldn’t leave others needing to chase you up for more information. Therefore, we ask you to investigate carefully, collect information and describe the issue in detail in your report. Please complete the following steps in advance to help us fix any potential bug as fast as possible.</p>
+<ul class="simple">
+<li><p>Make sure that you are using the latest version.</p></li>
+<li><p>Determine if your bug is really a bug and not an error on your side, e.g. using incompatible environment components/versions.</p></li>
+<li><p>Check the <a class="reference external" href="https://github.com/NOC-OBG-Autonomy/pelagos-py/issues?q=label%3Abug">bug tracker</a> to see if other users have already experienced (and potentially solved) the same issue.</p></li>
+<li><p>Collect information about the bug:</p>
+<ul>
+<li><p>Stack trace (Traceback).</p></li>
+<li><p>OS, platform and version (Windows, Linux, macOS, x86, ARM).</p></li>
+<li><p>Version of Python and package manager (conda/pip etc), depending on what seems relevant.</p></li>
+<li><p>Possibly your input, the output and any error messages you are seeing.</p></li>
+<li><p>Can you reliably reproduce the issue?</p></li>
+</ul>
+</li>
+</ul>
+<p><strong>How do I submit a good bug report?</strong></p>
+<p>We use GitHub issues to track bugs and errors. If you run into an issue with the project:</p>
+<ul class="simple">
+<li><p>Open an <a class="reference external" href="https://github.com/NOC-OBG-Autonomy/pelagos-py/issues/new">Issue</a>. (Since we can’t be sure at this point whether it is a bug or not, we ask you not to talk about a bug yet and not to label the issue.)</p></li>
+<li><p>Explain the behavior you would expect and the actual behavior.</p></li>
+<li><p>Please provide as much context as possible and describe the <em>reproduction steps</em> that someone else can follow to recreate the issue on their own. This usually includes your code. For good bug reports you should isolate the problem and create a reduced test case.</p></li>
+<li><p>Provide the information you collected in the previous section.</p></li>
+</ul>
+<p>Once it’s filed:</p>
+<ul class="simple">
+<li><p>The project team will label the issue accordingly.</p></li>
+<li><p>A team member will try to reproduce the issue with your provided steps. If there are no reproduction steps or no obvious way to reproduce the issue, the team will ask you for those steps. Bugs will not be addressed until they are reproducible.</p></li>
+</ul>
+</section>
+<section id="pypi">
+<h2>PyPI<a class="headerlink" href="#pypi" title="Link to this heading">#</a></h2>
+<p>The workflow automatically updates the version number upon a successful PR to the <code class="docutils literal notranslate"><span class="pre">main</span></code> branch. Any manually created release will then automatically be published to PyPI.</p>
 </section>
 <section id="code-quality-and-testing">
 <h2>Code Quality and Testing<a class="headerlink" href="#code-quality-and-testing" title="Link to this heading">#</a></h2>
@@ -375,6 +422,11 @@ git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </
 </pre></div>
 </div>
 </section>
+<section id="legal-notice-attribution">
+<h2>Legal Notice &amp; Attribution<a class="headerlink" href="#legal-notice-attribution" title="Link to this heading">#</a></h2>
+<p>When contributing to this project, you must agree that you have authored 100% of the content, that you have the necessary rights to the content and that the content you contribute will be provided under the project’s Apache-2.0 license.</p>
+<p>This guide is based on <a class="reference external" href="https://contributing.md/generator">contributing.md</a>.</p>
+</section>
 </section>
 </article>
 </div>
@@ -386,11 +438,15 @@ git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </
   </div>
 <nav aria-labelledby="pst-page-navigation-heading-2" class="page-toc" id="pst-page-toc-nav">
 <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#i-have-a-question">I Have a Question</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#development-workflow">Development Workflow</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#reporting-bugs">Reporting Bugs</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pypi">PyPI</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#code-quality-and-testing">Code Quality and Testing</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#testing">Testing</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#documentation">Documentation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#common-commands">Common Commands</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#legal-notice-attribution">Legal Notice &amp; Attribution</a></li>
 </ul>
 </nav></div>
 </div></div>
@@ -401,8 +457,8 @@ git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </
 </div>
 </div>
 <!-- Scripts loaded after <body> so the DOM is not blocked -->
-<script defer="" src="_static/scripts/bootstrap.js?digest=0790524f97105ba85085"></script>
-<script defer="" src="_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085"></script>
+<script defer="" src="_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5"></script>
+<script defer="" src="_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5"></script>
 <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
 <div class="footer-items__start">
@@ -424,7 +480,7 @@ git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </
 <div class="footer-item">
 <p class="theme-version">
 <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.18.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.19.0.
 </p></div>
 </div>
 </div>
