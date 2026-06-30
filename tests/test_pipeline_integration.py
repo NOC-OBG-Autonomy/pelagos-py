@@ -14,7 +14,6 @@ steps:
       sampling_info: ["2025-01-01", "2025-01-02", 20]
       additional_variables: []
       value_limits: {}
-      diagnostics: false
       gen_fixed_data: false
     diagnostics: false
 

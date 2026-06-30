@@ -277,7 +277,18 @@ class par_irregularity_qc(BaseQC):
     """
 
     qc_name = "PAR irregularity qc"
-    expected_parameters = {"noise_equivalent_estimate": 3e-2, "plot_profiles": []}
+    parameter_schema = {
+        "noise_equivalent_estimate": {
+            "type": float,
+            "default": 3e-2,
+            "description": "Sensor noise-equivalent estimate used when flagging PAR irregularities.",
+        },
+        "plot_profiles": {
+            "type": list,
+            "default": [],
+            "description": "Profile numbers to plot in diagnostics.",
+        },
+    }
     required_variables = [
         "LATITUDE",
         "LONGITUDE",

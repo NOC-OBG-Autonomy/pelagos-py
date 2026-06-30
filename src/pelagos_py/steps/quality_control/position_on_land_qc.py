@@ -39,7 +39,7 @@ class position_on_land_qc(BaseQC):
     """
 
     qc_name = "position on land qc"
-    expected_parameters = {}
+    parameter_schema = {}
     required_variables = ["LATITUDE", "LONGITUDE"]
     qc_outputs = ["LATITUDE_QC", "LONGITUDE_QC"]
 

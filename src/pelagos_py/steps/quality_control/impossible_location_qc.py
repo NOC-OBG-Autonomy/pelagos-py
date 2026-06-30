@@ -36,7 +36,7 @@ class impossible_location_qc(BaseQC):
     """
 
     qc_name = "impossible location qc"
-    expected_parameters = {}
+    parameter_schema = {}
     required_variables = ["LATITUDE", "LONGITUDE"]
     qc_outputs = ["LATITUDE_QC", "LONGITUDE_QC"]
 

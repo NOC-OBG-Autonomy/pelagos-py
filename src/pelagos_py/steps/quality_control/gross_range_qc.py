@@ -56,24 +56,29 @@ class gross_range_qc(BaseQC):
     qc_name = "gross range qc"
     dynamic = True
 
+    parameter_schema = {
+        "variable_ranges": {
+            "type": dict,
+            "required": True,
+            "description": "Per-variable {flag: [low, high]} ranges; data outside the range is flagged.",
+        },
+        "also_flag": {
+            "type": dict,
+            "default": None,
+            "description": "Propagate a variable's flags onto other variables, e.g. {'TEMP': ['DOXY']}.",
+        },
+        "plot": {
+            "type": list,
+            "default": [],
+            "description": "Variables to plot in diagnostics.",
+        },
+    }
+
     def __init__(self, data, **kwargs):
-        required_kwargs = {
-            "variable_ranges"
-        }  #   Removed also_flag, in case test is intended to be run independently
-        if not required_kwargs.issubset(kwargs):
-            raise KeyError(
-                f"{required_kwargs - set(kwargs)} missing from gross range test"
-            )
-        self.variable_ranges = kwargs["variable_ranges"]
-        #   Allow the also_flag param to be blank for this test
-        if "also_flag" in kwargs.keys():
-            if kwargs["also_flag"] is None:
-                self.also_flag = dict()
-            else:
-                self.also_flag = kwargs["also_flag"]
-        else:
+        super().__init__(data, **kwargs)
+        # also_flag may be omitted or explicitly null for this test.
+        if self.also_flag is None:
             self.also_flag = dict()
-        self.plot = kwargs.get("plot", [])  # Make plotting optional
 
         self.required_variables = list(self.variable_ranges.keys())
         self.tested_variables = self.required_variables.copy()
@@ -82,9 +87,6 @@ class gross_range_qc(BaseQC):
             set(f"{v}_QC" for v in self.tested_variables)
             | set(f"{v}_QC" for v in sum(self.also_flag.values(), []))
         )
-
-        if data is not None:
-            self.data = data.copy(deep=True)
 
     def return_qc(self):
         """Select data outside of the ranges and flag accordingly."""

@@ -34,7 +34,7 @@ class blank_qc(BaseQC):
     """
 
     qc_name = ""
-    expected_parameters = {}
+    parameter_schema = {}
     required_variables = []
     provided_variables = []
     qc_outputs = []

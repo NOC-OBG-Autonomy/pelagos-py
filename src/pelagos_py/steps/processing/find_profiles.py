@@ -568,22 +568,24 @@ class FindProfilesStep(BaseStep, QCHandlingMixin):
         self.check_data()
         self.filter_qc()
 
-        depth_col = getattr(self, "depth_column", "PRES")
+        # Parameters are resolved from parameter_schema in BaseStep.__init__,
+        # so every declared attribute is guaranteed to be set.
+        depth_col = self.depth_column
         if depth_col not in self.data.variables:
             raise ValueError(f"Specified depth column '{depth_col}' not found in the dataset.")
 
-        time_window_seconds = getattr(self, "time_window_seconds", 30)
-        is_propelled = getattr(self, "is_propelled", "auto")
-        velocity_threshold = getattr(self, "velocity_threshold", 0.033)
-        acceleration_threshold = getattr(self, "acceleration_threshold", 0.0005)
-        transition_buffer_seconds = getattr(self, "transition_buffer_seconds", 30)
-        min_duration_minutes = getattr(self, "min_duration_minutes", 5)
-        peak_prominence = getattr(self, "peak_prominence", 20.0)
-        min_samples_between_peaks = getattr(self, "min_samples_between_peaks", 20)
-        gap_threshold_minutes = getattr(self, "gap_threshold_minutes", 5)
-        surface_depth = getattr(self, "surface_depth", 20.0)
-        surfacing_threshold = getattr(self, "surfacing_threshold", 5.0)
-        parking_gradient_threshold = getattr(self, "parking_gradient_threshold", 0.005)
+        time_window_seconds = self.time_window_seconds
+        is_propelled = self.is_propelled
+        velocity_threshold = self.velocity_threshold
+        acceleration_threshold = self.acceleration_threshold
+        transition_buffer_seconds = self.transition_buffer_seconds
+        min_duration_minutes = self.min_duration_minutes
+        peak_prominence = self.peak_prominence
+        min_samples_between_peaks = self.min_samples_between_peaks
+        gap_threshold_minutes = self.gap_threshold_minutes
+        surface_depth = self.surface_depth
+        surfacing_threshold = self.surfacing_threshold
+        parking_gradient_threshold = self.parking_gradient_threshold
 
         if is_propelled == "auto":
             attr_id = str(self.data.attrs.get("id", ""))

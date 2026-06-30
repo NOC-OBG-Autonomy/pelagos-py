@@ -59,6 +59,24 @@ class chla_deep_correction(BaseStep, QCHandlingMixin):
     required_variables = ["TIME", "PROFILE_NUMBER", "DEPTH"]
     provided_variables = []
 
+    parameter_schema = {
+        "apply_to": {
+            "type": str,
+            "default": "CHLA",
+            "description": "Name of the variable to apply the correction to.",
+        },
+        "dark_value": {
+            "type": float,
+            "default": None,
+            "description": "Dark value to subtract; if null it is computed from the data.",
+        },
+        "depth_threshold": {
+            "type": float,
+            "default": -550,
+            "description": "Only data below this depth is used to compute the dark value.",
+        },
+    }
+
     def run(self):
         """
         Example
@@ -242,6 +260,34 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
     step_name = "Chla Quenching Correction"
     required_variables = ["PROFILE_NUMBER", "TIME", "DEPTH", "LATITUDE", "LONGITUDE"]
     provided_variables = []
+
+    parameter_schema = {
+        "method": {
+            "type": str,
+            "default": "Argo",
+            "options": ["Argo"],
+            "description": "Quenching correction method (currently only 'Argo', Xing et al. 2012).",
+        },
+        "apply_to": {
+            "type": str,
+            "default": "CHLA",
+            "description": "Name of the variable to apply the correction to.",
+        },
+        "mld_settings": {
+            "type": dict,
+            "default": {
+                "threshold_on": "TEMP",
+                "reference_depth": -10,
+                "threshold": 0.2,
+            },
+            "description": "Mixed-layer-depth thresholding settings (threshold_on/reference_depth/threshold).",
+        },
+        "plot_profiles": {
+            "type": list,
+            "default": [],
+            "description": "Profile numbers to plot in diagnostics.",
+        },
+    }
 
     def run(self):
         """

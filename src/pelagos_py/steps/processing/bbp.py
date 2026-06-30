@@ -37,6 +37,29 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
     required_variables = ["TIME", "DEPTH", "TEMP", "PRAC_SALINITY"]
     provided_variables = []
 
+    parameter_schema = {
+        "apply_to": {
+            "type": str,
+            "default": "BBP700",
+            "description": "Name of the variable to convert.",
+        },
+        "output_as": {
+            "type": str,
+            "default": "BBP700",
+            "description": "Name for the output variable added to the dataset.",
+        },
+        "theta": {
+            "type": float,
+            "default": 124,
+            "description": "Effective optical backscatter scattering angle (degrees).",
+        },
+        "xfactor": {
+            "type": float,
+            "default": 1.076,
+            "description": "Chi factor scaling particulate scattering to total backscatter.",
+        },
+    }
+
     def run(self):
         """
         Example
@@ -126,6 +149,24 @@ class IsolateBBPSpikes(BaseStep, QCHandlingMixin):
     step_name = "Isolate BBP Spikes"
     required_variables = ["TIME"]
     provided_variables = []
+
+    parameter_schema = {
+        "apply_to": {
+            "type": str,
+            "default": "BBP700",
+            "description": "Name of the variable to filter.",
+        },
+        "window_size": {
+            "type": int,
+            "default": 50,
+            "description": "Median/minmax filter window size in samples.",
+        },
+        "method": {
+            "type": str,
+            "default": "median",
+            "description": "Filter method used to determine the baseline.",
+        },
+    }
 
     def run(self):
         """

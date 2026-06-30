@@ -59,6 +59,29 @@ class GenerateData(BaseStep):
     required_variables = []
     provided_variables = ["TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC"]
 
+    parameter_schema = {
+        "sampling_info": {
+            "type": list,
+            "default": ["2025-01-01", "2025-01-02", 20],
+            "description": "[start_date (y-m-d), end_date (y-m-d), sample_period (s)].",
+        },
+        "additional_variables": {
+            "type": list,
+            "default": [],
+            "description": "Extra variables to generate on top of TIME, GPS and raw CTD.",
+        },
+        "value_limits": {
+            "type": dict,
+            "default": {},
+            "description": "Per-variable random sampling range, e.g. {'DENSITY': [1028, 1032]}.",
+        },
+        "gen_fixed_data": {
+            "type": bool,
+            "default": False,
+            "description": "Generate deterministic fixed data instead of random data (testing).",
+        },
+    }
+
     def run(self):
         # Check if the data is already in the context
         if "data" in self.context:
@@ -87,10 +110,10 @@ class GenerateData(BaseStep):
         else:
             self.log("Generating random data")
             # Load config parameters
-            start_date, end_date, sample_period = self.parameters["sampling_info"]
-            additional_variables = self.parameters["additional_variables"]
-            user_value_limits = self.parameters["value_limits"]
-            diagnostics = self.parameters["diagnostics"]
+            start_date, end_date, sample_period = self.sampling_info
+            additional_variables = self.additional_variables
+            user_value_limits = self.value_limits
+            diagnostics = self.diagnostics
 
             # Add aditional variables
             variable_names = {"LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC"}

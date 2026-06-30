@@ -37,7 +37,7 @@ class impossible_speed_qc(BaseQC):
     """
 
     qc_name = "impossible speed qc"
-    expected_parameters = {}
+    parameter_schema = {}
     required_variables = ["TIME", "LATITUDE", "LONGITUDE"]
     qc_outputs = ["TIME_QC", "LATITUDE_QC", "LONGITUDE_QC"]
 

@@ -56,48 +56,47 @@ class impossible_range_qc(BaseQC):
     # Specify if test target variable is user-defined (if True, __init__ has to be redefined)
     dynamic = True
 
-    def __init__(self, data, **kwargs):
-        # Check the necessary kwargs are available
-        required_kwargs = {"variable_ranges", "also_flag", "plot"}
-        if not required_kwargs.issubset(set(kwargs.keys())):
-            raise KeyError(
-                f"{required_kwargs - set(kwargs.keys())} are missing from {self.qc_name} settings"
-            )
+    parameter_schema = {
+        "variable_ranges": {
+            "type": dict,
+            "required": True,
+            "description": "Per-variable {flag: [low, high]} ranges to flag within.",
+        },
+        "also_flag": {
+            "type": dict,
+            "default": {},
+            "description": "Propagate a variable's flags onto other variables.",
+        },
+        "plot": {
+            "type": list,
+            "default": [],
+            "description": "Variables to plot in diagnostics.",
+        },
+        "test_depth_range": {
+            "type": list,
+            "default": None,
+            "description": "Optional [min, max] depth window to limit the checks to.",
+        },
+    }
 
-        # Specify the tests paramters from kwargs (config)
-        self.expected_parameters = {
-            k: v for k, v in kwargs.items() if k in required_kwargs
-        }
-        self.required_variables = list(
-            set(self.expected_parameters["variable_ranges"].keys())
-        )
+    def __init__(self, data, **kwargs):
+        super().__init__(data, **kwargs)
+        self.required_variables = list(set(self.variable_ranges.keys()))
         self.tested_variables = self.required_variables.copy()
-        if "test_depth_range" in kwargs.keys():
+        if self.test_depth_range is not None:
             self.required_variables.append("DEPTH")
-            self.test_depth_range = kwargs["test_depth_range"]
 
         self.qc_outputs = list(
             set(f"{var}_QC" for var in self.tested_variables)
-            | set(
-                f"{var}_QC"
-                for var in sum(self.expected_parameters["also_flag"].values(), [])
-            )
+            | set(f"{var}_QC" for var in sum(self.also_flag.values(), []))
         )
-
-        if data is not None:
-            self.data = data.copy(deep=True)
-
-        for k, v in self.expected_parameters.items():
-            setattr(self, k, v)
-
-        self.flags = None
 
     def return_qc(self):
         # Subset the data
         self.data = self.data[self.required_variables]
 
         # If the user specified a depth range, limit the checks to that range
-        if hasattr(self, "test_depth_range"):
+        if self.test_depth_range is not None:
             # TODO: -DEPTH
             depth_range_mask = (self.data["DEPTH"] >= self.test_depth_range[0]) & (
                 self.data["DEPTH"] <= self.test_depth_range[1]

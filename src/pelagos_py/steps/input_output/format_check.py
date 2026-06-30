@@ -40,6 +40,29 @@ class FormatCheck(BaseStep):
     """
     step_name = "Format Checker"
 
+    parameter_schema = {
+        "src": {
+            "type": str,
+            "required": True,
+            "description": "Source file path to run the compliance checker against.",
+        },
+        "standards": {
+            "type": list,
+            "default": ["cf", "og"],
+            "description": "Standards to check, e.g. ['cf', 'og'].",
+        },
+        "output_type": {
+            "type": str,
+            "default": "rst",
+            "description": "Output extension: 'json' for detail, 'rst'/ASCII for a summary.",
+        },
+        "proceed_on_fail": {
+            "type": bool,
+            "default": True,
+            "description": "If False, halt the pipeline when the file fails the checks.",
+        },
+    }
+
     def run(self):
 
         check_suite = CheckSuite()

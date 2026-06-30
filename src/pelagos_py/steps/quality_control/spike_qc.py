@@ -58,38 +58,36 @@ class spike_qc(BaseQC):
     # Specify if test target variable is user-defined (if True, __init__ has to be redefined)
     dynamic = True
 
-    def __init__(self, data, **kwargs):
-        # Check the necessary kwargs are available
-        required_kwargs = {"variables", "also_flag", "plot"}
-        if not required_kwargs.issubset(set(kwargs.keys())):
-            raise KeyError(
-                f"{required_kwargs - set(kwargs.keys())} are missing from {self.qc_name} settings"
-            )
+    parameter_schema = {
+        "variables": {
+            "type": dict,
+            "required": True,
+            "description": "Mapping of variable -> spike sensitivity, e.g. {'PRES': 2}.",
+        },
+        "also_flag": {
+            "type": dict,
+            "default": {},
+            "description": "Propagate a variable's flags onto other variables.",
+        },
+        "plot": {
+            "type": list,
+            "default": [],
+            "description": "Variables to plot in diagnostics.",
+        },
+        "window_size": {
+            "type": int,
+            "default": 50,
+            "description": "Rolling-median window size used for spike detection.",
+        },
+    }
 
-        # Specify the tests paramters from kwargs (config)
-        self.expected_parameters = {
-            k: v for k, v in kwargs.items() if k in required_kwargs
-        }
-        self.required_variables = list(
-            set(self.expected_parameters["variables"].keys())
-        ) + ["PROFILE_NUMBER"]
+    def __init__(self, data, **kwargs):
+        super().__init__(data, **kwargs)
+        self.required_variables = list(set(self.variables.keys())) + ["PROFILE_NUMBER"]
         self.qc_outputs = list(
             set(f"{var}_QC" for var in self.required_variables)
-            | set(
-                f"{var}_QC"
-                for var in sum(self.expected_parameters["also_flag"].values(), [])
-            )
+            | set(f"{var}_QC" for var in sum(self.also_flag.values(), []))
         )
-
-        if data is not None:
-            self.data = data.copy(deep=True)
-
-        # set attributes
-        for k, v in self.expected_parameters.items():
-            setattr(self, k, v)
-        self.window_size = kwargs.get("window_size") or 50
-
-        self.flags = None
 
     def return_qc(self):
         # Subset the data

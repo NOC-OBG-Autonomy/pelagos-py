@@ -17,6 +17,8 @@
 
 import logging
 
+from pelagos_py.utils import parameter_spec
+
 REGISTERED_QC = {}
 """Registry of explicitly registered QC test classes."""
 
@@ -64,29 +66,35 @@ class BaseQC:
     """
 
     qc_name = None
-    expected_parameters = {}
+    parameter_schema = {}
     required_variables = []
     qc_outputs = []
 
     def __init__(self, data, **kwargs):
-        self.data = data.copy(deep=True)
-        
+        # data may be None when a test is instantiated  to
+        # introspect its required/provided variables from its parameters.
+        self.data = data.copy(deep=True) if data is not None else None
+
         # Connect to the main pipeline logging hierarchy
         self.logger = logging.getLogger(f"pelagos_py.pipeline.qc.{self.qc_name.replace(' ', '_')}")
 
-        invalid_params = set(kwargs.keys()) - set(self.expected_parameters.keys())
-        if invalid_params:
-            raise KeyError(
-                f"Unexpected parameters for {self.qc_name}: {invalid_params}"
-            )
-
-        for k, v in kwargs.items():
-            self.expected_parameters[k] = v
-
-        for k, v in self.expected_parameters.items():
+        # Resolve parameters against the schema: applies defaults, enforces required
+        # parameters, and rejects unknown ones. Resolved values become attributes.
+        resolved = parameter_spec.resolve(
+            self.parameter_schema, kwargs, label=self.qc_name
+        )
+        for k, v in resolved.items():
             setattr(self, k, v)
 
         self.flags = None
+
+    @classmethod
+    def describe_parameters(cls):
+        """Return a JSON-serialisable description of this QC check's parameters.
+
+        See :func:`pelagos_py.utils.parameter_spec.describe`.
+        """
+        return parameter_spec.describe(cls.parameter_schema or {})
 
     def log(self, message):
         """Log an info-level message with the QC name prefix."""

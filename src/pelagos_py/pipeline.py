@@ -28,6 +28,7 @@ import difflib
 
 from pelagos_py.utils.config_mirror import ConfigMirrorMixin
 from pelagos_py.utils.valid_config_check import check_pipeline_variables
+from pelagos_py.utils.log_levels import STOP
 
 from pelagos_py.steps import create_step, STEP_CLASSES
 
@@ -133,7 +134,6 @@ class Pipeline(ConfigMirrorMixin):
                 self.global_parameters.get("log_file"),
             )
             self.build_steps(self._parameters.get("steps", []))
-            check_pipeline_variables(self.steps, self.logger)
             self.logger.info("Pipeline initialised")
 
     def build_steps(self, steps_config):
@@ -279,6 +279,16 @@ class Pipeline(ConfigMirrorMixin):
         If visualisation is specified in the configuration parameters, a visualisation
         of the pipeline execution will be generated.
         """
+        try:
+            check_pipeline_variables(self.steps, self.logger)
+        except ValueError:
+            self.logger.log(
+                STOP,
+                "Pipeline stopped before execution. "
+                "Resolve the validation error above and re-run.",
+            )
+            raise SystemExit(1) from None
+
         for step in self.steps:
             self._context = self.execute_step(step, self._context)
 

@@ -31,11 +31,9 @@ class QCHandlingMixin:
         if user_mappings := qc_settings.get("flag_mapping"):
             self.flag_mapping.update(user_mappings)
 
-        # Validate that data exists in the processing context
-        if "data" not in self.context:
-            raise ValueError("No data found in context. Please load data first.")
-        else:
-            self.log(f"Data found in context.")
+        # Validate that data exists in the processing context (logs + STOPs the
+        # pipeline if absent; see BaseStep.check_data).
+        self.check_data()
         self.data = self.context["data"].copy(deep=True)
 
         # Make a copy of the data for reference

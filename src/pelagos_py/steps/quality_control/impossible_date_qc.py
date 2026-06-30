@@ -37,7 +37,7 @@ class impossible_date_qc(BaseQC):
     """
 
     qc_name = "impossible date qc"
-    expected_parameters = {}
+    parameter_schema = {}
     required_variables = ["TIME"]
     qc_outputs = ["TIME_QC"]
 

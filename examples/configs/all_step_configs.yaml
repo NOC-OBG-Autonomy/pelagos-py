@@ -138,22 +138,22 @@ steps:
         # impossible date test (*/impossible_date_test.py):
         #   Flag: 4 (bad)
         #   Checks that the TIME variable has values between 1985 and now.
-        impossible date qc: {},
+        impossible date qc: {}
 
         # impossible location test (*/impossible_location_test.py):
         #   Flag: 4 (bad)
         #   Check that LATITUDE and LONGITUDE are between (-90, 90) and (-180, 180) degress respectively.
-        impossible location qc: {},
+        impossible location qc: {}
 
         # position on land test (*/position_on_land_test.py):
         #   Flag: 4 (bad)
         #   Checks if the GPS coords are on land.
-        position on land qc: {},
+        position on land qc: {}
 
         # impossible speed test (*/impossible_speed_test.py):
         #   Flag: 4 (bad)
         #   Checks if the horizontal speed derived from LATITUDE, LONGITUDE and TIME is valid.
-        impossible speed qc: {},
+        impossible speed qc: {}
 
         # range test (*/range_test.py):
         #   Flag: User-specified
@@ -201,7 +201,7 @@ steps:
           #   {variable: N} specifying which variables to apply the test to and the outlier threshold multiplier
           #   N, values are flagged if their values exceed (locally) median +- N * standard deviation.
           variables:
-            PRES: 2,
+            PRES: 2
             LATITUDE: 1
           # [window_size]:
           #   The window size for the running median and standard deviation caluclations
@@ -209,7 +209,7 @@ steps:
           # [also_flag]:
           #   Alows the QC result from one variable to be applied to others.
           also_flag:
-            PRES: [CNDC, TEMP],
+            PRES: [CNDC, TEMP]
             LATITUDE: [LONGITUDE]
           # [plot]:
           #   Plots data coloured by flag for the variables listed.
@@ -221,7 +221,7 @@ steps:
         valid profile qc:
           # [profile_length]:
           #   Number of datapoints per profile below which the entire profile will be flagged 4
-          profile_length: 1000,
+          profile_length: 1000
           # [depth_range]:
           #   DEPTH range that a profile must have at least one point in, otherwise it is flagged 3
           depth_range: [-.inf, 0]
@@ -229,7 +229,7 @@ steps:
         # flag_full_profile (*/flag_full_profile.py):
         #   Flag: 4 (bad)
         #   flags a whole profile if a user-specified limit of bad (4) flags are found.
-        flag_full_profile:
+        flag full profile:
           # [check_vars]:
           #   {variable: N} pairs where if >N bad values are found, the whole profile is flagged
           check_vars:
@@ -275,7 +275,7 @@ steps:
         #   Specifies how the data will be reconstructed after processing has occured. There are two options (defaults to reinsert):
         #   "replace":  Indices where data was filtered retain their post-processing value and the original "bad data" is deleted.
         #   "reinsert": The filtered "bad data" is reinserted back into the post-processed data.
-        reconstruction_behaviour: "replace",
+        reconstruction_behaviour: "replace"
         # [flag_mapping]:
         #   Tells the QC handler how flags should change for "bad data" indices if the pre- & postprocessing data are different.
         #   Eg. Interpolation would replace bad and missing values (3, 4, 9) with interpolated values (8).
