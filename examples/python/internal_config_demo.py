@@ -5,13 +5,18 @@ BASE_CONFIG_YAML = """
 pipeline:
   name: Example CTD Processing Pipeline
   description: A pipeline for processing CTD data
-  visualisation: false
   log_file: None
 
 steps:
   - name: Load OG1
     parameters:
       file_path: examples/data/OG1/Nelson_646_R.nc
+    diagnostics: false
+
+  - name: Format Checker
+    parameters:
+      standards: ["og"]
+      proceed_on_fail: true
     diagnostics: false
 
   - name: Correct Values
@@ -91,7 +96,7 @@ steps:
           1: 5
           2: 5
       filter_window_size: 21
-    diagnostics: true
+    diagnostics: false
 
   - name: Derive CTD
     parameters:

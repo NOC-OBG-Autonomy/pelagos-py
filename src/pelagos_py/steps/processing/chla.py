@@ -338,10 +338,9 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
 
             # only look at the values nearest the surface and find when and where they were taken
             self.sun_args = (
-                self.sun_args.groupby(["PROFILE_NUMBER"])
-                .apply(lambda x: x.nlargest(50, "DEPTH"))
-                .reset_index(drop=True)
-                .groupby(["PROFILE_NUMBER"])
+                self.sun_args.groupby("PROFILE_NUMBER", group_keys=True)
+                .apply(lambda x: x.nlargest(50, "DEPTH"), include_groups=False)
+                .groupby(level="PROFILE_NUMBER")
                 .agg({var: "median" for var in ["TIME", "LATITUDE", "LONGITUDE"]})
             )
 

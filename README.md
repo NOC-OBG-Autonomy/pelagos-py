@@ -100,7 +100,6 @@ An example YAML configuration for a simple pipeline. See examples/notebooks/pipe
  pipeline:
    name: Example CTD Processing Pipeline
    description: A pipeline for processing CTD data
-   visualisation: false
  
  steps:
    - name: Load OG1

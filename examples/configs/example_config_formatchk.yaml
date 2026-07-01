@@ -2,7 +2,6 @@
 pipeline:
   name: Format checker demo pipeline
   description: 
-  visualisation: false
   out_directory: ../examples/data/OG1/testing/
   log_file: checker_demo.log
 
@@ -12,9 +11,9 @@ steps:
 # --------------------- PRELIM DATA CHECK --------------------
   - name: Format Checker
     parameters:
-      src: ../examples/data/OG1/Nelson_646_R.nc # The source file to check
+      src: ../examples/data/OG1/Nelson_646_R.nc # File to check. Omit to reuse the file from a preceding 'Load OG1' step.
       standards: ['og']    # Standards to check
-      output_type: "rst"        # File extension for either ASCII or JSON output.
+      output_type: "rst"        # Also save a report file ('json'/'rst'/both). Omit for console-only. Console summary always prints.
       proceed_on_fail: True     # If the dataset does not pass the format checker, halt processing (False).
 
 # ------------------------ IMPORT DATA -----------------------

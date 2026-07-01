@@ -18,9 +18,12 @@
 from pelagos_py.utils.config_mirror import ConfigMirrorMixin
 from pelagos_py.utils import parameter_spec
 from pelagos_py.utils.log_levels import STOP
+from pelagos_py.utils import parameter_spec
+from pelagos_py.utils.log_levels import STOP
 import warnings
 import logging
 import os
+import time
 import time
 
 REGISTERED_STEPS = {}
@@ -102,8 +105,22 @@ class BaseStep(ConfigMirrorMixin):
         # the reported time/RAM cover the processing only (not a blocking plot).
         self._wrap_diagnostics_timing()
 
+        # Stop the diagnostics timer as soon as diagnostics generation begins, so
+        # the reported time/RAM cover the processing only (not a blocking plot).
+        self._wrap_diagnostics_timing()
+
         # Continue method resolution order
         super().__init__()
+
+    @classmethod
+    def describe_parameters(cls):
+        """Return a JSON-serialisable description of this step's parameters.
+
+        Introspection surface for external tools (e.g. a dashboard) that need to
+        render a parameter form without instantiating the step. See
+        :func:`pelagos_py.utils.parameter_spec.describe`.
+        """
+        return parameter_spec.describe(cls.parameter_schema or {})
 
     @classmethod
     def describe_parameters(cls):
@@ -212,6 +229,18 @@ class BaseStep(ConfigMirrorMixin):
                 self.name,
             )
             raise SystemExit(1)
+
+    def halt(self, message):
+        """Stop the pipeline cleanly for an unrecoverable misconfiguration.
+
+        Logs ``message`` (the detail and any fix/install hint) at ERROR level,
+        then a terminal STOP line marking the deliberate halt, and exits. Use
+        this instead of raising for config problems discovered at run time, so
+        the user sees one actionable error rather than a wrapped traceback.
+        """
+        self.logger.error("[%s] %s", self.name, message)
+        self.logger.log(STOP, "Pipeline stopped at step '%s'.", self.name)
+        raise SystemExit(1)
 
     # ----------- Config Handling -----------
 

@@ -6,7 +6,6 @@ GENERATE_YAML = """
 pipeline:
   name: Synthetic Data Generator
   description: Generate synthetic OG1-style data and export it to netCDF
-  visualisation: false
 
 steps:
   - name: "Generate Data"
@@ -27,7 +26,6 @@ LOAD_PIPELINE_YAML = """
 pipeline:
   name: Minimal Integration Pipeline
   description: Load a synthetic netCDF file and re-export it
-  visualisation: false
 
 steps:
   - name: Load OG1

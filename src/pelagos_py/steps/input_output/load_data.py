@@ -172,7 +172,10 @@ class LoadOG1(BaseStep):
         # Generate diagnostics if enabled
 
         self.log(f"Loaded data from {self.file_path}")
-        self.context["global_parameters"]["filename_core"] = Path(self.file_path).stem  # Make this available to other steps
+        # Make these available to other steps (e.g. Format Checker, which reads the
+        # original file from disk; the report uses filename_core for naming).
+        self.context["global_parameters"]["filename_core"] = Path(self.file_path).stem
+        self.context["global_parameters"]["source_file"] = self.file_path
 
         if self.diagnostics:
             self.generate_diagnostics()

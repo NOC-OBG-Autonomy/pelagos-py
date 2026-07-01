@@ -22,9 +22,6 @@ pipeline:
  name: "Data Processing Pipeline"
  # [description]: "Longer string describing describing pipeline purpse"
  description: "A pipeline for processing and analyzing multi-dimensional data"
- # [visualisation]: true/false
- #   Enable visualisation of the pipeline in Pipeline.visualise_pipeline()
- visualisation: false 
  # [out_directory]: string or path
  #   Output directory for any generated files (logs, reports, figures, etc.)
  out_directory: ./examples/data/
@@ -129,8 +126,10 @@ steps:
       #   List of string entries for different formats to check.
       standards: ['cf','og']
       # [output_type]:
-      #   The extension for the CC to write out to. Use 'json' for high detail, 'rst' or other ASCII for low detail.
-      output_type: "rst"
+      #   A short pass/fail summary is ALWAYS printed to the console. To also save a
+      #   detailed report file, set this to 'json' (high detail), 'rst' (ASCII), or a
+      #   list of both. Omit for console only. Saving requires out_directory.
+      output_type: ['json', 'rst']
       # [proceed_on_fail]:
       #   Whether or not to allow the pipeline to continue if the dataset doesn't pass selected standards.
       proceed_on_fail: true

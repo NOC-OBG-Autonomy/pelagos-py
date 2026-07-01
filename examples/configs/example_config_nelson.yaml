@@ -18,7 +18,6 @@
 pipeline:
   name: Example processing pipeline
   description: An example pipeline
-  visualisation: false
   out_directory: examples/data/OG1/
   log_file: example_processing.log
 
@@ -29,6 +28,18 @@ steps:
   - name: Load OG1
     parameters:
       file_path: examples/data/OG1/Nelson_646_R.nc # Path to the input NetCDF file
+    diagnostics: false
+
+# ----------------- FORMAT CHECK -----------------
+
+# Check the loaded file against the OG1 standard. With no 'src', it reuses the
+# file from Load OG1 above. A short pass/fail summary is printed to the console;
+# omit 'output_type' (as here) for console only, or set it to 'json'/'rst' (with
+# an out_directory) to also save a detailed report file.
+  - name: Format Checker
+    parameters:
+      standards: ['og']     # og = OG1
+      proceed_on_fail: true # Keep going even if the file fails the checks
     diagnostics: false
 
 # ----------------- CORRECT VALUES -----------------
@@ -159,9 +170,56 @@ steps:
       ]
     diagnostics: false
 
+# ----------------- CHLOROPHYLL CORRECTIONS -----------------
+# Chlorophyll fluorescence needs two corrections. First, a deep (dark-offset)
+# correction removes the sensor's baseline drift. The dark value is the residual
+# fluorescence measured deep down where there should be no chlorophyll, so it is
+# subtracted from the whole profile. Here dark_value is null, so it is computed
+# from the data using only measurements below depth_threshold.
+  - name: Chla Deep Correction
+    parameters:
+      apply_to: CHLA           # Variable to correct
+      dark_value: null         # null -> compute the dark offset from the data
+      depth_threshold: -550    # Only use data below this depth to estimate the dark value
+    diagnostics: true          # Plot the computed dark value and corrected profiles
+
+# Second, a non-photochemical quenching (NPQ) correction. Near the surface,
+# daylight suppresses fluorescence, so chlorophyll reads artificially low. The
+# Argo method (Xing et al. 2012) extrapolates the value at the base of the mixed
+# layer up to the surface. The mixed-layer depth is found by thresholding DENSITY
+# relative to a reference depth.
+  - name: Chla Quenching Correction
+    parameters:
+      method: Argo             # Currently only 'Argo' (Xing et al. 2012) is supported
+      apply_to: CHLA           # Variable to correct (uses CHLA_ADJUSTED if it already exists)
+      mld_settings:
+        threshold_on: DENSITY  # Variable used to detect the mixed-layer depth
+        reference_depth: -10   # Reference depth for the MLD threshold
+        threshold: 0.05        # Density change (vs. reference depth) that marks the MLD base
+      plot_profiles: [101, 200, 201, 300, 301, 400] # Profile numbers to plot in diagnostics
+    diagnostics: false
+
+# ---------------------- BACKSCATTER ------------------------
+# Convert the raw backscatter angle measurement (beta) into the particulate
+# backscattering coefficient BBP, using the scattering angle and chi factor.
+  - name: BBP from Beta
+    parameters:
+      theta: 124               # Effective optical backscatter scattering angle (degrees)
+      xfactor: 1.076           # Chi factor scaling particulate scattering to total backscatter
+    diagnostics: false
+
+# Large isolated spikes in BBP correspond to individual particles/aggregates.
+# This step separates that spike signal from the smooth baseline with a moving
+# filter, so each can be analysed on its own.
+  - name: Isolate BBP Spikes
+    parameters:
+      window_size: 50          # Filter window size in samples
+      method: median           # Filter method used to determine the baseline
+    diagnostics: false
+
 # ---------------------- EXPORT DATA ------------------------
 # Exporting the output data to the same folder as the input data
   - name: "Data Export"
     parameters:
       export_format: "netcdf"
-      output_path: "../examples/data/OG1/Nelson_646_R_Processed.nc"
+      output_path: "examples/data/OG1/Nelson_646_R_Processed.nc"

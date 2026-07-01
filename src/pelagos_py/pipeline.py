@@ -318,9 +318,6 @@ class Pipeline(ConfigMirrorMixin):
     def run(self):
         """
         Runs the entire pipeline.
-
-        If visualisation is specified in the configuration parameters, a visualisation
-        of the pipeline execution will be generated.
         """
         try:
             check_pipeline_variables(self.steps, self.logger)
@@ -334,9 +331,6 @@ class Pipeline(ConfigMirrorMixin):
 
         for step in self.steps:
             self._context = self.execute_step(step, self._context)
-
-        if self.global_parameters.get("visualisation", False):
-            self.visualise_pipeline()
 
     def generate_config(self):
         """

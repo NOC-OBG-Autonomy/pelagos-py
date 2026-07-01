@@ -3,7 +3,6 @@
 pipeline:
   name: VOTO glider processing pipeline
   description: A pipeline for processing VOTO glider data   # VOTO test default 2026
-  visualisation: false                          # Not practical if called on from another script
   out_directory: ../examples/data/OG1/testing/  # generic output directory for any generated files (logs, reports, figures, etc.)
   log_file: voto_processing.log   # Added log_file to pipeline parameters, should another step need to load it (reporting)
 

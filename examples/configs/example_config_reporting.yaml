@@ -2,7 +2,6 @@
 pipeline:
   name: Report demonstration pipeline
   description: 
-  visualisation: false
   out_directory: ../examples/data/OG1/testing/
   log_file: demo.log
 
