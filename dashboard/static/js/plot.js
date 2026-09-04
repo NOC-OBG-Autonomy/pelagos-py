@@ -205,20 +205,57 @@ const Plot = {
           })),
         };
 
+        // Plotly's own Home button / double-click reset restore an
+        // "initial range" it snapshots internally -- but our own zoom-driven
+        // Plotly.update() calls (LOD refetch, or this same reset on another
+        // panel) make Plotly re-snapshot that as the *current* (zoomed)
+        // range, so its native reset silently stops going back to the real
+        // original view. Replaced below with our own reset, driven only by
+        // this panel's own xlim/ylim, which we never let anyone else mutate.
+        div._resetView = () => window.Plotly.relayout(div,
+          Object.assign(Plot._axisResetPatch('xaxis', panel.xlim), Plot._axisResetPatch('yaxis', panel.ylim)));
+
         Plotly.newPlot(div, panel.traces.map(Plot.trace), layout, {
           responsive: true,
           displaylogo: false,
           scrollZoom: true,
-          modeBarButtonsToRemove: ['select2d', 'lasso2d'],
+          doubleClick: false,
+          modeBarButtonsToRemove: ['select2d', 'lasso2d', 'resetScale2d', 'autoScale2d'],
+          modeBarButtonsToAdd: [{
+            name: 'resetaxes',
+            title: 'Reset axes',
+            icon: Plotly.Icons.home,
+            click: () => resetAll(),
+          }],
           toImageButtonOptions: { format: 'png', scale: 2 },
         });
+
+        // config.doubleClick:false above stops Plotly's own (unreliable,
+        // see div._resetView comment) reset; do it ourselves instead, but
+        // only over the actual plot/drag surface so legend double-click
+        // (isolate trace) and modebar double-clicks are unaffected.
+        div.addEventListener('dblclick', (ev) => {
+          if (ev.target.closest('.nsewdrag')) resetAll();
+        });
       });
+
+      const resetAll = () => divs.forEach((d) => d._resetView && d._resetView());
 
       Plot._linkX(divs, spec.panels);
       Plot._trackResize(host);
       if (name) Plot._attachLod(divs, spec, name);
       return divs;
     });
+  },
+
+  // Mirrors the null-guard the initial axis() layout above uses: a panel
+  // whose matplotlib axis was never explicitly limited has a null xlim/ylim
+  // entry, and forcing a null range with autorange:false just freezes the
+  // axis at whatever range it already had -- autorange instead.
+  _axisResetPatch(axis, lim) {
+    return lim && lim.every((v) => v !== null)
+      ? { [axis + '.range']: lim, [axis + '.autorange']: false }
+      : { [axis + '.autorange']: true };
   },
 
   // Wire up zoomed-in full-resolution fetching for panels with an "lod"
@@ -269,22 +306,23 @@ const Plot = {
 
       // Restore data and pin the axis back to the panel's real extent in one
       // atomic Plotly.update call -- not a restyle followed by a separate
-      // relayout. Split in two, a sibling panel synced by _linkX's own
-      // programmatic relayout could have its axis autorange computed from the
-      // trace's *still-zoomed* data (restyle not applied yet), leaving that
-      // panel's range stuck narrow even after its data caught up -- which is
-      // what "reset doesn't do all, just one" looked like. Setting an explicit
-      // range instead of autorange sidesteps needing that computation at all.
+      // relayout, which could leave the axis's autorange computed from the
+      // trace's *still-zoomed* data (restyle not applied yet).
       const restoreOriginal = () => {
         if (controller) controller.abort();
         lodTraces.forEach((traceIdx) => { delete covered[traceIdx]; });
         safeUpdate(
           { x: original.map((t) => t.x), y: original.map((t) => t.y),
             'marker.color': original.map((t) => t.color) },
-          { 'xaxis.range': panel.xlim, 'xaxis.autorange': false },
+          Object.assign(Plot._axisResetPatch('xaxis', panel.xlim), Plot._axisResetPatch('yaxis', panel.ylim)),
           lodTraces,
         );
       };
+      // render()'s default div._resetView only resets the axes; a panel with
+      // LOD traces needs its data put back too, since zooming in overwrote it
+      // with just the fetched-in window (see div._resetView's own comment for
+      // why we don't just let Plotly's own Home/double-click reset do this).
+      div._resetView = restoreOriginal;
 
       div.on('plotly_relayout', (ev) => {
         clearTimeout(timer);
@@ -293,17 +331,15 @@ const Plot = {
         // single 'xaxis.range' array instead -- both mean the range changed.
         const range = ('xaxis.range[0]' in ev) ? [ev['xaxis.range[0]'], ev['xaxis.range[1]']]
           : (Array.isArray(ev['xaxis.range']) ? ev['xaxis.range'] : null);
-        const reset = ev['xaxis.autorange'] === true;
-        if (!range && !reset) return; // some other relayout (e.g. a resize)
+        if (!range) return; // some other relayout (e.g. a resize)
 
-        const xMin = reset ? origLo : toMs(range[0]);
-        const xMax = reset ? origHi : toMs(range[1]);
+        const xMin = toMs(range[0]);
+        const xMax = toMs(range[1]);
 
-        // Reset button/double-click, or zooming out at least to the original
-        // extent either way: show the original data directly rather than
-        // fetching (which would need no thinning applied beyond the original
-        // anyway, and avoids depending on exactly how "reset" was triggered).
-        if (reset || (xMin <= origLo && xMax >= origHi)) {
+        // Dragged/scrolled out at least to the original extent: show the
+        // original data directly rather than fetching (which would need no
+        // thinning applied beyond the original anyway).
+        if (xMin <= origLo && xMax >= origHi) {
           restoreOriginal();
           return;
         }

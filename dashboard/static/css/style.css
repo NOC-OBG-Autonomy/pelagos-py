@@ -948,5 +948,9 @@ body.run-locked .drag { pointer-events: none; opacity: .45; }
   display: flex; flex-direction: column; overflow: auto;
 }
 .plotly-panel { width: 100%; min-height: 0; }
+/* Plotly puts the zoom/pan/home toolbar top-right by default; move it to
+   bottom-left so it doesn't sit over the plot title. */
+.plotly-panel .modebar-container { top: auto !important; bottom: 2px; left: 2px; right: auto; }
+.plotly-panel .modebar { left: 0; }
 /* A thumbnail whose figure has a spec: the accent rule hints it opens live. */
 .plot-card.has-plot { border-left: 3px solid var(--accent); }
