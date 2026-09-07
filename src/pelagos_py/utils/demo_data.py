@@ -24,10 +24,11 @@ that deployment are present. Every entry carries its download URL, output
 filename, an optional TIME window to keep (``None`` for the whole file),
 which shipped template config to derive its dashboard config from
 ("default" -- the standard glider template -- or "alr" for the ALR
-platform's config), and the display label shown in the picker. Files are
+platform's config), and the display label shown in the picker. Most files are
 hosted on the BODC deployment catalogue; see
-https://noc.ac.uk/projects/bio-carbon for context. ``MISSIONS`` groups the
-keys by deployment campaign, in picker display order.
+https://noc.ac.uk/projects/bio-carbon for context. "voto_og_dm" (SEA063) is
+hosted on VOTO's own erddap instead. ``MISSIONS`` groups the keys by
+deployment campaign, in picker display order.
 """
 
 from dataclasses import dataclass
@@ -118,28 +119,43 @@ DEMOS = {
     # --- ReBELS 2 ---
     **_variants("stella2026", "Stella_20260403", "default", "Stella",
                 nrt="Stella_713_R.nc"),  # no delayed-mode file hosted (yet)
+    # --- VOTO --- (hosted on VOTO's own erddap, not the BODC catalogue above)
+    "voto_og_dm": DemoEntry(
+        "https://erddap.observations.voiceoftheocean.org/erddap/files/"
+        "OG_complete_SEA063_M75/SEA063_20240724T0737_delayed.nc",
+        "SEA063_20240724T0737_delayed.nc",
+        ("2024-07-25", "2024-08-03"), "default", "SEA063", "delayed",
+    ),
 }
 
-#: Picker display groups, in order: mission name -> base glider keys.
+#: Picker display groups, in order: mission name -> base glider keys, or (for
+#: a glider with a single ungrouped mode, e.g. voto_og_dm) its full DEMOS key.
 _MISSION_BASE_KEYS = {
     "Bio-Carbon": ["nelson", "doombar", "churchill", "alr4", "alr6", "cabot"],
     "Custard 1": ["custard1_churchill", "pancake", "custard1_doombar"],
     "Custard 2": ["bellamite", "custard2_zephyr"],
     "ReBELS": ["rebels_zephyr", "omg1", "9ja", "growler", "rebels_stella"],
     "ReBELS 2": ["stella2026"],
+    "VOTO": ["voto_og_dm"],
 }
+
+
+def _mission_keys(bases: list[str]) -> list[str]:
+    """Expand each base into its DEMOS keys: itself if it's already a full
+    key (e.g. "voto_og_dm"), else its nrt/delayed variants (whichever exist).
+    """
+    keys = []
+    for base in bases:
+        if base in DEMOS:
+            keys.append(base)
+            continue
+        keys.extend(f"{base}_{mode}" for mode in ("nrt", "delayed") if f"{base}_{mode}" in DEMOS)
+    return keys
+
 
 #: mission name -> ordered list of DEMOS keys (nrt then delayed per glider,
 #: whichever modes actually exist for it).
-MISSIONS = {
-    mission: [
-        f"{base}_{mode}"
-        for base in bases
-        for mode in ("nrt", "delayed")
-        if f"{base}_{mode}" in DEMOS
-    ]
-    for mission, bases in _MISSION_BASE_KEYS.items()
-}
+MISSIONS = {mission: _mission_keys(bases) for mission, bases in _MISSION_BASE_KEYS.items()}
 
 #: Where demo files are downloaded to, relative to the repo root.
 DEMO_DATA_DIR = "examples/data/OG1"
