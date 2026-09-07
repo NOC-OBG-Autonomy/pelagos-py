@@ -399,18 +399,18 @@
 <span class="c1">#</span>
 <span class="c1"># Copyright 2025-2026 National Oceanography Centre and The Contributors</span>
 <span class="c1">#</span>
-<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the "License");</span>
 <span class="c1"># you may not use this file except in compliance with the License.</span>
 <span class="c1"># You may obtain a copy of the License at</span>
 <span class="c1">#</span>
 <span class="c1">#    http://www.apache.org/licenses/LICENSE-2.0</span>
 <span class="c1">#</span>
 <span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
-<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># distributed under the License is distributed on an "AS IS" BASIS,</span>
 <span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
-<span class="sd">&quot;&quot;&quot;This module defines the base class for QC tests and a registry for QC test classes.&quot;&quot;&quot;</span>
+<span class="sd">"""This module defines the base class for QC tests and a registry for QC test classes."""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 
@@ -420,34 +420,34 @@
 <a class="viewcode-back" href="../../../api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.REGISTERED_QC">[docs]</a>
 <span class="n">REGISTERED_QC</span> <span class="o">=</span> <span class="p">{}</span></div>
 
-<span class="sd">&quot;&quot;&quot;Registry of explicitly registered QC test classes.&quot;&quot;&quot;</span>
+<span class="sd">"""Registry of explicitly registered QC test classes."""</span>
 
 <div class="viewcode-block" id="flag_cols">
 <a class="viewcode-back" href="../../../api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.flag_cols">[docs]</a>
 <span class="n">flag_cols</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="mi">0</span><span class="p">:</span> <span class="s2">&quot;gray&quot;</span><span class="p">,</span>
-    <span class="mi">1</span><span class="p">:</span> <span class="s2">&quot;blue&quot;</span><span class="p">,</span>
-    <span class="mi">2</span><span class="p">:</span> <span class="s2">&quot;lightblue&quot;</span><span class="p">,</span>
-    <span class="mi">3</span><span class="p">:</span> <span class="s2">&quot;orange&quot;</span><span class="p">,</span>
-    <span class="mi">4</span><span class="p">:</span> <span class="s2">&quot;red&quot;</span><span class="p">,</span>
-    <span class="mi">5</span><span class="p">:</span> <span class="s2">&quot;gray&quot;</span><span class="p">,</span>
-    <span class="mi">6</span><span class="p">:</span> <span class="s2">&quot;gray&quot;</span><span class="p">,</span>
-    <span class="mi">7</span><span class="p">:</span> <span class="s2">&quot;gray&quot;</span><span class="p">,</span>
-    <span class="mi">8</span><span class="p">:</span> <span class="s2">&quot;cyan&quot;</span><span class="p">,</span>
-    <span class="mi">9</span><span class="p">:</span> <span class="s2">&quot;black&quot;</span><span class="p">,</span>
+    <span class="mi">0</span><span class="p">:</span> <span class="s2">"gray"</span><span class="p">,</span>
+    <span class="mi">1</span><span class="p">:</span> <span class="s2">"blue"</span><span class="p">,</span>
+    <span class="mi">2</span><span class="p">:</span> <span class="s2">"lightblue"</span><span class="p">,</span>
+    <span class="mi">3</span><span class="p">:</span> <span class="s2">"orange"</span><span class="p">,</span>
+    <span class="mi">4</span><span class="p">:</span> <span class="s2">"red"</span><span class="p">,</span>
+    <span class="mi">5</span><span class="p">:</span> <span class="s2">"gray"</span><span class="p">,</span>
+    <span class="mi">6</span><span class="p">:</span> <span class="s2">"gray"</span><span class="p">,</span>
+    <span class="mi">7</span><span class="p">:</span> <span class="s2">"gray"</span><span class="p">,</span>
+    <span class="mi">8</span><span class="p">:</span> <span class="s2">"cyan"</span><span class="p">,</span>
+    <span class="mi">9</span><span class="p">:</span> <span class="s2">"black"</span><span class="p">,</span>
 <span class="p">}</span></div>
 
-<span class="sd">&quot;&quot;&quot;Map of QC flag values to colors for diagnostics plotting.&quot;&quot;&quot;</span>
+<span class="sd">"""Map of QC flag values to colors for diagnostics plotting."""</span>
 
 
 <div class="viewcode-block" id="register_qc">
 <a class="viewcode-back" href="../../../api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.register_qc">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">register_qc</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Decorator to mark QC tests that can be accessed by the ApplyQC step.&quot;&quot;&quot;</span>
-    <span class="n">qc_name</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s2">&quot;qc_name&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""Decorator to mark QC tests that can be accessed by the ApplyQC step."""</span>
+    <span class="n">qc_name</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s2">"qc_name"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">qc_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;QC test </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> is missing required &#39;qc_name&#39; attribute.&quot;</span>
+            <span class="sa">f</span><span class="s2">"QC test </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> is missing required 'qc_name' attribute."</span>
         <span class="p">)</span>
     <span class="n">REGISTERED_QC</span><span class="p">[</span><span class="n">qc_name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">cls</span>
     <span class="k">return</span> <span class="bp">cls</span></div>
@@ -457,21 +457,21 @@
 <div class="viewcode-block" id="BaseQC">
 <a class="viewcode-back" href="../../../api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.BaseQC">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">BaseQC</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Initializes a base class for quality control, to be further tweaked when inherited.</span>
 
 <span class="sd">    Follow the docstring format below when creating new QC tests.</span>
 
-<span class="sd">    Target Variable: &quot;Any&quot; or a specific variable names (see impossible_location_test.py)</span>
-<span class="sd">    Flag Number: &quot;Any&quot; or a specific ARGO flag number</span>
-<span class="sd">    Variables Flagged: &quot;Any&quot; or specific variable names, possibly external to the target variable (see valid_profile_test.py)</span>
+<span class="sd">    Target Variable: "Any" or a specific variable names (see impossible_location_test.py)</span>
+<span class="sd">    Flag Number: "Any" or a specific ARGO flag number</span>
+<span class="sd">    Variables Flagged: "Any" or specific variable names, possibly external to the target variable (see valid_profile_test.py)</span>
 <span class="sd">    Your description follows here.</span>
 
 <span class="sd">    Target Variable:</span>
 <span class="sd">    Flag Number:</span>
 <span class="sd">    Variables Flagged:</span>
 
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="n">qc_name</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{}</span>
@@ -479,12 +479,15 @@
     <span class="n">qc_outputs</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="c1"># data may be None when a test is instantiated  to</span>
-        <span class="c1"># introspect its required/provided variables from its parameters.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="c1"># data may be None when a test is instantiated to introspect its</span>
+        <span class="c1"># required/provided variables from its parameters.</span>
+        <span class="c1"># Shallow copy: a new Dataset container per test (cheap - no array copy)</span>
+        <span class="c1"># so a test adding *_QC variables can't leak them into other tests sharing</span>
+        <span class="c1"># the same underlying data. Deep copy was the main QC RAM ratchet.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
 
         <span class="c1"># Connect to the main pipeline logging hierarchy</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;pelagos_py.pipeline.qc.</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">qc_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;_&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="sa">f</span><span class="s2">"pelagos_py.pipeline.qc.</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">qc_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">' '</span><span class="p">,</span><span class="w"> </span><span class="s1">'_'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
         <span class="c1"># Resolve parameters against the schema: applies defaults, enforces required</span>
         <span class="c1"># parameters, and rejects unknown ones. Resolved values become attributes.</span>
@@ -500,37 +503,54 @@
 <div class="viewcode-block" id="BaseQC.describe_parameters">
 <a class="viewcode-back" href="../../../api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.BaseQC.describe_parameters">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">describe_parameters</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a JSON-serialisable description of this QC check&#39;s parameters.</span>
+<span class="w">        </span><span class="sd">"""Return a JSON-serialisable description of this QC check's parameters.</span>
 
 <span class="sd">        See :func:`pelagos_py.utils.parameter_spec.describe`.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">return</span> <span class="n">parameter_spec</span><span class="o">.</span><span class="n">describe</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">parameter_schema</span> <span class="ow">or</span> <span class="p">{})</span></div>
 
 
 <div class="viewcode-block" id="BaseQC.log">
 <a class="viewcode-back" href="../../../api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.BaseQC.log">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Log an info-level message with the QC name prefix.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;[</span><span class="si">%s</span><span class="s2">] </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">qc_name</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span></div>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">console</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Log an info-level message with the QC name prefix. ``console=False`` keeps it in the log file only."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"[</span><span class="si">%s</span><span class="s2">] </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">qc_name</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">"console"</span><span class="p">:</span> <span class="n">console</span><span class="p">})</span></div>
 
 
 <div class="viewcode-block" id="BaseQC.log_warn">
 <a class="viewcode-back" href="../../../api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.BaseQC.log_warn">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">log_warn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Log a warning-level message with the QC name prefix.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;[</span><span class="si">%s</span><span class="s2">] </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">qc_name</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span></div>
+<span class="w">        </span><span class="sd">"""Log a warning-level message with the QC name prefix."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"[</span><span class="si">%s</span><span class="s2">] </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">qc_name</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BaseQC.log_progress">
+<a class="viewcode-back" href="../../../api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.BaseQC.log_progress">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iterable</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">desc</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">"it"</span><span class="p">,</span> <span class="n">leave</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Wrap a countable loop as a standard pipeline progress bar (see :meth:`BaseStep.log_progress`)."""</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.console</span><span class="w"> </span><span class="kn">import</span> <span class="n">progress_bar</span>
+
+        <span class="k">return</span> <span class="n">progress_bar</span><span class="p">(</span>
+            <span class="n">iterable</span><span class="p">,</span>
+            <span class="n">desc</span><span class="o">=</span><span class="n">desc</span><span class="p">,</span>
+            <span class="n">total</span><span class="o">=</span><span class="n">total</span><span class="p">,</span>
+            <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">,</span>
+            <span class="n">leave</span><span class="o">=</span><span class="n">leave</span><span class="p">,</span>
+            <span class="n">logger</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="p">,</span>
+            <span class="n">step_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">qc_name</span><span class="p">,</span>
+        <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="BaseQC.return_qc">
 <a class="viewcode-back" href="../../../api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.BaseQC.return_qc">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">return_qc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Representative of QC processing, to be overridden by subclasses.</span>
+<span class="w">        </span><span class="sd">"""Representative of QC processing, to be overridden by subclasses.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        flags : array-like</span>
 <span class="sd">            Output QC flags for the data specific to the test.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># replace with processing of some kind</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">flags</span></div>
 
@@ -538,7 +558,7 @@
 <div class="viewcode-block" id="BaseQC.plot_diagnostics">
 <a class="viewcode-back" href="../../../api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.BaseQC.plot_diagnostics">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">plot_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Representative of diagnostic plotting (optional).&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Representative of diagnostic plotting (optional)."""</span>
         <span class="c1"># Any relevant diagnostic is generated or written out here</span>
         <span class="k">pass</span></div>
 </div>

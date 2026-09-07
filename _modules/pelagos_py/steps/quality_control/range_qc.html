@@ -399,49 +399,34 @@
 <span class="c1">#</span>
 <span class="c1"># Copyright 2025-2026 National Oceanography Centre and The Contributors</span>
 <span class="c1">#</span>
-<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the "License");</span>
 <span class="c1"># you may not use this file except in compliance with the License.</span>
 <span class="c1"># You may obtain a copy of the License at</span>
 <span class="c1">#</span>
 <span class="c1">#    http://www.apache.org/licenses/LICENSE-2.0</span>
 <span class="c1">#</span>
 <span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
-<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># distributed under the License is distributed on an "AS IS" BASIS,</span>
 <span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
 
-<span class="sd">&quot;&quot;&quot;Unified range QC test.</span>
-
-<span class="sd">Replaces the old ``gross range qc`` (flag values *outside* a good band) and</span>
-<span class="sd">``impossible range qc`` (flag values *inside* an impossible band) with a single</span>
-<span class="sd">test that does both. Each range carries an explicit ``inside``/``outside`` keyword</span>
-<span class="sd">that chooses the behaviour: ``outside`` flags data outside the band (a good band),</span>
-<span class="sd">``inside`` flags data within it (an impossible band). When no keyword is given the</span>
-<span class="sd">bound *order* is used as a fallback (ascending ``[low, high]`` -&gt; outside, descending</span>
-<span class="sd">``[high, low]`` -&gt; inside). A flag may list several ranges so the same flag can cover</span>
-<span class="sd">more than one band. The test can also propagate a variable&#39;s flags onto companion</span>
-<span class="sd">variables (e.g. flag PRES and TEMP bad whenever CNDC is bad), limit the checks to a</span>
-<span class="sd">DEPTH window, and plot every flagged variable when diagnostics are enabled.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""Unified range QC test: flags values outside a good band or inside an impossible one."""</span>
 
 <span class="c1">#### Mandatory imports ####</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_qc</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseQC</span><span class="p">,</span> <span class="n">register_qc</span><span class="p">,</span> <span class="n">flag_cols</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_qc</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseQC</span><span class="p">,</span> <span class="n">register_qc</span>
 
 <span class="c1">#### Custom imports ####</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fig_spec</span>
 
 
-<span class="c1"># Argo flag-merge matrix used when propagating an &quot;also_flag&quot; flag onto a companion:</span>
-<span class="c1"># the result of merging an existing flag (row) with a new one (column) is</span>
-<span class="c1"># QC_COMBINATRIX[existing, new]. This is the same logic Apply QC uses to merge each</span>
-<span class="c1"># test&#39;s flags into the dataset, copied here so a single test&#39;s own cross-flagging is</span>
-<span class="c1"># consistent with it (e.g. a companion already flagged bad (4) is never downgraded to</span>
-<span class="c1"># probably-bad (3) by propagation). See ApplyQC.organise_flags; this could later move</span>
-<span class="c1"># to a shared utility.</span>
+<span class="c1"># Argo flag-merge matrix for propagating flags onto a companion: merging an existing</span>
+<span class="c1"># flag (row) with a new one (column) gives QC_COMBINATRIX[existing, new], so a worse</span>
+<span class="c1"># flag is never downgraded. Same logic as ApplyQC.organise_flags.</span>
 <span class="n">QC_COMBINATRIX</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
     <span class="p">[</span>
         <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">],</span>
@@ -457,61 +442,37 @@
     <span class="p">]</span>
 <span class="p">)</span>
 
-<span class="n">FLAG_MEANINGS</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="mi">0</span><span class="p">:</span> <span class="s2">&quot;no QC&quot;</span><span class="p">,</span>
-    <span class="mi">1</span><span class="p">:</span> <span class="s2">&quot;good&quot;</span><span class="p">,</span>
-    <span class="mi">2</span><span class="p">:</span> <span class="s2">&quot;prob good&quot;</span><span class="p">,</span>
-    <span class="mi">3</span><span class="p">:</span> <span class="s2">&quot;prob bad&quot;</span><span class="p">,</span>
-    <span class="mi">4</span><span class="p">:</span> <span class="s2">&quot;bad&quot;</span><span class="p">,</span>
-    <span class="mi">5</span><span class="p">:</span> <span class="s2">&quot;changed&quot;</span><span class="p">,</span>
-    <span class="mi">8</span><span class="p">:</span> <span class="s2">&quot;interp&quot;</span><span class="p">,</span>
-    <span class="mi">9</span><span class="p">:</span> <span class="s2">&quot;missing&quot;</span><span class="p">,</span>
-<span class="p">}</span>
-
-
 <span class="nd">@register_qc</span>
 <div class="viewcode-block" id="range_qc">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/quality_control/range_qc/index.html#pelagos_py.steps.quality_control.range_qc.range_qc">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">range_qc</span><span class="p">(</span><span class="n">BaseQC</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Flag measurements by value range. A single, configurable replacement for the</span>
-<span class="sd">    old separate &quot;gross range&quot; and &quot;impossible range&quot; tests.</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Flag measurements by value range: a single replacement for the old separate</span>
+<span class="sd">    "gross range" and "impossible range" tests.</span>
 
-<span class="sd">    Each ``{flag: bounds}`` entry describes one or more bands. A band is given as a</span>
-<span class="sd">    ``[low, high]`` pair with an ``inside``/``outside`` keyword saying which side to</span>
-<span class="sd">    flag:</span>
+<span class="sd">    Each ``{flag: bounds}`` entry describes one or more bands:</span>
 
-<span class="sd">    - **``[low, high, &quot;outside&quot;]``** — a *good* band; data ``&lt; low`` or ``&gt; high``</span>
-<span class="sd">      gets the flag. (The old &quot;gross range&quot; behaviour.) Accepts ``outside``, ``out``</span>
-<span class="sd">      or ``o`` (any capitalisation).</span>
-<span class="sd">    - **``[low, high, &quot;inside&quot;]``** — an *impossible* band; data strictly between the</span>
-<span class="sd">      two bounds gets the flag. (The old &quot;impossible range&quot; behaviour.) Accepts</span>
-<span class="sd">      ``inside``, ``in`` or ``i`` (any capitalisation).</span>
-<span class="sd">    - **A single scalar** ``value`` — flags exact matches (``data == value``). Handy</span>
-<span class="sd">      for fill/filler values, e.g. ``4: 0.0`` to flag a pressure of exactly ``0`` as</span>
-<span class="sd">      bad.</span>
+<span class="sd">    - **``[low, high, "outside"]``** — a *good* band; data outside it gets the flag</span>
+<span class="sd">      (accepts ``outside``/``out``/``o``).</span>
+<span class="sd">    - **``[low, high, "inside"]``** — an *impossible* band; data between the bounds</span>
+<span class="sd">      inclusive gets the flag (accepts ``inside``/``in``/``i``).</span>
+<span class="sd">    - **A single scalar** ``value`` — flags exact matches (e.g. a fill value ``4: 0.0``).</span>
 
-<span class="sd">    The same flag can cover several bands by giving a *list of bands*, e.g.</span>
-<span class="sd">    ``4: [[2, 3, &quot;inside&quot;], [0.1, 10, &quot;outside&quot;]]`` — a point is flagged if it falls in</span>
-<span class="sd">    *any* of them.</span>
-
-<span class="sd">    If the keyword is omitted the bound *order* is used as a fallback: an ascending</span>
-<span class="sd">    ``[low, high]`` means ``outside`` (a good band) and a descending ``[high, low]``</span>
-<span class="sd">    means ``inside`` (an impossible band). An explicit keyword always wins over the</span>
-<span class="sd">    order, so write ``inside``/``outside`` when in doubt.</span>
-
-<span class="sd">    Within a variable, entries are applied most-severe-flag-first, so on overlap the</span>
-<span class="sd">    worse flag wins. Anything checked but not flagged is marked good (1).</span>
+<span class="sd">    A flag may give a *list of bands* to cover several ranges. If the keyword is</span>
+<span class="sd">    omitted the bound order decides: ascending ``[low, high]`` means outside,</span>
+<span class="sd">    descending ``[high, low]`` means inside. Entries apply most-severe-flag-first, so</span>
+<span class="sd">    the worse flag wins on overlap; anything checked but not flagged is marked good (1).</span>
 
 <span class="sd">    Target Variable: Any</span>
 <span class="sd">    Flag Number: Any (user-defined)</span>
-<span class="sd">    Variables Flagged: Any (the tested variables, plus any ``also_flag`` companions)</span>
+<span class="sd">    Variables Flagged: Any (the tested variables, minus any ``flag_instead`` sources,</span>
+<span class="sd">    plus any ``also_flag``/``flag_instead`` companions)</span>
 
 <span class="sd">    EXAMPLE</span>
 <span class="sd">    -------</span>
 <span class="sd">    ::</span>
 
-<span class="sd">        - name: &quot;Apply QC&quot;</span>
+<span class="sd">        - name: "Apply QC"</span>
 <span class="sd">          parameters:</span>
 <span class="sd">            qc_settings:</span>
 <span class="sd">              range qc:</span>
@@ -527,37 +488,59 @@
 <span class="sd">                    # one flag, two bands: flag bad both inside [2, 3] and outside [0.1, 10]</span>
 <span class="sd">                    4: [[2, 3, inside], [0.1, 10, outside]]</span>
 <span class="sd">                also_flag:</span>
-<span class="sd">                  CNDC: [PRES, TEMP]    # CNDC&#39;s flags propagate onto PRES &amp; TEMP (worst wins)</span>
-<span class="sd">                test_depth_range: [-100, 0]   # OPTIONAL: only check this DEPTH window</span>
+<span class="sd">                  CNDC: [PRES, TEMP]    # CNDC's flags propagate onto PRES &amp; TEMP (worst wins)</span>
+<span class="sd">                test_depth_range: [0, 100]    # OPTIONAL: only check this DEPTH window</span>
 <span class="sd">          diagnostics: true             # plots every flagged variable, coloured by flag</span>
-<span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">qc_name</span> <span class="o">=</span> <span class="s2">&quot;range qc&quot;</span>
+<span class="sd">    Flagging one variable by another's range (``flag_instead``) — here CHLA is judged</span>
+<span class="sd">    by DEPTH (probably-bad in the quenched top 5 m, probably-good below it) while DEPTH</span>
+<span class="sd">    itself is left unflagged::</span>
+
+<span class="sd">        - name: "Apply QC"</span>
+<span class="sd">          parameters:</span>
+<span class="sd">            qc_settings:</span>
+<span class="sd">              range qc:</span>
+<span class="sd">                variable_ranges:</span>
+<span class="sd">                  DEPTH:</span>
+<span class="sd">                    3: [0, 5, inside]     # top 5 m -&gt; probably bad (correctable)</span>
+<span class="sd">                    2: [0, 5, outside]    # deeper   -&gt; probably good</span>
+<span class="sd">                flag_instead:</span>
+<span class="sd">                  DEPTH: [CHLA]           # DEPTH's flags go onto CHLA; no DEPTH_QC written</span>
+<span class="sd">    """</span>
+
+    <span class="n">qc_name</span> <span class="o">=</span> <span class="s2">"range qc"</span>
 
     <span class="c1"># Target variables are user-defined, so __init__ is redefined to resolve the</span>
-    <span class="c1"># test&#39;s required/provided variables from the parameters.</span>
+    <span class="c1"># test's required/provided variables from the parameters.</span>
     <span class="n">dynamic</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;variable_ranges&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
-            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Per-variable {flag: band} ranges. A band is [low, high, &#39;inside&#39;|&#39;outside&#39;] &quot;</span>
-                           <span class="s2">&quot;(&#39;outside&#39; flags data outside it, &#39;inside&#39; flags data within it); the keyword &quot;</span>
-                           <span class="s2">&quot;may be omitted, in which case an ascending pair means outside and a descending &quot;</span>
-                           <span class="s2">&quot;pair means inside. A flag may give a list of bands to cover several ranges.&quot;</span><span class="p">,</span>
+        <span class="s2">"variable_ranges"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+            <span class="s2">"required"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Per-variable {flag: band} ranges. A band is [low, high, 'inside'|'outside'] "</span>
+                           <span class="s2">"('outside' flags data outside it, 'inside' flags data within it); the keyword "</span>
+                           <span class="s2">"may be omitted, in which case an ascending pair means outside and a descending "</span>
+                           <span class="s2">"pair means inside. A flag may give a list of bands to cover several ranges."</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="s2">&quot;also_flag&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
-            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="p">{},</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Propagate a variable&#39;s flags onto companion variables, e.g. &quot;</span>
-                           <span class="s2">&quot;{&#39;CNDC&#39;: [&#39;PRES&#39;, &#39;TEMP&#39;]}. Merged with the Argo matrix so the worst &quot;</span>
-                           <span class="s2">&quot;flag wins.&quot;</span><span class="p">,</span>
+        <span class="s2">"also_flag"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="p">{},</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Propagate a variable's flags onto companion variables, e.g. "</span>
+                           <span class="s2">"{'CNDC': ['PRES', 'TEMP']}. Merged with the Argo matrix so the worst "</span>
+                           <span class="s2">"flag wins."</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="s2">&quot;test_depth_range&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
-            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Optional [min, max] DEPTH window; checks apply only to samples within it.&quot;</span><span class="p">,</span>
+        <span class="s2">"flag_instead"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="p">{},</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Like also_flag, but the source variable's own flags are not written, e.g. "</span>
+                           <span class="s2">"{'DEPTH': ['CHLA']} flags CHLA by DEPTH's ranges while leaving DEPTH "</span>
+                           <span class="s2">"unflagged."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"test_depth_range"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Optional [min, max] DEPTH window; checks apply only to samples within it."</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">}</span>
 
@@ -566,44 +549,51 @@
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">also_flag</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">also_flag</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">flag_instead</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">flag_instead</span> <span class="o">=</span> <span class="p">{}</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">tested_variables</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variable_ranges</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
 
-        <span class="c1"># Flags become QC values that Apply QC (and this class&#39;s also_flag</span>
-        <span class="c1"># propagation) merges via the Argo 10x10 matrix, so they must be integer</span>
-        <span class="c1"># indices 0-9. Validate up front to fail with a clear config error rather</span>
-        <span class="c1"># than an IndexError deep in return_qc.</span>
+        <span class="c1"># flag_instead sources must define ranges but never appear in the outputs.</span>
+        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">flag_instead</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variable_ranges</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">qc_name</span><span class="si">}</span><span class="s2">] flag_instead source </span><span class="si">{</span><span class="n">var</span><span class="si">!r}</span><span class="s2"> has no entry in "</span>
+                    <span class="sa">f</span><span class="s2">"variable_ranges; give it ranges or remove it."</span>
+                <span class="p">)</span>
+
+        <span class="c1"># Flags index the Argo 10x10 matrix, so they must be integers 0-9. Validate</span>
+        <span class="c1"># up front for a clear config error rather than an IndexError in return_qc.</span>
         <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">meta</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variable_ranges</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">for</span> <span class="n">flag</span> <span class="ow">in</span> <span class="n">meta</span><span class="p">:</span>
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">flag</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">flag</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">flag</span> <span class="o">&lt;=</span> <span class="mi">9</span><span class="p">):</span>
                     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">qc_name</span><span class="si">}</span><span class="s2">] invalid QC flag </span><span class="si">{</span><span class="n">flag</span><span class="si">!r}</span><span class="s2"> for variable &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">!r}</span><span class="s2">; expected an Argo QC flag 0-9.&quot;</span>
+                        <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">qc_name</span><span class="si">}</span><span class="s2">] invalid QC flag </span><span class="si">{</span><span class="n">flag</span><span class="si">!r}</span><span class="s2"> for variable "</span>
+                        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">!r}</span><span class="s2">; expected an Argo QC flag 0-9."</span>
                     <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tested_variables</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">test_depth_range</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;DEPTH&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"DEPTH"</span><span class="p">)</span>
 
-        <span class="c1"># Outputs are the tested variables plus any companions they propagate onto.</span>
+        <span class="c1"># Outputs are the tested variables plus any companions they propagate onto,</span>
+        <span class="c1"># less the flag_instead sources (tested only to flag their companions).</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">qc_outputs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
-            <span class="p">{</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tested_variables</span><span class="p">}</span>
-            <span class="o">|</span> <span class="p">{</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">also_flag</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="p">[])}</span>
+            <span class="p">(</span>
+                <span class="p">{</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tested_variables</span><span class="p">}</span>
+                <span class="o">|</span> <span class="p">{</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">also_flag</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="p">[])}</span>
+                <span class="o">|</span> <span class="p">{</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flag_instead</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="p">[])}</span>
+            <span class="p">)</span>
+            <span class="o">-</span> <span class="p">{</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">flag_instead</span><span class="p">}</span>
         <span class="p">)</span>
 
-    <span class="c1"># Keyword aliases (any capitalisation) that force a band&#39;s behaviour.</span>
-    <span class="n">_OUTSIDE_KEYWORDS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;outside&quot;</span><span class="p">,</span> <span class="s2">&quot;out&quot;</span><span class="p">,</span> <span class="s2">&quot;o&quot;</span><span class="p">}</span>
-    <span class="n">_INSIDE_KEYWORDS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;inside&quot;</span><span class="p">,</span> <span class="s2">&quot;in&quot;</span><span class="p">,</span> <span class="s2">&quot;i&quot;</span><span class="p">}</span>
+    <span class="c1"># Keyword aliases (any capitalisation) that force a band's behaviour.</span>
+    <span class="n">_OUTSIDE_KEYWORDS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"outside"</span><span class="p">,</span> <span class="s2">"out"</span><span class="p">,</span> <span class="s2">"o"</span><span class="p">}</span>
+    <span class="n">_INSIDE_KEYWORDS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"inside"</span><span class="p">,</span> <span class="s2">"in"</span><span class="p">,</span> <span class="s2">"i"</span><span class="p">}</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_iter_bands</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">bounds</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Yield each individual band in a flag&#39;s configured ``bounds`` entry.</span>
-
-<span class="sd">        A flag can carry a single band or a *list* of bands. A list of bands is one</span>
-<span class="sd">        whose elements are themselves lists/tuples (e.g. ``[[2, 3], [0.1, 10]]``);</span>
-<span class="sd">        anything else (a scalar, or a single ``[low, high(, kw)]`` band) is treated as</span>
-<span class="sd">        one band and yielded as-is.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Yield each band: a list-of-lists is several bands, anything else is one.</span>
         <span class="k">if</span> <span class="p">(</span>
             <span class="nb">isinstance</span><span class="p">(</span><span class="n">bounds</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span>
             <span class="ow">and</span> <span class="n">bounds</span>
@@ -615,19 +605,7 @@
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_band_hit</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">vals</span><span class="p">,</span> <span class="n">band</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a boolean mask of the values a single configured ``band`` flags.</span>
-
-<span class="sd">        - A single scalar flags exact matches (e.g. a fill value such as ``0``).</span>
-<span class="sd">        - ``[low, high, &#39;outside&#39;]`` is a good band: values outside it are flagged.</span>
-<span class="sd">        - ``[low, high, &#39;inside&#39;]`` is an impossible band: values strictly between the</span>
-<span class="sd">          bounds are flagged.</span>
-<span class="sd">        - When no keyword is given the order decides: an ascending ``[low, high]`` is a</span>
-<span class="sd">          good band (flag outside), a descending ``[high, low]`` an impossible band</span>
-<span class="sd">          (flag inside).</span>
-
-<span class="sd">        An explicit keyword always wins over the bound order. NaNs compare ``False``</span>
-<span class="sd">        throughout, so missing values are never flagged here.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Boolean mask of values a single band flags. NaNs compare False throughout.</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">band</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
             <span class="k">return</span> <span class="n">vals</span> <span class="o">==</span> <span class="n">band</span>  <span class="c1"># exact-match a single value</span>
 
@@ -636,38 +614,38 @@
         <span class="k">if</span> <span class="n">nums</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">nums</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
             <span class="n">kw</span> <span class="o">=</span> <span class="n">nums</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">kw</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_OUTSIDE_KEYWORDS</span><span class="p">:</span>
-                <span class="n">mode</span> <span class="o">=</span> <span class="s2">&quot;outside&quot;</span>
+                <span class="n">mode</span> <span class="o">=</span> <span class="s2">"outside"</span>
             <span class="k">elif</span> <span class="n">kw</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_INSIDE_KEYWORDS</span><span class="p">:</span>
-                <span class="n">mode</span> <span class="o">=</span> <span class="s2">&quot;inside&quot;</span>
+                <span class="n">mode</span> <span class="o">=</span> <span class="s2">"inside"</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Unknown range keyword </span><span class="si">{</span><span class="n">nums</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">!r}</span><span class="s2">; expected one of &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">_OUTSIDE_KEYWORDS</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="bp">cls</span><span class="o">.</span><span class="n">_INSIDE_KEYWORDS</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+                    <span class="sa">f</span><span class="s2">"Unknown range keyword </span><span class="si">{</span><span class="n">nums</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">!r}</span><span class="s2">; expected one of "</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">_OUTSIDE_KEYWORDS</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="bp">cls</span><span class="o">.</span><span class="n">_INSIDE_KEYWORDS</span><span class="p">)</span><span class="si">}</span><span class="s2">."</span>
                 <span class="p">)</span>
             <span class="n">nums</span> <span class="o">=</span> <span class="n">nums</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">nums</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Invalid range band </span><span class="si">{</span><span class="n">band</span><span class="si">!r}</span><span class="s2">; expected a scalar, [low, high], &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;or [low, high, keyword].&quot;</span>
+                <span class="sa">f</span><span class="s2">"Invalid range band </span><span class="si">{</span><span class="n">band</span><span class="si">!r}</span><span class="s2">; expected a scalar, [low, high], "</span>
+                <span class="sa">f</span><span class="s2">"or [low, high, keyword]."</span>
             <span class="p">)</span>
         <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">nums</span>
         <span class="k">if</span> <span class="n">mode</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">mode</span> <span class="o">=</span> <span class="s2">&quot;outside&quot;</span> <span class="k">if</span> <span class="n">a</span> <span class="o">&lt;=</span> <span class="n">b</span> <span class="k">else</span> <span class="s2">&quot;inside&quot;</span>
+            <span class="n">mode</span> <span class="o">=</span> <span class="s2">"outside"</span> <span class="k">if</span> <span class="n">a</span> <span class="o">&lt;=</span> <span class="n">b</span> <span class="k">else</span> <span class="s2">"inside"</span>
 
         <span class="n">low</span><span class="p">,</span> <span class="n">high</span> <span class="o">=</span> <span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="k">if</span> <span class="n">a</span> <span class="o">&lt;=</span> <span class="n">b</span> <span class="k">else</span> <span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;outside&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">(</span><span class="n">vals</span> <span class="o">&lt;</span> <span class="n">low</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">vals</span> <span class="o">&gt;</span> <span class="n">high</span><span class="p">)</span>  <span class="c1"># good band -&gt; flag outside</span>
-        <span class="k">return</span> <span class="p">(</span><span class="n">vals</span> <span class="o">&gt;</span> <span class="n">low</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">vals</span> <span class="o">&lt;</span> <span class="n">high</span><span class="p">)</span>  <span class="c1"># impossible band -&gt; flag inside</span>
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">"outside"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">vals</span> <span class="o">&lt;</span> <span class="n">low</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">vals</span> <span class="o">&gt;</span> <span class="n">high</span><span class="p">)</span>  <span class="c1"># good band -&gt; flag outside (bounds good)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">vals</span> <span class="o">&gt;=</span> <span class="n">low</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">vals</span> <span class="o">&lt;=</span> <span class="n">high</span><span class="p">)</span>  <span class="c1"># impossible band -&gt; flag inside (bounds incl.)</span>
 
 <div class="viewcode-block" id="range_qc.return_qc">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/quality_control/range_qc/index.html#pelagos_py.steps.quality_control.range_qc.range_qc.return_qc">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">return_qc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">])</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">])</span>
 
         <span class="c1"># Restrict checks to a DEPTH window if requested; otherwise check everything.</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">test_depth_range</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">depth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;DEPTH&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+            <span class="n">depth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"DEPTH"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
             <span class="n">low</span><span class="p">,</span> <span class="n">high</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">test_depth_range</span>
             <span class="n">depth_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">depth</span> <span class="o">&gt;=</span> <span class="n">low</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">depth</span> <span class="o">&lt;=</span> <span class="n">high</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -689,23 +667,25 @@
             <span class="n">qc</span><span class="p">[(</span><span class="n">qc</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">depth_mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
             <span class="n">qc_arrays</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">qc</span>
 
-        <span class="c1"># Propagate flags onto companions using the Argo merge matrix, so a companion</span>
-        <span class="c1"># keeps its own flag wherever merging the propagated one does not upgrade it</span>
-        <span class="c1"># (e.g. an existing bad (4) is never downgraded by a propagated probably-bad (3)).</span>
-        <span class="c1"># Companions that are not themselves tested start from &quot;no QC&quot; (0), so they</span>
-        <span class="c1"># mirror the source&#39;s flags; Apply QC then merges the result with their existing</span>
-        <span class="c1"># flags.</span>
-        <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">companions</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">also_flag</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="n">src</span> <span class="o">=</span> <span class="n">qc_arrays</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">src</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="k">continue</span>
-            <span class="k">for</span> <span class="n">companion</span> <span class="ow">in</span> <span class="n">companions</span><span class="p">:</span>
-                <span class="n">base</span> <span class="o">=</span> <span class="n">qc_arrays</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">companion</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">))</span>
-                <span class="n">qc_arrays</span><span class="p">[</span><span class="n">companion</span><span class="p">]</span> <span class="o">=</span> <span class="n">QC_COMBINATRIX</span><span class="p">[</span><span class="n">base</span><span class="p">,</span> <span class="n">src</span><span class="p">]</span>
+        <span class="c1"># Propagate flags onto companions via the Argo merge matrix (worst wins).</span>
+        <span class="c1"># Untested companions start from "no QC" (0) so they mirror the source; Apply</span>
+        <span class="c1"># QC later merges the result with their existing flags.</span>
+        <span class="k">for</span> <span class="n">mapping</span> <span class="ow">in</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">also_flag</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">flag_instead</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">companions</span> <span class="ow">in</span> <span class="n">mapping</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">src</span> <span class="o">=</span> <span class="n">qc_arrays</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">src</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">for</span> <span class="n">companion</span> <span class="ow">in</span> <span class="n">companions</span><span class="p">:</span>
+                    <span class="n">base</span> <span class="o">=</span> <span class="n">qc_arrays</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">companion</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">))</span>
+                    <span class="n">qc_arrays</span><span class="p">[</span><span class="n">companion</span><span class="p">]</span> <span class="o">=</span> <span class="n">QC_COMBINATRIX</span><span class="p">[</span><span class="n">base</span><span class="p">,</span> <span class="n">src</span><span class="p">]</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">coords</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">]})</span>
+        <span class="c1"># Drop the flag_instead sources now their flags have been propagated.</span>
+        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">flag_instead</span><span class="p">:</span>
+            <span class="n">qc_arrays</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">coords</span><span class="o">=</span><span class="p">{</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">]})</span>
         <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">qc</span> <span class="ow">in</span> <span class="n">qc_arrays</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,),</span> <span class="n">qc</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">,),</span> <span class="n">qc</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">flags</span></div>
 
@@ -713,53 +693,36 @@
 <div class="viewcode-block" id="range_qc.plot_diagnostics">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/quality_control/range_qc/index.html#pelagos_py.steps.quality_control.range_qc.range_qc.plot_diagnostics">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">plot_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">&quot;tkagg&quot;</span><span class="p">)</span>
+        <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">"tkagg"</span><span class="p">)</span>
 
         <span class="c1"># Auto-plot every variable this test flagged: the tested variables first</span>
         <span class="c1"># (they get range lines), then any companions it propagated onto.</span>
+        <span class="c1"># (flag_instead sources drop out below: they have no flags in self.flags.)</span>
         <span class="n">plot_order</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tested_variables</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">companion</span> <span class="ow">in</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">also_flag</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="p">[]):</span>
+        <span class="k">for</span> <span class="n">companion</span> <span class="ow">in</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">also_flag</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="p">[])</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flag_instead</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="p">[]):</span>
             <span class="k">if</span> <span class="n">companion</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">plot_order</span><span class="p">:</span>
                 <span class="n">plot_order</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">companion</span><span class="p">)</span>
         <span class="n">plot_vars</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">var</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">plot_order</span>
-            <span class="k">if</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="ow">and</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">flags</span>
+            <span class="k">if</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="ow">and</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">flags</span>
         <span class="p">]</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">plot_vars</span><span class="p">:</span>
             <span class="k">return</span>
 
         <span class="c1"># Use TIME on the x-axis when available, otherwise the measurement index.</span>
-        <span class="k">if</span> <span class="s2">&quot;TIME&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
-            <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-            <span class="n">xlabel</span> <span class="o">=</span> <span class="s2">&quot;Time&quot;</span>
+        <span class="k">if</span> <span class="s2">"TIME"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+            <span class="n">xlabel</span> <span class="o">=</span> <span class="s2">"Time"</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-            <span class="n">xlabel</span> <span class="o">=</span> <span class="s2">&quot;Index&quot;</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+            <span class="n">xlabel</span> <span class="o">=</span> <span class="s2">"Index"</span>
 
-        <span class="n">n_vars</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">plot_vars</span><span class="p">)</span>
-        <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span>
-            <span class="n">n_vars</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mf">2.6</span> <span class="o">*</span> <span class="n">n_vars</span> <span class="o">+</span> <span class="mf">1.5</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">150</span>
-        <span class="p">)</span>
-        <span class="k">if</span> <span class="n">n_vars</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">axes</span> <span class="o">=</span> <span class="p">[</span><span class="n">axes</span><span class="p">]</span>
-
-        <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span> <span class="n">plot_vars</span><span class="p">):</span>
-            <span class="n">vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-            <span class="n">qc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-
-            <span class="c1"># Plot points coloured by flag (drawn low-to-high so worse flags sit on top).</span>
-            <span class="k">for</span> <span class="n">flag</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
-                <span class="n">mask</span> <span class="o">=</span> <span class="n">qc</span> <span class="o">==</span> <span class="n">flag</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">mask</span><span class="p">):</span>
-                    <span class="k">continue</span>
-                <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-                    <span class="n">x</span><span class="p">[</span><span class="n">mask</span><span class="p">],</span> <span class="n">vals</span><span class="p">[</span><span class="n">mask</span><span class="p">],</span> <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mf">2.5</span><span class="p">,</span>
-                    <span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">flag_cols</span><span class="p">[</span><span class="n">flag</span><span class="p">],</span>
-                    <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">flag</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">FLAG_MEANINGS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">flag</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;n/a&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="n">flag</span><span class="p">,</span>
-                <span class="p">)</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">new_fig</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">plot_vars</span><span class="p">),</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axes</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">plot_vars</span><span class="p">):</span>
+            <span class="n">fig_spec</span><span class="o">.</span><span class="n">flag_points</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
 
             <span class="c1"># Range boundaries for variables that define their own ranges (a single</span>
-            <span class="c1"># scalar is drawn as one line).</span>
+            <span class="c1"># scalar is drawn as one line, coloured by the flag it triggers).</span>
             <span class="k">if</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variable_ranges</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">flag</span><span class="p">,</span> <span class="n">bounds</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variable_ranges</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                     <span class="k">for</span> <span class="n">band</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_iter_bands</span><span class="p">(</span><span class="n">bounds</span><span class="p">):</span>
@@ -769,23 +732,20 @@
                             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bound</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">bound</span><span class="p">):</span>
                                 <span class="k">continue</span>
                             <span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span>
-                                <span class="n">bound</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span>
-                                <span class="n">color</span><span class="o">=</span><span class="n">flag_cols</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">flag</span><span class="p">,</span> <span class="s2">&quot;k&quot;</span><span class="p">),</span>
+                                <span class="n">bound</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">"--"</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span>
+                                <span class="n">color</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">FLAG_COLOURS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">flag</span><span class="p">,</span> <span class="s2">"k"</span><span class="p">),</span>
                             <span class="p">)</span>
 
-            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s2">&quot;major&quot;</span><span class="p">,</span> <span class="n">labelsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">var</span> <span class="o">==</span> <span class="s2">&quot;PRES&quot;</span><span class="p">:</span>
+            <span class="n">ylabel</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">axis_label</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">))</span>
+            <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="n">ylabel</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">var</span> <span class="o">==</span> <span class="s2">"PRES"</span><span class="p">:</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span>
-                <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Flag&quot;</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">&quot;center left&quot;</span><span class="p">,</span> <span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mf">1.01</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span>
-                <span class="n">fontsize</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">framealpha</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">fancybox</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-            <span class="p">)</span>
+            <span class="n">fig_spec</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Flag"</span><span class="p">)</span>
 
-        <span class="n">axes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">xlabel</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
-        <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Range QC&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s2">&quot;bold&quot;</span><span class="p">)</span>
-        <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">(</span><span class="n">rect</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.83</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">xlabel</span> <span class="o">==</span> <span class="s2">"Time"</span><span class="p">:</span>
+            <span class="n">fig_spec</span><span class="o">.</span><span class="n">date_axis</span><span class="p">(</span><span class="n">axes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">which</span><span class="o">=</span><span class="s2">"x"</span><span class="p">)</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">axes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">xlabel</span><span class="o">=</span><span class="n">xlabel</span><span class="p">)</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">finish</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">suptitle</span><span class="o">=</span><span class="s2">"Range QC"</span><span class="p">)</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 </div>
 

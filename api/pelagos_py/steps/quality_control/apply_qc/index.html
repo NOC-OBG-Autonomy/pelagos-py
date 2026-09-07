@@ -370,10 +370,13 @@
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../processing/index.html">pelagos_py.steps.processing</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/bbp/index.html">pelagos_py.steps.processing.bbp</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../processing/chla/index.html">pelagos_py.steps.processing.chla</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../processing/chla_quenching/index.html">pelagos_py.steps.processing.chla_quenching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../processing/deep_correction/index.html">pelagos_py.steps.processing.deep_correction</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/derive_ctd/index.html">pelagos_py.steps.processing.derive_ctd</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/find_profiles/index.html">pelagos_py.steps.processing.find_profiles</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/interpolate_data/index.html">pelagos_py.steps.processing.interpolate_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../processing/interpolate_par/index.html">pelagos_py.steps.processing.interpolate_par</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../processing/mixed_layer_depth/index.html">pelagos_py.steps.processing.mixed_layer_depth</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/oxygen/index.html">pelagos_py.steps.processing.oxygen</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/salinity/index.html">pelagos_py.steps.processing.salinity</a></li>
 </ul>
@@ -400,9 +403,12 @@
 </ul>
 </details></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../utils/index.html">pelagos_py.utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/console/index.html">pelagos_py.utils.console</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/diagnostic_capture/index.html">pelagos_py.utils.diagnostic_capture</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/diagnostics/index.html">pelagos_py.utils.diagnostics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/fig_spec/index.html">pelagos_py.utils.fig_spec</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/log_levels/index.html">pelagos_py.utils.log_levels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/palettes/index.html">pelagos_py.utils.palettes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/parameter_spec/index.html">pelagos_py.utils.parameter_spec</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/qc_handling/index.html">pelagos_py.utils.qc_handling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/yaml_loading/index.html">pelagos_py.utils.yaml_loading</a></li>
@@ -515,7 +521,7 @@ As an example, if an existing flag is 2 (probably good data) and a new flag is 4
 <dl class="field-list simple">
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.14)"><strong>KeyError</strong></a> – If no QC operations are specified, if requested QC tests are invalid, or esssential variables are missing.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.14)"><strong>KeyError</strong></a> – If no QC operations are specified, or if requested QC tests are invalid.</p></li>
 <li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If no data is found in context.</p></li>
 </ul>
 </dd>

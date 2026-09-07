@@ -399,19 +399,19 @@
 <span class="c1">#</span>
 <span class="c1"># Copyright 2025-2026 National Oceanography Centre and The Contributors</span>
 <span class="c1">#</span>
-<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the "License");</span>
 <span class="c1"># you may not use this file except in compliance with the License.</span>
 <span class="c1"># You may obtain a copy of the License at</span>
 <span class="c1">#</span>
 <span class="c1">#    http://www.apache.org/licenses/LICENSE-2.0</span>
 <span class="c1">#</span>
 <span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
-<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># distributed under the License is distributed on an "AS IS" BASIS,</span>
 <span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
 
-<span class="sd">&quot;&quot;&quot;Example step template. Copy and populate this example, which will inherit additional functionality from BaseStep.&quot;&quot;&quot;</span>
+<span class="sd">"""Example step template. Copy and populate this example, which will inherit additional functionality from BaseStep."""</span>
 
 <span class="c1">#### Mandatory imports ####</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
@@ -426,36 +426,45 @@
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/templates/blank_step/index.html#pelagos_py.steps.templates.blank_step.BlankStep">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">BlankStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
 
-    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Blank Step&quot;</span>
+    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Blank Step"</span>
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="c1"># Declare every parameter here (see pelagos_py.utils.parameter_spec). Omit</span>
-    <span class="c1"># &quot;default&quot; (or set &quot;required&quot;: True) for parameters with no sensible preset.</span>
+    <span class="c1"># "default" (or set "required": True) for parameters with no sensible preset.</span>
     <span class="c1"># Resolved values are available as attributes, e.g. self.my_threshold.</span>
     <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="c1"># &quot;my_threshold&quot;: {</span>
-        <span class="c1">#     &quot;type&quot;: float,</span>
-        <span class="c1">#     &quot;default&quot;: 1.0,</span>
-        <span class="c1">#     &quot;description&quot;: &quot;What this controls.&quot;,</span>
+        <span class="c1"># "my_threshold": {</span>
+        <span class="c1">#     "type": float,</span>
+        <span class="c1">#     "default": 1.0,</span>
+        <span class="c1">#     "description": "What this controls.",</span>
         <span class="c1"># },</span>
     <span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
 
-        <span class="c1"># EXAMPLE: self.data[&quot;C&quot;] = self.data[&quot;A&quot;] * self.data[&quot;B&quot;]</span>
+        <span class="c1"># EXAMPLE: self.data["C"] = self.data["A"] * self.data["B"]</span>
+
+        <span class="c1"># If the step DERIVES anything from more than one sample (a rolling window,</span>
+        <span class="c1"># a fit, a mean/median/max, a peak), flagged samples must not feed it. Use</span>
+        <span class="c1"># self.calculation_mask() to exclude them from the derivation while still</span>
+        <span class="c1"># writing the result to every sample. A pure per-point formula (as above)</span>
+        <span class="c1"># needs none of this - generate_qc already propagates its inputs' flags.</span>
+        <span class="c1"># EXAMPLE: usable = self.calculation_mask(["A", "B"])</span>
+        <span class="c1">#          reference = np.nanmedian(self.data["A"].values[usable])</span>
+        <span class="c1">#          self.data["C"] = self.data["A"] - reference</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct_data</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">update_qc</span><span class="p">()</span>
 
         <span class="c1"># If a new variable was added, use self.generate_qc()</span>
-        <span class="c1"># EXAMPLE: self.generate_qc({&quot;C_QC&quot;: [&quot;A_QC&quot;, &quot;B_QC&quot;]})</span>
+        <span class="c1"># EXAMPLE: self.generate_qc({"C_QC": ["A_QC", "B_QC"]})</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>

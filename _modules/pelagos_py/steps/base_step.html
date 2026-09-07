@@ -399,18 +399,18 @@
 <span class="c1">#</span>
 <span class="c1"># Copyright 2025-2026 National Oceanography Centre and The Contributors</span>
 <span class="c1">#</span>
-<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the "License");</span>
 <span class="c1"># you may not use this file except in compliance with the License.</span>
 <span class="c1"># You may obtain a copy of the License at</span>
 <span class="c1">#</span>
 <span class="c1">#    http://www.apache.org/licenses/LICENSE-2.0</span>
 <span class="c1">#</span>
 <span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
-<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># distributed under the License is distributed on an "AS IS" BASIS,</span>
 <span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
-<span class="sd">&quot;&quot;&quot;This module defines the base class for pipeline steps and configurations.&quot;&quot;&quot;</span>
+<span class="sd">"""This module defines the base class for pipeline steps and configurations."""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.config_mirror</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigMirrorMixin</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">parameter_spec</span>
@@ -427,17 +427,17 @@
 <a class="viewcode-back" href="../../../api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.REGISTERED_STEPS">[docs]</a>
 <span class="n">REGISTERED_STEPS</span> <span class="o">=</span> <span class="p">{}</span></div>
 
-<span class="sd">&quot;&quot;&quot;Registry of explicitly registered step classes.&quot;&quot;&quot;</span>
+<span class="sd">"""Registry of explicitly registered step classes."""</span>
 
 
 <div class="viewcode-block" id="register_step">
 <a class="viewcode-back" href="../../../api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.register_step">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">register_step</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Decorator to mark a step class for inclusion in the pipeline.&quot;&quot;&quot;</span>
-    <span class="n">step_name</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s2">&quot;step_name&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""Decorator to mark a step class for inclusion in the pipeline."""</span>
+    <span class="n">step_name</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s2">"step_name"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">step_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Class </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> is missing required &#39;step_name&#39; attribute.&quot;</span>
+            <span class="sa">f</span><span class="s2">"Class </span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> is missing required 'step_name' attribute."</span>
         <span class="p">)</span>
     <span class="n">REGISTERED_STEPS</span><span class="p">[</span><span class="n">step_name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">cls</span>
     <span class="k">return</span> <span class="bp">cls</span></div>
@@ -447,21 +447,21 @@
 <div class="viewcode-block" id="BaseStep">
 <a class="viewcode-back" href="../../../api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">BaseStep</span><span class="p">(</span><span class="n">ConfigMirrorMixin</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Base class for pipeline steps with config-mirroring support.</span>
 <span class="sd">    Every concrete subclass (registered via @register_step) inherits this.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="c1">#: Declarative parameter schema. See :mod:`pelagos_py.utils.parameter_spec`.</span>
-    <span class="c1">#: ``None`` means &quot;not declared yet&quot; and validation is skipped (e.g. the</span>
+    <span class="c1">#: ``None`` means "not declared yet" and validation is skipped (e.g. the</span>
     <span class="c1">#: deferred oxygen steps). Any dict — including an empty ``{}`` for a step that</span>
     <span class="c1">#: genuinely takes no parameters — opts in to strict validation.</span>
     <span class="n">parameter_schema</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="c1">#: Parameter keys consumed by framework mixins rather than the schema, and so</span>
-    <span class="c1">#: permitted in a step&#39;s config even when absent from ``parameter_schema``</span>
+    <span class="c1">#: permitted in a step's config even when absent from ``parameter_schema``</span>
     <span class="c1">#: (e.g. ``qc_handling_settings`` handled by :class:`QCHandlingMixin`).</span>
-    <span class="n">framework_parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;qc_handling_settings&quot;</span><span class="p">}</span>
+    <span class="n">framework_parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"qc_handling_settings"</span><span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">diagnostics</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="c1"># === Core behaviour (same as before) ===</span>
@@ -489,18 +489,18 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
         <span class="c1"># Get child logger initialized in pipeline.py</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;pelagos_py.pipeline.step.</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="sa">f</span><span class="s2">"pelagos_py.pipeline.step.</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
         <span class="c1"># === Initialise config mirror system ===</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_init_config_mirror</span><span class="p">()</span>
         <span class="c1"># canonical parameters go in private store</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-            <span class="s2">&quot;parameters&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span>
-            <span class="s2">&quot;diagnostics&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">,</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s2">"parameters"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span>
+            <span class="s2">"diagnostics"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">,</span>
         <span class="p">}</span>
         <span class="c1"># mirror parameters &amp; diagnostics as attributes</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_reset_parameter_bridge</span><span class="p">(</span><span class="n">mirror_keys</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">,</span> <span class="s2">&quot;diagnostics&quot;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reset_parameter_bridge</span><span class="p">(</span><span class="n">mirror_keys</span><span class="o">=</span><span class="p">[</span><span class="s2">"parameters"</span><span class="p">,</span> <span class="s2">"diagnostics"</span><span class="p">])</span>
 
         <span class="c1"># expose param keys as attributes (for user convenience)</span>
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -521,51 +521,51 @@
 <div class="viewcode-block" id="BaseStep.describe_parameters">
 <a class="viewcode-back" href="../../../api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep.describe_parameters">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">describe_parameters</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a JSON-serialisable description of this step&#39;s parameters.</span>
+<span class="w">        </span><span class="sd">"""Return a JSON-serialisable description of this step's parameters.</span>
 
 <span class="sd">        Introspection surface for external tools (e.g. a dashboard) that need to</span>
 <span class="sd">        render a parameter form without instantiating the step. See</span>
 <span class="sd">        :func:`pelagos_py.utils.parameter_spec.describe`.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">return</span> <span class="n">parameter_spec</span><span class="o">.</span><span class="n">describe</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">parameter_schema</span> <span class="ow">or</span> <span class="p">{})</span></div>
 
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">describe_parameters</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a JSON-serialisable description of this step&#39;s parameters.</span>
+<span class="w">        </span><span class="sd">"""Return a JSON-serialisable description of this step's parameters.</span>
 
 <span class="sd">        Introspection surface for external tools (e.g. a dashboard) that need to</span>
 <span class="sd">        render a parameter form without instantiating the step. See</span>
 <span class="sd">        :func:`pelagos_py.utils.parameter_spec.describe`.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">return</span> <span class="n">parameter_spec</span><span class="o">.</span><span class="n">describe</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">parameter_schema</span> <span class="ow">or</span> <span class="p">{})</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Run the step and return the updated pipeline context.</span>
 
 <span class="sd">        Subclasses override this with their processing logic; the base</span>
 <span class="sd">        implementation only enforces that they do so.</span>
 
 <span class="sd">        :meta private:</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Step &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; must implement a run() method.&quot;</span><span class="p">)</span>
+<span class="sd">        """</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Step '</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">' must implement a run() method."</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Optional hook for emitting step diagnostics.</span>
 
 <span class="sd">        Subclasses override this to log or plot information about their output;</span>
 <span class="sd">        the base implementation does nothing.</span>
 
 <span class="sd">        :meta private:</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">pass</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_wrap_diagnostics_timing</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Wrap the step&#39;s diagnostics method so the performance timer stops the</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Wrap the step's diagnostics method so the performance timer stops the</span>
 <span class="sd">        moment diagnostics generation begins.</span>
 
 <span class="sd">        Steps call ``self.generate_diagnostics()`` (or ``plot_diagnostics()``) as</span>
@@ -574,10 +574,10 @@
 <span class="sd">        every individual step needing to call :meth:`report_performance` itself.</span>
 
 <span class="sd">        :meta private:</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
 
-        <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;generate_diagnostics&quot;</span><span class="p">,</span> <span class="s2">&quot;plot_diagnostics&quot;</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"generate_diagnostics"</span><span class="p">,</span> <span class="s2">"plot_diagnostics"</span><span class="p">):</span>
             <span class="n">method</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="n">method</span><span class="p">):</span>
                 <span class="k">continue</span>
@@ -590,58 +590,85 @@
             <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">wrapped</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">report_performance</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Log the step&#39;s processing time and memory use (diagnostics mode only).</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Log the step's processing time and memory use (diagnostics mode only).</span>
 
 <span class="sd">        The pipeline records a start time before :meth:`run` and calls this once</span>
 <span class="sd">        afterwards. :meth:`_wrap_diagnostics_timing` also triggers it the moment a</span>
-<span class="sd">        step&#39;s diagnostics method is entered, so the reported time reflects the</span>
+<span class="sd">        step's diagnostics method is entered, so the reported time reflects the</span>
 <span class="sd">        processing work only and not how long a blocking plot is left open. The</span>
 <span class="sd">        call is idempotent: the first call reports, any later call (including the</span>
-<span class="sd">        pipeline&#39;s fallback) is a no-op.</span>
+<span class="sd">        pipeline's fallback) is a no-op.</span>
 
 <span class="sd">        :meta private:</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">start</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_diagnostics_start&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">start</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_diagnostics_reported&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+<span class="sd">        """</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"_diagnostics_start"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">start</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"_diagnostics_reported"</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
             <span class="k">return</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_diagnostics_reported</span> <span class="o">=</span> <span class="kc">True</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Execution time: </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> seconds.&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Execution time: </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> seconds."</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="kn">import</span><span class="w"> </span><span class="nn">psutil</span>
 
             <span class="n">mem_info</span> <span class="o">=</span> <span class="n">psutil</span><span class="o">.</span><span class="n">Process</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">())</span><span class="o">.</span><span class="n">memory_info</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Current memory usage: </span><span class="si">{</span><span class="n">mem_info</span><span class="o">.</span><span class="n">rss</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="w"> </span><span class="o">**</span><span class="w"> </span><span class="mi">2</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> MB&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Current memory usage: </span><span class="si">{</span><span class="n">mem_info</span><span class="o">.</span><span class="n">rss</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="w"> </span><span class="o">**</span><span class="w"> </span><span class="mi">2</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> MB"</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
             <span class="k">pass</span>
 
 <div class="viewcode-block" id="BaseStep.log">
 <a class="viewcode-back" href="../../../api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep.log">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Log an info-level message with step name prefix.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;[</span><span class="si">%s</span><span class="s2">] </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span></div>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">console</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Log an info-level message with step name prefix. ``console=False`` keeps it in the log file only."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"[</span><span class="si">%s</span><span class="s2">] </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">"console"</span><span class="p">:</span> <span class="n">console</span><span class="p">})</span></div>
+
+
+<div class="viewcode-block" id="BaseStep.log_generating_diagnostics">
+<a class="viewcode-back" href="../../../api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep.log_generating_diagnostics">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log_generating_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Log that diagnostics are being produced, distinguishing report-capture runs from ``diagnostics: true``."""</span>
+        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"_report_capture"</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">"Generating diagnostics for report"</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">"Generating diagnostics"</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BaseStep.log_progress">
+<a class="viewcode-back" href="../../../api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep.log_progress">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">iterable</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">desc</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">"it"</span><span class="p">,</span> <span class="n">leave</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Wrap a countable sub-loop as a standard pipeline progress bar; drop-in for ``tqdm(iterable, ...)``."""</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.console</span><span class="w"> </span><span class="kn">import</span> <span class="n">progress_bar</span>
+
+        <span class="k">return</span> <span class="n">progress_bar</span><span class="p">(</span>
+            <span class="n">iterable</span><span class="p">,</span>
+            <span class="n">desc</span><span class="o">=</span><span class="n">desc</span><span class="p">,</span>
+            <span class="n">total</span><span class="o">=</span><span class="n">total</span><span class="p">,</span>
+            <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">,</span>
+            <span class="n">leave</span><span class="o">=</span><span class="n">leave</span><span class="p">,</span>
+            <span class="n">logger</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="p">,</span>
+            <span class="n">step_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="BaseStep.log_warn">
 <a class="viewcode-back" href="../../../api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep.log_warn">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">log_warn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">warning_type</span><span class="o">=</span><span class="ne">UserWarning</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Log a warning-level message with step name prefix.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;[</span><span class="si">%s</span><span class="s2">] </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span></div>
+<span class="w">        </span><span class="sd">"""Log a warning-level message with step name prefix."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"[</span><span class="si">%s</span><span class="s2">] </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="BaseStep.check_data">
 <a class="viewcode-back" href="../../../api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep.check_data">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">check_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check for data in context for transformer steps.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="s2">&quot;data&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Check for data in context for transformer steps."""</span>
+        <span class="k">if</span> <span class="s2">"data"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-                <span class="s2">&quot;[</span><span class="si">%s</span><span class="s2">] No data found in context. Please load data first.&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+                <span class="s2">"[</span><span class="si">%s</span><span class="s2">] No data found in context. Please load data first."</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
             <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
                 <span class="n">STOP</span><span class="p">,</span>
-                <span class="s2">&quot;Pipeline stopped at step &#39;</span><span class="si">%s</span><span class="s2">&#39;. &quot;</span>
-                <span class="s2">&quot;Add a data-loading step before it and re-run.&quot;</span><span class="p">,</span>
+                <span class="s2">"Pipeline stopped at step '</span><span class="si">%s</span><span class="s2">'. "</span>
+                <span class="s2">"Add a data-loading step before it and re-run."</span><span class="p">,</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
@@ -650,15 +677,15 @@
 <div class="viewcode-block" id="BaseStep.halt">
 <a class="viewcode-back" href="../../../api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep.halt">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">halt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Stop the pipeline cleanly for an unrecoverable misconfiguration.</span>
+<span class="w">        </span><span class="sd">"""Stop the pipeline cleanly for an unrecoverable misconfiguration.</span>
 
 <span class="sd">        Logs ``message`` (the detail and any fix/install hint) at ERROR level,</span>
 <span class="sd">        then a terminal STOP line marking the deliberate halt, and exits. Use</span>
 <span class="sd">        this instead of raising for config problems discovered at run time, so</span>
 <span class="sd">        the user sees one actionable error rather than a wrapped traceback.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;[</span><span class="si">%s</span><span class="s2">] </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">STOP</span><span class="p">,</span> <span class="s2">&quot;Pipeline stopped at step &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"[</span><span class="si">%s</span><span class="s2">] </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">STOP</span><span class="p">,</span> <span class="s2">"Pipeline stopped at step '</span><span class="si">%s</span><span class="s2">'."</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
         <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
 
 
@@ -667,23 +694,23 @@
 <div class="viewcode-block" id="BaseStep.update_parameters">
 <a class="viewcode-back" href="../../../api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep.update_parameters">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">update_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Update parameter values both in attributes and in private store.</span>
 
 <span class="sd">        Example::</span>
 
-<span class="sd">            self.update_parameters(file_path=&#39;newfile.nc&#39;, add_meta=False)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">            self.update_parameters(file_path='newfile.nc', add_meta=False)</span>
+<span class="sd">        """</span>
         <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
             <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span><span class="p">[</span><span class="s2">"parameters"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span></div>
 
 
 <div class="viewcode-block" id="BaseStep.generate_config">
 <a class="viewcode-back" href="../../../api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep.generate_config">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return this step&#39;s config dict (suitable for saving to YAML).&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Return this step's config dict (suitable for saving to YAML)."""</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_sync_attributes_to_parameters</span><span class="p">()</span>
         <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span><span class="p">)</span></div>
 
@@ -691,17 +718,17 @@
 <div class="viewcode-block" id="BaseStep.save_config">
 <a class="viewcode-back" href="../../../api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep.save_config">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">save_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save this step&#39;s config to YAML (for standalone debugging).&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Save this step's config to YAML (for standalone debugging)."""</span>
         <span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span><span class="o">,</span><span class="w"> </span><span class="nn">os</span>
 
         <span class="n">cfg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_config</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">safe_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-            <span class="n">path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">safe_name</span><span class="si">}</span><span class="s2">_step.yaml&quot;</span>
-        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">safe_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">" "</span><span class="p">,</span> <span class="s2">"_"</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">safe_name</span><span class="si">}</span><span class="s2">_step.yaml"</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"."</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">yaml</span><span class="o">.</span><span class="n">safe_dump</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">] Step config saved → </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">] Step config saved → </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">cfg</span></div>
 </div>
 

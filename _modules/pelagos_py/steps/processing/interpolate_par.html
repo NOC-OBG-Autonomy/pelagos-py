@@ -1,0 +1,805 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pelagos_py.steps.processing.interpolate_par &#8212; Pelagos-Py</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../_static/styles/theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-codeautolink.css?v=b2176991" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=1376b26a" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../../../_static/scripts/fontawesome.js?digest=a95f357e85573c9b56d5"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5" />
+<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5" />
+
+    <script src="../../../../_static/documentation_options.js?v=0b8c961e"></script>
+    <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../../_static/copybutton.js?v=df1a032d"></script>
+    <script src="../../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/pelagos_py/steps/processing/interpolate_par';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="canonical" href="https://noc-obg-autonomy.github.io/pelagos-py/_modules/pelagos_py/steps/processing/interpolate_par.html" />
+    <link rel="icon" href="../../../../_static/NOC_logo.svg"/>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0" />
+  
+    
+    <script src="../../../../_static/searchtools.js"></script>
+    <script src="../../../../_static/language_data.js"></script>
+    <script src="../../../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../../_static/pelagos-py-text-logo.png" class="logo__image only-light" alt="Pelagos-Py - Home"/>
+    <img src="../../../../_static/pelagos-py-text-logo.png" class="logo__image only-dark pst-js-only" alt="Pelagos-Py - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../user_guide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../api_reference.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../development.html">
+    Development
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NOC-OBG-Autonomy/pelagos-py" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../user_guide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../api_reference.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../development.html">
+    Development
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NOC-OBG-Autonomy/pelagos-py" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../../index.html" class="nav-link">Module code</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../steps.html" class="nav-link">pelagos_py.steps</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">pelagos_py.steps.processing.interpolate_par</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for pelagos_py.steps.processing.interpolate_par</h1><div class="highlight"><pre>
+<span></span><span class="c1"># This file is part of pelagos_py.</span>
+<span class="c1">#</span>
+<span class="c1"># Copyright 2025-2026 National Oceanography Centre and The Contributors</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the "License");</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#    http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an "AS IS" BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="sd">"""Derive per-profile light depths (euphotic depth and an iPAR isolume) from PAR.</span>
+
+<span class="sd">Computes two per-profile depth scalars from the downwelling PAR profile for</span>
+<span class="sd">downstream quenching corrections, optionally interpolating each in time onto</span>
+<span class="sd">profiles without usable PAR. See :class:`InterpolatePAR` for details.</span>
+<span class="sd">"""</span>
+
+<span class="c1">#### Mandatory imports ####</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.qc_handling</span><span class="w"> </span><span class="kn">import</span> <span class="n">QCHandlingMixin</span>
+
+<span class="c1">#### Custom imports ####</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fig_spec</span>
+
+
+<div class="viewcode-block" id="estimate_euphotic_depth">
+<a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/interpolate_par/index.html#pelagos_py.steps.processing.interpolate_par.estimate_euphotic_depth">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">estimate_euphotic_depth</span><span class="p">(</span><span class="n">par</span><span class="p">,</span> <span class="n">depth</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Euphotic depth (1% light) from a log-linear Beer-Lambert fit of PAR vs depth.</span>
+
+<span class="sd">    Returns metres positive down, or ``NaN`` when the fit is invalid (fewer than</span>
+<span class="sd">    4 valid points, non-physical slope, or beyond the ~186 m clear-water limit).</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.stats</span><span class="w"> </span><span class="kn">import</span> <span class="n">linregress</span>
+
+    <span class="n">par</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">par</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">depth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">depth</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
+    <span class="c1"># Only finite, positive PAR at finite depths can be log-fitted.</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">par</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">par</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">depth</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">4</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="n">z</span> <span class="o">=</span> <span class="n">depth</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">par</span><span class="p">[</span><span class="n">mask</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">z</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">z</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>  <span class="c1"># regression wants increasing depth</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">z</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">slope</span> <span class="o">=</span> <span class="n">linregress</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">slope</span>
+    <span class="c1"># Reject non-physical attenuation (too clear or too turbid).</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">slope</span><span class="p">)</span> <span class="ow">or</span> <span class="n">slope</span> <span class="o">&gt;=</span> <span class="o">-</span><span class="mf">0.005</span> <span class="ow">or</span> <span class="n">slope</span> <span class="o">&lt;=</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="n">zeu</span> <span class="o">=</span> <span class="mf">4.605</span> <span class="o">/</span> <span class="p">(</span><span class="o">-</span><span class="n">slope</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">zeu</span> <span class="k">if</span> <span class="n">zeu</span> <span class="o">&lt;=</span> <span class="mi">186</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span></div>
+
+
+
+<div class="viewcode-block" id="depth_of_ipar">
+<a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/interpolate_par/index.html#pelagos_py.steps.processing.interpolate_par.depth_of_ipar">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">depth_of_ipar</span><span class="p">(</span><span class="n">depth</span><span class="p">,</span> <span class="n">ipar</span><span class="p">,</span> <span class="n">level</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Depth (positive-down m) where downwelling iPAR crosses ``level``, or NaN.</span>
+
+<span class="sd">    Interpolates on the irregular profile grid; clamps to the deepest /</span>
+<span class="sd">    shallowest sample when ``level`` lies outside the observed PAR range.</span>
+<span class="sd">    """</span>
+    <span class="n">depth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">depth</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">ipar</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ipar</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">valid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">depth</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">ipar</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">valid</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="n">zi</span> <span class="o">=</span> <span class="n">depth</span><span class="p">[</span><span class="n">valid</span><span class="p">]</span>
+    <span class="n">pi</span> <span class="o">=</span> <span class="n">ipar</span><span class="p">[</span><span class="n">valid</span><span class="p">]</span>
+    <span class="n">order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">zi</span><span class="p">)</span>  <span class="c1"># surface -&gt; deep</span>
+    <span class="n">zi</span> <span class="o">=</span> <span class="n">zi</span><span class="p">[</span><span class="n">order</span><span class="p">]</span>
+    <span class="n">pi</span> <span class="o">=</span> <span class="n">pi</span><span class="p">[</span><span class="n">order</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">level</span> <span class="o">&lt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">pi</span><span class="p">):</span>  <span class="c1"># whole profile brighter than level -&gt; deepest sample</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">zi</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">level</span> <span class="o">&gt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">pi</span><span class="p">):</span>  <span class="c1"># whole profile darker than level -&gt; surface</span>
+        <span class="k">return</span> <span class="mf">0.0</span>
+    <span class="c1"># PAR decreases with depth; reverse so np.interp sees increasing x.</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">pi</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">zi</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span></div>
+
+
+
+<span class="nd">@register_step</span>
+<div class="viewcode-block" id="InterpolatePAR">
+<a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/interpolate_par/index.html#pelagos_py.steps.processing.interpolate_par.InterpolatePAR">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">InterpolatePAR</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Derive the euphotic depth ``ZEU`` and the iPAR isolume depth ``Z_IPAR``.</span>
+
+<span class="sd">    Both are per-profile scalars found from the downwelling PAR profile and</span>
+<span class="sd">    broadcast across each profile's measurements. Profiles without usable PAR</span>
+<span class="sd">    are optionally filled by interpolating each scalar in time (``interpolate_*``);</span>
+<span class="sd">    otherwise they stay ``NaN``.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    par_var : str, optional</span>
+<span class="sd">        Downwelling PAR variable read per profile. Default ``"DOWNWELLING_PAR"``.</span>
+<span class="sd">    depth_variable : str, optional</span>
+<span class="sd">        Vertical coordinate (m, positive down). Default ``"DEPTH"``.</span>
+<span class="sd">    ipar_level : float, optional</span>
+<span class="sd">        Irradiance level (umol m-2 s-1) whose crossing depth becomes ``Z_IPAR``.</span>
+<span class="sd">        Default ``15.0``.</span>
+<span class="sd">    compute_zeu, compute_ipar : bool, optional</span>
+<span class="sd">        Whether to produce ``ZEU`` / ``Z_IPAR`` at all. Both default ``True``.</span>
+<span class="sd">    interpolate_zeu, interpolate_ipar : bool, optional</span>
+<span class="sd">        When ``True`` (default) the scalar is interpolated in time onto every</span>
+<span class="sd">        profile; when ``False`` only profiles with usable PAR carry it.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    .. code-block:: yaml</span>
+
+<span class="sd">        steps:</span>
+<span class="sd">          - name: Interpolate PAR</span>
+<span class="sd">            parameters:</span>
+<span class="sd">              par_var: DOWNWELLING_PAR</span>
+<span class="sd">              ipar_level: 15.0</span>
+<span class="sd">              interpolate_zeu: true</span>
+<span class="sd">              interpolate_ipar: true</span>
+<span class="sd">            diagnostics: false</span>
+
+<span class="sd">    Which samples are usable is governed by ``qc_handling_settings``</span>
+<span class="sd">    (``calculation_flag_filter``), exactly as in the other processing steps.</span>
+<span class="sd">    """</span>
+
+    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Interpolate PAR"</span>
+    <span class="c1"># DOWNWELLING_PAR is file-native, so it is validated in run() rather than by</span>
+    <span class="c1"># the pipeline pre-run check (which only knows standard/step-produced vars).</span>
+    <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">,</span> <span class="s2">"TIME"</span><span class="p">,</span> <span class="s2">"DEPTH"</span><span class="p">]</span>
+    <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"ZEU"</span><span class="p">,</span> <span class="s2">"Z_IPAR"</span><span class="p">]</span>
+    <span class="c1"># par_var/depth_variable are config-driven variable names (see run()'s halt</span>
+    <span class="c1"># check, which validates the *actual* configured names, not this static list).</span>
+    <span class="n">variable_parameters</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"par_var"</span><span class="p">,</span> <span class="s2">"depth_variable"</span><span class="p">]</span>
+    <span class="n">uses_data_subset</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"par_var"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="s2">"DOWNWELLING_PAR"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Downwelling PAR variable read per profile."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"depth_variable"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="s2">"DEPTH"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Vertical coordinate (m, positive down)."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"ipar_level"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="mf">15.0</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Irradiance level whose crossing depth becomes Z_IPAR."</span><span class="p">,</span>
+            <span class="s2">"min"</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">"unit"</span><span class="p">:</span> <span class="s2">"umol/m2/s"</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"compute_zeu"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Produce the euphotic depth ZEU."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"compute_ipar"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Produce the iPAR isolume depth Z_IPAR."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"interpolate_zeu"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="p">(</span>
+                <span class="s2">"Interpolate ZEU in time onto profiles without usable PAR "</span>
+                <span class="s2">"(off: leave those NaN)."</span>
+            <span class="p">),</span>
+        <span class="p">},</span>
+        <span class="s2">"interpolate_ipar"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="p">(</span>
+                <span class="s2">"Interpolate Z_IPAR in time onto profiles without usable PAR "</span>
+                <span class="s2">"(off: leave those NaN)."</span>
+            <span class="p">),</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">"Deriving PAR light depths (ZEU / Z_IPAR)..."</span><span class="p">)</span>
+
+        <span class="n">par_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">par_var</span>
+        <span class="n">depth_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth_variable</span>
+        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="p">(</span><span class="n">par_var</span><span class="p">,</span> <span class="n">depth_var</span><span class="p">,</span> <span class="s2">"PROFILE_NUMBER"</span><span class="p">,</span> <span class="s2">"TIME"</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">halt</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">' is required by Interpolate PAR but is missing from the "</span>
+                    <span class="s2">"dataset. Run the steps that provide it first."</span>
+                <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">compute_zeu</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_ipar</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">"Neither ZEU nor Z_IPAR requested; nothing to do."</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
+
+        <span class="c1"># Flagged PAR/depth samples must not inform a scalar, so NaN them out.</span>
+        <span class="n">usable</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculation_mask</span><span class="p">([</span><span class="n">par_var</span><span class="p">,</span> <span class="n">depth_var</span><span class="p">])</span>
+        <span class="n">par</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">usable</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">par_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+        <span class="n">depth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">depth_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">prof</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">tidx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="n">tsec</span> <span class="o">=</span> <span class="n">tidx</span><span class="o">.</span><span class="n">asi8</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1e9</span>
+        <span class="n">tsec</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">tidx</span><span class="o">.</span><span class="n">isna</span><span class="p">())]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+        <span class="n">profiles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">prof</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">prof</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">))])</span>
+
+        <span class="n">prof_tsec</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">zeu_calc</span><span class="p">,</span> <span class="n">zipar_calc</span> <span class="o">=</span> <span class="p">{},</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">pn</span> <span class="ow">in</span> <span class="n">profiles</span><span class="p">:</span>
+            <span class="n">sel</span> <span class="o">=</span> <span class="n">prof</span> <span class="o">==</span> <span class="n">pn</span>
+            <span class="n">z</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">depth</span><span class="p">[</span><span class="n">sel</span><span class="p">],</span> <span class="n">par</span><span class="p">[</span><span class="n">sel</span><span class="p">],</span> <span class="n">tsec</span><span class="p">[</span><span class="n">sel</span><span class="p">]</span>
+            <span class="n">prof_tsec</span><span class="p">[</span><span class="n">pn</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">t</span><span class="p">))</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_zeu</span><span class="p">:</span>
+                <span class="n">zeu_calc</span><span class="p">[</span><span class="n">pn</span><span class="p">]</span> <span class="o">=</span> <span class="n">estimate_euphotic_depth</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_ipar</span><span class="p">:</span>
+                <span class="n">zipar_calc</span><span class="p">[</span><span class="n">pn</span><span class="p">]</span> <span class="o">=</span> <span class="n">depth_of_ipar</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ipar_level</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_diag</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"prof_tsec"</span><span class="p">:</span> <span class="n">prof_tsec</span><span class="p">,</span> <span class="s2">"profiles"</span><span class="p">:</span> <span class="n">profiles</span><span class="p">}</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_zeu</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_emit_scalar</span><span class="p">(</span>
+                <span class="s2">"ZEU"</span><span class="p">,</span> <span class="n">zeu_calc</span><span class="p">,</span> <span class="n">prof</span><span class="p">,</span> <span class="n">profiles</span><span class="p">,</span> <span class="n">prof_tsec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">interpolate_zeu</span><span class="p">,</span>
+                <span class="n">long_name</span><span class="o">=</span><span class="s2">"Euphotic depth (1</span><span class="si">% li</span><span class="s2">ght, positive down). NaN where undefined."</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_ipar</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_emit_scalar</span><span class="p">(</span>
+                <span class="s2">"Z_IPAR"</span><span class="p">,</span> <span class="n">zipar_calc</span><span class="p">,</span> <span class="n">prof</span><span class="p">,</span> <span class="n">profiles</span><span class="p">,</span> <span class="n">prof_tsec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">interpolate_ipar</span><span class="p">,</span>
+                <span class="n">long_name</span><span class="o">=</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"Depth where downwelling iPAR crosses </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ipar_level</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2"> "</span>
+                    <span class="s2">"umol/m2/s (positive down). NaN where undefined."</span>
+                <span class="p">),</span>
+                <span class="n">extra_attrs</span><span class="o">=</span><span class="p">{</span><span class="s2">"ipar_level"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ipar_level</span><span class="p">)},</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_emit_scalar</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">calc</span><span class="p">,</span> <span class="n">prof</span><span class="p">,</span> <span class="n">profiles</span><span class="p">,</span> <span class="n">prof_tsec</span><span class="p">,</span> <span class="n">interpolate</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">long_name</span><span class="p">,</span>
+        <span class="n">extra_attrs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="c1"># Interpolate (optionally), broadcast to N_MEASUREMENTS and write `name`.</span>
+        <span class="n">final</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interpolate_scalar</span><span class="p">(</span><span class="n">calc</span><span class="p">,</span> <span class="n">profiles</span><span class="p">,</span> <span class="n">prof_tsec</span><span class="p">)</span> <span class="k">if</span> <span class="n">interpolate</span> <span class="k">else</span> <span class="nb">dict</span><span class="p">(</span><span class="n">calc</span><span class="p">)</span>
+
+        <span class="n">n_calc</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">calc</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="n">n_final</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">final</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">interpolate</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: computed on </span><span class="si">{</span><span class="n">n_calc</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">profiles</span><span class="p">)</span><span class="si">}</span><span class="s2"> profiles, "</span>
+                <span class="sa">f</span><span class="s2">"interpolated to </span><span class="si">{</span><span class="n">n_final</span><span class="si">}</span><span class="s2">."</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: computed on </span><span class="si">{</span><span class="n">n_calc</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">profiles</span><span class="p">)</span><span class="si">}</span><span class="s2"> profiles (no interpolation)."</span><span class="p">)</span>
+
+        <span class="n">broadcast</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">prof</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">pn</span> <span class="ow">in</span> <span class="n">profiles</span><span class="p">:</span>
+            <span class="n">broadcast</span><span class="p">[</span><span class="n">prof</span> <span class="o">==</span> <span class="n">pn</span><span class="p">]</span> <span class="o">=</span> <span class="n">final</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">pn</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">,),</span> <span class="n">broadcast</span><span class="p">)</span>
+        <span class="n">attrs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"long_name"</span><span class="p">:</span> <span class="n">long_name</span><span class="p">,</span> <span class="s2">"units"</span><span class="p">:</span> <span class="s2">"m"</span><span class="p">,</span> <span class="s2">"standard_name"</span><span class="p">:</span> <span class="n">name</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">extra_attrs</span><span class="p">:</span>
+            <span class="n">attrs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">extra_attrs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="n">attrs</span>
+
+        <span class="c1"># Kept for the diagnostics: which profiles were computed vs interpolated.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_diag</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"calc"</span><span class="p">:</span> <span class="n">calc</span><span class="p">,</span> <span class="s2">"final"</span><span class="p">:</span> <span class="n">final</span><span class="p">}</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_interpolate_scalar</span><span class="p">(</span><span class="n">calc</span><span class="p">,</span> <span class="n">profiles</span><span class="p">,</span> <span class="n">prof_tsec</span><span class="p">):</span>
+        <span class="c1"># Fill NaN profiles by interpolating in time; outside the span bracketed</span>
+        <span class="c1"># by computed profiles, hold the nearest endpoint value constant.</span>
+        <span class="n">order</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">profiles</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="p">(</span><span class="n">prof_tsec</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">prof_tsec</span><span class="p">[</span><span class="n">p</span><span class="p">])</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">))</span>
+        <span class="n">times</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">prof_tsec</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">order</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">calc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">order</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
+        <span class="n">anchor</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">times</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">anchor</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">calc</span><span class="p">)</span>  <span class="c1"># not enough to interpolate from</span>
+
+        <span class="n">interp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">times</span><span class="p">[</span><span class="n">anchor</span><span class="p">],</span> <span class="n">vals</span><span class="p">[</span><span class="n">anchor</span><span class="p">])</span>
+        <span class="n">interp</span><span class="p">[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">times</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">p</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">interp</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">order</span><span class="p">)}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># One panel per scalar: computed profiles vs interpolated fills over time.</span>
+        <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">"tkagg"</span><span class="p">)</span>
+
+        <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"Z_IPAR"</span><span class="p">,</span> <span class="s2">"ZEU"</span><span class="p">)</span> <span class="k">if</span> <span class="n">n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_diag</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">names</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">prof_tsec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_diag</span><span class="p">[</span><span class="s2">"prof_tsec"</span><span class="p">]</span>
+        <span class="n">profiles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_diag</span><span class="p">[</span><span class="s2">"profiles"</span><span class="p">]</span>
+
+        <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">new_fig</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">),</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axes</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">names</span><span class="p">):</span>
+            <span class="n">calc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_diag</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="s2">"calc"</span><span class="p">]</span>
+            <span class="n">final</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_diag</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="s2">"final"</span><span class="p">]</span>
+
+            <span class="k">def</span><span class="w"> </span><span class="nf">series</span><span class="p">(</span><span class="n">pred</span><span class="p">):</span>
+                <span class="n">pns</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">profiles</span> <span class="k">if</span> <span class="n">pred</span><span class="p">(</span><span class="n">p</span><span class="p">)]</span>
+                <span class="n">t</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">([</span><span class="n">prof_tsec</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">*</span> <span class="mf">1e9</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pns</span><span class="p">])</span>
+                <span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="n">final</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pns</span><span class="p">]</span>
+                <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">t</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+
+            <span class="n">ct</span><span class="p">,</span> <span class="n">cy</span> <span class="o">=</span> <span class="n">series</span><span class="p">(</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">calc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)))</span>
+            <span class="n">it</span><span class="p">,</span> <span class="n">iy</span> <span class="o">=</span> <span class="n">series</span><span class="p">(</span>
+                <span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">calc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">))</span>
+                <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">final</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">))</span>
+            <span class="p">)</span>
+            <span class="n">fig_spec</span><span class="o">.</span><span class="n">points</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">ct</span><span class="p">,</span> <span class="n">cy</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">CATEGORY</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">"computed"</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">it</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+                <span class="n">fig_spec</span><span class="o">.</span><span class="n">points</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">it</span><span class="p">,</span> <span class="n">iy</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">CATEGORY</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">"interpolated"</span><span class="p">)</span>
+
+            <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">axis_label</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="s2">"m"</span><span class="p">))</span>
+            <span class="n">fig_spec</span><span class="o">.</span><span class="n">date_axis</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>  <span class="c1"># positive-down depth: shallower at the top</span>
+            <span class="n">fig_spec</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">finish</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">suptitle</span><span class="o">=</span><span class="s2">"PAR light depths"</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5"></script>
+<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, National Oceanography Centre.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.19.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

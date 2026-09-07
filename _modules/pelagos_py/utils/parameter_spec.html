@@ -396,19 +396,19 @@
 <span class="c1">#</span>
 <span class="c1"># Copyright 2025-2026 National Oceanography Centre and The Contributors</span>
 <span class="c1">#</span>
-<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the "License");</span>
 <span class="c1"># you may not use this file except in compliance with the License.</span>
 <span class="c1"># You may obtain a copy of the License at</span>
 <span class="c1">#</span>
 <span class="c1">#    http://www.apache.org/licenses/LICENSE-2.0</span>
 <span class="c1">#</span>
 <span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
-<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># distributed under the License is distributed on an "AS IS" BASIS,</span>
 <span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
 
-<span class="sd">&quot;&quot;&quot;The single, canonical parameter-schema format shared by every step and QC check.</span>
+<span class="sd">"""The single, canonical parameter-schema format shared by every step and QC check.</span>
 
 <span class="sd">A component declares its parameters as a ``parameter_schema`` class attribute: a</span>
 <span class="sd">dict mapping each parameter name to a small spec dict.</span>
@@ -418,30 +418,30 @@
 <span class="sd">::</span>
 
 <span class="sd">    parameter_schema = {</span>
-<span class="sd">        &quot;velocity_threshold&quot;: {</span>
-<span class="sd">            &quot;type&quot;: float,</span>
-<span class="sd">            &quot;default&quot;: 0.033,        # has a default =&gt; optional; this is the preset</span>
-<span class="sd">            &quot;description&quot;: &quot;Vertical velocity (m/s) to flag an up/down cast.&quot;,</span>
+<span class="sd">        "velocity_threshold": {</span>
+<span class="sd">            "type": float,</span>
+<span class="sd">            "default": 0.033,        # has a default =&gt; optional; this is the preset</span>
+<span class="sd">            "description": "Vertical velocity (m/s) to flag an up/down cast.",</span>
 <span class="sd">            # optional hints, consumed by the (future) dashboard:</span>
-<span class="sd">            &quot;min&quot;: 0.0, &quot;max&quot;: 0.5, &quot;step&quot;: 0.001, &quot;unit&quot;: &quot;m/s&quot;,</span>
+<span class="sd">            "min": 0.0, "max": 0.5, "step": 0.001, "unit": "m/s",</span>
 <span class="sd">        },</span>
-<span class="sd">        &quot;file_path&quot;: {</span>
-<span class="sd">            &quot;type&quot;: str,</span>
-<span class="sd">            &quot;required&quot;: True,        # no sensible preset =&gt; must be supplied</span>
-<span class="sd">            &quot;description&quot;: &quot;Path to the input file.&quot;,</span>
+<span class="sd">        "file_path": {</span>
+<span class="sd">            "type": str,</span>
+<span class="sd">            "required": True,        # no sensible preset =&gt; must be supplied</span>
+<span class="sd">            "description": "Path to the input file.",</span>
 <span class="sd">        },</span>
-<span class="sd">        &quot;method&quot;: {</span>
-<span class="sd">            &quot;type&quot;: str,</span>
-<span class="sd">            &quot;default&quot;: &quot;poly&quot;,</span>
-<span class="sd">            &quot;options&quot;: [&quot;poly&quot;, &quot;linear&quot;],   # enumerated choices</span>
-<span class="sd">            &quot;description&quot;: &quot;Fitting method.&quot;,</span>
+<span class="sd">        "method": {</span>
+<span class="sd">            "type": str,</span>
+<span class="sd">            "default": "poly",</span>
+<span class="sd">            "options": ["poly", "linear"],   # enumerated choices</span>
+<span class="sd">            "description": "Fitting method.",</span>
 <span class="sd">        },</span>
 <span class="sd">    }</span>
 
 <span class="sd">A parameter is **required** when its spec has no ``default`` key, or sets</span>
-<span class="sd">``&quot;required&quot;: True``. Otherwise the ``default`` is used whenever the user omits it,</span>
+<span class="sd">``"required": True``. Otherwise the ``default`` is used whenever the user omits it,</span>
 <span class="sd">so a fully-defaulted component runs with no configuration at all.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
@@ -451,16 +451,16 @@
 <div class="viewcode-block" id="is_required">
 <a class="viewcode-back" href="../../../api/pelagos_py/utils/parameter_spec/index.html#pelagos_py.utils.parameter_spec.is_required">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">is_required</span><span class="p">(</span><span class="n">spec</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return whether a single parameter spec describes a required parameter.&quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;required&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Return whether a single parameter spec describes a required parameter."""</span>
+    <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"required"</span><span class="p">):</span>
         <span class="k">return</span> <span class="kc">True</span>
-    <span class="k">return</span> <span class="s2">&quot;default&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">spec</span></div>
+    <span class="k">return</span> <span class="s2">"default"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">spec</span></div>
 
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_allowed_types</span><span class="p">(</span><span class="n">spec</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Normalise a spec&#39;s ``type`` to a tuple, or ``None`` if no type is declared.&quot;&quot;&quot;</span>
-    <span class="n">t</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""Normalise a spec's ``type`` to a tuple, or ``None`` if no type is declared."""</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"type"</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">t</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
     <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="k">else</span> <span class="p">(</span><span class="n">t</span><span class="p">,)</span>
@@ -469,22 +469,22 @@
 <div class="viewcode-block" id="matches_type">
 <a class="viewcode-back" href="../../../api/pelagos_py/utils/parameter_spec/index.html#pelagos_py.utils.parameter_spec.matches_type">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">matches_type</span><span class="p">(</span><span class="n">spec</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return whether ``value`` satisfies a single parameter spec&#39;s ``type``.</span>
+<span class="w">    </span><span class="sd">"""Return whether ``value`` satisfies a single parameter spec's ``type``.</span>
 
 <span class="sd">    A spec with no ``type`` accepts anything. Special cases:</span>
 
 <span class="sd">    - ``None`` is accepted when ``None`` is the declared default (a sentinel</span>
-<span class="sd">      meaning e.g. &quot;compute it&quot;, as with ``dark_value``).</span>
+<span class="sd">      meaning e.g. "compute it", as with ``dark_value``).</span>
 <span class="sd">    - ``bool`` is a subclass of ``int`` but is only accepted when ``bool`` is</span>
 <span class="sd">      explicitly listed — so ``acceleration_threshold: no`` (YAML ``False``) is</span>
 <span class="sd">      rejected for a ``float`` parameter.</span>
 <span class="sd">    - an ``int`` is accepted where a ``float`` is expected (e.g. ``20`` for a</span>
 <span class="sd">      threshold), since YAML has no way to force a whole-number float.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">allowed</span> <span class="o">=</span> <span class="n">_allowed_types</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">allowed</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">True</span>
-    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;default&quot;</span><span class="p">,</span> <span class="n">_MISSING</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"default"</span><span class="p">,</span> <span class="n">_MISSING</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">True</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">bool</span> <span class="ow">in</span> <span class="n">allowed</span>
@@ -501,7 +501,7 @@
 <div class="viewcode-block" id="coerce">
 <a class="viewcode-back" href="../../../api/pelagos_py/utils/parameter_spec/index.html#pelagos_py.utils.parameter_spec.coerce">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">coerce</span><span class="p">(</span><span class="n">spec</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Coerce a numeric *string* to the spec&#39;s declared numeric type.</span>
+<span class="w">    </span><span class="sd">"""Coerce a numeric *string* to the spec's declared numeric type.</span>
 
 <span class="sd">    Configs are not always parsed by pelagos: a caller may hand the pipeline a</span>
 <span class="sd">    dict it built itself (or parsed with plain ``yaml.safe_load``), in which case</span>
@@ -512,7 +512,7 @@
 
 <span class="sd">    Anything that is not a numeric string, or whose spec legitimately accepts a</span>
 <span class="sd">    string, is returned unchanged.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">allowed</span> <span class="o">=</span> <span class="n">_allowed_types</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">allowed</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">str</span> <span class="ow">in</span> <span class="n">allowed</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">value</span>
@@ -532,26 +532,49 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_expected_str</span><span class="p">(</span><span class="n">spec</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Render a spec&#39;s declared ``type`` for an error message.&quot;&quot;&quot;</span>
-    <span class="n">names</span> <span class="o">=</span> <span class="n">_type_name</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">))</span>
-    <span class="k">return</span> <span class="s2">&quot; or &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">names</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">names</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""Render a spec's declared ``type`` for an error message."""</span>
+    <span class="n">names</span> <span class="o">=</span> <span class="n">_type_name</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"type"</span><span class="p">))</span>
+    <span class="k">return</span> <span class="s2">" or "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">names</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">names</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="type_errors">
 <a class="viewcode-back" href="../../../api/pelagos_py/utils/parameter_spec/index.html#pelagos_py.utils.parameter_spec.type_errors">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">type_errors</span><span class="p">(</span><span class="n">schema</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return ``&quot;name (expected X, got Y)&quot;`` messages for type-mismatched params.</span>
+<span class="w">    </span><span class="sd">"""Return ``"name (expected X, got Y)"`` messages for type-mismatched params.</span>
 
 <span class="sd">    Only user-supplied values present in ``schema`` are checked; omitted</span>
 <span class="sd">    parameters and undeclared keys are out of scope here (defaults are trusted,</span>
 <span class="sd">    and unknown keys are handled separately).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="p">[</span>
-        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> (expected </span><span class="si">{</span><span class="n">_expected_str</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="n">name</span><span class="p">])</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">params</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="si">!r}</span><span class="s2">)&quot;</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> (expected </span><span class="si">{</span><span class="n">_expected_str</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="n">name</span><span class="p">])</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> "</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">params</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="si">!r}</span><span class="s2">)"</span>
         <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">schema</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">params</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">matches_type</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">params</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">matches_type</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="n">coerce</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="n">name</span><span class="p">]))</span>
     <span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="option_errors">
+<a class="viewcode-back" href="../../../api/pelagos_py/utils/parameter_spec/index.html#pelagos_py.utils.parameter_spec.option_errors">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">option_errors</span><span class="p">(</span><span class="n">schema</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Return ``"name (expected one of ..., got ...)"`` for out-of-``options`` params.</span>
+
+<span class="sd">    Only supplied params whose spec declares ``options`` are checked. For a</span>
+<span class="sd">    list-valued param ``options`` constrains each element.</span>
+<span class="sd">    """</span>
+    <span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">schema</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">params</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"options"</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="n">spec</span><span class="p">[</span><span class="s2">"options"</span><span class="p">]</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">coerce</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">value</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="k">else</span> <span class="p">[</span><span class="n">value</span><span class="p">]</span>
+        <span class="n">bad</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">values</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">options</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">bad</span><span class="p">:</span>
+            <span class="n">got</span> <span class="o">=</span> <span class="n">bad</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="k">else</span> <span class="n">value</span>
+            <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> (expected one of </span><span class="si">{</span><span class="n">options</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">got</span><span class="si">!r}</span><span class="s2">)"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">errors</span></div>
 
 
 
@@ -561,10 +584,10 @@
     <span class="n">schema</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
     <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;component&quot;</span><span class="p">,</span>
+    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"component"</span><span class="p">,</span>
     <span class="n">allowed_extra</span><span class="o">=</span><span class="p">(),</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolve user-supplied ``params`` against a ``schema``.</span>
+<span class="w">    </span><span class="sd">"""Resolve user-supplied ``params`` against a ``schema``.</span>
 
 <span class="sd">    Every parameter declared in ``schema`` is returned: user values are passed</span>
 <span class="sd">    through, omitted optional parameters fall back to their ``default``, and any</span>
@@ -578,7 +601,7 @@
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    schema : dict</span>
-<span class="sd">        The component&#39;s ``parameter_schema``.</span>
+<span class="sd">        The component's ``parameter_schema``.</span>
 <span class="sd">    params : dict</span>
 <span class="sd">        The user-supplied parameters for this component.</span>
 <span class="sd">    label : str, optional</span>
@@ -594,16 +617,18 @@
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
 <span class="sd">    ValueError</span>
-<span class="sd">        If a required parameter is missing, or an unknown parameter is supplied.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">        If a required parameter is missing, an unknown parameter is supplied, a</span>
+<span class="sd">        value has the wrong type, or a value declaring ``options`` is not one of</span>
+<span class="sd">        them.</span>
+<span class="sd">    """</span>
     <span class="n">unknown</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">params</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">schema</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">allowed_extra</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">unknown</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">] unknown parameter(s): </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">unknown</span><span class="p">))</span><span class="si">}</span><span class="s2">. &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;Valid parameters: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">schema</span><span class="p">))</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">&#39;(none)&#39;</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">] unknown parameter(s): </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">unknown</span><span class="p">))</span><span class="si">}</span><span class="s2">. "</span>
+            <span class="sa">f</span><span class="s2">"Valid parameters: </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">schema</span><span class="p">))</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">'(none)'</span><span class="si">}</span><span class="s2">."</span>
         <span class="p">)</span>
 
-    <span class="c1"># Coerce numeric strings (e.g. &quot;3e-2&quot; from a hand-parsed/plain-YAML config)</span>
+    <span class="c1"># Coerce numeric strings (e.g. "3e-2" from a hand-parsed/plain-YAML config)</span>
     <span class="c1"># to their declared numeric type before any type checking.</span>
     <span class="n">supplied</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">coerce</span><span class="p">(</span><span class="n">schema</span><span class="p">[</span><span class="n">name</span><span class="p">],</span> <span class="n">params</span><span class="p">[</span><span class="n">name</span><span class="p">])</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">params</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">schema</span><span class="p">}</span>
 
@@ -615,17 +640,23 @@
         <span class="k">elif</span> <span class="n">is_required</span><span class="p">(</span><span class="n">spec</span><span class="p">):</span>
             <span class="n">missing</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">resolved</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;default&quot;</span><span class="p">)</span>
+            <span class="n">resolved</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"default"</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">] missing required parameter(s): </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">missing</span><span class="p">))</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">] missing required parameter(s): </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">missing</span><span class="p">))</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
 
     <span class="n">bad_types</span> <span class="o">=</span> <span class="n">type_errors</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">supplied</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">bad_types</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">] invalid parameter type(s): </span><span class="si">{</span><span class="s1">&#39;; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">bad_types</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">] invalid parameter type(s): </span><span class="si">{</span><span class="s1">'; '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">bad_types</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span>
+
+    <span class="n">bad_options</span> <span class="o">=</span> <span class="n">option_errors</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">supplied</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">bad_options</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">] invalid parameter value(s): </span><span class="si">{</span><span class="s1">'; '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">bad_options</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">resolved</span></div>
@@ -633,30 +664,30 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_type_name</span><span class="p">(</span><span class="n">t</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Render a schema ``type`` (a type, or list of types) as JSON-safe string(s).&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Render a schema ``type`` (a type, or list of types) as JSON-safe string(s)."""</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">_type_name</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">t</span><span class="p">]</span>
-    <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="s2">&quot;__name__&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">t</span><span class="p">))</span> <span class="k">if</span> <span class="n">t</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="s2">"__name__"</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">t</span><span class="p">))</span> <span class="k">if</span> <span class="n">t</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
 
 
 <div class="viewcode-block" id="describe">
 <a class="viewcode-back" href="../../../api/pelagos_py/utils/parameter_spec/index.html#pelagos_py.utils.parameter_spec.describe">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">describe</span><span class="p">(</span><span class="n">schema</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a JSON-serialisable description of a schema.</span>
+<span class="w">    </span><span class="sd">"""Return a JSON-serialisable description of a schema.</span>
 
 <span class="sd">    This can be used to interface with a dashboard (or any external tool).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">described</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">schema</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="n">entry</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="n">_type_name</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)),</span>
-            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="n">is_required</span><span class="p">(</span><span class="n">spec</span><span class="p">),</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;description&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="n">_type_name</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"type"</span><span class="p">)),</span>
+            <span class="s2">"required"</span><span class="p">:</span> <span class="n">is_required</span><span class="p">(</span><span class="n">spec</span><span class="p">),</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"description"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
         <span class="p">}</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">is_required</span><span class="p">(</span><span class="n">spec</span><span class="p">):</span>
-            <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;default&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;default&quot;</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">hint</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;min&quot;</span><span class="p">,</span> <span class="s2">&quot;max&quot;</span><span class="p">,</span> <span class="s2">&quot;step&quot;</span><span class="p">,</span> <span class="s2">&quot;unit&quot;</span><span class="p">,</span> <span class="s2">&quot;options&quot;</span><span class="p">):</span>
+            <span class="n">entry</span><span class="p">[</span><span class="s2">"default"</span><span class="p">]</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"default"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">hint</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"min"</span><span class="p">,</span> <span class="s2">"max"</span><span class="p">,</span> <span class="s2">"step"</span><span class="p">,</span> <span class="s2">"unit"</span><span class="p">,</span> <span class="s2">"options"</span><span class="p">):</span>
             <span class="k">if</span> <span class="n">hint</span> <span class="ow">in</span> <span class="n">spec</span><span class="p">:</span>
                 <span class="n">entry</span><span class="p">[</span><span class="n">hint</span><span class="p">]</span> <span class="o">=</span> <span class="n">spec</span><span class="p">[</span><span class="n">hint</span><span class="p">]</span>
         <span class="n">described</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>

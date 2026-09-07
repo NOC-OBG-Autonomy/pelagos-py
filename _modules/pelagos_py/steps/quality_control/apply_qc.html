@@ -399,19 +399,19 @@
 <span class="c1">#</span>
 <span class="c1"># Copyright 2025-2026 National Oceanography Centre and The Contributors</span>
 <span class="c1">#</span>
-<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the "License");</span>
 <span class="c1"># you may not use this file except in compliance with the License.</span>
 <span class="c1"># You may obtain a copy of the License at</span>
 <span class="c1">#</span>
 <span class="c1">#    http://www.apache.org/licenses/LICENSE-2.0</span>
 <span class="c1">#</span>
 <span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
-<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># distributed under the License is distributed on an "AS IS" BASIS,</span>
 <span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
 
-<span class="sd">&quot;&quot;&quot;Class definition for quality control steps.&quot;&quot;&quot;</span>
+<span class="sd">"""Class definition for quality control steps."""</span>
 
 <span class="c1">#### Mandatory imports ####</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
@@ -429,21 +429,21 @@
 <div class="viewcode-block" id="ApplyQC">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/quality_control/apply_qc/index.html#pelagos_py.steps.quality_control.apply_qc.ApplyQC">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ApplyQC</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Step to apply quality control tests to the dataset.</span>
 
 <span class="sd">    Inherits properties from BaseStep (see base_step.py).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
-    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Apply QC&quot;</span>
+    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Apply QC"</span>
 
     <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;qc_settings&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
-            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="p">(</span>
-                <span class="s2">&quot;Mapping of QC test name -&gt; that test&#39;s settings. Each test is run &quot;</span>
-                <span class="s2">&quot;in order and merges its flags into the dataset&#39;s _QC columns.&quot;</span>
+        <span class="s2">"qc_settings"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+            <span class="s2">"required"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="p">(</span>
+                <span class="s2">"Mapping of QC test name -&gt; that test's settings. Each test is run "</span>
+                <span class="s2">"in order and merges its flags into the dataset's _QC columns."</span>
             <span class="p">),</span>
         <span class="p">},</span>
     <span class="p">}</span>
@@ -451,7 +451,7 @@
 <div class="viewcode-block" id="ApplyQC.organise_flags">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/quality_control/apply_qc/index.html#pelagos_py.steps.quality_control.apply_qc.ApplyQC.organise_flags">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">organise_flags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_flags</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Method for taking in new flags (new_flags) and cross checking against existing flags (self.flag_store), including upgrading flags when necessary, following ARGO flagging standards.</span>
 <span class="sd">        See Wong et al. 2025 pp. 106 (http://dx.doi.org/10.13155/33951) and Mancini et al. 2021 pp. 43-44 for additional ARGO flag definitions.</span>
 
@@ -475,7 +475,7 @@
 <span class="sd">        ----------</span>
 <span class="sd">        new_flags : xarray.Dataset</span>
 <span class="sd">            Dataset containing new QC flag variables to be merged into the existing flag store.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
         <span class="c1"># Define combinatrix for handling flag upgrade behaviour</span>
         <span class="n">qc_combinatrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
@@ -512,42 +512,42 @@
 <div class="viewcode-block" id="ApplyQC.run">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/quality_control/apply_qc/index.html#pelagos_py.steps.quality_control.apply_qc.ApplyQC.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Run the Apply QC step.</span>
 
 <span class="sd">        raises</span>
 <span class="sd">        ------</span>
 <span class="sd">        KeyError</span>
-<span class="sd">            If no QC operations are specified, if requested QC tests are invalid, or esssential variables are missing.</span>
+<span class="sd">            If no QC operations are specified, or if requested QC tests are invalid.</span>
 <span class="sd">        ValueError</span>
 <span class="sd">            If no data is found in context.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="c1"># Defining the order of operations</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qc_settings</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
-                <span class="s2">&quot;[Apply QC] No QC operations were specified in an ApplyQC step.&quot;</span>
+                <span class="s2">"[Apply QC] No QC operations were specified in an ApplyQC step."</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1">#   Check requested QC tests against valid tests</span>
             <span class="n">invalid_requests</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qc_settings</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">QC_CLASSES</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
             <span class="k">if</span> <span class="n">invalid_requests</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;[Apply QC] The following requested QC tests could not be found: </span><span class="si">{</span><span class="n">invalid_requests</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="sa">f</span><span class="s2">"[Apply QC] The following requested QC tests could not be found: </span><span class="si">{</span><span class="n">invalid_requests</span><span class="si">}</span><span class="s2">"</span>
                 <span class="p">)</span>
         <span class="n">queued_qc</span> <span class="o">=</span> <span class="p">[</span><span class="n">QC_CLASSES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">qc_settings</span><span class="o">.</span><span class="n">keys</span><span class="p">()]</span>
 
         <span class="c1"># Check if the data is in the context</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">check_data</span><span class="p">()</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">full_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span>
 
         <span class="c1"># Try and fetch the qc history from context and update it</span>
-        <span class="n">qc_history</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;qc_history&quot;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">qc_history</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"qc_history"</span><span class="p">,</span> <span class="p">{})</span>
 
         <span class="c1"># Collect all of the required varible names and qc outputs for each test</span>
         <span class="n">all_required_variables</span> <span class="o">=</span> <span class="nb">set</span><span class="p">({})</span>
         <span class="n">test_qc_outputs_cols</span> <span class="o">=</span> <span class="nb">set</span><span class="p">({})</span>
         <span class="k">for</span> <span class="n">test</span> <span class="ow">in</span> <span class="n">queued_qc</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="s2">&quot;dynamic&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">test</span><span class="p">,</span> <span class="s2">"dynamic"</span><span class="p">):</span>
                 <span class="c1"># Initialise the test to check its dynamic attributes</span>
                 <span class="n">test_instance</span> <span class="o">=</span> <span class="n">test</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">qc_settings</span><span class="p">[</span><span class="n">test</span><span class="o">.</span><span class="n">qc_name</span><span class="p">])</span>
                 <span class="n">all_required_variables</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">test_instance</span><span class="o">.</span><span class="n">required_variables</span><span class="p">)</span>
@@ -557,32 +557,45 @@
                 <span class="n">all_required_variables</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">test</span><span class="o">.</span><span class="n">required_variables</span><span class="p">)</span>
                 <span class="n">test_qc_outputs_cols</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">test</span><span class="o">.</span><span class="n">qc_outputs</span><span class="p">)</span>
             <span class="c1">#   Check that the required variables for the test are in the dataset.</span>
-            <span class="c1">#   Use data.variables (data vars + coordinates), not data.keys() (data</span>
+            <span class="c1">#   Use full_data.variables (data vars + coordinates), not .keys() (data</span>
             <span class="c1">#   vars only), so a required variable stored as a coordinate (e.g. TIME,</span>
             <span class="c1">#   LATITUDE, LONGITUDE) is not falsely reported as missing.</span>
-            <span class="n">present</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">variables</span><span class="p">)</span>
+            <span class="n">present</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">full_data</span><span class="o">.</span><span class="n">variables</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">(</span><span class="n">all_required_variables</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="n">present</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;[Apply QC] The data is missing variables: (</span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="n">all_required_variables</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">present</span><span class="si">}</span><span class="s2">) which are required for running QC &#39;</span><span class="si">{</span><span class="n">test</span><span class="o">.</span><span class="n">qc_name</span><span class="si">}</span><span class="s2">&#39;.&quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot; Make sure that the variables are present in the data, or remove tests from the order.&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">halt</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"The data is missing variables: (</span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="n">all_required_variables</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">present</span><span class="si">}</span><span class="s2">) which are required for running QC '</span><span class="si">{</span><span class="n">test</span><span class="o">.</span><span class="n">qc_name</span><span class="si">}</span><span class="s2">'."</span>
+                    <span class="sa">f</span><span class="s2">" Make sure that the variables are present in the data, or remove tests from the order."</span>
                 <span class="p">)</span>
+
+        <span class="c1"># Deep-copy only what this call touches: every test's required_variables</span>
+        <span class="c1"># (each test self-scopes to these, including dynamic tests above), plus</span>
+        <span class="c1"># the QC output columns themselves and the variable each flags (needed to</span>
+        <span class="c1"># build masks for outputs that don't exist yet, see mia_qc/base below).</span>
+        <span class="n">subset_names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">all_required_variables</span><span class="p">)</span> <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="n">test_qc_outputs_cols</span><span class="p">)</span>
+        <span class="n">subset_names</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">var</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">test_qc_outputs_cols</span><span class="p">)</span>
+        <span class="n">subset_vars</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">subset_names</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">full_data</span><span class="o">.</span><span class="n">variables</span><span class="p">]</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">full_data</span><span class="p">[</span><span class="n">subset_vars</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="c1"># Convert data to polars for fast processing</span>
         <span class="c1"># Fetch existing flags from the data and create a place to store them</span>
         <span class="n">existing_flags</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">flag_col</span> <span class="k">for</span> <span class="n">flag_col</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span> <span class="k">if</span> <span class="n">flag_col</span> <span class="ow">in</span> <span class="n">test_qc_outputs_cols</span>
         <span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">coords</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">]})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">coords</span><span class="o">=</span><span class="p">{</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">:</span> <span class="n">data</span><span class="p">[</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">]})</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">existing_flags</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found existing flags columns </span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="n">existing_flags</span><span class="p">)</span><span class="si">}</span><span class="s2"> in data.&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Found existing flags columns </span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="n">existing_flags</span><span class="p">)</span><span class="si">}</span><span class="s2"> in data."</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">existing_flags</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">9</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
 
         <span class="n">other_existing_qc</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span>
-            <span class="p">[</span><span class="n">var</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span> <span class="k">if</span> <span class="n">var</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;_QC&quot;</span><span class="p">)]</span>
+            <span class="p">[</span><span class="n">var</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span> <span class="k">if</span> <span class="n">var</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">"_QC"</span><span class="p">)]</span>
         <span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">test_qc_outputs_cols</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">other_existing_qc</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found QC columns for untested values: </span><span class="si">{</span><span class="n">other_existing_qc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
-                <span class="s2">&quot;These columns will not be modified and are not subject to this step.&quot;</span>
+            <span class="c1"># File-only: this set can be large and repeats every QC step.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">"[</span><span class="si">%s</span><span class="s2">] </span><span class="si">%s</span><span class="s2"> pre-existing QC column(s) left untouched by this step: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="nb">len</span><span class="p">(</span><span class="n">other_existing_qc</span><span class="p">),</span>
+                <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">other_existing_qc</span><span class="p">)),</span>
+                <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">"console"</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
             <span class="p">)</span>
 
         <span class="c1"># Initialize the missing flag columns</span>
@@ -592,20 +605,20 @@
             <span class="nb">set</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
         <span class="p">):</span>  <span class="c1">#   Confirm that the required QC columns exist</span>
             <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;[Apply QC] The data is missing: (</span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="n">base</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">set</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">), which is/are defined in the config as a variable to flag or use during one of the tests.&quot;</span>
-                <span class="sa">f</span><span class="s2">&quot; Double check the configuration file and make sure all variable parameters (like &#39;also flag&#39; [CHLA]) are present in the data.&quot;</span>
+                <span class="sa">f</span><span class="s2">"[Apply QC] The data is missing: (</span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="n">base</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">set</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">), which is/are defined in the config as a variable to flag or use during one of the tests."</span>
+                <span class="sa">f</span><span class="s2">" Double check the configuration file and make sure all variable parameters (like 'also flag' [CHLA]) are present in the data."</span>
             <span class="p">)</span>
         <span class="n">data_subset</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">base</span><span class="p">]</span>
         <span class="n">masks</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">data_subset</span><span class="o">.</span><span class="n">isnull</span><span class="p">(),</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-        <span class="n">masks</span> <span class="o">=</span> <span class="n">masks</span><span class="o">.</span><span class="n">rename</span><span class="p">({</span><span class="n">var</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">base</span><span class="p">})</span>
+        <span class="n">masks</span> <span class="o">=</span> <span class="n">masks</span><span class="o">.</span><span class="n">rename</span><span class="p">({</span><span class="n">var</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">base</span><span class="p">})</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">masks</span><span class="p">)</span>
 
         <span class="c1"># Run through all of the QC steps and add the flags to flag_store</span>
         <span class="k">for</span> <span class="n">qc_qc_name</span><span class="p">,</span> <span class="n">qc_test_params</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">qc_settings</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="c1"># Create an instance of this test step</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Applying: </span><span class="si">{</span><span class="n">qc_qc_name</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span>  <span class="c1"># print(f&quot;[Apply QC] Applying: {qc_qc_name}&quot;)</span>
+                <span class="sa">f</span><span class="s2">"Applying: </span><span class="si">{</span><span class="n">qc_qc_name</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>  <span class="c1"># print(f"[Apply QC] Applying: {qc_qc_name}")</span>
             <span class="n">qc_test_instance</span> <span class="o">=</span> <span class="n">QC_CLASSES</span><span class="p">[</span><span class="n">qc_qc_name</span><span class="p">](</span><span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">qc_test_params</span><span class="p">)</span>
             <span class="n">returned_flags</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="n">qc_test_instance</span><span class="o">.</span><span class="n">return_qc</span><span class="p">()</span>
@@ -619,35 +632,44 @@
                 <span class="n">percent_flagged</span> <span class="o">=</span> <span class="p">(</span><span class="n">var_flags</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">var_flags</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">percent_flagged</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;All flags for </span><span class="si">{</span><span class="n">flagged_var</span><span class="si">}</span><span class="s2"> remain 0 after </span><span class="si">{</span><span class="n">qc_qc_name</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="sa">f</span><span class="s2">"All flags for </span><span class="si">{</span><span class="n">flagged_var</span><span class="si">}</span><span class="s2"> remain 0 after </span><span class="si">{</span><span class="n">qc_qc_name</span><span class="si">}</span><span class="s2">"</span>
                     <span class="p">)</span>
-                <span class="c1"># else: #   TODO: Add &#39;verbose&#39; log option if needed. Might not need to happen at this point.</span>
-                <span class="c1">#     self.log(f&quot;{percent_flagged*100:.2f}% of {flagged_var} points accounted for by {qc_qc_name}&quot;)</span>
+                <span class="c1"># else: #   TODO: Add 'verbose' log option if needed. Might not need to happen at this point.</span>
+                <span class="c1">#     self.log(f"{percent_flagged*100:.2f}% of {flagged_var} points accounted for by {qc_qc_name}")</span>
                 <span class="n">qc_history</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">flagged_var</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                     <span class="p">(</span><span class="n">qc_qc_name</span><span class="p">,</span> <span class="n">percent_flagged</span><span class="p">)</span>
                 <span class="p">)</span>
 
                 <span class="c1"># Write additional QC details to _QC variable attributes</span>
-                <span class="c1"># TODO: Find where columns are initialized, or just run on non-QC&#39;d datasets</span>
+                <span class="c1"># TODO: Find where columns are initialized, or just run on non-QC'd datasets</span>
                 <span class="n">parent_attrs</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">flagged_var</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]]</span><span class="o">.</span><span class="n">attrs</span>
                 <span class="n">attrs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="p">[</span><span class="n">flagged_var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span>
-                <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;quality_control_conventions&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Argo standard flags&quot;</span>
-                <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;valid_min&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-                <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;valid_max&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">9</span>
-                <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;flag_values&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">]</span>
-                <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;flag_meanings&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="s2">&quot;NO_QC, GOOD, PROB_GOOD, PROB_BAD, BAD, VALUE_CHANGED, NOT_USED, NOT_USED, ESTIMATED, MISSING&quot;</span>
+                <span class="n">attrs</span><span class="p">[</span><span class="s2">"quality_control_conventions"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"Argo standard flags"</span>
+                <span class="n">attrs</span><span class="p">[</span><span class="s2">"valid_min"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">attrs</span><span class="p">[</span><span class="s2">"valid_max"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">9</span>
+                <span class="n">attrs</span><span class="p">[</span><span class="s2">"flag_values"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">]</span>
+                <span class="n">attrs</span><span class="p">[</span><span class="s2">"flag_meanings"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s2">"NO_QC, GOOD, PROB_GOOD, PROB_BAD, BAD, VALUE_CHANGED, NOT_USED, NOT_USED, ESTIMATED, MISSING"</span>
                 <span class="p">)</span>
-                <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;long_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">parent_attrs</span><span class="p">[</span><span class="s1">&#39;long_name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> quality flag&quot;</span>
-                <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;standard_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">parent_attrs</span><span class="p">[</span><span class="s1">&#39;standard_name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">_flag&quot;</span>
-                <span class="n">attr_test</span> <span class="o">=</span> <span class="n">qc_qc_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-                <span class="n">attrs</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">attr_test</span><span class="si">}</span><span class="s2">_flag_cts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
+                <span class="n">parent_long_name</span> <span class="o">=</span> <span class="n">parent_attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"long_name"</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">parent_long_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">flagged_var</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span><span class="si">}</span><span class="s2">' has no 'long_name' attribute; QC flag variable "</span>
+                        <span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">flagged_var</span><span class="si">}</span><span class="s2">' will be missing its 'long_name' too."</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">attrs</span><span class="p">[</span><span class="s2">"long_name"</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">parent_long_name</span><span class="si">}</span><span class="s2"> quality flag"</span>
+                <span class="n">parent_standard_name</span> <span class="o">=</span> <span class="n">parent_attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"standard_name"</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">parent_standard_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">attrs</span><span class="p">[</span><span class="s2">"standard_name"</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">parent_standard_name</span><span class="si">}</span><span class="s2">_flag"</span>
+                <span class="n">attr_test</span> <span class="o">=</span> <span class="n">qc_qc_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">" "</span><span class="p">,</span> <span class="s2">"_"</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                <span class="n">attrs</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">attr_test</span><span class="si">}</span><span class="s2">_flag_cts"</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
                     <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">var_flags</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span> <span class="o">==</span> <span class="n">i</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)}</span>
                 <span class="p">)</span>
-                <span class="n">attrs</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">attr_test</span><span class="si">}</span><span class="s2">_stats&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
+                <span class="n">attrs</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">attr_test</span><span class="si">}</span><span class="s2">_stats"</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
                     <span class="n">var_flags</span><span class="o">.</span><span class="n">to_series</span><span class="p">()</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
                 <span class="p">)</span>
-                <span class="n">attrs</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">attr_test</span><span class="si">}</span><span class="s2">_params&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">qc_test_params</span><span class="p">)</span>
+                <span class="n">attrs</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">attr_test</span><span class="si">}</span><span class="s2">_params"</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">qc_test_params</span><span class="p">)</span>
                 <span class="c1"># Can get indices of 3/4 with np.where(var_flags.to_numpy() == 3)[0] for future reference</span>
 
             <span class="c1"># Diagnostic plotting. Never let a diagnostic-only error abort QC;</span>
@@ -658,7 +680,7 @@
                     <span class="n">qc_test_instance</span><span class="o">.</span><span class="n">plot_diagnostics</span><span class="p">()</span>
                 <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># noqa: BLE001 - diagnostics must not be fatal</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Diagnostic plotting failed for QC test &#39;</span><span class="si">{</span><span class="n">qc_qc_name</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="sa">f</span><span class="s2">"Diagnostic plotting failed for QC test '</span><span class="si">{</span><span class="n">qc_qc_name</span><span class="si">}</span><span class="s2">': </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span>
                     <span class="p">)</span>
 
             <span class="c1"># Once finished, remove the test instance from memory</span>
@@ -668,21 +690,24 @@
         <span class="k">for</span> <span class="n">flag_column</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
             <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="p">[</span><span class="n">flag_column</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">flag_column</span><span class="si">}</span><span class="s2"> is all 0 after running all QC steps. Check intended QC variables and test requirements.&quot;</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">flag_column</span><span class="si">}</span><span class="s2"> is all 0 after running all QC steps. Check intended QC variables and test requirements."</span>
                 <span class="p">)</span>
             <span class="k">elif</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="p">[</span><span class="n">flag_column</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
                 <span class="n">n_zero</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="p">[</span><span class="n">flag_column</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">flag_column</span><span class="si">}</span><span class="s2"> (length=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="p">[</span><span class="n">flag_column</span><span class="p">])</span><span class="si">}</span><span class="s2">) has </span><span class="si">{</span><span class="n">n_zero</span><span class="si">}</span><span class="s2"> zero QC values following all QC steps.&quot;</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">flag_column</span><span class="si">}</span><span class="s2"> (length=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="p">[</span><span class="n">flag_column</span><span class="p">])</span><span class="si">}</span><span class="s2">) has </span><span class="si">{</span><span class="n">n_zero</span><span class="si">}</span><span class="s2"> zero QC values following all QC steps."</span>
                 <span class="p">)</span>
 
             <span class="n">data</span><span class="p">[</span><span class="n">flag_column</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="p">(</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,),</span>
+                <span class="p">(</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">,),</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="p">[</span><span class="n">flag_column</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span>
             <span class="p">)</span>
             <span class="n">data</span><span class="p">[</span><span class="n">flag_column</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span><span class="p">[</span><span class="n">flag_column</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;qc_history&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">qc_history</span>
+        <span class="c1"># data is a subset of context["data"]; merge rather than replace so</span>
+        <span class="c1"># variables outside the subset (e.g. other tests' untouched _QC columns)</span>
+        <span class="c1"># aren't dropped.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"qc_history"</span><span class="p">]</span> <span class="o">=</span> <span class="n">qc_history</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
 </div>

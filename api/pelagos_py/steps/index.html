@@ -370,10 +370,13 @@
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="processing/index.html">pelagos_py.steps.processing</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="processing/bbp/index.html">pelagos_py.steps.processing.bbp</a></li>
-<li class="toctree-l3"><a class="reference internal" href="processing/chla/index.html">pelagos_py.steps.processing.chla</a></li>
+<li class="toctree-l3"><a class="reference internal" href="processing/chla_quenching/index.html">pelagos_py.steps.processing.chla_quenching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="processing/deep_correction/index.html">pelagos_py.steps.processing.deep_correction</a></li>
 <li class="toctree-l3"><a class="reference internal" href="processing/derive_ctd/index.html">pelagos_py.steps.processing.derive_ctd</a></li>
 <li class="toctree-l3"><a class="reference internal" href="processing/find_profiles/index.html">pelagos_py.steps.processing.find_profiles</a></li>
 <li class="toctree-l3"><a class="reference internal" href="processing/interpolate_data/index.html">pelagos_py.steps.processing.interpolate_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="processing/interpolate_par/index.html">pelagos_py.steps.processing.interpolate_par</a></li>
+<li class="toctree-l3"><a class="reference internal" href="processing/mixed_layer_depth/index.html">pelagos_py.steps.processing.mixed_layer_depth</a></li>
 <li class="toctree-l3"><a class="reference internal" href="processing/oxygen/index.html">pelagos_py.steps.processing.oxygen</a></li>
 <li class="toctree-l3"><a class="reference internal" href="processing/salinity/index.html">pelagos_py.steps.processing.salinity</a></li>
 </ul>
@@ -400,9 +403,12 @@
 </ul>
 </details></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../utils/index.html">pelagos_py.utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../utils/console/index.html">pelagos_py.utils.console</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../utils/diagnostic_capture/index.html">pelagos_py.utils.diagnostic_capture</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../utils/diagnostics/index.html">pelagos_py.utils.diagnostics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/fig_spec/index.html">pelagos_py.utils.fig_spec</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../utils/log_levels/index.html">pelagos_py.utils.log_levels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/palettes/index.html">pelagos_py.utils.palettes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../utils/parameter_spec/index.html">pelagos_py.utils.parameter_spec</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../utils/qc_handling/index.html">pelagos_py.utils.qc_handling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../utils/yaml_loading/index.html">pelagos_py.utils.yaml_loading</a></li>
@@ -502,6 +508,12 @@ This populates the global STEP_CLASSES and QC_CLASSES registries for use elsewhe
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="pelagos_py.steps.resolve_step_name">
+<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.</span></span><span class="sig-name descname"><span class="pre">resolve_step_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">step_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/pelagos_py/steps.html#resolve_step_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.resolve_step_name" title="Link to this definition">#</a></dt>
+<dd><p>Resolve a step name to its canonical STEP_CLASSES key, case-insensitively (None if no match).</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="pelagos_py.steps.create_step">
 <span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.</span></span><span class="sig-name descname"><span class="pre">create_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">step_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/pelagos_py/steps.html#create_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.create_step" title="Link to this definition">#</a></dt>
 <dd><p>Factory to create a Step instance from a dictionary or YAML file.</p>
@@ -555,6 +567,7 @@ This populates the global STEP_CLASSES and QC_CLASSES registries for use elsewhe
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.STEP_CLASSES"><code class="docutils literal notranslate"><span class="pre">STEP_CLASSES</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.QC_CLASSES"><code class="docutils literal notranslate"><span class="pre">QC_CLASSES</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.discover_steps"><code class="docutils literal notranslate"><span class="pre">discover_steps()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.resolve_step_name"><code class="docutils literal notranslate"><span class="pre">resolve_step_name()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.create_step"><code class="docutils literal notranslate"><span class="pre">create_step()</span></code></a></li>
 </ul>
 </li>

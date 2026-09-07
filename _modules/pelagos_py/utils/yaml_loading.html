@@ -396,31 +396,31 @@
 <span class="c1">#</span>
 <span class="c1"># Copyright 2025-2026 National Oceanography Centre and The Contributors</span>
 <span class="c1">#</span>
-<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the "License");</span>
 <span class="c1"># you may not use this file except in compliance with the License.</span>
 <span class="c1"># You may obtain a copy of the License at</span>
 <span class="c1">#</span>
 <span class="c1">#    http://www.apache.org/licenses/LICENSE-2.0</span>
 <span class="c1">#</span>
 <span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
-<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># distributed under the License is distributed on an "AS IS" BASIS,</span>
 <span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
 
-<span class="sd">&quot;&quot;&quot;Shared YAML loading for config files.</span>
+<span class="sd">"""Shared YAML loading for config files.</span>
 
 <span class="sd">PyYAML implements the YAML 1.1 float rule, whose resolver only recognises</span>
 <span class="sd">scientific notation that carries *both* a decimal point and a signed exponent</span>
 <span class="sd">(``3.0e-2``, ``1.5e+3``). Common forms such as ``3e-2``, ``1e3``, ``-2e-2`` and</span>
 <span class="sd">``3E-2`` are therefore loaded as **strings**, which then fail a step/QC</span>
-<span class="sd">parameter&#39;s ``float`` type check and halt the pipeline.</span>
+<span class="sd">parameter's ``float`` type check and halt the pipeline.</span>
 
 <span class="sd">This module provides a :func:`safe_load` that behaves like ``yaml.safe_load`` but</span>
 <span class="sd">with a float resolver matching the YAML 1.2 / JSON intent, so integer-mantissa</span>
 <span class="sd">scientific notation is parsed as a ``float``. Use it for every config read so</span>
 <span class="sd">numeric values resolve consistently regardless of how they are written.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 
@@ -430,32 +430,32 @@
 <div class="viewcode-block" id="PelagosSafeLoader">
 <a class="viewcode-back" href="../../../api/pelagos_py/utils/yaml_loading/index.html#pelagos_py.utils.yaml_loading.PelagosSafeLoader">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">PelagosSafeLoader</span><span class="p">(</span><span class="n">yaml</span><span class="o">.</span><span class="n">SafeLoader</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;``SafeLoader`` with a float resolver that accepts ``3e-2``-style numbers.&quot;&quot;&quot;</span></div>
+<span class="w">    </span><span class="sd">"""``SafeLoader`` with a float resolver that accepts ``3e-2``-style numbers."""</span></div>
 
 
 
-<span class="c1"># Mirrors PyYAML&#39;s default float resolver but adds an integer-mantissa exponent</span>
+<span class="c1"># Mirrors PyYAML's default float resolver but adds an integer-mantissa exponent</span>
 <span class="c1"># branch (``[0-9]+[eE][+-]?[0-9]+``) so e.g. ``3e-2`` and ``1e3`` resolve to float.</span>
 <span class="n">_FLOAT_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;^(?:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""^(?:</span>
 <span class="sd">        [-+]?(?:[0-9][0-9_]*)\.[0-9_]*(?:[eE][-+]?[0-9]+)?</span>
 <span class="sd">       |[-+]?(?:[0-9][0-9_]*)(?:[eE][-+]?[0-9]+)</span>
 <span class="sd">       |\.[0-9_]+(?:[eE][-+]?[0-9]+)?</span>
 <span class="sd">       |[-+]?[0-9][0-9_]*(?::[0-5]?[0-9])+\.[0-9_]*</span>
 <span class="sd">       |[-+]?\.(?:inf|Inf|INF)</span>
-<span class="sd">       |\.(?:nan|NaN|NAN))$&quot;&quot;&quot;</span><span class="p">,</span>
+<span class="sd">       |\.(?:nan|NaN|NAN))$"""</span><span class="p">,</span>
     <span class="n">re</span><span class="o">.</span><span class="n">X</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">PelagosSafeLoader</span><span class="o">.</span><span class="n">add_implicit_resolver</span><span class="p">(</span>
-    <span class="s2">&quot;tag:yaml.org,2002:float&quot;</span><span class="p">,</span> <span class="n">_FLOAT_RE</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="s2">&quot;-+0123456789.&quot;</span><span class="p">)</span>
+    <span class="s2">"tag:yaml.org,2002:float"</span><span class="p">,</span> <span class="n">_FLOAT_RE</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="s2">"-+0123456789."</span><span class="p">)</span>
 <span class="p">)</span>
 
 
 <div class="viewcode-block" id="safe_load">
 <a class="viewcode-back" href="../../../api/pelagos_py/utils/yaml_loading/index.html#pelagos_py.utils.yaml_loading.safe_load">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">safe_load</span><span class="p">(</span><span class="n">stream</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse YAML like ``yaml.safe_load``, resolving ``3e-2``-style floats.</span>
+<span class="w">    </span><span class="sd">"""Parse YAML like ``yaml.safe_load``, resolving ``3e-2``-style floats.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -465,7 +465,7 @@
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    The parsed Python object (``None`` for an empty document).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">yaml</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">Loader</span><span class="o">=</span><span class="n">PelagosSafeLoader</span><span class="p">)</span></div>
 
 </pre></div>

@@ -399,23 +399,23 @@
 <span class="c1">#</span>
 <span class="c1"># Copyright 2025-2026 National Oceanography Centre and The Contributors</span>
 <span class="c1">#</span>
-<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the "License");</span>
 <span class="c1"># you may not use this file except in compliance with the License.</span>
 <span class="c1"># You may obtain a copy of the License at</span>
 <span class="c1">#</span>
 <span class="c1">#    http://www.apache.org/licenses/LICENSE-2.0</span>
 <span class="c1">#</span>
 <span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
-<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># distributed under the License is distributed on an "AS IS" BASIS,</span>
 <span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
 
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 <span class="sd">QC tests to identify irregularities in PAR profiles based on La Forgia &amp; Organelli (2025).</span>
 <span class="sd">* Shapiro–Wilk test</span>
 <span class="sd">* Day and night sequences</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="c1">#### Mandatory imports ####</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">IPython.core.pylabtools</span><span class="w"> </span><span class="kn">import</span> <span class="n">figsize</span>
@@ -432,14 +432,13 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pvlib</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">tqdm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
 
 
 <span class="c1"># Functions written and provided by Thomas Ryan-Keogh based off of (https://doi.org/10.1002/lom3.10701)</span>
 <div class="viewcode-block" id="calculate_solar_elevation">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/quality_control/par_irregularity_qc/index.html#pelagos_py.steps.quality_control.par_irregularity_qc.calculate_solar_elevation">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">calculate_solar_elevation</span><span class="p">(</span><span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span><span class="p">,</span> <span class="n">datetime</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Calculate the solar elevation angle for given geographic coordinates and timestamps.</span>
 
 <span class="sd">    Parameters</span>
@@ -461,23 +460,23 @@
 <span class="sd">    - The calculation uses `pvlib.solarposition.get_solarposition` with times localized to UTC.</span>
 <span class="sd">    - Intended for use with xarray datasets where each profile has a single latitude,</span>
 <span class="sd">      longitude, and datetime (e.g., one value per `N_PROF`).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># Ensure datetime is timezone-aware (UTC)</span>
-    <span class="n">time_utc</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">datetime</span><span class="p">)</span><span class="o">.</span><span class="n">tz_localize</span><span class="p">(</span><span class="s2">&quot;UTC&quot;</span><span class="p">)</span>
+    <span class="n">time_utc</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">datetime</span><span class="p">)</span><span class="o">.</span><span class="n">tz_localize</span><span class="p">(</span><span class="s2">"UTC"</span><span class="p">)</span>
 
     <span class="c1"># Compute solar position</span>
     <span class="n">solar_position</span> <span class="o">=</span> <span class="n">pvlib</span><span class="o">.</span><span class="n">solarposition</span><span class="o">.</span><span class="n">get_solarposition</span><span class="p">(</span>
         <span class="n">time_utc</span><span class="p">,</span> <span class="n">latitude</span><span class="p">,</span> <span class="n">longitude</span>
     <span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">solar_position</span><span class="p">[</span><span class="s2">&quot;elevation&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span></div>
+    <span class="k">return</span> <span class="n">solar_position</span><span class="p">[</span><span class="s2">"elevation"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span></div>
 
 
 
 <div class="viewcode-block" id="qc_par_flagging">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/quality_control/par_irregularity_qc/index.html#pelagos_py.steps.quality_control.par_irregularity_qc.qc_par_flagging">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">qc_par_flagging</span><span class="p">(</span><span class="n">pres</span><span class="p">,</span> <span class="n">par</span><span class="p">,</span> <span class="n">sun_elev</span><span class="p">,</span> <span class="n">nei_par</span><span class="o">=</span><span class="mf">3e-2</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Real-time quality control (RT-QC) for PAR profiles</span>
 <span class="sd">    following La Forgia &amp; Organelli (2025, L&amp;O Methods, 23:526–542).</span>
 
@@ -535,7 +534,7 @@
 <span class="sd">      Real-time quality assessment for Biogeochemical Argo radiometric profiles.</span>
 <span class="sd">      *Limnology &amp; Oceanography: Methods*, 23, 526–542.</span>
 <span class="sd">      https://doi.org/10.1002/lom3.10701</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">pres</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">pres</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
     <span class="n">par</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">par</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
     <span class="n">N</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
@@ -549,7 +548,7 @@
     <span class="n">flags</span><span class="p">[(</span><span class="n">par</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">par</span> <span class="o">&gt;</span> <span class="mi">2500</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">4</span>
 
     <span class="c1"># determine mode</span>
-    <span class="n">mode</span> <span class="o">=</span> <span class="s2">&quot;day&quot;</span> <span class="k">if</span> <span class="n">sun_elev</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="s2">&quot;night&quot;</span>
+    <span class="n">mode</span> <span class="o">=</span> <span class="s2">"day"</span> <span class="k">if</span> <span class="n">sun_elev</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="s2">"night"</span>
 
     <span class="c1"># valid subset for interpolation</span>
     <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">pres</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
@@ -590,7 +589,7 @@
         <span class="n">pres_i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">p_min</span><span class="p">,</span> <span class="n">p_max</span> <span class="o">+</span> <span class="mf">0.125</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">)</span>
 
     <span class="c1"># now perform interpolation</span>
-    <span class="n">f</span> <span class="o">=</span> <span class="n">interp1d</span><span class="p">(</span><span class="n">pres_v</span><span class="p">,</span> <span class="n">par_v</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">interp1d</span><span class="p">(</span><span class="n">pres_v</span><span class="p">,</span> <span class="n">par_v</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">,</span> <span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
     <span class="n">par_i</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">pres_i</span><span class="p">)</span>
 
     <span class="c1"># ───────────────────────────────────────────────</span>
@@ -604,7 +603,7 @@
             <span class="k">try</span><span class="p">:</span>
                 <span class="c1"># TODO: Dev. verbosity to disable warning ignoring. Also below...</span>
                 <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
-                    <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">)</span>
                     <span class="n">_</span><span class="p">,</span> <span class="n">pvals</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">shapiro</span><span class="p">(</span><span class="n">seg</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
                 <span class="n">pvals</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
@@ -616,7 +615,7 @@
     <span class="c1"># ───────────────────────────────────────────────</span>
     <span class="c1"># 4. DAYTIME tests</span>
     <span class="c1"># ───────────────────────────────────────────────</span>
-    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;day&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">"day"</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">pa</span><span class="p">):</span>
             <span class="n">flags</span><span class="p">[</span><span class="n">pres</span> <span class="o">&lt;</span> <span class="n">pa</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># lit region</span>
 
@@ -625,7 +624,7 @@
         <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">trans_mask</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">6</span><span class="p">:</span>
             <span class="n">z</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">pres</span><span class="p">[</span><span class="n">trans_mask</span><span class="p">],</span> <span class="n">par</span><span class="p">[</span><span class="n">trans_mask</span><span class="p">]</span>
             <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
-                <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">)</span>
                 <span class="n">coeffs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">deg</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
             <span class="n">fit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyval</span><span class="p">(</span><span class="n">coeffs</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
             <span class="c1"># find first relative minimum (derivative zero → upward curvature)</span>
@@ -677,32 +676,32 @@
 <div class="viewcode-block" id="par_irregularity_qc">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/quality_control/par_irregularity_qc/index.html#pelagos_py.steps.quality_control.par_irregularity_qc.par_irregularity_qc">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">par_irregularity_qc</span><span class="p">(</span><span class="n">BaseQC</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Wrapper for qc_par_flagging, defining solar_elevation if it is not provided.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
-    <span class="n">qc_name</span> <span class="o">=</span> <span class="s2">&quot;PAR irregularity qc&quot;</span>
+    <span class="n">qc_name</span> <span class="o">=</span> <span class="s2">"PAR irregularity qc"</span>
     <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;noise_equivalent_estimate&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="mf">3e-2</span><span class="p">,</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Sensor noise-equivalent estimate used when flagging PAR irregularities.&quot;</span><span class="p">,</span>
+        <span class="s2">"noise_equivalent_estimate"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="mf">3e-2</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Sensor noise-equivalent estimate used when flagging PAR irregularities."</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="s2">&quot;plot_profiles&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
-            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="p">[],</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Profile numbers to plot in diagnostics.&quot;</span><span class="p">,</span>
+        <span class="s2">"plot_profiles"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Profile numbers to plot in diagnostics."</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">}</span>
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="s2">&quot;LATITUDE&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;LONGITUDE&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;TIME&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;PRES&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;DOWNWELLING_PAR&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,</span>
+        <span class="s2">"LATITUDE"</span><span class="p">,</span>
+        <span class="s2">"LONGITUDE"</span><span class="p">,</span>
+        <span class="s2">"TIME"</span><span class="p">,</span>
+        <span class="s2">"PRES"</span><span class="p">,</span>
+        <span class="s2">"DOWNWELLING_PAR"</span><span class="p">,</span>
+        <span class="s2">"PROFILE_NUMBER"</span><span class="p">,</span>
     <span class="p">]</span>
-    <span class="n">qc_outputs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;DOWNWELLING_PAR_QC&quot;</span><span class="p">]</span>
+    <span class="n">qc_outputs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"DOWNWELLING_PAR_QC"</span><span class="p">]</span>
 
 <div class="viewcode-block" id="par_irregularity_qc.return_qc">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/quality_control/par_irregularity_qc/index.html#pelagos_py.steps.quality_control.par_irregularity_qc.par_irregularity_qc.return_qc">[docs]</a>
@@ -711,41 +710,36 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span><span class="p">]</span>
 
         <span class="c1"># Make an unchecked (0) QC container for PAR QC</span>
-        <span class="n">par_qc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;DOWNWELLING_PAR&quot;</span><span class="p">]),</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">par_qc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"DOWNWELLING_PAR"</span><span class="p">]),</span> <span class="mi">0</span><span class="p">)</span>
 
         <span class="c1"># Apply the checks across individual profiles</span>
         <span class="n">profile_numbers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">)</span>
         <span class="p">)</span>
-        <span class="k">for</span> <span class="n">profile_number</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span>
-            <span class="n">profile_numbers</span><span class="p">,</span>
-            <span class="n">colour</span><span class="o">=</span><span class="s2">&quot;green&quot;</span><span class="p">,</span>
-            <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[97mProgress</span><span class="se">\033</span><span class="s2">[0m&quot;</span><span class="p">,</span>
-            <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;profile&quot;</span><span class="p">,</span>
-        <span class="p">):</span>
+        <span class="k">for</span> <span class="n">profile_number</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_progress</span><span class="p">(</span><span class="n">profile_numbers</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">"profile"</span><span class="p">):</span>
             <span class="c1"># Subset the data</span>
             <span class="n">profile</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">profile_number</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span> <span class="o">==</span> <span class="n">profile_number</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span>
             <span class="p">)</span>
 
             <span class="c1"># Find the solar elevation</span>
             <span class="n">solar_elevation</span> <span class="o">=</span> <span class="n">calculate_solar_elevation</span><span class="p">(</span>
-                <span class="n">profile</span><span class="p">[</span><span class="s2">&quot;LATITUDE&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-                <span class="n">profile</span><span class="p">[</span><span class="s2">&quot;LONGITUDE&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-                <span class="n">profile</span><span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+                <span class="n">profile</span><span class="p">[</span><span class="s2">"LATITUDE"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+                <span class="n">profile</span><span class="p">[</span><span class="s2">"LONGITUDE"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+                <span class="n">profile</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
             <span class="p">)</span>
 
             <span class="c1"># Apply the QC opperation</span>
             <span class="n">profile_element_qc</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">qc_par_flagging</span><span class="p">(</span>
-                <span class="n">profile</span><span class="p">[</span><span class="s2">&quot;PRES&quot;</span><span class="p">],</span>
-                <span class="n">profile</span><span class="p">[</span><span class="s2">&quot;DOWNWELLING_PAR&quot;</span><span class="p">],</span>
+                <span class="n">profile</span><span class="p">[</span><span class="s2">"PRES"</span><span class="p">],</span>
+                <span class="n">profile</span><span class="p">[</span><span class="s2">"DOWNWELLING_PAR"</span><span class="p">],</span>
                 <span class="n">solar_elevation</span><span class="p">,</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">noise_equivalent_estimate</span><span class="p">,</span>
             <span class="p">)</span>
 
             <span class="c1"># Stitch the QC results back into the QC container</span>
             <span class="n">profile_element_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">profile_number</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span> <span class="o">==</span> <span class="n">profile_number</span>
             <span class="p">)</span>
             <span class="n">par_qc</span><span class="p">[</span><span class="n">profile_element_indices</span><span class="p">]</span> <span class="o">=</span> <span class="n">profile_element_qc</span>
 
@@ -753,8 +747,8 @@
         <span class="n">par_qc</span><span class="p">[</span><span class="n">par_qc</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
 
         <span class="c1"># Collect the flags</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;DOWNWELLING_PAR_QC&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">([</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">],</span> <span class="n">par_qc</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;DOWNWELLING_PAR_QC&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_dataset</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"DOWNWELLING_PAR_QC"</span><span class="p">]</span> <span class="o">=</span> <span class="p">([</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">],</span> <span class="n">par_qc</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"DOWNWELLING_PAR_QC"</span><span class="p">]</span><span class="o">.</span><span class="n">to_dataset</span><span class="p">()</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">flags</span></div>
 
@@ -762,10 +756,10 @@
 <div class="viewcode-block" id="par_irregularity_qc.plot_diagnostics">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/quality_control/par_irregularity_qc/index.html#pelagos_py.steps.quality_control.par_irregularity_qc.par_irregularity_qc.plot_diagnostics">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">plot_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">mpl</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">&quot;tkagg&quot;</span><span class="p">)</span>
+        <span class="n">mpl</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">"tkagg"</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plot_profiles</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;To see diagnostics, please specify the plot_profiles setting.&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">"To see diagnostics, please specify the plot_profiles setting."</span><span class="p">)</span>
             <span class="k">return</span>
 
         <span class="n">nrows</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plot_profiles</span><span class="p">)</span> <span class="o">/</span> <span class="mi">3</span><span class="p">))</span>
@@ -774,41 +768,41 @@
         <span class="k">for</span> <span class="n">profile_number</span><span class="p">,</span> <span class="n">ax</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plot_profiles</span><span class="p">,</span> <span class="n">axs</span><span class="o">.</span><span class="n">flatten</span><span class="p">()):</span>
             <span class="c1"># Select the profile data</span>
             <span class="n">profile</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">profile_number</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span>
-            <span class="p">)</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;DOWNWELLING_PAR&quot;</span><span class="p">,</span> <span class="s2">&quot;PRES&quot;</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span> <span class="o">==</span> <span class="n">profile_number</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s2">"DOWNWELLING_PAR"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">])</span>
 
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">profile</span><span class="p">[</span><span class="s2">&quot;DOWNWELLING_PAR&quot;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">profile</span><span class="p">[</span><span class="s2">"DOWNWELLING_PAR"</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span>
-                    <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Prof. </span><span class="si">{</span><span class="n">profile_number</span><span class="si">}</span><span class="s2"> (data missing)&quot;</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">&quot;upper right&quot;</span>
+                    <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Prof. </span><span class="si">{</span><span class="n">profile_number</span><span class="si">}</span><span class="s2"> (data missing)"</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">"upper right"</span>
                 <span class="p">)</span>
                 <span class="k">continue</span>
 
             <span class="k">for</span> <span class="n">flag</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
-                <span class="c1"># Get the data for each flag and check it isn&#39;t empty</span>
+                <span class="c1"># Get the data for each flag and check it isn't empty</span>
                 <span class="n">plot_data</span> <span class="o">=</span> <span class="n">profile</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
-                    <span class="n">profile</span><span class="p">[</span><span class="s2">&quot;DOWNWELLING_PAR_QC&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">flag</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span>
+                    <span class="n">profile</span><span class="p">[</span><span class="s2">"DOWNWELLING_PAR_QC"</span><span class="p">]</span> <span class="o">==</span> <span class="n">flag</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span>
                 <span class="p">)</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">plot_data</span><span class="p">[</span><span class="s2">&quot;DOWNWELLING_PAR&quot;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">plot_data</span><span class="p">[</span><span class="s2">"DOWNWELLING_PAR"</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                     <span class="k">continue</span>
 
                 <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-                    <span class="n">plot_data</span><span class="p">[</span><span class="s2">&quot;DOWNWELLING_PAR&quot;</span><span class="p">],</span>
-                    <span class="n">plot_data</span><span class="p">[</span><span class="s2">&quot;PRES&quot;</span><span class="p">],</span>
+                    <span class="n">plot_data</span><span class="p">[</span><span class="s2">"DOWNWELLING_PAR"</span><span class="p">],</span>
+                    <span class="n">plot_data</span><span class="p">[</span><span class="s2">"PRES"</span><span class="p">],</span>
                     <span class="n">c</span><span class="o">=</span><span class="n">flag_cols</span><span class="p">[</span><span class="n">flag</span><span class="p">],</span>
-                    <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-                    <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span>
-                    <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">flag</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="n">ls</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span>
+                    <span class="n">marker</span><span class="o">=</span><span class="s2">"o"</span><span class="p">,</span>
+                    <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">flag</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
                 <span class="p">)</span>
 
             <span class="n">ax</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
-                <span class="n">xlabel</span><span class="o">=</span><span class="s2">&quot;PAR&quot;</span><span class="p">,</span>
-                <span class="n">ylabel</span><span class="o">=</span><span class="s2">&quot;PRES&quot;</span><span class="p">,</span>
-                <span class="n">ylim</span><span class="o">=</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">profile</span><span class="p">[</span><span class="s2">&quot;PRES&quot;</span><span class="p">]),</span> <span class="mi">0</span><span class="p">),</span>
+                <span class="n">xlabel</span><span class="o">=</span><span class="s2">"PAR"</span><span class="p">,</span>
+                <span class="n">ylabel</span><span class="o">=</span><span class="s2">"PRES"</span><span class="p">,</span>
+                <span class="n">ylim</span><span class="o">=</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">profile</span><span class="p">[</span><span class="s2">"PRES"</span><span class="p">]),</span> <span class="mi">0</span><span class="p">),</span>
             <span class="p">)</span>
 
-            <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Prof. </span><span class="si">{</span><span class="n">profile_number</span><span class="si">}</span><span class="s2"> flags&quot;</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">&quot;upper right&quot;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Prof. </span><span class="si">{</span><span class="n">profile_number</span><span class="si">}</span><span class="s2"> flags"</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">"upper right"</span><span class="p">)</span>
 
-        <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;PAR irregularity test&quot;</span><span class="p">)</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">"PAR irregularity test"</span><span class="p">)</span>
         <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 </div>

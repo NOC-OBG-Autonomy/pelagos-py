@@ -14,7 +14,7 @@
           "pelagos_py.steps.base_step"
         ]
       },
-      "doc_lineno": 215
+      "doc_lineno": 263
     }
   ],
   "api/pelagos_py/steps/index": [],
@@ -106,33 +106,34 @@
       "doc_lineno": 100
     }
   ],
-  "api/pelagos_py/steps/processing/chla/index": [
+  "api/pelagos_py/steps/processing/chla_quenching/index": [
     {
-      "source": "- name: \"Chla Deep Correction\"\n  parameters:\n    apply_to: \"CHLA\"\n    dark_value: null\n    depth_threshold: 200\n  diagnostics: true",
+      "source": "- name: \"CHLA Quenching\"\n  parameters:\n    method: \"xing2012\"\n    apply_to: \"CHLA\"\n  diagnostics: true",
       "names": [],
       "example": {
-        "document": "api/pelagos_py/steps/processing/chla/index",
-        "ref_id": "module-pelagos_py.steps.processing.chla",
+        "document": "api/pelagos_py/steps/processing/chla_quenching/index",
+        "ref_id": "module-pelagos_py.steps.processing.chla_quenching",
         "headings": [
-          "pelagos_py.steps.processing.chla",
+          "pelagos_py.steps.processing.chla_quenching",
           "Example"
         ]
       },
-      "doc_lineno": 40
-    },
+      "doc_lineno": 29
+    }
+  ],
+  "api/pelagos_py/steps/processing/deep_correction/index": [
     {
-      "source": "- name: \"Chla Quenching Correction\"\n  parameters:\n    method: \"Argo\"\n    apply_to: \"CHLA\"\n    mld_settings: {\n      \"threshold_on\": \"TEMP\",\n      \"reference_depth\": 10,\n      \"threshold\": 0.2\n      }\n    plot_profiles: []\n  diagnostics: true",
+      "source": "- name: \"Deep Correction\"\n  parameters:\n    apply_to: \"CHLA\"\n  diagnostics: true",
       "names": [],
       "example": {
-        "document": "api/pelagos_py/steps/processing/chla/index",
-        "ref_id": "module-pelagos_py.steps.processing.chla",
+        "document": "api/pelagos_py/steps/processing/deep_correction/index",
+        "ref_id": "module-pelagos_py.steps.processing.deep_correction",
         "headings": [
-          "pelagos_py.steps.processing.chla",
-          "Example",
-          "Example"
+          "pelagos_py.steps.processing.deep_correction",
+          "Examples"
         ]
       },
-      "doc_lineno": 163
+      "doc_lineno": 42
     }
   ],
   "api/pelagos_py/steps/processing/derive_ctd/index": [],
@@ -140,7 +141,7 @@
   "api/pelagos_py/steps/processing/index": [],
   "api/pelagos_py/steps/processing/interpolate_data/index": [
     {
-      "source": "- name: \"Interpolate Data\"\n  parameters:\n    qc_handling_settings: {\n      flag_filter_settings: {\n        \"PRES\": [3, 4, 9],\n        \"LATITUDE\": [3, 4, 9],\n        \"LONGITUDE\": [3, 4, 9]\n      },\n      reconstruction_behaviour: \"replace\",\n      flag_mapping: { 3: 8, 4: 8, 9: 8 }\n    }\n  diagnostics: false",
+      "source": "- name: \"Interpolate Data\"\n  parameters:\n    max_interp_time: 5.0\n    qc_handling_settings: {\n      flag_filter_settings: {\n        \"PRES\": [3, 4, 9],\n        \"LATITUDE\": [3, 4, 9],\n        \"LONGITUDE\": [3, 4, 9]\n      },\n      reconstruction_behaviour: \"replace\",\n      flag_mapping: { 3: 8, 4: 8, 9: 8 }\n    }\n  diagnostics: false",
       "names": [],
       "example": {
         "document": "api/pelagos_py/steps/processing/interpolate_data/index",
@@ -153,6 +154,8 @@
       "doc_lineno": 39
     }
   ],
+  "api/pelagos_py/steps/processing/interpolate_par/index": [],
+  "api/pelagos_py/steps/processing/mixed_layer_depth/index": [],
   "api/pelagos_py/steps/processing/oxygen/index": [
     {
       "source": "- name: \"Derive Uncalibrated Phase\"\n  parameters:\n    #  <MANDATORY>\n    blue_phase_name: \"BPHASE_DOXY\"\n    # <OPTIONAL>\n    red_phase_name: \"RPHASE_DOXY\"\n  diagnostics: false",
@@ -197,7 +200,7 @@
       "doc_lineno": 185
     },
     {
-      "source": "- name: \"Derive Calibrated Phase\"\n  parameters:\n    uncalibrated_phase_name: \"UNCAL_PHASE_DOXY\"\n    calib_coefficients: [0, 1, 0, 0]\n  diagnostics: false",
+      "source": "- name: \"Shift Oxygen To CTD\"\n  parameters:\n    # <MANDATORY>\n    shift_vars: [\"UNCAL_PHASE_DOXY\", \"TEMP_DOXY\"]\n    # <OPTIONAL>\n    lag_seconds: null\n    pitch_name: \"GLIDER_PITCH\"\n    distance_cm: 90\n    cast_id_var: \"PROFILE_DIRECTION\"\n  diagnostics: false",
       "names": [],
       "example": {
         "document": "api/pelagos_py/steps/processing/oxygen/index",
@@ -213,7 +216,7 @@
       "doc_lineno": 243
     },
     {
-      "source": "- name: \"Derive Oxygen Concentration\"\n  parameters:\n    # <MANDATORY>\n    method: \"poly\"\n    # <METHOD DEPENDENT>\n    # The following params are for \"poly\" method\n    temperature_name: \"TEMP\"\n    calib_coefficient_matrix: [\n      [0, 1, 0, 0],\n      [0, 1, 0, 0],\n      [0, 1, 0, 0],\n      [0, 1, 0, 0],\n      [0, 1, 0, 0]\n    ]\n  diagnostics: false",
+      "source": "- name: \"Derive Calibrated Phase\"\n  parameters:\n    uncalibrated_phase_name: \"UNCAL_PHASE_DOXY\"\n    calib_coefficients: [0, 1, 0, 0]\n  diagnostics: false",
       "names": [],
       "example": {
         "document": "api/pelagos_py/steps/processing/oxygen/index",
@@ -227,7 +230,25 @@
           "Example"
         ]
       },
-      "doc_lineno": 301
+      "doc_lineno": 319
+    },
+    {
+      "source": "- name: \"Derive Oxygen Concentration\"\n  parameters:\n    # <MANDATORY>\n    method: \"SVU\"\n    # <METHOD DEPENDENT>\n    # The following params are for \"SVU\" method\n    temperature_name: \"TEMP_DOXY\"\n    svu_coefficients: [c0, c1, c2, c3, c4, c5, c6]  # manufacturer SVUFoilCoef0-6\n  diagnostics: false",
+      "names": [],
+      "example": {
+        "document": "api/pelagos_py/steps/processing/oxygen/index",
+        "ref_id": "module-pelagos_py.steps.processing.oxygen",
+        "headings": [
+          "pelagos_py.steps.processing.oxygen",
+          "Example",
+          "Example",
+          "Example",
+          "Example",
+          "Example",
+          "Example"
+        ]
+      },
+      "doc_lineno": 377
     },
     {
       "source": "- name: \"Molar DOXY Salinity Correction\"\n  parameters:\n    # <MANDATORY>\n    salinity_name: \"PRAC_SALINITY\"\n    temperature_name: \"TEMP\"\n    # <OPTIONAL>\n    reference_salinity: 0\n  diagnostics: false",
@@ -242,10 +263,11 @@
           "Example",
           "Example",
           "Example",
+          "Example",
           "Example"
         ]
       },
-      "doc_lineno": 369
+      "doc_lineno": 443
     },
     {
       "source": "- name: \"Molar DOXY Pressure Correction\"\n  parameters:\n    # <MANDATORY>\n    pressure_name: \"PRES\"\n    temperature_name: \"TEMP\"\n    molar_doxy_name: \"MOLAR_DOXY_PSAL\"\n    uncalibrated_phase_correction_applied: true\n  diagnostics: false",
@@ -261,10 +283,11 @@
           "Example",
           "Example",
           "Example",
+          "Example",
           "Example"
         ]
       },
-      "doc_lineno": 430
+      "doc_lineno": 504
     }
   ],
   "api/pelagos_py/steps/processing/salinity/index": [],
@@ -278,7 +301,7 @@
   "api/pelagos_py/steps/quality_control/position_on_land_qc/index": [],
   "api/pelagos_py/steps/quality_control/range_qc/index": [
     {
-      "source": "- name: \"Apply QC\"\n  parameters:\n    qc_settings:\n      range qc:\n        variable_ranges:\n          PRES:\n            3: [-2.4, -5, inside]   # impossible band: flag data INSIDE it\n            4: [-5, -.inf, inside]\n            9: 0.0                  # single scalar -> flag the exact fill value 0.0\n          TEMP:\n            3: [0, 30, outside]     # good band: flag data OUTSIDE it\n            4: [-2.5, 40, outside]\n          CNDC:\n            # one flag, two bands: flag bad both inside [2, 3] and outside [0.1, 10]\n            4: [[2, 3, inside], [0.1, 10, outside]]\n        also_flag:\n          CNDC: [PRES, TEMP]    # CNDC's flags propagate onto PRES & TEMP (worst wins)\n        test_depth_range: [-100, 0]   # OPTIONAL: only check this DEPTH window\n  diagnostics: true             # plots every flagged variable, coloured by flag",
+      "source": "- name: \"Apply QC\"\n  parameters:\n    qc_settings:\n      range qc:\n        variable_ranges:\n          PRES:\n            3: [-2.4, -5, inside]   # impossible band: flag data INSIDE it\n            4: [-5, -.inf, inside]\n            9: 0.0                  # single scalar -> flag the exact fill value 0.0\n          TEMP:\n            3: [0, 30, outside]     # good band: flag data OUTSIDE it\n            4: [-2.5, 40, outside]\n          CNDC:\n            # one flag, two bands: flag bad both inside [2, 3] and outside [0.1, 10]\n            4: [[2, 3, inside], [0.1, 10, outside]]\n        also_flag:\n          CNDC: [PRES, TEMP]    # CNDC's flags propagate onto PRES & TEMP (worst wins)\n        test_depth_range: [0, 100]    # OPTIONAL: only check this DEPTH window\n  diagnostics: true             # plots every flagged variable, coloured by flag",
       "names": [],
       "example": {
         "document": "api/pelagos_py/steps/quality_control/range_qc/index",
@@ -288,7 +311,20 @@
           "Example"
         ]
       },
-      "doc_lineno": 49
+      "doc_lineno": 37
+    },
+    {
+      "source": "- name: \"Apply QC\"\n  parameters:\n    qc_settings:\n      range qc:\n        variable_ranges:\n          DEPTH:\n            3: [0, 5, inside]     # top 5 m -> probably bad (correctable)\n            2: [0, 5, outside]    # deeper   -> probably good\n        flag_instead:\n          DEPTH: [CHLA]           # DEPTH's flags go onto CHLA; no DEPTH_QC written",
+      "names": [],
+      "example": {
+        "document": "api/pelagos_py/steps/quality_control/range_qc/index",
+        "ref_id": "module-pelagos_py.steps.quality_control.range_qc",
+        "headings": [
+          "pelagos_py.steps.quality_control.range_qc",
+          "Example"
+        ]
+      },
+      "doc_lineno": 61
     }
   ],
   "api/pelagos_py/steps/quality_control/spike_qc/index": [
@@ -325,10 +361,13 @@
   "api/pelagos_py/steps/templates/blank_qc/index": [],
   "api/pelagos_py/steps/templates/blank_step/index": [],
   "api/pelagos_py/steps/templates/index": [],
+  "api/pelagos_py/utils/console/index": [],
   "api/pelagos_py/utils/diagnostic_capture/index": [],
   "api/pelagos_py/utils/diagnostics/index": [],
+  "api/pelagos_py/utils/fig_spec/index": [],
   "api/pelagos_py/utils/index": [],
   "api/pelagos_py/utils/log_levels/index": [],
+  "api/pelagos_py/utils/palettes/index": [],
   "api/pelagos_py/utils/parameter_spec/index": [],
   "api/pelagos_py/utils/qc_handling/index": [],
   "api/pelagos_py/utils/yaml_loading/index": [],
@@ -408,72 +447,7 @@
   "user_guide": [
     {
       "source": "from pelagos_py.steps.base_step import BaseStep, register_step\n\n@register_step\nclass MyNewStep(BaseStep):\n    ...",
-      "names": [
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_step"
-          ],
-          "code_str": "pelagos_py.steps.base_step",
-          "lineno": 1,
-          "end_lineno": 1,
-          "context": "import_from",
-          "resolved_location": "pelagos_py.steps.base_step"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_step",
-            "BaseStep"
-          ],
-          "code_str": "BaseStep",
-          "lineno": 1,
-          "end_lineno": 1,
-          "context": "import_target",
-          "resolved_location": "pelagos_py.steps.base_step.BaseStep"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_step",
-            "register_step"
-          ],
-          "code_str": "register_step",
-          "lineno": 1,
-          "end_lineno": 1,
-          "context": "import_target",
-          "resolved_location": "pelagos_py.steps.base_step.register_step"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_step",
-            "register_step"
-          ],
-          "code_str": "register_step",
-          "lineno": 3,
-          "end_lineno": 3,
-          "context": "none",
-          "resolved_location": "pelagos_py.steps.base_step.register_step"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_step",
-            "BaseStep"
-          ],
-          "code_str": "BaseStep",
-          "lineno": 4,
-          "end_lineno": 4,
-          "context": "none",
-          "resolved_location": "pelagos_py.steps.base_step.BaseStep"
-        }
-      ],
+      "names": [],
       "example": {
         "document": "user_guide",
         "ref_id": "how-to-add-a-new-step",
@@ -487,72 +461,7 @@
     },
     {
       "source": "from pelagos_py.steps.base_step import BaseStep, register_step\n\n@register_step\nclass MyNewStep(BaseStep):\n\n    step_name = \"My New Step\"",
-      "names": [
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_step"
-          ],
-          "code_str": "pelagos_py.steps.base_step",
-          "lineno": 1,
-          "end_lineno": 1,
-          "context": "import_from",
-          "resolved_location": "pelagos_py.steps.base_step"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_step",
-            "BaseStep"
-          ],
-          "code_str": "BaseStep",
-          "lineno": 1,
-          "end_lineno": 1,
-          "context": "import_target",
-          "resolved_location": "pelagos_py.steps.base_step.BaseStep"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_step",
-            "register_step"
-          ],
-          "code_str": "register_step",
-          "lineno": 1,
-          "end_lineno": 1,
-          "context": "import_target",
-          "resolved_location": "pelagos_py.steps.base_step.register_step"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_step",
-            "register_step"
-          ],
-          "code_str": "register_step",
-          "lineno": 3,
-          "end_lineno": 3,
-          "context": "none",
-          "resolved_location": "pelagos_py.steps.base_step.register_step"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_step",
-            "BaseStep"
-          ],
-          "code_str": "BaseStep",
-          "lineno": 4,
-          "end_lineno": 4,
-          "context": "none",
-          "resolved_location": "pelagos_py.steps.base_step.BaseStep"
-        }
-      ],
+      "names": [],
       "example": {
         "document": "user_guide",
         "ref_id": "how-to-add-a-new-step",
@@ -566,72 +475,7 @@
     },
     {
       "source": "from pelagos_py.steps.base_step import BaseStep, register_step\n\n@register_step\nclass MyNewStep(BaseStep):\n    step_name = \"My New Step\"\n\n    def run(self):\n        # Your processing logic here\n        return self.context",
-      "names": [
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_step"
-          ],
-          "code_str": "pelagos_py.steps.base_step",
-          "lineno": 1,
-          "end_lineno": 1,
-          "context": "import_from",
-          "resolved_location": "pelagos_py.steps.base_step"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_step",
-            "BaseStep"
-          ],
-          "code_str": "BaseStep",
-          "lineno": 1,
-          "end_lineno": 1,
-          "context": "import_target",
-          "resolved_location": "pelagos_py.steps.base_step.BaseStep"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_step",
-            "register_step"
-          ],
-          "code_str": "register_step",
-          "lineno": 1,
-          "end_lineno": 1,
-          "context": "import_target",
-          "resolved_location": "pelagos_py.steps.base_step.register_step"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_step",
-            "register_step"
-          ],
-          "code_str": "register_step",
-          "lineno": 3,
-          "end_lineno": 3,
-          "context": "none",
-          "resolved_location": "pelagos_py.steps.base_step.register_step"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_step",
-            "BaseStep"
-          ],
-          "code_str": "BaseStep",
-          "lineno": 4,
-          "end_lineno": 4,
-          "context": "none",
-          "resolved_location": "pelagos_py.steps.base_step.BaseStep"
-        }
-      ],
+      "names": [],
       "example": {
         "document": "user_guide",
         "ref_id": "how-to-add-a-new-step",
@@ -645,72 +489,7 @@
     },
     {
       "source": "from pelagos_py.steps.base_step import BaseStep, register_step\n\n@register_step\nclass MyNewStep(BaseStep):\n    step_name = \"My New Step\"\n\n    def run(self):\n        # Your processing logic here\n        return self.context\n\n    def generate_diagnostics(self):\n        # Your diagnostics logic here\n        pass",
-      "names": [
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_step"
-          ],
-          "code_str": "pelagos_py.steps.base_step",
-          "lineno": 1,
-          "end_lineno": 1,
-          "context": "import_from",
-          "resolved_location": "pelagos_py.steps.base_step"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_step",
-            "BaseStep"
-          ],
-          "code_str": "BaseStep",
-          "lineno": 1,
-          "end_lineno": 1,
-          "context": "import_target",
-          "resolved_location": "pelagos_py.steps.base_step.BaseStep"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_step",
-            "register_step"
-          ],
-          "code_str": "register_step",
-          "lineno": 1,
-          "end_lineno": 1,
-          "context": "import_target",
-          "resolved_location": "pelagos_py.steps.base_step.register_step"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_step",
-            "register_step"
-          ],
-          "code_str": "register_step",
-          "lineno": 3,
-          "end_lineno": 3,
-          "context": "none",
-          "resolved_location": "pelagos_py.steps.base_step.register_step"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_step",
-            "BaseStep"
-          ],
-          "code_str": "BaseStep",
-          "lineno": 4,
-          "end_lineno": 4,
-          "context": "none",
-          "resolved_location": "pelagos_py.steps.base_step.BaseStep"
-        }
-      ],
+      "names": [],
       "example": {
         "document": "user_guide",
         "ref_id": "how-to-add-a-new-step",
@@ -724,72 +503,7 @@
     },
     {
       "source": "from pelagos_py.steps.base_step import BaseStep, register_step\nfrom pelagos_py.utils.qc_handling import QCHandlingMixin\n\n@register_step\nclass MyNewStep(BaseStep, QCHandlingMixin):\n    step_name = \"My New Step\"\n\n    def run(self):\n        # Filter the specified QC out of this step's instance of self.data\n        # and store it separately.\n        self.filter_qc()\n\n        # Your processing logic here. Always use self.data to access your\n        # processing inputs, as this is what has been filtered.\n        # --------- EXAMPLE ---------\n        self.data[\"C\"] = self.data[\"A\"] * self.data[\"B\"]\n        # ---------------------------\n\n        # Add the filtered-out data back in, or retain its replacement\n        # depending on the user config.\n        self.reconstruct_data()\n        # Update the flags of the filtered data.\n        self.update_qc()\n\n        # If a new variable was added, give it its own QC column derived from\n        # its parents' QC. Not necessary if no new variables were added.\n        # --------- EXAMPLE ---------\n        self.generate_qc({\"C_QC\": [\"A_QC\", \"B_QC\"]})\n        # ---------------------------\n\n        self.context[\"data\"] = self.data\n        return self.context\n\n    def generate_diagnostics(self):\n        # Your diagnostics logic here\n        pass",
-      "names": [
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_step"
-          ],
-          "code_str": "pelagos_py.steps.base_step",
-          "lineno": 1,
-          "end_lineno": 1,
-          "context": "import_from",
-          "resolved_location": "pelagos_py.steps.base_step"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_step",
-            "BaseStep"
-          ],
-          "code_str": "BaseStep",
-          "lineno": 1,
-          "end_lineno": 1,
-          "context": "import_target",
-          "resolved_location": "pelagos_py.steps.base_step.BaseStep"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_step",
-            "register_step"
-          ],
-          "code_str": "register_step",
-          "lineno": 1,
-          "end_lineno": 1,
-          "context": "import_target",
-          "resolved_location": "pelagos_py.steps.base_step.register_step"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_step",
-            "register_step"
-          ],
-          "code_str": "register_step",
-          "lineno": 4,
-          "end_lineno": 4,
-          "context": "none",
-          "resolved_location": "pelagos_py.steps.base_step.register_step"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_step",
-            "BaseStep"
-          ],
-          "code_str": "BaseStep",
-          "lineno": 5,
-          "end_lineno": 5,
-          "context": "none",
-          "resolved_location": "pelagos_py.steps.base_step.BaseStep"
-        }
-      ],
+      "names": [],
       "example": {
         "document": "user_guide",
         "ref_id": "adding-qc-handling-to-a-step",
@@ -803,85 +517,7 @@
     },
     {
       "source": "from pelagos_py.steps.base_qc import BaseQC, register_qc, flag_cols\n\n@register_qc\nclass MyNewCheck(BaseQC):\n    ...",
-      "names": [
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_qc"
-          ],
-          "code_str": "pelagos_py.steps.base_qc",
-          "lineno": 1,
-          "end_lineno": 1,
-          "context": "import_from",
-          "resolved_location": "pelagos_py.steps.base_qc"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_qc",
-            "BaseQC"
-          ],
-          "code_str": "BaseQC",
-          "lineno": 1,
-          "end_lineno": 1,
-          "context": "import_target",
-          "resolved_location": "pelagos_py.steps.base_qc.BaseQC"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_qc",
-            "register_qc"
-          ],
-          "code_str": "register_qc",
-          "lineno": 1,
-          "end_lineno": 1,
-          "context": "import_target",
-          "resolved_location": "pelagos_py.steps.base_qc.register_qc"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_qc",
-            "flag_cols"
-          ],
-          "code_str": "flag_cols",
-          "lineno": 1,
-          "end_lineno": 1,
-          "context": "import_target",
-          "resolved_location": "pelagos_py.steps.base_qc.flag_cols"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_qc",
-            "register_qc"
-          ],
-          "code_str": "register_qc",
-          "lineno": 3,
-          "end_lineno": 3,
-          "context": "none",
-          "resolved_location": "pelagos_py.steps.base_qc.register_qc"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_qc",
-            "BaseQC"
-          ],
-          "code_str": "BaseQC",
-          "lineno": 4,
-          "end_lineno": 4,
-          "context": "none",
-          "resolved_location": "pelagos_py.steps.base_qc.BaseQC"
-        }
-      ],
+      "names": [],
       "example": {
         "document": "user_guide",
         "ref_id": "how-to-add-a-new-qc-check",
@@ -891,89 +527,11 @@
           "How to add a new QC check"
         ]
       },
-      "doc_lineno": 283
+      "doc_lineno": 292
     },
     {
       "source": "from pelagos_py.steps.base_qc import BaseQC, register_qc, flag_cols\n\n@register_qc\nclass MyNewCheck(BaseQC):\n    qc_name = \"my new check\"  # How you refer to the check in config (see below)\n    expected_parameters = {'A_cutoff': 1}  # Parameters the user may supply; the value is the default\n    required_variables = ['A']  # Variables required for execution; cross-referenced against the data vars in context\n    provided_variables = []  # Variables this check itself provides, if any\n    qc_outputs = ['A_QC']  # QC outputs; references that help \"Apply QC\" update existing QC in the data",
-      "names": [
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_qc"
-          ],
-          "code_str": "pelagos_py.steps.base_qc",
-          "lineno": 1,
-          "end_lineno": 1,
-          "context": "import_from",
-          "resolved_location": "pelagos_py.steps.base_qc"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_qc",
-            "BaseQC"
-          ],
-          "code_str": "BaseQC",
-          "lineno": 1,
-          "end_lineno": 1,
-          "context": "import_target",
-          "resolved_location": "pelagos_py.steps.base_qc.BaseQC"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_qc",
-            "register_qc"
-          ],
-          "code_str": "register_qc",
-          "lineno": 1,
-          "end_lineno": 1,
-          "context": "import_target",
-          "resolved_location": "pelagos_py.steps.base_qc.register_qc"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_qc",
-            "flag_cols"
-          ],
-          "code_str": "flag_cols",
-          "lineno": 1,
-          "end_lineno": 1,
-          "context": "import_target",
-          "resolved_location": "pelagos_py.steps.base_qc.flag_cols"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_qc",
-            "register_qc"
-          ],
-          "code_str": "register_qc",
-          "lineno": 3,
-          "end_lineno": 3,
-          "context": "none",
-          "resolved_location": "pelagos_py.steps.base_qc.register_qc"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_qc",
-            "BaseQC"
-          ],
-          "code_str": "BaseQC",
-          "lineno": 4,
-          "end_lineno": 4,
-          "context": "none",
-          "resolved_location": "pelagos_py.steps.base_qc.BaseQC"
-        }
-      ],
+      "names": [],
       "example": {
         "document": "user_guide",
         "ref_id": "how-to-add-a-new-qc-check",
@@ -983,89 +541,11 @@
           "How to add a new QC check"
         ]
       },
-      "doc_lineno": 293
+      "doc_lineno": 302
     },
     {
       "source": "from pelagos_py.steps.base_qc import BaseQC, register_qc, flag_cols\n\n@register_qc\nclass MyNewCheck(BaseQC):\n    qc_name = \"my new check\"\n    expected_parameters = {'A_cutoff': 1}\n    required_variables = ['A']\n    provided_variables = []\n    qc_outputs = ['A_QC']\n\n    def return_qc(self):\n        # IMPORTANT: access the data with self.data.\n        # self.flags should be an xarray Dataset whose data_vars hold the\n        # \"{variable}_QC\" columns produced by the check.\n        return self.flags\n\n    def plot_diagnostics(self):\n        # Add your diagnostic plotting here\n        ...",
-      "names": [
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_qc"
-          ],
-          "code_str": "pelagos_py.steps.base_qc",
-          "lineno": 1,
-          "end_lineno": 1,
-          "context": "import_from",
-          "resolved_location": "pelagos_py.steps.base_qc"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_qc",
-            "BaseQC"
-          ],
-          "code_str": "BaseQC",
-          "lineno": 1,
-          "end_lineno": 1,
-          "context": "import_target",
-          "resolved_location": "pelagos_py.steps.base_qc.BaseQC"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_qc",
-            "register_qc"
-          ],
-          "code_str": "register_qc",
-          "lineno": 1,
-          "end_lineno": 1,
-          "context": "import_target",
-          "resolved_location": "pelagos_py.steps.base_qc.register_qc"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_qc",
-            "flag_cols"
-          ],
-          "code_str": "flag_cols",
-          "lineno": 1,
-          "end_lineno": 1,
-          "context": "import_target",
-          "resolved_location": "pelagos_py.steps.base_qc.flag_cols"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_qc",
-            "register_qc"
-          ],
-          "code_str": "register_qc",
-          "lineno": 3,
-          "end_lineno": 3,
-          "context": "none",
-          "resolved_location": "pelagos_py.steps.base_qc.register_qc"
-        },
-        {
-          "import_components": [
-            "pelagos_py",
-            "steps",
-            "base_qc",
-            "BaseQC"
-          ],
-          "code_str": "BaseQC",
-          "lineno": 4,
-          "end_lineno": 4,
-          "context": "none",
-          "resolved_location": "pelagos_py.steps.base_qc.BaseQC"
-        }
-      ],
+      "names": [],
       "example": {
         "document": "user_guide",
         "ref_id": "how-to-add-a-new-qc-check",
@@ -1075,7 +555,7 @@
           "How to add a new QC check"
         ]
       },
-      "doc_lineno": 309
+      "doc_lineno": 318
     }
   ]
 }

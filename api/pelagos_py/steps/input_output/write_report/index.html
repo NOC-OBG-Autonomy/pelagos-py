@@ -370,10 +370,13 @@
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../processing/index.html">pelagos_py.steps.processing</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/bbp/index.html">pelagos_py.steps.processing.bbp</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../processing/chla/index.html">pelagos_py.steps.processing.chla</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../processing/chla_quenching/index.html">pelagos_py.steps.processing.chla_quenching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../processing/deep_correction/index.html">pelagos_py.steps.processing.deep_correction</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/derive_ctd/index.html">pelagos_py.steps.processing.derive_ctd</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/find_profiles/index.html">pelagos_py.steps.processing.find_profiles</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/interpolate_data/index.html">pelagos_py.steps.processing.interpolate_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../processing/interpolate_par/index.html">pelagos_py.steps.processing.interpolate_par</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../processing/mixed_layer_depth/index.html">pelagos_py.steps.processing.mixed_layer_depth</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/oxygen/index.html">pelagos_py.steps.processing.oxygen</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/salinity/index.html">pelagos_py.steps.processing.salinity</a></li>
 </ul>
@@ -400,9 +403,12 @@
 </ul>
 </details></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../utils/index.html">pelagos_py.utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/console/index.html">pelagos_py.utils.console</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/diagnostic_capture/index.html">pelagos_py.utils.diagnostic_capture</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/diagnostics/index.html">pelagos_py.utils.diagnostics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/fig_spec/index.html">pelagos_py.utils.fig_spec</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/log_levels/index.html">pelagos_py.utils.log_levels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/palettes/index.html">pelagos_py.utils.palettes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/parameter_spec/index.html">pelagos_py.utils.parameter_spec</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/qc_handling/index.html">pelagos_py.utils.qc_handling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/yaml_loading/index.html">pelagos_py.utils.yaml_loading</a></li>
@@ -530,13 +536,13 @@ Tests are ID’d using <cite>_flag_cts</cite> suffix in variable test parameters
 <li><p><strong>qc_dict</strong> (<em>dict</em>) – Nested dictionaries of QC variables with test names and results.</p>
 <p>Structure:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-    <span class="s2">&quot;VAR_QC&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">&quot;qc_name&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="p">{</span><span class="o">...</span><span class="p">},</span>
-            <span class="s2">&quot;flag_counts&quot;</span><span class="p">:</span> <span class="p">{</span><span class="o">...</span><span class="p">},</span>
-            <span class="s2">&quot;stats&quot;</span><span class="p">:</span> <span class="p">{</span><span class="o">...</span><span class="p">},</span>
+    <span class="s2">"VAR_QC"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"qc_name"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"params"</span><span class="p">:</span> <span class="p">{</span><span class="o">...</span><span class="p">},</span>
+            <span class="s2">"flag_counts"</span><span class="p">:</span> <span class="p">{</span><span class="o">...</span><span class="p">},</span>
+            <span class="s2">"stats"</span><span class="p">:</span> <span class="p">{</span><span class="o">...</span><span class="p">},</span>
         <span class="p">},</span>
-        <span class="s2">&quot;qc_name_2&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"qc_name_2"</span><span class="p">:</span> <span class="p">{</span>
             <span class="o">...</span>
         <span class="p">},</span>
     <span class="p">}</span>
@@ -640,8 +646,8 @@ See RstCloth for info about <cite>directive</cite> (<a class="reference external
 <div class="admonition-example admonition">
 <p class="admonition-title">Example</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">img_rst</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span>
-        <span class="s2">&quot;../examples/data/OG1/testing/fig.png&quot;</span><span class="p">,</span>
-        <span class="n">fields</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;height&quot;</span><span class="p">,</span><span class="s2">&quot;100px&quot;</span><span class="p">),(</span><span class="s2">&quot;width&quot;</span><span class="p">,</span><span class="s2">&quot;100px&quot;</span><span class="p">)])</span>
+        <span class="s2">"../examples/data/OG1/testing/fig.png"</span><span class="p">,</span>
+        <span class="n">fields</span><span class="o">=</span><span class="p">[(</span><span class="s2">"height"</span><span class="p">,</span><span class="s2">"100px"</span><span class="p">),(</span><span class="s2">"width"</span><span class="p">,</span><span class="s2">"100px"</span><span class="p">)])</span>
 </pre></div>
 </div>
 <p>would write out:</p>

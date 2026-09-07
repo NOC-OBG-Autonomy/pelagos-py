@@ -396,27 +396,27 @@
 <span class="c1">#</span>
 <span class="c1"># Copyright 2025-2026 National Oceanography Centre and The Contributors</span>
 <span class="c1">#</span>
-<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the "License");</span>
 <span class="c1"># you may not use this file except in compliance with the License.</span>
 <span class="c1"># You may obtain a copy of the License at</span>
 <span class="c1">#</span>
 <span class="c1">#    http://www.apache.org/licenses/LICENSE-2.0</span>
 <span class="c1">#</span>
 <span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
-<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># distributed under the License is distributed on an "AS IS" BASIS,</span>
 <span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
 
-<span class="sd">&quot;&quot;&quot;Capture step diagnostic figures for the PDF report.</span>
+<span class="sd">"""Capture step diagnostic figures for the PDF report.</span>
 
 <span class="sd">Steps draw their diagnostics with matplotlib and display them with</span>
 <span class="sd">``plt.show()`` when ``diagnostics`` is enabled. To include those plots in the</span>
-<span class="sd">report regardless of a step&#39;s own ``diagnostics`` setting, the pipeline</span>
+<span class="sd">report regardless of a step's own ``diagnostics`` setting, the pipeline</span>
 <span class="sd">force-enables diagnostics and runs each step inside :func:`capture_figures`,</span>
 <span class="sd">which redirects ``plt.show`` so the figures are written to disk instead of being</span>
 <span class="sd">displayed. The saved paths are then embedded by the report writer.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
@@ -430,23 +430,23 @@
 <div class="viewcode-block" id="force_headless_backend">
 <a class="viewcode-back" href="../../../api/pelagos_py/utils/diagnostic_capture/index.html#pelagos_py.utils.diagnostic_capture.force_headless_backend">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">force_headless_backend</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Force the headless Agg backend for the whole report run.</span>
+<span class="w">    </span><span class="sd">"""Force the headless Agg backend for the whole report run.</span>
 
 <span class="sd">    Report figures are saved to disk, never displayed, so no GUI backend is</span>
-<span class="sd">    needed. Steps&#39; diagnostics commonly call ``matplotlib.use(&quot;tkagg&quot;)`` to</span>
+<span class="sd">    needed. Steps' diagnostics commonly call ``matplotlib.use("tkagg")`` to</span>
 <span class="sd">    force the interactive Tk backend; under report capture that is both</span>
 <span class="sd">    pointless and dangerous - instantiating a Tk canvas off the main thread</span>
 <span class="sd">    (e.g. when driven from an IDE/GUI) can hard-crash the process on Windows.</span>
 
 <span class="sd">    The backend is switched to Agg exactly once here and ``matplotlib.use()`` is</span>
-<span class="sd">    neutralised for the duration, so every step&#39;s backend switch becomes a</span>
+<span class="sd">    neutralised for the duration, so every step's backend switch becomes a</span>
 <span class="sd">    harmless no-op and the backend is never toggled mid-run (repeated</span>
-<span class="sd">    ``use(..., force=True)`` re-initialises matplotlib&#39;s compiled backend, which</span>
+<span class="sd">    ``use(..., force=True)`` re-initialises matplotlib's compiled backend, which</span>
 <span class="sd">    can trigger a fatal delay-load crash on Windows). Both are restored on exit.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">original_use</span> <span class="o">=</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span>
     <span class="n">original_backend</span> <span class="o">=</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">get_backend</span><span class="p">()</span>
-    <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">&quot;Agg&quot;</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">"Agg"</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span> <span class="o">=</span> <span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="kc">None</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">yield</span>
@@ -461,9 +461,9 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_save_open_figures</span><span class="p">(</span>
-    <span class="n">outdir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">images</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">close</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">outdir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">step_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">images</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">close</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Save every open matplotlib figure to ``outdir`` for the report.</span>
+<span class="w">    </span><span class="sd">"""Save every open matplotlib figure to ``outdir`` for the report.</span>
 
 <span class="sd">    Each saved path is appended to ``images``. Saving failures are swallowed so</span>
 <span class="sd">    capturing a diagnostic can never interrupt the pipeline. When ``close`` is</span>
@@ -471,13 +471,16 @@
 <span class="sd">    nor leaked between steps; when ``False`` the figures are left open so they</span>
 <span class="sd">    can still be shown interactively afterwards (used for steps the user</span>
 <span class="sd">    explicitly enabled diagnostics on).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">safe</span> <span class="o">=</span> <span class="n">step_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
+
+<span class="sd">    ``step_index`` (the step's pipeline position) is in the filename so repeated</span>
+<span class="sd">    step names (e.g. several 'Apply QC' steps) don't overwrite each other.</span>
+<span class="sd">    """</span>
+    <span class="n">safe</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">step_index</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">_"</span> <span class="o">+</span> <span class="n">step_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="p">,</span> <span class="s2">"_"</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">" "</span><span class="p">,</span> <span class="s2">"_"</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">num</span> <span class="ow">in</span> <span class="n">plt</span><span class="o">.</span><span class="n">get_fignums</span><span class="p">():</span>
         <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">num</span><span class="p">)</span>
-        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">safe</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">images</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">.png&quot;</span><span class="p">)</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">safe</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">images</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">.png"</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">150</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">150</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">"tight"</span><span class="p">)</span>
             <span class="n">images</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>  <span class="c1"># noqa: BLE001 - a capture failure must never be fatal</span>
             <span class="k">pass</span>
@@ -492,11 +495,12 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">capture_figures</span><span class="p">(</span>
     <span class="n">outdir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">step_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">images</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
     <span class="n">suppress_text</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">interactive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Redirect ``plt.show`` so diagnostic figures are saved for the report.</span>
+<span class="w">    </span><span class="sd">"""Redirect ``plt.show`` so diagnostic figures are saved for the report.</span>
 
 <span class="sd">    Within the context, every ``plt.show`` call (and any figures still open when</span>
 <span class="sd">    the context exits) is written to ``outdir`` and its path recorded in</span>
@@ -508,6 +512,8 @@
 <span class="sd">        Directory the figures are written into.</span>
 <span class="sd">    step_name : str</span>
 <span class="sd">        Name of the step producing the figures (used to name the files).</span>
+<span class="sd">    step_index : int</span>
+<span class="sd">        The step's pipeline position, used to keep repeated step names apart.</span>
 <span class="sd">    images : list</span>
 <span class="sd">        List that captured image paths are appended to, in the order produced.</span>
 <span class="sd">    suppress_text : bool, optional</span>
@@ -528,7 +534,7 @@
 <span class="sd">        run. This temporarily switches to the interactive Tk backend for the</span>
 <span class="sd">        duration of the step and switches back to headless Agg afterwards; the</span>
 <span class="sd">        GUI backend is the reason this path is opt-in only.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">original_show</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">show</span>
 
     <span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
@@ -541,41 +547,41 @@
         <span class="c1">#   so the underlying problem is visible and can be fixed. Do NOT add a</span>
         <span class="c1">#   fallback that degrades to save-only / headless here: a silent</span>
         <span class="c1">#   fallback hides whether the backend is actually working and makes the</span>
-        <span class="c1">#   bug look &quot;fixed&quot; when it is not.</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">switch_backend</span><span class="p">(</span><span class="s2">&quot;tkagg&quot;</span><span class="p">)</span>
+        <span class="c1">#   bug look "fixed" when it is not.</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">switch_backend</span><span class="p">(</span><span class="s2">"tkagg"</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_capture_show</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
             <span class="c1">#   Save into the report first (leaving the figures open), then show</span>
             <span class="c1">#   them in a blocking window so the user sees the plot and the</span>
-            <span class="c1">#   pipeline pauses. Close afterwards so figures don&#39;t leak.</span>
-            <span class="n">_save_open_figures</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span> <span class="n">step_name</span><span class="p">,</span> <span class="n">images</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="c1">#   pipeline pauses. Close afterwards so figures don't leak.</span>
+            <span class="n">_save_open_figures</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span> <span class="n">step_name</span><span class="p">,</span> <span class="n">step_index</span><span class="p">,</span> <span class="n">images</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="n">original_show</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="o">**</span><span class="n">kwargs</span><span class="p">,</span> <span class="s2">&quot;block&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+                <span class="n">original_show</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="o">**</span><span class="n">kwargs</span><span class="p">,</span> <span class="s2">"block"</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
             <span class="k">finally</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">num</span> <span class="ow">in</span> <span class="n">plt</span><span class="o">.</span><span class="n">get_fignums</span><span class="p">():</span>
                     <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">num</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">_save_open_figures</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span> <span class="n">step_name</span><span class="p">,</span> <span class="n">images</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">_save_open_figures</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span> <span class="n">step_name</span><span class="p">,</span> <span class="n">step_index</span><span class="p">,</span> <span class="n">images</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="n">plt</span><span class="o">.</span><span class="n">show</span> <span class="o">=</span> <span class="n">_capture_show</span>
 
     <span class="k">try</span><span class="p">:</span>
         <span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">ExitStack</span><span class="p">()</span> <span class="k">as</span> <span class="n">stack</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">suppress_text</span><span class="p">:</span>
-                <span class="n">devnull</span> <span class="o">=</span> <span class="n">stack</span><span class="o">.</span><span class="n">enter_context</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">devnull</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">))</span>
+                <span class="n">devnull</span> <span class="o">=</span> <span class="n">stack</span><span class="o">.</span><span class="n">enter_context</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">devnull</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">))</span>
                 <span class="n">stack</span><span class="o">.</span><span class="n">enter_context</span><span class="p">(</span><span class="n">contextlib</span><span class="o">.</span><span class="n">redirect_stdout</span><span class="p">(</span><span class="n">devnull</span><span class="p">))</span>
             <span class="k">yield</span>
     <span class="k">finally</span><span class="p">:</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span> <span class="o">=</span> <span class="n">original_show</span>
         <span class="c1">#   Catch any figures a diagnostic left open without calling show()</span>
         <span class="c1">#   (headless: never display these, just save them).</span>
-        <span class="n">_save_open_figures</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span> <span class="n">step_name</span><span class="p">,</span> <span class="n">images</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">_save_open_figures</span><span class="p">(</span><span class="n">outdir</span><span class="p">,</span> <span class="n">step_name</span><span class="p">,</span> <span class="n">step_index</span><span class="p">,</span> <span class="n">images</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
             <span class="c1">#   Return to the headless Agg backend forced for the rest of the</span>
             <span class="c1">#   run, so only opt-in steps ever touch the GUI backend.</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="n">plt</span><span class="o">.</span><span class="n">switch_backend</span><span class="p">(</span><span class="s2">&quot;agg&quot;</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">switch_backend</span><span class="p">(</span><span class="s2">"agg"</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>  <span class="c1"># noqa: BLE001 - never let a backend switch be fatal</span>
                 <span class="k">pass</span></div>
 
@@ -584,14 +590,14 @@
 <div class="viewcode-block" id="make_diagnostics_safe">
 <a class="viewcode-back" href="../../../api/pelagos_py/utils/diagnostic_capture/index.html#pelagos_py.utils.diagnostic_capture.make_diagnostics_safe">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">make_diagnostics_safe</span><span class="p">(</span><span class="n">step</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Wrap a step&#39;s diagnostic methods so a failure never aborts the step.</span>
+<span class="w">    </span><span class="sd">"""Wrap a step's diagnostic methods so a failure never aborts the step.</span>
 
 <span class="sd">    Used when diagnostics are force-enabled to capture plots for the report: a</span>
 <span class="sd">    user who did not opt into diagnostics should never have the pipeline fail</span>
 <span class="sd">    because of a diagnostic-only error. The error is logged as a warning and the</span>
-<span class="sd">    step&#39;s core processing continues.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;generate_diagnostics&quot;</span><span class="p">,</span> <span class="s2">&quot;plot_diagnostics&quot;</span><span class="p">):</span>
+<span class="sd">    step's core processing continues.</span>
+<span class="sd">    """</span>
+    <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"generate_diagnostics"</span><span class="p">,</span> <span class="s2">"plot_diagnostics"</span><span class="p">):</span>
         <span class="n">method</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="n">method</span><span class="p">):</span>
             <span class="k">continue</span>
@@ -602,7 +608,7 @@
                 <span class="k">return</span> <span class="n">_method</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># noqa: BLE001 - diagnostics must never be fatal</span>
                 <span class="n">step</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="s2">&quot;[</span><span class="si">%s</span><span class="s2">] Diagnostic generation for the report failed: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="s2">"[</span><span class="si">%s</span><span class="s2">] Diagnostic generation for the report failed: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
                     <span class="n">step</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
                     <span class="n">exc</span><span class="p">,</span>
                 <span class="p">)</span>

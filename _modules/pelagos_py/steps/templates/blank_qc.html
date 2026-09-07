@@ -399,40 +399,43 @@
 <span class="c1">#</span>
 <span class="c1"># Copyright 2025-2026 National Oceanography Centre and The Contributors</span>
 <span class="c1">#</span>
-<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the "License");</span>
 <span class="c1"># you may not use this file except in compliance with the License.</span>
 <span class="c1"># You may obtain a copy of the License at</span>
 <span class="c1">#</span>
 <span class="c1">#    http://www.apache.org/licenses/LICENSE-2.0</span>
 <span class="c1">#</span>
 <span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
-<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># distributed under the License is distributed on an "AS IS" BASIS,</span>
 <span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
 
-<span class="sd">&quot;&quot;&quot;Example QC test template, using parts of impossible_date_test as a skeleton.&quot;&quot;&quot;</span>
+<span class="sd">"""Example QC test template, using parts of impossible_date_test as a skeleton."""</span>
 
 <span class="c1">#### Mandatory imports ####</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_qc</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseQC</span>
 
 <span class="c1">#### Custom imports ####</span>
 <span class="c1"># any additional imports required for the test go here</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fig_spec</span>  <span class="c1"># shared diagnostic-plot style</span>
 
 
 <span class="c1"># @register_qc  # Uncomment when implementing</span>
 <div class="viewcode-block" id="blank_qc">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/templates/blank_qc/index.html#pelagos_py.steps.templates.blank_qc.blank_qc">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">blank_qc</span><span class="p">(</span><span class="n">BaseQC</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Example Docstring:</span>
 <span class="sd">    Target Variable: TIME</span>
 <span class="sd">    Flag Number: 4 (bad data)</span>
 <span class="sd">    Variables Flagged: TIME</span>
 <span class="sd">    Checks that the datetime of each point is valid.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
-    <span class="n">qc_name</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">qc_name</span> <span class="o">=</span> <span class="s2">""</span>
     <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[]</span>
@@ -442,15 +445,24 @@
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/templates/blank_qc/index.html#pelagos_py.steps.templates.blank_qc.blank_qc.return_qc">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">return_qc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># Access the data with self.data</span>
-        <span class="c1"># self.flags should be an xarray Dataset with data_vars that hold the &quot;{variable}_QC&quot; columns produced by the test</span>
+        <span class="c1"># self.flags should be an xarray Dataset with data_vars that hold the "{variable}_QC" columns produced by the test</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">flags</span></div>
 
 
 <div class="viewcode-block" id="blank_qc.plot_diagnostics">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/templates/blank_qc/index.html#pelagos_py.steps.templates.blank_qc.blank_qc.plot_diagnostics">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">plot_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="c1"># plt.show(block=True)</span>
-        <span class="k">pass</span></div>
+        <span class="c1"># Style every diagnostic with the shared fig_spec helpers so plots stay</span>
+        <span class="c1"># uniform and dashboard-interactive. Example: one QC-flag panel.</span>
+        <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">"tkagg"</span><span class="p">)</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">new_fig</span><span class="p">()</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c1"># fig_spec.flag_points(ax, self.data["N_MEASUREMENTS"], self.data[var],</span>
+        <span class="c1">#                      self.data[f"{var}_QC"])</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">xlabel</span><span class="o">=</span><span class="s2">"Index"</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Flags"</span><span class="p">)</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">finish</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">suptitle</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">qc_name</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 </div>
 
 </pre></div>

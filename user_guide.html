@@ -301,20 +301,20 @@ to avoid common implementation issues.</p>
 <code class="docutils literal notranslate"><span class="pre">@register_step</span></code> decorator. This makes the step discoverable by the
 Pipeline Manager, while still letting you define other (unregistered) classes
 in the same file.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_step/index.html#module-pelagos_py.steps.base_step" title="pelagos_py.steps.base_step"><span class="nn">pelagos_py.steps.base_step</span></a><span class="w"> </span><span class="kn">import</span> <a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep" title="pelagos_py.steps.base_step.BaseStep"><span class="n">BaseStep</span></a><span class="p">,</span> <a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.register_step" title="pelagos_py.steps.base_step.register_step"><span class="n">register_step</span></a>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
 
-<a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.register_step" title="pelagos_py.steps.base_step.register_step"><span class="nd">@register_step</span></a>
-<span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep" title="pelagos_py.steps.base_step.BaseStep"><span class="n">BaseStep</span></a><span class="p">):</span>
+<span class="nd">@register_step</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
     <span class="o">...</span>
 </pre></div>
 </div>
 </li>
 <li><p>Define the <code class="docutils literal notranslate"><span class="pre">step_name</span></code> attribute. This is the name used in the pipeline
 config file to refer to the step.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_step/index.html#module-pelagos_py.steps.base_step" title="pelagos_py.steps.base_step"><span class="nn">pelagos_py.steps.base_step</span></a><span class="w"> </span><span class="kn">import</span> <a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep" title="pelagos_py.steps.base_step.BaseStep"><span class="n">BaseStep</span></a><span class="p">,</span> <a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.register_step" title="pelagos_py.steps.base_step.register_step"><span class="n">register_step</span></a>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
 
-<a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.register_step" title="pelagos_py.steps.base_step.register_step"><span class="nd">@register_step</span></a>
-<span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep" title="pelagos_py.steps.base_step.BaseStep"><span class="n">BaseStep</span></a><span class="p">):</span>
+<span class="nd">@register_step</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
 
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"My New Step"</span>
 </pre></div>
@@ -323,10 +323,10 @@ config file to refer to the step.</p>
 <li><p>Implement the <code class="docutils literal notranslate"><span class="pre">run</span></code> method, which contains the logic for your step. It
 should take no arguments other than <code class="docutils literal notranslate"><span class="pre">self</span></code> and should return the
 <code class="docutils literal notranslate"><span class="pre">self.context</span></code> object.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_step/index.html#module-pelagos_py.steps.base_step" title="pelagos_py.steps.base_step"><span class="nn">pelagos_py.steps.base_step</span></a><span class="w"> </span><span class="kn">import</span> <a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep" title="pelagos_py.steps.base_step.BaseStep"><span class="n">BaseStep</span></a><span class="p">,</span> <a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.register_step" title="pelagos_py.steps.base_step.register_step"><span class="n">register_step</span></a>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
 
-<a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.register_step" title="pelagos_py.steps.base_step.register_step"><span class="nd">@register_step</span></a>
-<span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep" title="pelagos_py.steps.base_step.BaseStep"><span class="n">BaseStep</span></a><span class="p">):</span>
+<span class="nd">@register_step</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"My New Step"</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -337,10 +337,10 @@ should take no arguments other than <code class="docutils literal notranslate"><
 </li>
 <li><p>Optionally, implement the <code class="docutils literal notranslate"><span class="pre">generate_diagnostics</span></code> method if your step
 produces any diagnostic plots or outputs.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_step/index.html#module-pelagos_py.steps.base_step" title="pelagos_py.steps.base_step"><span class="nn">pelagos_py.steps.base_step</span></a><span class="w"> </span><span class="kn">import</span> <a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep" title="pelagos_py.steps.base_step.BaseStep"><span class="n">BaseStep</span></a><span class="p">,</span> <a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.register_step" title="pelagos_py.steps.base_step.register_step"><span class="n">register_step</span></a>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
 
-<a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.register_step" title="pelagos_py.steps.base_step.register_step"><span class="nd">@register_step</span></a>
-<span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep" title="pelagos_py.steps.base_step.BaseStep"><span class="n">BaseStep</span></a><span class="p">):</span>
+<span class="nd">@register_step</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"My New Step"</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -395,11 +395,11 @@ or reinserted once the step completes.</p>
 <p>To give your step QC handling, add <code class="docutils literal notranslate"><span class="pre">QCHandlingMixin</span></code> to the class inheritance
 and call <code class="docutils literal notranslate"><span class="pre">self.filter_qc()</span></code>, <code class="docutils literal notranslate"><span class="pre">self.reconstruct_data()</span></code>, <code class="docutils literal notranslate"><span class="pre">self.update_qc()</span></code>
 and — if you add new variables — <code class="docutils literal notranslate"><span class="pre">self.generate_qc({&lt;QC_child&gt;:</span> <span class="pre">[*&lt;QC_parents&gt;]})</span></code>:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_step/index.html#module-pelagos_py.steps.base_step" title="pelagos_py.steps.base_step"><span class="nn">pelagos_py.steps.base_step</span></a><span class="w"> </span><span class="kn">import</span> <a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep" title="pelagos_py.steps.base_step.BaseStep"><span class="n">BaseStep</span></a><span class="p">,</span> <a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.register_step" title="pelagos_py.steps.base_step.register_step"><span class="n">register_step</span></a>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.qc_handling</span><span class="w"> </span><span class="kn">import</span> <span class="n">QCHandlingMixin</span>
 
-<a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.register_step" title="pelagos_py.steps.base_step.register_step"><span class="nd">@register_step</span></a>
-<span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep" title="pelagos_py.steps.base_step.BaseStep"><span class="n">BaseStep</span></a><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
+<span class="nd">@register_step</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MyNewStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"My New Step"</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -464,6 +464,15 @@ and — if you add new variables — <code class="docutils literal notranslate">
 <span class="w">          </span><span class="nt">3</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
 <span class="w">          </span><span class="nt">4</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
 <span class="w">          </span><span class="nt">9</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
+<span class="w">        </span><span class="c1"># [calculation_flag_filter]:</span>
+<span class="w">        </span><span class="c1">#   Flags a step's calculations ignore (defaults to [3, 4, 9]). Unlike</span>
+<span class="w">        </span><span class="c1">#   flag_filter_settings this does not remove the data: the samples are</span>
+<span class="w">        </span><span class="c1">#   still corrected, they just do not inform the correction. E.g. Deep</span>
+<span class="w">        </span><span class="c1">#   Correction leaves bad values out of the dark-value estimate but</span>
+<span class="w">        </span><span class="c1">#   still subtracts the dark value from them. Set to [] to opt out.</span>
+<span class="w">        </span><span class="c1">#   Steps opt in by calling self.calculation_mask([...]) with the</span>
+<span class="w">        </span><span class="c1">#   variables whose flags should gate the calculation.</span>
+<span class="w">        </span><span class="nt">calculation_flag_filter</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">4</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">9</span><span class="p p-Indicator">]</span>
 </pre></div>
 </div>
 </section>
@@ -496,19 +505,19 @@ A template for a static check is provided in
 <li><p>Import the parent class and define your QC class. It must inherit from
 <code class="docutils literal notranslate"><span class="pre">BaseQC</span></code> and carry the <code class="docutils literal notranslate"><span class="pre">@register_qc</span></code> decorator so the pipeline can find
 and register it.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_qc/index.html#module-pelagos_py.steps.base_qc" title="pelagos_py.steps.base_qc"><span class="nn">pelagos_py.steps.base_qc</span></a><span class="w"> </span><span class="kn">import</span> <a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.BaseQC" title="pelagos_py.steps.base_qc.BaseQC"><span class="n">BaseQC</span></a><span class="p">,</span> <a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.register_qc" title="pelagos_py.steps.base_qc.register_qc"><span class="n">register_qc</span></a><span class="p">,</span> <a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.flag_cols" title="pelagos_py.steps.base_qc.flag_cols"><span class="n">flag_cols</span></a>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_qc</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseQC</span><span class="p">,</span> <span class="n">register_qc</span><span class="p">,</span> <span class="n">flag_cols</span>
 
-<a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.register_qc" title="pelagos_py.steps.base_qc.register_qc"><span class="nd">@register_qc</span></a>
-<span class="k">class</span><span class="w"> </span><span class="nc">MyNewCheck</span><span class="p">(</span><a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.BaseQC" title="pelagos_py.steps.base_qc.BaseQC"><span class="n">BaseQC</span></a><span class="p">):</span>
+<span class="nd">@register_qc</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MyNewCheck</span><span class="p">(</span><span class="n">BaseQC</span><span class="p">):</span>
     <span class="o">...</span>
 </pre></div>
 </div>
 </li>
 <li><p>Specify the following attributes:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_qc/index.html#module-pelagos_py.steps.base_qc" title="pelagos_py.steps.base_qc"><span class="nn">pelagos_py.steps.base_qc</span></a><span class="w"> </span><span class="kn">import</span> <a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.BaseQC" title="pelagos_py.steps.base_qc.BaseQC"><span class="n">BaseQC</span></a><span class="p">,</span> <a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.register_qc" title="pelagos_py.steps.base_qc.register_qc"><span class="n">register_qc</span></a><span class="p">,</span> <a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.flag_cols" title="pelagos_py.steps.base_qc.flag_cols"><span class="n">flag_cols</span></a>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_qc</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseQC</span><span class="p">,</span> <span class="n">register_qc</span><span class="p">,</span> <span class="n">flag_cols</span>
 
-<a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.register_qc" title="pelagos_py.steps.base_qc.register_qc"><span class="nd">@register_qc</span></a>
-<span class="k">class</span><span class="w"> </span><span class="nc">MyNewCheck</span><span class="p">(</span><a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.BaseQC" title="pelagos_py.steps.base_qc.BaseQC"><span class="n">BaseQC</span></a><span class="p">):</span>
+<span class="nd">@register_qc</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MyNewCheck</span><span class="p">(</span><span class="n">BaseQC</span><span class="p">):</span>
     <span class="n">qc_name</span> <span class="o">=</span> <span class="s2">"my new check"</span>  <span class="c1"># How you refer to the check in config (see below)</span>
     <span class="n">expected_parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'A_cutoff'</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>  <span class="c1"># Parameters the user may supply; the value is the default</span>
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'A'</span><span class="p">]</span>  <span class="c1"># Variables required for execution; cross-referenced against the data vars in context</span>
@@ -520,10 +529,10 @@ and register it.</p>
 <li><p>Add the <code class="docutils literal notranslate"><span class="pre">return_qc</span></code> method, which implements your check algorithm.
 Optionally add <code class="docutils literal notranslate"><span class="pre">plot_diagnostics</span></code> if the check should generate plots when
 <code class="docutils literal notranslate"><span class="pre">diagnostics</span></code> is true in the config.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_qc/index.html#module-pelagos_py.steps.base_qc" title="pelagos_py.steps.base_qc"><span class="nn">pelagos_py.steps.base_qc</span></a><span class="w"> </span><span class="kn">import</span> <a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.BaseQC" title="pelagos_py.steps.base_qc.BaseQC"><span class="n">BaseQC</span></a><span class="p">,</span> <a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.register_qc" title="pelagos_py.steps.base_qc.register_qc"><span class="n">register_qc</span></a><span class="p">,</span> <a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.flag_cols" title="pelagos_py.steps.base_qc.flag_cols"><span class="n">flag_cols</span></a>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_qc</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseQC</span><span class="p">,</span> <span class="n">register_qc</span><span class="p">,</span> <span class="n">flag_cols</span>
 
-<a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.register_qc" title="pelagos_py.steps.base_qc.register_qc"><span class="nd">@register_qc</span></a>
-<span class="k">class</span><span class="w"> </span><span class="nc">MyNewCheck</span><span class="p">(</span><a class="sphinx-codeautolink-a" href="api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.BaseQC" title="pelagos_py.steps.base_qc.BaseQC"><span class="n">BaseQC</span></a><span class="p">):</span>
+<span class="nd">@register_qc</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MyNewCheck</span><span class="p">(</span><span class="n">BaseQC</span><span class="p">):</span>
     <span class="n">qc_name</span> <span class="o">=</span> <span class="s2">"my new check"</span>
     <span class="n">expected_parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'A_cutoff'</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'A'</span><span class="p">]</span>

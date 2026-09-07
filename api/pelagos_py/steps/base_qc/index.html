@@ -370,10 +370,13 @@
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../processing/index.html">pelagos_py.steps.processing</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="../processing/bbp/index.html">pelagos_py.steps.processing.bbp</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../processing/chla/index.html">pelagos_py.steps.processing.chla</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../processing/chla_quenching/index.html">pelagos_py.steps.processing.chla_quenching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../processing/deep_correction/index.html">pelagos_py.steps.processing.deep_correction</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../processing/derive_ctd/index.html">pelagos_py.steps.processing.derive_ctd</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../processing/find_profiles/index.html">pelagos_py.steps.processing.find_profiles</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../processing/interpolate_data/index.html">pelagos_py.steps.processing.interpolate_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../processing/interpolate_par/index.html">pelagos_py.steps.processing.interpolate_par</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../processing/mixed_layer_depth/index.html">pelagos_py.steps.processing.mixed_layer_depth</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../processing/oxygen/index.html">pelagos_py.steps.processing.oxygen</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../processing/salinity/index.html">pelagos_py.steps.processing.salinity</a></li>
 </ul>
@@ -400,9 +403,12 @@
 </ul>
 </details></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../utils/index.html">pelagos_py.utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../utils/console/index.html">pelagos_py.utils.console</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../utils/diagnostic_capture/index.html">pelagos_py.utils.diagnostic_capture</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../utils/diagnostics/index.html">pelagos_py.utils.diagnostics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../utils/fig_spec/index.html">pelagos_py.utils.fig_spec</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../utils/log_levels/index.html">pelagos_py.utils.log_levels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../utils/palettes/index.html">pelagos_py.utils.palettes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../utils/parameter_spec/index.html">pelagos_py.utils.parameter_spec</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../utils/qc_handling/index.html">pelagos_py.utils.qc_handling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../utils/yaml_loading/index.html">pelagos_py.utils.yaml_loading</a></li>
@@ -512,14 +518,20 @@ Variables Flagged:</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.base_qc.BaseQC.log">
-<span class="sig-name descname"><span class="pre">log</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_qc.html#BaseQC.log"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_qc.BaseQC.log" title="Link to this definition">#</a></dt>
-<dd><p>Log an info-level message with the QC name prefix.</p>
+<span class="sig-name descname"><span class="pre">log</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">console</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_qc.html#BaseQC.log"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_qc.BaseQC.log" title="Link to this definition">#</a></dt>
+<dd><p>Log an info-level message with the QC name prefix. <code class="docutils literal notranslate"><span class="pre">console=False</span></code> keeps it in the log file only.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.base_qc.BaseQC.log_warn">
 <span class="sig-name descname"><span class="pre">log_warn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_qc.html#BaseQC.log_warn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_qc.BaseQC.log_warn" title="Link to this definition">#</a></dt>
 <dd><p>Log a warning-level message with the QC name prefix.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pelagos_py.steps.base_qc.BaseQC.log_progress">
+<span class="sig-name descname"><span class="pre">log_progress</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iterable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">desc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'it'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">leave</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_qc.html#BaseQC.log_progress"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_qc.BaseQC.log_progress" title="Link to this definition">#</a></dt>
+<dd><p>Wrap a countable loop as a standard pipeline progress bar (see <code class="xref py py-meth docutils literal notranslate"><span class="pre">BaseStep.log_progress()</span></code>).</p>
 </dd></dl>
 
 <dl class="py method">
@@ -576,6 +588,7 @@ Variables Flagged:</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.base_qc.BaseQC.describe_parameters"><code class="docutils literal notranslate"><span class="pre">BaseQC.describe_parameters()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.base_qc.BaseQC.log"><code class="docutils literal notranslate"><span class="pre">BaseQC.log()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.base_qc.BaseQC.log_warn"><code class="docutils literal notranslate"><span class="pre">BaseQC.log_warn()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.base_qc.BaseQC.log_progress"><code class="docutils literal notranslate"><span class="pre">BaseQC.log_progress()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.base_qc.BaseQC.return_qc"><code class="docutils literal notranslate"><span class="pre">BaseQC.return_qc()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.base_qc.BaseQC.plot_diagnostics"><code class="docutils literal notranslate"><span class="pre">BaseQC.plot_diagnostics()</span></code></a></li>
 </ul>

@@ -399,19 +399,19 @@
 <span class="c1">#</span>
 <span class="c1"># Copyright 2025-2026 National Oceanography Centre and The Contributors</span>
 <span class="c1">#</span>
-<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the "License");</span>
 <span class="c1"># you may not use this file except in compliance with the License.</span>
 <span class="c1"># You may obtain a copy of the License at</span>
 <span class="c1">#</span>
 <span class="c1">#    http://www.apache.org/licenses/LICENSE-2.0</span>
 <span class="c1">#</span>
 <span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
-<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># distributed under the License is distributed on an "AS IS" BASIS,</span>
 <span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
 
-<span class="sd">&quot;&quot;&quot;Pipeline steps for processing dissolved-oxygen optode data (uncalibrated phase and optode temperature).&quot;&quot;&quot;</span>
+<span class="sd">"""Pipeline steps for processing dissolved-oxygen optode data (uncalibrated phase and optode temperature)."""</span>
 
 <span class="c1">#### Mandatory imports ####</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
@@ -419,28 +419,123 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">pelagos_py.utils.diagnostics</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">diag</span>
 
 <span class="c1">#### Custom imports ####</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mpl_toolkits.axes_grid1</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_axes_locatable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fig_spec</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">butter</span><span class="p">,</span> <span class="n">filtfilt</span>
 
 
 <div class="viewcode-block" id="check_config">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.check_config">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">check_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expected_params</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Runtime checks beyond the parameter schema.</span>
+<span class="w">    </span><span class="sd">"""Runtime checks beyond the parameter schema.</span>
 
 <span class="sd">    Parameter *presence* and defaults are handled by ``parameter_schema``; this</span>
 <span class="sd">    additionally (a) catches method-dependent parameters left unset (``None``) and</span>
 <span class="sd">    (b) verifies that any ``*_name`` parameter points at a variable that actually</span>
 <span class="sd">    exists in the dataset.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">expected_params</span><span class="p">:</span>
         <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] &#39;</span><span class="si">{</span><span class="n">param</span><span class="si">}</span><span class="s2">&#39; is missing from config&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="s2">&quot;_name&quot;</span> <span class="ow">in</span> <span class="n">param</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] '</span><span class="si">{</span><span class="n">param</span><span class="si">}</span><span class="s2">' is missing from config"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">"_name"</span> <span class="ow">in</span> <span class="n">param</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">param</span><span class="p">)</span><span class="si">}</span><span class="s2"> could not be found in the data&quot;</span>
+                    <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">param</span><span class="p">)</span><span class="si">}</span><span class="s2"> could not be found in the data"</span>
                 <span class="p">)</span></div>
 
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_plot_section</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">pressure_var</span><span class="p">,</span> <span class="n">step_name</span><span class="p">):</span>
+    <span class="c1"># Single panel section: TIME vs pressure_var (inverted), coloured by var's value.</span>
+    <span class="c1"># Continuous colour + colorbar isn't reproducible by the dashboard's WebGL viewer (PNG-only).</span>
+    <span class="k">if</span> <span class="n">var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span> <span class="ow">or</span> <span class="n">pressure_var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+        <span class="k">return</span>
+
+    <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">"tkagg"</span><span class="p">)</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">new_fig</span><span class="p">()</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">time</span><span class="p">,</span> <span class="n">pres</span><span class="p">,</span> <span class="n">values</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">pressure_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">finite</span> <span class="o">=</span> <span class="o">~</span><span class="n">pd</span><span class="o">.</span><span class="n">isnull</span><span class="p">(</span><span class="n">time</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">pres</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+
+    <span class="n">sc</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+        <span class="n">time</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span> <span class="n">pres</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="n">values</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span>
+        <span class="n">s</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">MARKER</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">ALPHA</span><span class="p">,</span> <span class="n">rasterized</span><span class="o">=</span><span class="n">finite</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">RASTER_ABOVE</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">cbar</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+    <span class="n">cbar</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">axis_label</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">)),</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">FS_LABEL</span><span class="p">)</span>
+    <span class="n">cbar</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">labelsize</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">FS_TICK</span><span class="p">)</span>
+
+    <span class="n">fig_spec</span><span class="o">.</span><span class="n">date_axis</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s2">"x"</span><span class="p">)</span>
+    <span class="n">ylabel</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">axis_label</span><span class="p">(</span><span class="n">pressure_var</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">pressure_var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">))</span>
+    <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="n">ylabel</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
+
+    <span class="n">fig_spec</span><span class="o">.</span><span class="n">finish</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">suptitle</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2"> Diagnostics"</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_qc_good_mask</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">var</span><span class="p">):</span>
+    <span class="c1"># True where var isn't flagged bad (4); no QC var means nothing to exclude.</span>
+    <span class="n">qc_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span>
+    <span class="k">if</span> <span class="n">qc_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="n">qc_name</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">!=</span> <span class="mi">4</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_plot_diff</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">raw_var</span><span class="p">,</span> <span class="n">corrected_var</span><span class="p">,</span> <span class="n">pressure_var</span><span class="p">,</span> <span class="n">step_name</span><span class="p">):</span>
+    <span class="c1"># Two panels: raw+corrected overlaid on TIME, and TIME vs pressure_var (inverted)</span>
+    <span class="c1"># coloured by (corrected - raw) - where in the water column the correction bites.</span>
+    <span class="k">if</span> <span class="n">raw_var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span> <span class="ow">or</span> <span class="n">corrected_var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+        <span class="k">return</span>
+
+    <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">"tkagg"</span><span class="p">)</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">new_fig</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">ax0</span><span class="p">,</span> <span class="n">ax1</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="c1"># Reserve the same width on ax0 as the colorbar takes on ax1, so the shared TIME axis lines up.</span>
+    <span class="n">divider0</span> <span class="o">=</span> <span class="n">make_axes_locatable</span><span class="p">(</span><span class="n">ax0</span><span class="p">)</span>
+    <span class="n">cax0</span> <span class="o">=</span> <span class="n">divider0</span><span class="o">.</span><span class="n">append_axes</span><span class="p">(</span><span class="s2">"right"</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="s2">"3%"</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mf">0.15</span><span class="p">)</span>
+    <span class="n">cax0</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">"off"</span><span class="p">)</span>
+
+    <span class="n">good</span> <span class="o">=</span> <span class="n">_qc_good_mask</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">raw_var</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">_qc_good_mask</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">corrected_var</span><span class="p">)</span>
+    <span class="n">time</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">fig_spec</span><span class="o">.</span><span class="n">points</span><span class="p">(</span><span class="n">ax0</span><span class="p">,</span> <span class="n">time</span><span class="p">[</span><span class="n">good</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="n">raw_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">good</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">FLAGGED</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">raw_var</span><span class="p">)</span>
+    <span class="n">fig_spec</span><span class="o">.</span><span class="n">points</span><span class="p">(</span><span class="n">ax0</span><span class="p">,</span> <span class="n">time</span><span class="p">[</span><span class="n">good</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="n">corrected_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">good</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">CATEGORY</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="n">corrected_var</span><span class="p">)</span>
+    <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">ax0</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">axis_label</span><span class="p">(</span><span class="n">corrected_var</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">corrected_var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">)))</span>
+    <span class="c1"># An outside (bbox_to_anchor) legend would need more width than the colorbar spacer</span>
+    <span class="c1"># reserves above, re-breaking the TIME-axis alignment with ax1 - so keep it inside.</span>
+    <span class="n">ax0</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">FS_LEGEND</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">"upper right"</span><span class="p">,</span> <span class="n">framealpha</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">markerscale</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="n">diff</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">corrected_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">-</span> <span class="n">data</span><span class="p">[</span><span class="n">raw_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="k">if</span> <span class="n">pressure_var</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+        <span class="n">pres</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">pressure_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">finite</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">diff</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">pres</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">good</span>
+        <span class="n">divider1</span> <span class="o">=</span> <span class="n">make_axes_locatable</span><span class="p">(</span><span class="n">ax1</span><span class="p">)</span>
+        <span class="n">cax1</span> <span class="o">=</span> <span class="n">divider1</span><span class="o">.</span><span class="n">append_axes</span><span class="p">(</span><span class="s2">"right"</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="s2">"3%"</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mf">0.15</span><span class="p">)</span>
+        <span class="n">sc</span> <span class="o">=</span> <span class="n">ax1</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+            <span class="n">time</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span> <span class="n">pres</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="n">diff</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span>
+            <span class="n">s</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">MARKER</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">ALPHA</span><span class="p">,</span> <span class="n">rasterized</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">cbar</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">cax</span><span class="o">=</span><span class="n">cax1</span><span class="p">)</span>
+        <span class="n">cbar</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">corrected_var</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">raw_var</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">FS_LABEL</span><span class="p">)</span>
+        <span class="n">cbar</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">labelsize</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">FS_TICK</span><span class="p">)</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">date_axis</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s2">"x"</span><span class="p">)</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">xlabel</span><span class="o">=</span><span class="s2">"TIME"</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">axis_label</span><span class="p">(</span><span class="n">pressure_var</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">pressure_var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">)))</span>
+        <span class="n">ax1</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">points</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">time</span><span class="p">[</span><span class="n">good</span><span class="p">],</span> <span class="n">diff</span><span class="p">[</span><span class="n">good</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">CATEGORY</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">ax1</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"grey"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">date_axis</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s2">"x"</span><span class="p">)</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">xlabel</span><span class="o">=</span><span class="s2">"TIME"</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">corrected_var</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">raw_var</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="n">fig_spec</span><span class="o">.</span><span class="n">finish</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">suptitle</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2"> Diagnostics"</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 
 <span class="nd">@register_step</span>
@@ -448,76 +543,82 @@
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.DeriveUncalibratedPhase">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DeriveUncalibratedPhase</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
 
-    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Derive Uncalibrated Phase&quot;</span>
+    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Derive Uncalibrated Phase"</span>
 
     <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;blue_phase_name&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Name of the blue-phase variable in the dataset.&quot;</span><span class="p">,</span>
+        <span class="s2">"blue_phase_name"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">"required"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Name of the blue-phase variable in the dataset."</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="s2">&quot;red_phase_name&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Optional red-phase variable; subtracted from blue phase when given.&quot;</span><span class="p">,</span>
+        <span class="s2">"red_phase_name"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Optional red-phase variable; subtracted from blue phase when given."</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">}</span>
 
 <div class="viewcode-block" id="DeriveUncalibratedPhase.run">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.DeriveUncalibratedPhase.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Example</span>
 <span class="sd">        -------</span>
 <span class="sd">        ::</span>
 
-<span class="sd">            - name: &quot;Derive Uncalibrated Phase&quot;</span>
+<span class="sd">            - name: "Derive Uncalibrated Phase"</span>
 <span class="sd">              parameters:</span>
 <span class="sd">                #  &lt;MANDATORY&gt;</span>
-<span class="sd">                blue_phase_name: &quot;BPHASE_DOXY&quot;</span>
+<span class="sd">                blue_phase_name: "BPHASE_DOXY"</span>
 <span class="sd">                # &lt;OPTIONAL&gt;</span>
-<span class="sd">                red_phase_name: &quot;RPHASE_DOXY&quot;</span>
+<span class="sd">                red_phase_name: "RPHASE_DOXY"</span>
 <span class="sd">              diagnostics: false</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
 
         <span class="c1"># Check blue_phase_name is present</span>
-        <span class="n">check_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;blue_phase_name&quot;</span><span class="p">,))</span>
+        <span class="n">check_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">(</span><span class="s2">"blue_phase_name"</span><span class="p">,))</span>
 
         <span class="c1"># Check if the output already exists</span>
-        <span class="k">if</span> <span class="s2">&quot;UNCAL_PHASE_DOXY&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span><span class="s2">&quot;UNCAL_PHASE_DOXY already exists in the data. Overwriting...&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">"UNCAL_PHASE_DOXY"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span><span class="s2">"UNCAL_PHASE_DOXY already exists in the data. Overwriting..."</span><span class="p">)</span>
 
         <span class="c1"># Calculate Uncalibrated phase and specify what QC will be derived from</span>
-        <span class="n">qc_parents</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">blue_phase_name</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">]</span>
+        <span class="n">qc_parents</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">blue_phase_name</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">red_phase_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">check_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;red_phase_name&quot;</span><span class="p">,))</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;UNCAL_PHASE_DOXY&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">check_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">(</span><span class="s2">"red_phase_name"</span><span class="p">,))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">blue_phase_name</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">red_phase_name</span><span class="p">]</span>
             <span class="p">)</span>
-            <span class="n">qc_parents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">red_phase_name</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">)</span>
+            <span class="n">qc_parents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">red_phase_name</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;UNCAL_PHASE_DOXY&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">blue_phase_name</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">blue_phase_name</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"units"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">blue_phase_name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s2">"units"</span><span class="p">,</span> <span class="s2">"degree"</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"long_name"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"Uncalibrated oxygen optode phase"</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"standard_name"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"UNCAL_PHASE_DOXY"</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct_data</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">update_qc</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">({</span><span class="s2">&quot;UNCAL_PHASE_DOXY_QC&quot;</span><span class="p">:</span> <span class="n">qc_parents</span><span class="p">})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">({</span><span class="s2">"UNCAL_PHASE_DOXY_QC"</span><span class="p">:</span> <span class="n">qc_parents</span><span class="p">})</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">pass</span></div>
+        <span class="n">_plot_section</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="s2">"UNCAL_PHASE_DOXY"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="p">)</span></div>
 
 
 
@@ -526,78 +627,81 @@
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.DeriveOptodeTemperature">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DeriveOptodeTemperature</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
 
-    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Derive Optode Temperature&quot;</span>
+    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Derive Optode Temperature"</span>
 
     <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;temp_voltage_name&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Name of the optode temperature-voltage variable in the dataset.&quot;</span><span class="p">,</span>
+        <span class="s2">"temp_voltage_name"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">"required"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Name of the optode temperature-voltage variable in the dataset."</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="s2">&quot;calib_coefficients&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
-            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Polynomial calibration coefficients (at least two).&quot;</span><span class="p">,</span>
+        <span class="s2">"calib_coefficients"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+            <span class="s2">"required"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Polynomial calibration coefficients (at least two)."</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">}</span>
 
 <div class="viewcode-block" id="DeriveOptodeTemperature.run">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.DeriveOptodeTemperature.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Example</span>
 <span class="sd">        -------</span>
 <span class="sd">        ::</span>
 
-<span class="sd">            - name: &quot;Derive Optode Temperature&quot;</span>
+<span class="sd">            - name: "Derive Optode Temperature"</span>
 <span class="sd">              parameters:</span>
-<span class="sd">                temp_voltage_name: &quot;TEMP_VOLTAGE_DOXY&quot;</span>
+<span class="sd">                temp_voltage_name: "TEMP_VOLTAGE_DOXY"</span>
 <span class="sd">                calib_coefficients: [0, 1, 0, 0, 0, 0]</span>
 <span class="sd">              diagnostics: false</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
 
         <span class="c1"># Check the optode temperature voltage and calibration coefficients are present</span>
-        <span class="n">check_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;temp_voltage_name&quot;</span><span class="p">,</span> <span class="s2">&quot;calib_coefficients&quot;</span><span class="p">))</span>
+        <span class="n">check_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">(</span><span class="s2">"temp_voltage_name"</span><span class="p">,</span> <span class="s2">"calib_coefficients"</span><span class="p">))</span>
 
         <span class="c1"># Check there are at least two coefficients for the polynomial. Fill in missing values.</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">calib_coefficients</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] At least two calibration coefficients are required.&quot;</span>
+                <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] At least two calibration coefficients are required."</span>
             <span class="p">)</span>
         <span class="n">coeffs</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">6</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">calib_coefficients</span><span class="p">)):</span>
             <span class="n">coeffs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calib_coefficients</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
 
         <span class="c1"># Check if the output already exists</span>
-        <span class="k">if</span> <span class="s2">&quot;TEMP_DOXY&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span><span class="s2">&quot;TEMP_DOXY already exists in the data. Overwriting...&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">"TEMP_DOXY"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span><span class="s2">"TEMP_DOXY already exists in the data. Overwriting..."</span><span class="p">)</span>
 
         <span class="c1"># Calculate temp_doxy</span>
         <span class="n">temp_doxy</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">coeff</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">coeffs</span><span class="p">):</span>
             <span class="n">temp_doxy</span> <span class="o">+=</span> <span class="n">coeff</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_voltage_name</span><span class="p">]</span> <span class="o">**</span> <span class="n">i</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;TEMP_DOXY&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">temp_doxy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"TEMP_DOXY"</span><span class="p">]</span> <span class="o">=</span> <span class="n">temp_doxy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"TEMP_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"units"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"degree_Celsius"</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"TEMP_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"long_name"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"Oxygen optode temperature"</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"TEMP_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"standard_name"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"TEMP_DOXY"</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct_data</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">update_qc</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">({</span><span class="s2">&quot;TEMP_DOXY_QC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_voltage_name</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">]})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">({</span><span class="s2">"TEMP_DOXY_QC"</span><span class="p">:</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_voltage_name</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]})</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">pass</span></div>
+        <span class="n">_plot_section</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="s2">"TEMP_DOXY"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="p">)</span></div>
 
 
 
@@ -606,63 +710,68 @@
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.PhasePressureCorrection">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">PhasePressureCorrection</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
 
-    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Phase Pressure Correction&quot;</span>
+    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Phase Pressure Correction"</span>
 
     <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;optode_pressure_name&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Name of the pressure variable used for the correction.&quot;</span><span class="p">,</span>
+        <span class="s2">"optode_pressure_name"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">"required"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Name of the pressure variable used for the correction."</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="s2">&quot;correction_coefficient&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Pressure correction coefficient.&quot;</span><span class="p">,</span>
+        <span class="s2">"correction_coefficient"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="s2">"required"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Pressure correction coefficient."</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">}</span>
 
 <div class="viewcode-block" id="PhasePressureCorrection.run">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.PhasePressureCorrection.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Example</span>
 <span class="sd">        -------</span>
 <span class="sd">        ::</span>
 
-<span class="sd">            - name: &quot;Phase Pressure Correction&quot;</span>
+<span class="sd">            - name: "Phase Pressure Correction"</span>
 <span class="sd">              parameters:</span>
-<span class="sd">                optode_pressure_name: &quot;PRES&quot;</span>
+<span class="sd">                optode_pressure_name: "PRES"</span>
 <span class="sd">                correction_coefficient: 0.1</span>
 <span class="sd">              diagnostics: false</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
 
         <span class="c1"># Check the optode pressure and correction coefficient are present and that UNCAL_PHASE_DOXY is in the data</span>
-        <span class="n">check_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;optode_pressure_name&quot;</span><span class="p">,</span> <span class="s2">&quot;correction_coefficient&quot;</span><span class="p">))</span>
-        <span class="k">if</span> <span class="s2">&quot;UNCAL_PHASE_DOXY&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+        <span class="n">check_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">(</span><span class="s2">"optode_pressure_name"</span><span class="p">,</span> <span class="s2">"correction_coefficient"</span><span class="p">))</span>
+        <span class="k">if</span> <span class="s2">"UNCAL_PHASE_DOXY"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] UNCAL_PHASE_DOXY required but is missing from the data&quot;</span>
+                <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] UNCAL_PHASE_DOXY required but is missing from the data"</span>
             <span class="p">)</span>
 
         <span class="c1"># Apply the correction</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;UNCAL_PHASE_DOXY_PCORR&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;UNCAL_PHASE_DOXY&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY_PCORR"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY"</span><span class="p">]</span>
             <span class="o">+</span> <span class="mf">0.001</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">correction_coefficient</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">optode_pressure_name</span><span class="p">]</span>
         <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY_PCORR"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"units"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s2">"units"</span><span class="p">,</span> <span class="s2">"degree"</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY_PCORR"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"long_name"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"Pressure-corrected uncalibrated oxygen optode phase"</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY_PCORR"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"standard_name"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"UNCAL_PHASE_DOXY_PCORR"</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct_data</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">update_qc</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">(</span>
             <span class="p">{</span>
-                <span class="s2">&quot;UNCAL_PHASE_DOXY_PCORR_QC&quot;</span><span class="p">:</span> <span class="p">[</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">optode_pressure_name</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">,</span>
-                    <span class="s2">&quot;UNCAL_PHASE_DOXY_QC&quot;</span><span class="p">,</span>
+                <span class="s2">"UNCAL_PHASE_DOXY_PCORR_QC"</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">optode_pressure_name</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">,</span>
+                    <span class="s2">"UNCAL_PHASE_DOXY_QC"</span><span class="p">,</span>
                 <span class="p">]</span>
             <span class="p">}</span>
         <span class="p">)</span>
@@ -670,12 +779,252 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">pass</span></div>
+        <span class="n">_plot_diff</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="s2">"UNCAL_PHASE_DOXY"</span><span class="p">,</span>
+            <span class="s2">"UNCAL_PHASE_DOXY_PCORR"</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">optode_pressure_name</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_plot_shift_diff</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">raw_var</span><span class="p">,</span> <span class="n">shifted_var</span><span class="p">,</span> <span class="n">pressure_var</span><span class="p">,</span> <span class="n">step_name</span><span class="p">,</span> <span class="n">lag_label</span><span class="p">):</span>
+    <span class="c1"># Single panel: TIME vs pressure_var (inverted), coloured by (shifted - raw); the</span>
+    <span class="c1"># raw/shifted overlay isn't useful here since a good shift looks almost identical to raw.</span>
+    <span class="k">if</span> <span class="n">raw_var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span> <span class="ow">or</span> <span class="n">shifted_var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span> <span class="ow">or</span> <span class="n">pressure_var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+        <span class="k">return</span>
+
+    <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">"tkagg"</span><span class="p">)</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">new_fig</span><span class="p">()</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">good</span> <span class="o">=</span> <span class="n">_qc_good_mask</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">raw_var</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">_qc_good_mask</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">shifted_var</span><span class="p">)</span>
+    <span class="n">time</span><span class="p">,</span> <span class="n">pres</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">pressure_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">diff</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">shifted_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">-</span> <span class="n">data</span><span class="p">[</span><span class="n">raw_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">finite</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">diff</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">pres</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">good</span>
+
+    <span class="n">sc</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+        <span class="n">time</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span> <span class="n">pres</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="n">diff</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span>
+        <span class="n">s</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">MARKER</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">ALPHA</span><span class="p">,</span> <span class="n">rasterized</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">cbar</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+    <span class="n">cbar</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">shifted_var</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">raw_var</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">FS_LABEL</span><span class="p">)</span>
+    <span class="n">cbar</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">labelsize</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">FS_TICK</span><span class="p">)</span>
+
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([],</span> <span class="p">[],</span> <span class="n">ls</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">"lag: </span><span class="si">{</span><span class="n">lag_label</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">FS_LEGEND</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">"upper right"</span><span class="p">,</span> <span class="n">framealpha</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
+
+    <span class="n">fig_spec</span><span class="o">.</span><span class="n">date_axis</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s2">"x"</span><span class="p">)</span>
+    <span class="n">ylabel</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">axis_label</span><span class="p">(</span><span class="n">pressure_var</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">pressure_var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">))</span>
+    <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="n">ylabel</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
+
+    <span class="n">fig_spec</span><span class="o">.</span><span class="n">finish</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">suptitle</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2"> Diagnostics"</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="nd">@register_step</span>
+<div class="viewcode-block" id="ShiftOxygenToCTD">
+<a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.ShiftOxygenToCTD">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ShiftOxygenToCTD</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
+
+    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Shift Oxygen To CTD"</span>
+
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"shift_vars"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+            <span class="s2">"required"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Names of optode variables (e.g. phase, optode temperature) to time-shift onto the CTD sampling grid."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"lag_seconds"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Constant geometric time lag (s), the water travel time between optode and CTD. If not set, the lag is instead derived per profile from pitch and dive rate."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"pitch_name"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="s2">"GLIDER_PITCH"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Name of the glider pitch variable (radians), used to derive a per-profile lag when 'lag_seconds' is not set."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"distance_cm"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="mf">90.0</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Distance between the CTD and oxygen optode along the glider body, in centimetres. Used when deriving a per-profile lag."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"cast_id_var"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="s2">"PROFILE_DIRECTION"</span><span class="p">,</span>
+            <span class="s2">"options"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"PROFILE_DIRECTION"</span><span class="p">,</span> <span class="s2">"SCI_PHASE"</span><span class="p">],</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Variable distinguishing up- and downcasts, used when deriving a per-profile lag."</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_derive_profile_lag</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Per-profile geometric time lag (s) from mean pitch and dive rate, following Woo &amp; Gourcuff (2023).</span>
+        <span class="n">valid_casts</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"PROFILE_DIRECTION"</span><span class="p">:</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">"SCI_PHASE"</span><span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)}[</span><span class="bp">self</span><span class="o">.</span><span class="n">cast_id_var</span><span class="p">]</span>
+
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">"PROFILE_NUMBER"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+                <span class="s2">"CAST"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">cast_id_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+                <span class="s2">"PITCH"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">pitch_name</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+                <span class="s2">"GRADIENT"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_GRADIENT"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">,</span> <span class="s2">"CAST"</span><span class="p">])</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">"CAST"</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">valid_casts</span><span class="p">)]</span>
+
+        <span class="n">per_cast</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">"CAST"</span><span class="p">,</span> <span class="s2">"PROFILE_NUMBER"</span><span class="p">])[[</span><span class="s2">"PITCH"</span><span class="p">,</span> <span class="s2">"GRADIENT"</span><span class="p">]]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+        <span class="n">velocity</span> <span class="o">=</span> <span class="n">per_cast</span><span class="p">[</span><span class="s2">"GRADIENT"</span><span class="p">]</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">per_cast</span><span class="p">[</span><span class="s2">"PITCH"</span><span class="p">])</span>
+        <span class="n">per_cast</span><span class="p">[</span><span class="s2">"LAG"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">distance_cm</span> <span class="o">/</span> <span class="mi">100</span><span class="p">)</span> <span class="o">/</span> <span class="n">velocity</span>
+
+        <span class="c1"># Low-pass filter (per cast direction) needs a handful of profiles to be meaningful.</span>
+        <span class="n">lag_lookup</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">group</span> <span class="ow">in</span> <span class="n">per_cast</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">"CAST"</span><span class="p">):</span>
+            <span class="n">group</span> <span class="o">=</span> <span class="n">group</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">)</span>
+            <span class="n">filled</span> <span class="o">=</span> <span class="n">group</span><span class="p">[</span><span class="s2">"LAG"</span><span class="p">]</span><span class="o">.</span><span class="n">ffill</span><span class="p">()</span><span class="o">.</span><span class="n">bfill</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">filled</span><span class="o">.</span><span class="n">notna</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="mi">7</span><span class="p">:</span>
+                <span class="n">b</span><span class="p">,</span> <span class="n">a</span> <span class="o">=</span> <span class="n">butter</span><span class="p">(</span><span class="n">N</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">Wn</span><span class="o">=</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">30</span><span class="p">,</span> <span class="n">btype</span><span class="o">=</span><span class="s2">"low"</span><span class="p">,</span> <span class="n">fs</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">filled</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">filtfilt</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">filled</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()),</span> <span class="n">index</span><span class="o">=</span><span class="n">filled</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+            <span class="n">lag_lookup</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">],</span> <span class="n">filled</span><span class="p">)))</span>
+
+        <span class="k">return</span> <span class="n">lag_lookup</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_shift_onto_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">lag_lookup</span><span class="p">):</span>
+        <span class="n">epoch_s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"datetime64[ns]"</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"int64"</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1e9</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">valid</span> <span class="o">=</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">epoch_s</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">valid</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">' has fewer than two valid samples; cannot shift."</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">epoch_s</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+
+        <span class="n">src_time</span> <span class="o">=</span> <span class="n">epoch_s</span><span class="p">[</span><span class="n">valid</span><span class="p">]</span>
+        <span class="n">src_values</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="n">valid</span><span class="p">]</span>
+        <span class="n">order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">src_time</span><span class="p">)</span>
+        <span class="n">src_time</span><span class="p">,</span> <span class="n">src_values</span> <span class="o">=</span> <span class="n">src_time</span><span class="p">[</span><span class="n">order</span><span class="p">],</span> <span class="n">src_values</span><span class="p">[</span><span class="n">order</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">lag_lookup</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">lag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lag_seconds</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">lag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">lag_lookup</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">])</span>
+
+        <span class="c1"># Value at CTD time t is the optode measurement of the same water parcel, taken 'lag' seconds later.</span>
+        <span class="n">query_time</span> <span class="o">=</span> <span class="n">epoch_s</span> <span class="o">+</span> <span class="n">lag</span>
+        <span class="n">shifted</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">query_time</span><span class="p">,</span> <span class="n">src_time</span><span class="p">,</span> <span class="n">src_values</span><span class="p">,</span> <span class="n">left</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+        <span class="n">shifted</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">query_time</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+        <span class="k">return</span> <span class="n">shifted</span>
+
+<div class="viewcode-block" id="ShiftOxygenToCTD.run">
+<a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.ShiftOxygenToCTD.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        ::</span>
+
+<span class="sd">            - name: "Shift Oxygen To CTD"</span>
+<span class="sd">              parameters:</span>
+<span class="sd">                # &lt;MANDATORY&gt;</span>
+<span class="sd">                shift_vars: ["UNCAL_PHASE_DOXY", "TEMP_DOXY"]</span>
+<span class="sd">                # &lt;OPTIONAL&gt;</span>
+<span class="sd">                lag_seconds: null</span>
+<span class="sd">                pitch_name: "GLIDER_PITCH"</span>
+<span class="sd">                distance_cm: 90</span>
+<span class="sd">                cast_id_var: "PROFILE_DIRECTION"</span>
+<span class="sd">              diagnostics: false</span>
+
+<span class="sd">        Geometrically time-shifts optode measurements (e.g. phase, optode</span>
+<span class="sd">        temperature) onto the CTD's dense sampling grid, correcting for the</span>
+<span class="sd">        water travel time between the two sensors' positions on the glider</span>
+<span class="sd">        (Woo &amp; Gourcuff, 2023). This is the reverse of the more common</span>
+<span class="sd">        approach of cloning CTD data onto the sparse optode grid: it produces</span>
+<span class="sd">        one shifted oxygen value per ``N_MEASUREMENTS`` row, named</span>
+<span class="sd">        ``&lt;variable&gt;_SHIFTED``.</span>
+
+<span class="sd">        If ``lag_seconds`` is not set, the lag is instead derived per profile</span>
+<span class="sd">        from mean pitch and dive rate. If ``pitch_name`` cannot be found (or</span>
+<span class="sd">        is empty), a warning is logged and the step fails, since no lag is</span>
+<span class="sd">        then available; set ``lag_seconds`` for a constant lag instead.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+
+<span class="sd">        """</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
+
+        <span class="n">check_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">(</span><span class="s2">"shift_vars"</span><span class="p">,</span> <span class="s2">"distance_cm"</span><span class="p">,</span> <span class="s2">"cast_id_var"</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift_vars</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] '</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">' is missing from the data"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">"PROFILE_NUMBER"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] PROFILE_NUMBER required but is missing from the data"</span><span class="p">)</span>
+
+        <span class="n">lag_lookup</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lag_seconds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Using constant lag of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">lag_seconds</span><span class="si">}</span><span class="s2"> s."</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_lag_label</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">lag_seconds</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">s (constant)"</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pitch_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span> <span class="ow">or</span> <span class="nb">bool</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">pitch_name</span><span class="p">]</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+            <span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pitch_name</span><span class="si">}</span><span class="s2">' not found or empty; cannot derive a per-profile lag. "</span>
+                    <span class="s2">"Set 'lag_seconds' for a constant lag instead."</span>
+                <span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] No lag available: '</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pitch_name</span><span class="si">}</span><span class="s2">' missing and 'lag_seconds' not set."</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="s2">"PROFILE_GRADIENT"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] PROFILE_GRADIENT required but is missing from the data"</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cast_id_var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cast_id_var</span><span class="si">}</span><span class="s2"> required but is missing from the data"</span><span class="p">)</span>
+
+            <span class="n">lag_lookup</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_derive_profile_lag</span><span class="p">()</span>
+            <span class="n">mean_lag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">lag_lookup</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span> <span class="k">if</span> <span class="n">lag_lookup</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_lag_label</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"per-profile (mean </span><span class="si">{</span><span class="n">mean_lag</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">s)"</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">mean_lag</span><span class="p">)</span> <span class="k">else</span> <span class="s2">"per-profile"</span>
+
+        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift_vars</span><span class="p">:</span>
+            <span class="n">out_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_SHIFTED"</span>
+            <span class="k">if</span> <span class="n">out_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">out_name</span><span class="si">}</span><span class="s2"> already exists in the data. Overwriting..."</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">out_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">,),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shift_onto_grid</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">lag_lookup</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">out_name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"units"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">)</span>
+            <span class="n">parent_long_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"long_name"</span><span class="p">,</span> <span class="n">var</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">out_name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"long_name"</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">parent_long_name</span><span class="si">}</span><span class="s2">, geometrically shifted onto the CTD grid"</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">out_name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"standard_name"</span><span class="p">]</span> <span class="o">=</span> <span class="n">out_name</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct_data</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_qc</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">({</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_SHIFTED_QC"</span><span class="p">:</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift_vars</span><span class="p">})</span>
+
+        <span class="c1"># The shift evaluates every row via interpolation, so a valid shifted value is</span>
+        <span class="c1"># never really its parent's original flag (e.g. still-missing 9) - it's "changed".</span>
+        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift_vars</span><span class="p">:</span>
+            <span class="n">qc_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_SHIFTED_QC"</span>
+            <span class="n">has_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_SHIFTED"</span><span class="p">]</span><span class="o">.</span><span class="n">notnull</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">qc_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">has_value</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">qc_name</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift_vars</span><span class="p">:</span>
+            <span class="n">_plot_shift_diff</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_SHIFTED"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lag_label</span><span class="p">)</span></div>
 
 
 
@@ -684,78 +1033,83 @@
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.DeriveCalibratedPhase">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DeriveCalibratedPhase</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
 
-    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Derive Calibrated Phase&quot;</span>
+    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Derive Calibrated Phase"</span>
 
     <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;uncalibrated_phase_name&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Name of the uncalibrated-phase variable in the dataset.&quot;</span><span class="p">,</span>
+        <span class="s2">"uncalibrated_phase_name"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">"required"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Name of the uncalibrated-phase variable in the dataset."</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="s2">&quot;calib_coefficients&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
-            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Polynomial calibration coefficients (at least two).&quot;</span><span class="p">,</span>
+        <span class="s2">"calib_coefficients"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+            <span class="s2">"required"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Polynomial calibration coefficients (at least two)."</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">}</span>
 
 <div class="viewcode-block" id="DeriveCalibratedPhase.run">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.DeriveCalibratedPhase.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Example</span>
 <span class="sd">        -------</span>
 <span class="sd">        ::</span>
 
-<span class="sd">            - name: &quot;Derive Calibrated Phase&quot;</span>
+<span class="sd">            - name: "Derive Calibrated Phase"</span>
 <span class="sd">              parameters:</span>
-<span class="sd">                uncalibrated_phase_name: &quot;UNCAL_PHASE_DOXY&quot;</span>
+<span class="sd">                uncalibrated_phase_name: "UNCAL_PHASE_DOXY"</span>
 <span class="sd">                calib_coefficients: [0, 1, 0, 0]</span>
 <span class="sd">              diagnostics: false</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
 
         <span class="c1"># Check the config satisfies requirements</span>
-        <span class="n">check_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;uncalibrated_phase_name&quot;</span><span class="p">,</span> <span class="s2">&quot;calib_coefficients&quot;</span><span class="p">))</span>
+        <span class="n">check_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">(</span><span class="s2">"uncalibrated_phase_name"</span><span class="p">,</span> <span class="s2">"calib_coefficients"</span><span class="p">))</span>
 
         <span class="c1"># Check there are at least two coefficients for the polynomial. Fill in missing values.</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">calib_coefficients</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] At least two calibration coefficients are required.&quot;</span>
+                <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] At least two calibration coefficients are required."</span>
             <span class="p">)</span>
         <span class="n">coeffs</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">4</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">calib_coefficients</span><span class="p">)):</span>
             <span class="n">coeffs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calib_coefficients</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
 
         <span class="c1"># Check if the output already exists</span>
-        <span class="k">if</span> <span class="s2">&quot;CAL_PHASE_DOXY&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span><span class="s2">&quot;CAL_PHASE_DOXY already exists in the data. Overwriting...&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">"CAL_PHASE_DOXY"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span><span class="s2">"CAL_PHASE_DOXY already exists in the data. Overwriting..."</span><span class="p">)</span>
 
         <span class="c1"># Calculate cal_phase_doxy</span>
         <span class="n">cal_phase_doxy</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">coeff</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">coeffs</span><span class="p">):</span>
             <span class="n">cal_phase_doxy</span> <span class="o">+=</span> <span class="n">coeff</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">uncalibrated_phase_name</span><span class="p">]</span> <span class="o">**</span> <span class="n">i</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;CAL_PHASE_DOXY&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cal_phase_doxy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"CAL_PHASE_DOXY"</span><span class="p">]</span> <span class="o">=</span> <span class="n">cal_phase_doxy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"CAL_PHASE_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"units"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">uncalibrated_phase_name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s2">"units"</span><span class="p">,</span> <span class="s2">"degree"</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"CAL_PHASE_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"long_name"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"Calibrated oxygen optode phase"</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"CAL_PHASE_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"standard_name"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"CAL_PHASE_DOXY"</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct_data</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">update_qc</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">({</span><span class="s2">&quot;CAL_PHASE_DOXY_QC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">uncalibrated_phase_name</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">]})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">({</span><span class="s2">"CAL_PHASE_DOXY_QC"</span><span class="p">:</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">uncalibrated_phase_name</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]})</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">pass</span></div>
+        <span class="n">_plot_section</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="s2">"CAL_PHASE_DOXY"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="p">)</span></div>
 
 
 
@@ -764,29 +1118,32 @@
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.DeriveOxygenConcentration">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DeriveOxygenConcentration</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
 
-    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Derive Oxygen Concentration&quot;</span>
+    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Derive Oxygen Concentration"</span>
 
     <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s2">&quot;options&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;poly&quot;</span><span class="p">,</span> <span class="s2">&quot;SVU&quot;</span><span class="p">],</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Conversion method: &#39;poly&#39; or &#39;SVU&#39;.&quot;</span><span class="p">,</span>
+        <span class="s2">"method"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">"required"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">"options"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"poly"</span><span class="p">,</span> <span class="s2">"SVU"</span><span class="p">],</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Conversion method: 'poly' or 'SVU'."</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="s2">&quot;temperature_name&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Name of the temperature variable in the dataset.&quot;</span><span class="p">,</span>
+        <span class="s2">"temperature_name"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">"required"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Name of the temperature variable in the dataset."</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="s2">&quot;calib_coefficient_matrix&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
-            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Calibration coefficient matrix ((5, 4) for poly, (2, 4) for SVU).&quot;</span><span class="p">,</span>
+        <span class="s2">"calib_coefficient_matrix"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Calibration coefficient matrix, shape (5, 4). Required by the 'poly' method."</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="s2">&quot;temperature_independent_coefficients&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
-            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;[F1, F2] coefficients required by the &#39;SVU&#39; method.&quot;</span><span class="p">,</span>
+        <span class="s2">"svu_coefficients"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="p">(</span>
+                <span class="s2">"Manufacturer SVUFoilCoef0-6, required by the 'SVU' method: "</span>
+                <span class="s2">"K_SV = c0 + c1*T + c2*T^2, P0 = c3 + c4*T, Pc = c5 + c6*CAL_PHASE_DOXY."</span>
+            <span class="p">),</span>
         <span class="p">},</span>
     <span class="p">}</span>
 
@@ -794,7 +1151,7 @@
         <span class="c1"># Check the calibration matrix has the right shape</span>
         <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">calib_coefficient_matrix</span><span class="p">)</span> <span class="o">!=</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] Calib coefficient matrix must be of shape (5, 4) for method &#39;poly&#39;.&quot;</span>
+                <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] Calib coefficient matrix must be of shape (5, 4) for method 'poly'."</span>
             <span class="p">)</span>
 
         <span class="c1"># Build the internal coefficient matrix</span>
@@ -808,85 +1165,66 @@
         <span class="p">)[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
         <span class="n">molar_doxy</span> <span class="o">=</span> <span class="p">(</span>
             <span class="p">(</span><span class="n">poly_temp</span> <span class="o">*</span> <span class="n">coeffs_matrix</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-            <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;CAL_PHASE_DOXY&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">**</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">)])</span>
+            <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"CAL_PHASE_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">**</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">)])</span>
         <span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">molar_doxy</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">func_SVU</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="c1"># Check the calibration matrix has the right shape</span>
-        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">calib_coefficient_matrix</span><span class="p">)</span> <span class="o">!=</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">svu_coefficients</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">7</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] Calib coefficient matrix must be of shape (2, 4) for method &#39;poly&#39;.&quot;</span>
+                <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] 'svu_coefficients' must have 7 values (SVUFoilCoef0-6) for method 'SVU'."</span>
             <span class="p">)</span>
+        <span class="n">c0</span><span class="p">,</span> <span class="n">c1</span><span class="p">,</span> <span class="n">c2</span><span class="p">,</span> <span class="n">c3</span><span class="p">,</span> <span class="n">c4</span><span class="p">,</span> <span class="n">c5</span><span class="p">,</span> <span class="n">c6</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">svu_coefficients</span>
 
-        <span class="c1"># Build the internal coefficient matrix</span>
-        <span class="n">coeffs_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">calib_coefficient_matrix</span><span class="p">):</span>
-            <span class="n">coeffs_matrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">row</span>
+        <span class="n">T</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">temperature_name</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">phase</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"CAL_PHASE_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
 
-        <span class="n">F1</span><span class="p">,</span> <span class="n">F2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">temperature_independent_coefficients</span>
+        <span class="c1"># Stern-Volmer-Uchida equation (Aanderaa manufacturer form)</span>
+        <span class="n">K_SV</span> <span class="o">=</span> <span class="n">c0</span> <span class="o">+</span> <span class="n">c1</span> <span class="o">*</span> <span class="n">T</span> <span class="o">+</span> <span class="n">c2</span> <span class="o">*</span> <span class="n">T</span><span class="o">**</span><span class="mi">2</span>
+        <span class="n">P0</span> <span class="o">=</span> <span class="n">c3</span> <span class="o">+</span> <span class="n">c4</span> <span class="o">*</span> <span class="n">T</span>
+        <span class="n">Pc</span> <span class="o">=</span> <span class="n">c5</span> <span class="o">+</span> <span class="n">c6</span> <span class="o">*</span> <span class="n">phase</span>
 
-        <span class="c1"># Apply the conversion</span>
-        <span class="n">poly_temp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
-            <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">temperature_name</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">**</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)]</span>
-        <span class="p">)[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
-        <span class="n">coeffs</span> <span class="o">=</span> <span class="p">(</span><span class="n">poly_temp</span> <span class="o">*</span> <span class="n">coeffs_matrix</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-
-        <span class="c1"># Apply Stern–Volmer equation</span>
-        <span class="n">molar_doxy</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">F1</span> <span class="o">/</span> <span class="p">(</span><span class="n">coeffs</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;CAL_PHASE_DOXY&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">F2</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span>
-        <span class="p">)</span> <span class="o">*</span> <span class="n">coeffs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span>
-
-        <span class="k">return</span> <span class="n">molar_doxy</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">P0</span> <span class="o">/</span> <span class="n">Pc</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">/</span> <span class="n">K_SV</span>
 
 <div class="viewcode-block" id="DeriveOxygenConcentration.run">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.DeriveOxygenConcentration.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Example</span>
 <span class="sd">        -------</span>
 <span class="sd">        ::</span>
 
-<span class="sd">            - name: &quot;Derive Oxygen Concentration&quot;</span>
+<span class="sd">            - name: "Derive Oxygen Concentration"</span>
 <span class="sd">              parameters:</span>
 <span class="sd">                # &lt;MANDATORY&gt;</span>
-<span class="sd">                method: &quot;poly&quot;</span>
+<span class="sd">                method: "SVU"</span>
 <span class="sd">                # &lt;METHOD DEPENDENT&gt;</span>
-<span class="sd">                # The following params are for &quot;poly&quot; method</span>
-<span class="sd">                temperature_name: &quot;TEMP&quot;</span>
-<span class="sd">                calib_coefficient_matrix: [</span>
-<span class="sd">                  [0, 1, 0, 0],</span>
-<span class="sd">                  [0, 1, 0, 0],</span>
-<span class="sd">                  [0, 1, 0, 0],</span>
-<span class="sd">                  [0, 1, 0, 0],</span>
-<span class="sd">                  [0, 1, 0, 0]</span>
-<span class="sd">                ]</span>
+<span class="sd">                # The following params are for "SVU" method</span>
+<span class="sd">                temperature_name: "TEMP_DOXY"</span>
+<span class="sd">                svu_coefficients: [c0, c1, c2, c3, c4, c5, c6]  # manufacturer SVUFoilCoef0-6</span>
 <span class="sd">              diagnostics: false</span>
+
+<span class="sd">        ``method: "poly"`` instead expects ``calib_coefficient_matrix`` (shape</span>
+<span class="sd">        (5, 4)); ``method: "SVU"`` expects ``svu_coefficients``, the 7</span>
+<span class="sd">        manufacturer SVUFoilCoef values (Stern-Volmer-Uchida equation).</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
 
         <span class="n">methods</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;poly&quot;</span><span class="p">:</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">func_poly</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;temperature_name&quot;</span><span class="p">,</span> <span class="s2">&quot;calib_coefficient_matrix&quot;</span><span class="p">)),</span>
-            <span class="s2">&quot;SVU&quot;</span><span class="p">:</span> <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">func_SVU</span><span class="p">,</span>
-                <span class="p">(</span>
-                    <span class="s2">&quot;temperature_name&quot;</span><span class="p">,</span>
-                    <span class="s2">&quot;calib_coefficient_matrix&quot;</span><span class="p">,</span>
-                    <span class="s2">&quot;temperature_independent_coefficients&quot;</span><span class="p">,</span>
-                <span class="p">),</span>
-            <span class="p">),</span>
+            <span class="s2">"poly"</span><span class="p">:</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">func_poly</span><span class="p">,</span> <span class="p">(</span><span class="s2">"temperature_name"</span><span class="p">,</span> <span class="s2">"calib_coefficient_matrix"</span><span class="p">)),</span>
+            <span class="s2">"SVU"</span><span class="p">:</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">func_SVU</span><span class="p">,</span> <span class="p">(</span><span class="s2">"temperature_name"</span><span class="p">,</span> <span class="s2">"svu_coefficients"</span><span class="p">)),</span>
         <span class="p">}</span>
 
         <span class="c1"># Check the specified method</span>
-        <span class="n">check_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;method&quot;</span><span class="p">,))</span>
+        <span class="n">check_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">(</span><span class="s2">"method"</span><span class="p">,))</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">methods</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] Unknown method &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] Unknown method '</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="si">}</span><span class="s2">'"</span><span class="p">)</span>
 
         <span class="c1"># Unpack the method args and functions</span>
         <span class="n">func</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="n">methods</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">]</span>
@@ -895,27 +1233,30 @@
         <span class="n">check_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
 
         <span class="c1"># Check if the output already exists</span>
-        <span class="k">if</span> <span class="s2">&quot;MOLAR_DOXY&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span><span class="s2">&quot;MOLAR_DOXY already exists in the data. Overwriting...&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">"MOLAR_DOXY"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span><span class="s2">"MOLAR_DOXY already exists in the data. Overwriting..."</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;MOLAR_DOXY&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,),</span> <span class="n">func</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY"</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">,),</span> <span class="n">func</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"units"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"micromole/l"</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"long_name"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"Molar dissolved oxygen concentration"</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"standard_name"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"MOLAR_DOXY"</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct_data</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">update_qc</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">(</span>
-            <span class="p">{</span><span class="s2">&quot;MOLAR_DOXY_QC&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;CAL_PHASE_DOXY_QC&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">temperature_name</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">]}</span>
+            <span class="p">{</span><span class="s2">"MOLAR_DOXY_QC"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"CAL_PHASE_DOXY_QC"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">temperature_name</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]}</span>
         <span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">pass</span></div>
+        <span class="n">_plot_section</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="s2">"MOLAR_DOXY"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="p">)</span></div>
 
 
 
@@ -924,23 +1265,23 @@
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.MolarDOXYSalinityCorrection">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">MolarDOXYSalinityCorrection</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
 
-    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Molar DOXY Salinity Correction&quot;</span>
+    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Molar DOXY Salinity Correction"</span>
 
     <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;salinity_name&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Name of the salinity variable in the dataset.&quot;</span><span class="p">,</span>
+        <span class="s2">"salinity_name"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">"required"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Name of the salinity variable in the dataset."</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="s2">&quot;temperature_name&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Name of the temperature variable in the dataset.&quot;</span><span class="p">,</span>
+        <span class="s2">"temperature_name"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">"required"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Name of the temperature variable in the dataset."</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="s2">&quot;reference_salinity&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Reference salinity the correction is computed relative to.&quot;</span><span class="p">,</span>
+        <span class="s2">"reference_salinity"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Reference salinity the correction is computed relative to."</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">}</span>
 
@@ -994,16 +1335,16 @@
 <div class="viewcode-block" id="MolarDOXYSalinityCorrection.run">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.MolarDOXYSalinityCorrection.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Example</span>
 <span class="sd">        -------</span>
 <span class="sd">        ::</span>
 
-<span class="sd">            - name: &quot;Molar DOXY Salinity Correction&quot;</span>
+<span class="sd">            - name: "Molar DOXY Salinity Correction"</span>
 <span class="sd">              parameters:</span>
 <span class="sd">                # &lt;MANDATORY&gt;</span>
-<span class="sd">                salinity_name: &quot;PRAC_SALINITY&quot;</span>
-<span class="sd">                temperature_name: &quot;TEMP&quot;</span>
+<span class="sd">                salinity_name: "PRAC_SALINITY"</span>
+<span class="sd">                temperature_name: "TEMP"</span>
 <span class="sd">                # &lt;OPTIONAL&gt;</span>
 <span class="sd">                reference_salinity: 0</span>
 <span class="sd">              diagnostics: false</span>
@@ -1011,15 +1352,15 @@
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
 
         <span class="c1"># Check the requred variable names are specified</span>
-        <span class="n">check_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;salinity_name&quot;</span><span class="p">,</span> <span class="s2">&quot;temperature_name&quot;</span><span class="p">))</span>
-        <span class="k">if</span> <span class="s2">&quot;MOLAR_DOXY&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+        <span class="n">check_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">(</span><span class="s2">"salinity_name"</span><span class="p">,</span> <span class="s2">"temperature_name"</span><span class="p">))</span>
+        <span class="k">if</span> <span class="s2">"MOLAR_DOXY"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] MOLAR_DOXY required but is missing from the data&quot;</span>
+                <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] MOLAR_DOXY required but is missing from the data"</span>
             <span class="p">)</span>
 
         <span class="c1"># Calculate factor with partial pressure of water vapour, following Weiss &amp; PRice (1980)</span>
@@ -1030,20 +1371,25 @@
 
         <span class="n">S_Corr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">oxy_solubility_salinity_correction</span><span class="p">()</span>
 
-        <span class="n">MOLAR_DOXY_PSAL</span> <span class="o">=</span> <span class="p">(</span><span class="n">A</span> <span class="o">/</span> <span class="n">B</span><span class="p">)</span> <span class="o">*</span> <span class="n">S_Corr</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;MOLAR_DOXY&quot;</span><span class="p">]</span>
+        <span class="n">MOLAR_DOXY_PSAL</span> <span class="o">=</span> <span class="p">(</span><span class="n">A</span> <span class="o">/</span> <span class="n">B</span><span class="p">)</span> <span class="o">*</span> <span class="n">S_Corr</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY"</span><span class="p">]</span>
 
         <span class="c1"># Apply the correction</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;MOLAR_DOXY_PSAL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MOLAR_DOXY_PSAL</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY_PSAL"</span><span class="p">]</span> <span class="o">=</span> <span class="n">MOLAR_DOXY_PSAL</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY_PSAL"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"units"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s2">"units"</span><span class="p">,</span> <span class="s2">"micromole/l"</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY_PSAL"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"long_name"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"Salinity-corrected molar dissolved oxygen concentration"</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY_PSAL"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"standard_name"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"MOLAR_DOXY_PSAL"</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct_data</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">update_qc</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">(</span>
             <span class="p">{</span>
-                <span class="s2">&quot;MOLAR_DOXY_PSAL_QC&quot;</span><span class="p">:</span> <span class="p">[</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">salinity_name</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">,</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">temperature_name</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">,</span>
-                    <span class="s2">&quot;MOLAR_DOXY_QC&quot;</span><span class="p">,</span>
+                <span class="s2">"MOLAR_DOXY_PSAL_QC"</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">salinity_name</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">temperature_name</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">,</span>
+                    <span class="s2">"MOLAR_DOXY_QC"</span><span class="p">,</span>
                 <span class="p">]</span>
             <span class="p">}</span>
         <span class="p">)</span>
@@ -1051,12 +1397,12 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">pass</span></div>
+        <span class="n">_plot_diff</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="s2">"MOLAR_DOXY"</span><span class="p">,</span> <span class="s2">"MOLAR_DOXY_PSAL"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="p">)</span></div>
 
 
 
@@ -1065,52 +1411,52 @@
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.MolarDOXYPressureCorrection">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">MolarDOXYPressureCorrection</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
 
-    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Molar DOXY Pressure Correction&quot;</span>
+    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Molar DOXY Pressure Correction"</span>
 
     <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;pressure_name&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Name of the pressure variable in the dataset.&quot;</span><span class="p">,</span>
+        <span class="s2">"pressure_name"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">"required"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Name of the pressure variable in the dataset."</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="s2">&quot;temperature_name&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Name of the temperature variable in the dataset.&quot;</span><span class="p">,</span>
+        <span class="s2">"temperature_name"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">"required"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Name of the temperature variable in the dataset."</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="s2">&quot;molar_doxy_name&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Name of the molar oxygen variable to correct.&quot;</span><span class="p">,</span>
+        <span class="s2">"molar_doxy_name"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">"required"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Name of the molar oxygen variable to correct."</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="s2">&quot;uncalibrated_phase_correction_applied&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-            <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Whether the uncalibrated-phase pressure correction was already applied (selects coefficients).&quot;</span><span class="p">,</span>
+        <span class="s2">"uncalibrated_phase_correction_applied"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+            <span class="s2">"required"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Whether the uncalibrated-phase pressure correction was already applied (selects coefficients)."</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">}</span>
 
 <div class="viewcode-block" id="MolarDOXYPressureCorrection.run">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.MolarDOXYPressureCorrection.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Example</span>
 <span class="sd">        -------</span>
 <span class="sd">        ::</span>
 
-<span class="sd">            - name: &quot;Molar DOXY Pressure Correction&quot;</span>
+<span class="sd">            - name: "Molar DOXY Pressure Correction"</span>
 <span class="sd">              parameters:</span>
 <span class="sd">                # &lt;MANDATORY&gt;</span>
-<span class="sd">                pressure_name: &quot;PRES&quot;</span>
-<span class="sd">                temperature_name: &quot;TEMP&quot;</span>
-<span class="sd">                molar_doxy_name: &quot;MOLAR_DOXY_PSAL&quot;</span>
+<span class="sd">                pressure_name: "PRES"</span>
+<span class="sd">                temperature_name: "TEMP"</span>
+<span class="sd">                molar_doxy_name: "MOLAR_DOXY_PSAL"</span>
 <span class="sd">                uncalibrated_phase_correction_applied: true</span>
 <span class="sd">              diagnostics: false</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
 
@@ -1118,10 +1464,10 @@
         <span class="n">check_config</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
             <span class="p">(</span>
-                <span class="s2">&quot;pressure_name&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;temperature_name&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;molar_doxy_name&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;uncalibrated_phase_correction_applied&quot;</span><span class="p">,</span>
+                <span class="s2">"pressure_name"</span><span class="p">,</span>
+                <span class="s2">"temperature_name"</span><span class="p">,</span>
+                <span class="s2">"molar_doxy_name"</span><span class="p">,</span>
+                <span class="s2">"uncalibrated_phase_correction_applied"</span><span class="p">,</span>
             <span class="p">),</span>
         <span class="p">)</span>
 
@@ -1141,17 +1487,24 @@
         <span class="p">)</span>
 
         <span class="c1"># Apply the correction</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;MOLAR_DOXY_PSAL_PRES&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">MOLAR_DOXY_PSAL_PRES</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY_PSAL_PRES"</span><span class="p">]</span> <span class="o">=</span> <span class="n">MOLAR_DOXY_PSAL_PRES</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY_PSAL_PRES"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"units"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">molar_doxy_name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s2">"units"</span><span class="p">,</span> <span class="s2">"micromole/l"</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY_PSAL_PRES"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"long_name"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">"Salinity- and pressure-corrected molar dissolved oxygen concentration"</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY_PSAL_PRES"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"standard_name"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"MOLAR_DOXY_PSAL_PRES"</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct_data</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">update_qc</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">(</span>
             <span class="p">{</span>
-                <span class="s2">&quot;MOLAR_DOXY_PSAL_PRES_QC&quot;</span><span class="p">:</span> <span class="p">[</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pressure_name</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">,</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">temperature_name</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">,</span>
-                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">molar_doxy_name</span><span class="si">}</span><span class="s2">_QC&quot;</span><span class="p">,</span>
+                <span class="s2">"MOLAR_DOXY_PSAL_PRES_QC"</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pressure_name</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">temperature_name</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">molar_doxy_name</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">,</span>
                 <span class="p">]</span>
             <span class="p">}</span>
         <span class="p">)</span>
@@ -1159,12 +1512,18 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">pass</span></div>
+        <span class="n">_plot_diff</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">molar_doxy_name</span><span class="p">,</span>
+            <span class="s2">"MOLAR_DOXY_PSAL_PRES"</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pressure_name</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="p">,</span>
+        <span class="p">)</span></div>
 
 </pre></div>
 

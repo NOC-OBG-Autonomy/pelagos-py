@@ -370,10 +370,13 @@
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../processing/index.html">pelagos_py.steps.processing</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/bbp/index.html">pelagos_py.steps.processing.bbp</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../processing/chla/index.html">pelagos_py.steps.processing.chla</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../processing/chla_quenching/index.html">pelagos_py.steps.processing.chla_quenching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../processing/deep_correction/index.html">pelagos_py.steps.processing.deep_correction</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/derive_ctd/index.html">pelagos_py.steps.processing.derive_ctd</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/find_profiles/index.html">pelagos_py.steps.processing.find_profiles</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/interpolate_data/index.html">pelagos_py.steps.processing.interpolate_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../processing/interpolate_par/index.html">pelagos_py.steps.processing.interpolate_par</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../processing/mixed_layer_depth/index.html">pelagos_py.steps.processing.mixed_layer_depth</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/oxygen/index.html">pelagos_py.steps.processing.oxygen</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/salinity/index.html">pelagos_py.steps.processing.salinity</a></li>
 </ul>
@@ -400,9 +403,12 @@
 </ul>
 </details></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../utils/index.html">pelagos_py.utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/console/index.html">pelagos_py.utils.console</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/diagnostic_capture/index.html">pelagos_py.utils.diagnostic_capture</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/diagnostics/index.html">pelagos_py.utils.diagnostics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/fig_spec/index.html">pelagos_py.utils.fig_spec</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/log_levels/index.html">pelagos_py.utils.log_levels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/palettes/index.html">pelagos_py.utils.palettes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/parameter_spec/index.html">pelagos_py.utils.parameter_spec</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/qc_handling/index.html">pelagos_py.utils.qc_handling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/yaml_loading/index.html">pelagos_py.utils.yaml_loading</a></li>
@@ -485,20 +491,37 @@
 valid (non-NaN) data is compared against <code class="docutils literal notranslate"><span class="pre">[min,</span> <span class="pre">max]</span></code>, and the correction is
 applied only when the median falls <em>outside</em> that range (i.e. the data still looks
 uncorrected). When <code class="docutils literal notranslate"><span class="pre">expected_range</span></code> is omitted the correction is always applied.</p>
-<p>This makes a config robust to upstream fixes: e.g. a CNDC unit conversion
-(<code class="docutils literal notranslate"><span class="pre">slope:</span> <span class="pre">10</span></code>) targeting <code class="docutils literal notranslate"><span class="pre">expected_range:</span> <span class="pre">[20,</span> <span class="pre">45]</span></code> will scale S/m data into
-mS/cm, but quietly skip files that already arrive in mS/cm.</p>
+<p>This makes a config robust to upstream fixes: a unit conversion targeting an
+<code class="docutils literal notranslate"><span class="pre">expected_range</span></code> quietly skips files that already arrive in the right units.
+(CNDC does not need this: Derive CTD reads the units attribute and converts
+S/m -&gt; mS/cm for gsw itself.)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>target_variable</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Name of the variable to correct (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;CNDC&quot;</span></code>).</p></li>
+<li><p><strong>output_as</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>, </em><em>optional</em>) – Name(s) to write the result under. Defaults to <code class="docutils literal notranslate"><span class="pre">target_variable</span></code> (in-place).
+Set it to a new name to copy/rename, e.g. <code class="docutils literal notranslate"><span class="pre">LATITUDE_GPS</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">LATITUDE</span></code>
+with <code class="docutils literal notranslate"><span class="pre">slope:</span> <span class="pre">1</span></code> leaves the values unchanged and just exposes the new name.
+A list writes the same result under several names, e.g.
+<code class="docutils literal notranslate"><span class="pre">[CHLA,</span> <span class="pre">CHLA_MID]</span></code> keeps a mid-processing snapshot in <code class="docutils literal notranslate"><span class="pre">CHLA_MID</span></code> while
+later steps continue working on <code class="docutils literal notranslate"><span class="pre">CHLA</span></code>.</p></li>
 <li><p><strong>slope</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Multiplicative factor (default <code class="docutils literal notranslate"><span class="pre">1.0</span></code>). For a x10 unit conversion, set <code class="docutils literal notranslate"><span class="pre">10</span></code>.</p></li>
 <li><p><strong>intercept</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Additive offset applied after scaling (default <code class="docutils literal notranslate"><span class="pre">0.0</span></code>). Use for alignment.</p></li>
 <li><p><strong>expected_range</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">[min,</span> <span class="pre">max]</span></code> for the <em>corrected</em> variable. The correction is applied only
 when the data’s median falls outside this range. If omitted, the correction
 is always applied.</p></li>
-<li><p><strong>corrected_units</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Units string written to the variable’s attributes after a correction is
-applied (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;mS/cm&quot;</span></code>). Left untouched if omitted or if no correction runs.</p></li>
+<li><p><strong>time_start</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Restrict the correction to a TIME window (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;2024-07-01T00:00:00&quot;</span></code>).
+Points outside the window keep their raw value. Either bound may be omitted.</p></li>
+<li><p><strong>time_end</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Restrict the correction to a TIME window (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;2024-07-01T00:00:00&quot;</span></code>).
+Points outside the window keep their raw value. Either bound may be omitted.</p></li>
+<li><p><strong>corrected_units</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Units string written to the output variable’s attributes after a correction
+is applied (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;mS/cm&quot;</span></code>). Left untouched if omitted or if no correction runs.</p></li>
+<li><p><strong>append_description</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Note written to the output variable’s <code class="docutils literal notranslate"><span class="pre">comment</span></code> attribute (e.g.
+<code class="docutils literal notranslate"><span class="pre">&quot;Renamed</span> <span class="pre">from</span> <span class="pre">LATITUDE_GPS&quot;</span></code>). <code class="docutils literal notranslate"><span class="pre">append_description</span></code> adds to any existing
+comment; <code class="docutils literal notranslate"><span class="pre">overwrite_description</span></code> replaces it. Set at most one.</p></li>
+<li><p><strong>overwrite_description</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Note written to the output variable’s <code class="docutils literal notranslate"><span class="pre">comment</span></code> attribute (e.g.
+<code class="docutils literal notranslate"><span class="pre">&quot;Renamed</span> <span class="pre">from</span> <span class="pre">LATITUDE_GPS&quot;</span></code>). <code class="docutils literal notranslate"><span class="pre">append_description</span></code> adds to any existing
+comment; <code class="docutils literal notranslate"><span class="pre">overwrite_description</span></code> replaces it. Set at most one.</p></li>
 </ul>
 </dd>
 </dl>
@@ -508,11 +531,10 @@ applied (e.g. <code class="docutils literal notranslate"><span class="pre">&quot
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Correct Values</span>
 <span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">target_variable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CNDC</span>
-<span class="w">      </span><span class="nt">slope</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.0</span>
-<span class="w">      </span><span class="nt">intercept</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0</span>
-<span class="w">      </span><span class="nt">expected_range</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">20</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">45</span><span class="p p-Indicator">]</span>
-<span class="w">      </span><span class="nt">corrected_units</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mS/cm</span>
+<span class="w">      </span><span class="nt">target_variable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TEMP</span>
+<span class="w">      </span><span class="nt">slope</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.001</span>
+<span class="w">      </span><span class="nt">intercept</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-0.05</span>
+<span class="w">      </span><span class="nt">expected_range</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">-2.5</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">40</span><span class="p p-Indicator">]</span>
 <span class="w">    </span><span class="nt">diagnostics</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 </pre></div>
 </div>

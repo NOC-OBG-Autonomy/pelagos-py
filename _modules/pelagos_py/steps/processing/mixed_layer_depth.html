@@ -1,0 +1,841 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pelagos_py.steps.processing.mixed_layer_depth &#8212; Pelagos-Py</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../_static/styles/theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-codeautolink.css?v=b2176991" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=1376b26a" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../../../_static/scripts/fontawesome.js?digest=a95f357e85573c9b56d5"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5" />
+<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5" />
+
+    <script src="../../../../_static/documentation_options.js?v=0b8c961e"></script>
+    <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../../_static/copybutton.js?v=df1a032d"></script>
+    <script src="../../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/pelagos_py/steps/processing/mixed_layer_depth';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="canonical" href="https://noc-obg-autonomy.github.io/pelagos-py/_modules/pelagos_py/steps/processing/mixed_layer_depth.html" />
+    <link rel="icon" href="../../../../_static/NOC_logo.svg"/>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0" />
+  
+    
+    <script src="../../../../_static/searchtools.js"></script>
+    <script src="../../../../_static/language_data.js"></script>
+    <script src="../../../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../../_static/pelagos-py-text-logo.png" class="logo__image only-light" alt="Pelagos-Py - Home"/>
+    <img src="../../../../_static/pelagos-py-text-logo.png" class="logo__image only-dark pst-js-only" alt="Pelagos-Py - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../user_guide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../api_reference.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../development.html">
+    Development
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NOC-OBG-Autonomy/pelagos-py" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../user_guide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../api_reference.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../development.html">
+    Development
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NOC-OBG-Autonomy/pelagos-py" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../../index.html" class="nav-link">Module code</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../steps.html" class="nav-link">pelagos_py.steps</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">pelagos_py.steps.processing.mixed_layer_depth</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for pelagos_py.steps.processing.mixed_layer_depth</h1><div class="highlight"><pre>
+<span></span><span class="c1"># This file is part of pelagos_py.</span>
+<span class="c1">#</span>
+<span class="c1"># Copyright 2025-2026 National Oceanography Centre and The Contributors</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the "License");</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#    http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an "AS IS" BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="sd">"""Pipeline step for calculating the mixed layer depth (MLD) of each profile."""</span>
+
+<span class="c1">#### Mandatory imports ####</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.qc_handling</span><span class="w"> </span><span class="kn">import</span> <span class="n">QCHandlingMixin</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pelagos_py.utils.diagnostics</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">diag</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pelagos_py.utils.palettes</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">palettes</span>
+
+<span class="c1">#### Custom imports ####</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">gsw</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+<span class="c1"># Dataset variables each method reads; density is derived here as potential density.</span>
+<span class="n">METHOD_INPUTS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"density"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"ABS_SALINITY"</span><span class="p">,</span> <span class="s2">"CONS_TEMP"</span><span class="p">],</span> <span class="s2">"temp"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"TEMP"</span><span class="p">]}</span>
+
+<span class="c1"># Name each method's values go by in logs and on plots.</span>
+<span class="n">METHOD_LABELS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"density"</span><span class="p">:</span> <span class="s2">"SIGMA0"</span><span class="p">,</span> <span class="s2">"temp"</span><span class="p">:</span> <span class="s2">"TEMP"</span><span class="p">}</span>
+
+
+<span class="nd">@register_step</span>
+<div class="viewcode-block" id="MixedLayerDepthStep">
+<a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/mixed_layer_depth/index.html#pelagos_py.steps.processing.mixed_layer_depth.MixedLayerDepthStep">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MixedLayerDepthStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Calculate the mixed layer depth (MLD) of each profile.</span>
+
+<span class="sd">    The MLD is found per profile by a threshold method: from a near-surface</span>
+<span class="sd">    reference point, the first depth at which the chosen variable departs from its</span>
+<span class="sd">    reference value by more than a threshold marks the base of the mixed layer.</span>
+<span class="sd">    ``PROFILE_NUMBER`` and ``DEPTH`` must already be derived.</span>
+
+<span class="sd">    Two derived variables are written on the ``N_MEASUREMENTS`` dimension: ``MLD``,</span>
+<span class="sd">    the profile's mixed layer depth (positive down, matching ``DEPTH``; ``NaN`` where</span>
+<span class="sd">    undefined), and ``MLD_BOOL``, ``0`` above the MLD, ``1`` at/below it, ``NaN``</span>
+<span class="sd">    where undefined. Samples whose flags fall in ``calculation_flag_filter`` take no</span>
+<span class="sd">    part in the search, so a bad value cannot place the MLD; both variables are still</span>
+<span class="sd">    written for every measurement in the profile.</span>
+
+<span class="sd">    The density method uses potential density (sigma0, referenced to 0 dbar) derived</span>
+<span class="sd">    here from ``ABS_SALINITY`` and ``CONS_TEMP``, not the dataset's in-situ</span>
+<span class="sd">    ``DENSITY`` whose pressure term alone crosses a typical threshold within a few</span>
+<span class="sd">    metres of the surface. The derived sigma0 is not written to the dataset.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    method : str, optional</span>
+<span class="sd">        ``"density"``, ``"temp"``, or ``"auto"`` (default; density if its inputs are</span>
+<span class="sd">        present, else temp). An explicit choice whose inputs are missing halts the</span>
+<span class="sd">        pipeline.</span>
+<span class="sd">    reference_depth : float, optional</span>
+<span class="sd">        Near-surface reference depth (positive down). Default ``10``.</span>
+<span class="sd">    density_threshold : float, optional</span>
+<span class="sd">        Density departure (kg/m3) marking the MLD. Default ``0.03``.</span>
+<span class="sd">    temp_threshold : float, optional</span>
+<span class="sd">        Temperature departure (degC) marking the MLD. Default ``0.2``.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    .. code-block:: yaml</span>
+
+<span class="sd">        steps:</span>
+<span class="sd">          - name: Mixed Layer Depth</span>
+<span class="sd">            parameters:</span>
+<span class="sd">              method: density</span>
+<span class="sd">              reference_depth: 10</span>
+<span class="sd">              density_threshold: 0.03</span>
+<span class="sd">              temp_threshold: 0.2</span>
+<span class="sd">            diagnostics: true</span>
+<span class="sd">    """</span>
+
+    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Mixed Layer Depth"</span>
+    <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">,</span> <span class="s2">"DEPTH"</span><span class="p">]</span>
+    <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"MLD"</span><span class="p">,</span> <span class="s2">"MLD_BOOL"</span><span class="p">]</span>
+    <span class="c1"># ABS_SALINITY/CONS_TEMP/TEMP cover both "auto" method resolution and the</span>
+    <span class="c1"># diagnostics panel, which computes MLD from every available method, not</span>
+    <span class="c1"># just the configured one; TIME/PROFILE_DIRECTION are read only if present.</span>
+    <span class="n">optional_variables</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">"ABS_SALINITY"</span><span class="p">,</span> <span class="s2">"CONS_TEMP"</span><span class="p">,</span> <span class="s2">"TEMP"</span><span class="p">,</span> <span class="s2">"TIME"</span><span class="p">,</span> <span class="s2">"PROFILE_DIRECTION"</span><span class="p">,</span>
+    <span class="p">]</span>
+    <span class="n">uses_data_subset</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"method"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="s2">"auto"</span><span class="p">,</span>
+            <span class="s2">"options"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"auto"</span><span class="p">,</span> <span class="s2">"density"</span><span class="p">,</span> <span class="s2">"temp"</span><span class="p">],</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Variable the threshold keys off: 'density', 'temp', or 'auto' (density, else temp)."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"reference_depth"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Near-surface reference depth (positive down)."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"density_threshold"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="mf">0.03</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Density departure (kg/m3) from the reference marking the MLD."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"temp_threshold"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Temperature departure (degC) from the reference marking the MLD."</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">resolved_method</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_method</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"Calculating MLD from </span><span class="si">{</span><span class="n">METHOD_LABELS</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">resolved_method</span><span class="p">]</span><span class="si">}</span><span class="s2"> "</span>
+            <span class="sa">f</span><span class="s2">"(threshold </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">threshold</span><span class="si">}</span><span class="s2">, reference depth </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">reference_depth</span><span class="si">}</span><span class="s2">)..."</span>
+        <span class="p">)</span>
+
+        <span class="n">depth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"DEPTH"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">mld</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_mld</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resolved_method</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Above MLD -&gt; 0, at/below -&gt; 1, NaN where depth or the profile's MLD is undefined.</span>
+        <span class="n">mld_bool</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">depth</span> <span class="o">&gt;=</span> <span class="n">mld</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="n">mld_bool</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">depth</span><span class="p">)</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">mld</span><span class="p">)]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MLD"</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">,),</span> <span class="n">mld</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MLD"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"long_name"</span><span class="p">:</span> <span class="s2">"Mixed layer depth of the profile (positive down, matching DEPTH). NaN where undefined."</span><span class="p">,</span>
+            <span class="s2">"units"</span><span class="p">:</span> <span class="s2">"m"</span><span class="p">,</span>
+            <span class="s2">"standard_name"</span><span class="p">:</span> <span class="s2">"MLD"</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MLD_BOOL"</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">,),</span> <span class="n">mld_bool</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MLD_BOOL"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"long_name"</span><span class="p">:</span> <span class="s2">"Mixed layer flag: 0 above MLD, 1 at/below MLD, NaN where undefined."</span><span class="p">,</span>
+            <span class="s2">"units"</span><span class="p">:</span> <span class="s2">"None"</span><span class="p">,</span>
+            <span class="s2">"standard_name"</span><span class="p">:</span> <span class="s2">"MLD_BOOL"</span><span class="p">,</span>
+            <span class="s2">"valid_min"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">"valid_max"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s2">"flag_values"</span><span class="p">:</span> <span class="s2">"0, 1"</span><span class="p">,</span>
+            <span class="s2">"flag_meanings"</span><span class="p">:</span> <span class="s2">"above_mld below_mld"</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct_data</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_qc</span><span class="p">()</span>
+
+        <span class="n">qc_parents</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span>
+            <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">,</span> <span class="s2">"DEPTH"</span><span class="p">]</span> <span class="o">+</span> <span class="n">METHOD_INPUTS</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">resolved_method</span><span class="p">]</span>
+        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">({</span><span class="s2">"MLD_QC"</span><span class="p">:</span> <span class="n">qc_parents</span><span class="p">,</span> <span class="s2">"MLD_BOOL_QC"</span><span class="p">:</span> <span class="n">qc_parents</span><span class="p">})</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_method</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Returns (method, threshold); "auto" prefers density, falls back to temp.</span>
+        <span class="n">method</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"auto"</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"density"</span><span class="p">,</span> <span class="s2">"temp"</span><span class="p">):</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_method_available</span><span class="p">(</span><span class="n">candidate</span><span class="p">):</span>
+                    <span class="n">method</span> <span class="o">=</span> <span class="n">candidate</span>
+                    <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">halt</span><span class="p">(</span>
+                    <span class="s2">"Method 'auto' needs either ABS_SALINITY and CONS_TEMP (density) or "</span>
+                    <span class="s2">"TEMP in the dataset, but neither set is present. Derive them "</span>
+                    <span class="s2">"beforehand (e.g. Derive CTD)."</span>
+                <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">METHOD_INPUTS</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">halt</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Unknown MLD method '</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="si">}</span><span class="s2">'. Choose 'auto', 'density', or 'temp'."</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_method_available</span><span class="p">(</span><span class="n">method</span><span class="p">):</span>
+            <span class="n">missing</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">var</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">METHOD_INPUTS</span><span class="p">[</span><span class="n">method</span><span class="p">]</span> <span class="k">if</span> <span class="n">var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span>
+            <span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">halt</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Method '</span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">' requires </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">METHOD_INPUTS</span><span class="p">[</span><span class="n">method</span><span class="p">])</span><span class="si">}</span><span class="s2"> in the "</span>
+                <span class="sa">f</span><span class="s2">"dataset, but </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">missing</span><span class="p">)</span><span class="si">}</span><span class="s2"> is not present. Derive it beforehand "</span>
+                <span class="sa">f</span><span class="s2">"(e.g. Derive CTD)."</span>
+            <span class="p">)</span>
+
+        <span class="n">threshold</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">density_threshold</span> <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"density"</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">temp_threshold</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">method</span><span class="p">,</span> <span class="n">threshold</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_method_available</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">METHOD_INPUTS</span><span class="p">[</span><span class="n">method</span><span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_method_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">):</span>
+        <span class="c1"># Density is potential density (sigma0) derived here, only to place the MLD.</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"temp"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"TEMP"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="k">return</span> <span class="n">gsw</span><span class="o">.</span><span class="n">sigma0</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"ABS_SALINITY"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"CONS_TEMP"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compute_mld</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">threshold</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="n">profile_number</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">depth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"DEPTH"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+
+        <span class="c1"># Flagged samples must not influence the MLD, so the search runs on NaN-masked</span>
+        <span class="c1"># copies; MLD/MLD_BOOL are still assigned to every sample using unmasked depth.</span>
+        <span class="n">usable</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculation_mask</span><span class="p">(</span>
+            <span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">,</span> <span class="s2">"DEPTH"</span><span class="p">]</span> <span class="o">+</span> <span class="n">METHOD_INPUTS</span><span class="p">[</span><span class="n">method</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">search_depth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">usable</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+        <span class="n">search_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">usable</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_method_values</span><span class="p">(</span><span class="n">method</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+
+        <span class="n">mld</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">profile_number</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+        <span class="n">profile_numbers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">profile_number</span><span class="p">[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">profile_number</span><span class="p">)])</span>
+        <span class="k">if</span> <span class="n">progress</span><span class="p">:</span>
+            <span class="n">profile_numbers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_progress</span><span class="p">(</span><span class="n">profile_numbers</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">"prof"</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">pn</span> <span class="ow">in</span> <span class="n">profile_numbers</span><span class="p">:</span>
+            <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">profile_number</span> <span class="o">==</span> <span class="n">pn</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">profile_mld</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_profile_mld</span><span class="p">(</span>
+                <span class="n">search_depth</span><span class="p">[</span><span class="n">indices</span><span class="p">],</span> <span class="n">search_values</span><span class="p">[</span><span class="n">indices</span><span class="p">],</span> <span class="n">threshold</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">profile_mld</span><span class="p">):</span>
+                <span class="n">mld</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span> <span class="o">=</span> <span class="n">profile_mld</span>
+        <span class="k">return</span> <span class="n">mld</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_profile_mld</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">threshold</span><span class="p">):</span>
+        <span class="c1"># Restrict to valid points at or below the reference depth.</span>
+        <span class="n">below_reference</span> <span class="o">=</span> <span class="n">depth</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reference_depth</span>
+        <span class="n">valid</span> <span class="o">=</span> <span class="n">below_reference</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">depth</span><span class="p">)</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+        <span class="n">depth</span> <span class="o">=</span> <span class="n">depth</span><span class="p">[</span><span class="n">valid</span><span class="p">]</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="n">valid</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">depth</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+        <span class="c1"># Reference point: shallowest remaining measurement; if deeper than twice the</span>
+        <span class="c1"># reference depth there is nothing near the surface to anchor to.</span>
+        <span class="n">reference_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">depth</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">depth</span><span class="p">[</span><span class="n">reference_index</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">reference_depth</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="n">reference_value</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="n">reference_index</span><span class="p">]</span>
+
+        <span class="c1"># Scan from the surface downward for the first threshold crossing.</span>
+        <span class="n">order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">depth</span><span class="p">)</span>
+        <span class="n">depth</span> <span class="o">=</span> <span class="n">depth</span><span class="p">[</span><span class="n">order</span><span class="p">]</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="n">order</span><span class="p">]</span>
+        <span class="n">exceeded</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">values</span> <span class="o">-</span> <span class="n">reference_value</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">threshold</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">exceeded</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">depth</span><span class="p">[</span><span class="n">exceeded</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+
+    <span class="c1"># Panels and MLD lines are drawn for each of these that is present in the data.</span>
+    <span class="n">DIAGNOSTIC_METHODS</span> <span class="o">=</span> <span class="p">((</span><span class="s2">"temp"</span><span class="p">,</span> <span class="s2">"red"</span><span class="p">),</span> <span class="p">(</span><span class="s2">"density"</span><span class="p">,</span> <span class="s2">"black"</span><span class="p">))</span>
+    <span class="n">DIAGNOSTIC_MAX_DEPTH</span> <span class="o">=</span> <span class="mi">200</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_profile_spans</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">profile_number</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="c1"># (indices, [x_start, x_end]) per profile; span the core (PROFILE_DIRECTION</span>
+        <span class="c1"># +-1) where available so MLD lines don't stretch across transect legs.</span>
+        <span class="n">direction</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_DIRECTION"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+            <span class="k">if</span> <span class="s2">"PROFILE_DIRECTION"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+            <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
+
+        <span class="n">spans</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">pn</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">profile_number</span><span class="p">[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">profile_number</span><span class="p">)]):</span>
+            <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">profile_number</span> <span class="o">==</span> <span class="n">pn</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">span_indices</span> <span class="o">=</span> <span class="n">indices</span>
+            <span class="k">if</span> <span class="n">direction</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">core</span> <span class="o">=</span> <span class="n">indices</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">direction</span><span class="p">[</span><span class="n">indices</span><span class="p">],</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))]</span>
+                <span class="k">if</span> <span class="n">core</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+                    <span class="n">span_indices</span> <span class="o">=</span> <span class="n">core</span>
+            <span class="n">span_x</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">span_indices</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">span_x</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">spans</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">indices</span><span class="p">,</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">span_x</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">span_x</span><span class="p">)]))</span>
+        <span class="k">return</span> <span class="n">spans</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">"tkagg"</span><span class="p">)</span>
+
+        <span class="n">profile_number</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">depth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"DEPTH"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="c1"># TIME is not required by this step; fall back to measurement index.</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+            <span class="k">if</span> <span class="s2">"TIME"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+            <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">depth</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="n">profile_spans</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_profile_spans</span><span class="p">(</span><span class="n">profile_number</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+
+        <span class="c1"># Both MLDs are drawn on every panel for comparison; only the selected one is stored.</span>
+        <span class="n">methods</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">colour</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">method</span><span class="p">,</span> <span class="n">colour</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">DIAGNOSTIC_METHODS</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_method_available</span><span class="p">(</span><span class="n">method</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="n">mlds</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">method</span><span class="p">,</span> <span class="n">colour</span> <span class="ow">in</span> <span class="n">methods</span><span class="p">:</span>
+            <span class="n">threshold</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">density_threshold</span> <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"density"</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">temp_threshold</span>
+            <span class="p">)</span>
+            <span class="n">mld</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MLD"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+                <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolved_method</span>
+                <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_mld</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">threshold</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">mlds</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="sa">f</span><span class="s2">"MLD from </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">colour</span><span class="p">,</span> <span class="n">mld</span><span class="p">))</span>
+
+        <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">methods</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">14</span><span class="p">,</span> <span class="mi">4</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">methods</span><span class="p">)),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">150</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">squeeze</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axes</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">methods</span><span class="p">):</span>
+            <span class="n">panel_label</span> <span class="o">=</span> <span class="n">METHOD_LABELS</span><span class="p">[</span><span class="n">method</span><span class="p">]</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_method_values</span><span class="p">(</span><span class="n">method</span><span class="p">)</span>
+
+            <span class="c1"># Flagged samples and points below the plotted range are kept off the scatter.</span>
+            <span class="n">usable</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculation_mask</span><span class="p">([</span><span class="s2">"DEPTH"</span><span class="p">]</span> <span class="o">+</span> <span class="n">METHOD_INPUTS</span><span class="p">[</span><span class="n">method</span><span class="p">])</span>
+            <span class="n">valid</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">usable</span>
+                <span class="o">&amp;</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">depth</span><span class="p">)</span>
+                <span class="o">&amp;</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+                <span class="o">&amp;</span> <span class="p">(</span><span class="n">depth</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DIAGNOSTIC_MAX_DEPTH</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">cmap</span> <span class="o">=</span> <span class="n">palettes</span><span class="o">.</span><span class="n">cmap_for_variable</span><span class="p">(</span><span class="n">panel_label</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">)</span>
+            <span class="n">scatter</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">valid</span><span class="p">],</span> <span class="n">depth</span><span class="p">[</span><span class="n">valid</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="n">values</span><span class="p">[</span><span class="n">valid</span><span class="p">],</span> <span class="n">s</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">)</span>
+            <span class="n">colourbar</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">scatter</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+            <span class="n">colourbar</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="n">panel_label</span><span class="p">)</span>
+
+            <span class="c1"># Draw each MLD as a line spanning every profile's span.</span>
+            <span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">colour</span><span class="p">,</span> <span class="n">mld</span> <span class="ow">in</span> <span class="n">mlds</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">indices</span><span class="p">,</span> <span class="n">span</span> <span class="ow">in</span> <span class="n">profile_spans</span><span class="p">:</span>
+                    <span class="n">finite_mld</span> <span class="o">=</span> <span class="n">mld</span><span class="p">[</span><span class="n">indices</span><span class="p">][</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">mld</span><span class="p">[</span><span class="n">indices</span><span class="p">])]</span>
+                    <span class="k">if</span> <span class="n">finite_mld</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                        <span class="n">span</span><span class="p">,</span>
+                        <span class="p">[</span><span class="n">finite_mld</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">finite_mld</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span>
+                        <span class="n">c</span><span class="o">=</span><span class="n">colour</span><span class="p">,</span>
+                        <span class="n">lw</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                        <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="n">label</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># only label the first line of each MLD</span>
+
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"DEPTH"</span><span class="p">)</span>
+            <span class="c1"># Positive-down depth: surface at the top, clipped to the shallow range.</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">DIAGNOSTIC_MAX_DEPTH</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Mixed Layer Depth (</span><span class="si">{</span><span class="n">panel_label</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_legend_handles_labels</span><span class="p">()[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">"lower right"</span><span class="p">)</span>
+
+        <span class="n">axes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"TIME"</span> <span class="k">if</span> <span class="s2">"TIME"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="k">else</span> <span class="s2">"Measurement"</span><span class="p">)</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5"></script>
+<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, National Oceanography Centre.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.19.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

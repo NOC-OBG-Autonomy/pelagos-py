@@ -370,10 +370,13 @@
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../processing/index.html">pelagos_py.steps.processing</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/bbp/index.html">pelagos_py.steps.processing.bbp</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../processing/chla/index.html">pelagos_py.steps.processing.chla</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../processing/chla_quenching/index.html">pelagos_py.steps.processing.chla_quenching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../processing/deep_correction/index.html">pelagos_py.steps.processing.deep_correction</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/derive_ctd/index.html">pelagos_py.steps.processing.derive_ctd</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/find_profiles/index.html">pelagos_py.steps.processing.find_profiles</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/interpolate_data/index.html">pelagos_py.steps.processing.interpolate_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../processing/interpolate_par/index.html">pelagos_py.steps.processing.interpolate_par</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../processing/mixed_layer_depth/index.html">pelagos_py.steps.processing.mixed_layer_depth</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/oxygen/index.html">pelagos_py.steps.processing.oxygen</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../processing/salinity/index.html">pelagos_py.steps.processing.salinity</a></li>
 </ul>
@@ -400,9 +403,12 @@
 </ul>
 </details></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../utils/index.html">pelagos_py.utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/console/index.html">pelagos_py.utils.console</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/diagnostic_capture/index.html">pelagos_py.utils.diagnostic_capture</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/diagnostics/index.html">pelagos_py.utils.diagnostics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/fig_spec/index.html">pelagos_py.utils.fig_spec</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/log_levels/index.html">pelagos_py.utils.log_levels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/palettes/index.html">pelagos_py.utils.palettes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/parameter_spec/index.html">pelagos_py.utils.parameter_spec</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/qc_handling/index.html">pelagos_py.utils.qc_handling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/yaml_loading/index.html">pelagos_py.utils.yaml_loading</a></li>
@@ -480,37 +486,27 @@
 <dt class="sig sig-object py" id="pelagos_py.steps.quality_control.range_qc.range_qc">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.quality_control.range_qc.</span></span><span class="sig-name descname"><span class="pre">range_qc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/quality_control/range_qc.html#range_qc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.quality_control.range_qc.range_qc" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="../../base_qc/index.html#pelagos_py.steps.base_qc.BaseQC" title="pelagos_py.steps.base_qc.BaseQC"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pelagos_py.steps.base_qc.BaseQC</span></code></a></p>
-<p>Flag measurements by value range. A single, configurable replacement for the
-old separate “gross range” and “impossible range” tests.</p>
-<p>Each <code class="docutils literal notranslate"><span class="pre">{flag:</span> <span class="pre">bounds}</span></code> entry describes one or more bands. A band is given as a
-<code class="docutils literal notranslate"><span class="pre">[low,</span> <span class="pre">high]</span></code> pair with an <code class="docutils literal notranslate"><span class="pre">inside</span></code>/<code class="docutils literal notranslate"><span class="pre">outside</span></code> keyword saying which side to
-flag:</p>
+<p>Flag measurements by value range: a single replacement for the old separate
+“gross range” and “impossible range” tests.</p>
+<p>Each <code class="docutils literal notranslate"><span class="pre">{flag:</span> <span class="pre">bounds}</span></code> entry describes one or more bands:</p>
 <ul class="simple">
-<li><p><strong>``[low, high, “outside”]``</strong> — a <em>good</em> band; data <code class="docutils literal notranslate"><span class="pre">&lt;</span> <span class="pre">low</span></code> or <code class="docutils literal notranslate"><span class="pre">&gt;</span> <span class="pre">high</span></code>
-gets the flag. (The old “gross range” behaviour.) Accepts <code class="docutils literal notranslate"><span class="pre">outside</span></code>, <code class="docutils literal notranslate"><span class="pre">out</span></code>
-or <code class="docutils literal notranslate"><span class="pre">o</span></code> (any capitalisation).</p></li>
-<li><p><strong>``[low, high, “inside”]``</strong> — an <em>impossible</em> band; data strictly between the
-two bounds gets the flag. (The old “impossible range” behaviour.) Accepts
-<code class="docutils literal notranslate"><span class="pre">inside</span></code>, <code class="docutils literal notranslate"><span class="pre">in</span></code> or <code class="docutils literal notranslate"><span class="pre">i</span></code> (any capitalisation).</p></li>
-<li><p><strong>A single scalar</strong> <code class="docutils literal notranslate"><span class="pre">value</span></code> — flags exact matches (<code class="docutils literal notranslate"><span class="pre">data</span> <span class="pre">==</span> <span class="pre">value</span></code>). Handy
-for fill/filler values, e.g. <code class="docutils literal notranslate"><span class="pre">4:</span> <span class="pre">0.0</span></code> to flag a pressure of exactly <code class="docutils literal notranslate"><span class="pre">0</span></code> as
-bad.</p></li>
+<li><p><strong>``[low, high, “outside”]``</strong> — a <em>good</em> band; data outside it gets the flag
+(accepts <code class="docutils literal notranslate"><span class="pre">outside</span></code>/<code class="docutils literal notranslate"><span class="pre">out</span></code>/<code class="docutils literal notranslate"><span class="pre">o</span></code>).</p></li>
+<li><p><strong>``[low, high, “inside”]``</strong> — an <em>impossible</em> band; data between the bounds
+inclusive gets the flag (accepts <code class="docutils literal notranslate"><span class="pre">inside</span></code>/<code class="docutils literal notranslate"><span class="pre">in</span></code>/<code class="docutils literal notranslate"><span class="pre">i</span></code>).</p></li>
+<li><p><strong>A single scalar</strong> <code class="docutils literal notranslate"><span class="pre">value</span></code> — flags exact matches (e.g. a fill value <code class="docutils literal notranslate"><span class="pre">4:</span> <span class="pre">0.0</span></code>).</p></li>
 </ul>
-<p>The same flag can cover several bands by giving a <em>list of bands</em>, e.g.
-<code class="docutils literal notranslate"><span class="pre">4:</span> <span class="pre">[[2,</span> <span class="pre">3,</span> <span class="pre">&quot;inside&quot;],</span> <span class="pre">[0.1,</span> <span class="pre">10,</span> <span class="pre">&quot;outside&quot;]]</span></code> — a point is flagged if it falls in
-<em>any</em> of them.</p>
-<p>If the keyword is omitted the bound <em>order</em> is used as a fallback: an ascending
-<code class="docutils literal notranslate"><span class="pre">[low,</span> <span class="pre">high]</span></code> means <code class="docutils literal notranslate"><span class="pre">outside</span></code> (a good band) and a descending <code class="docutils literal notranslate"><span class="pre">[high,</span> <span class="pre">low]</span></code>
-means <code class="docutils literal notranslate"><span class="pre">inside</span></code> (an impossible band). An explicit keyword always wins over the
-order, so write <code class="docutils literal notranslate"><span class="pre">inside</span></code>/<code class="docutils literal notranslate"><span class="pre">outside</span></code> when in doubt.</p>
-<p>Within a variable, entries are applied most-severe-flag-first, so on overlap the
-worse flag wins. Anything checked but not flagged is marked good (1).</p>
+<p>A flag may give a <em>list of bands</em> to cover several ranges. If the keyword is
+omitted the bound order decides: ascending <code class="docutils literal notranslate"><span class="pre">[low,</span> <span class="pre">high]</span></code> means outside,
+descending <code class="docutils literal notranslate"><span class="pre">[high,</span> <span class="pre">low]</span></code> means inside. Entries apply most-severe-flag-first, so
+the worse flag wins on overlap; anything checked but not flagged is marked good (1).</p>
 <p>Target Variable: Any
 Flag Number: Any (user-defined)
-Variables Flagged: Any (the tested variables, plus any <code class="docutils literal notranslate"><span class="pre">also_flag</span></code> companions)</p>
+Variables Flagged: Any (the tested variables, minus any <code class="docutils literal notranslate"><span class="pre">flag_instead</span></code> sources,
+plus any <code class="docutils literal notranslate"><span class="pre">also_flag</span></code>/<code class="docutils literal notranslate"><span class="pre">flag_instead</span></code> companions)</p>
 <div class="admonition-example admonition">
 <p class="admonition-title">Example</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="s2">&quot;Apply QC&quot;</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="s2">"Apply QC"</span>
   <span class="n">parameters</span><span class="p">:</span>
     <span class="n">qc_settings</span><span class="p">:</span>
       <span class="nb">range</span> <span class="n">qc</span><span class="p">:</span>
@@ -526,9 +522,24 @@ Variables Flagged: Any (the tested variables, plus any <code class="docutils lit
             <span class="c1"># one flag, two bands: flag bad both inside [2, 3] and outside [0.1, 10]</span>
             <span class="mi">4</span><span class="p">:</span> <span class="p">[[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">inside</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">outside</span><span class="p">]]</span>
         <span class="n">also_flag</span><span class="p">:</span>
-          <span class="n">CNDC</span><span class="p">:</span> <span class="p">[</span><span class="n">PRES</span><span class="p">,</span> <span class="n">TEMP</span><span class="p">]</span>    <span class="c1"># CNDC&#39;s flags propagate onto PRES &amp; TEMP (worst wins)</span>
-        <span class="n">test_depth_range</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mi">100</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>   <span class="c1"># OPTIONAL: only check this DEPTH window</span>
+          <span class="n">CNDC</span><span class="p">:</span> <span class="p">[</span><span class="n">PRES</span><span class="p">,</span> <span class="n">TEMP</span><span class="p">]</span>    <span class="c1"># CNDC's flags propagate onto PRES &amp; TEMP (worst wins)</span>
+        <span class="n">test_depth_range</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">]</span>    <span class="c1"># OPTIONAL: only check this DEPTH window</span>
   <span class="n">diagnostics</span><span class="p">:</span> <span class="n">true</span>             <span class="c1"># plots every flagged variable, coloured by flag</span>
+</pre></div>
+</div>
+<p>Flagging one variable by another’s range (<code class="docutils literal notranslate"><span class="pre">flag_instead</span></code>) — here CHLA is judged
+by DEPTH (probably-bad in the quenched top 5 m, probably-good below it) while DEPTH
+itself is left unflagged:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="s2">"Apply QC"</span>
+  <span class="n">parameters</span><span class="p">:</span>
+    <span class="n">qc_settings</span><span class="p">:</span>
+      <span class="nb">range</span> <span class="n">qc</span><span class="p">:</span>
+        <span class="n">variable_ranges</span><span class="p">:</span>
+          <span class="n">DEPTH</span><span class="p">:</span>
+            <span class="mi">3</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">inside</span><span class="p">]</span>     <span class="c1"># top 5 m -&gt; probably bad (correctable)</span>
+            <span class="mi">2</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">outside</span><span class="p">]</span>    <span class="c1"># deeper   -&gt; probably good</span>
+        <span class="n">flag_instead</span><span class="p">:</span>
+          <span class="n">DEPTH</span><span class="p">:</span> <span class="p">[</span><span class="n">CHLA</span><span class="p">]</span>           <span class="c1"># DEPTH's flags go onto CHLA; no DEPTH_QC written</span>
 </pre></div>
 </div>
 </div>

@@ -1,0 +1,919 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pelagos_py.steps.processing.deep_correction &#8212; Pelagos-Py</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../_static/styles/theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-codeautolink.css?v=b2176991" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=1376b26a" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../../../_static/scripts/fontawesome.js?digest=a95f357e85573c9b56d5"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5" />
+<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5" />
+
+    <script src="../../../../_static/documentation_options.js?v=0b8c961e"></script>
+    <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../../_static/copybutton.js?v=df1a032d"></script>
+    <script src="../../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/pelagos_py/steps/processing/deep_correction';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="canonical" href="https://noc-obg-autonomy.github.io/pelagos-py/_modules/pelagos_py/steps/processing/deep_correction.html" />
+    <link rel="icon" href="../../../../_static/NOC_logo.svg"/>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0" />
+  
+    
+    <script src="../../../../_static/searchtools.js"></script>
+    <script src="../../../../_static/language_data.js"></script>
+    <script src="../../../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../../_static/pelagos-py-text-logo.png" class="logo__image only-light" alt="Pelagos-Py - Home"/>
+    <img src="../../../../_static/pelagos-py-text-logo.png" class="logo__image only-dark pst-js-only" alt="Pelagos-Py - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../user_guide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../api_reference.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../development.html">
+    Development
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NOC-OBG-Autonomy/pelagos-py" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../user_guide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../api_reference.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../development.html">
+    Development
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NOC-OBG-Autonomy/pelagos-py" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../../index.html" class="nav-link">Module code</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../steps.html" class="nav-link">pelagos_py.steps</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">pelagos_py.steps.processing.deep_correction</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for pelagos_py.steps.processing.deep_correction</h1><div class="highlight"><pre>
+<span></span><span class="c1"># This file is part of pelagos_py.</span>
+<span class="c1">#</span>
+<span class="c1"># Copyright 2025-2026 National Oceanography Centre and The Contributors</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the "License");</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#    http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an "AS IS" BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="sd">"""Generic deep-value (dark offset) correction for profile data.</span>
+
+<span class="sd">Estimates a constant baseline (``dark_value``) from the deepest measurements of</span>
+<span class="sd">the first few deep profiles and subtracts it from the whole record. Written for</span>
+<span class="sd">chlorophyll fluorescence but works for any variable with a deep signal-free</span>
+<span class="sd">region (the offset and thresholds are all parameters)."""</span>
+
+<span class="c1">#### Mandatory imports ####</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.qc_handling</span><span class="w"> </span><span class="kn">import</span> <span class="n">QCHandlingMixin</span>
+
+<span class="c1">#### Custom imports ####</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mpl</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pelagos_py.utils.palettes</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">palettes</span>
+
+<span class="c1"># A depth_threshold shallower than this warns the user.</span>
+<span class="n">MIN_DEEP_THRESHOLD</span> <span class="o">=</span> <span class="mi">300</span>
+
+<span class="c1"># Full-record diagnostic panel is downsampled to this many points.</span>
+<span class="n">MAX_DIAGNOSTIC_POINTS</span> <span class="o">=</span> <span class="mi">10_000</span>
+
+
+<span class="nd">@register_step</span>
+<div class="viewcode-block" id="deep_correction">
+<a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/deep_correction/index.html#pelagos_py.steps.processing.deep_correction.deep_correction">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">deep_correction</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Subtract a deep dark offset from a profile variable.</span>
+
+<span class="sd">    Estimates a roughly-constant baseline (the *dark value*) from the deepest</span>
+<span class="sd">    measurements and subtracts it from the whole record, writing the result to</span>
+<span class="sd">    an ``_ADJUSTED`` companion variable. Written for chlorophyll but works for</span>
+<span class="sd">    any variable with a deep, signal-free region.</span>
+
+<span class="sd">    The dark value is estimated as follows:</span>
+
+<span class="sd">    1. Find profiles whose ``depth_var`` reaches past ``depth_threshold``</span>
+<span class="sd">       (deeper = larger, e.g. ``PRES &gt; 950``) that also carry enough data:</span>
+<span class="sd">       at least ``min_profile_points`` finite points overall and</span>
+<span class="sd">       ``min_valid_points`` below the threshold. Take the first ``n_profiles``</span>
+<span class="sd">       that qualify.</span>
+<span class="sd">    2. Smooth each profile with a ``smoothing_window``-point rolling median.</span>
+<span class="sd">    3. Keep the deep points (below the threshold) that are finite and below</span>
+<span class="sd">       ``max_valid_value`` (guards against non-dark readings).</span>
+<span class="sd">    4. Take each profile's minimum deep value, provided it has at least</span>
+<span class="sd">       ``min_valid_points`` valid deep points.</span>
+<span class="sd">    5. Use the median of those per-profile minima as the dark value.</span>
+
+<span class="sd">    A ``dark_value`` supplied via config skips this estimation and is subtracted</span>
+<span class="sd">    directly. Samples whose flags fall in ``calculation_flag_filter`` are left</span>
+<span class="sd">    out of the estimate but still corrected — they just cannot bias it.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    A minimal config only needs the variable to correct; every other parameter</span>
+<span class="sd">    has a sensible default::</span>
+
+<span class="sd">        - name: "Deep Correction"</span>
+<span class="sd">          parameters:</span>
+<span class="sd">            apply_to: "CHLA"</span>
+<span class="sd">          diagnostics: true</span>
+<span class="sd">    """</span>
+
+    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Deep Correction"</span>
+    <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span>
+    <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">variable_parameters</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"apply_to"</span><span class="p">,</span> <span class="s2">"depth_var"</span><span class="p">]</span>
+    <span class="n">uses_data_subset</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"apply_to"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="s2">"CHLA"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Name of the variable to apply the correction to."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"dark_value"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Dark offset to subtract; if null it is computed from the data."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"depth_var"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="s2">"PRES"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Vertical-coordinate variable used to find deep data (deeper = larger)."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"depth_threshold"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="mi">950</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Only data where depth_var exceeds this is used to compute the dark value."</span><span class="p">,</span>
+            <span class="s2">"unit"</span><span class="p">:</span> <span class="s2">"dbar"</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"n_profiles"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Number of deep profiles (in order of occurrence) to use."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"smoothing_window"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Rolling-median window (points) applied along each profile before sampling."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"max_valid_value"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Deep values at or above this are ignored (guards against non-dark readings)."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"min_profile_points"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"A profile must have at least this many finite points overall to be selected."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"min_valid_points"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"A profile must have at least this many valid deep points to be selected and contribute."</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
+
+        <span class="c1"># Resolve the input/output variable names (OG1 _ADJUSTED convention).</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_as</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolve_variables</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">compute_dark_value</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"Dark correction value for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dark_value</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">apply_dark_correction</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct_data</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_qc</span><span class="p">()</span>
+
+        <span class="c1"># Adding an _ADJUSTED variable needs its own QC.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_as</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">({</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">output_as</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">:</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]})</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">resolve_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># OG1 convention: prefer an existing _ADJUSTED variable as input, else</span>
+        <span class="c1"># produce one.</span>
+        <span class="n">apply_to</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span>
+        <span class="k">if</span> <span class="n">apply_to</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] The variable </span><span class="si">{</span><span class="n">apply_to</span><span class="si">}</span><span class="s2"> does not exist in the data."</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">apply_to</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">"_ADJUSTED"</span><span class="p">)</span> <span class="ow">and</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">apply_to</span><span class="si">}</span><span class="s2">_ADJUSTED"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"User requested processing on </span><span class="si">{</span><span class="n">apply_to</span><span class="si">}</span><span class="s2"> but </span><span class="si">{</span><span class="n">apply_to</span><span class="si">}</span><span class="s2">_ADJUSTED "</span>
+                <span class="sa">f</span><span class="s2">"already exists. Using </span><span class="si">{</span><span class="n">apply_to</span><span class="si">}</span><span class="s2">_ADJUSTED..."</span><span class="p">,</span>
+                <span class="n">console</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">apply_to</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">apply_to</span><span class="si">}</span><span class="s2">_ADJUSTED"</span>
+
+        <span class="n">output_as</span> <span class="o">=</span> <span class="n">apply_to</span> <span class="k">if</span> <span class="n">apply_to</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">"_ADJUSTED"</span><span class="p">)</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">apply_to</span><span class="si">}</span><span class="s2">_ADJUSTED"</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Processing </span><span class="si">{</span><span class="n">apply_to</span><span class="si">}</span><span class="s2">..."</span><span class="p">,</span> <span class="n">console</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">apply_to</span><span class="p">,</span> <span class="n">output_as</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">compute_dark_value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Per-profile diagnostics for plotting; empty when dark_value is given.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_profile_diagnostics</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dark_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Using dark value from config: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dark_value</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">console</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">var</span><span class="p">,</span> <span class="n">depth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth_var</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"Computing dark value from the first </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n_profiles</span><span class="si">}</span><span class="s2"> profiles "</span>
+            <span class="sa">f</span><span class="s2">"reaching </span><span class="si">{</span><span class="n">depth</span><span class="si">}</span><span class="s2"> &gt; </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">depth_threshold</span><span class="si">}</span><span class="s2">."</span><span class="p">,</span>
+            <span class="n">console</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth_threshold</span> <span class="o">&lt;</span> <span class="n">MIN_DEEP_THRESHOLD</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"depth_threshold (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">depth_threshold</span><span class="si">}</span><span class="s2">) is shallower than "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">MIN_DEEP_THRESHOLD</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">depth</span><span class="si">}</span><span class="s2">; this may not be deep enough for a "</span>
+                <span class="s2">"signal-free dark region and could bias the dark value."</span>
+            <span class="p">)</span>
+
+        <span class="n">missing_vars</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">var</span><span class="p">}</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">missing_vars</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">missing_vars</span><span class="si">}</span><span class="s2"> could not be found in the data."</span>
+            <span class="p">)</span>
+
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">var</span><span class="p">]]</span><span class="o">.</span><span class="n">to_pandas</span><span class="p">()</span>
+
+        <span class="c1"># Flagged samples must not inform the dark value, but are still corrected</span>
+        <span class="c1"># by it, so drop them here rather than from self.data.</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="o">~</span><span class="bp">self</span><span class="o">.</span><span class="n">calculation_mask</span><span class="p">([</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">var</span><span class="p">]),</span> <span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">,</span> <span class="n">depth</span><span class="p">])</span>
+
+        <span class="c1"># Profiles reaching past the threshold, in order of occurrence; coverage</span>
+        <span class="c1"># is checked below before a candidate spends an n_profiles slot.</span>
+        <span class="n">deep_reach</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">)[</span><span class="n">depth</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+        <span class="n">candidates</span> <span class="o">=</span> <span class="n">deep_reach</span><span class="p">[</span><span class="n">deep_reach</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth_threshold</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">candidates</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">halt</span><span class="p">(</span>
+                <span class="s2">"No profiles reach past the depth threshold. "</span>
+                <span class="s2">"Try adjusting 'depth_threshold' or 'depth_var'."</span>
+            <span class="p">)</span>
+
+        <span class="n">minima</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">skipped</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">profile_number</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_profile_diagnostics</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_profiles</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="n">profile</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span> <span class="o">==</span> <span class="n">profile_number</span><span class="p">]</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">depth</span><span class="p">)</span>
+
+            <span class="c1"># Skip sparse/empty deep profiles.</span>
+            <span class="n">n_points</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">profile</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">notna</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+            <span class="n">below</span> <span class="o">=</span> <span class="n">profile</span><span class="p">[</span><span class="n">profile</span><span class="p">[</span><span class="n">depth</span><span class="p">]</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth_threshold</span><span class="p">]</span>
+            <span class="n">n_deep_points</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">below</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">notna</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+            <span class="k">if</span> <span class="n">n_points</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_profile_points</span> <span class="ow">or</span> <span class="n">n_deep_points</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_valid_points</span><span class="p">:</span>
+                <span class="n">skipped</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">profile_number</span><span class="p">))</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># Smooth along the full profile, then sample the deep region.</span>
+            <span class="n">smoothed</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">profile</span><span class="p">[</span><span class="n">var</span><span class="p">]</span>
+                <span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">smoothing_window</span><span class="p">,</span> <span class="n">min_periods</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">median</span><span class="p">()</span>
+            <span class="p">)</span>
+            <span class="n">deep_mask</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="p">(</span><span class="n">profile</span><span class="p">[</span><span class="n">depth</span><span class="p">]</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth_threshold</span><span class="p">)</span>
+                <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">smoothed</span><span class="p">)</span>
+                <span class="o">&amp;</span> <span class="p">(</span><span class="n">smoothed</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_valid_value</span><span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="n">record</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">"depth"</span><span class="p">:</span> <span class="n">profile</span><span class="p">[</span><span class="n">depth</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span>
+                <span class="s2">"raw"</span><span class="p">:</span> <span class="n">profile</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span>
+                <span class="s2">"smoothed"</span><span class="p">:</span> <span class="n">smoothed</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span>
+                <span class="s2">"deep_mask"</span><span class="p">:</span> <span class="n">deep_mask</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span>
+            <span class="p">}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_profile_diagnostics</span><span class="p">[</span><span class="n">profile_number</span><span class="p">]</span> <span class="o">=</span> <span class="n">record</span>
+
+            <span class="n">deep_vals</span> <span class="o">=</span> <span class="n">smoothed</span><span class="p">[</span><span class="n">deep_mask</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">deep_vals</span><span class="o">.</span><span class="n">notnull</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_valid_points</span><span class="p">:</span>
+                <span class="n">idxmin</span> <span class="o">=</span> <span class="n">deep_vals</span><span class="o">.</span><span class="n">idxmin</span><span class="p">()</span>
+                <span class="n">record</span><span class="p">[</span><span class="s2">"min_value"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">deep_vals</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idxmin</span><span class="p">])</span>
+                <span class="n">record</span><span class="p">[</span><span class="s2">"min_depth"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">profile</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idxmin</span><span class="p">,</span> <span class="n">depth</span><span class="p">])</span>
+                <span class="n">minima</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s2">"min_value"</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="n">skipped</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Skipped </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">skipped</span><span class="p">)</span><span class="si">}</span><span class="s2"> deep profile(s) with too few points "</span>
+                <span class="sa">f</span><span class="s2">"(need &gt;= </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">min_profile_points</span><span class="si">}</span><span class="s2"> total, "</span>
+                <span class="sa">f</span><span class="s2">"&gt;= </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">min_valid_points</span><span class="si">}</span><span class="s2"> below </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">depth_threshold</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">depth</span><span class="si">}</span><span class="s2">): "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">skipped</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">console</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">minima</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] No profiles had at least </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">min_valid_points</span><span class="si">}</span><span class="s2"> "</span>
+                <span class="s2">"valid deep points. Try adjusting the parameters."</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dark_value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="n">minima</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"Computed dark value: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dark_value</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2"> "</span>
+            <span class="sa">f</span><span class="s2">"(median of </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">minima</span><span class="p">)</span><span class="si">}</span><span class="s2"> profile minimums)"</span><span class="p">,</span>
+            <span class="n">console</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"Min values range: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">minima</span><span class="p">)</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">minima</span><span class="p">)</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="n">console</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">apply_dark_correction</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">output_as</span><span class="p">]</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">dark_value</span><span class="p">,</span>
+            <span class="n">dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="p">]</span><span class="o">.</span><span class="n">dims</span><span class="p">,</span>
+            <span class="n">coords</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="p">]</span><span class="o">.</span><span class="n">coords</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="p">],</span> <span class="s2">"attrs"</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">output_as</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">output_as</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span>
+            <span class="s2">"comment"</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="si">}</span><span class="s2"> with dark value correction (dark_value=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dark_value</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">)"</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">output_as</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"dark_value"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dark_value</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Two-panel figure: deep profiles used for the estimate (left) and the</span>
+        <span class="c1"># whole record raw vs corrected (right).</span>
+        <span class="n">mpl</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">"tkagg"</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_profile_diagnostics</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+                <span class="s2">"No profile diagnostics to plot (dark value was supplied via config)."</span>
+            <span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax_prof</span><span class="p">,</span> <span class="n">ax_corr</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span>
+            <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mf">5.5</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">150</span><span class="p">,</span> <span class="n">sharey</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+
+        <span class="n">cmap</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">viridis</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_profile_diagnostics</span><span class="p">)</span>
+        <span class="n">colours</span> <span class="o">=</span> <span class="p">[</span><span class="n">cmap</span><span class="p">(</span><span class="n">i</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span>
+
+        <span class="c1"># --- Left: the deep profiles used, so biofouled/invalid ones stand out.</span>
+        <span class="k">for</span> <span class="n">colour</span><span class="p">,</span> <span class="p">(</span><span class="n">profile_number</span><span class="p">,</span> <span class="n">rec</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+            <span class="n">colours</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_profile_diagnostics</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">):</span>
+            <span class="n">ax_prof</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">rec</span><span class="p">[</span><span class="s2">"raw"</span><span class="p">],</span> <span class="n">rec</span><span class="p">[</span><span class="s2">"depth"</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="n">colour</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+            <span class="n">ax_prof</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                <span class="n">rec</span><span class="p">[</span><span class="s2">"smoothed"</span><span class="p">],</span>
+                <span class="n">rec</span><span class="p">[</span><span class="s2">"depth"</span><span class="p">],</span>
+                <span class="n">c</span><span class="o">=</span><span class="n">colour</span><span class="p">,</span>
+                <span class="n">lw</span><span class="o">=</span><span class="mf">1.4</span><span class="p">,</span>
+                <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Prof. </span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">profile_number</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="s2">"min_value"</span> <span class="ow">in</span> <span class="n">rec</span><span class="p">:</span>
+                <span class="n">ax_prof</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+                    <span class="n">rec</span><span class="p">[</span><span class="s2">"min_value"</span><span class="p">],</span>
+                    <span class="n">rec</span><span class="p">[</span><span class="s2">"min_depth"</span><span class="p">],</span>
+                    <span class="n">c</span><span class="o">=</span><span class="p">[</span><span class="n">colour</span><span class="p">],</span>
+                    <span class="n">edgecolors</span><span class="o">=</span><span class="s2">"k"</span><span class="p">,</span>
+                    <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                    <span class="n">s</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="n">ax_prof</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">depth_threshold</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">"--"</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">"grey"</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Depth threshold"</span>
+        <span class="p">)</span>
+        <span class="n">ax_prof</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">":"</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">"0.4"</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Zero"</span><span class="p">)</span>
+        <span class="n">ax_prof</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dark_value</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">"--"</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">"r"</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Dark value (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dark_value</span><span class="si">:</span><span class="s2">.4g</span><span class="si">}</span><span class="s2">)"</span>
+        <span class="p">)</span>
+        <span class="n">ax_prof</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>  <span class="c1"># deeper (larger depth_var) at the bottom</span>
+        <span class="n">ax_prof</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+        <span class="n">ax_prof</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">depth_var</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+        <span class="n">ax_prof</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"Deep profiles used for dark estimate"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+        <span class="n">ax_prof</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">labelsize</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+        <span class="n">ax_prof</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">"upper left"</span><span class="p">,</span> <span class="n">framealpha</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_deep_inset</span><span class="p">(</span><span class="n">ax_prof</span><span class="p">,</span> <span class="n">colours</span><span class="p">)</span>
+
+        <span class="c1"># --- Right: the whole record, raw (grey) vs corrected (coloured).</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_plot_full_record</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax_corr</span><span class="p">)</span>
+
+        <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Deep Correction — </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">11</span><span class="p">)</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_plot_full_record</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fig</span><span class="p">,</span> <span class="n">ax_corr</span><span class="p">):</span>
+        <span class="c1"># Whole record vs depth: raw in grey, corrected coloured; downsampled.</span>
+        <span class="n">depth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">depth_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+        <span class="n">raw</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+        <span class="n">corr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">output_as</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+
+        <span class="n">finite</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">depth</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">corr</span><span class="p">)</span>
+        <span class="n">depth</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">corr</span> <span class="o">=</span> <span class="n">depth</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span> <span class="n">raw</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span> <span class="n">corr</span><span class="p">[</span><span class="n">finite</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">depth</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="n">MAX_DIAGNOSTIC_POINTS</span><span class="p">:</span>
+            <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">keep</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">depth</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">MAX_DIAGNOSTIC_POINTS</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">depth</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">corr</span> <span class="o">=</span> <span class="n">depth</span><span class="p">[</span><span class="n">keep</span><span class="p">],</span> <span class="n">raw</span><span class="p">[</span><span class="n">keep</span><span class="p">],</span> <span class="n">corr</span><span class="p">[</span><span class="n">keep</span><span class="p">]</span>
+            <span class="n">n_label</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">MAX_DIAGNOSTIC_POINTS</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">finite</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> pts"</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">n_label</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">depth</span><span class="o">.</span><span class="n">size</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> pts"</span>
+
+        <span class="n">ax_corr</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">"0.7"</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Raw (</span><span class="si">{</span><span class="n">n_label</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+        <span class="n">cmap</span> <span class="o">=</span> <span class="n">palettes</span><span class="o">.</span><span class="n">cmap_for_variable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_as</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">)</span>
+        <span class="n">sc</span> <span class="o">=</span> <span class="n">ax_corr</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+            <span class="n">corr</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">corr</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Corrected"</span>
+        <span class="p">)</span>
+        <span class="n">ax_corr</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">"--"</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">"k"</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Corrected baseline"</span><span class="p">)</span>
+
+        <span class="n">cbar</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax_corr</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mf">0.02</span><span class="p">)</span>
+        <span class="n">cbar</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_as</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+        <span class="n">cbar</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">labelsize</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
+
+        <span class="n">ax_corr</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_as</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+        <span class="n">ax_corr</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"Full record: raw (grey) vs corrected"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span>
+        <span class="n">ax_corr</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">labelsize</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+        <span class="n">ax_corr</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">"upper right"</span><span class="p">,</span> <span class="n">framealpha</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_deep_inset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax_prof</span><span class="p">,</span> <span class="n">colours</span><span class="p">):</span>
+        <span class="c1"># Inset zoomed onto the deep (below-threshold) points driving the estimate.</span>
+        <span class="n">axins</span> <span class="o">=</span> <span class="n">ax_prof</span><span class="o">.</span><span class="n">inset_axes</span><span class="p">([</span><span class="mf">0.56</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">])</span>
+
+        <span class="n">deep_depths</span><span class="p">,</span> <span class="n">deep_vals</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">colour</span><span class="p">,</span> <span class="n">rec</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">colours</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_profile_diagnostics</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="n">rec</span><span class="p">[</span><span class="s2">"deep_mask"</span><span class="p">]</span>
+            <span class="n">depth</span> <span class="o">=</span> <span class="n">rec</span><span class="p">[</span><span class="s2">"depth"</span><span class="p">][</span><span class="n">mask</span><span class="p">]</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="n">rec</span><span class="p">[</span><span class="s2">"smoothed"</span><span class="p">][</span><span class="n">mask</span><span class="p">]</span>
+            <span class="n">axins</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">colour</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">"o"</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+            <span class="n">deep_depths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">depth</span><span class="p">)</span>
+            <span class="n">deep_vals</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s2">"min_value"</span> <span class="ow">in</span> <span class="n">rec</span><span class="p">:</span>
+                <span class="n">axins</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+                    <span class="n">rec</span><span class="p">[</span><span class="s2">"min_value"</span><span class="p">],</span>
+                    <span class="n">rec</span><span class="p">[</span><span class="s2">"min_depth"</span><span class="p">],</span>
+                    <span class="n">c</span><span class="o">=</span><span class="p">[</span><span class="n">colour</span><span class="p">],</span>
+                    <span class="n">edgecolors</span><span class="o">=</span><span class="s2">"k"</span><span class="p">,</span>
+                    <span class="n">zorder</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                    <span class="n">s</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span>
+                <span class="p">)</span>
+        <span class="n">axins</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dark_value</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">"--"</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">"r"</span><span class="p">)</span>
+
+        <span class="c1"># Frame on the deep points plus the dark value, with a 10% margin.</span>
+        <span class="n">depth_cat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">deep_depths</span><span class="p">)</span> <span class="k">if</span> <span class="n">deep_depths</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+        <span class="n">vals_cat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">deep_vals</span><span class="p">)</span> <span class="k">if</span> <span class="n">deep_vals</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span>
+        <span class="k">if</span> <span class="n">depth_cat</span><span class="o">.</span><span class="n">size</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">vals_cat</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="n">xlo</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">vals_cat</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">dark_value</span><span class="p">)</span>
+            <span class="n">xhi</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">vals_cat</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">dark_value</span><span class="p">)</span>
+            <span class="n">dlo</span><span class="p">,</span> <span class="n">dhi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">depth_cat</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">depth_cat</span><span class="p">)</span>
+            <span class="n">xlo</span><span class="p">,</span> <span class="n">xhi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pad_range</span><span class="p">(</span><span class="n">xlo</span><span class="p">,</span> <span class="n">xhi</span><span class="p">)</span>
+            <span class="n">dlo</span><span class="p">,</span> <span class="n">dhi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pad_range</span><span class="p">(</span><span class="n">dlo</span><span class="p">,</span> <span class="n">dhi</span><span class="p">)</span>
+            <span class="n">axins</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">xlo</span><span class="p">,</span> <span class="n">xhi</span><span class="p">)</span>
+            <span class="n">axins</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">dhi</span><span class="p">,</span> <span class="n">dlo</span><span class="p">)</span>  <span class="c1"># inverted: deeper at the bottom</span>
+
+        <span class="n">axins</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">labelsize</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
+        <span class="n">axins</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"Below threshold (zoom)"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_pad_range</span><span class="p">(</span><span class="n">lo</span><span class="p">,</span> <span class="n">hi</span><span class="p">,</span> <span class="n">frac</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+        <span class="c1"># Widen a [lo, hi] range by a fraction of its span on each side.</span>
+        <span class="n">span</span> <span class="o">=</span> <span class="n">hi</span> <span class="o">-</span> <span class="n">lo</span>
+        <span class="n">pad</span> <span class="o">=</span> <span class="p">(</span><span class="n">span</span> <span class="k">if</span> <span class="n">span</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="nb">abs</span><span class="p">(</span><span class="n">hi</span><span class="p">)</span> <span class="ow">or</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">frac</span>
+        <span class="k">return</span> <span class="n">lo</span> <span class="o">-</span> <span class="n">pad</span><span class="p">,</span> <span class="n">hi</span> <span class="o">+</span> <span class="n">pad</span></div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5"></script>
+<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, National Oceanography Centre.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.19.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

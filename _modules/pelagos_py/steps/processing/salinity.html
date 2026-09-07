@@ -399,31 +399,30 @@
 <span class="c1">#</span>
 <span class="c1"># Copyright 2025-2026 National Oceanography Centre and The Contributors</span>
 <span class="c1">#</span>
-<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the "License");</span>
 <span class="c1"># you may not use this file except in compliance with the License.</span>
 <span class="c1"># You may obtain a copy of the License at</span>
 <span class="c1">#</span>
 <span class="c1">#    http://www.apache.org/licenses/LICENSE-2.0</span>
 <span class="c1">#</span>
 <span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
-<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># distributed under the License is distributed on an "AS IS" BASIS,</span>
 <span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
 
-<span class="sd">&quot;&quot;&quot;Pipeline step for adjusting and deriving salinity from conductivity, temperature and pressure.&quot;&quot;&quot;</span>
+<span class="sd">"""Pipeline step for adjusting and deriving salinity from conductivity, temperature and pressure."""</span>
 
 <span class="c1">#### Mandatory imports ####</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.qc_handling</span><span class="w"> </span><span class="kn">import</span> <span class="n">QCHandlingMixin</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pelagos_py.utils.diagnostics</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">diag</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.processing_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">cndc_scale_factor</span>
 
 <span class="c1">#### Custom imports ####</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.lines</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mlines</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mpl</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy</span><span class="w"> </span><span class="kn">import</span> <span class="n">interpolate</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">tqdm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -431,22 +430,22 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">running_average_nan</span><span class="p">(</span><span class="n">arr</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">window_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Symmetric running-average mean that ignores NaNs. ``window_size`` must be odd.</span>
 
 <span class="sd">    :meta private:</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">if</span> <span class="n">window_size</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Window size must be odd for symmetry.&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Window size must be odd for symmetry."</span><span class="p">)</span>
 
     <span class="n">pad_size</span> <span class="o">=</span> <span class="n">window_size</span> <span class="o">//</span> <span class="mi">2</span>  <span class="c1"># Symmetric padding</span>
-    <span class="n">padded</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">pad_size</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;reflect&quot;</span><span class="p">)</span>  <span class="c1"># Edge handling</span>
+    <span class="n">padded</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">pad_size</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"reflect"</span><span class="p">)</span>  <span class="c1"># Edge handling</span>
 
     <span class="n">kernel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">window_size</span><span class="p">)</span>
     <span class="c1"># Compute weighted sums while ignoring NaNs</span>
-    <span class="n">sum_vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">padded</span><span class="p">),</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;valid&quot;</span><span class="p">)</span>
-    <span class="n">count_vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">padded</span><span class="p">),</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;valid&quot;</span><span class="p">)</span>
+    <span class="n">sum_vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">padded</span><span class="p">),</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"valid"</span><span class="p">)</span>
+    <span class="n">count_vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">padded</span><span class="p">),</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"valid"</span><span class="p">)</span>
 
     <span class="c1"># Compute the moving average, handling NaNs properly and preventing uninitialised memory warnings</span>
     <span class="n">avg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span>
@@ -462,7 +461,7 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">compute_optimal_lag</span><span class="p">(</span>
     <span class="n">profile_data</span><span class="p">,</span> <span class="n">filter_window_size</span><span class="p">,</span> <span class="n">time_col</span><span class="p">,</span> <span class="n">return_cost_data</span><span class="o">=</span><span class="kc">False</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Find the optimal conductivity-temperature time lag (seconds) for one profile.</span>
 
 <span class="sd">    Trials lags from -2 s to +2 s in 0.1 s steps and returns the lag that minimises</span>
@@ -472,11 +471,11 @@
 <span class="sd">    :meth:`AdjustSalinity.correct_ct_lag` for the full method and references.</span>
 
 <span class="sd">    :meta private:</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="c1"># remove any rows where conductivity is bad (nan)</span>
-    <span class="n">profile_data</span> <span class="o">=</span> <span class="n">profile_data</span><span class="p">[[</span><span class="n">time_col</span><span class="p">,</span> <span class="s2">&quot;CNDC&quot;</span><span class="p">,</span> <span class="s2">&quot;PRES&quot;</span><span class="p">,</span> <span class="s2">&quot;TEMP&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span>
-        <span class="n">dim</span><span class="o">=</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;CNDC&quot;</span><span class="p">]</span>
+    <span class="n">profile_data</span> <span class="o">=</span> <span class="n">profile_data</span><span class="p">[[</span><span class="n">time_col</span><span class="p">,</span> <span class="s2">"CNDC"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">,</span> <span class="s2">"TEMP"</span><span class="p">]]</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span>
+        <span class="n">dim</span><span class="o">=</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">,</span> <span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s2">"CNDC"</span><span class="p">]</span>
     <span class="p">)</span>
 
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">profile_data</span><span class="p">[</span><span class="n">time_col</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
@@ -486,12 +485,15 @@
 
     <span class="c1"># Find the elapsed time in seconds from the start of the profile</span>
     <span class="n">t0</span> <span class="o">=</span> <span class="n">profile_data</span><span class="p">[</span><span class="n">time_col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">profile_data</span><span class="p">[</span><span class="s2">&quot;ELAPSED_TIME[s]&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">profile_data</span><span class="p">[</span><span class="n">time_col</span><span class="p">]</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+    <span class="n">profile_data</span><span class="p">[</span><span class="s2">"ELAPSED_TIME[s]"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">profile_data</span><span class="p">[</span><span class="n">time_col</span><span class="p">]</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+
+    <span class="c1"># gsw wants conductivity in mS/cm; scale from the units attribute (S/m assumed if unset)</span>
+    <span class="n">cndc_factor</span> <span class="o">=</span> <span class="n">cndc_scale_factor</span><span class="p">(</span><span class="n">profile_data</span><span class="p">[</span><span class="s2">"CNDC"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">))</span>
 
     <span class="c1"># Creates a callable function that predicts what CNDC would be at any given time</span>
     <span class="n">conductivity_from_time</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span>
-        <span class="n">profile_data</span><span class="p">[</span><span class="s2">&quot;ELAPSED_TIME[s]&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-        <span class="n">profile_data</span><span class="p">[</span><span class="s2">&quot;CNDC&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+        <span class="n">profile_data</span><span class="p">[</span><span class="s2">"ELAPSED_TIME[s]"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+        <span class="n">profile_data</span><span class="p">[</span><span class="s2">"CNDC"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
         <span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span>
 
@@ -504,25 +506,20 @@
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">lag</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">time_lags</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()):</span>
         <span class="c1"># Apply the time shift</span>
         <span class="n">time_shifted_conductivity</span> <span class="o">=</span> <span class="n">conductivity_from_time</span><span class="p">(</span>
-            <span class="n">profile_data</span><span class="p">[</span><span class="s2">&quot;ELAPSED_TIME[s]&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">lag</span>
-        <span class="p">)</span>
-
-        <span class="c1"># Scale if necessary (handles conductivity supplied in S/m rather than mS/cm)</span>
-        <span class="n">cndc_scaled</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">time_shifted_conductivity</span> <span class="o">*</span> <span class="mi">10</span>
-            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">time_shifted_conductivity</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">10</span>
-            <span class="k">else</span> <span class="n">time_shifted_conductivity</span>
+            <span class="n">profile_data</span><span class="p">[</span><span class="s2">"ELAPSED_TIME[s]"</span><span class="p">]</span> <span class="o">+</span> <span class="n">lag</span>
         <span class="p">)</span>
 
         <span class="c1"># Derive salinity with the time shifted CNDC (spiking will be minimized when CNDC and TEMP are aligned)</span>
         <span class="n">PSAL</span> <span class="o">=</span> <span class="n">gsw</span><span class="o">.</span><span class="n">conversions</span><span class="o">.</span><span class="n">SP_from_C</span><span class="p">(</span>
-            <span class="n">cndc_scaled</span><span class="p">,</span> <span class="n">profile_data</span><span class="p">[</span><span class="s2">&quot;TEMP&quot;</span><span class="p">],</span> <span class="n">profile_data</span><span class="p">[</span><span class="s2">&quot;PRES&quot;</span><span class="p">]</span>
+            <span class="n">time_shifted_conductivity</span> <span class="o">*</span> <span class="n">cndc_factor</span><span class="p">,</span>
+            <span class="n">profile_data</span><span class="p">[</span><span class="s2">"TEMP"</span><span class="p">],</span>
+            <span class="n">profile_data</span><span class="p">[</span><span class="s2">"PRES"</span><span class="p">],</span>
         <span class="p">)</span>
 
         <span class="c1"># Smooth the salinity profile (to remove spiking)</span>
         <span class="n">PSAL_Smooth</span> <span class="o">=</span> <span class="n">running_average_nan</span><span class="p">(</span><span class="n">PSAL</span><span class="p">,</span> <span class="n">filter_window_size</span><span class="p">)</span>
 
-        <span class="c1"># Subtracting the raw and smoothed salinity gives an indication of &quot;spikiness&quot;.</span>
+        <span class="c1"># Subtracting the raw and smoothed salinity gives an indication of "spikiness".</span>
         <span class="n">PSAL_Diff</span> <span class="o">=</span> <span class="n">PSAL</span> <span class="o">-</span> <span class="n">PSAL_Smooth</span>
 
         <span class="c1"># More spiky data will have higher standard deviation - which is used to score the effectiveness of the applied lag</span>
@@ -542,13 +539,13 @@
         <span class="n">p_zero</span><span class="p">,</span> <span class="n">p_smooth_zero</span> <span class="o">=</span> <span class="n">saved_psal</span><span class="p">[</span><span class="n">zero_lag</span><span class="p">]</span>
 
         <span class="n">cost_data</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;lags&quot;</span><span class="p">:</span> <span class="n">time_lags</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
-            <span class="s2">&quot;costs&quot;</span><span class="p">:</span> <span class="n">time_lags</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
-            <span class="s2">&quot;best_lag&quot;</span><span class="p">:</span> <span class="n">best_lag</span><span class="p">,</span>
-            <span class="s2">&quot;zero_lag&quot;</span><span class="p">:</span> <span class="n">zero_lag</span><span class="p">,</span>
-            <span class="s2">&quot;elapsed_time&quot;</span><span class="p">:</span> <span class="n">profile_data</span><span class="p">[</span><span class="s2">&quot;ELAPSED_TIME[s]&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-            <span class="s2">&quot;resid_zero&quot;</span><span class="p">:</span> <span class="n">p_zero</span> <span class="o">-</span> <span class="n">p_smooth_zero</span><span class="p">,</span>
-            <span class="s2">&quot;resid_best&quot;</span><span class="p">:</span> <span class="n">p_best</span> <span class="o">-</span> <span class="n">p_smooth_best</span><span class="p">,</span>
+            <span class="s2">"lags"</span><span class="p">:</span> <span class="n">time_lags</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="s2">"costs"</span><span class="p">:</span> <span class="n">time_lags</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
+            <span class="s2">"best_lag"</span><span class="p">:</span> <span class="n">best_lag</span><span class="p">,</span>
+            <span class="s2">"zero_lag"</span><span class="p">:</span> <span class="n">zero_lag</span><span class="p">,</span>
+            <span class="s2">"elapsed_time"</span><span class="p">:</span> <span class="n">profile_data</span><span class="p">[</span><span class="s2">"ELAPSED_TIME[s]"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="s2">"resid_zero"</span><span class="p">:</span> <span class="n">p_zero</span> <span class="o">-</span> <span class="n">p_smooth_zero</span><span class="p">,</span>
+            <span class="s2">"resid_best"</span><span class="p">:</span> <span class="n">p_best</span> <span class="o">-</span> <span class="n">p_smooth_best</span><span class="p">,</span>
         <span class="p">}</span>
         <span class="k">return</span> <span class="n">best_lag</span><span class="p">,</span> <span class="n">cost_data</span>
 
@@ -559,7 +556,7 @@
 <div class="viewcode-block" id="AdjustSalinity">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/salinity/index.html#pelagos_py.steps.processing.salinity.AdjustSalinity">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">AdjustSalinity</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Corrects conductivity- and temperature-related sensor errors so that salinity</span>
 <span class="sd">    can be derived cleanly from a glider CTD.</span>
 
@@ -581,7 +578,11 @@
 <span class="sd">    Morison et al. (1994) or Garau et al. (2011) [2]_. They are appropriate for a</span>
 <span class="sd">    pumped Sea-Bird CT sail at the conductivity-cell flow rate reported by</span>
 <span class="sd">    Woo (2019); unpumped CTDs would require the flow rate to be derived from the</span>
-<span class="sd">    glider&#39;s velocity through the water (e.g. from pitch or a flight model).</span>
+<span class="sd">    glider's velocity through the water (e.g. from pitch or a flight model).</span>
+
+<span class="sd">    Samples flagged in ``calculation_flag_filter`` (by default probably-bad (3),</span>
+<span class="sd">    bad (4), missing (9)) neither inform the lag estimate nor anchor the correction</span>
+<span class="sd">    interpolants, but both corrections are still evaluated at every sample.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -596,14 +597,14 @@
 <span class="sd">    .. code-block:: yaml</span>
 
 <span class="sd">        steps:</span>
-<span class="sd">          - name: &quot;ADJ: Salinity&quot;</span>
+<span class="sd">          - name: "ADJ: Salinity"</span>
 <span class="sd">            parameters:</span>
 <span class="sd">              filter_window_size: 21</span>
 <span class="sd">            diagnostics: false</span>
 
 <span class="sd">    References</span>
 <span class="sd">    ----------</span>
-<span class="sd">    .. [1] Morison, J., Andersen, R., Larson, N., D&#39;Asaro, E., &amp; Boyd, T. (1994).</span>
+<span class="sd">    .. [1] Morison, J., Andersen, R., Larson, N., D'Asaro, E., &amp; Boyd, T. (1994).</span>
 <span class="sd">       The correction for thermal-lag effects in Sea-Bird CTD data. *Journal of</span>
 <span class="sd">       Atmospheric and Oceanic Technology*, 11(4), 1151-1164.</span>
 <span class="sd">    .. [2] Garau, B., Ruiz, S., Zhang, W. G., Pascual, A., Heslop, E., Kerfoot, J.,</span>
@@ -612,35 +613,45 @@
 <span class="sd">    .. [3] Woo, L. M. (2019). Delayed Mode QA/QC Best Practice Manual Version 2.0.</span>
 <span class="sd">       Integrated Marine Observing System. DOI: 10.26198/5c997b5fdc9bd</span>
 <span class="sd">       (http://dx.doi.org/10.26198/5c997b5fdc9bd).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
-    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">&quot;Salinity Adjustment&quot;</span>
-    <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;TIME&quot;</span><span class="p">,</span> <span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">,</span> <span class="s2">&quot;CNDC&quot;</span><span class="p">,</span> <span class="s2">&quot;TEMP&quot;</span><span class="p">,</span> <span class="s2">&quot;PRES&quot;</span><span class="p">]</span>
+    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Salinity Adjustment"</span>
+    <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"TIME"</span><span class="p">,</span> <span class="s2">"PROFILE_NUMBER"</span><span class="p">,</span> <span class="s2">"CNDC"</span><span class="p">,</span> <span class="s2">"TEMP"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">]</span>
     <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1"># Read only if present: TIME_CTD is an optional fallback for TIME (see run());</span>
+    <span class="c1"># PROFILE_DIRECTION/DEPTH are only used to build the diagnostics QC mask.</span>
+    <span class="n">optional_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"TIME_CTD"</span><span class="p">,</span> <span class="s2">"PROFILE_DIRECTION"</span><span class="p">,</span> <span class="s2">"DEPTH"</span><span class="p">]</span>
+    <span class="n">uses_data_subset</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;filter_window_size&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-            <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="mi">21</span><span class="p">,</span>
-            <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Running-average filter size used when computing optimal time lags.&quot;</span><span class="p">,</span>
+        <span class="s2">"filter_window_size"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="mi">21</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Running-average filter size used when computing optimal time lags."</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Running adjustment...&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Running adjustment..."</span><span class="p">)</span>
         <span class="c1"># TODO: TIME_CTD checking</span>
 
         <span class="c1"># Required for plotting later</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data_copy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="c1"># Check if TIME_CTD exists</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">time_col</span> <span class="o">=</span> <span class="s2">&quot;TIME_CTD&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_col</span> <span class="o">=</span> <span class="s2">"TIME_CTD"</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;TIME_CTD cound not be found. Defaulting to TIME instead.&quot;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">time_col</span> <span class="o">=</span> <span class="s2">&quot;TIME&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">"TIME_CTD cound not be found. Defaulting to TIME instead."</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">time_col</span> <span class="o">=</span> <span class="s2">"TIME"</span>
 
         <span class="c1"># Filter user-specified flags</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
+
+        <span class="c1"># Per-input usable masks: flagged samples anchor no interpolant and inform no</span>
+        <span class="c1"># lag estimate; the combined mask drops a sample if any one input is flagged.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_usable_ct</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculation_mask</span><span class="p">([</span><span class="s2">"CNDC"</span><span class="p">,</span> <span class="s2">"TEMP"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_usable_cndc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculation_mask</span><span class="p">([</span><span class="s2">"CNDC"</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_usable_temp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculation_mask</span><span class="p">([</span><span class="s2">"TEMP"</span><span class="p">])</span>
 
         <span class="c1"># Correct conductivity-temperature response time misalignment (C-T Lag)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">correct_ct_lag</span><span class="p">()</span>
@@ -654,13 +665,15 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+        <span class="c1"># self.data is a subset of context["data"] (see QCHandlingMixin); merge</span>
+        <span class="c1"># rather than replace so variables outside the subset aren't dropped.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
 
 <div class="viewcode-block" id="AdjustSalinity.correct_ct_lag">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/salinity/index.html#pelagos_py.steps.processing.salinity.AdjustSalinity.correct_ct_lag">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">correct_ct_lag</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Align conductivity to temperature to suppress salinity spikes.</span>
 
 <span class="sd">        Conductivity and temperature are measured by separate sensors whose physical</span>
@@ -669,7 +682,7 @@
 
 <span class="sd">        For a random sample of up to 100 qualifying profiles, the optimal time shift</span>
 <span class="sd">        of ``CNDC`` relative to ``TEMP`` is found by minimising the standard deviation</span>
-<span class="sd">        of (salinity - running-average salinity) — the approach used by RBR&#39;s</span>
+<span class="sd">        of (salinity - running-average salinity) — the approach used by RBR's</span>
 <span class="sd">        pyRSKtools — rather than comparing downcast against upcast as originally</span>
 <span class="sd">        described by Woo (2019). The median of the per-profile lags is then applied</span>
 <span class="sd">        to ``CNDC`` across the whole dataset.</span>
@@ -682,16 +695,16 @@
 <span class="sd">        -----</span>
 <span class="sd">        Operates in place on ``self.data``. ``self.ct_lag_median`` is stored for the</span>
 <span class="sd">        diagnostics dashboard.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">profile_numbers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">values</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">)</span><span class="o">.</span><span class="n">values</span>
         <span class="p">)</span>
 
         <span class="c1"># Making a place to store intermediate products. Column dimensions: (profile number, time lag)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">per_profile_optimal_lag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">profile_numbers</span><span class="p">),</span> <span class="mi">2</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_ct_cost_data</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="n">prof_arr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">prof_arr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
 
         <span class="c1"># Randomly permute to ensure uniform sampling across the dataset</span>
         <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">permutation</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">profile_numbers</span><span class="p">))</span>
@@ -712,12 +725,7 @@
         <span class="n">qualifying</span> <span class="o">=</span> <span class="p">(</span><span class="n">durations</span> <span class="o">&gt;=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">counts</span> <span class="o">&gt;</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">filter_size</span><span class="p">)</span>
         <span class="n">n_to_process</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">max_profiles</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">qualifying</span><span class="o">.</span><span class="n">sum</span><span class="p">()))</span>
 
-        <span class="n">pbar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span>
-            <span class="n">total</span><span class="o">=</span><span class="n">n_to_process</span><span class="p">,</span>
-            <span class="n">colour</span><span class="o">=</span><span class="s2">&quot;green&quot;</span><span class="p">,</span>
-            <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[97mCT Lag Progress</span><span class="se">\033</span><span class="s2">[0m&quot;</span><span class="p">,</span>
-            <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;prof&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="n">pbar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_progress</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="n">n_to_process</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">"CT Lag"</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">"prof"</span><span class="p">)</span>
 
         <span class="c1"># Loop through all good profiles and store the optimal C-T lag for each.</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">:</span>
@@ -731,13 +739,26 @@
                 <span class="k">continue</span>
 
             <span class="n">profile</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">isel</span><span class="p">(</span><span class="n">N_MEASUREMENTS</span><span class="o">=</span><span class="n">prof_indices</span><span class="p">)</span>
-            <span class="n">valid_times</span> <span class="o">=</span> <span class="n">profile</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_col</span><span class="p">]</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">)</span>
+
+            <span class="c1"># NaN out flagged samples so they do not affect the lag estimate</span>
+            <span class="n">usable</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_usable_ct</span><span class="p">[</span><span class="n">prof_indices</span><span class="p">]</span>
+            <span class="n">profile</span> <span class="o">=</span> <span class="n">profile</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span>
+                <span class="o">**</span><span class="p">{</span>
+                    <span class="n">var</span><span class="p">:</span> <span class="p">(</span>
+                        <span class="n">profile</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">dims</span><span class="p">,</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">usable</span><span class="p">,</span> <span class="n">profile</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+                    <span class="p">)</span>
+                    <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"CNDC"</span><span class="p">,</span> <span class="s2">"TEMP"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">)</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
+
+            <span class="n">valid_times</span> <span class="o">=</span> <span class="n">profile</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_col</span><span class="p">]</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">valid_times</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">duration</span> <span class="o">=</span> <span class="n">valid_times</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">valid_times</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
-                <span class="k">if</span> <span class="n">duration</span> <span class="o">&gt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">timedelta64</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;h&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">valid_times</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">filter_size</span><span class="p">:</span>
-                    <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ct_cost_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">duration</span> <span class="o">&gt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">timedelta64</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">"h"</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">valid_times</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">filter_size</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"diagnostics"</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ct_cost_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                         <span class="n">optimal_lag</span><span class="p">,</span> <span class="n">cost_data</span> <span class="o">=</span> <span class="n">compute_optimal_lag</span><span class="p">(</span>
                             <span class="n">profile</span><span class="p">,</span> <span class="n">filter_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_col</span><span class="p">,</span> <span class="n">return_cost_data</span><span class="o">=</span><span class="kc">True</span>
                         <span class="p">)</span>
@@ -755,10 +776,10 @@
 
         <span class="c1"># Apply shifts</span>
         <span class="n">valid_data_mask</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;CNDC&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">notnull</span><span class="p">()</span> <span class="o">&amp;</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_col</span><span class="p">]</span><span class="o">.</span><span class="n">notnull</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"CNDC"</span><span class="p">]</span><span class="o">.</span><span class="n">notnull</span><span class="p">()</span> <span class="o">&amp;</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_col</span><span class="p">]</span><span class="o">.</span><span class="n">notnull</span><span class="p">()</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">valid_data_mask</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;No valid CNDC data found. Skipping CT lag correction.&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">"No valid CNDC data found. Skipping CT lag correction."</span><span class="p">)</span>
             <span class="k">return</span>
 
         <span class="n">lags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">per_profile_optimal_lag</span><span class="p">[</span>
@@ -766,31 +787,40 @@
         <span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ct_lag_median</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">lags</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lags</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">0.0</span>
 
-        <span class="n">data_subset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_col</span><span class="p">,</span> <span class="s2">&quot;CNDC&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">valid_data_mask</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">data_subset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_col</span><span class="p">,</span> <span class="s2">"CNDC"</span><span class="p">]]</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">valid_data_mask</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="c1"># Find the elapsed time in seconds</span>
         <span class="n">t0</span> <span class="o">=</span> <span class="n">data_subset</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">data_subset</span><span class="p">[</span><span class="s2">&quot;ELAPSED_TIME[s]&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">data_subset</span><span class="p">[</span><span class="s2">"ELAPSED_TIME[s]"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">data_subset</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_col</span><span class="p">]</span> <span class="o">-</span> <span class="n">t0</span>
         <span class="p">)</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
 
+        <span class="c1"># Only usable samples anchor the interpolant; it is still evaluated everywhere</span>
+        <span class="n">anchors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_usable_cndc</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">valid_data_mask</span><span class="p">)[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="k">if</span> <span class="n">anchors</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+                <span class="s2">"Fewer than two usable CNDC samples for the CT lag shift "</span>
+                <span class="sa">f</span><span class="s2">"(flags </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">calculation_flag_filter</span><span class="si">}</span><span class="s2"> excluded). Skipping."</span>
+            <span class="p">)</span>
+            <span class="k">return</span>
+
         <span class="n">CNDC_from_TIME</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span>
-            <span class="n">data_subset</span><span class="p">[</span><span class="s2">&quot;ELAPSED_TIME[s]&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-            <span class="n">data_subset</span><span class="p">[</span><span class="s2">&quot;CNDC&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="n">data_subset</span><span class="p">[</span><span class="s2">"ELAPSED_TIME[s]"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">anchors</span><span class="p">],</span>
+            <span class="n">data_subset</span><span class="p">[</span><span class="s2">"CNDC"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">anchors</span><span class="p">],</span>
             <span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="n">shifted_time</span> <span class="o">=</span> <span class="n">data_subset</span><span class="p">[</span><span class="s2">&quot;ELAPSED_TIME[s]&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ct_lag_median</span>
+        <span class="n">shifted_time</span> <span class="o">=</span> <span class="n">data_subset</span><span class="p">[</span><span class="s2">"ELAPSED_TIME[s]"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ct_lag_median</span>
 
-        <span class="n">data_subset</span><span class="p">[</span><span class="s2">&quot;CNDC&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">=</span> <span class="n">CNDC_from_TIME</span><span class="p">(</span><span class="n">shifted_time</span><span class="p">)</span>
+        <span class="n">data_subset</span><span class="p">[</span><span class="s2">"CNDC"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">=</span> <span class="n">CNDC_from_TIME</span><span class="p">(</span><span class="n">shifted_time</span><span class="p">)</span>
 
         <span class="c1"># Reinsert the time-shifted data back into self.data</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;CNDC&quot;</span><span class="p">][</span><span class="n">valid_data_mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_subset</span><span class="p">[</span><span class="s2">&quot;CNDC&quot;</span><span class="p">]</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"CNDC"</span><span class="p">][</span><span class="n">valid_data_mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_subset</span><span class="p">[</span><span class="s2">"CNDC"</span><span class="p">]</span></div>
 
 
 <div class="viewcode-block" id="AdjustSalinity.correct_thermal_lag">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/salinity/index.html#pelagos_py.steps.processing.salinity.AdjustSalinity.correct_thermal_lag">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">correct_thermal_lag</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Correct the thermal-mass error in temperature.</span>
 
 <span class="sd">        The conductivity cell stores and releases heat, so the temperature of the</span>
@@ -808,53 +838,61 @@
 <span class="sd">        Notes</span>
 <span class="sd">        -----</span>
 <span class="sd">        Operates in place on ``self.data``.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">corrected_temp_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;TEMP&quot;</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+<span class="sd">        """</span>
+        <span class="n">corrected_temp_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"TEMP"</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+        <span class="n">prof_arr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
         <span class="n">profile_numbers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">values</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">)</span><span class="o">.</span><span class="n">values</span>
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_params</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_thermal_scatter_data</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="k">for</span> <span class="n">prof</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span>
-            <span class="n">profile_numbers</span><span class="p">,</span>
-            <span class="n">colour</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span>
-            <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\033</span><span class="s2">[97mThermal Lag Progress</span><span class="se">\033</span><span class="s2">[0m&quot;</span><span class="p">,</span>
-            <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;prof&quot;</span><span class="p">,</span>
-        <span class="p">):</span>
+        <span class="k">for</span> <span class="n">prof</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_progress</span><span class="p">(</span><span class="n">profile_numbers</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">"Thermal Lag"</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">"prof"</span><span class="p">):</span>
 
-            <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">prof</span>
-            <span class="n">nan_mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;TEMP&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span> <span class="o">|</span> <span class="o">~</span><span class="n">mask</span>
-            <span class="n">data_subset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_col</span><span class="p">,</span> <span class="s2">&quot;TEMP&quot;</span><span class="p">,</span> <span class="s2">&quot;PRES&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
-                <span class="o">~</span><span class="n">nan_mask</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span>
+            <span class="c1"># Restrict to this profile's rows first (like correct_ct_lag above),</span>
+            <span class="c1"># so the NaN-mask/where below runs on a per-profile slice instead of</span>
+            <span class="c1"># rebuilding a full-dataset-sized copy on every iteration.</span>
+            <span class="n">prof_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">prof_arr</span> <span class="o">==</span> <span class="n">prof</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">prof_indices</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">profile</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_col</span><span class="p">,</span> <span class="s2">"TEMP"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">]]</span><span class="o">.</span><span class="n">isel</span><span class="p">(</span>
+                <span class="n">N_MEASUREMENTS</span><span class="o">=</span><span class="n">prof_indices</span>
             <span class="p">)</span>
+            <span class="n">nan_mask</span> <span class="o">=</span> <span class="n">profile</span><span class="p">[</span><span class="s2">"TEMP"</span><span class="p">]</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span>
+            <span class="n">data_subset</span> <span class="o">=</span> <span class="n">profile</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="o">~</span><span class="n">nan_mask</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">indices</span> <span class="o">=</span> <span class="n">prof_indices</span><span class="p">[</span><span class="o">~</span><span class="n">nan_mask</span><span class="o">.</span><span class="n">values</span><span class="p">]</span>
 
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data_subset</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_col</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mi">5</span><span class="p">:</span>
                 <span class="k">continue</span>
 
+            <span class="c1"># Only usable samples anchor the interpolant; every sample is still corrected</span>
+            <span class="n">anchors</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_usable_temp</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">anchors</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="k">continue</span>
+
             <span class="c1"># Find the elapsed time in seconds</span>
             <span class="n">t0</span> <span class="o">=</span> <span class="n">data_subset</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="n">data_subset</span><span class="p">[</span><span class="s2">&quot;ELAPSED_TIME[s]&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">data_subset</span><span class="p">[</span><span class="s2">"ELAPSED_TIME[s]"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="n">data_subset</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_col</span><span class="p">]</span> <span class="o">-</span> <span class="n">t0</span>
             <span class="p">)</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
 
             <span class="c1"># Define a function that can estimate TEMP at any time point</span>
             <span class="n">TEMP_from_TIME</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">interp1d</span><span class="p">(</span>
-                <span class="n">data_subset</span><span class="p">[</span><span class="s2">&quot;ELAPSED_TIME[s]&quot;</span><span class="p">],</span>
-                <span class="n">data_subset</span><span class="p">[</span><span class="s2">&quot;TEMP&quot;</span><span class="p">],</span>
+                <span class="n">data_subset</span><span class="p">[</span><span class="s2">"ELAPSED_TIME[s]"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">anchors</span><span class="p">],</span>
+                <span class="n">data_subset</span><span class="p">[</span><span class="s2">"TEMP"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">anchors</span><span class="p">],</span>
                 <span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                <span class="n">fill_value</span><span class="o">=</span><span class="s2">&quot;extrapolate&quot;</span><span class="p">,</span>
+                <span class="n">fill_value</span><span class="o">=</span><span class="s2">"extrapolate"</span><span class="p">,</span>
             <span class="p">)</span>
 
             <span class="c1"># Resample the data onto a 1Hz sample rate timeseries</span>
-            <span class="n">TIME_1Hz_sampling</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">data_subset</span><span class="p">[</span><span class="s2">&quot;ELAPSED_TIME[s]&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">TIME_1Hz_sampling</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">data_subset</span><span class="p">[</span><span class="s2">"ELAPSED_TIME[s]"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">TIME_1Hz_sampling</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
                 <span class="k">continue</span>
             <span class="n">TEMP_1Hz_sampling</span> <span class="o">=</span> <span class="n">TEMP_from_TIME</span><span class="p">(</span><span class="n">TIME_1Hz_sampling</span><span class="p">)</span>
             <span class="n">n_resamples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">TEMP_1Hz_sampling</span><span class="p">)</span>
 
-            <span class="c1"># Set up the recursive filter defined in &quot;CTD dynamic performance and corrections through gradients&quot;</span>
+            <span class="c1"># Set up the recursive filter defined in "CTD dynamic performance and corrections through gradients"</span>
             <span class="c1"># Tau and alpha are the fixed coefficients of Morison94 for unpumped cell.</span>
             <span class="c1"># alpha: initial amplitude of the temperature error for a unit step change in ambient temperature [without unit].</span>
             <span class="n">alpha_offset</span> <span class="o">=</span> <span class="mf">0.0135</span>
@@ -868,7 +906,7 @@
             <span class="n">tau</span> <span class="o">=</span> <span class="n">tau_offset</span> <span class="o">+</span> <span class="n">tau_slope</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">flow_rate</span><span class="p">)</span>
             <span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha_offset</span> <span class="o">+</span> <span class="n">alpha_slope</span> <span class="o">/</span> <span class="n">flow_rate</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">filter_params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;alpha&quot;</span><span class="p">:</span> <span class="n">alpha</span><span class="p">,</span> <span class="s2">&quot;tau&quot;</span><span class="p">:</span> <span class="n">tau</span><span class="p">}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">filter_params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"alpha"</span><span class="p">:</span> <span class="n">alpha</span><span class="p">,</span> <span class="s2">"tau"</span><span class="p">:</span> <span class="n">tau</span><span class="p">}</span>
 
             <span class="c1"># Set the filter coefficients</span>
             <span class="n">nyquist_frequency</span> <span class="o">=</span> <span class="p">(</span>
@@ -890,66 +928,58 @@
                 <span class="n">TIME_1Hz_sampling</span><span class="p">,</span>
                 <span class="n">corrected_TEMP_1Hz_sampling</span><span class="p">,</span>
                 <span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                <span class="n">fill_value</span><span class="o">=</span><span class="s2">&quot;extrapolate&quot;</span><span class="p">,</span>
+                <span class="n">fill_value</span><span class="o">=</span><span class="s2">"extrapolate"</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="n">data_subset</span><span class="p">[</span><span class="s2">&quot;TEMP&quot;</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">corrected_TEMP_from_TIME</span><span class="p">(</span>
-                <span class="n">data_subset</span><span class="p">[</span><span class="s2">&quot;ELAPSED_TIME[s]&quot;</span><span class="p">]</span>
+            <span class="n">data_subset</span><span class="p">[</span><span class="s2">"TEMP"</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">corrected_TEMP_from_TIME</span><span class="p">(</span>
+                <span class="n">data_subset</span><span class="p">[</span><span class="s2">"ELAPSED_TIME[s]"</span><span class="p">]</span>
             <span class="p">)</span>
 
             <span class="c1"># Store adjusted data</span>
-            <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="o">~</span><span class="n">nan_mask</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="n">corrected_temp_array</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_subset</span><span class="p">[</span><span class="s2">&quot;TEMP&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+            <span class="n">corrected_temp_array</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_subset</span><span class="p">[</span><span class="s2">"TEMP"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
 
             <span class="k">if</span> <span class="p">(</span>
-                <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;diagnostics&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+                <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"diagnostics"</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
                 <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_thermal_scatter_data</span> <span class="ow">is</span> <span class="kc">None</span>
                 <span class="ow">and</span> <span class="n">TIME_1Hz_sampling</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">3600</span>
                 <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">TEMP_1Hz_sampling</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">TEMP_1Hz_sampling</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mf">1.0</span>
             <span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_thermal_scatter_data</span> <span class="o">=</span> <span class="p">{</span>
-                    <span class="s2">&quot;dT_dt&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">gradient</span><span class="p">(</span><span class="n">TEMP_1Hz_sampling</span><span class="p">,</span> <span class="n">TIME_1Hz_sampling</span><span class="p">),</span>
-                    <span class="s2">&quot;correction&quot;</span><span class="p">:</span> <span class="n">TEMP_correction</span><span class="p">,</span>
+                    <span class="s2">"dT_dt"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">gradient</span><span class="p">(</span><span class="n">TEMP_1Hz_sampling</span><span class="p">,</span> <span class="n">TIME_1Hz_sampling</span><span class="p">),</span>
+                    <span class="s2">"correction"</span><span class="p">:</span> <span class="n">TEMP_correction</span><span class="p">,</span>
                 <span class="p">}</span>
 
         <span class="c1"># Reinsert the corrected data back into self.data</span>
         <span class="n">final_temp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
-            <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">corrected_temp_array</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;TEMP&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">corrected_temp_array</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">corrected_temp_array</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"TEMP"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">corrected_temp_array</span>
         <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;TEMP&quot;</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">final_temp</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"TEMP"</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">final_temp</span></div>
 
 
-<div class="viewcode-block" id="AdjustSalinity.generate_diagnostics">
-<a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/salinity/index.html#pelagos_py.steps.processing.salinity.AdjustSalinity.generate_diagnostics">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Displays a comprehensive diagnostics dashboard detailing applied adjustments</span>
-<span class="sd">        to conductivity and temperature, along with overall impacts on the dataset.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">mpl</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">&quot;tkagg&quot;</span><span class="p">)</span>
+        <span class="c1"># Dashboard of applied CNDC/TEMP adjustments and their dataset-wide impact</span>
+        <span class="n">mpl</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">"tkagg"</span><span class="p">)</span>
 
         <span class="c1"># --- Friendly Configuration Variables ---</span>
         <span class="n">FIG_SIZE</span> <span class="o">=</span> <span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span>
         <span class="n">DPI</span> <span class="o">=</span> <span class="mi">120</span>
 
         <span class="c1"># Colours</span>
-        <span class="n">COLOUR_CORR_T</span> <span class="o">=</span> <span class="s2">&quot;darkred&quot;</span>
-        <span class="n">COLOUR_CORR_C</span> <span class="o">=</span> <span class="s2">&quot;darkblue&quot;</span>
-        <span class="n">COLOUR_BEST</span> <span class="o">=</span> <span class="s2">&quot;darkorange&quot;</span>
-        <span class="n">COLOUR_SMOOTH</span> <span class="o">=</span> <span class="s2">&quot;dimgrey&quot;</span>
-        <span class="n">COLOUR_SCATTER</span> <span class="o">=</span> <span class="s2">&quot;tab:purple&quot;</span>
-        <span class="n">COLOUR_COMBINED</span> <span class="o">=</span> <span class="s2">&quot;teal&quot;</span>
+        <span class="n">COLOUR_BEST</span> <span class="o">=</span> <span class="s2">"darkorange"</span>
+        <span class="n">COLOUR_SMOOTH</span> <span class="o">=</span> <span class="s2">"dimgrey"</span>
+        <span class="n">COLOUR_SCATTER</span> <span class="o">=</span> <span class="s2">"tab:purple"</span>
+        <span class="n">COLOUR_COMBINED</span> <span class="o">=</span> <span class="s2">"teal"</span>
 
         <span class="c1"># Text Styles</span>
         <span class="n">TITLE_SIZE</span> <span class="o">=</span> <span class="mi">9</span>
         <span class="n">LABEL_SIZE</span> <span class="o">=</span> <span class="mi">8</span>
 
         <span class="c1"># --- Data Preparation ---</span>
-        <span class="n">prof_arr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">prof_arr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
         <span class="n">unique_profs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">prof_arr</span><span class="p">[</span><span class="o">~</span><span class="n">pd</span><span class="o">.</span><span class="n">isnull</span><span class="p">(</span><span class="n">prof_arr</span><span class="p">)])</span>
 
-        <span class="n">plot_qc_mask</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_copy</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;TEMP&quot;</span><span class="p">,</span> <span class="s2">&quot;CNDC&quot;</span><span class="p">,</span> <span class="s2">&quot;PRES&quot;</span><span class="p">,</span> <span class="s2">&quot;DEPTH&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_col</span><span class="p">]:</span>
-            <span class="n">qc_col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC&quot;</span>
+        <span class="n">plot_qc_mask</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_copy</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"TEMP"</span><span class="p">,</span> <span class="s2">"CNDC"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">,</span> <span class="s2">"DEPTH"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_col</span><span class="p">]:</span>
+            <span class="n">qc_col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span>
             <span class="k">if</span> <span class="n">qc_col</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_copy</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
                 <span class="n">plot_qc_mask</span> <span class="o">=</span> <span class="n">plot_qc_mask</span> <span class="o">&amp;</span> <span class="o">~</span><span class="bp">self</span><span class="o">.</span><span class="n">data_copy</span><span class="p">[</span><span class="n">qc_col</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">9</span><span class="p">])</span>
 
@@ -974,7 +1004,7 @@
         <span class="n">ax_diff</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
 
         <span class="c1"># (1) Row 1, Col 1-2: Applied Lag Distribution over Profile Index</span>
-        <span class="n">ax_lag</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">ax_lag</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"black"</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">"-"</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
         <span class="n">profs_subset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">per_profile_optimal_lag</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
         <span class="n">lags_subset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">per_profile_optimal_lag</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
@@ -984,7 +1014,7 @@
             <span class="n">profs_plot</span> <span class="o">=</span> <span class="n">profs_subset</span><span class="p">[</span><span class="n">valid_indices</span><span class="p">]</span>
             <span class="n">lags_plot</span> <span class="o">=</span> <span class="n">lags_subset</span><span class="p">[</span><span class="n">valid_indices</span><span class="p">]</span>
 
-            <span class="n">label_text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Combined (median: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ct_lag_median</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">s)&quot;</span>
+            <span class="n">label_text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Combined (median: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ct_lag_median</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">s)"</span>
             <span class="n">ax_lag</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
                 <span class="n">profs_plot</span><span class="p">,</span>
                 <span class="n">lags_plot</span><span class="p">,</span>
@@ -995,216 +1025,157 @@
                 <span class="n">zorder</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">ax_lag</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">ct_lag_median</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">COLOUR_COMBINED</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">3</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ct_lag_median</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">COLOUR_COMBINED</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">"--"</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">3</span>
             <span class="p">)</span>
 
-        <span class="n">ax_lag</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Dataset Lag Distribution by Profile&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">TITLE_SIZE</span><span class="p">)</span>
-        <span class="n">ax_lag</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Profile Number&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
-        <span class="n">ax_lag</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Optimal Lag (s)&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
-        <span class="n">ax_lag</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span> <span class="n">labelsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
+        <span class="n">ax_lag</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"Dataset Lag Distribution by Profile"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">TITLE_SIZE</span><span class="p">)</span>
+        <span class="n">ax_lag</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"Profile Number"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
+        <span class="n">ax_lag</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"Optimal Lag (s)"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
+        <span class="n">ax_lag</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="s2">"both"</span><span class="p">,</span> <span class="n">labelsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
         <span class="n">ax_lag</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
         <span class="n">ax_lag</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
 
         <span class="c1"># (2) Row 1, Col 3: CT Lag Cost Curve</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ct_cost_data</span><span class="p">:</span>
             <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ct_cost_data</span>
-            <span class="n">ax_cost</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="s2">&quot;lags&quot;</span><span class="p">],</span> <span class="n">c</span><span class="p">[</span><span class="s2">&quot;costs&quot;</span><span class="p">],</span> <span class="s2">&quot;o-&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">COLOUR_SMOOTH</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+            <span class="n">ax_cost</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="s2">"lags"</span><span class="p">],</span> <span class="n">c</span><span class="p">[</span><span class="s2">"costs"</span><span class="p">],</span> <span class="s2">"o-"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">COLOUR_SMOOTH</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ms</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
             <span class="n">ax_cost</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span>
-                <span class="n">c</span><span class="p">[</span><span class="s2">&quot;best_lag&quot;</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">COLOUR_BEST</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Best: </span><span class="si">{</span><span class="n">c</span><span class="p">[</span><span class="s1">&#39;best_lag&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">s&quot;</span>
+                <span class="n">c</span><span class="p">[</span><span class="s2">"best_lag"</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">COLOUR_BEST</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">"--"</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Best: </span><span class="si">{</span><span class="n">c</span><span class="p">[</span><span class="s1">'best_lag'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">s"</span>
             <span class="p">)</span>
-            <span class="n">ax_cost</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Trial Lag (s)&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
-            <span class="n">ax_cost</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;std(PSAL - smooth)&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
+            <span class="n">ax_cost</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"Trial Lag (s)"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
+            <span class="n">ax_cost</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"std(PSAL - smooth)"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
             <span class="n">ax_cost</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Optimal CT Lag Search (Profile </span><span class="si">{</span><span class="n">sample_prof</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">TITLE_SIZE</span>
+                <span class="sa">f</span><span class="s2">"Optimal CT Lag Search (Profile </span><span class="si">{</span><span class="n">sample_prof</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">)"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">TITLE_SIZE</span>
             <span class="p">)</span>
-            <span class="n">ax_cost</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span> <span class="n">labelsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
+            <span class="n">ax_cost</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="s2">"both"</span><span class="p">,</span> <span class="n">labelsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
             <span class="n">ax_cost</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
             <span class="n">ax_cost</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
 
         <span class="c1"># (3) Row 2, Col 1: Thermal Scatter &amp; Parameters Legend</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_thermal_scatter_data</span><span class="p">:</span>
             <span class="n">ts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_thermal_scatter_data</span>
-            <span class="n">finite</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">ts</span><span class="p">[</span><span class="s2">&quot;correction&quot;</span><span class="p">])</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">ts</span><span class="p">[</span><span class="s2">&quot;dT_dt&quot;</span><span class="p">])</span>
+            <span class="n">finite</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">ts</span><span class="p">[</span><span class="s2">"correction"</span><span class="p">])</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">ts</span><span class="p">[</span><span class="s2">"dT_dt"</span><span class="p">])</span>
             <span class="n">ax_scatter</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
-                <span class="n">ts</span><span class="p">[</span><span class="s2">&quot;dT_dt&quot;</span><span class="p">][</span><span class="n">finite</span><span class="p">],</span>
-                <span class="n">ts</span><span class="p">[</span><span class="s2">&quot;correction&quot;</span><span class="p">][</span><span class="n">finite</span><span class="p">],</span>
+                <span class="n">ts</span><span class="p">[</span><span class="s2">"dT_dt"</span><span class="p">][</span><span class="n">finite</span><span class="p">],</span>
+                <span class="n">ts</span><span class="p">[</span><span class="s2">"correction"</span><span class="p">][</span><span class="n">finite</span><span class="p">],</span>
                 <span class="n">s</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
                 <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span>
                 <span class="n">color</span><span class="o">=</span><span class="n">COLOUR_SCATTER</span><span class="p">,</span>
             <span class="p">)</span>
-            <span class="n">ax_scatter</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;dT/dt (°C/s)&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
-            <span class="n">ax_scatter</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Corr Amplitude (°C)&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
+            <span class="n">ax_scatter</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"dT/dt (°C/s)"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
+            <span class="n">ax_scatter</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"Corr Amplitude (°C)"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
             <span class="n">ax_scatter</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Thermal Mass Verification (Profile </span><span class="si">{</span><span class="n">sample_prof</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">TITLE_SIZE</span>
+                <span class="sa">f</span><span class="s2">"Thermal Mass Verification (Profile </span><span class="si">{</span><span class="n">sample_prof</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">)"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">TITLE_SIZE</span>
             <span class="p">)</span>
-            <span class="n">ax_scatter</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span> <span class="n">labelsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
+            <span class="n">ax_scatter</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="s2">"both"</span><span class="p">,</span> <span class="n">labelsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
             <span class="n">ax_scatter</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
 
-            <span class="n">alpha_val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;alpha&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
-            <span class="n">tau_val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;tau&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
-            <span class="n">param_text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Flow Velocity: ~0.49 m/s</span><span class="se">\n</span><span class="s2">Alpha (α): </span><span class="si">{</span><span class="n">alpha_val</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="se">\n</span><span class="s2">Tau (τ): </span><span class="si">{</span><span class="n">tau_val</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> s&quot;</span>
+            <span class="n">alpha_val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"alpha"</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+            <span class="n">tau_val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"tau"</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+            <span class="n">param_text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Flow Velocity: ~0.49 m/s</span><span class="se">\n</span><span class="s2">Alpha (α): </span><span class="si">{</span><span class="n">alpha_val</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="se">\n</span><span class="s2">Tau (τ): </span><span class="si">{</span><span class="n">tau_val</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> s"</span>
             <span class="n">ax_scatter</span><span class="o">.</span><span class="n">text</span><span class="p">(</span>
                 <span class="mf">0.05</span><span class="p">,</span>
                 <span class="mf">0.95</span><span class="p">,</span>
                 <span class="n">param_text</span><span class="p">,</span>
                 <span class="n">transform</span><span class="o">=</span><span class="n">ax_scatter</span><span class="o">.</span><span class="n">transAxes</span><span class="p">,</span>
                 <span class="n">fontsize</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
-                <span class="n">verticalalignment</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">,</span>
-                <span class="n">bbox</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">boxstyle</span><span class="o">=</span><span class="s2">&quot;round&quot;</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="s2">&quot;white&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s2">&quot;#ccc&quot;</span><span class="p">),</span>
+                <span class="n">verticalalignment</span><span class="o">=</span><span class="s2">"top"</span><span class="p">,</span>
+                <span class="n">bbox</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">boxstyle</span><span class="o">=</span><span class="s2">"round"</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="s2">"white"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s2">"#ccc"</span><span class="p">),</span>
             <span class="p">)</span>
 
-        <span class="c1"># (4) Row 2, Col 2: Combined Salinity Profiles</span>
-        <span class="n">mask_range</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_copy</span><span class="p">[</span><span class="s2">&quot;PROFILE_NUMBER&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">processed_profs</span><span class="p">)</span>
-        <span class="n">uncorr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_copy</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">mask_range</span> <span class="o">&amp;</span> <span class="n">plot_qc_mask</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">corr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">mask_range</span> <span class="o">&amp;</span> <span class="n">plot_qc_mask</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="c1"># (4)+(5) Row 2, Col 2-3: up/down-cast salinity, raw (left, all samples) vs</span>
+        <span class="c1"># QC-clean + adjusted (right). ~20 mid-mission profiles sharing one sal/pres range.</span>
+        <span class="n">COLOUR_DOWN</span> <span class="o">=</span> <span class="s2">"grey"</span>
+        <span class="n">COLOUR_UP</span> <span class="o">=</span> <span class="s2">"tab:blue"</span>
 
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">uncorr</span><span class="p">[</span><span class="s2">&quot;DEPTH&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s2">&quot;N_MEASUREMENTS&quot;</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">c_raw</span> <span class="o">=</span> <span class="n">uncorr</span><span class="p">[</span><span class="s2">&quot;CNDC&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-            <span class="n">c_new</span> <span class="o">=</span> <span class="n">corr</span><span class="p">[</span><span class="s2">&quot;CNDC&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-            <span class="n">c_raw</span> <span class="o">=</span> <span class="n">c_raw</span> <span class="o">*</span> <span class="mi">10</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">c_raw</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">10</span> <span class="k">else</span> <span class="n">c_raw</span>
-            <span class="n">c_new</span> <span class="o">=</span> <span class="n">c_new</span> <span class="o">*</span> <span class="mi">10</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">c_new</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">10</span> <span class="k">else</span> <span class="n">c_new</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">psal_from</span><span class="p">(</span><span class="n">ds</span><span class="p">):</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="s2">"CNDC"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">*</span> <span class="n">cndc_scale_factor</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="s2">"CNDC"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">gsw</span><span class="o">.</span><span class="n">conversions</span><span class="o">.</span><span class="n">SP_from_C</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">ds</span><span class="p">[</span><span class="s2">"TEMP"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">ds</span><span class="p">[</span><span class="s2">"PRES"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
 
-            <span class="n">p_raw</span> <span class="o">=</span> <span class="n">gsw</span><span class="o">.</span><span class="n">conversions</span><span class="o">.</span><span class="n">SP_from_C</span><span class="p">(</span>
-                <span class="n">c_raw</span><span class="p">,</span> <span class="n">uncorr</span><span class="p">[</span><span class="s2">&quot;TEMP&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">uncorr</span><span class="p">[</span><span class="s2">&quot;PRES&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-            <span class="p">)</span>
-            <span class="n">p_new</span> <span class="o">=</span> <span class="n">gsw</span><span class="o">.</span><span class="n">conversions</span><span class="o">.</span><span class="n">SP_from_C</span><span class="p">(</span>
-                <span class="n">c_new</span><span class="p">,</span> <span class="n">corr</span><span class="p">[</span><span class="s2">&quot;TEMP&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">uncorr</span><span class="p">[</span><span class="s2">&quot;PRES&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-            <span class="p">)</span>
+        <span class="n">has_direction</span> <span class="o">=</span> <span class="s2">"PROFILE_DIRECTION"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_profs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">has_direction</span><span class="p">:</span>
+            <span class="c1"># Contiguous ~20-profile block from the middle of the deployment</span>
+            <span class="n">p1</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="n">unique_profs</span><span class="p">))</span>
+            <span class="n">p2</span> <span class="o">=</span> <span class="n">p1</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">unique_profs</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">20</span><span class="p">))</span>
+            <span class="n">in_subset</span> <span class="o">=</span> <span class="p">(</span><span class="n">prof_arr</span> <span class="o">&gt;</span> <span class="n">p1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">prof_arr</span> <span class="o">&lt;</span> <span class="n">p2</span><span class="p">)</span>
+            <span class="n">subset_mask</span> <span class="o">=</span> <span class="n">in_subset</span> <span class="o">&amp;</span> <span class="n">plot_qc_mask</span><span class="o">.</span><span class="n">values</span>
 
-            <span class="n">ax_sal</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-                <span class="n">p_raw</span><span class="p">,</span>
-                <span class="n">uncorr</span><span class="p">[</span><span class="s2">&quot;DEPTH&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-                <span class="n">c</span><span class="o">=</span><span class="s2">&quot;grey&quot;</span><span class="p">,</span>
-                <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-                <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;.&quot;</span><span class="p">,</span>
-                <span class="n">ms</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-                <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span>
-                <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Raw&quot;</span><span class="p">,</span>
-            <span class="p">)</span>
+            <span class="n">dir_arr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_DIRECTION"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+            <span class="n">pres</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_copy</span><span class="p">[</span><span class="s2">"PRES"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+            <span class="n">psal_raw</span> <span class="o">=</span> <span class="n">psal_from</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_copy</span><span class="p">)</span>
+            <span class="n">psal_corr</span> <span class="o">=</span> <span class="n">psal_from</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
 
-            <span class="n">sal_legend</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="n">mlines</span><span class="o">.</span><span class="n">Line2D</span><span class="p">(</span>
-                    <span class="p">[],</span> <span class="p">[],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;grey&quot;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Raw (All)&quot;</span>
-                <span class="p">)</span>
-            <span class="p">]</span>
-
-            <span class="n">ax_sal</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-                <span class="n">p_new</span><span class="p">,</span>
-                <span class="n">uncorr</span><span class="p">[</span><span class="s2">&quot;DEPTH&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-                <span class="n">c</span><span class="o">=</span><span class="n">COLOUR_COMBINED</span><span class="p">,</span>
-                <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-                <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;.&quot;</span><span class="p">,</span>
-                <span class="n">ms</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span>
-                <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="n">sal_legend</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="n">mlines</span><span class="o">.</span><span class="n">Line2D</span><span class="p">(</span>
-                    <span class="p">[],</span>
-                    <span class="p">[],</span>
-                    <span class="n">color</span><span class="o">=</span><span class="n">COLOUR_COMBINED</span><span class="p">,</span>
-                    <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;.&quot;</span><span class="p">,</span>
-                    <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-                    <span class="n">markersize</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
-                    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Corr Combined&quot;</span><span class="p">,</span>
-                <span class="p">)</span>
+            <span class="c1"># Log sample counts and depth/salinity scales so a small correction on a</span>
+            <span class="c1"># deep axis stays diagnosable</span>
+            <span class="n">_sub</span> <span class="o">=</span> <span class="n">subset_mask</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">dir_arr</span><span class="p">,</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">])</span>
+            <span class="n">_dsal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">psal_corr</span><span class="p">[</span><span class="n">_sub</span><span class="p">]</span> <span class="o">-</span> <span class="n">psal_raw</span><span class="p">[</span><span class="n">_sub</span><span class="p">])</span>
+            <span class="n">_p</span> <span class="o">=</span> <span class="n">pres</span><span class="p">[</span><span class="n">_sub</span><span class="p">][</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">pres</span><span class="p">[</span><span class="n">_sub</span><span class="p">])]</span>
+            <span class="n">_sr</span> <span class="o">=</span> <span class="n">psal_raw</span><span class="p">[</span><span class="n">_sub</span><span class="p">]</span>
+            <span class="n">_dropped</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">in_subset</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">plot_qc_mask</span><span class="o">.</span><span class="n">values</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">psal_raw</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Salinity profile panels: </span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">_sub</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span><span class="si">}</span><span class="s2"> samples shown, "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_dropped</span><span class="si">}</span><span class="s2"> hidden by QC flags (3/4/9); "</span>
+                <span class="sa">f</span><span class="s2">"PRES </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">_p</span><span class="p">)</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">_p</span><span class="p">)</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> dbar; "</span>
+                <span class="sa">f</span><span class="s2">"raw PSAL spread </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">_sr</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">np</span><span class="o">.</span><span class="n">nanmin</span><span class="p">(</span><span class="n">_sr</span><span class="p">)</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">; "</span>
+                <span class="sa">f</span><span class="s2">"correction |Δpsal| median </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="n">_dsal</span><span class="p">)</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, "</span>
+                <span class="sa">f</span><span class="s2">"max </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">_dsal</span><span class="p">)</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
 
-            <span class="n">ax_sal</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Combined Result&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">TITLE_SIZE</span><span class="p">)</span>
-            <span class="n">ax_sal</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Practical Salinity&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
-            <span class="n">ax_sal</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Depth (m)&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
-            <span class="n">ax_sal</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span> <span class="n">labelsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
+            <span class="k">def</span><span class="w"> </span><span class="nf">draw_profiles</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">psal</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">title</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">direction</span><span class="p">,</span> <span class="n">colour</span><span class="p">,</span> <span class="n">lbl</span> <span class="ow">in</span> <span class="p">(</span>
+                    <span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">COLOUR_DOWN</span><span class="p">,</span> <span class="s2">"Downcast"</span><span class="p">),</span>
+                    <span class="p">(</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">COLOUR_UP</span><span class="p">,</span> <span class="s2">"Upcast"</span><span class="p">),</span>
+                <span class="p">):</span>
+                    <span class="n">sel</span> <span class="o">=</span> <span class="n">mask</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">dir_arr</span> <span class="o">==</span> <span class="n">direction</span><span class="p">)</span>
+                    <span class="n">first</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="k">for</span> <span class="n">pn</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">prof_arr</span><span class="p">[</span><span class="n">sel</span><span class="p">]):</span>
+                        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">sel</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">prof_arr</span> <span class="o">==</span> <span class="n">pn</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="k">continue</span>
+                        <span class="c1"># Drop NaN samples so points connect into a profile line</span>
+                        <span class="n">x</span> <span class="o">=</span> <span class="n">psal</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+                        <span class="n">y</span> <span class="o">=</span> <span class="n">pres</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+                        <span class="n">finite</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">finite</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                            <span class="k">continue</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+                            <span class="n">x</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span>
+                            <span class="n">y</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span>
+                            <span class="n">color</span><span class="o">=</span><span class="n">colour</span><span class="p">,</span>
+                            <span class="n">lw</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+                            <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+                            <span class="n">label</span><span class="o">=</span><span class="n">lbl</span> <span class="k">if</span> <span class="n">first</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                        <span class="p">)</span>
+                        <span class="n">first</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">TITLE_SIZE</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"Practical Salinity"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="s2">"both"</span><span class="p">,</span> <span class="n">labelsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">"lower right"</span><span class="p">)</span>
 
-            <span class="n">y_min</span><span class="p">,</span> <span class="n">y_max</span> <span class="o">=</span> <span class="n">ax_sal</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
-            <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">y_max</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">abs</span><span class="p">(</span><span class="n">y_min</span><span class="p">):</span>
-                <span class="n">ax_sal</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">y_min</span><span class="p">,</span> <span class="n">y_max</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">ax_sal</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">y_max</span><span class="p">,</span> <span class="n">y_min</span><span class="p">)</span>
+            <span class="n">draw_profiles</span><span class="p">(</span><span class="n">ax_sal</span><span class="p">,</span> <span class="n">psal_raw</span><span class="p">,</span> <span class="n">in_subset</span><span class="p">,</span> <span class="s2">"Raw salinity"</span><span class="p">)</span>
+            <span class="n">draw_profiles</span><span class="p">(</span><span class="n">ax_diff</span><span class="p">,</span> <span class="n">psal_corr</span><span class="p">,</span> <span class="n">subset_mask</span><span class="p">,</span> <span class="s2">"QC + adjusted"</span><span class="p">)</span>
+            <span class="n">ax_sal</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"Pressure (dbar)"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
 
-            <span class="n">ax_sal</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
-            <span class="n">ax_sal</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">handles</span><span class="o">=</span><span class="n">sal_legend</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">&quot;lower right&quot;</span><span class="p">)</span>
-
-        <span class="c1"># (5) Row 2, Col 3: Dataset Adjustments Diff Plot</span>
-        <span class="n">t_all</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_copy</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-
-        <span class="n">valid_t</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnat</span><span class="p">(</span><span class="n">t_all</span><span class="p">)</span>
-            <span class="o">&amp;</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_copy</span><span class="p">[</span><span class="s2">&quot;TEMP&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
-            <span class="o">&amp;</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_copy</span><span class="p">[</span><span class="s2">&quot;CNDC&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
-            <span class="o">&amp;</span> <span class="n">plot_qc_mask</span><span class="o">.</span><span class="n">values</span>
-        <span class="p">)</span>
-        <span class="n">sub_step</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">valid_t</span><span class="p">)</span> <span class="o">//</span> <span class="mi">50000</span><span class="p">)</span>
-
-        <span class="n">t_valid</span> <span class="o">=</span> <span class="n">t_all</span><span class="p">[</span><span class="n">valid_t</span><span class="p">][::</span><span class="n">sub_step</span><span class="p">]</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">t_valid</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">elapsed_days</span> <span class="o">=</span> <span class="p">(</span><span class="n">t_valid</span> <span class="o">-</span> <span class="n">t_valid</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">timedelta64</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;D&quot;</span><span class="p">)</span>
-
-            <span class="n">temp_raw_all</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_copy</span><span class="p">[</span><span class="s2">&quot;TEMP&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">valid_t</span><span class="p">][::</span><span class="n">sub_step</span><span class="p">]</span>
-            <span class="n">temp_corr_all</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;TEMP&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">valid_t</span><span class="p">][::</span><span class="n">sub_step</span><span class="p">]</span>
-            <span class="n">cndc_raw_all</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_copy</span><span class="p">[</span><span class="s2">&quot;CNDC&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">valid_t</span><span class="p">][::</span><span class="n">sub_step</span><span class="p">]</span>
-            <span class="n">cndc_corr_all</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;CNDC&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">valid_t</span><span class="p">][::</span><span class="n">sub_step</span><span class="p">]</span>
-
-            <span class="n">cndc_raw_all</span> <span class="o">=</span> <span class="n">cndc_raw_all</span> <span class="o">*</span> <span class="mi">10</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">cndc_raw_all</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">10</span> <span class="k">else</span> <span class="n">cndc_raw_all</span>
-            <span class="n">cndc_corr_all</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="n">cndc_corr_all</span> <span class="o">*</span> <span class="mi">10</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">cndc_corr_all</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">10</span> <span class="k">else</span> <span class="n">cndc_corr_all</span>
-            <span class="p">)</span>
-
-            <span class="n">temp_diff</span> <span class="o">=</span> <span class="n">temp_corr_all</span> <span class="o">-</span> <span class="n">temp_raw_all</span>
-            <span class="n">cndc_diff</span> <span class="o">=</span> <span class="n">cndc_corr_all</span> <span class="o">-</span> <span class="n">cndc_raw_all</span>
-
-            <span class="n">ax_diff_c</span> <span class="o">=</span> <span class="n">ax_diff</span><span class="o">.</span><span class="n">twinx</span><span class="p">()</span>
-
-            <span class="n">ax_diff</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-                <span class="n">elapsed_days</span><span class="p">,</span>
-                <span class="n">temp_diff</span><span class="p">,</span>
-                <span class="n">color</span><span class="o">=</span><span class="n">COLOUR_CORR_T</span><span class="p">,</span>
-                <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;.&quot;</span><span class="p">,</span>
-                <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-                <span class="n">ms</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-                <span class="n">alpha</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span>
-                <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Temp Diff&quot;</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="n">ax_diff_c</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-                <span class="n">elapsed_days</span><span class="p">,</span>
-                <span class="n">cndc_diff</span><span class="p">,</span>
-                <span class="n">color</span><span class="o">=</span><span class="n">COLOUR_CORR_C</span><span class="p">,</span>
-                <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;.&quot;</span><span class="p">,</span>
-                <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-                <span class="n">ms</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-                <span class="n">alpha</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span>
-                <span class="n">label</span><span class="o">=</span><span class="s2">&quot;CNDC Diff&quot;</span><span class="p">,</span>
-            <span class="p">)</span>
-
-            <span class="n">ax_diff</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Elapsed Time (Days)&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
-            <span class="n">ax_diff</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Temp Difference (°C)&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
-            <span class="n">ax_diff_c</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;CNDC Difference (mS/cm)&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
-            <span class="n">ax_diff</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Dataset-Wide Adjustments (Corr - Raw)&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">TITLE_SIZE</span><span class="p">)</span>
-            <span class="n">ax_diff</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="s2">&quot;both&quot;</span><span class="p">,</span> <span class="n">labelsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
-            <span class="n">ax_diff_c</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="n">labelsize</span><span class="o">=</span><span class="n">LABEL_SIZE</span><span class="p">)</span>
-
-            <span class="c1"># Scale both axes symmetrically about zero so the two 0-lines coincide</span>
-            <span class="n">t_absmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">temp_diff</span><span class="p">))</span>
-            <span class="n">c_absmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">cndc_diff</span><span class="p">))</span>
-            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">t_absmax</span><span class="p">)</span> <span class="ow">and</span> <span class="n">t_absmax</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="n">ax_diff</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="n">t_absmax</span> <span class="o">*</span> <span class="mf">1.05</span><span class="p">,</span> <span class="n">t_absmax</span> <span class="o">*</span> <span class="mf">1.05</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">c_absmax</span><span class="p">)</span> <span class="ow">and</span> <span class="n">c_absmax</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="n">ax_diff_c</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">-</span><span class="n">c_absmax</span> <span class="o">*</span> <span class="mf">1.05</span><span class="p">,</span> <span class="n">c_absmax</span> <span class="o">*</span> <span class="mf">1.05</span><span class="p">)</span>
-
-            <span class="n">lines1</span><span class="p">,</span> <span class="n">labels1</span> <span class="o">=</span> <span class="n">ax_diff</span><span class="o">.</span><span class="n">get_legend_handles_labels</span><span class="p">()</span>
-            <span class="n">lines2</span><span class="p">,</span> <span class="n">labels2</span> <span class="o">=</span> <span class="n">ax_diff_c</span><span class="o">.</span><span class="n">get_legend_handles_labels</span><span class="p">()</span>
-
-            <span class="n">leg_handles</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines1</span> <span class="o">+</span> <span class="n">lines2</span><span class="p">:</span>
-                <span class="n">leg_handles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                    <span class="n">mlines</span><span class="o">.</span><span class="n">Line2D</span><span class="p">([],</span> <span class="p">[],</span> <span class="n">color</span><span class="o">=</span><span class="n">line</span><span class="o">.</span><span class="n">get_color</span><span class="p">(),</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
-                <span class="p">)</span>
-
-            <span class="n">ax_diff</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">leg_handles</span><span class="p">,</span> <span class="n">labels1</span> <span class="o">+</span> <span class="n">labels2</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">&quot;best&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
-            <span class="n">ax_diff</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+            <span class="c1"># Shared pressure-down ranges framed on QC-clean salinity; raw spikes clip</span>
+            <span class="n">raw_sub</span> <span class="o">=</span> <span class="n">in_subset</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">dir_arr</span><span class="p">,</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">])</span>
+            <span class="n">clean_sal</span> <span class="o">=</span> <span class="n">psal_corr</span><span class="p">[</span><span class="n">subset_mask</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">dir_arr</span><span class="p">,</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">])]</span>
+            <span class="n">clean_sal</span> <span class="o">=</span> <span class="n">clean_sal</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">clean_sal</span><span class="p">)]</span>
+            <span class="k">if</span> <span class="n">clean_sal</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+                <span class="n">s_lo</span><span class="p">,</span> <span class="n">s_hi</span> <span class="o">=</span> <span class="n">clean_sal</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">clean_sal</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+                <span class="n">pad</span> <span class="o">=</span> <span class="mf">0.02</span> <span class="o">*</span> <span class="p">(</span><span class="n">s_hi</span> <span class="o">-</span> <span class="n">s_lo</span><span class="p">)</span> <span class="k">if</span> <span class="n">s_hi</span> <span class="o">&gt;</span> <span class="n">s_lo</span> <span class="k">else</span> <span class="mf">0.02</span>
+                <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="p">(</span><span class="n">ax_sal</span><span class="p">,</span> <span class="n">ax_diff</span><span class="p">):</span>
+                    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">s_lo</span> <span class="o">-</span> <span class="n">pad</span><span class="p">,</span> <span class="n">s_hi</span> <span class="o">+</span> <span class="n">pad</span><span class="p">)</span>
+            <span class="n">p_finite</span> <span class="o">=</span> <span class="n">pres</span><span class="p">[</span><span class="n">raw_sub</span><span class="p">][</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">pres</span><span class="p">[</span><span class="n">raw_sub</span><span class="p">])]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">p_finite</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">pmin</span><span class="p">,</span> <span class="n">pmax</span> <span class="o">=</span> <span class="n">p_finite</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">p_finite</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+                <span class="n">ppad</span> <span class="o">=</span> <span class="mf">0.02</span> <span class="o">*</span> <span class="p">(</span><span class="n">pmax</span> <span class="o">-</span> <span class="n">pmin</span><span class="p">)</span> <span class="k">if</span> <span class="n">pmax</span> <span class="o">&gt;</span> <span class="n">pmin</span> <span class="k">else</span> <span class="mf">1.0</span>
+                <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="p">(</span><span class="n">ax_sal</span><span class="p">,</span> <span class="n">ax_diff</span><span class="p">):</span>
+                    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">pmax</span> <span class="o">+</span> <span class="n">ppad</span><span class="p">,</span> <span class="n">pmin</span> <span class="o">-</span> <span class="n">ppad</span><span class="p">)</span>
 
         <span class="c1"># Final Render</span>
-        <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Salinity Adjustment Diagnostics Dashboard&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s2">&quot;bold&quot;</span><span class="p">)</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">"Salinity Adjustment Diagnostics Dashboard"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">fontweight</span><span class="o">=</span><span class="s2">"bold"</span><span class="p">)</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
-</div>
 
 </pre></div>
 

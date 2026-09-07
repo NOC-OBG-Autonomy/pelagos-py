@@ -370,10 +370,13 @@
 </details></li>
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="../index.html">pelagos_py.steps.processing</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="../bbp/index.html">pelagos_py.steps.processing.bbp</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../chla/index.html">pelagos_py.steps.processing.chla</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../chla_quenching/index.html">pelagos_py.steps.processing.chla_quenching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../deep_correction/index.html">pelagos_py.steps.processing.deep_correction</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../derive_ctd/index.html">pelagos_py.steps.processing.derive_ctd</a></li>
 <li class="toctree-l3 current active"><a class="current reference internal" href="#">pelagos_py.steps.processing.find_profiles</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../interpolate_data/index.html">pelagos_py.steps.processing.interpolate_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../interpolate_par/index.html">pelagos_py.steps.processing.interpolate_par</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../mixed_layer_depth/index.html">pelagos_py.steps.processing.mixed_layer_depth</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../oxygen/index.html">pelagos_py.steps.processing.oxygen</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../salinity/index.html">pelagos_py.steps.processing.salinity</a></li>
 </ul>
@@ -400,9 +403,12 @@
 </ul>
 </details></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../../utils/index.html">pelagos_py.utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/console/index.html">pelagos_py.utils.console</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/diagnostic_capture/index.html">pelagos_py.utils.diagnostic_capture</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/diagnostics/index.html">pelagos_py.utils.diagnostics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/fig_spec/index.html">pelagos_py.utils.fig_spec</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/log_levels/index.html">pelagos_py.utils.log_levels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../utils/palettes/index.html">pelagos_py.utils.palettes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/parameter_spec/index.html">pelagos_py.utils.parameter_spec</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/qc_handling/index.html">pelagos_py.utils.qc_handling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../utils/yaml_loading/index.html">pelagos_py.utils.yaml_loading</a></li>
@@ -481,35 +487,14 @@
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.processing.find_profiles.</span></span><span class="sig-name descname"><span class="pre">FindProfilesStep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/find_profiles.html#FindProfilesStep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.find_profiles.FindProfilesStep" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="../../base_step/index.html#pelagos_py.steps.base_step.BaseStep" title="pelagos_py.steps.base_step.BaseStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pelagos_py.steps.base_step.BaseStep</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">pelagos_py.utils.qc_handling.QCHandlingMixin</span></code></p>
 <p>Identifies and classifies vertical and horizontal profiles from depth-time data.</p>
-<p>The step smooths the depth (or pressure) record, derives vertical velocity and
-acceleration, and uses these to label every measurement with a scientific phase.
-From those phases it then derives a continuous <code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER</span></code>, a
-<code class="docutils literal notranslate"><span class="pre">PROFILE_DIRECTION</span></code>, a <code class="docutils literal notranslate"><span class="pre">CYCLE</span></code> count, and a per-profile vertical
-<code class="docutils literal notranslate"><span class="pre">PROFILE_GRADIENT</span></code>.</p>
+<p>The step smooths the depth (or pressure) record, derives vertical velocity from
+it, and uses that to label every measurement with a scientific phase. From those
+phases it then derives a continuous <code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER</span></code>, a <code class="docutils literal notranslate"><span class="pre">PROFILE_DIRECTION</span></code>,
+a <code class="docutils literal notranslate"><span class="pre">CYCLE</span></code> count, and <code class="docutils literal notranslate"><span class="pre">PROFILE_GRADIENT</span></code> (the smoothed vertical velocity used
+for classification, in depth units/s).</p>
 <p><strong>All parameters are optional</strong> — every parameter has a sensible default, so the
 step runs unchanged on a typical OG1 dataset with no configuration at all (see the
-first example below). The parameters exist only to tune the classification for
-unusual platforms, sampling rates, or dive patterns.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="pelagos_py.steps.processing.find_profiles.FindProfilesStep.generate_diagnostics">
-<span class="sig-name descname"><span class="pre">generate_diagnostics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mapped_df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">depth_col</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/find_profiles.html#FindProfilesStep.generate_diagnostics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.find_profiles.FindProfilesStep.generate_diagnostics" title="Link to this definition">#</a></dt>
-<dd><p>Plot the derived phase classification and profile/cycle numbering.</p>
-<p>Called automatically at the end of <code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code> when <code class="docutils literal notranslate"><span class="pre">diagnostics</span></code> is
-enabled. Produces a two-panel figure for visually checking that profiles
-were identified correctly.</p>
-<p>The upper panel shows the depth (or pressure) record against time, with every
-measurement coloured by its scientific phase — ascent, descent, surfacing,
-parking, propelled, inflection and transition (see the class description for
-the full phase definitions). The legend reports the number of points assigned
-to each phase. This makes it easy to confirm that each turn is bracketed by a
-single inflection point at its apex, with the surrounding turn marked as
-transition and the near-surface portions marked as surfacing.</p>
-<p>The lower panel shows the derived <code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER</span></code> (each ascent/descent core,
-extended to include the adjacent transition/inflection on either side) and the
-<code class="docutils literal notranslate"><span class="pre">CYCLE</span></code> number against time, so the continuity of the numbering can be
-checked at a glance.</p>
-</dd></dl>
-
+first example below).</p>
 </dd></dl>
 
 </section>
@@ -537,10 +522,7 @@ checked at a glance.</p>
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.find_profiles.FindProfilesStep"><code class="docutils literal notranslate"><span class="pre">FindProfilesStep</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.find_profiles.FindProfilesStep.generate_diagnostics"><code class="docutils literal notranslate"><span class="pre">FindProfilesStep.generate_diagnostics()</span></code></a></li>
-</ul>
-</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.find_profiles.FindProfilesStep"><code class="docutils literal notranslate"><span class="pre">FindProfilesStep</span></code></a></li>
 </ul>
   </nav></div>
 
