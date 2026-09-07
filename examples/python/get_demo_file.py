@@ -1,13 +1,17 @@
 """Fetch the demo dataset(s) used by the other example scripts.
 
 Run this once before the other demos to download an OG1 NetCDF file into
-examples/data/OG1. Files are hosted on the BODC deployment catalogue; see
-https://noc.ac.uk/projects/bio-carbon for context.
+examples/data/OG1. nelson/churchill/alr are hosted on the BODC deployment
+catalogue (see https://noc.ac.uk/projects/bio-carbon for context);
+voto_og_dm is hosted on VOTO's erddap instead.
 
-Same set of demo gliders as the dashboard's picker (see
-pelagos_py.utils.demo_data), one entry per glider/mode: "_nrt" for the
-near-real-time file, "_delayed" for the recovered/full one -- only the modes
-actually hosted for that deployment are listed.
+Four demos are available:
+  nelson      - Nelson (unit_397), Near-Real-Time deployment. Used as-is.
+  churchill   - Churchill (unit_398), Recovered deployment. The full record
+                spans May-Oct 2024; it is cut down to August 2024 to keep a
+                demo-sized file, then the full download is deleted.
+  alr         - ALR_4 (unit_399), Recovered deployment. Used as-is.
+  voto_og_dm  - SEA063 (VOTO), cut down to 2024-07-25..2024-08-03.
 
 Usage:
   python get_demo_file.py                 # all demos (default)
@@ -64,6 +68,12 @@ DEMOS = {
     "rebels_stella_delayed": (f"{_OG1_DELAYED}/Stella_20250323/Stella_678.nc", "Stella_678.nc"),
     # --- ReBELS 2 ---
     "stella2026_nrt": (f"{_OG1_NRT}/Stella_20260403/Stella_713_R.nc", "Stella_713_R.nc"),  # no delayed-mode file hosted (yet)
+    "voto_og_dm": (
+        "https://erddap.observations.voiceoftheocean.org/erddap/files/"
+        "OG_complete_SEA063_M75/SEA063_20240724T0737_delayed.nc",
+        "SEA063_20240724T0737_delayed.nc",
+        ("2024-07-25", "2024-08-03"),
+    ),
 }
 
 # Work from the repo root so the relative paths below resolve the same way no
