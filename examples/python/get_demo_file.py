@@ -134,7 +134,7 @@ def _cut_to_window(path: Path, start: str, end: str) -> None:
     for v in subset.variables:
         subset[v].encoding = {}
         if subset[v].dtype.kind in "fiu":
-            encoding[v] = {"zlib": True, "complevel": 4}
+            encoding[v] = {"zlib": True, "complevel": 2}
     tmp = path.with_suffix(".full.nc")
     path.rename(tmp)
     subset.to_netcdf(path, encoding=encoding)

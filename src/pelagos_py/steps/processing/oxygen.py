@@ -29,7 +29,6 @@ from pelagos_py.utils import fig_spec
 import numpy as np
 import pandas as pd
 import xarray as xr
-from scipy.signal import butter, filtfilt
 
 
 def check_config(self, expected_params):
@@ -478,6 +477,7 @@ class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
             group = group.sort_values("PROFILE_NUMBER")
             filled = group["LAG"].ffill().bfill()
             if filled.notna().sum() >= 7:
+                from scipy.signal import butter, filtfilt
                 b, a = butter(N=3, Wn=1 / 30, btype="low", fs=1)
                 filled = pd.Series(filtfilt(b, a, filled.to_numpy()), index=filled.index)
             lag_lookup.update(dict(zip(group["PROFILE_NUMBER"], filled)))

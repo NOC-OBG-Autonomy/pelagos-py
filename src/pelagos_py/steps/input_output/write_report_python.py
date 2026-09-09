@@ -52,6 +52,7 @@ import xarray as xr
 import numpy as np
 
 from pelagos_py.utils.console import progress_bar
+from pelagos_py.utils.diagnostic_capture import save_figure, wait_for_saves
 
 
 #   The core PDF fonts are latin-1 only. Map the symbols we expect to plain
@@ -1300,7 +1301,7 @@ def glider_track_map(data: xr.Dataset, outdir: str, ext: str = ".png") -> str:
 
     fig.tight_layout(pad=0.3)
     fname = outdir + "glider_track" + ext
-    plt.savefig(fname, dpi=200, facecolor=fig.get_facecolor())
+    save_figure(fig, fname, dpi=200, facecolor=fig.get_facecolor())
     plt.close(fig)
     return fname
 
@@ -1383,25 +1384,16 @@ def qc_hist(
         fig.supylabel(dataset_label)
 
     fname = outdir + var + ext
-    plt.savefig(fname)  #   Save to the outdir
+    save_figure(fig, fname)
     plt.close(fig)
     return fname
 
 
-def make_plots(
-    pdf: ReportPDF,
-    data: xr.Dataset,
-    outdir: str,
-    bar=None,
-) -> None:
-    #   Write a QC histogram per numeric QC variable. xarray.plot keeps the
-    #   million-point series fast to render.
-    pdf.add_page()
-    pdf.section_heading("QC Plots")
-
-    #   Only plot QC flags that belong to a numeric measurement series. Many
-    #   QC variables flag metadata/coordinate fields whose parent is a string,
-    #   datetime, or scalar; those cannot be NaN-checked or histogrammed.
+def qc_hist_figures(data: xr.Dataset, outdir: str, bar=None) -> list:
+    #   Render a QC histogram per numeric QC variable (in the background, see
+    #   save_figure); returns [(var, image path or None)] for make_plots. Only
+    #   QC flags of a numeric measurement series are plotted: many flag
+    #   metadata/coordinate fields whose parent is a string, datetime or scalar.
     qc_vars = [
         var
         for var in data.data_vars
@@ -1417,33 +1409,37 @@ def make_plots(
     dataset_id = data.attrs.get("dataset_id")
     dataset_label = dataset_id if dataset_id != UNKNOWN_DATASET_ID else None
 
-    #   Bar arrives at 10%; jump to 20% as the loop begins, then split the
-    #   remaining 80% across the QC variables.
-    if bar is not None:
-        bar.update(10)
+    figures = []
     emitted = 0
     for i, var in enumerate(qc_vars, start=1):
         var_source = var[:-3]  #   TEMP_QC --> TEMP
         #   Scan each array's NaN-ness once and reuse it in qc_hist, rather than
-        #   scanning both again inside there.
+        #   scanning both again inside there. Nothing to plot when both are NaN.
         source_all_nan = bool(np.all(np.isnan(data[var_source])))
         flag_all_nan = bool(np.all(np.isnan(data[var])))
-        #   When both the measurement and its flags are entirely NaN there is
-        #   nothing to plot. Note it in one line and skip so more useful plots
-        #   fit on the page.
         if source_all_nan and flag_all_nan:
-            pdf.body(f"{var_source} and {var} are all NaN.", align="C")
+            figures.append((var, None))
         else:
-            # Any form of scatter takes ~30 sec, stick with xarray.plot for now (no colorbars, alternative color schemes)
-            hist_img = qc_hist(
+            figures.append((var, qc_hist(
                 data, outdir, var, dataset_label=dataset_label,
                 source_all_nan=source_all_nan, flag_all_nan=flag_all_nan,
-            )
-            pdf.image_full(hist_img, aspect=3.2 / 8)
+            )))
         if bar is not None:
             target = round(80 * i / len(qc_vars))
             bar.update(target - emitted)
             emitted = target
+    return figures
+
+
+def make_plots(pdf: ReportPDF, figures: list) -> None:
+    #   Write the QC Plots section from qc_hist_figures() output.
+    pdf.add_page()
+    pdf.section_heading("QC Plots")
+    for var, hist_img in figures:
+        if hist_img is None:
+            pdf.body(f"{var[:-3]} and {var} are all NaN.", align="C")
+        else:
+            pdf.image_full(hist_img, aspect=3.2 / 8)
 
 
 def cross_section_figure(data: xr.Dataset, outdir: str, ext: str = ".png") -> str:
@@ -1588,16 +1584,15 @@ def cross_section_figure(data: xr.Dataset, outdir: str, ext: str = ".png") -> st
     bottom.set_xlabel(time_name, fontsize=8)
 
     fname = outdir + "cross_section" + ext
-    plt.savefig(fname, dpi=200)
+    save_figure(fig, fname, dpi=200)
     plt.close(fig)
     return fname
 
 
-def cross_section_section(pdf: ReportPDF, data: xr.Dataset, outdir: str) -> None:
+def cross_section_section(pdf: ReportPDF, img: str | None) -> None:
     #   Write the Cross Section Plots section (the full-page A4 figure).
     pdf.add_page()
     pdf.section_heading("Cross Section Plots")
-    img = cross_section_figure(data, outdir)
     if img is None:
         pdf.body("No suitable TIME/PRES/variable data available for cross-section plots.")
         return
@@ -1819,6 +1814,23 @@ class WriteDataReportPython(BaseStep):
             track_map_path = None
 
         try:
+            #   All figures are drawn first and rasterised by background workers
+            #   (save_figure); the PDF is assembled once every PNG exists.
+            #   One bar for the whole build: cross-section to 10%, QC histograms
+            #   fill 20 -> 100%; the quick middle sections read as the 10 -> 20 jump.
+            report_bar = progress_bar(
+                total=100, desc="", unit="%", step_name=self.name
+            )
+            cross_section_img = None
+            if self.parameters.get("show_cross_section_plots", True):
+                cross_section_img = cross_section_figure(data, fig_dir)
+                report_bar.update(10)
+            qc_figures = []
+            if self.parameters.get("show_qc_plots", True):
+                qc_figures = qc_hist_figures(data, fig_dir, bar=report_bar)
+            wait_for_saves()
+            report_bar.close()
+
             #   Build the PDF
             pdf = ReportPDF(
                 title=title,
@@ -1852,15 +1864,8 @@ class WriteDataReportPython(BaseStep):
             #   per-step diagnostics, QC summary, plots and logs. Close with a
             #   pelagos-py credit and an index (QC flag glossary, variable index
             #   and glider information).
-            #   One bar for the whole build: cross-sections to 10%, QC-image loop
-            #   fills 20 -> 100%; the quick middle sections read as the 10 -> 20 jump.
-            report_bar = progress_bar(
-                total=100, desc="", unit="%", step_name=self.name
-            )
-
             if self.parameters.get("show_cross_section_plots", True):
-                cross_section_section(pdf, data, outdir=fig_dir)
-                report_bar.update(10)
+                cross_section_section(pdf, cross_section_img)
 
             if (
                 self.parameters.get("show_format_check", True)
@@ -1882,8 +1887,7 @@ class WriteDataReportPython(BaseStep):
                 qc_section(pdf, data)
 
             if self.parameters.get("show_qc_plots", True):
-                make_plots(pdf, data, outdir=fig_dir, bar=report_bar)
-            report_bar.close()
+                make_plots(pdf, qc_figures)
 
             if self.parameters.get("show_logs", True):
                 log_path = odir + self.context["global_parameters"]["log_file"]

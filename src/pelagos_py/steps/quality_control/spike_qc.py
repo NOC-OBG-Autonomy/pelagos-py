@@ -18,7 +18,9 @@
 
 #### Mandatory imports ####
 import numpy as np
+import pandas as pd
 from pelagos_py.steps.base_qc import BaseQC, register_qc
+from pelagos_py.utils.processing_utils import profile_indices
 
 #### Custom imports ####
 import matplotlib.pyplot as plt
@@ -101,41 +103,35 @@ class spike_qc(BaseQC):
         self.data = self.data[self.required_variables + qc_cols + keep]
 
         # Generate the variable-specific flags
+        groups = profile_indices(self.data["PROFILE_NUMBER"].values)
         for var, sensitivity in self.variables.items():
             spike_qc = np.full(len(self.data[var]), 0)
+            values = self.data[var].values
+            qc_flags = self.data[f"{var}_QC"].values if f"{var}_QC" in self.data else None
 
             # Apply the checks across individual profiles
-            profile_numbers = np.unique(
-                self.data["PROFILE_NUMBER"].dropna(dim="N_MEASUREMENTS")
-            )
-            for profile_number in self.log_progress(
-                profile_numbers,
-                desc=f"[{var}]",
-                unit="prof",
-            ):
-                # Subset the data
-                profile = self.data.where(
-                    self.data["PROFILE_NUMBER"] == profile_number, drop=True
-                )
+            for indices in self.log_progress(groups.values(), desc=f"[{var}]", unit="prof", total=len(groups)):
+                profile = values[indices]
+                missing = np.isnan(profile)
 
                 # Usable = not NaN and not already flagged bad/missing; only these
                 # inform the baseline, so prior-bad spikes can't bias detection.
-                usable = ~profile[var].isnull()
-                if f"{var}_QC" in profile:
-                    usable = usable & ~profile[f"{var}_QC"].isin(self.IGNORE_FLAGS)
+                usable = ~missing
+                if qc_flags is not None:
+                    usable &= ~np.isin(qc_flags[indices], self.IGNORE_FLAGS)
 
-                var_data = profile[var].where(usable, drop=True)
+                var_data = profile[usable]
                 if len(var_data) < self.window_size:
                     continue
 
                 # Calculate the residules from the running median of the data
                 rolling_median = (
-                    var_data.to_pandas()
+                    pd.Series(var_data)
                     .rolling(window=self.window_size, center=True)
                     .median()
                     .to_numpy()
                 )
-                residules = var_data.to_numpy() - rolling_median
+                residules = var_data - rolling_median
 
                 # Define the residule threshold
                 threshold = np.nanstd(residules) * sensitivity
@@ -146,14 +142,9 @@ class spike_qc(BaseQC):
                 # NaNs are missing (9); excluded/usable points start good (1).
                 # Excluded points stay 1 so Apply QC's combinatrix keeps their
                 # existing (worse) flag; usable points take their spike result.
-                profile_flags = np.where(profile[var].isnull().to_numpy(), 9, 1)
-                profile_flags[np.where(usable.to_numpy())] = spike_flags
-
-                # Stitch the QC results back into the QC container
-                profile_indices = np.where(
-                    self.data["PROFILE_NUMBER"] == profile_number
-                )
-                spike_qc[profile_indices] = profile_flags
+                profile_flags = np.where(missing, 9, 1)
+                profile_flags[usable] = spike_flags
+                spike_qc[indices] = profile_flags
 
             # Add the flags to the data
             self.data[f"{var}_QC"] = (["N_MEASUREMENTS"], spike_qc)

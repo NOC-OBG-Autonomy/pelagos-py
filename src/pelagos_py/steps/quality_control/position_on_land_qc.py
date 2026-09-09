@@ -26,7 +26,6 @@ import shapely as sh
 import numpy as np
 import xarray as xr
 import matplotlib
-import geopandas
 from pelagos_py.utils import fig_spec
 
 
@@ -46,6 +45,7 @@ class position_on_land_qc(BaseQC):
 
     def return_qc(self):
         # Concat the polygons into a MultiPolygon object
+        import geopandas
         self.world = geopandas.read_file(get_path("naturalearth.land"))
         land_polygons = sh.ops.unary_union(self.world.geometry)
 

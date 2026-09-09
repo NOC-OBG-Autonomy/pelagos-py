@@ -28,11 +28,6 @@ from pelagos_py.utils.processing_utils import profile_indices
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
-from scipy.stats import shapiro
-
-# Skip scipy's axis/nan_policy wrapper (~5x the test itself); same result on finite 1-D input.
-_shapiro = getattr(shapiro, "__wrapped__", shapiro)
-from scipy.interpolate import interp1d
 from datetime import datetime
 import warnings
 import xarray as xr
@@ -191,24 +186,34 @@ def qc_par_flagging(pres, par, sun_elev, nei_par=3e-2):
         pres_i = np.arange(p_min, p_max + 0.125, 0.25)
 
     # now perform interpolation
+    from scipy.interpolate import interp1d
     f = interp1d(pres_v, par_v, kind="linear", bounds_error=False, fill_value=np.nan)
     par_i = f(pres_i)
 
     # ───────────────────────────────────────────────
     # 3. Shapiro–Wilk test on successive tails
     # ───────────────────────────────────────────────
+    from scipy.stats import shapiro
+    _shapiro = getattr(shapiro, "__wrapped__", shapiro)  # skip scipy's axis/nan_policy wrapper (~5x the test itself)
+    # Only the deepest tail with p <= 1e-4 (pa) is used, plus whether every p is
+    # > 0 for night profiles, so scan from the bottom up and stop once both are
+    # settled: same result as testing every tail, at a fraction of the cost.
     pvals = np.full_like(pres_i, np.nan, dtype=float)
-    for i in range(pres_i.size):
-        seg = par_i[i:]
-        seg = seg[np.isfinite(seg)]
-        if seg.size >= 3:
-            try:
-                # TODO: Dev. verbosity to disable warning ignoring. Also below...
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
+    finite_par = np.isfinite(par_i)
+    found_pa, all_positive = False, True
+    with warnings.catch_warnings():  # TODO: Dev. verbosity to disable warning ignoring. Also below...
+        warnings.simplefilter("ignore")
+        for i in range(pres_i.size - 1, -1, -1):
+            seg = par_i[i:][finite_par[i:]]
+            if seg.size >= 3:
+                try:
                     _, pvals[i] = _shapiro(seg)
-            except Exception:
-                pvals[i] = np.nan
+                except Exception:
+                    pvals[i] = np.nan
+            found_pa |= bool(pvals[i] <= 1e-4)
+            all_positive &= bool(pvals[i] > 0)
+            if found_pa and (mode == "day" or not all_positive):
+                break
 
     # Determine P_A = last depth where p ≈ 0 (non-normal)
     null_mask = np.isfinite(pvals) & (pvals <= 1e-4)

@@ -24,9 +24,13 @@ which redirects ``plt.show`` so the figures are written to disk instead of being
 displayed. The saved paths are then embedded by the report writer.
 """
 
+import atexit
 import contextlib
 import functools
 import os
+import pickle
+import subprocess
+import sys
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -44,9 +48,8 @@ from pelagos_py.utils import fig_spec
 _CAPTURE_MAX_POINTS = 100_000
 
 
-@contextlib.contextmanager
-def _decimated_for_save(fig):
-    """Temporarily thin dense Line2D/scatter artists in ``fig`` to a point cap."""
+def _decimate(fig):
+    """Thin dense Line2D/scatter artists in ``fig`` to a point cap; returns what to restore."""
     restore = []
     for ax in fig.axes:
         for artist in ax.lines:
@@ -66,6 +69,12 @@ def _decimated_for_save(fig):
                 artist.set_offsets(offsets[idx])
                 if array is not None:
                     artist.set_array(array[idx])
+    return restore
+
+
+@contextlib.contextmanager
+def _decimated_for_save(fig):
+    restore = _decimate(fig)
     try:
         yield
     finally:
@@ -111,6 +120,67 @@ def force_headless_backend():
             pass
 
 
+#   Rasterising a figure (layout, ticks, Agg draw, PNG encode) is single-threaded
+#   Python and often costs more than the step that drew it. Headless saves are
+#   handed to a few worker subprocesses instead: the figure is pickled to
+#   ``path + ".fig"`` and the worker (fig_save_worker.py) writes the PNG while
+#   the pipeline carries on. wait_for_saves() blocks until every PNG exists.
+_SAVE_WORKERS = min(4, os.cpu_count() or 1)
+_workers = []  # [proc, [pending paths]]
+_next_worker = 0
+
+
+def _worker(i):
+    while len(_workers) <= i:
+        proc = subprocess.Popen(
+            [sys.executable, os.path.join(os.path.dirname(__file__), "fig_save_worker.py")],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True,
+        )
+        _workers.append([proc, []])
+    return _workers[i]
+
+
+def save_figure(fig, path, **kwargs):
+    """Save ``fig`` to ``path`` in the background; falls back to a direct save."""
+    global _next_worker
+    try:
+        with open(path + ".fig", "wb") as fh:
+            pickle.dump((fig, kwargs), fh, protocol=pickle.HIGHEST_PROTOCOL)
+        entry = _worker(_next_worker % _SAVE_WORKERS)
+        entry[0].stdin.write(path + "\n")
+        entry[0].stdin.flush()
+        entry[1].append(path)
+        _next_worker += 1
+    except Exception:  # noqa: BLE001 - unpicklable artists, dead worker: save here instead
+        if os.path.exists(path + ".fig"):
+            os.remove(path + ".fig")
+        fig.savefig(path, **kwargs)
+
+
+def wait_for_saves():
+    """Block until every save_figure() call has produced its file."""
+    for proc, pending in _workers:
+        while pending:
+            path = pending.pop(0)
+            reply = proc.stdout.readline() if proc.poll() is None else ""
+            if not reply.startswith("ok") and os.path.exists(path + ".fig"):
+                #   Worker failed on this one (or died): rasterise it here.
+                with open(path + ".fig", "rb") as fh:
+                    fig, kwargs = pickle.load(fh)
+                os.remove(path + ".fig")
+                fig.savefig(path, **kwargs)
+
+
+@atexit.register
+def _shutdown_workers():
+    with contextlib.suppress(Exception):
+        wait_for_saves()
+    for proc, _ in _workers:
+        with contextlib.suppress(Exception):
+            proc.stdin.close()
+            proc.wait(timeout=5)
+
+
 def _save_open_figures(
     outdir: str, step_name: str, step_index: int, images: list, close: bool = True
 ) -> None:
@@ -131,8 +201,12 @@ def _save_open_figures(
         fig = plt.figure(num)
         path = os.path.join(outdir, f"{safe}_{len(images) + 1}.png")
         try:
-            with _decimated_for_save(fig):
-                fig.savefig(path, dpi=150, bbox_inches="tight")
+            if close:
+                _decimate(fig)
+                save_figure(fig, path, dpi=150, bbox_inches="tight")
+            else:
+                with _decimated_for_save(fig):
+                    fig.savefig(path, dpi=150, bbox_inches="tight")
             images.append(path)
         except Exception:  # noqa: BLE001 - a capture failure must never be fatal
             pass

@@ -33,6 +33,7 @@ WebGL-safe rules:
 
 import matplotlib.dates as mdates
 import numpy as np
+from functools import partial
 
 # Geometry: single panel is 16:9; multi-panel keeps width, grows height by ROW_H/row.
 FIG_W, FIG_H, DPI = 10, 5.625, 130
@@ -130,8 +131,9 @@ def date_axis(ax, which="x", index=None):
     order = np.argsort(t, kind="stable")
     ts, is_ = t[order], i[order]
     top = max(ax.get_shared_x_axes().get_siblings(ax), key=lambda a: a.get_position().y1)
-    sec = top.secondary_xaxis("top", functions=(lambda v: np.interp(v, ts, is_),
-                                                lambda v: np.interp(v, i, t)))
+    # partials (not lambdas) so the figure stays picklable for background saving
+    sec = top.secondary_xaxis("top", functions=(partial(np.interp, xp=ts, fp=is_),
+                                                partial(np.interp, xp=i, fp=t)))
     sec.set_xlabel("N_MEASUREMENTS", fontsize=FS_LABEL)
     sec.tick_params(labelsize=FS_TICK)
     top._pelagos_index = (ts, is_)  # picked up by the dashboard serialiser

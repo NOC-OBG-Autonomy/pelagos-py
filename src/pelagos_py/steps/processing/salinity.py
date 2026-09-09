@@ -25,8 +25,6 @@ from pelagos_py.utils.processing_utils import cndc_scale_factor, profile_indices
 #### Custom imports ####
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from scipy import interpolate
-from scipy.signal import lfilter
 import xarray as xr
 import pandas as pd
 import numpy as np
@@ -95,6 +93,7 @@ def compute_optimal_lag(
     cndc_factor = cndc_scale_factor(profile_data["CNDC"].attrs.get("units"))
 
     # Creates a callable function that predicts what CNDC would be at any given time
+    from scipy import interpolate
     conductivity_from_time = interpolate.interp1d(
         profile_data["ELAPSED_TIME[s]"].values,
         profile_data["CNDC"].values,
@@ -107,18 +106,14 @@ def compute_optimal_lag(
     saved_psal = {} if return_cost_data else None
 
     # For each lag find its score and add it to the time_lags array
+    elapsed = profile_data["ELAPSED_TIME[s]"].values
+    temp, pres = profile_data["TEMP"].values, profile_data["PRES"].values
     for i, lag in enumerate(time_lags[:, 0].copy()):
         # Apply the time shift
-        time_shifted_conductivity = conductivity_from_time(
-            profile_data["ELAPSED_TIME[s]"] + lag
-        )
+        time_shifted_conductivity = conductivity_from_time(elapsed + lag)
 
         # Derive salinity with the time shifted CNDC (spiking will be minimized when CNDC and TEMP are aligned)
-        PSAL = gsw.conversions.SP_from_C(
-            time_shifted_conductivity * cndc_factor,
-            profile_data["TEMP"],
-            profile_data["PRES"],
-        )
+        PSAL = gsw.conversions.SP_from_C(time_shifted_conductivity * cndc_factor, temp, pres)
 
         # Smooth the salinity profile (to remove spiking)
         PSAL_Smooth = running_average_nan(PSAL, filter_window_size)
@@ -402,6 +397,7 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
             )
             return
 
+        from scipy import interpolate
         CNDC_from_TIME = interpolate.interp1d(
             data_subset["ELAPSED_TIME[s]"].values[anchors],
             data_subset["CNDC"].values[anchors],
@@ -434,6 +430,8 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
         -----
         Operates in place on ``self.data``.
         """
+        from scipy import interpolate
+        from scipy.signal import lfilter
         corrected_temp_array = np.full(len(self.data["TEMP"]), np.nan)
         temp_arr = self.data["TEMP"].values
         time_arr = self.data[self.time_col].values

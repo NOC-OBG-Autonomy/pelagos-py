@@ -35,7 +35,7 @@ class ExportStep(BaseStep):
         Either "netcdf", "csv", "hdf5" or "parquet". Defaults to "netcdf".
     compression : int
         zlib compression level for netcdf/hdf5 output: 0 turns compression off,
-        1 (fastest) to 9 (smallest). Defaults to 4. Ignored for csv/parquet.
+        1 (fastest) to 9 (smallest). Defaults to 2. Ignored for csv/parquet.
 
     Examples
     --------
@@ -48,7 +48,7 @@ class ExportStep(BaseStep):
             parameters:
                 output_path: "save/my/data/here.nc"
                 export_format: "netcdf"
-                compression: 4
+                compression: 2
     """
 
     step_name = "Data Export"
@@ -67,7 +67,7 @@ class ExportStep(BaseStep):
         },
         "compression": {
             "type": int,
-            "default": 4,
+            "default": 2,
             "min": 0,
             "max": 9,
             "description": "zlib level for netcdf/hdf5 (0 = off, 1-9). Ignored for csv/parquet.",
@@ -108,8 +108,15 @@ class ExportStep(BaseStep):
                 raise ValueError(
                     f"Unsupported compression level: {compression}. Please specify compression from 0-9."
                 )
+            # Chunks inherited from the input file can be tiny (512 samples), which
+            # makes zlib slow and the file bigger; write large chunks instead.
             encoding = {
-                var: {"zlib": True, "complevel": compression} for var in data.data_vars
+                var: {
+                    "zlib": True,
+                    "complevel": compression,
+                    "chunksizes": tuple(min(n, 1_000_000) for n in data[var].shape),
+                }
+                for var in data.data_vars
             }
         else:
             encoding = None

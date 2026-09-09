@@ -29,7 +29,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from scipy.stats import linregress
 
 CALC_SUFFIX = "__FOR_CALC"  # suffix of the QC-masked calculation-only copies; see run().
 
@@ -318,17 +317,22 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
 
         # Per-profile median surface fix (time/lat/lon) for the solar-angle lookup.
         if method_key in self.methods_requiring_sun:
-            self.sun_args = (
-                self.data[["PROFILE_NUMBER", "TIME", "DEPTH", "LATITUDE", "LONGITUDE"]]
-                .to_pandas()
-                .dropna()
-            )
+            cols = ["PROFILE_NUMBER", "TIME", "DEPTH", "LATITUDE", "LONGITUDE"]
+            arrays = {c: self.data[c].values for c in cols}
+            complete = np.ones(self.data.sizes["N_MEASUREMENTS"], dtype=bool)
+            for values in arrays.values():
+                complete &= ~pd.isnull(values)
 
-            # median over the 50 shallowest samples of each profile
+            # median over the 50 shallowest complete samples of each profile
+            # (picked in numpy: a full-dataset DataFrame is GBs on big missions)
+            depth = arrays["DEPTH"]
+            picked = []
+            for indices in self._profile_index.values():
+                indices = indices[complete[indices]]
+                picked.append(indices[np.argsort(depth[indices], kind="stable")[:50]])
+            picked = np.concatenate(picked) if picked else np.array([], dtype=int)
             self.sun_args = (
-                self.sun_args.sort_values("DEPTH", kind="stable")
-                .groupby("PROFILE_NUMBER")
-                .head(50)
+                pd.DataFrame({c: arrays[c][picked] for c in cols})
                 .groupby("PROFILE_NUMBER")
                 .agg({var: "median" for var in ["TIME", "LATITUDE", "LONGITUDE"]})
             )
@@ -629,6 +633,7 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
                     "points to fit a regression; day profiles will be left uncorrected."
                 )
                 return
+            from scipy.stats import linregress
             fit = linregress(b[sel], f[sel])
             self._hemsley_regression = {
                 "slope": float(fit.slope),
@@ -1441,13 +1446,16 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         # already matches night, would only dilute the metric.
         max_key = int(np.floor(COMPARE_SURFACE_LIMIT_METRES / COMPARE_BIN_METRES))
         xs, ys = [], []
+        night_cache = {}  # night bins are method-independent: bin each night once
         for day_pn, night_pn in pairs:
             day = day_dv.get(day_pn)
             night = night_dv.get(night_pn)
             if day is None or night is None:
                 continue
             day_bins = self._bin_medians(day[0], day[1])
-            night_bins = self._bin_medians(night[0], night[1])
+            if night_pn not in night_cache:
+                night_cache[night_pn] = self._bin_medians(night[0], night[1])
+            night_bins = night_cache[night_pn]
             for k in day_bins.keys() & night_bins.keys():
                 if k > max_key:  # deeper than the surface window -> skip
                     continue
@@ -1464,7 +1472,14 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         if not np.any(mask):
             return {}
         keys = np.floor(depth[mask] / COMPARE_BIN_METRES).astype(int)
-        return {int(k): float(np.nanmedian(v)) for k, v in _group_by_key(keys, values[mask])}
+        # sort by (bin, value) once; the median is the middle element (or the
+        # mean of the middle two), exactly as np.median computes it
+        order = np.lexsort((values[mask], keys))
+        k, v = keys[order], values[mask][order]
+        starts = np.flatnonzero(np.r_[True, k[1:] != k[:-1]])
+        n = np.diff(np.append(starts, k.size))
+        med = (v[starts + (n - 1) // 2] + v[starts + n // 2]) / 2
+        return {int(key): float(m) for key, m in zip(k[starts], med)}
 
     @staticmethod
     def _fit_stats(xs, ys):
@@ -1475,6 +1490,7 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         x, y = x[mask], y[mask]
         if x.size < 2 or np.ptp(x) == 0:
             return None
+        from scipy.stats import linregress
         fit = linregress(x, y)
         resid = y - x
         bias = float(np.mean(resid))

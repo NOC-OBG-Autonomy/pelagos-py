@@ -27,6 +27,29 @@ import numpy as np
 import json
 
 
+def _flag_summary(flags):
+    """Per-flag counts (0-9) and pandas-describe-equivalent stats, from one bincount."""
+    counts = np.bincount(flags.astype(np.int64), minlength=10)
+    n = int(counts.sum())
+    values = np.arange(counts.size, dtype=float)
+    cum = np.cumsum(counts)
+    mean = float((values * counts).sum() / n)
+    std = float(np.sqrt(((values - mean) ** 2 * counts).sum() / (n - 1))) if n > 1 else float("nan")
+
+    def quantile(q):  # numpy 'linear' method, as pandas describe uses
+        pos = q * (n - 1)
+        lo, hi = values[np.searchsorted(cum, int(pos), side="right")], values[np.searchsorted(cum, int(np.ceil(pos)), side="right")]
+        t = pos - int(pos)
+        return float(hi - (hi - lo) * (1 - t)) if t >= 0.5 else float(lo + (hi - lo) * t)
+
+    stats = {
+        "count": float(n), "mean": mean, "std": std, "min": float(values[counts > 0][0]),
+        "25%": quantile(0.25), "50%": quantile(0.5), "75%": quantile(0.75),
+        "max": float(values[counts > 0][-1]),
+    }
+    return {i: int(counts[i]) for i in range(10)}, {k: round(v, 5) for k, v in stats.items()}
+
+
 @register_step
 class ApplyQC(BaseStep):
     """
@@ -275,12 +298,9 @@ class ApplyQC(BaseStep):
                 if parent_standard_name is not None:
                     attrs["standard_name"] = f"{parent_standard_name}_flag"
                 attr_test = qc_qc_name.replace(" ", "_").lower()
-                attrs[f"{attr_test}_flag_cts"] = json.dumps(
-                    {i: int(np.sum(var_flags.to_numpy() == i)) for i in range(10)}
-                )
-                attrs[f"{attr_test}_stats"] = json.dumps(
-                    var_flags.to_series().describe().round(5).to_dict()
-                )
+                counts, stats = _flag_summary(var_flags.to_numpy())
+                attrs[f"{attr_test}_flag_cts"] = json.dumps(counts)
+                attrs[f"{attr_test}_stats"] = json.dumps(stats)
                 attrs[f"{attr_test}_params"] = json.dumps(qc_test_params)
                 # Can get indices of 3/4 with np.where(var_flags.to_numpy() == 3)[0] for future reference
 
