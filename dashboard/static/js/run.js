@@ -41,6 +41,8 @@ const Run = {
   RERUN_MARKER: '__PELAGOS_RERUN__ ',
   MEM_MARKER: '__PELAGOS_MEM__ ',
   REPORT_MARKER: '__PELAGOS_REPORT__ ',
+  VARS_MARKER: '__PELAGOS_VARS__ ',
+  variables: [], // dataset variables at the current pause (for Manual QC's axis pickers)
 
   // Whether the unit currently paused on failed its most recent attempt
   // (rather than pausing for review after a successful diagnostics step).
@@ -187,7 +189,7 @@ const Run = {
   markerAt(plain) {
     let best = null;
     for (const marker of [Run.FIG_MARKER, Run.LOG_MARKER, Run.FAIL_MARKER, Run.STEP_MARKER,
-      Run.PAUSE_MARKER, Run.RERUN_MARKER, Run.MEM_MARKER, Run.REPORT_MARKER]) {
+      Run.PAUSE_MARKER, Run.RERUN_MARKER, Run.MEM_MARKER, Run.REPORT_MARKER, Run.VARS_MARKER]) {
       const at = plain.indexOf(marker);
       if (at >= 0 && (best === null || at < best.at)) best = { marker, at };
     }
@@ -215,6 +217,10 @@ const Run = {
       // Payload is "<rss>\t<peak>\t<data>\t<label>" — the RAM meter's, not a
       // step marker. Kept out of the console: it's a visual, not a log line.
       Mem.add(plain.slice(marker.length));
+      return;
+    }
+    if (marker === Run.VARS_MARKER) {
+      try { Run.variables = JSON.parse(plain.slice(marker.length)); } catch (e) { /* malformed */ }
       return;
     }
     if (marker === Run.REPORT_MARKER) {

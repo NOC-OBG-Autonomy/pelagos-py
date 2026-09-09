@@ -341,7 +341,12 @@ class Pipeline(ConfigMirrorMixin):
         # performance logging. Capture mode additionally force-enables the
         # diagnostic code path so its figures can be saved for the report,
         # without otherwise changing how the step reports performance.
-        user_diagnostics = step.diagnostics
+        # A QC step counts as user-requested when any of its tests overrides
+        # diagnostics on, even if the step-level flag is off.
+        qc_tests = (step.parameters or {}).get("qc_settings") or {}
+        user_diagnostics = step.diagnostics or any(
+            isinstance(t, dict) and bool(t.get("diagnostics")) for t in qc_tests.values()
+        )
         # True when diagnostics run only to feed the report (not user-requested).
         step._report_capture = bool(capture and not user_diagnostics)
         captured_images = []

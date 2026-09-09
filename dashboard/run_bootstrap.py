@@ -388,9 +388,12 @@ def _qc_tests(step_config):
 def _pausable(step_config, test):
     """Whether the run should stop after this unit for the user to look at it."""
     step_diag = bool(step_config.get("diagnostics"))
-    if test is None:
-        return step_diag
     settings = _qc_tests(step_config) or {}
+    if test is None:
+        # An unsplit QC step pauses if any of its tests asks to.
+        return step_diag or any(
+            bool((cfg or {}).get("diagnostics", step_diag)) for cfg in settings.values()
+        )
     return bool((settings.get(test) or {}).get("diagnostics", step_diag))
 
 
@@ -405,8 +408,10 @@ def _expand(step_config):
 
     Only done when the step would pause anyway, so ordinary runs are unaffected.
     """
+    # A single test is still split, so the pause is keyed by test name (the
+    # Manual QC panel and the per-test builder unlock depend on that).
     tests = _qc_tests(step_config)
-    if not tests or len(tests) < 2:
+    if not tests:
         return [(step_config, None)]
     if not any(_pausable(step_config, name) for name in tests):
         return [(step_config, None)]
@@ -416,6 +421,38 @@ def _expand(step_config):
         sub["parameters"] = dict(step_config["parameters"], qc_settings={name: settings})
         units.append((sub, name))
     return units
+
+
+def _emit_vars(context):
+    """Print a ``__PELAGOS_VARS__`` marker listing the dataset's plottable
+    variables (1-D over N_MEASUREMENTS, not _QC), so the dashboard can offer
+    them as axes while paused on a Manual QC test."""
+    try:
+        data = (context or {}).get("data")
+        if data is None:
+            return
+        names = [
+            name for name in data.variables
+            if data[name].dims == ("N_MEASUREMENTS",) and not name.endswith("_QC")
+            and name != "N_MEASUREMENTS"
+        ]
+        print(f"__PELAGOS_VARS__ {json.dumps(names)}", flush=True)
+    except Exception:  # noqa: BLE001 - the axis list is a bonus, never fatal
+        pass
+
+
+def _drop_captures(pipeline, mark):
+    """Discard report figures captured since ``mark`` (the previous attempt's)."""
+    figs = getattr(pipeline, "_captured_figures", None)
+    if not figs:
+        return
+    for entry in figs[mark:]:
+        for path in entry.get("images", []):
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+    del figs[mark:]
 
 
 def _read_command():
@@ -507,6 +544,9 @@ def main():
             # cleanly; one that did is a known, accepted gap (see CLAUDE.md).
             snapshot = _snapshot(context) if pausable else None
             pre_context = context
+            # Report captures taken so far: a re-run replaces this unit's, so the
+            # report shows only the attempt that was carried forward.
+            captured_mark = len(getattr(pipeline, "_captured_figures", None) or [])
             label = name + (f"\t{test}" if test else "")
             # Announce the step *before* it runs so the dashboard can attribute
             # the figures it emits. The pipeline's own "Executing:" log line is
@@ -554,6 +594,7 @@ def main():
                     _emit_report(context, report_since - 2)
             if not pausable and not failed:
                 continue
+            _emit_vars(context)
             while True:
                 print(f"__PELAGOS_PAUSE__ {idx}\t{label}", flush=True)
                 action, params = _read_command()
@@ -592,6 +633,7 @@ def main():
                     # Fresh copy each re-run so repeated re-runs all start clean.
                     _mem_begin(mem_label)
                     _begin_diag_capture(True)
+                    _drop_captures(pipeline, captured_mark)
                     retry_context = _snapshot(snapshot) if snapshot is not None else pre_context
                     try:
                         context = pipeline.execute_step(rerun_config, retry_context)

@@ -199,8 +199,14 @@ const Review = {
       main.appendChild(Review.paramSummary(current.params));
       const cards = document.createElement('div');
       cards.className = 'review-main-cards';
-      current.figs.forEach((_, i) =>
-        cards.appendChild(Viewer.card(current.figs, i, { cls: 'big' })));
+      // Manual QC: the plot is the editor, so it goes inline with its box tools
+      // rather than as a thumbnail that opens the viewer.
+      if (ManualQC.isActive() && current.figs[0].spec && isLatest) {
+        cards.appendChild(ManualQC.panel(current.figs[0]));
+      } else {
+        current.figs.forEach((_, i) =>
+          cards.appendChild(Viewer.card(current.figs, i, { cls: 'big' })));
+      }
       main.appendChild(cards);
       host.appendChild(main);
     }

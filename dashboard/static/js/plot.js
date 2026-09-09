@@ -61,11 +61,13 @@ const Plot = {
     return traces;
   },
 
-  async render(host, spec, { name, onProgress, signal } = {}) {
+  // `manual` ({onSelect, onRemove}) turns on the Manual QC selection mode: see
+  // Chart._bind and manual.js.
+  async render(host, spec, { name, onProgress, signal, manual } = {}) {
     const data = await Plot.fetchBin(name, onProgress, signal);
     if (signal && signal.aborted) throw new DOMException('aborted', 'AbortError');
     Plot.purge(host);
-    host._chart = new Chart(host, spec, data, name);
+    host._chart = new Chart(host, spec, data, name, manual);
     return host._chart;
   },
 
@@ -176,8 +178,11 @@ const FONT = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-s
 const FONT_B = '600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
 class Chart {
-  constructor(host, spec, data, name) {
+  constructor(host, spec, data, name, manual) {
     this.host = host; this.spec = spec; this.name = name;
+    // Manual QC: boxes already in the config (drawn with an × to remove them) and
+    // the one being drawn now, awaiting a flag. Both in chart coordinates.
+    this.manual = manual || null; this.overlays = []; this.pending = null; this.overlayHits = [];
     this.dpr = window.devicePixelRatio || 1;
     this.stage = document.createElement('div');
     this.stage.className = 'plot-stage';
@@ -191,6 +196,7 @@ class Chart {
 
     this.panels = spec.panels.map((p, i) => this._panel(p, i, data));
     this.box = null; this.pick = null;
+    this.busy = false; // Manual QC re-running: selection is off until the new plot lands
     this._initGL();
     this._bind();
     this.resize();
@@ -477,10 +483,48 @@ class Chart {
 
   _rgbaCss(rgba, i) { return 'rgba(' + rgba[i * 4] + ',' + rgba[i * 4 + 1] + ',' + rgba[i * 4 + 2] + ',' + (rgba[i * 4 + 3] / 255) + ')'; }
 
+  // Manual QC boxes, in chart coordinates: [{x0, x1, y0, y1, color, label}].
+  setOverlays(list) { this.overlays = list || []; this._drawFG(); }
+  clearPending() { this.pending = null; this._drawFG(); }
+
+  _drawBoxes(fg) {
+    this.overlayHits = [];
+    const p = this.panels[0];
+    if (!p || !p.rect) return;
+    const r = p.rect;
+    fg.save(); fg.beginPath(); fg.rect(r.x, r.y, r.w, r.h); fg.clip();
+    for (const o of this.overlays) {
+      const x = Math.min(this.px(p, o.x0), this.px(p, o.x1)), y = Math.min(this.py(p, o.y0), this.py(p, o.y1));
+      const w = Math.abs(this.px(p, o.x1) - this.px(p, o.x0)), h = Math.abs(this.py(p, o.y1) - this.py(p, o.y0));
+      fg.strokeStyle = o.color; fg.lineWidth = 1.5; fg.setLineDash([5, 3]);
+      fg.strokeRect(x + 0.5, y + 0.5, w, h);
+      fg.setLineDash([]);
+      // Label + × at the top-right corner; the × is the remove hit area.
+      const label = o.label || '';
+      fg.font = FONT_B; const tw = label ? fg.measureText(label).width + 8 : 0;
+      const bx = Math.min(x + w, r.x + r.w) - 18, by = Math.max(y, r.y);
+      fg.fillStyle = o.color; fg.fillRect(bx - tw, by, tw + 18, 16);
+      fg.fillStyle = '#fff'; fg.textAlign = 'left'; fg.textBaseline = 'middle';
+      if (label) fg.fillText(label, bx - tw + 4, by + 8);
+      fg.fillText('×', bx + 5, by + 8);
+      this.overlayHits.push({ x: bx, y: by, w: 18, h: 16, box: o });
+    }
+    if (this.pending) {
+      const s = this.pending;
+      const x = Math.min(this.px(p, s.x0), this.px(p, s.x1)), y = Math.min(this.py(p, s.y0), this.py(p, s.y1));
+      const w = Math.abs(this.px(p, s.x1) - this.px(p, s.x0)), h = Math.abs(this.py(p, s.y1) - this.py(p, s.y0));
+      fg.fillStyle = 'rgba(11,107,203,.14)'; fg.strokeStyle = ACCENT; fg.lineWidth = 1.5;
+      fg.fillRect(x, y, w, h); fg.strokeRect(x + 0.5, y + 0.5, w, h);
+    }
+    fg.restore(); fg.font = FONT;
+  }
+
   _drawOverlay(fg) {
+    if (this.manual) this._drawBoxes(fg);
     if (this.box) {
       const b = this.box, x = Math.min(b.x0, b.x1), y = Math.min(b.y0, b.y1);
-      fg.fillStyle = 'rgba(11,107,203,.10)'; fg.strokeStyle = ACCENT; fg.lineWidth = 1; fg.setLineDash([4, 3]);
+      const sel = b.select;
+      fg.fillStyle = sel ? 'rgba(214,57,47,.12)' : 'rgba(11,107,203,.10)'; fg.strokeStyle = sel ? '#d6392f' : ACCENT; fg.lineWidth = 1; fg.setLineDash([4, 3]);
       fg.fillRect(x, y, Math.abs(b.x1 - b.x0), Math.abs(b.y1 - b.y0));
       fg.strokeRect(x + 0.5, y + 0.5, Math.abs(b.x1 - b.x0), Math.abs(b.y1 - b.y0));
       fg.setLineDash([]);
@@ -513,7 +557,13 @@ class Chart {
       if (!p) return;
       const hit = p.legendHits.find((h) => x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h);
       if (hit) { hit.trace.hidden = !hit.trace.hidden; this.draw(); return; }
-      this.box = { panel: p, x0: x, y0: y, x1: x, y1: y };
+      if (this.manual) {
+        if (this.busy) return;
+        const ohit = this.overlayHits.find((h) => x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h);
+        if (ohit) { this.manual.onRemove(ohit.box); return; }
+      }
+      // ⌘/Ctrl-drag on a Manual QC chart selects a region instead of zooming.
+      this.box = { panel: p, x0: x, y0: y, x1: x, y1: y, select: !!(this.manual && (ev.metaKey || ev.ctrlKey)) };
       el.setPointerCapture(ev.pointerId);
     };
     const move = (ev) => {
@@ -527,7 +577,17 @@ class Chart {
     const up = (ev) => {
       if (!this.box) return;
       const b = this.box; this.box = null;
-      if (Math.abs(b.x1 - b.x0) > 4 && Math.abs(b.y1 - b.y0) > 4) {
+      const big = Math.abs(b.x1 - b.x0) > 4 && Math.abs(b.y1 - b.y0) > 4;
+      if (b.select) {
+        if (!big) { this._drawFG(); return; }
+        const p = b.panel;
+        this.pending = { x0: this.dx(p, Math.min(b.x0, b.x1)), x1: this.dx(p, Math.max(b.x0, b.x1)),
+          y0: this.dy(p, Math.max(b.y0, b.y1)), y1: this.dy(p, Math.min(b.y0, b.y1)) };
+        this._drawFG();
+        this.manual.onSelect(this.pending, { x: Math.max(b.x0, b.x1), y: Math.min(b.y0, b.y1) });
+        return;
+      }
+      if (big) {
         this.zoomTo(b.panel, [this.dx(b.panel, Math.min(b.x0, b.x1)), this.dx(b.panel, Math.max(b.x0, b.x1))],
           [this.dy(b.panel, Math.max(b.y0, b.y1)), this.dy(b.panel, Math.min(b.y0, b.y1))]);
       } else this._click(b.panel, b.x0, b.y0);

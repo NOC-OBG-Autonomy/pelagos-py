@@ -54,6 +54,7 @@ Range and Value Checks
 These identify data points that fall outside expected physical or sensor limits.
 
 * :doc:`Range <api/pelagos_py/steps/quality_control/range_qc/index>`: Flags values by range, per variable. Each band carries an ``inside``/``outside`` keyword: ``[low, high, "outside"]`` is a band of good values (data outside it is flagged), while ``[low, high, "inside"]`` is an impossible band (data within it is flagged). A flag may list several bands. If the keyword is omitted the bound order is the fallback (ascending → outside, descending → inside). A single scalar flags exact matches (e.g. fill values).
+* :doc:`Manual <api/pelagos_py/steps/quality_control/manual_qc/index>`: Flags samples inside (or outside) hand-drawn boxes on an ``x_variable``/``y_variable`` plot — each box is a 2D range test with its own flag and target variables. The dashboard draws the boxes for you while paused on this test; the config it writes is plain YAML that replays anywhere.
 * :doc:`Stuck Value <api/pelagos_py/steps/quality_control/stuck_value_qc/index>`: Identifies sensor "freezing" by looking for sequences of identical values where variation is expected.
 * :doc:`Spike <api/pelagos_py/steps/quality_control/spike_qc/index>`: Detects sudden, unrealistic jumps in data values between adjacent measurements.
 * :doc:`PAR Irregularity <api/pelagos_py/steps/quality_control/par_irregularity_qc/index>`: A specialised check for Photosynthetically Active Radiation sensors to identify inconsistent light readings.

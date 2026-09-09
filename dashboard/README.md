@@ -75,6 +75,22 @@ the QC editor. Re-run replays that one test from the state just before it — th
 tests already applied in the same step keep their flags. Splitting only happens
 when the step would pause anyway, so an unattended run is unaffected.
 
+## Manual QC: drawing flags on the plot
+
+The `manual qc` test (in an Apply QC step, with diagnostics on) turns the pause
+into an editor. Its plot — `y_variable` vs `x_variable`, PRES vs TIME by
+default, with dropdowns to change either axis — is embedded live in the Run tab.
+**⌘/Ctrl-drag** a region and a popover asks which flag (0–9, with meanings) to
+give the samples **inside** or **outside** it, and on which variables (the y
+variable by default). Each box goes straight into the test's `boxes` parameter
+and the test is re-run so the plot shows the flags applied; the × on a box
+removes it the same way. Plain drag still zooms.
+
+Nothing lives only in the browser: a box is just a 2D range test in the YAML
+(`x: [lo, hi]`, `y: [lo, hi]`, `flag`, `mode`, `variables`), so the saved
+config replays the same flags anywhere the pipeline runs. The runner reports
+the dataset's variables at each pause (`__PELAGOS_VARS__`) to fill the pickers.
+
 ## Interactive plots
 
 Diagnostic figures are matplotlib, captured as PNGs — which cannot be zoomed

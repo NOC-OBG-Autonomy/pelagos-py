@@ -127,9 +127,10 @@ function renderPalette(filter = '') {
   ];
   const all = STATE.registry.steps;
   for (const [cat, title] of cats) {
+    const match = (x) => !f || x.name.toLowerCase().includes(f) || (x.description || '').toLowerCase().includes(f);
+    // A QC container stays listed while any of its tests matches the search.
     const items = all.filter(
-      (s) => s.category === cat &&
-        (!f || s.name.toLowerCase().includes(f) || (s.description || '').toLowerCase().includes(f))
+      (s) => s.category === cat && (match(s) || (isQcContainer(s) && STATE.registry.qc.some(match)))
     );
     if (!items.length) continue;
     const group = document.createElement('div');
@@ -138,25 +139,77 @@ function renderPalette(filter = '') {
     h.className = 'cat-title'; h.textContent = title;
     group.appendChild(h);
     for (const s of items) {
-      const el = document.createElement('div');
-      el.className = 'palette-item';
-      el.draggable = true;
-      el.innerHTML = `<div class="pi-name">${s.name}</div>` +
-        (s.description ? `<div class="pi-desc">${s.description}</div>` : '');
-      el.onclick = () => addStep(s.name); // click still adds to the end
-      el.addEventListener('dragstart', (e) => {
-        el.classList.add('dragging');
-        dragState = { kind: 'new', name: s.name };
-        e.dataTransfer.effectAllowed = 'copy';
-        e.dataTransfer.setData('text/plain', s.name); // Firefox needs some data set
-      });
-      el.addEventListener('dragend', () => {
-        el.classList.remove('dragging'); clearDropIndicator(); dragState = null;
-      });
-      group.appendChild(el);
+      group.appendChild(paletteItem(s.name, s.description, { kind: 'new', name: s.name }, () => addStep(s.name)));
+      // The QC tests sit under their container step so one can be dragged in
+      // directly: onto an existing Apply QC card to join it, or anywhere else
+      // to make a new Apply QC step holding just that test.
+      if (isQcContainer(s)) {
+        for (const qc of STATE.registry.qc) {
+          if (!match(s) && !match(qc)) continue;
+          const el = paletteItem(qc.name, qc.description, { kind: 'qc', container: s.name, test: qc.name },
+            () => addQcTest(s.name, qc.name));
+          el.classList.add('palette-qc');
+          group.appendChild(el);
+        }
+      }
     }
     list.appendChild(group);
   }
+}
+
+function paletteItem(name, description, drag, onClick) {
+  const el = document.createElement('div');
+  el.className = 'palette-item';
+  el.draggable = true;
+  el.innerHTML = `<div class="pi-name">${name}</div>` +
+    (description ? `<div class="pi-desc">${description}</div>` : '');
+  el.onclick = onClick; // click still adds to the end
+  el.addEventListener('dragstart', (e) => {
+    el.classList.add('dragging');
+    dragState = drag;
+    e.dataTransfer.effectAllowed = 'copy';
+    e.dataTransfer.setData('text/plain', name); // Firefox needs some data set
+  });
+  el.addEventListener('dragend', () => {
+    el.classList.remove('dragging'); clearDropIndicator(); dragState = null;
+  });
+  return el;
+}
+
+// Add a QC test to the last Apply QC step, or a new one at the end of the pipeline.
+function addQcTest(container, test) {
+  const last = [...STATE.pipeline.items].reverse().find((i) => i.name === container);
+  if (last) { addTestTo(last, test); return; }
+  const nodes = STATE.pipeline.nodes;
+  const tail = nodes[nodes.length - 1];
+  insertQcAt(container, test, isSection(tail) ? tail.steps : nodes, Infinity);
+}
+
+// Manual QC only makes sense paused on its plot, so it starts with diagnostics on.
+function initTestValues(test) {
+  const v = initValues(STATE.qcByName[test]);
+  if (test === 'manual qc') v.diagnostics = true;
+  return v;
+}
+
+function addTestTo(item, test) {
+  if (!(test in item.values.qc_settings)) {
+    item.values.qc_settings[test] = initTestValues(test);
+  }
+  item.qcOpen = Object.assign({}, item.qcOpen, { [test]: true });
+  item.collapsed = false;
+  renderPipeline();
+  STATE.onChange();
+}
+
+function insertQcAt(container, test, list, index) {
+  const item = makeItem(container);
+  if (!item) return;
+  item.values.qc_settings[test] = initTestValues(test);
+  item.qcOpen = { [test]: true };
+  list.splice(Math.max(0, Math.min(index, list.length)), 0, item);
+  renderPipeline();
+  STATE.onChange();
 }
 
 // ---------------------------------------------------------------- add/mutate
@@ -286,6 +339,15 @@ let dropIndicator = null;
 
 // The drop host under the pointer: a section body, or the root (loose steps).
 // Sections never nest, so a section drag always resolves to the root.
+// The Apply QC card a dragged QC test is over, if any.
+function qcCardAt(target) {
+  if (!dragState || dragState.kind !== 'qc') return null;
+  const card = target && target.closest ? target.closest('.step-card') : null;
+  if (!card) return null;
+  const item = STATE.pipeline.items.find((i) => i.id === Number(card.dataset.stepId));
+  return item && item.name === dragState.container ? { card, item } : null;
+}
+
 function dropHostAt(target) {
   const root = document.getElementById('pipeline-steps');
   if (dragState && dragState.kind === 'section') return root;
@@ -342,9 +404,11 @@ function initBuilderDnD() {
   root.addEventListener('dragover', (e) => {
     if (!dragState) return;
     e.preventDefault();
-    e.dataTransfer.dropEffect = dragState.kind === 'new' ? 'copy' : 'move';
-    const host = dropHostAt(e.target);
+    e.dataTransfer.dropEffect = dragState.kind === 'new' || dragState.kind === 'qc' ? 'copy' : 'move';
     clearDropIndicator();
+    const qc = qcCardAt(e.target);
+    if (qc) { qc.card.classList.add('drag-active'); return; }
+    const host = dropHostAt(e.target);
     host.classList.add('drag-active');
     showDropIndicator(host, e.clientY);
   });
@@ -358,9 +422,14 @@ function initBuilderDnD() {
     const index = computeDropIndex(host, e.clientY);
     const list = listForHost(host);
     const st = dragState;
+    const qc = qcCardAt(e.target);
     clearDropIndicator();
     dragState = null;
-    if (st.kind === 'new') insertStepAt(st.name, list, index);
+    if (st.kind === 'qc') {
+      if (qc) addTestTo(qc.item, st.test);
+      else insertQcAt(st.container, st.test, list, index);
+    }
+    else if (st.kind === 'new') insertStepAt(st.name, list, index);
     else if (st.kind === 'section') moveSectionTo(st.id, index);
     else moveStepTo(st.id, list, index);
   });
@@ -684,6 +753,7 @@ function renderSection(sec, index = 0) {
 function renderStepCard(item) {
   const card = document.createElement('div');
   card.className = 'step-card cat-' + item.def.category;
+  card.dataset.stepId = item.id;
 
   // header
   const head = document.createElement('div');
@@ -878,7 +948,7 @@ function renderQcEditor(item, spec) {
   addBtn.onclick = () => {
     const name = sel.value;
     if (!name || name in item.values.qc_settings) return;
-    item.values.qc_settings[name] = initValues(STATE.qcByName[name]);
+    item.values.qc_settings[name] = initTestValues(name);
     sel.value = '';
     renderPipeline();
     STATE.onChange();

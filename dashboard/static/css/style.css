@@ -290,6 +290,12 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .section-body.drag-active { outline: 2px dashed var(--accent); outline-offset: -2px; border-radius: var(--radius-sm); }
 .palette-item { cursor: grab; }
 .step-card .step-head { cursor: pointer; }
+/* QC tests nested under Apply QC in the palette; an Apply QC card lights up
+   when one is dragged over it. */
+.palette-item.palette-qc { margin-left: 14px; padding: 6px 10px; border-left: 2px solid var(--cat-qc); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+.palette-item.palette-qc .pi-name { font-weight: 500; }
+.palette-item.palette-qc .pi-desc { -webkit-line-clamp: 1; }
+.step-card.drag-active { outline: 2px dashed var(--accent); outline-offset: 2px; }
 .step-head .drag { cursor: grab; }
 .step-card.dragging { opacity: 0.45; }
 .drop-indicator {
@@ -990,3 +996,38 @@ body.run-locked .drag { pointer-events: none; opacity: .45; }
 .demo-card-ico { display: inline-flex; color: var(--accent); }
 .demo-card-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .demo-card-hint { font-size: 10.5px; color: var(--muted); }
+
+/* ---------- Manual QC (paused-step panel for the `manual qc` test) ----------
+   The plot is the editor: ⌘/Ctrl-drag selects a region, a popover picks the
+   flag, boxes carry an × to remove them. See manual.js. */
+.manual-panel { display: flex; flex-direction: column; gap: 8px; }
+.manual-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.manual-axis { font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+.manual-axis select { font-size: 12px; padding: 2px 6px; }
+.manual-hint { flex: 1; min-width: 200px; margin: 0; }
+.manual-chart {
+  position: relative; height: 480px; min-height: 300px; resize: vertical; overflow: hidden;
+  background: #fff; border: 1px solid var(--border); border-radius: var(--radius-sm);
+}
+.manual-pop {
+  position: absolute; z-index: 5; width: 300px; padding: 10px 12px;
+  background: #fff; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .18); font-size: 12px;
+}
+.manual-pop-title { font-weight: 700; margin-bottom: 8px; }
+.manual-flags { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
+.manual-flag {
+  display: flex; align-items: center; gap: 6px; padding: 3px 6px; font-size: 11.5px;
+  background: var(--panel-2); border: 1px solid transparent; border-radius: 5px; text-align: left; cursor: pointer;
+}
+.manual-flag.on { border-color: var(--accent); background: var(--accent-soft); }
+.manual-flag .sw, .manual-box-chip .sw { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; }
+.manual-modes { display: flex; gap: 14px; margin: 10px 0 6px; }
+.manual-modes label, .manual-var-list label { display: inline-flex; align-items: center; gap: 2px; cursor: pointer; }
+.manual-var-list { display: flex; flex-wrap: wrap; gap: 4px 12px; max-height: 96px; overflow: auto; margin-top: 3px; }
+.manual-pop-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px; }
+.manual-boxes { display: flex; flex-wrap: wrap; gap: 6px; }
+.manual-box-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 2px 4px 2px 8px;
+  font-family: var(--mono); font-size: 10.5px; background: var(--panel-2); border-radius: 6px;
+}
