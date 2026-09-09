@@ -21,7 +21,8 @@ from pelagos_py.steps.base_qc import BaseQC, register_qc
 
 #### Custom imports ####
 import matplotlib.pyplot as plt
-import polars as pl
+import numpy as np
+import pandas as pd
 import xarray as xr
 import matplotlib
 from pelagos_py.utils import fig_spec
@@ -102,42 +103,24 @@ class valid_profile_qc(BaseQC):
     qc_outputs = ["PROFILE_NUMBER"]
 
     def return_qc(self):
-        # Convert to polars
-        self.df = pl.from_pandas(
-            self.data[self.required_variables].to_dataframe(), nan_to_null=False
+        profile_number = self.data["PROFILE_NUMBER"].values
+        depth = self.data["DEPTH"].values
+        lower, upper = self.depth_range
+
+        # Per-sample: length of its profile, and whether the profile reaches the depth
+        # range (samples without a profile number get NaN here and are flagged 9 below)
+        by_profile = pd.Series((depth >= lower) & (depth <= upper)).groupby(profile_number)
+        count = by_profile.transform("size").to_numpy(dtype=float)
+        in_depth_range = by_profile.transform("any").fillna(False).to_numpy(dtype=bool)
+
+        qc = np.select(
+            [pd.isna(profile_number), count < self.profile_length, ~in_depth_range],
+            [9, 4, 3],
+            default=1,
         )
 
-        # Check profiles are of a given length
-        profile_lengths = self.df.group_by("PROFILE_NUMBER").agg(
-            pl.len().alias("count")
-        )
-        self.df = self.df.join(profile_lengths, on="PROFILE_NUMBER", how="left")
-
-        # Find profiles that have no data between the sepcified depth ranges
-        profile_ranges = self.df.group_by("PROFILE_NUMBER").agg(
-            (pl.col("DEPTH").is_between(*self.depth_range).any()).alias(
-                "in_depth_range"
-            )
-        )
-        self.df = self.df.join(profile_ranges, on="PROFILE_NUMBER", how="left")
-
-        self.df = self.df.with_columns(
-            pl.when(pl.col("PROFILE_NUMBER").is_nan())
-            .then(9)
-            .when(pl.col("count") < self.profile_length)
-            .then(4)
-            .when(pl.col("in_depth_range").not_())
-            .then(3)
-            .otherwise(1)
-            .alias("PROFILE_NUMBER_QC")
-        )
-
-        # Convert back to xarray
-        flags = self.df.select(pl.col("^.*_QC$"))
         self.flags = xr.Dataset(
-            data_vars={
-                col: ("N_MEASUREMENTS", flags[col].to_numpy()) for col in flags.columns
-            },
+            data_vars={"PROFILE_NUMBER_QC": ("N_MEASUREMENTS", qc)},
             coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]},
         )
 
@@ -145,10 +128,10 @@ class valid_profile_qc(BaseQC):
 
     def plot_diagnostics(self):
         matplotlib.use("tkagg")
-        df = self.df.with_row_index()
+        depth = self.data["DEPTH"].values
         fig, axes = fig_spec.new_fig()
         ax = axes[0][0]
-        fig_spec.flag_points(ax, df["index"], df["DEPTH"], df["PROFILE_NUMBER_QC"])
+        fig_spec.flag_points(ax, np.arange(depth.size), depth, self.flags["PROFILE_NUMBER_QC"].values)
         fig_spec.style_axes(ax, xlabel="Index", ylabel="Pressure")
         fig_spec.legend(ax, title="Flags")
         fig_spec.finish(fig, suptitle="Valid Profile Test")
