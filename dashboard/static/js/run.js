@@ -263,7 +263,7 @@ const Run = {
       const reason = (parts[3] || '').trim();
       Run.addPlot(fname, caption, spec);
       Run.append('  · plot: ' + (caption || fname) +
-        (spec ? ' (zoomable)' : reason ? ` (image only — ${reason})` : ''));
+        (spec ? ' (interactive)' : reason ? ` (image only — ${reason})` : ''));
     } else if (marker === Run.STEP_MARKER) {
       // Which step is executing, so its figures group under it. A garbled index
       // would make every figure its own group (NaN !== NaN), so ignore it.

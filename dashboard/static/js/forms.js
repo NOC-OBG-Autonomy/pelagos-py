@@ -137,6 +137,29 @@ const Forms = {
     if (kind === 'bool') {
       wrap.appendChild(boolSwitch);
       wrap.appendChild(label);
+    } else if (spec.name === 'file_path' && input.type === 'text') {
+      // Native file picker (server-side dialog) next to the path field: the
+      // dashboard is local-only, so the path it returns is usable as-is.
+      const row = document.createElement('div');
+      row.className = 'file-row';
+      input.placeholder = 'Path to your input NetCDF file';
+      const browse = document.createElement('button');
+      browse.type = 'button';
+      browse.className = 'ghost';
+      browse.appendChild(Icon.el('folder', 14));
+      browse.appendChild(document.createTextNode('Browse…'));
+      browse.onclick = async () => {
+        browse.disabled = true;
+        try {
+          const path = await API.browseFile(input.value);
+          if (path) { input.value = path; values[spec.name] = path; onChange(); }
+        } catch (e) { alert(e.message); }
+        finally { browse.disabled = false; }
+      };
+      row.appendChild(input);
+      row.appendChild(browse);
+      wrap.appendChild(label);
+      wrap.appendChild(row);
     } else {
       wrap.appendChild(label);
       wrap.appendChild(input);

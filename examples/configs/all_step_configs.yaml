@@ -326,21 +326,15 @@ steps:
         calculation_flag_filter: [3, 4, 9]
 
 # Interpolate Data (src/pelagos_py/steps/processing/interpolate_data.py):
-# Interpolates over nan values. Paired with QC handling allowing "bad data" to be replaced with nans and interpolated over.
+# Interpolates over nan values, and over samples carrying the listed QC flags; filled samples are flagged 8.
   - name: "Interpolate Data"
     parameters:
-      qc_handling_settings:
-        flag_filter_settings:
-          PRES: [3, 4, 9]
-          LATITUDE: [3, 4, 9]
-          LONGITUDE: [3, 4, 9]
-        reconstruction_behaviour: "replace"
-        flag_mapping:
-          3: 8
-          4: 8
-          9: 8
+      variables:  # per variable, the QC flags treated as gaps to fill
+        PRES: [3, 4, 9]
+        LATITUDE: [3, 4, 9]
+        LONGITUDE: [3, 4, 9]
     # [diagnostics]:
-    #   Creates two comparison plots of before & after interpolation
+    #   Plots the first variable, original samples vs interpolated fills
     diagnostics: false
 
 

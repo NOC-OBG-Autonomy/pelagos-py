@@ -132,19 +132,10 @@ steps:
 # process CTD, we need to intepolate to fill in the missing data.
   - name: Interpolate Data
     parameters:
-      qc_handling_settings:
-        # This QC filtering functionality can be specified in most processing steps by
-        # adding the qc_handling_settings parameter. Here we are using it to nan-out bad (4)
-        # probably bad (3) and missing (9) data so that it can be interpolated over.
-        flag_filter_settings:
-          PRES: [3, 4, 9]
-          LATITUDE: [3, 4, 9]
-          LONGITUDE: [3, 4, 9]
-        reconstruction_behaviour: replace
-        flag_mapping: # The QC flags where bad data has been replaced turn into 8 (interpolated)
-          3: 8
-          4: 8
-          9: 8
+      variables:  # per variable, the QC flags treated as gaps to fill
+        PRES: [3, 4, 9]
+        LATITUDE: [3, 4, 9]
+        LONGITUDE: [3, 4, 9]
     diagnostics: false # Plot the outcome after interpolation
 
 # ===========================================================
@@ -229,16 +220,10 @@ steps:
 # nan'd out, interpolated over, and reflagged as interpolated (8).
   - name: Interpolate Data
     parameters:
-      qc_handling_settings:
-        flag_filter_settings:
-          TEMP: [3, 4, 9]
-          PRES: [3, 4, 9]
-          PRAC_SALINITY: [3, 4, 9]
-        reconstruction_behaviour: replace
-        flag_mapping:
-          3: 8
-          4: 8
-          9: 8
+      variables:  # per variable, the QC flags treated as gaps to fill
+        TEMP: [3, 4, 9]
+        PRES: [3, 4, 9]
+        PRAC_SALINITY: [3, 4, 9]
     diagnostics: false
 
 # ===========================================================

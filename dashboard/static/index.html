@@ -43,6 +43,7 @@
           <button class="tab" data-tab="plots"><span data-icon="image" data-icon-size="15"></span>Plots</button>
           <button class="tab" data-tab="report"><span data-icon="file" data-icon-size="15"></span>Report</button>
           <button class="tab" data-tab="inspect"><span data-icon="search" data-icon-size="15"></span>Inspect</button>
+          <button class="tab tab-demos" data-tab="demos"><span data-icon="download" data-icon-size="15"></span>Demos</button>
         </div>
         <div class="tab-actions hidden" data-panel="yaml">
           <select id="theme-select" title="Editor colour theme">
@@ -83,7 +84,7 @@
             </div>
             <div class="topbar-bottom">
               <div class="cfg-file-group" title="Saves the pipeline under this name — a new name creates a new pipeline, the current name overwrites it">
-                <span class="cfg-label">Save as</span>
+                <span class="cfg-label">Save pipeline as</span>
                 <input id="config-name" placeholder="config name" />
                 <button id="btn-save" class="ghost"><span data-icon="save"></span><span class="btn-label">Save</span></button>
                 <button id="btn-delete" class="ghost danger"><span data-icon="trash"></span>Delete</button>
@@ -205,6 +206,19 @@
               Add a file to '<strong>Load OG1</strong>'.
             </p>
           </div>
+
+          <!-- Demos: sample glider deployments for trying the tool out. Picking
+               one loads a ready-made pipeline (downloading its data first if
+               needed) — for real work, set your own file in Load OG1. -->
+          <div class="tab-panel hidden" data-panel="demos">
+            <div class="demos-intro">
+              <strong>Demo data for trying pelagos-py out.</strong>
+              Pick a deployment to load a ready-made pipeline against a sample
+              glider file. Files are downloaded on first use. To process your
+              own data, choose a file in the <strong>Load OG1</strong> step instead.
+            </div>
+            <div id="demos-list" class="demos-list"></div>
+          </div>
         </section>
       </main>
     </div>
@@ -215,12 +229,12 @@
   <script src="/js/forms.js"></script>
   <script src="/js/builder.js"></script>
   <script src="/js/config.js"></script>
-  <!-- plot.js lazy-loads /vendor/plotly.min.js the first time an interactive
-       plot is opened, so the 4.5 MB bundle costs nothing on page load. -->
+  <!-- plot.js is the WebGL figure viewer; no plotting library is vendored. -->
   <script src="/js/plot.js"></script>
   <script src="/js/viewer.js"></script>
   <script src="/js/review.js"></script>
   <script src="/js/inspect.js"></script>
+  <script src="/js/demos.js"></script>
   <script src="/js/mem.js"></script>
   <script src="/js/run.js"></script>
   <script src="/js/app.js"></script>

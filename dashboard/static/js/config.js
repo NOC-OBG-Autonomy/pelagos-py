@@ -224,6 +224,7 @@ const Config = {
     Config.renderPicker();
     Config.updateControls();
     Config.updateSaveLabel();
+    if (typeof Demos !== 'undefined') Demos.render();
   },
 
   // The Save button always writes to whatever name is in the field — typing a
@@ -400,15 +401,7 @@ const Config = {
       (n) => !Config.demo.includes(n) && !Config.reference.includes(n)
     );
 
-    // Demo configs are grouped by deployment mission (Config.missions), not
-    // lumped into one list — the same glider name can appear in more than one
-    // mission (e.g. Churchill, Zephyr), so which group it's under matters.
-    for (const [mission, names] of Object.entries(Config.missions)) {
-      const inThisMission = names.filter((n) => Config.known.includes(n));
-      if (!inThisMission.length) continue;
-      group(mission);
-      for (const name of inThisMission) menu.appendChild(makeOpt(name, { demo: true }));
-    }
+    // Demo configs live on the Demos tab (demos.js), not in this menu.
     if (referenceNames.length) {
       group('Default');
       for (const name of referenceNames) menu.appendChild(makeOpt(name));
@@ -479,5 +472,6 @@ const Config = {
     if (Config.selected && !Config.known.includes(Config.selected)) Config.selected = '';
     Config.renderPicker();
     Config.updateControls();
+    if (typeof Demos !== 'undefined') Demos.render();
   },
 };

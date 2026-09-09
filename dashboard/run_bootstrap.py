@@ -13,7 +13,7 @@ plot. This launcher redirects ``plt.show`` to *save* every open figure into
 
 so the browser can display the plot inline (see run.js). Alongside the PNG it
 also tries to write a JSON plot spec (see fig_spec.py) holding the figure's
-underlying x/y data, which the browser redraws with plotly so the plot can be
+underlying x/y data, which the browser redraws with WebGL so the plot can be
 zoomed and panned. Figures that cannot be serialised faithfully just get an
 empty spec field and stay PNG-only. It also forces the Agg
 backend and neutralises backend switches, so no step can grab a GUI backend
@@ -191,49 +191,22 @@ def _caption(fig) -> str:
         return ""
 
 
-def _write_fullres(fullres, stem: str):
-    """Write full-resolution trace captures for zoomed-in range queries.
-
-    One ``.npz`` per figure, entries named ``"<panel>_<trace>_x"`` etc. so
-    app.py's figdata route can pick a single trace back out by index without
-    parsing the whole archive's structure. Best-effort and silent: a zoomed
-    trace just won't offer extra detail if this fails.
-    """
-    if not fullres:
-        return
-    try:
-        import numpy as np
-
-        arrays = {}
-        for (panel_idx, trace_idx), capture in fullres.items():
-            key = f"{panel_idx}_{trace_idx}"
-            arrays[f"{key}_x"] = capture["x"]
-            arrays[f"{key}_y"] = capture["y"]
-            if capture["color"] is not None:
-                arrays[f"{key}_color"] = capture["color"]
-        np.savez(os.path.join(FIG_DIR, stem + "_full.npz"), **arrays)
-    except Exception:  # noqa: BLE001 - a bonus feature, never fatal
-        pass
-
-
 def _capture_spec(fig, stem: str):
-    """Write the figure's interactive plot spec: ``(filename, reason)``.
-
-    Serialising is best-effort in every sense: a figure fig_spec cannot
-    represent faithfully yields no file (and anything unexpected is swallowed),
-    leaving the dashboard with the PNG it has already saved. ``reason`` says
-    what stopped it, so the log tells the user which plots are PNG-only. Any
-    traces eligible for a zoomed-in range query also get a full-resolution
-    ``.npz`` sidecar (see ``_write_fullres``).
-    """
+    """Write the figure's interactive spec, float32 blob and float64 sidecar:
+    ``(spec filename, reason)``. Best-effort: anything fig_spec cannot represent
+    (or anything unexpected) leaves the dashboard with the PNG it already has."""
     try:
-        spec, reason, fullres = fig_spec.serialise(fig)
+        spec, reason, blob, full = fig_spec.serialise(fig)
         if spec is None:
             return "", reason
         name = stem + ".json"
         with open(os.path.join(FIG_DIR, name), "w") as handle:
             json.dump(spec, handle)
-        _write_fullres(fullres, stem)
+        with open(os.path.join(FIG_DIR, stem + ".f32"), "wb") as handle:
+            handle.write(blob)
+        import numpy as np
+
+        np.savez(os.path.join(FIG_DIR, stem + "_full.npz"), **full)
         return name, ""
     except Exception as exc:  # noqa: BLE001 - a bonus feature, never fatal
         return "", f"{type(exc).__name__}"
@@ -336,7 +309,7 @@ def _emit_fail(idx, name, test, exc):
     ``_emit_diag_log``) so the dashboard can show it the same way, styled as
     an error instead of a plain log.
     """
-    text = f"{type(exc).__name__}: {exc}"
+    text = getattr(exc, "halt_message", None) or f"{type(exc).__name__}: {exc}"
     payload = base64.b64encode(text.encode()).decode()
     print(f"__PELAGOS_FAIL__ {idx}\t{name}\t{test or ''}\t{payload}", flush=True)
 

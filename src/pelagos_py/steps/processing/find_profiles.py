@@ -607,7 +607,7 @@ class FindProfilesStep(BaseStep, QCHandlingMixin):
                         color=fig_spec.CATEGORY[1], label="Profile Number")
         fig_spec.points(ax2, mapped_df["TIME"], mapped_df["CYCLE"],
                         color=fig_spec.CATEGORY[2], label="Cycle Number")
-        fig_spec.date_axis(ax2, which="x")
+        fig_spec.date_axis(ax2, which="x", index=mapped_df["TIME"].values)
         fig_spec.style_axes(ax2, xlabel="Time", ylabel="ID / Cycle")
         fig_spec.legend(ax2)
 

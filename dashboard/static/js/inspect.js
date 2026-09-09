@@ -77,9 +77,9 @@ function renderInspectError(message) {
   inspectShowEmptyState(`<strong>Could not read file.</strong><br>${escapeHtml(message || '')}`);
 }
 
-function inspectRow(name, tag, desc) {
+function inspectRow(name, tag, desc, plottable) {
   const row = document.createElement('div');
-  row.className = 'inspect-row';
+  row.className = 'inspect-row' + (plottable ? ' inspect-row-plottable' : '');
   row.innerHTML =
     `<div class="inspect-row-head">` +
     `<span class="inspect-row-name">${escapeHtml(name)}</span>` +
@@ -87,7 +87,35 @@ function inspectRow(name, tag, desc) {
     `</div>` +
     (desc ? `<div class="inspect-row-desc">${escapeHtml(desc)}</div>` : '');
   row.dataset.search = `${name} ${tag || ''} ${desc || ''}`.toLowerCase();
+  if (plottable) row.addEventListener('click', () => toggleInspectPlot(row, name));
   return row;
+}
+
+// Click a variable to show it against TIME (coloured by its _QC if the file has
+// one); click again to hide. Rendered server-side, fetched once per row.
+function toggleInspectPlot(row, name) {
+  let host = row.querySelector('.inspect-plot');
+  if (host) { host.classList.toggle('hidden'); return; }
+  host = document.createElement('div');
+  host.className = 'inspect-plot';
+  host.textContent = 'Plotting…';
+  row.appendChild(host);
+  const url = '/api/inspect/plot?file_path=' + encodeURIComponent(Inspect.lastPath) +
+    '&var=' + encodeURIComponent(name);
+  fetch(url)
+    .then(async (r) => {
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || 'Could not plot.');
+      return r.json();
+    })
+    .then((d) => {
+      if (d.value !== undefined) { host.textContent = d.value; return; }
+      const fmt = (n) => n.toLocaleString();
+      const shown = d.n_shown < d.n_valid ? ` (${fmt(d.n_shown)} shown)` : '';
+      host.innerHTML =
+        `<img src="${d.png}" alt="${escapeHtml(name)} vs TIME">` +
+        `<div class="inspect-plot-note">${fmt(d.n_valid)} points${shown}</div>`;
+    })
+    .catch((e) => { host.textContent = e.message; });
 }
 
 function inspectFillSection(section, rows, emptyText) {
@@ -108,11 +136,17 @@ function renderInspect(data) {
   document.getElementById('inspect-body').classList.remove('hidden');
   document.getElementById('inspect-path').textContent = data.path;
 
-  inspectFillSection(
-    'parameters',
-    (data.variables || []).map((v) => inspectRow(v.name, v.units, v.description)),
-    'No variables found.'
-  );
+  // List each X_QC directly under its X rather than wherever the file orders it.
+  const vars = data.variables || [];
+  const names = new Set(vars.map((v) => v.name));
+  const rows = [];
+  vars.forEach((v) => {
+    if (v.name.endsWith('_QC') && names.has(v.name.slice(0, -3))) return;
+    rows.push(inspectRow(v.name, v.units, v.description, true));
+    const qc = vars.find((q) => q.name === v.name + '_QC');
+    if (qc) rows.push(inspectRow(qc.name, qc.units, qc.description, true));
+  });
+  inspectFillSection('parameters', rows, 'No variables found.');
   inspectFillSection(
     'sensors',
     (data.sensors || []).map((s) => inspectRow(s, '', '')),

@@ -31,7 +31,6 @@ from __future__ import annotations
 import codecs
 import json
 import logging
-import math
 import os
 import re
 import signal
@@ -56,6 +55,7 @@ def _clean_ansi(text: str) -> str:
     return _ANSI_RE.sub(lambda m: m.group(0) if m.group(0).endswith("m") else "", text)
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 import yaml
 
@@ -70,13 +70,9 @@ try:
 except ImportError:
     pass
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, Response, StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-
-# Same-directory import as run_bootstrap.py's (script's own dir is on
-# sys.path); reused here for the zoomed-in range-query decimation.
-import fig_spec
 
 # --- Locate the repo and make pelagos_py importable -------------------------
 DASHBOARD_DIR = Path(__file__).resolve().parent
@@ -88,9 +84,8 @@ RUN_BOOTSTRAP = DASHBOARD_DIR / "run_bootstrap.py"
 # to the browser (see run_bootstrap.py). Cleared at the start of each run.
 FIG_DIR = DASHBOARD_DIR / "_run_figures"
 FIG_DIR.mkdir(exist_ok=True)
-# Full-resolution trace arrays for zoomed-in range queries (see run_figdata),
-# loaded from a figure's "_full.npz" lazily and kept only for this process's
-# lifetime -- cleared on the next run, never written back to disk.
+# Float64 trace arrays for exact click-lookups (see run_figpoint), loaded from
+# a figure's "_full.npz" lazily and kept only until the next run.
 _FIGDATA_CACHE: dict[str, dict] = {}
 # Configs authored in the dashboard live here by default.
 CONFIG_DIR = DASHBOARD_DIR / "configs"
@@ -428,6 +423,42 @@ def reveal_configs():
     return {"status": "opened", "path": str(CONFIG_DIR)}
 
 
+class BrowsePayload(BaseModel):
+    start: str = ""
+
+
+@app.post("/api/browse")
+def browse_file(payload: BrowsePayload):
+    """Open the OS file picker on the server and return the chosen path.
+
+    Browsers never expose a dropped/picked file's real path, and the dashboard
+    only ever runs against local files, so the dialog is opened server-side --
+    it appears on the machine serving the dashboard (the 127.0.0.1 case).
+    """
+    start = Path(payload.start).expanduser() if payload.start else None
+    start_dir = start.parent if start and start.parent.is_dir() else Path.cwd()
+    if sys.platform == "darwin":
+        script = (
+            'POSIX path of (choose file with prompt "Choose an input NetCDF file" '
+            f'default location POSIX file "{start_dir}")'
+        )
+        proc = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
+        if proc.returncode != 0:  # user cancelled
+            return {"path": None}
+        return {"path": proc.stdout.strip()}
+    try:
+        import tkinter
+        from tkinter import filedialog
+    except ImportError as exc:
+        raise HTTPException(status_code=500, detail=f"No file dialog available: {exc}")
+    root = tkinter.Tk()
+    root.withdraw()
+    root.attributes("-topmost", True)
+    chosen = filedialog.askopenfilename(initialdir=str(start_dir), title="Choose an input NetCDF file")
+    root.destroy()
+    return {"path": chosen or None}
+
+
 def _ensure_demo_file(config_name: str) -> None:
     """Download a demo config's input NetCDF file if it isn't there yet.
 
@@ -583,9 +614,9 @@ class _Run:
             [str(SRC_DIR), env.get("PYTHONPATH", "")]
         ).strip(os.pathsep)
         # Fresh figure dir per run so the Plots tab only shows this run's plots.
-        # .json are the interactive plot specs, _full.npz the full-resolution
-        # zoom captures, saved beside each .png.
-        for pattern in ("*.png", "*.json", "*_full.npz"):
+        # .json/.f32 are the interactive plot spec and its float32 data,
+        # _full.npz the float64 copy for exact point lookups, beside each .png.
+        for pattern in ("*.png", "*.json", "*.f32", "*_full.npz"):
             for old in FIG_DIR.glob(pattern):
                 old.unlink(missing_ok=True)
         _FIGDATA_CACHE.clear()
@@ -819,123 +850,42 @@ def run_figspec(name: str):
     return FileResponse(path, media_type="application/json")
 
 
-def _load_fullres(stem: str) -> dict:
-    """Full-resolution captures for a figure, loaded from its ``.npz`` once and
-    cached in memory for the rest of this process's life (see _FIGDATA_CACHE).
-
-    Maps ``"<panel>_<trace>"`` to ``{"x", "y", "color"}`` numpy arrays.
-    """
-    if stem in _FIGDATA_CACHE:
-        return _FIGDATA_CACHE[stem]
-    data: dict = {}
-    path = FIG_DIR / (stem + "_full.npz")
-    if path.is_file():
-        with np.load(path) as npz:
-            keys = {k.rsplit("_", 1)[0] for k in npz.files if k.endswith(("_x", "_y"))}
-            for key in keys:
-                data[key] = {
-                    "x": npz[f"{key}_x"],
-                    "y": npz[f"{key}_y"],
-                    "color": npz[f"{key}_color"] if f"{key}_color" in npz.files else None,
-                }
-    _FIGDATA_CACHE[stem] = data
-    return data
+@app.get("/api/run/figbin/{name}")
+def run_figbin(name: str):
+    """Serve a figure's float32 trace data (see fig_spec.py) for the WebGL viewer.
+    Sent as a plain file so the browser gets a Content-Length for its progress bar."""
+    path = FIG_DIR / Path(name).name
+    if path.suffix != ".f32" or not path.is_file():
+        raise HTTPException(status_code=404, detail="Plot data not found.")
+    return FileResponse(path, media_type="application/octet-stream")
 
 
-def _lttb_indices(x: "np.ndarray", y: "np.ndarray", cap: int):
-    """Largest-Triangle-Three-Buckets indices thinning ``x``/``y`` to ``cap``
-    points: ``(keep_idx, thinned)``, mirroring ``fig_spec._decimate_indices``.
-
-    Zoom-endpoint only (see the user's choice to keep the original write-time
-    spec on the plain min/max bucket decimator). That decimator picks each
-    bucket's y-min *and* y-max by index-position, which on a repeating signal
-    -- a profiling glider's depth sawtooth -- degenerates at a wide zoom into
-    a clump of near-surface and near-bottom points with the dive/climb slopes
-    between them dropped, since a slope's points are never a bucket's extreme.
-    LTTB instead keeps, per bucket, whichever point forms the largest triangle
-    with the previously-kept point and the next bucket's average -- it
-    preserves the visual shape (including slopes) rather than only extremes.
-    """
-    n = len(x)
-    if n <= cap:
-        return np.arange(n), False
-    if cap < 3:
-        step = int(math.ceil(n / max(1, cap)))
-        return np.arange(0, n, step)[:cap], True
-
-    every = (n - 2) / (cap - 2)
-    keep = np.empty(cap, dtype=np.int64)
-    keep[0] = 0
-    keep[-1] = n - 1
-    a = 0
-    for i in range(cap - 2):
-        avg_lo = min(int((i + 1) * every) + 1, n - 1)
-        avg_hi = min(int((i + 2) * every) + 1, n)
-        avg_x = np.nanmean(x[avg_lo:avg_hi]) if avg_hi > avg_lo else x[avg_lo]
-        avg_y = np.nanmean(y[avg_lo:avg_hi]) if avg_hi > avg_lo else y[avg_lo]
-
-        lo = min(int(i * every) + 1, n - 1)
-        hi = min(int((i + 1) * every) + 1, n)
-        ys = y[lo:hi]
-        valid = np.flatnonzero(np.isfinite(ys))
-        if len(valid) == 0:
-            idx = lo
-        else:
-            xs = x[lo:hi][valid]
-            area = np.abs((x[a] - avg_x) * (ys[valid] - y[a]) - (x[a] - xs) * (avg_y - y[a]))
-            idx = lo + int(valid[np.argmax(area)])
-        keep[i + 1] = idx
-        a = idx
-    return keep, True
-
-
-def _pack_binary(header: dict, arrays: list) -> bytes:
-    """The figdata wire format: uint32 header length, JSON header, then each
-    array's raw little-endian bytes back to back -- lets the browser slice
-    straight into typed arrays instead of JSON-parsing huge point lists."""
-    header_bytes = json.dumps(header).encode("utf-8")
-    parts = [len(header_bytes).to_bytes(4, "little"), header_bytes]
-    parts.extend(a.tobytes() for a in arrays)
-    return b"".join(parts)
-
-
-@app.get("/api/run/figdata/{name}")
-def run_figdata(name: str, panel: int, trace: int, x_min: float, x_max: float,
-                 cap: int = fig_spec.ZOOM_POINT_CAP):
-    """Full-resolution points for one trace within ``[x_min, x_max]``.
-
-    ``name`` is the same figure filename the browser got from figspec (e.g.
-    ``fig_001.json``); only its stem is used, so the traversal guard is the
-    same as the other figure routes. ``x_min``/``x_max`` are epoch
-    milliseconds for a date axis, else the raw axis values -- whatever unit
-    ``dashboard/fig_spec.py``'s ``_fullres`` stored. Response is packed
-    binary (see ``_pack_binary``); ``complete`` in its header tells the
-    browser this range needed no further thinning, so it can stop re-fetching
-    as the user zooms further into it.
-    """
+@app.get("/api/run/figpoint/{name}")
+def run_figpoint(name: str, panel: int, trace: int, index: int):
+    """Exact float64 ``x``/``y`` of one plotted point (dates as ISO strings),
+    for the viewer's click tooltip; the drawn data is float32."""
     stem = Path(Path(name).name).stem
-    entry = _load_fullres(stem).get(f"{panel}_{trace}")
-    if entry is None:
-        raise HTTPException(status_code=404, detail="No full-resolution data for this trace.")
-    x, y, color = entry["x"], entry["y"], entry["color"]
-    lo = int(np.searchsorted(x, x_min, side="left"))
-    hi = int(np.searchsorted(x, x_max, side="right"))
-    sx, sy = x[lo:hi], y[lo:hi]
-    scolor = color[lo:hi] if color is not None else None
+    if stem not in _FIGDATA_CACHE:
+        path = FIG_DIR / (stem + "_full.npz")
+        if not path.is_file():
+            raise HTTPException(status_code=404, detail="No point data for this figure.")
+        with np.load(path) as npz:
+            _FIGDATA_CACHE[stem] = {k: npz[k] for k in npz.files}
+    data = _FIGDATA_CACHE[stem]
+    key = f"{panel}_{trace}"
+    if f"{key}_x" not in data or not 0 <= index < len(data[f"{key}_x"]):
+        raise HTTPException(status_code=404, detail="No such point.")
+    spec = json.loads((FIG_DIR / (stem + ".json")).read_text())["panels"][panel]
 
-    cap = max(1, min(cap, fig_spec.ZOOM_POINT_CAP))
-    keep, thinned = _lttb_indices(sx, sy, cap)
-    rx, ry = sx[keep], sy[keep]
-    rcolor = scolor[keep] if scolor is not None else None
+    def fmt(v, is_date):
+        if not np.isfinite(v):
+            return None
+        if is_date:
+            return pd.Timestamp(v, unit="ms").isoformat(timespec="milliseconds")
+        return float(v)
 
-    header = {
-        "n": int(len(rx)), "complete": not thinned,
-        "x_dtype": "float64", "y_dtype": "float64", "has_color": rcolor is not None,
-    }
-    arrays = [rx.astype("<f8"), ry.astype("<f8")]
-    if rcolor is not None:
-        arrays.append(np.ascontiguousarray(rcolor, dtype=np.uint8))
-    return Response(content=_pack_binary(header, arrays), media_type="application/octet-stream")
+    return {"x": fmt(data[f"{key}_x"][index], spec["xdate"]),
+            "y": fmt(data[f"{key}_y"][index], spec["ydate"])}
 
 
 @app.get("/api/run/report")
@@ -1002,6 +952,98 @@ def inspect_file(file_path: str):
         "variables": variables,
         "global_attributes": global_attrs,
         "sensors": sensors,
+    }
+
+
+_INSPECT_PLOT_MAX = 20_000
+_inspect_plot_lock = threading.Lock()  # pyplot is not thread-safe
+
+
+def _resolve_inspect_path(file_path):
+    if not file_path:
+        raise HTTPException(status_code=400, detail="No file_path given.")
+    path = Path(file_path)
+    if not path.is_absolute():
+        path = REPO_ROOT / path
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail=f"File not found: {path}")
+    return path
+
+
+@app.get("/api/inspect/plot")
+def inspect_plot(file_path: str, var: str):
+    """PNG of ``var`` against TIME (coloured by ``{var}_QC`` if present) plus
+    point counts, for a clicked variable in the Inspect tab. Evenly subsampled
+    to at most _INSPECT_PLOT_MAX non-NaN points so it renders in well under a second."""
+    import base64
+    import io
+
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from pelagos_py.utils import fig_spec
+
+    path = _resolve_inspect_path(file_path)
+    try:
+        with xr.open_dataset(path) as ds:
+            if var not in ds.variables:
+                raise HTTPException(status_code=404, detail=f"'{var}' not in file.")
+            da = ds[var]
+            numeric = np.issubdtype(da.dtype, np.number) or np.issubdtype(da.dtype, np.datetime64)
+            if da.ndim == 0:
+                return {"value": str(da.values)}
+            if da.ndim == 1 and not numeric and da.size <= 200:
+                return {"value": ", ".join(str(v) for v in da.values)}
+            if da.ndim != 1 or not numeric:
+                shape = " x ".join(f"{d}={n}" for d, n in zip(da.dims, da.shape))
+                raise HTTPException(status_code=400, detail=f"{da.dtype} ({shape}), not plotted.")
+            y = da.values
+            units = da.attrs.get("units", "")
+            x_is_time = var != "TIME" and "TIME" in ds.variables and ds["TIME"].dims == da.dims
+            x = ds["TIME"].values if x_is_time else np.arange(y.size)
+            qc_name = f"{var}_QC"
+            flags = ds[qc_name].values if qc_name in ds.variables and ds[qc_name].dims == da.dims else None
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Could not read '{var}': {exc}")
+
+    valid = ~pd.isnull(y)
+    n_total, n_valid = int(y.size), int(valid.sum())
+    idx = np.flatnonzero(valid)
+    if idx.size > _INSPECT_PLOT_MAX:
+        idx = idx[np.linspace(0, idx.size - 1, _INSPECT_PLOT_MAX).astype(int)]
+
+    with _inspect_plot_lock:
+        fig, axes = fig_spec.new_fig()
+        ax = axes[0][0]
+        if flags is not None:
+            fig_spec.flag_points(ax, x[idx], y[idx], flags[idx])
+            ax.legend(fontsize=fig_spec.FS_LEGEND, loc="best", frameon=False, markerscale=2)
+        else:
+            fig_spec.points(ax, x[idx], y[idx], color=fig_spec.CATEGORY[1])
+        fig_spec.style_axes(
+            ax, xlabel="TIME" if x_is_time else "index", ylabel=fig_spec.axis_label(var, units)
+        )
+        if x_is_time:
+            fig_spec.date_axis(ax, index=x)
+        if var.startswith(("PRES", "DEPTH")):
+            ax.invert_yaxis()
+        # Page-element look: transparent, no grid or box, fixed margins so every plot is the same size.
+        ax.grid(False)
+        for side in ("top", "right"):
+            ax.spines[side].set_visible(False)
+        fig.subplots_adjust(left=0.08, right=0.99, top=0.97, bottom=0.12)
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", transparent=True)
+        plt.close(fig)
+
+    return {
+        "png": "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("ascii"),
+        "n_total": n_total,
+        "n_valid": n_valid,
+        "n_shown": int(idx.size),
+        "qc": flags is not None,
     }
 
 

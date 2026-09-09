@@ -101,7 +101,8 @@ class flag_full_profile(BaseQC):
     def return_qc(self):
         # TODO: Add support for flagging if threshold is a mix of 3 (questionable) and 4 (definitely bad) flags
         # Subset the data
-        self.data = self.data[self.required_variables]
+        keep = self.required_variables + [v for v in ["TIME"] if v in self.data and v not in self.required_variables]
+        self.data = self.data[keep]
 
         for var, threshold in self.check_vars.items():
             flag_counts = (
@@ -129,13 +130,13 @@ class flag_full_profile(BaseQC):
         # Plot the QC output
         n_plots = len(self.check_vars.keys())
         fig, axes = fig_spec.new_fig(nrows=n_plots, sharex=True)
+        x = fig_spec.x_time(self.data)
         for ax, var in zip(axes[:, 0], self.check_vars.keys()):
-            fig_spec.flag_points(
-                ax, self.data["N_MEASUREMENTS"], self.data[var], self.data[f"{var}_QC"]
-            )
+            fig_spec.flag_points(ax, x, self.data[var], self.data[f"{var}_QC"])
             ylabel = fig_spec.axis_label(var, self.data[var].attrs.get("units"))
-            fig_spec.style_axes(ax, title=f"{var} Flag Full Profile", xlabel="Index", ylabel=ylabel)
+            fig_spec.style_axes(ax, title=f"{var} Flag Full Profile", ylabel=ylabel)
             fig_spec.legend(ax, title="Flags")
+        fig_spec.x_axis(axes[-1][0], x)
 
         fig_spec.finish(fig)
         plt.show(block=True)

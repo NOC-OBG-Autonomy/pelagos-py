@@ -176,6 +176,7 @@ class ApplyQC(BaseStep):
         # build masks for outputs that don't exist yet, see mia_qc/base below).
         subset_names = set(all_required_variables) | set(test_qc_outputs_cols)
         subset_names.update(var[:-3] for var in test_qc_outputs_cols)
+        subset_names.add("TIME")  # diagnostics plot against time; one column is cheap
         subset_vars = [name for name in subset_names if name in full_data.variables]
         data = full_data[subset_vars].copy(deep=True)
         # Convert data to polars for fast processing

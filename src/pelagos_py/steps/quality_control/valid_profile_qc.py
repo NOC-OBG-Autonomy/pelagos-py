@@ -145,11 +145,12 @@ class valid_profile_qc(BaseQC):
 
     def plot_diagnostics(self):
         matplotlib.use("tkagg")
-        df = self.df.with_row_index()
+        x = fig_spec.x_time(self.data)
         fig, axes = fig_spec.new_fig()
         ax = axes[0][0]
-        fig_spec.flag_points(ax, df["index"], df["DEPTH"], df["PROFILE_NUMBER_QC"])
-        fig_spec.style_axes(ax, xlabel="Index", ylabel="Pressure")
+        fig_spec.flag_points(ax, x, self.df["DEPTH"], self.df["PROFILE_NUMBER_QC"])
+        fig_spec.style_axes(ax, ylabel="Pressure")
+        fig_spec.x_axis(ax, x)
         fig_spec.legend(ax, title="Flags")
         fig_spec.finish(fig, suptitle="Valid Profile Test")
         plt.show(block=True)

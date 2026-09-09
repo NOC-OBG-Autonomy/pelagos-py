@@ -323,7 +323,7 @@ class InterpolatePAR(BaseStep, QCHandlingMixin):
                 fig_spec.points(ax, it, iy, color=fig_spec.CATEGORY[3], label="interpolated")
 
             fig_spec.style_axes(ax, title=name, ylabel=fig_spec.axis_label(name, "m"))
-            fig_spec.date_axis(ax)
+            fig_spec.date_axis(ax, index=self.data["TIME"].values if "TIME" in self.data else None)
             ax.invert_yaxis()  # positive-down depth: shallower at the top
             fig_spec.legend(ax)
 

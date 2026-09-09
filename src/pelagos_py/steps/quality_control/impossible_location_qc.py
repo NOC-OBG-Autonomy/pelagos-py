@@ -72,18 +72,19 @@ class impossible_location_qc(BaseQC):
 
     def plot_diagnostics(self):
         matplotlib.use("tkagg")
-        df = self.df.with_row_index()
+        x = fig_spec.x_time(self.data)
         fig, axes = fig_spec.new_fig(nrows=2, sharex=True)
 
         for ax, var, bounds in zip(
             axes[:, 0], ["LATITUDE", "LONGITUDE"], [(-90, 90), (-180, 180)]
         ):
-            fig_spec.flag_points(ax, df["index"], df[var], df[f"{var}_QC"])
+            fig_spec.flag_points(ax, x, self.df[var], self.df[f"{var}_QC"])
             ylabel = fig_spec.axis_label(var, self.data[var].attrs.get("units"))
-            fig_spec.style_axes(ax, xlabel="Index", ylabel=ylabel)
+            fig_spec.style_axes(ax, ylabel=ylabel)
             fig_spec.legend(ax, title="Flags")
             for bound in bounds:
                 ax.axhline(bound, ls="--", c="k")
+        fig_spec.x_axis(axes[-1][0], x)
 
         fig_spec.finish(fig, suptitle="Impossible Location Test")
         plt.show(block=True)

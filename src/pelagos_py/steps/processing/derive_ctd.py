@@ -250,7 +250,7 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
             else:
                 fig_spec.points(ax, time_data, data_vals, color=fig_spec.CATEGORY[0])
 
-            fig_spec.date_axis(ax, which="x")
+            fig_spec.date_axis(ax, which="x", index=time_data)
             ylabel = fig_spec.axis_label(var_name, self.data[var_name].attrs.get("units"))
             xlabel = "Time" if i == len(plot_vars) - 1 else None
             fig_spec.style_axes(ax, xlabel=xlabel, ylabel=ylabel)

@@ -24,6 +24,7 @@ import pelagos_py.utils.diagnostics as diag
 #### Custom imports ####
 import polars as pl
 import numpy as np
+import xarray as xr
 import matplotlib
 import matplotlib.pyplot as plt
 from pelagos_py.utils import fig_spec
@@ -62,27 +63,31 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
 
         - name: "Interpolate Data"
           parameters:
+            variables:  # per variable, the QC flags treated as gaps to fill
+              PRES: [3, 4, 9]
+              LATITUDE: [3, 4, 9]
+              LONGITUDE: [3, 4, 9]
             max_interp_time: 5.0
-            qc_handling_settings: {
-              flag_filter_settings: {
-                "PRES": [3, 4, 9],
-                "LATITUDE": [3, 4, 9],
-                "LONGITUDE": [3, 4, 9]
-              },
-              reconstruction_behaviour: "replace",
-              flag_mapping: { 3: 8, 4: 8, 9: 8 }
-            }
           diagnostics: false
+
+    Filled samples are flagged 8 (interpolated).
     """
 
     step_name = "Interpolate Data"
     required_variables = ["TIME"]
     provided_variables = []
     uses_data_subset = True
+    variable_parameters = ["variables"]
 
-    # Variables to interpolate are driven entirely by the framework
-    # ``qc_handling_settings`` (flag_filter_settings).
     parameter_schema = {
+        "variables": {
+            "type": dict,
+            "required": True,
+            "description": (
+                "Variables to interpolate, each with the QC flags whose samples are "
+                "treated as gaps (e.g. PRES: [3, 4, 9]). NaN samples are always gaps."
+            ),
+        },
         "max_interp_time": {
             "type": [float, bool, str],
             "default": 5.0,
@@ -94,6 +99,15 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
             ),
         },
     }
+
+    def __init__(self, name, parameters=None, diagnostics=False, context=None):
+        parameters = dict(parameters or {})
+        if "qc_handling_settings" in parameters:
+            raise ValueError(f"[{name}] 'qc_handling_settings' is not used here: put the flags under 'variables'.")
+        # `variables` is exactly the mixin's flag_filter_settings; hand it over so
+        # its subsetting/snapshot/filter machinery works unchanged.
+        parameters["qc_handling_settings"] = {"flag_filter_settings": dict(parameters.get("variables") or {})}
+        super().__init__(name, parameters, diagnostics, context)
 
     def run(self):
         """
@@ -117,12 +131,13 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
         self.log(f"Interpolating variables...")
 
         self.filter_qc()
+        variables = list(self.filter_settings)
 
         max_interp_seconds = self._max_interp_seconds()
 
         # Convert to polars dataframe
         self.df = pl.from_pandas(
-            self.data[list(self.filter_settings.keys() | {"TIME"})].to_dataframe(),
+            self.data[variables + ["TIME"]].to_dataframe(),
             nan_to_null=False,
         )
         self.unprocessed_df = (
@@ -135,20 +150,19 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
             .replace({np.nan: None})
             .interpolate_by("TIME")
             .replace({None: np.nan})
-            for var in self.filter_settings.keys()
+            for var in variables
         )
 
         time = self.df["TIME"].to_numpy()
-        for var in self.filter_settings.keys():
+        for var in variables:
             interpolated = self.df[var].to_numpy().copy()
             if max_interp_seconds:
                 was_nan = self.unprocessed_df[var].is_nan().to_numpy()
                 self._limit_gap_fill(time, interpolated, was_nan, max_interp_seconds)
             self.df = self.df.with_columns(pl.Series(var, interpolated))
+            filled = np.isnan(self.data[var].values) & np.isfinite(interpolated)
             self.data[var][:] = interpolated
-
-        self.reconstruct_data()
-        self.update_qc()
+            self.data[f"{var}_QC"] = xr.where(filled, 8, self.data[f"{var}_QC"])
 
         if self.diagnostics:
             self.generate_diagnostics()
@@ -193,27 +207,21 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
         interpolated[too_far] = np.nan
 
     def generate_diagnostics(self):
-        """
-        Generate diagnostic plots comparing original and interpolated data.
-
-        Creates a side-by-side comparison visualization showing the first
-        variable in filter_settings before and after interpolation.
-
-        This method uses the Tkinter backend for interactive display.
-
-        Returns
-        -------
-        None
-        """
-
+        # First variable in `variables`, original samples vs interpolated fills.
         matplotlib.use("tkagg")
-        fig, axes = fig_spec.new_fig(nrows=2, sharex=True, sharey=True)
+        fig, axes = fig_spec.new_fig()
+        ax = axes[0][0]
 
-        plot_var = list(self.filter_settings.keys())[0]
-        titles = ["Original", "Interpolated"]
-        for ax, data, title in zip(axes[:, 0], [self.unprocessed_df, self.df], titles):
-            ax.plot(data[plot_var], color=fig_spec.CATEGORY[1])
-            fig_spec.style_axes(ax, title=title, ylabel=plot_var)
+        plot_var = next(iter(self.filter_settings))
+        time = self.df["TIME"].to_numpy()
+        original = self.unprocessed_df[plot_var].to_numpy()
+        filled = self.df[plot_var].to_numpy()
+        was_nan = np.isnan(original) & ~np.isnan(filled)
+        fig_spec.points(ax, time[~was_nan], filled[~was_nan], color=fig_spec.CATEGORY[1], label="original")
+        fig_spec.points(ax, time[was_nan], filled[was_nan], color=fig_spec.CATEGORY[3], label="interpolated")
+        fig_spec.style_axes(ax, ylabel=plot_var)
+        fig_spec.x_axis(ax, time)
+        fig_spec.legend(ax)
 
         fig_spec.finish(fig, suptitle=f"Interpolation: {plot_var}")
         plt.show(block=True)

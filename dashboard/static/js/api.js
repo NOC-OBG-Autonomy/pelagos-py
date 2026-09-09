@@ -54,6 +54,15 @@ const API = {
     }
     return r.json();
   },
+  // Opens a native file dialog on the server; resolves to the path or null.
+  async browseFile(start) {
+    const r = await fetch('/api/browse', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ start: start || '' }),
+    });
+    if (!r.ok) throw new Error((await r.json()).detail || 'Browse failed');
+    return (await r.json()).path;
+  },
   async run(yamlContent) {
     const r = await fetch('/api/run', {
       method: 'POST',

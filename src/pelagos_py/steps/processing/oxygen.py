@@ -71,7 +71,7 @@ def _plot_section(data, var, pressure_var, step_name):
     cbar.set_label(fig_spec.axis_label(var, data[var].attrs.get("units")), fontsize=fig_spec.FS_LABEL)
     cbar.ax.tick_params(labelsize=fig_spec.FS_TICK)
 
-    fig_spec.date_axis(ax, which="x")
+    fig_spec.date_axis(ax, which="x", index=time)
     ylabel = fig_spec.axis_label(pressure_var, data[pressure_var].attrs.get("units"))
     fig_spec.style_axes(ax, ylabel=ylabel)
     ax.invert_yaxis()
@@ -125,13 +125,13 @@ def _plot_diff(data, raw_var, corrected_var, pressure_var, step_name):
         cbar = fig.colorbar(sc, cax=cax1)
         cbar.set_label(f"{corrected_var} - {raw_var}", fontsize=fig_spec.FS_LABEL)
         cbar.ax.tick_params(labelsize=fig_spec.FS_TICK)
-        fig_spec.date_axis(ax1, which="x")
+        fig_spec.date_axis(ax1, which="x", index=time)
         fig_spec.style_axes(ax1, xlabel="TIME", ylabel=fig_spec.axis_label(pressure_var, data[pressure_var].attrs.get("units")))
         ax1.invert_yaxis()
     else:
         fig_spec.points(ax1, time[good], diff[good], color=fig_spec.CATEGORY[0])
         ax1.axhline(0, color="grey", alpha=0.7, zorder=0, linewidth=0.8)
-        fig_spec.date_axis(ax1, which="x")
+        fig_spec.date_axis(ax1, which="x", index=time)
         fig_spec.style_axes(ax1, xlabel="TIME", ylabel=f"{corrected_var} - {raw_var}")
 
     fig_spec.finish(fig, suptitle=f"{step_name} Diagnostics")
@@ -143,6 +143,7 @@ class DeriveUncalibratedPhase(BaseStep, QCHandlingMixin):
 
     step_name = "Derive Uncalibrated Phase"
     provided_variables = ["UNCAL_PHASE_DOXY"]
+    variable_parameters = ["blue_phase_name", "red_phase_name"]
 
     parameter_schema = {
         "blue_phase_name": {
@@ -222,6 +223,7 @@ class DeriveOptodeTemperature(BaseStep, QCHandlingMixin):
 
     step_name = "Derive Optode Temperature"
     provided_variables = ["TEMP_DOXY"]
+    variable_parameters = ["temp_voltage_name"]
 
     parameter_schema = {
         "temp_voltage_name": {
@@ -299,7 +301,9 @@ class DeriveOptodeTemperature(BaseStep, QCHandlingMixin):
 class PhasePressureCorrection(BaseStep, QCHandlingMixin):
 
     step_name = "Phase Pressure Correction"
+    required_variables = ["UNCAL_PHASE_DOXY"]
     provided_variables = ["UNCAL_PHASE_DOXY_PCORR"]
+    variable_parameters = ["optode_pressure_name"]
 
     parameter_schema = {
         "optode_pressure_name": {
@@ -405,7 +409,7 @@ def _plot_shift_diff(data, raw_var, shifted_var, pressure_var, step_name, lag_la
     ax.plot([], [], ls="", label=f"lag: {lag_label}")
     ax.legend(fontsize=fig_spec.FS_LEGEND, loc="upper right", framealpha=0.9)
 
-    fig_spec.date_axis(ax, which="x")
+    fig_spec.date_axis(ax, which="x", index=time)
     ylabel = fig_spec.axis_label(pressure_var, data[pressure_var].attrs.get("units"))
     fig_spec.style_axes(ax, ylabel=ylabel)
     ax.invert_yaxis()
@@ -418,6 +422,8 @@ def _plot_shift_diff(data, raw_var, shifted_var, pressure_var, step_name, lag_la
 class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
 
     step_name = "Shift Oxygen To CTD"
+    required_variables = ["PROFILE_NUMBER"]
+    variable_parameters = ["shift_vars"]
 
     parameter_schema = {
         "shift_vars": {
@@ -612,6 +618,7 @@ class DeriveCalibratedPhase(BaseStep, QCHandlingMixin):
 
     step_name = "Derive Calibrated Phase"
     provided_variables = ["CAL_PHASE_DOXY"]
+    variable_parameters = ["uncalibrated_phase_name"]
 
     parameter_schema = {
         "uncalibrated_phase_name": {
@@ -691,7 +698,9 @@ class DeriveCalibratedPhase(BaseStep, QCHandlingMixin):
 class DeriveOxygenConcentration(BaseStep, QCHandlingMixin):
 
     step_name = "Derive Oxygen Concentration"
+    required_variables = ["CAL_PHASE_DOXY"]
     provided_variables = ["MOLAR_DOXY"]
+    variable_parameters = ["temperature_name"]
 
     parameter_schema = {
         "method": {
@@ -833,7 +842,9 @@ class DeriveOxygenConcentration(BaseStep, QCHandlingMixin):
 class MolarDOXYSalinityCorrection(BaseStep, QCHandlingMixin):
 
     step_name = "Molar DOXY Salinity Correction"
+    required_variables = ["MOLAR_DOXY"]
     provided_variables = ["MOLAR_DOXY_PSAL"]
+    variable_parameters = ["salinity_name", "temperature_name"]
 
     parameter_schema = {
         "salinity_name": {
@@ -975,6 +986,7 @@ class MolarDOXYPressureCorrection(BaseStep, QCHandlingMixin):
 
     step_name = "Molar DOXY Pressure Correction"
     provided_variables = ["MOLAR_DOXY_PSAL_PRES"]
+    variable_parameters = ["pressure_name", "temperature_name", "molar_doxy_name"]
 
     parameter_schema = {
         "pressure_name": {

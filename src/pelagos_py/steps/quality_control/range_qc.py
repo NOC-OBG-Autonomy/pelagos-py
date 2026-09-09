@@ -339,7 +339,7 @@ class range_qc(BaseQC):
             fig_spec.legend(ax, title="Flag")
 
         if xlabel == "Time":
-            fig_spec.date_axis(axes[-1][0], which="x")
+            fig_spec.date_axis(axes[-1][0], which="x", index=x)
         fig_spec.style_axes(axes[-1][0], xlabel=xlabel)
         fig_spec.finish(fig, suptitle="Range QC")
         plt.show(block=True)

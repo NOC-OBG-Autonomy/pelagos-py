@@ -306,7 +306,7 @@ class IsolateBBPSpikes(BaseStep, QCHandlingMixin):
 
         ylabel = fig_spec.axis_label(self.apply_to, self.data[self.apply_to].attrs.get("units"))
         for ax in (ax1, ax2):
-            fig_spec.date_axis(ax, which="x")
+            fig_spec.date_axis(ax, which="x", index=time.values)
             fig_spec.legend(ax)
         fig_spec.style_axes(ax1, ylabel=ylabel)
         fig_spec.style_axes(ax2, xlabel="Time", ylabel=ylabel)

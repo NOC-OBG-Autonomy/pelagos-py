@@ -97,7 +97,8 @@ class spike_qc(BaseQC):
         # Subset the data, keeping any existing _QC so already-bad samples can be
         # excluded from the baseline below.
         qc_cols = [f"{v}_QC" for v in self.variables if f"{v}_QC" in self.data]
-        self.data = self.data[self.required_variables + qc_cols]
+        keep = [v for v in ["TIME"] if v in self.data and v not in self.required_variables]
+        self.data = self.data[self.required_variables + qc_cols + keep]
 
         # Generate the variable-specific flags
         for var, sensitivity in self.variables.items():
@@ -181,6 +182,7 @@ class spike_qc(BaseQC):
 
         # Plot the QC output
         fig, axes = fig_spec.new_fig(nrows=len(self.plot), sharex=True)
+        x = fig_spec.x_time(self.data)
         for ax, var in zip(axes[:, 0], self.plot):
             # Check that the user specified var exists in the test set
             if f"{var}_QC" not in self.qc_outputs:
@@ -189,12 +191,11 @@ class spike_qc(BaseQC):
                 )
                 continue
 
-            fig_spec.flag_points(
-                ax, self.data["N_MEASUREMENTS"], self.data[var], self.data[f"{var}_QC"]
-            )
+            fig_spec.flag_points(ax, x, self.data[var], self.data[f"{var}_QC"])
             ylabel = fig_spec.axis_label(var, self.data[var].attrs.get("units"))
-            fig_spec.style_axes(ax, title=f"{var} Spike Test", xlabel="Index", ylabel=ylabel)
+            fig_spec.style_axes(ax, title=f"{var} Spike Test", ylabel=ylabel)
             fig_spec.legend(ax, title="Flags")
+        fig_spec.x_axis(axes[-1][0], x)
 
         fig_spec.finish(fig)
         plt.show(block=True)

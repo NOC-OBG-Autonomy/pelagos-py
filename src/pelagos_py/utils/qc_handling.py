@@ -67,7 +67,7 @@ class QCHandlingMixin:
                 value = getattr(self, attr, None)
                 if value is None:
                     continue
-                values = [value] if isinstance(value, str) else value
+                values = [value] if isinstance(value, str) else list(value)  # a dict gives its keys
                 subset_names.update(values)
                 # Several steps use the OG1 "prefer an existing _ADJUSTED variant"
                 # convention (e.g. apply_to="CHLA" but CHLA_ADJUSTED is read/used if

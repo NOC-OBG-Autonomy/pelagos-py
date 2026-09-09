@@ -290,3 +290,89 @@ def test_validator_passes_when_file_has_everything(tmp_path):
         {"name": "BBP from Beta", "parameters": {}},
     ]
     assert check_pipeline_variables(steps, LOGGER) is True
+
+
+def _optional_rename_steps(qc_var):
+    return [
+        {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
+        {
+            "name": "Correct Values",
+            "parameters": {
+                "target_variable": "BBP700",
+                "output_as": "BETA_BACKSCATTERING700",
+                "optional": True,
+            },
+        },
+        {
+            "name": "Apply QC",
+            "parameters": {
+                "qc_settings": {"range qc": {"variable_ranges": {qc_var: {4: [0, 1, "outside"]}}}}
+            },
+        },
+    ]
+
+
+def test_validator_flags_output_of_skipped_optional_step(monkeypatch):
+    # Neither BBP700 nor BETA_BACKSCATTERING700 is in the file, so the optional
+    # rename skips at run time and its output must not satisfy the QC.
+    monkeypatch.setattr(
+        "pelagos_py.utils.valid_config_check._read_file_variables",
+        lambda *a, **k: ({"TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC"}, set()),
+    )
+    with pytest.raises(ValueError, match="BETA_BACKSCATTERING700.*input file does not contain"):
+        check_pipeline_variables(_optional_rename_steps("BETA_BACKSCATTERING700"), LOGGER)
+
+
+def test_validator_passes_output_of_optional_step_with_input_present(monkeypatch):
+    monkeypatch.setattr(
+        "pelagos_py.utils.valid_config_check._read_file_variables",
+        lambda *a, **k: ({"TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC", "BBP700"}, set()),
+    )
+    assert check_pipeline_variables(_optional_rename_steps("BETA_BACKSCATTERING700"), LOGGER) is True
+
+
+def test_validator_flags_oxygen_name_parameter_missing_from_file(monkeypatch):
+    monkeypatch.setattr(
+        "pelagos_py.utils.valid_config_check._read_file_variables",
+        lambda *a, **k: ({"TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC"}, set()),
+    )
+    steps = [
+        {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
+        {"name": "Derive Uncalibrated Phase", "parameters": {"blue_phase_name": "BPHASE_DOXY"}},
+    ]
+    with pytest.raises(ValueError, match="BPHASE_DOXY.*input file does not contain"):
+        check_pipeline_variables(steps, LOGGER)
+
+
+def test_validator_tracks_shifted_oxygen_outputs(monkeypatch):
+    monkeypatch.setattr(
+        "pelagos_py.utils.valid_config_check._read_file_variables",
+        lambda *a, **k: (
+            {"TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC", "BPHASE_DOXY"}, set()
+        ),
+    )
+    steps = [
+        {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
+        {"name": "Find Profiles", "parameters": {}},
+        {"name": "Derive Uncalibrated Phase", "parameters": {"blue_phase_name": "BPHASE_DOXY"}},
+        {
+            "name": "Phase Pressure Correction",
+            "parameters": {"optode_pressure_name": "PRES", "correction_coefficient": 0.1},
+        },
+        {
+            "name": "Shift Oxygen To CTD",
+            "parameters": {"shift_vars": ["UNCAL_PHASE_DOXY_PCORR"], "lag_seconds": 3.0},
+        },
+        {
+            "name": "Derive Calibrated Phase",
+            "parameters": {
+                "uncalibrated_phase_name": "UNCAL_PHASE_DOXY_PCORR_SHIFTED",
+                "calib_coefficients": [0, 1],
+            },
+        },
+    ]
+    assert check_pipeline_variables(steps, LOGGER) is True
+    # Without the shift step the _SHIFTED name is produced by nothing.
+    del steps[4]
+    with pytest.raises(ValueError, match="UNCAL_PHASE_DOXY_PCORR_SHIFTED"):
+        check_pipeline_variables(steps, LOGGER)

@@ -104,7 +104,7 @@ class impossible_speed_qc(BaseQC):
         fig_spec.flag_points(
             ax, self.df["TIME"], self.df["absolute_speed"], self.df["LATITUDE_QC"]
         )
-        fig_spec.date_axis(ax, which="x")
+        fig_spec.date_axis(ax, which="x", index=self.df["TIME"].to_numpy())
         ax.set_ylim(0, 4)
         ax.axhline(3, ls="--", c="k")
         fig_spec.style_axes(

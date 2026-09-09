@@ -71,7 +71,7 @@ def _variable_parameter_names(step_class, parameters):
         value = parameters.get(attr, default)
         if value is None:
             continue
-        names.extend(value if isinstance(value, (list, tuple)) else [value])
+        names.extend(list(value) if isinstance(value, (list, tuple, dict)) else [value])
     return names
 
 
@@ -86,6 +86,11 @@ def _resolve_output_as(step_class, parameters):
     if not out:
         return []
     return list(out) if isinstance(out, (list, tuple)) else [out]
+
+
+def _shift_oxygen_output(parameters):
+    # "Shift Oxygen To CTD" writes ``{var}_SHIFTED`` for every ``shift_vars`` entry.
+    return [f"{v}_SHIFTED" for v in (parameters.get("shift_vars") or [])]
 
 
 def _deep_correction_output(step_class, parameters):
@@ -343,6 +348,8 @@ def _pipeline_provided_variables(steps_list):
         provided.update(_resolve_output_as(step_class, parameters))
         if step_config["name"] == "Deep Correction":
             provided.update(_deep_correction_output(step_class, parameters))
+        if step_config["name"] == "Shift Oxygen To CTD":
+            provided.update(_shift_oxygen_output(parameters))
         if step_config["name"] == "Apply QC":
             for qc_name, qc_params in (parameters.get("qc_settings") or {}).items():
                 qc_class = QC_CLASSES.get(qc_name)
@@ -508,6 +515,7 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
 
     pipeline_provided = _pipeline_provided_variables(steps_list)
     known_derived = _known_derived_variables()
+    skipped_outputs = set()
 
     for index, step_config in enumerate(steps_list):
         try:
@@ -660,7 +668,8 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
                     if qc_missing:
                         _raise_missing_variables(
                             logger, "QC test", qc_name, qc_missing,
-                            pipeline_provided, known_derived, file_vars, file_all_nan,
+                            pipeline_provided - skipped_outputs, known_derived,
+                            file_vars, file_all_nan,
                         )
 
                     # Make this test's outputs available to later tests in the same
@@ -682,6 +691,16 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
             own_provided.update(_resolve_output_as(step_class, parameters))
             if step_name == "Deep Correction":
                 own_provided.update(_deep_correction_output(step_class, parameters))
+            if step_name == "Shift Oxygen To CTD":
+                own_provided.update(_shift_oxygen_output(parameters))
+
+            # An `optional: true` step skips at run time when its target_variable
+            # is absent, so its outputs must not count as provided either.
+            if parameters.get("optional") and file_vars is not None:
+                target = parameters.get("target_variable")
+                if target and target not in available_vars and target not in file_vars:
+                    skipped_outputs |= own_provided
+                    own_provided = set()
 
             missing_vars = [req for req in req_vars if req not in available_vars]
 
@@ -692,7 +711,8 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
                 # look like the variable is "produced later" by this very step.
                 _raise_missing_variables(
                     logger, "step", step_name, missing_vars,
-                    pipeline_provided - own_provided, known_derived, file_vars, file_all_nan,
+                    pipeline_provided - own_provided - skipped_outputs, known_derived,
+                    file_vars, file_all_nan,
                 )
 
             available_vars.update(own_provided)

@@ -84,7 +84,8 @@ class stuck_value_qc(BaseQC):
 
     def return_qc(self):
         # Subset the data
-        self.data = self.data[self.required_variables]
+        keep = self.required_variables + [v for v in ["TIME"] if v in self.data and v not in self.required_variables]
+        self.data = self.data[keep]
 
         # Generate the variable-specific flags
         for var, n_stuck in self.variables.items():
@@ -148,6 +149,7 @@ class stuck_value_qc(BaseQC):
 
         # Plot the QC output
         fig, axes = fig_spec.new_fig(nrows=len(self.plot), sharex=True)
+        x = fig_spec.x_time(self.data)
         for ax, var in zip(axes[:, 0], self.plot):
             # Check that the user specified var exists in the test set
             if f"{var}_QC" not in self.qc_outputs:
@@ -156,12 +158,11 @@ class stuck_value_qc(BaseQC):
                 )
                 continue
 
-            fig_spec.flag_points(
-                ax, self.data["N_MEASUREMENTS"], self.data[var], self.data[f"{var}_QC"]
-            )
+            fig_spec.flag_points(ax, x, self.data[var], self.data[f"{var}_QC"])
             ylabel = fig_spec.axis_label(var, self.data[var].attrs.get("units"))
-            fig_spec.style_axes(ax, title=f"{var} Stuck Value Test", xlabel="Index", ylabel=ylabel)
+            fig_spec.style_axes(ax, title=f"{var} Stuck Value Test", ylabel=ylabel)
             fig_spec.legend(ax, title="Flags")
+        fig_spec.x_axis(axes[-1][0], x)
 
         fig_spec.finish(fig)
         plt.show(block=True)

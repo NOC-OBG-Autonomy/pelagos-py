@@ -53,9 +53,10 @@ class blank_qc(BaseQC):
         matplotlib.use("tkagg")
         fig, axes = fig_spec.new_fig()
         ax = axes[0][0]
-        # fig_spec.flag_points(ax, self.data["N_MEASUREMENTS"], self.data[var],
-        #                      self.data[f"{var}_QC"])
-        fig_spec.style_axes(ax, xlabel="Index", ylabel="")
+        x = fig_spec.x_time(self.data)  # TIME (with N_MEASUREMENTS on top) or index
+        # fig_spec.flag_points(ax, x, self.data[var], self.data[f"{var}_QC"])
+        fig_spec.style_axes(ax, ylabel="")
+        fig_spec.x_axis(ax, x)
         fig_spec.legend(ax, title="Flags")
         fig_spec.finish(fig, suptitle=self.qc_name)
         plt.show(block=True)

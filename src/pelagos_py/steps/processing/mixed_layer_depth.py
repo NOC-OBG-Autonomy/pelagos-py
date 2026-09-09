@@ -25,6 +25,8 @@ import pelagos_py.utils.palettes as palettes
 #### Custom imports ####
 import gsw
 import numpy as np
+
+from pelagos_py.utils import fig_spec
 import matplotlib
 import matplotlib.pyplot as plt
 
@@ -368,6 +370,6 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
             if ax.get_legend_handles_labels()[0]:
                 ax.legend(loc="lower right")
 
-        axes[-1, 0].set_xlabel("TIME" if "TIME" in self.data else "Measurement")
+        fig_spec.x_axis(axes[-1, 0], x)
         fig.tight_layout()
         plt.show(block=True)

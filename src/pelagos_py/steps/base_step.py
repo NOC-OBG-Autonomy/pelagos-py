@@ -261,7 +261,9 @@ class BaseStep(ConfigMirrorMixin):
         """
         self.logger.error("[%s] %s", self.name, message)
         self.logger.log(STOP, "Pipeline stopped at step '%s'.", self.name)
-        raise SystemExit(1)
+        exc = SystemExit(1)
+        exc.halt_message = message  # lets the dashboard show the reason, not "SystemExit: 1"
+        raise exc
 
     # ----------- Config Handling -----------
 

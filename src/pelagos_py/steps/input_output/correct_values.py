@@ -307,7 +307,7 @@ class CorrectValues(BaseStep):
             ax.axhline(lo, color="black", linestyle="--", alpha=0.6, linewidth=1, label=f"Min ({lo})")
 
         if xlabel == "Time":
-            fig_spec.date_axis(ax, which="x")
+            fig_spec.date_axis(ax, which="x", index=x)
         ylabel = fig_spec.axis_label(var, self.data[var].attrs.get("units"))
         fig_spec.style_axes(ax, xlabel=xlabel, ylabel=ylabel)
         fig_spec.legend(ax)

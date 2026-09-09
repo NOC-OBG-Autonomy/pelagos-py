@@ -98,12 +98,48 @@ def axis_label(var, units=None):
     return var if u in ("", "1", "unitless", "unknown", "none", "None") else f"{var} [{u}]"
 
 
-def date_axis(ax, which="x"):
-    """Consistent date formatting on the chosen axis (x or y)."""
+def date_axis(ax, which="x", index=None):
+    """Consistent date formatting on the chosen axis (x or y).
+
+    ``index`` is the full TIME array whose position is N_MEASUREMENTS: with it, a
+    time-series x axis also gets N_MEASUREMENTS along the top (of the top-most
+    panel when the axes share x), so readers see both.
+    """
     axis = ax.xaxis if which == "x" else ax.yaxis
     loc = mdates.AutoDateLocator()
     axis.set_major_locator(loc)
     axis.set_major_formatter(mdates.ConciseDateFormatter(loc))
+    if index is None or which != "x":
+        return
+    t = np.asarray(index)
+    if np.issubdtype(t.dtype, np.datetime64) or t.dtype == object:
+        t = np.asarray(mdates.date2num(t), dtype=float)
+    ok = np.isfinite(t)
+    t, i = t[ok], np.flatnonzero(ok).astype(float)
+    if t.size < 2:
+        return
+    order = np.argsort(t, kind="stable")
+    ts, is_ = t[order], i[order]
+    top = max(ax.get_shared_x_axes().get_siblings(ax), key=lambda a: a.get_position().y1)
+    sec = top.secondary_xaxis("top", functions=(lambda v: np.interp(v, ts, is_),
+                                                lambda v: np.interp(v, i, t)))
+    sec.set_xlabel("N_MEASUREMENTS", fontsize=FS_LABEL)
+    sec.tick_params(labelsize=FS_TICK)
+    top._pelagos_index = (ts, is_)  # picked up by the dashboard serialiser
+
+
+def x_time(data):
+    """What a whole-dataset series is plotted against: TIME if present, else N_MEASUREMENTS."""
+    return data["TIME"].values if "TIME" in data else np.arange(data.sizes["N_MEASUREMENTS"])
+
+
+def x_axis(ax, x):
+    """Label the x axis for an ``x_time`` array: TIME below + N_MEASUREMENTS on top, or Index."""
+    if np.issubdtype(np.asarray(x).dtype, np.datetime64):
+        date_axis(ax, index=x)
+        style_axes(ax, xlabel="TIME")
+    else:
+        style_axes(ax, xlabel="Index")
 
 
 def points(ax, x, y, *, color, label=None, size=MARKER, alpha=ALPHA):

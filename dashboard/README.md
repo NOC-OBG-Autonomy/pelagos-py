@@ -79,11 +79,13 @@ when the step would pause anyway, so an unattended run is unaffected.
 
 Diagnostic figures are matplotlib, captured as PNGs — which cannot be zoomed
 into. So alongside each PNG the runner also tries to write a **plot spec**
-(`fig_spec.py`): the figure's actual x/y arrays plus its labels, limits and
-legend. The viewer redraws that with plotly, giving box-zoom, pan, scroll-zoom,
-hover readout and legend toggling on the real data. Panels a step drew with
-`sharex=True` keep their x-ranges linked. **Image** in the viewer toolbar
-switches back to the PNG at any point.
+(`fig_spec.py`): a JSON file with the figure's labels, limits, layout and trace
+styling, plus a binary of every trace's full x/y. The viewer (`plot.js`) draws
+all of it in one WebGL context — no thinning, however many millions of points —
+with a progress bar while the data streams in. Drag a box to zoom, double-click
+(or **Reset**) to go back, click a point for its exact values, click a legend
+entry to hide that series. Panels a step drew with `sharex`/`sharey` keep their
+ranges linked. **Image** in the viewer toolbar switches back to the PNG.
 
 Nothing in `pelagos_py` changes: steps still just draw with matplotlib and call
 `plt.show()`, and a run outside the dashboard never touches any of this.
@@ -100,7 +102,7 @@ half-drawn or subtly wrong.
 The run log says which is which, per plot, and names what stopped it:
 
 ```
-  · plot: TEMP Spike Test (zoomable)
+  · plot: TEMP Spike Test (interactive)
   · plot: Profile summary (image only — patches)
   · plot: Track map (image only — projection:mercator)
 ```
@@ -110,14 +112,11 @@ plot interactive you either change the *step* to draw it with lines/scatter, or
 teach `fig_spec.py` the artist named in the log — add a branch to
 `_scatter_trace`/`_line_trace` and drop it from `_unsupported`.
 
-Very large traces are thinned to a whole-figure budget of ~150k points before
-being sent, using min/max-per-bucket decimation so single-sample spikes survive
-(these are spike and stuck-value diagnostics — striding would hide exactly what
-they exist to show). The viewer says so when it has thinned, and the PNG beside
-it is always full resolution.
-
-`static/vendor/plotly.min.js` is ~4.5 MB and is lazy-loaded the first time an
-interactive plot is opened, so it costs nothing on page load.
+Data goes over the wire as float32 (dates as seconds since the figure's first
+timestamp) — about 12 MB per 1.5M-point trace — and a float64 copy stays on the
+server so a clicked point reports exact values. Per figure the runner writes
+`fig_NNN.json` (spec), `fig_NNN.f32` (float32 data) and `fig_NNN_full.npz`
+(float64) beside the PNG.
 
 ## Layout
 
@@ -132,8 +131,8 @@ interactive plot is opened, so it costs nothing on page load.
 | `static/js/run.js` | Run, streamed log console, captured-figure model |
 | `static/js/review.js` | Paused-step panel: its plots + its parameters + re-run |
 | `static/js/viewer.js` | Full-window figure viewer (lightbox) |
-| `static/js/plot.js` | Plot spec → interactive plotly panels |
-| `fig_spec.py` | matplotlib figure → plot spec (dashboard-only, best-effort) |
+| `static/js/plot.js` | WebGL renderer: spec + binary → zoomable panels |
+| `fig_spec.py` | matplotlib figure → plot spec + float32 data (dashboard-only, best-effort) |
 | `static/js/app.js` | Bootstrap and wiring |
 
 ## Later / offline
