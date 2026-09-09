@@ -61,7 +61,7 @@ const Plot = {
     return traces;
   },
 
-  // `manual` ({onSelect, onRemove}) turns on the Manual QC selection mode: see
+  // `manual` ({onSelect, onPoint, onRemove, draw}) turns on the Manual QC selection mode: see
   // Chart._bind and manual.js.
   async render(host, spec, { name, onProgress, signal, manual } = {}) {
     const data = await Plot.fetchBin(name, onProgress, signal);
@@ -250,7 +250,7 @@ class Chart {
     const buf = (arr) => { const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, arr, gl.STATIC_DRAW); return b; };
     for (const p of this.panels) for (const t of p.traces) {
       t.bx = buf(t.x); t.by = buf(t.y);
-      t.bc = t.rgba ? buf(t.rgba) : null;
+      t.bc = t.rgba ? buf(t.rgba) : null; t.bc0 = t.bc;
       if (t.spec.mode.includes('lines')) {
         // Segment index list skipping NaN gaps, as matplotlib breaks the line there.
         const idx = new Uint32Array((t.n - 1) * 2);
@@ -294,7 +294,7 @@ class Chart {
           gl.uniform1i(this.loc.uPer, 0);
           gl.uniform4fv(this.loc.uColor, this._hexToRGBA(t.spec.color));
         }
-        gl.uniform1f(this.loc.uOpacity, t.spec.opacity == null ? 1 : t.spec.opacity);
+        gl.uniform1f(this.loc.uOpacity, t.bc && t.bc === t.bcDyn ? 1 : (t.spec.opacity == null ? 1 : t.spec.opacity));
         if (t.bi && t.ni) {
           // WebGL lines are 1 device px; thicker strokes are extra passes shifted a pixel.
           gl.uniform1i(this.loc.uRound, 0);
@@ -483,7 +483,24 @@ class Chart {
 
   _rgbaCss(rgba, i) { return 'rgba(' + rgba[i * 4] + ',' + rgba[i * 4 + 1] + ',' + rgba[i * 4 + 2] + ',' + (rgba[i * 4 + 3] / 255) + ')'; }
 
-  // Manual QC boxes, in chart coordinates: [{x0, x1, y0, y1, color, label}].
+  // Manual QC live preview: fn(trace, rgba) fills a per-point colour buffer for
+  // each single-colour marker trace; null restores the trace colours.
+  recolour(fn) {
+    const gl = this.ctx;
+    for (const p of this.panels) for (const t of p.traces) {
+      if (!t.spec.mode.includes('markers') || t.rgba) continue;
+      if (!fn) { t.bc = t.bc0; continue; }
+      const arr = new Uint8Array(t.n * 4);
+      fn(t, arr);
+      if (!t.bcDyn) t.bcDyn = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, t.bcDyn); gl.bufferData(gl.ARRAY_BUFFER, arr, gl.DYNAMIC_DRAW);
+      t.bc = t.bcDyn;
+    }
+    this.draw();
+  }
+
+  // Manual QC boxes, in chart coordinates: [{x0, x1, y0, y1, color, label, hi}];
+  // a point is {point: true, x0, y0, ...}.
   setOverlays(list) { this.overlays = list || []; this._drawFG(); }
   clearPending() { this.pending = null; this._drawFG(); }
 
@@ -494,15 +511,24 @@ class Chart {
     const r = p.rect;
     fg.save(); fg.beginPath(); fg.rect(r.x, r.y, r.w, r.h); fg.clip();
     for (const o of this.overlays) {
-      const x = Math.min(this.px(p, o.x0), this.px(p, o.x1)), y = Math.min(this.py(p, o.y0), this.py(p, o.y1));
-      const w = Math.abs(this.px(p, o.x1) - this.px(p, o.x0)), h = Math.abs(this.py(p, o.y1) - this.py(p, o.y0));
-      fg.strokeStyle = o.color; fg.lineWidth = 1.5; fg.setLineDash([5, 3]);
-      fg.strokeRect(x + 0.5, y + 0.5, w, h);
-      fg.setLineDash([]);
+      let x, y, w, h;
+      if (o.point) {
+        // A single sample: a ring, label pinned to its top-right.
+        const cx = this.px(p, o.x0), cy = this.py(p, o.y0);
+        fg.strokeStyle = o.color; fg.lineWidth = o.hi ? 3 : 2; fg.beginPath(); fg.arc(cx, cy, 7, 0, Math.PI * 2); fg.stroke();
+        x = cx + 8; y = cy - 8; w = 0; h = 0;
+      } else {
+        x = Math.min(this.px(p, o.x0), this.px(p, o.x1)); y = Math.min(this.py(p, o.y0), this.py(p, o.y1));
+        w = Math.abs(this.px(p, o.x1) - this.px(p, o.x0)); h = Math.abs(this.py(p, o.y1) - this.py(p, o.y0));
+        if (o.hi) { fg.fillStyle = o.color; fg.globalAlpha = .18; fg.fillRect(x, y, w, h); fg.globalAlpha = 1; }
+        fg.strokeStyle = o.color; fg.lineWidth = o.hi ? 3 : 1.5; fg.setLineDash([5, 3]);
+        fg.strokeRect(x + 0.5, y + 0.5, w, h);
+        fg.setLineDash([]);
+      }
       // Label + × at the top-right corner; the × is the remove hit area.
       const label = o.label || '';
       fg.font = FONT_B; const tw = label ? fg.measureText(label).width + 8 : 0;
-      const bx = Math.min(x + w, r.x + r.w) - 18, by = Math.max(y, r.y);
+      const bx = o.point ? x + tw : Math.min(x + w, r.x + r.w) - 18, by = Math.max(y, r.y);
       fg.fillStyle = o.color; fg.fillRect(bx - tw, by, tw + 18, 16);
       fg.fillStyle = '#fff'; fg.textAlign = 'left'; fg.textBaseline = 'middle';
       if (label) fg.fillText(label, bx - tw + 4, by + 8);
@@ -562,8 +588,13 @@ class Chart {
         const ohit = this.overlayHits.find((h) => x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h);
         if (ohit) { this.manual.onRemove(ohit.box); return; }
       }
-      // ⌘/Ctrl-drag on a Manual QC chart selects a region instead of zooming.
-      this.box = { panel: p, x0: x, y0: y, x1: x, y1: y, select: !!(this.manual && (ev.metaKey || ev.ctrlKey)) };
+      // Manual QC: a drag selects a region instead of zooming — plain drag in
+      // draw mode, ⌘/Ctrl-drag otherwise (the modifier flips the mode).
+      const mod = ev.metaKey || ev.ctrlKey;
+      const draw = !!(this.manual && this.manual.draw && this.manual.draw());
+      // Boxes are only drawn on the main (first) panel; a side panel just zooms.
+      const main = p === this.panels[0];
+      this.box = { panel: p, x0: x, y0: y, x1: x, y1: y, select: !!(this.manual && main && (draw ? !mod : mod)) };
       el.setPointerCapture(ev.pointerId);
     };
     const move = (ev) => {
@@ -579,7 +610,13 @@ class Chart {
       const b = this.box; this.box = null;
       const big = Math.abs(b.x1 - b.x0) > 4 && Math.abs(b.y1 - b.y0) > 4;
       if (b.select) {
-        if (!big) { this._drawFG(); return; }
+        // A ⌘/Ctrl-click (no drag) picks the single nearest sample.
+        if (!big) {
+          const near = this._nearest(b.panel, b.x0, b.y0);
+          this._drawFG();
+          if (near) this.manual.onPoint({ x: near.trace.x[near.index], y: near.trace.y[near.index] });
+          return;
+        }
         const p = b.panel;
         this.pending = { x0: this.dx(p, Math.min(b.x0, b.x1)), x1: this.dx(p, Math.max(b.x0, b.x1)),
           y0: this.dy(p, Math.max(b.y0, b.y1)), y1: this.dy(p, Math.min(b.y0, b.y1)) };
@@ -603,6 +640,7 @@ class Chart {
 
   // Redraw just the top 2D layer (axes, legend, box drag, pick marker).
   _drawFG() {
+    if (!this.w) return; // not laid out yet (host hidden or unsized); draw() will
     const fg = this.fg.getContext('2d');
     fg.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); fg.clearRect(0, 0, this.w, this.h); fg.font = FONT;
     if (this.spec.suptitle) { fg.fillStyle = FG; fg.font = FONT_B; fg.textAlign = 'center'; fg.textBaseline = 'middle'; fg.fillText(this.spec.suptitle, this.w / 2, 13); }
@@ -623,18 +661,38 @@ class Chart {
         const inv = p.view.y0 > p.view.y1; p.view.y0 = inv ? yr[1] : yr[0]; p.view.y1 = inv ? yr[0] : yr[1];
       }
     }
+    if (this.manual && this.manual.onView) this.manual.onView();
     this.draw();
   }
 
   reset() {
     for (const p of this.panels) p.view = Object.assign({}, p.home);
     this.pick = null; this.tip.classList.add('hidden');
+    if (this.manual && this.manual.onView) this.manual.onView();
     this.draw();
+  }
+
+  // Manual QC profile panel: grey the points whose `keep[i]` is false (a
+  // per-point rgba trace only); null restores the trace's own colours.
+  dim(t, keep) {
+    const gl = this.ctx;
+    if (!t.rgba) return;
+    if (!keep) { t.bc = t.bc0; return; }
+    const arr = new Uint8Array(t.rgba);
+    for (let i = 0; i < t.n; i++) {
+      if (keep[i]) continue;
+      // Premultiplied grey at ~35% alpha.
+      arr[i * 4] = 55; arr[i * 4 + 1] = 57; arr[i * 4 + 2] = 61; arr[i * 4 + 3] = 90;
+    }
+    if (!t.bcDyn) t.bcDyn = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, t.bcDyn); gl.bufferData(gl.ARRAY_BUFFER, arr, gl.DYNAMIC_DRAW);
+    t.bc = t.bcDyn;
   }
 
   // Nearest visible point (in screen space) within a small radius; brute force
   // over every point is ~tens of ms even at millions, and only runs on click.
-  _click(p, cx, cy) {
+  // Nearest visible sample within 12px of a canvas point, or null.
+  _nearest(p, cx, cy) {
     const R2 = 12 * 12;
     const kx = p.rect.w / (p.view.x1 - p.view.x0), ky = p.rect.h / (p.view.y1 - p.view.y0);
     const ox = p.rect.x - p.view.x0 * kx, oy = p.rect.y + p.rect.h + p.view.y0 * ky;
@@ -645,15 +703,20 @@ class Chart {
       for (let i = 0; i < t.n; i++) {
         const sx = xs[i] * kx + ox - cx, sy = oy - ys[i] * ky - cy;
         const d = sx * sx + sy * sy;
-        if (d < bestD) { bestD = d; best = { trace: j, index: i }; }
+        if (d < bestD) { bestD = d; best = { trace: t, traceIndex: j, index: i }; }
       }
     });
+    return best;
+  }
+
+  _click(p, cx, cy) {
+    const best = this._nearest(p, cx, cy);
     if (!best) { this.pick = null; this.tip.classList.add('hidden'); this._drawFG(); return; }
-    const t = p.traces[best.trace];
+    const t = best.trace;
     const pick = { panel: p, trace: t, index: best.index, x: t.x[best.index], y: t.y[best.index], exact: null };
     this.pick = pick;
     this._drawFG();
-    fetch(Plot.pointUrl(this.name, this.panels.indexOf(p), best.trace, best.index))
+    fetch(Plot.pointUrl(this.name, this.panels.indexOf(p), best.traceIndex, best.index))
       .then((r) => (r.ok ? r.json() : null))
       .then((ex) => { if (this.pick === pick && ex) { pick.exact = ex; this._drawFG(); } })
       .catch(() => {});

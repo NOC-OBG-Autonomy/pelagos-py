@@ -43,7 +43,7 @@ const Demos = {
     hint.textContent = active ? 'loaded' : downloaded ? 'ready' : 'download';
     el.appendChild(hint);
     el.addEventListener('click', async () => {
-      if (Config.busy) return;
+      if (Config.busy || (typeof RunLock !== 'undefined' && RunLock.running)) return;
       try { await Config.load(name); }
       catch (e) { Config.notice('Could not load ' + name + ': ' + e.message, { sticky: true, err: true }); }
     });

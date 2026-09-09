@@ -104,6 +104,7 @@ def _line_trace(line):
         "x": x, "y": y, "x_date": x_date, "y_date": y_date, "rgba": None,
         "mode": ("lines+markers" if has_line and has_marker else "lines" if has_line else "markers"),
         "label": line.get_label(),
+        "gid": line.get_gid(),
         "color": _hex(color),
         "opacity": _alpha(color, line.get_alpha()),
         "width": float(line.get_linewidth()),
@@ -136,7 +137,7 @@ def _scatter_trace(coll):
     sizes = coll.get_sizes()
     return {
         "x": x, "y": y, "x_date": x_date, "y_date": y_date, "rgba": rgba,
-        "mode": "markers", "label": coll.get_label(), "color": color, "opacity": opacity,
+        "mode": "markers", "label": coll.get_label(), "gid": coll.get_gid(), "color": color, "opacity": opacity,
         "width": 1.0, "dash": "solid",
         "size": float(np.sqrt(sizes[0])) if len(sizes) else 6.0,  # points^2 -> diameter
     }
@@ -287,7 +288,7 @@ def serialise(fig):
             if t["rgba"] is not None:
                 arrays.append(np.ascontiguousarray(t["rgba"]))
             header_traces.append({"panel": i, "trace": j, "n": n, "rgba": t["rgba"] is not None})
-            specs.append({k: t[k] for k in ("mode", "label", "color", "opacity", "width", "dash", "size")} | {"n": n})
+            specs.append({k: t[k] for k in ("mode", "label", "gid", "color", "opacity", "width", "dash", "size")} | {"n": n})
         for r in reflines:
             is_date = x_date if r["axis"] == "x" else y_date
             r["value"] = float(_rel(_epoch_ms(r["value"]) if is_date else r["value"], is_date, t0))

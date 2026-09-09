@@ -544,6 +544,10 @@ const Run = {
     } else {
       Review.show(idx, name, test);
     }
+    if (ManualQC.continueAfter) {
+      ManualQC.continueAfter = false;
+      if (!Run.pauseFailed) Run.continueRun();
+    }
   },
 
   hidePause() {
@@ -779,20 +783,22 @@ const Run = {
     } catch (e) { /* server not ready; ignore */ }
   },
 
-  // Switch the output panel to the Run tab (used when auto-resuming, and to get
-  // back to the review panel from the pause banner on another tab).
-  showTab() {
+  // Switch to a tab (used when auto-resuming, and to get back to the review
+  // panel / Manual QC editor from the pause banner on another tab).
+  showTab(name = 'run') {
     document.querySelectorAll('.tab').forEach((t) =>
-      t.classList.toggle('active', t.dataset.tab === 'run'));
+      t.classList.toggle('active', t.dataset.tab === name));
     document.querySelectorAll('.tab-panel, .tab-actions').forEach((p) =>
-      p.classList.toggle('hidden', p.dataset.panel !== 'run'));
+      p.classList.toggle('hidden', p.dataset.panel !== name));
     Run.onTabChange();
   },
 
   // The pause banner's "Review step" button is only needed when the review
   // panel isn't already on screen, so it has to be re-evaluated whenever the
-  // visible tab changes.
+  // visible tab changes. The Manual QC tab hides the palette and builder.
   onTabChange() {
+    const which = document.querySelector('.tab.active')?.dataset.tab;
+    document.body.classList.toggle('manual-full', which === 'manual');
     if (Review.active) Review.apply();
   },
 

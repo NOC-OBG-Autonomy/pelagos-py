@@ -21,20 +21,22 @@ QC tests to identify irregularities in PAR profiles based on La Forgia & Organel
 """
 
 #### Mandatory imports ####
-from IPython.core.pylabtools import figsize
 from pelagos_py.steps.base_qc import BaseQC, register_qc, flag_cols
+from pelagos_py.utils.processing_utils import profile_indices
 
 #### Custom imports ####
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
 from scipy.stats import shapiro
+
+# Skip scipy's axis/nan_policy wrapper (~5x the test itself); same result on finite 1-D input.
+_shapiro = getattr(shapiro, "__wrapped__", shapiro)
 from scipy.interpolate import interp1d
 from datetime import datetime
 import warnings
 import xarray as xr
 import pandas as pd
-import pvlib
 
 
 # Functions written and provided by Thomas Ryan-Keogh based off of (https://doi.org/10.1002/lom3.10701)
@@ -62,6 +64,8 @@ def calculate_solar_elevation(latitude, longitude, datetime):
     - Intended for use with xarray datasets where each profile has a single latitude,
       longitude, and datetime (e.g., one value per `N_PROF`).
     """
+    import pvlib  # slow import, deferred to first use
+
     # Ensure datetime is timezone-aware (UTC)
     time_utc = pd.to_datetime(datetime).tz_localize("UTC")
 
@@ -202,7 +206,7 @@ def qc_par_flagging(pres, par, sun_elev, nei_par=3e-2):
                 # TODO: Dev. verbosity to disable warning ignoring. Also below...
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
-                    _, pvals[i] = shapiro(seg)
+                    _, pvals[i] = _shapiro(seg)
             except Exception:
                 pvals[i] = np.nan
 
@@ -305,22 +309,20 @@ class par_irregularity_qc(BaseQC):
         # Make an unchecked (0) QC container for PAR QC
         par_qc = np.full(len(self.data["DOWNWELLING_PAR"]), 0)
 
-        # Apply the checks across individual profiles
-        profile_numbers = np.unique(
-            self.data["PROFILE_NUMBER"].dropna(dim="N_MEASUREMENTS")
+        # Apply the checks across individual profiles. Solar elevation comes from
+        # each profile's first sample, in one vectorised call for all profiles.
+        groups = profile_indices(self.data["PROFILE_NUMBER"].values)
+        first = np.array([idx[0] for idx in groups.values()], dtype=int)
+        solar_elevations = calculate_solar_elevation(
+            self.data["LATITUDE"].values[first],
+            self.data["LONGITUDE"].values[first],
+            self.data["TIME"].values[first],
         )
-        for profile_number in self.log_progress(profile_numbers, desc="", unit="profile"):
-            # Subset the data
-            profile = self.data.where(
-                self.data["PROFILE_NUMBER"] == profile_number, drop=True
-            )
-
-            # Find the solar elevation
-            solar_elevation = calculate_solar_elevation(
-                profile["LATITUDE"][0].values,
-                profile["LONGITUDE"][0].values,
-                profile["TIME"][0].values,
-            )
+        for (profile_number, idx), solar_elevation in zip(
+            self.log_progress(groups.items(), total=len(groups), desc="", unit="profile"),
+            solar_elevations,
+        ):
+            profile = self.data.isel(N_MEASUREMENTS=idx)
 
             # Apply the QC opperation
             profile_element_qc, _, _ = qc_par_flagging(
@@ -331,10 +333,7 @@ class par_irregularity_qc(BaseQC):
             )
 
             # Stitch the QC results back into the QC container
-            profile_element_indices = np.where(
-                self.data["PROFILE_NUMBER"] == profile_number
-            )
-            par_qc[profile_element_indices] = profile_element_qc
+            par_qc[idx] = profile_element_qc
 
         # any remaining flags that are 0 (unchecked) are updated to 1 (good)
         par_qc[par_qc == 0] = 1

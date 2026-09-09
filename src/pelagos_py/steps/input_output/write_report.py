@@ -29,8 +29,6 @@ import subprocess
 import json
 from importlib.metadata import version, PackageNotFoundError
 import matplotlib.pyplot as plt
-import cartopy.crs as ccrs
-import cartopy.feature as cfeature
 import xarray as xr
 from tqdm import tqdm
 import numpy as np
@@ -526,6 +524,9 @@ def basic_geo(doc, data, g_extent, ext, outdir):
     """
     Creates a simple geographic plot using the glider LONGITUDE and LATITUDE.
     """
+    import cartopy.crs as ccrs
+    import cartopy.feature as cfeature
+
     ax0 = plt.axes(projection=ccrs.PlateCarree())
     ax0.set_extent(g_extent, crs=ccrs.PlateCarree())
     ax0.add_feature(cfeature.LAND.with_scale("110m"))
@@ -576,6 +577,9 @@ def inset_geo(
     ext : str
         Image filetype extension (.png, .svg, etc.)
     """
+    import cartopy.crs as ccrs
+    import cartopy.feature as cfeature
+
     fig = plt.figure(figsize=(8, 6))
 
     lon = data["LONGITUDE"].values

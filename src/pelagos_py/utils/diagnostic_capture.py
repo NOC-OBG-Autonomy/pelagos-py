@@ -33,6 +33,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.collections import PathCollection
 from matplotlib.lines import Line2D
+from pelagos_py.utils import fig_spec
 
 #   Report PNGs render at a fixed size regardless of how many points a step
 #   plotted, so a million-point diagnostic costs as much to rasterize as the
@@ -97,9 +98,11 @@ def force_headless_backend():
     original_backend = matplotlib.get_backend()
     matplotlib.use("Agg", force=True)
     matplotlib.use = lambda *args, **kwargs: None
+    fig_spec.MAX_POINTS = _CAPTURE_MAX_POINTS
     try:
         yield
     finally:
+        fig_spec.MAX_POINTS = None
         matplotlib.use = original_use
         #   Best-effort restore: never let backend restoration break the run.
         try:
@@ -183,8 +186,10 @@ def capture_figures(
         GUI backend is the reason this path is opt-in only.
     """
     original_show = plt.show
+    max_points = fig_spec.MAX_POINTS
 
     if interactive:
+        fig_spec.MAX_POINTS = None  # the user sees every point; only the saved copy is thinned
         #   Switch this step to the interactive Tk backend so its figure can be
         #   displayed. ``matplotlib.use`` is neutralised for the run, so switch
         #   via pyplot directly.
@@ -221,6 +226,7 @@ def capture_figures(
             yield
     finally:
         plt.show = original_show
+        fig_spec.MAX_POINTS = max_points
         #   Catch any figures a diagnostic left open without calling show()
         #   (headless: never display these, just save them).
         _save_open_figures(outdir, step_name, step_index, images, close=True)

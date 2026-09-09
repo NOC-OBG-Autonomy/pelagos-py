@@ -16,12 +16,15 @@
 </head>
 <body>
   <div class="shell">
-    <!-- Left rail: brand + step palette (auto-generated from the registry) -->
+    <!-- Left rail: step palette (auto-generated from the registry) -->
     <aside class="palette">
       <div class="brand">
         <img class="logo" src="/img/NOC_logo.svg" alt="NOC logo" height="32" />
         <div class="title">pelagos-py</div>
       </div>
+      <!-- Manual QC tab: the rail holds the editor's controls instead of the
+           palette (see manual.js); the palette parts hide via body.manual-full. -->
+      <div id="manual-rail" class="manual-rail"></div>
       <input id="palette-search" placeholder="Search steps…" />
       <div id="palette-list"></div>
       <a class="rail-foot" href="https://noc-obg-autonomy.github.io/pelagos-py/"
@@ -40,6 +43,9 @@
         <div class="tab-list">
           <button class="tab" data-tab="yaml"><span data-icon="code" data-icon-size="15"></span>YAML</button>
           <button class="tab active" data-tab="run"><span data-icon="play" data-icon-size="15"></span>Run</button>
+          <!-- Only while a run is paused on the `manual qc` test; takes the
+               whole window (palette + builder hide) — see manual.js. -->
+          <button class="tab tab-manual hidden" data-tab="manual"><span data-icon="image" data-icon-size="15"></span>Manual QC</button>
           <button class="tab" data-tab="plots"><span data-icon="image" data-icon-size="15"></span>Plots</button>
           <button class="tab" data-tab="report"><span data-icon="file" data-icon-size="15"></span>Report</button>
           <button class="tab" data-tab="inspect"><span data-icon="search" data-icon-size="15"></span>Inspect</button>
@@ -59,6 +65,11 @@
           <span id="run-status" class="run-status"></span>
           <button id="btn-stop" class="ghost danger" disabled><span data-icon="stop"></span>Stop</button>
           <button id="btn-run" class="primary"><span data-icon="play"></span>Run pipeline</button>
+        </div>
+        <div class="tab-actions hidden" data-panel="manual">
+          <span id="manual-status" class="run-status"></span>
+          <button id="btn-manual-rerun" class="ghost"><span data-icon="rerun"></span>Re-run test</button>
+          <button id="btn-manual-continue" class="primary"><span data-icon="play"></span>Continue</button>
         </div>
       </div>
 
@@ -163,6 +174,10 @@
             <p class="note" id="run-note">Steps with <code>diagnostics: true</code> pause
               the run here so you can check the plot and tune that step before
               continuing. Every plot is also kept in the <strong>Plots</strong> tab.</p>
+          </div>
+
+          <div class="tab-panel hidden" data-panel="manual">
+            <div id="manual-workspace" class="manual-ws"></div>
           </div>
 
           <div class="tab-panel hidden" data-panel="plots">

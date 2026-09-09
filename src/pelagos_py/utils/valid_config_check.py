@@ -716,6 +716,12 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
                 )
 
             available_vars.update(own_provided)
+            # Everything the input file actually holds is available from the loader
+            # on (a file variable a later step overwrites, e.g. BBP700 + "BBP from
+            # Beta", must not read as "produced later"); all-NaN placeholders stay
+            # missing so _raise_missing_variables can point at them.
+            if step_name == "Load OG1" and file_vars is not None:
+                available_vars.update(file_vars - (file_all_nan or set()))
 
         except ValueError as exc:
             if not hasattr(exc, "step_index"):

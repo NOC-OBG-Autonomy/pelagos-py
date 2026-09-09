@@ -20,12 +20,13 @@
 from pelagos_py.steps.base_step import BaseStep, register_step
 from pelagos_py.utils.qc_handling import QCHandlingMixin
 import pelagos_py.utils.diagnostics as diag
-from pelagos_py.utils.processing_utils import cndc_scale_factor
+from pelagos_py.utils.processing_utils import cndc_scale_factor, profile_indices
 
 #### Custom imports ####
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from scipy import interpolate
+from scipy.signal import lfilter
 import xarray as xr
 import pandas as pd
 import numpy as np
@@ -304,6 +305,7 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
         self._ct_cost_data = None
 
         prof_arr = self.data["PROFILE_NUMBER"].values
+        self._profile_index = profile_indices(prof_arr)
 
         # Randomly permute to ensure uniform sampling across the dataset
         indices = np.random.permutation(len(profile_numbers))
@@ -332,10 +334,7 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
                 break
 
             profile_number = profile_numbers[i]
-            prof_indices = np.where(prof_arr == profile_number)[0]
-
-            if len(prof_indices) == 0:
-                continue
+            prof_indices = self._profile_index[profile_number]
 
             profile = self.data.isel(N_MEASUREMENTS=prof_indices)
 
@@ -436,7 +435,8 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
         Operates in place on ``self.data``.
         """
         corrected_temp_array = np.full(len(self.data["TEMP"]), np.nan)
-        prof_arr = self.data["PROFILE_NUMBER"].values
+        temp_arr = self.data["TEMP"].values
+        time_arr = self.data[self.time_col].values
         profile_numbers = np.unique(
             self.data["PROFILE_NUMBER"].dropna(dim="N_MEASUREMENTS").values
         )
@@ -446,20 +446,11 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
 
         for prof in self.log_progress(profile_numbers, desc="Thermal Lag", unit="prof"):
 
-            # Restrict to this profile's rows first (like correct_ct_lag above),
-            # so the NaN-mask/where below runs on a per-profile slice instead of
-            # rebuilding a full-dataset-sized copy on every iteration.
-            prof_indices = np.where(prof_arr == prof)[0]
-            if len(prof_indices) == 0:
-                continue
-            profile = self.data[[self.time_col, "TEMP", "PRES"]].isel(
-                N_MEASUREMENTS=prof_indices
-            )
-            nan_mask = profile["TEMP"].isnull()
-            data_subset = profile.where(~nan_mask, drop=True)
-            indices = prof_indices[~nan_mask.values]
+            # This profile's rows with a TEMP value
+            prof_indices = self._profile_index[prof]
+            indices = prof_indices[~np.isnan(temp_arr[prof_indices])]
 
-            if len(data_subset[self.time_col]) < 5:
+            if indices.size < 5:
                 continue
 
             # Only usable samples anchor the interpolant; every sample is still corrected
@@ -468,21 +459,18 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
                 continue
 
             # Find the elapsed time in seconds
-            t0 = data_subset[self.time_col].values[0]
-            data_subset["ELAPSED_TIME[s]"] = (
-                data_subset[self.time_col] - t0
-            ).dt.total_seconds()
+            elapsed = (time_arr[indices] - time_arr[indices[0]]) / np.timedelta64(1, "s")
 
             # Define a function that can estimate TEMP at any time point
             TEMP_from_TIME = interpolate.interp1d(
-                data_subset["ELAPSED_TIME[s]"].values[anchors],
-                data_subset["TEMP"].values[anchors],
+                elapsed[anchors],
+                temp_arr[indices][anchors],
                 bounds_error=False,
                 fill_value="extrapolate",
             )
 
             # Resample the data onto a 1Hz sample rate timeseries
-            TIME_1Hz_sampling = np.arange(0, data_subset["ELAPSED_TIME[s]"].values[-1], 1)
+            TIME_1Hz_sampling = np.arange(0, elapsed[-1], 1)
             if len(TIME_1Hz_sampling) < 2:
                 continue
             TEMP_1Hz_sampling = TEMP_from_TIME(TIME_1Hz_sampling)
@@ -511,12 +499,8 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
             a = 4 * nyquist_frequency * alpha * tau / (1 + 4 * nyquist_frequency * tau)
             b = 1 - (2 * a / alpha)
 
-            # Apply the filter
-            TEMP_correction = np.full(n_resamples, 0.0)
-            for i in range(1, n_resamples):
-                TEMP_correction[i] = -b * TEMP_correction[i - 1] + a * (
-                    TEMP_1Hz_sampling[i] - TEMP_1Hz_sampling[i - 1]
-                )
+            # Apply the filter: y[i] = -b*y[i-1] + a*(x[i] - x[i-1]), as an IIR filter
+            TEMP_correction = lfilter([a, -a], [1.0, b], TEMP_1Hz_sampling - TEMP_1Hz_sampling[0])
             corrected_TEMP_1Hz_sampling = TEMP_1Hz_sampling - TEMP_correction
 
             # Resample the TEMP back onto the original time sampling
@@ -526,12 +510,8 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
                 bounds_error=False,
                 fill_value="extrapolate",
             )
-            data_subset["TEMP"][:] = corrected_TEMP_from_TIME(
-                data_subset["ELAPSED_TIME[s]"]
-            )
-
             # Store adjusted data
-            corrected_temp_array[indices] = data_subset["TEMP"].values
+            corrected_temp_array[indices] = corrected_TEMP_from_TIME(elapsed)
 
             if (
                 getattr(self, "diagnostics", False)

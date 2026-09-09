@@ -22,7 +22,6 @@ from pelagos_py.utils.qc_handling import QCHandlingMixin
 import pelagos_py.utils.diagnostics as diag
 
 #### Custom imports ####
-import polars as pl
 import numpy as np
 import gsw
 import matplotlib
@@ -100,20 +99,6 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
 
         self.filter_qc()
 
-        # Convert xarray Dataset to Polars DataFrame for efficient numerical processing
-        # Extract only the variables needed for GSW calculations
-        base_columns = ["TIME", "LATITUDE", "LONGITUDE", "CNDC", "PRES", "TEMP"]
-        # Pull in any already-derived variable too, so derivations can be split across
-        # two Derive CTD steps (e.g. to correct PRAC_SALINITY in between).
-        derived_columns = [
-            var
-            for var in self.provided_variables
-            if var in self.data and var not in base_columns
-        ]
-        df = pl.from_pandas(
-            self.data[base_columns + derived_columns].to_dataframe(),
-            nan_to_null=False,
-        )
 
         # gsw wants conductivity in mS/cm; scale from the units attribute (S/m assumed if unset)
         cndc_factor = cndc_scale_factor(self.data["CNDC"].attrs.get("units"))
@@ -191,7 +176,7 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
 
             # Validate that all required inputs exist for this specific calculation
             # (e.g. an intermediate like PRAC_SALINITY may not have been derived)
-            missing_args = [arg for arg in args if arg not in df.columns]
+            missing_args = [arg for arg in args if arg not in self.data]
             if missing_args:
                 self.log(
                     f"Warning: Missing required variables {missing_args} for {var_name}. Skipping."
@@ -199,10 +184,8 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
                 continue
 
             # Apply the GSW function to pure numpy arrays
-            input_arrays = [df[arg].to_numpy() for arg in args]
+            input_arrays = [self.data[arg].values for arg in args]
             derived_values = func(*input_arrays)
-
-            df = df.with_columns(pl.Series(var_name, derived_values))
 
             # Add the derived variable to the xarray Dataset with CF-compliant metadata
             self.data[var_name] = (("N_MEASUREMENTS",), derived_values)

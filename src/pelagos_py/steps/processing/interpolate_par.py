@@ -24,6 +24,7 @@ profiles without usable PAR. See :class:`InterpolatePAR` for details.
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
 from pelagos_py.utils.qc_handling import QCHandlingMixin
+from pelagos_py.utils.processing_utils import profile_indices
 
 #### Custom imports ####
 import numpy as np
@@ -210,12 +211,13 @@ class InterpolatePAR(BaseStep, QCHandlingMixin):
         tsec = tidx.asi8.astype(float) / 1e9
         tsec[np.asarray(tidx.isna())] = np.nan
 
-        profiles = np.unique(prof[np.isfinite(prof.astype(float))])
+        self._profile_index = profile_indices(prof)
+        profiles = np.array(list(self._profile_index))
 
         prof_tsec = {}
         zeu_calc, zipar_calc = {}, {}
         for pn in profiles:
-            sel = prof == pn
+            sel = self._profile_index[pn]
             z, p, t = depth[sel], par[sel], tsec[sel]
             prof_tsec[pn] = np.nanmedian(t) if np.any(np.isfinite(t)) else np.nan
             if self.compute_zeu:
@@ -265,7 +267,7 @@ class InterpolatePAR(BaseStep, QCHandlingMixin):
 
         broadcast = np.full(prof.shape, np.nan)
         for pn in profiles:
-            broadcast[prof == pn] = final.get(pn, np.nan)
+            broadcast[self._profile_index[pn]] = final.get(pn, np.nan)
 
         self.data[name] = (("N_MEASUREMENTS",), broadcast)
         attrs = {"long_name": long_name, "units": "m", "standard_name": name}

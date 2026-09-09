@@ -36,6 +36,8 @@ const Review = {
     Review.showLog = false;
     Review.selected = null;
     Review.build();
+    if (ManualQC.isActive()) ManualQC.open();
+    Review.renderPlots();
     Review.apply();
   },
 
@@ -43,6 +45,7 @@ const Review = {
     Review.active = false;
     Review.busy = false;
     Review.host().innerHTML = '';
+    ManualQC.close();
     Review.apply();
   },
 
@@ -52,12 +55,14 @@ const Review = {
   // button — the way back to the panel — hides once the panel is already on
   // screen, where it would be redundant.
   apply() {
-    const onRunTab = document.querySelector('.tab.active')?.dataset.tab === 'run';
+    const tab = document.querySelector('.tab.active')?.dataset.tab;
+    const onRunTab = tab === 'run';
     const panelVisible = Review.active && !Review.showLog;
     Review.host().classList.toggle('hidden', !panelVisible);
     document.getElementById('log-wrap').classList.toggle('hidden', panelVisible);
     document.getElementById('run-note').classList.toggle('hidden', panelVisible);
-    document.getElementById('run-pause').classList.toggle('hidden', !Review.active);
+    // The Manual QC tab carries its own Re-run/Continue, so no banner there.
+    document.getElementById('run-pause').classList.toggle('hidden', !Review.active || tab === 'manual');
     document.getElementById('btn-review').classList.toggle('hidden', panelVisible && onRunTab);
     document.getElementById('btn-log').classList.toggle('hidden', !panelVisible && onRunTab);
   },
@@ -158,7 +163,6 @@ const Review = {
 
     host.appendChild(plots);
     host.appendChild(where);
-    Review.renderPlots();
   },
 
   // Latest attempt large, earlier attempts as a comparison strip underneath.
@@ -199,16 +203,24 @@ const Review = {
       main.appendChild(Review.paramSummary(current.params));
       const cards = document.createElement('div');
       cards.className = 'review-main-cards';
-      // Manual QC: the plot is the editor, so it goes inline with its box tools
-      // rather than as a thumbnail that opens the viewer.
-      if (ManualQC.isActive() && current.figs[0].spec && isLatest) {
-        cards.appendChild(ManualQC.panel(current.figs[0]));
-      } else {
-        current.figs.forEach((_, i) =>
-          cards.appendChild(Viewer.card(current.figs, i, { cls: 'big' })));
-      }
+      current.figs.forEach((_, i) =>
+        cards.appendChild(Viewer.card(current.figs, i, { cls: 'big' })));
       main.appendChild(cards);
       host.appendChild(main);
+    }
+    // Manual QC: the plot is the editor, in its own tab. The latest attempt is
+    // what it edits; this panel keeps the attempt strip for comparison.
+    if (ManualQC.isActive()) {
+      const latest = attempts[attempts.length - 1];
+      ManualQC.render(latest && latest.figs.length && latest.figs[0].spec ? latest.figs[0] : null);
+      const where = document.createElement('div');
+      where.className = 'hint review-where';
+      where.textContent = 'Boxes are drawn in the Manual QC tab.';
+      const go = document.createElement('button');
+      go.className = 'ghost review-jump'; go.textContent = 'Open Manual QC';
+      go.onclick = () => Run.showTab('manual');
+      where.appendChild(go);
+      host.prepend(where);
     }
 
     if (attempts.length > 1) {
@@ -321,9 +333,9 @@ const Review = {
   // Pause-banner status + button state while a re-run is in flight.
   setBusy(busy, text) {
     Review.busy = busy;
-    const status = document.getElementById('run-pause-status');
-    if (status) status.textContent = text || '';
-    const rerun = document.getElementById('btn-rerun');
-    if (rerun) rerun.disabled = busy;
+    for (const id of ['run-pause-status', 'manual-status'])
+      document.getElementById(id).textContent = text || '';
+    for (const id of ['btn-rerun', 'btn-manual-rerun'])
+      document.getElementById(id).disabled = busy;
   },
 };

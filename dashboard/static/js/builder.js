@@ -228,6 +228,21 @@ function makeItem(name) {
   return item;
 }
 
+// Mirror what the demo loader does server-side: export next to the input as
+// <stem>_Processed.nc. Leaves a hand-set output path alone.
+function syncOutputPath(filePath) {
+  const m = String(filePath || '').match(/^(.*?)([^/\\]+?)(\.[^./\\]*)?$/);
+  if (!m || !m[2]) return;
+  const auto = `${m[1]}${m[2]}_Processed.nc`;
+  let changed = false;
+  for (const item of STATE.pipeline.items) {
+    if (!(item.def && item.def.parameters.some((p) => p.name === 'output_path'))) continue;
+    const cur = item.values.output_path;
+    if ((!cur || /Processed\.nc$/.test(cur)) && cur !== auto) { item.values.output_path = auto; changed = true; }
+  }
+  if (changed) renderPipeline();
+}
+
 // Clicking a palette item appends to the end of the pipeline, which means
 // inside the trailing section when there is one.
 function addStep(name) {
@@ -667,12 +682,28 @@ function renderPipeline() {
   renderAllDiagnosticsRow(); // step list just changed shape: on/off/custom may have too
 }
 
-// A section's colour: dark green if it holds CHLA Quenching, orange if it holds
-// Find Profiles, otherwise plain alternating blue-grey / grey by position.
+// A section's colour, keyed on its title (falling back to the steps it holds);
+// unmatched sections alternate blue-grey / grey by position.
+const SECTION_COLOURS = [
+  [/chla|chlorophyll|quench/, 'sec-chla'],
+  [/profile/, 'sec-profiles'],
+  [/import|load|export|write/, 'sec-io'],
+  [/\blat|\blon|coord|position/, 'sec-coords'],
+  [/cross.?cal/, 'sec-crosscal'],
+  [/interpol/, 'sec-interp'],
+  [/salin|cndc|conduct/, 'sec-salinity'],
+  [/ctd|temp|pres/, 'sec-ctd'],
+  [/backscatter|bbp|beta/, 'sec-bbp'],
+  [/oxy|doxy/, 'sec-oxygen'],
+  [/par\b|irradiance|light/, 'sec-par'],
+  [/mixed layer|mld|density/, 'sec-mld'],
+];
 function sectionColourClass(sec, index) {
-  const names = sec.steps.map((s) => (s.name || '').toLowerCase());
-  if (names.some((n) => n.includes('chla') && n.includes('quench'))) return 'sec-chla';
-  if (names.some((n) => n.includes('find profiles'))) return 'sec-profiles';
+  const title = (sec.title || '').toLowerCase();
+  const names = sec.steps.map((s) => (s.name || '').toLowerCase()).join(' | ');
+  for (const text of [title, names]) {
+    for (const [re, cls] of SECTION_COLOURS) if (re.test(text)) return cls;
+  }
   return index % 2 === 0 ? 'sec-alt-0' : 'sec-alt-1';
 }
 

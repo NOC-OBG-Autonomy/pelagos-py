@@ -25,6 +25,16 @@ def cndc_scale_factor(units):
 
 
 # ----------------------------- NaN Handling ------------------------------
+def profile_indices(profile_number):
+    """{profile number: sorted sample indices} for every finite profile number, in one pass."""
+    pn = np.asarray(profile_number, dtype=float)
+    order = np.flatnonzero(np.isfinite(pn))
+    order = order[np.argsort(pn[order], kind="stable")]
+    keys, starts = np.unique(pn[order], return_index=True)
+    ends = np.append(starts[1:], order.size)
+    return {k: order[s:e] for k, s, e in zip(keys, starts, ends)}
+
+
 def find_nans(data: np.ndarray):
     """
     Handles generation of masks and location indices of nans.

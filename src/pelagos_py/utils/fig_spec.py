@@ -66,15 +66,20 @@ def flag_label(flag):
     return f"{flag} ({meaning})" if meaning else str(flag)
 
 
-def new_fig(nrows=1, ncols=1, sharex=False, sharey=False, height_ratios=None):
+def new_fig(nrows=1, ncols=1, sharex=False, sharey=False, height_ratios=None, width_ratios=None):
     """A standard figure + axes at the standard width/dpi. Axes always 2D: axes[r][c].
 
     Single panel is 16:9; multi-panel grows height by ``ROW_H`` per row.
-    ``height_ratios`` (e.g. ``(3, 1)``) sets unequal row heights via gridspec.
+    ``height_ratios`` / ``width_ratios`` (e.g. ``(3, 1)``) set unequal panel sizes via gridspec.
     """
     import matplotlib.pyplot as plt
     height = FIG_H if nrows == 1 else ROW_H * nrows
-    gridspec_kw = {"height_ratios": height_ratios} if height_ratios is not None else None
+    gridspec_kw = {}
+    if height_ratios is not None:
+        gridspec_kw["height_ratios"] = height_ratios
+    if width_ratios is not None:
+        gridspec_kw["width_ratios"] = width_ratios
+    gridspec_kw = gridspec_kw or None
     return plt.subplots(nrows, ncols, figsize=(FIG_W, height), dpi=DPI,
                         sharex=sharex, sharey=sharey, squeeze=False,
                         gridspec_kw=gridspec_kw)
@@ -112,10 +117,14 @@ def date_axis(ax, which="x", index=None):
     if index is None or which != "x":
         return
     t = np.asarray(index)
+    pos = np.arange(t.size)
+    if MAX_POINTS and t.size > MAX_POINTS:  # report capture: a thinned index maps just as well
+        pos = np.linspace(0, t.size - 1, MAX_POINTS).astype(int)
+        t = t[pos]
     if np.issubdtype(t.dtype, np.datetime64) or t.dtype == object:
         t = np.asarray(mdates.date2num(t), dtype=float)
     ok = np.isfinite(t)
-    t, i = t[ok], np.flatnonzero(ok).astype(float)
+    t, i = t[ok], pos[ok].astype(float)
     if t.size < 2:
         return
     order = np.argsort(t, kind="stable")
@@ -142,10 +151,18 @@ def x_axis(ax, x):
         style_axes(ax, xlabel="Index")
 
 
+# Report capture sets this (diagnostic_capture) so dense series are thinned when
+# drawn, not only when saved: same PNG, a fraction of the draw time and memory.
+MAX_POINTS = None
+
+
 def points(ax, x, y, *, color, label=None, size=MARKER, alpha=ALPHA):
     """Standard point series: fast plot() markers, WebGL-safe, one legend entry."""
-    x = np.asarray(x)
-    ax.plot(x, np.asarray(y), ls="", marker="o", markersize=size,
+    x, y = np.asarray(x), np.asarray(y)
+    if MAX_POINTS and x.size > MAX_POINTS:
+        idx = np.linspace(0, x.size - 1, MAX_POINTS).astype(int)
+        x, y = x[idx], y[idx]
+    ax.plot(x, y, ls="", marker="o", markersize=size,
             markeredgewidth=0, color=color, alpha=alpha, label=label,
             rasterized=x.size > RASTER_ABOVE)
 
@@ -154,9 +171,11 @@ def flag_points(ax, x, y, flags):
     """y vs x coloured by QC flag: one series per present flag (0..9)."""
     flags, x, y = np.asarray(flags), np.asarray(x), np.asarray(y)
     for f in range(10):
-        m = flags == f
-        if m.any():
-            points(ax, x[m], y[m], color=FLAG_COLOURS[f], label=flag_label(f))
+        idx = np.flatnonzero(flags == f)
+        if MAX_POINTS and idx.size > MAX_POINTS:  # thin before gathering x/y
+            idx = idx[np.linspace(0, idx.size - 1, MAX_POINTS).astype(int)]
+        if idx.size:
+            points(ax, x[idx], y[idx], color=FLAG_COLOURS[f], label=flag_label(f))
 
 
 def legend(ax, *, title=None):

@@ -278,7 +278,7 @@ class QCHandlingMixin:
             data_subset = self.data[list(missing_qc)]
             flags = (
                 xr.where(data_subset.isnull(), 9, 0)
-                .astype(int)
+                .astype(np.int8)
                 .rename({var: f"{var}_QC" for var in missing_qc})
             )
             self.data.update(flags)

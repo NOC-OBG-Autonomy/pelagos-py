@@ -19,12 +19,10 @@ A module for diagnostic plotting and data summarization.
 """
 
 import matplotlib.pyplot as plt
-import seaborn as sns
 import xarray as xr
 import pandas as pd
 import numpy as np
 import matplotlib.dates as mdates
-from geopy.distance import geodesic
 from pelagos_py.utils.time import safe_median_datetime, add_datetime_secondary_xaxis
 from typing import Dict, List, Optional
 
@@ -83,6 +81,8 @@ def plot_boxplot(data, var, title="Box Plot", xlabel=None, **kwargs):
         # Handle custom data types like lists or arrays
         data_to_plot = data
 
+    import seaborn as sns
+
     plt.figure(figsize=(10, 6))
     sns.boxplot(data=data_to_plot, **kwargs)
     plt.title(title)
@@ -99,6 +99,8 @@ def plot_correlation_matrix(data, variables=None, title="Correlation Matrix", **
         corr = data[variables].to_array().T.corr(dim="dim_0")
     else:
         raise TypeError("Data must be a Xarray Dataset to generate correlation matrix.")
+
+    import seaborn as sns
 
     plt.figure(figsize=(10, 6))
     sns.heatmap(corr, annot=True, cmap="coolwarm", fmt=".2f", linewidths=0.5, **kwargs)
@@ -214,6 +216,8 @@ def find_closest_prof(df_a: pd.DataFrame, df_b: pd.DataFrame) -> pd.DataFrame:
     closest_ids = []
     time_diffs = []
     distances = []
+
+    from geopy.distance import geodesic
 
     for a_time, a_lat, a_lon in zip(a_times, a_lats, a_lons):
         time_diff = np.abs(b_times - a_time)
@@ -372,6 +376,8 @@ def find_candidate_glider_pairs(
 
     if df_cross.empty:
         return pd.DataFrame()
+
+    from geopy.distance import geodesic
 
     # Vectorised geodesic distance using np.vectorize
     def compute_dist_km(lat_a, lon_a, lat_b, lon_b):

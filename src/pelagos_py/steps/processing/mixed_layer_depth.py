@@ -19,6 +19,7 @@
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
 from pelagos_py.utils.qc_handling import QCHandlingMixin
+from pelagos_py.utils.processing_utils import profile_indices
 import pelagos_py.utils.diagnostics as diag
 import pelagos_py.utils.palettes as palettes
 
@@ -230,12 +231,13 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
         search_values = np.where(usable, self._method_values(method), np.nan)
 
         mld = np.full(profile_number.shape, np.nan)
-        profile_numbers = np.unique(profile_number[~np.isnan(profile_number)])
+        groups = profile_indices(profile_number)
+        profile_numbers = list(groups)
         if progress:
             profile_numbers = self.log_progress(profile_numbers, desc="", unit="prof")
 
         for pn in profile_numbers:
-            indices = np.where(profile_number == pn)[0]
+            indices = groups[pn]
             profile_mld = self._profile_mld(
                 search_depth[indices], search_values[indices], threshold
             )
@@ -282,8 +284,7 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
         )
 
         spans = []
-        for pn in np.unique(profile_number[~np.isnan(profile_number)]):
-            indices = np.where(profile_number == pn)[0]
+        for indices in profile_indices(profile_number).values():
             span_indices = indices
             if direction is not None:
                 core = indices[np.isin(direction[indices], (-1, 1))]
@@ -348,20 +349,19 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
             colourbar = fig.colorbar(scatter, ax=ax)
             colourbar.set_label(panel_label)
 
-            # Draw each MLD as a line spanning every profile's span.
+            # Draw each MLD as a line spanning every profile's span (one NaN-separated
+            # line per MLD: thousands of plot() calls are slow to build and draw).
+            gap = np.datetime64("NaT") if np.issubdtype(x.dtype, np.datetime64) else np.nan
             for label, colour, mld in mlds:
+                xs, ys = [], []
                 for indices, span in profile_spans:
                     finite_mld = mld[indices][np.isfinite(mld[indices])]
                     if finite_mld.size == 0:
                         continue
-                    ax.plot(
-                        span,
-                        [finite_mld[0], finite_mld[0]],
-                        c=colour,
-                        lw=1,
-                        label=label,
-                    )
-                    label = None  # only label the first line of each MLD
+                    xs += [span[0], span[1], gap]
+                    ys += [finite_mld[0], finite_mld[0], np.nan]
+                if xs:
+                    ax.plot(np.array(xs), ys, c=colour, lw=1, label=label)
 
             ax.set_ylabel("DEPTH")
             # Positive-down depth: surface at the top, clipped to the shallow range.

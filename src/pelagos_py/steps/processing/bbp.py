@@ -29,6 +29,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
 import glidertools as gt
+import pandas as pd
 from pelagos_py.utils import fig_spec
 
 
@@ -208,6 +209,33 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
         plt.show(block=True)
 
 
+def _rolling(arr, n, name):
+    # glidertools.cleaning.rolling_window semantics: full windows over the interior,
+    # expanding windows at the head and (from the end, in that order) the tail.
+    i0 = n // 2
+    interior = getattr(pd.Series(arr).rolling(n), name)().to_numpy()[n - 1 : arr.size - 1]
+    head = getattr(pd.Series(arr[:i0]).expanding(), name)().to_numpy()
+    tail = getattr(pd.Series(arr[::-1][: n - i0]).expanding(), name)().to_numpy()
+    return np.concatenate([head, interior, tail])
+
+
+def despike(var, window_size, spike_method="median"):
+    """Briggs et al. (2011) despike as in glidertools.cleaning.despike: (baseline, spikes).
+
+    Same results, but streams the rolling window instead of materialising a
+    (window x N) matrix, which cost ~1.6 GB on a 2M-sample record.
+    """
+    arr = np.asarray(var, dtype=float)
+    mask = ~np.isnan(arr)
+    if spike_method.startswith("min"):
+        base = _rolling(_rolling(arr[mask], window_size, "min"), window_size, "max")
+    else:
+        base = _rolling(arr[mask], window_size, "median")
+    baseline = np.full(arr.shape, np.nan)
+    baseline[mask] = base
+    return baseline, arr - baseline
+
+
 @register_step
 class IsolateBBPSpikes(BaseStep, QCHandlingMixin):
 
@@ -261,12 +289,17 @@ class IsolateBBPSpikes(BaseStep, QCHandlingMixin):
             self.calculation_mask([self.apply_to])
         )
 
-        self.baseline, self.spikes = gt.cleaning.despike(
+        self.baseline, self.spikes = despike(
             usable, self.window_size, spike_method=self.method
         )
 
-        self.data[f"{self.apply_to}_BASELINE"] = self.baseline
-        self.data[f"{self.apply_to}_SPIKES"] = self.spikes
+        attrs = dict(usable.attrs)
+        attrs["history"] = attrs.get("history", "") + (
+            f"Isolate BBP Spikes: despike(window_size={self.window_size}, "
+            f"spike_method='{self.method}'), Briggs et al. (2011) as in glidertools.cleaning.despike;\n"
+        )
+        self.data[f"{self.apply_to}_BASELINE"] = (usable.dims, self.baseline, attrs)
+        self.data[f"{self.apply_to}_SPIKES"] = (usable.dims, self.spikes, dict(attrs))
 
         self.reconstruct_data()
         self.update_qc()

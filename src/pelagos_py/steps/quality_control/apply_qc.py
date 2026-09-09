@@ -49,9 +49,10 @@ class ApplyQC(BaseStep):
         },
     }
 
-    def organise_flags(self, new_flags):
+    def organise_flags(self, new_flags, overwrite=False):
         """
         Method for taking in new flags (new_flags) and cross checking against existing flags (self.flag_store), including upgrading flags when necessary, following ARGO flagging standards.
+        With ``overwrite`` the new flags replace the stored ones outright (tests that merge themselves, e.g. manual qc).
         See Wong et al. 2025 pp. 106 (http://dx.doi.org/10.13155/33951) and Mancini et al. 2021 pp. 43-44 for additional ARGO flag definitions.
 
         Combinatrix logic:
@@ -97,7 +98,7 @@ class ApplyQC(BaseStep):
             self.flag_store.data_vars
         )
         for column_name in flag_columns_to_update:
-            self.flag_store[column_name][:] = qc_combinatrix[
+            self.flag_store[column_name][:] = new_flags[column_name].values if overwrite else qc_combinatrix[
                 self.flag_store[column_name], new_flags[column_name]
             ]
 
@@ -187,7 +188,7 @@ class ApplyQC(BaseStep):
         self.flag_store = xr.Dataset(coords={"N_MEASUREMENTS": data["N_MEASUREMENTS"]})
         if len(existing_flags) > 0:
             self.log(f"Found existing flags columns {set(existing_flags)} in data.")
-            self.flag_store = data[existing_flags].fillna(9).astype(int)
+            self.flag_store = data[existing_flags].fillna(9).astype(np.int8)
 
         other_existing_qc = set(
             [var for var in data.data_vars if var.endswith("_QC")]
@@ -213,7 +214,7 @@ class ApplyQC(BaseStep):
                 f" Double check the configuration file and make sure all variable parameters (like 'also flag' [CHLA]) are present in the data."
             )
         data_subset = data[base]
-        masks = xr.where(data_subset.isnull(), 9, 0).astype(int)
+        masks = xr.where(data_subset.isnull(), 9, 0).astype(np.int8)
         masks = masks.rename({var: f"{var}_QC" for var in base})
         self.flag_store.update(masks)
 
@@ -230,10 +231,13 @@ class ApplyQC(BaseStep):
                 f"Applying: {qc_qc_name}"
             )  # print(f"[Apply QC] Applying: {qc_qc_name}")
             qc_test_instance = QC_CLASSES[qc_qc_name](data, **qc_test_params)
+            overwrite = getattr(qc_test_instance, "overwrite_flags", False)
+            if overwrite:  # the test merges against the store itself
+                qc_test_instance.existing_flags = self.flag_store
             returned_flags = (
                 qc_test_instance.return_qc()
             )  #   Runs the test, returns the flags
-            self.organise_flags(returned_flags)
+            self.organise_flags(returned_flags, overwrite=overwrite)
 
             # Update QC history
             for flagged_var in returned_flags.data_vars:
@@ -311,7 +315,7 @@ class ApplyQC(BaseStep):
 
             data[flag_column] = (
                 ("N_MEASUREMENTS",),
-                self.flag_store[flag_column].to_numpy(),
+                self.flag_store[flag_column].to_numpy().astype(np.int8),
             )
             data[flag_column].attrs = self.flag_store[flag_column].attrs.copy()
         # data is a subset of context["data"]; merge rather than replace so

@@ -19,6 +19,7 @@
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
 from pelagos_py.utils.qc_handling import QCHandlingMixin
+from pelagos_py.utils.processing_utils import profile_indices
 import pelagos_py.utils.diagnostics as diag
 import pelagos_py.utils.palettes as palettes
 
@@ -26,7 +27,6 @@ import pelagos_py.utils.palettes as palettes
 import xarray as xr
 import numpy as np
 import pandas as pd
-import pvlib
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from scipy.stats import linregress
@@ -83,6 +83,16 @@ def check_chl_variables(self, allowed_requests):
 
     self.log(f"Processing {user_request}...")
     return user_request, output_as
+
+
+def _group_by_key(keys, *arrays):
+    # (key, arrays sliced to that key) per unique key, one stable sort instead of
+    # a full-array mask per key (order within a group is preserved, so sums match).
+    order = np.argsort(keys, kind="stable")
+    uniq, starts = np.unique(keys[order], return_index=True)
+    ends = np.append(starts[1:], order.size)
+    for k, s, e in zip(uniq, starts, ends):
+        yield (k, *(a[order[s:e]] for a in arrays))
 
 
 @register_step
@@ -316,11 +326,13 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
 
             # median over the 50 shallowest samples of each profile
             self.sun_args = (
-                self.sun_args.groupby("PROFILE_NUMBER", group_keys=True)
-                .apply(lambda x: x.nsmallest(50, "DEPTH"), include_groups=False)
-                .groupby(level="PROFILE_NUMBER")
+                self.sun_args.sort_values("DEPTH", kind="stable")
+                .groupby("PROFILE_NUMBER")
+                .head(50)
+                .groupby("PROFILE_NUMBER")
                 .agg({var: "median" for var in ["TIME", "LATITUDE", "LONGITUDE"]})
             )
+            self._fill_sun_caches()
 
         # Scalar-driven / hybrid methods are all-or-nothing over daytime profiles,
         # so gate on what every daytime profile carries (night profiles are skipped
@@ -412,12 +424,10 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
             data_subset["PROFILE_NUMBER"].dropna(dim="N_MEASUREMENTS")
         )
         for profile_number in self.log_progress(profile_numbers, desc="", unit="prof"):
-            profile = data_subset.where(
-                data_subset["PROFILE_NUMBER"] == profile_number, drop=True
-            )
+            idx = self._profile_index[profile_number]
+            profile = data_subset.isel(N_MEASUREMENTS=idx)
             corrected_chla = method_function(profile)
-            profile_indices = np.where(self.data["PROFILE_NUMBER"] == profile_number)
-            self.data[self.output_as][profile_indices] = corrected_chla
+            self.data[self.output_as][idx] = corrected_chla
 
         if method_key == "thomalla2018":
             counts = getattr(self, "_thomalla_debug", {})
@@ -457,6 +467,13 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
     # ==================================================================
     # Shared helpers - inputs and per-profile quantities used by the methods below
     # ==================================================================
+    @property
+    def _profile_index(self):
+        # {profile number: sample indices}, built once and shared by every per-profile pass
+        if getattr(self, "_profile_index_cache", None) is None:
+            self._profile_index_cache = profile_indices(self.data["PROFILE_NUMBER"].values)
+        return self._profile_index_cache
+
     def _calc_values(self, profile, var):
         # QC-masked copy of var: read when *deriving* a quantity, not when correcting.
         return np.asarray(profile[f"{var}{CALC_SUFFIX}"].values, dtype=float)
@@ -471,9 +488,11 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
     def _require_scalar_on_days(self, name, toggle, day_pns):
         # Scalar-driven methods are all-or-nothing; halt if any daytime profile
         # lacks name, pointing at the 'Interpolate PAR' toggle that would fill it.
-        pnum = self.data["PROFILE_NUMBER"].values
         vals = np.asarray(self.data[name].values, dtype=float)
-        missing = [pn for pn in day_pns if not np.any(np.isfinite(vals[pnum == pn]))]
+        missing = [
+            pn for pn in day_pns
+            if not np.any(np.isfinite(vals[self._profile_index.get(pn, [])]))
+        ]
         if missing:
             self.halt(
                 f"Method '{self.method}' needs {name} on every daytime profile, but "
@@ -487,12 +506,11 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         MIN_PTS = 4
         if self.par_var not in self.data.data_vars:
             return len(day_pns)
-        pnum = self.data["PROFILE_NUMBER"].values
         par = np.asarray(self.data[self.par_var].values, dtype=float)
         depth = np.asarray(self.data["DEPTH"].values, dtype=float)
         missing = 0
         for pn in day_pns:
-            sel = pnum == pn
+            sel = self._profile_index.get(pn, [])
             z, p = depth[sel], par[sel]
             if np.count_nonzero(np.isfinite(z) & np.isfinite(p) & (p > 0)) < MIN_PTS:
                 missing += 1
@@ -547,36 +565,28 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
     def _sun_elevation(self, profile):
         return self._sun_elevation_for(int(profile["PROFILE_NUMBER"][0]))
 
+    def _fill_sun_caches(self):
+        # Per-profile solar elevation (deg) and hours from solar noon ([0, 12], via the
+        # equation of time + longitude), in one vectorised pvlib call (~1 ms per call).
+        import pvlib  # slow import, deferred to first use
+
+        pns = [int(p) for p in self.sun_args.index]
+        long = self.sun_args["LONGITUDE"].to_numpy(dtype=float)
+        time_utc = pd.DatetimeIndex(self.sun_args["TIME"]).tz_localize("UTC")
+        solpos = pvlib.solarposition.get_solarposition(
+            time_utc, self.sun_args["LATITUDE"].to_numpy(dtype=float), long
+        )
+        self._sun_cache = dict(zip(pns, solpos["elevation"].to_numpy(dtype=float)))
+        utc_hours = time_utc.hour + time_utc.minute / 60 + time_utc.second / 3600
+        eot = solpos["equation_of_time"].to_numpy(dtype=float)  # minutes
+        solar_hours = (np.asarray(utc_hours, dtype=float) + long / 15.0 + eot / 60.0) % 24.0
+        self._solar_noon_cache = dict(zip(pns, np.abs(solar_hours - 12.0)))
+
     def _sun_elevation_for(self, profile_number):
-        # Solar elevation (deg) from the profile's median surface fix, memoised
-        # per profile (diagnostics run every method over many profiles).
-        cache = getattr(self, "_sun_cache", None)
-        if cache is None:
-            cache = self._sun_cache = {}
-        if profile_number not in cache:
-            time, lat, long = self.sun_args.loc[profile_number].to_numpy()
-            time_utc = pd.to_datetime(time).tz_localize("UTC")
-            solar_position = pvlib.solarposition.get_solarposition(time_utc, lat, long)
-            cache[profile_number] = float(solar_position["elevation"].values[0])
-        return cache[profile_number]
+        return self._sun_cache[profile_number]
 
     def _hours_from_solar_noon(self, profile_number):
-        # Hours from nearest solar noon, in [0, 12]: 0 = solar noon (max quenching),
-        # 12 = solar midnight. Uses the equation of time + longitude to track the
-        # sun rather than the clock. Memoised per profile.
-        cache = getattr(self, "_solar_noon_cache", None)
-        if cache is None:
-            cache = self._solar_noon_cache = {}
-        if profile_number not in cache:
-            time, lat, long = self.sun_args.loc[profile_number].to_numpy()
-            time_utc = pd.to_datetime(time).tz_localize("UTC")
-            solpos = pvlib.solarposition.get_solarposition(time_utc, lat, long)
-            eot = float(solpos["equation_of_time"].values[0])  # minutes
-            utc_hours = time_utc.hour + time_utc.minute / 60 + time_utc.second / 3600
-            # Local apparent solar time (hours): UTC + longitude offset + EoT.
-            solar_hours = (utc_hours + long / 15.0 + eot / 60.0) % 24.0
-            cache[profile_number] = abs(solar_hours - 12.0)
-        return cache[profile_number]
+        return self._solar_noon_cache[profile_number]
 
     def _build_night_references(self, method_key, quiet=False):
         # Build the nighttime references, once, before the per-profile loop:
@@ -705,10 +715,9 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         fl_v, bbp_v = fl[valid], bbp[valid]
 
         centres, mean_fl, ratio = [], [], []
-        for k in np.unique(keys):
-            in_bin = keys == k
-            f = np.nanmean(fl_v[in_bin]) if np.any(np.isfinite(fl_v[in_bin])) else np.nan
-            b = np.nanmean(bbp_v[in_bin]) if np.any(np.isfinite(bbp_v[in_bin])) else np.nan
+        for k, fl_bin, bbp_bin in _group_by_key(keys, fl_v, bbp_v):
+            f = np.nanmean(fl_bin) if np.any(np.isfinite(fl_bin)) else np.nan
+            b = np.nanmean(bbp_bin) if np.any(np.isfinite(bbp_bin)) else np.nan
             if not (np.isfinite(f) and np.isfinite(b) and b > 0):
                 continue
             centres.append((k + 0.5) * NIGHT_REF_BIN_METRES)
@@ -808,11 +817,7 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         finite_mld = mld_values[np.isfinite(mld_values)]
         mld = float(finite_mld[0]) if finite_mld.size else np.nan
 
-        profile_number = int(profile["PROFILE_NUMBER"][0])
-        time, lat, long = self.sun_args.loc[profile_number].to_numpy()
-        time_utc = pd.to_datetime(time).tz_localize("UTC")
-        solar_position = pvlib.solarposition.get_solarposition(time_utc, lat, long)
-        sun_angle = solar_position["elevation"].values
+        sun_angle = self._sun_elevation(profile)
         if (
             sun_angle <= self.day_min_elevation
             or N == 0
@@ -1400,11 +1405,10 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
 
     def _profile_subsets(self, profile_numbers):
         # {pn: single-profile subset of data_copy}
-        pnum = self.data_copy["PROFILE_NUMBER"].values
         subsets = {}
         for pn in profile_numbers:
-            idx = np.where(pnum == pn)[0]
-            if idx.size:
+            idx = self._profile_index.get(pn)
+            if idx is not None:
                 subsets[pn] = self.data_copy.isel(N_MEASUREMENTS=idx)
         return subsets
 
@@ -1460,8 +1464,7 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         if not np.any(mask):
             return {}
         keys = np.floor(depth[mask] / COMPARE_BIN_METRES).astype(int)
-        vals = values[mask]
-        return {int(k): float(np.nanmedian(vals[keys == k])) for k in np.unique(keys)}
+        return {int(k): float(np.nanmedian(v)) for k, v in _group_by_key(keys, values[mask])}
 
     @staticmethod
     def _fit_stats(xs, ys):
@@ -1603,7 +1606,6 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
     def _example_profiles(self):
         # day profile = the one the configured method changed most; night profile
         # = the nearest in time to it
-        pnum = self.data["PROFILE_NUMBER"].values
         change = np.abs(
             self.data[self.output_as].values - self.data_copy[self.apply_to].values
         )
@@ -1611,8 +1613,8 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
 
         elev = {int(pn): self._sun_elevation_for(int(pn)) for pn in self.sun_args.index}
         total_change = {}
-        for pn in np.unique(pnum[np.isfinite(pnum)]):
-            total_change[int(pn)] = float(np.nansum(change[np.where(pnum == pn)[0]]))
+        for pn, idx in self._profile_index.items():
+            total_change[int(pn)] = float(np.nansum(change[idx]))
 
         day_candidates = [p for p in total_change if elev.get(p, 0) > self.day_min_elevation]
         pool = day_candidates or list(total_change)
@@ -1630,7 +1632,7 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         return day_pn, night_pn
 
     def _draw_profile_change(self, ax, profile_number, title):
-        idx = np.where(self.data["PROFILE_NUMBER"].values == profile_number)[0]
+        idx = self._profile_index[profile_number]
         depth = self.data["DEPTH"].values[idx]
         orig = self.data_copy[self.apply_to].values[idx]
         corr = self.data[self.output_as].values[idx]
@@ -1752,7 +1754,6 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
     def _section_quenching_depths(self):
         # per-profile quenching depth (deepest changed point), used to zoom the
         # sections; NaN where the correction touched nothing
-        pnum = self.data["PROFILE_NUMBER"].values
         depth = self.data["DEPTH"].values
         orig = self.data_copy[self.apply_to].values
         corr = self.data[self.output_as].values
@@ -1760,8 +1761,8 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
 
         qd = []
         for pn in self.sun_args.index:
-            idx = np.where(pnum == pn)[0]
-            if idx.size == 0:
+            idx = self._profile_index.get(pn)
+            if idx is None:
                 continue
             in_profile = changed[idx]
             qd.append(float(np.max(depth[idx][in_profile])) if np.any(in_profile) else np.nan)

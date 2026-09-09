@@ -38,10 +38,17 @@ class manual_qc(BaseQC):
     for you — pause on this test, cmd/ctrl-drag a box on the plot, pick a flag —
     but the config it writes is plain YAML, so the run is repeatable anywhere.
 
-    Boxes apply most-severe-flag-first, so the worse flag wins on overlap.
-    Samples no box touches keep flag 0 here and so are left as they were when
-    Apply QC merges the result (a manual flag can raise but never lower an
-    existing flag — Argo merge rules).
+    Unlike other tests this one starts from the existing flags and *replaces*
+    them: a box overrides whatever flag a sample had (bad -> good included),
+    later boxes winning on overlap. Set ``override: false`` on a box to merge
+    it by the Argo combinatrix instead (can raise but never lower a flag).
+    Missing samples stay 9. A box whose ``x`` and ``y`` are single values is a
+    point: it flags just the one sample nearest to it (cmd/ctrl-click in the
+    dashboard). A box may name its own ``x_variable``/``y_variable`` (the plot
+    it was drawn on; the dashboard's plot switcher does this), else it uses the
+    test's. ``y_variable`` is always flagged, so its existing ``_QC`` is loaded
+    and shown on the plot. Samples no box touches get flag 1 when
+    ``flag_remaining_good`` is on (the default), else keep what they had.
 
     Target Variable: Any
     Flag Number: Any (user-defined, 0-9)
@@ -67,11 +74,21 @@ class manual_qc(BaseQC):
                     y: [0, 1000]
                     flag: 3
                     mode: outside             # flag everything outside the box
+                    override: false           # merge by combinatrix, never lower a flag
+                  - x: ["2024-05-03T08:12:30"]
+                    y: [42.5]
+                    flag: 4                   # a point: the nearest sample only
+                  - x: ["2024-05-04", "2024-05-05"]
+                    y: [10, 12]
+                    flag: 3
+                    y_variable: TEMP          # drawn on the TEMP plot, flags TEMP
+                flag_remaining_good: true     # untouched samples become 1 (good)
           diagnostics: true                   # the plot the dashboard pauses on
     """
 
     qc_name = "manual qc"
     dynamic = True
+    overwrite_flags = True  # Apply QC replaces the columns this returns instead of merging them
 
     parameter_schema = {
         "x_variable": {
@@ -89,7 +106,26 @@ class manual_qc(BaseQC):
             "type": list,
             "default": [],
             "description": "List of {x: [lo, hi], y: [lo, hi], flag: 0-9, mode: inside|outside, "
-                           "variables: [...]} boxes. Drawn in the dashboard, or written by hand.",
+                           "variables: [...], override: true} boxes; single-value x/y is a point "
+                           "(nearest sample). Drawn in the dashboard, or written by hand.",
+        },
+        "colour_variable": {
+            "type": str,
+            "default": None,
+            "description": "Colour the plot's points by this variable instead of by flag; flags "
+                           "then show as a ring around non-good points.",
+        },
+        "profile_plot": {
+            "type": bool,
+            "default": False,
+            "description": "With colour_variable: add a side panel of colour_variable vs y_variable "
+                           "(a profile view), thinned to 100k points. The dashboard greys the "
+                           "points outside the main plot's zoom.",
+        },
+        "flag_remaining_good": {
+            "type": bool,
+            "default": True,
+            "description": "Give samples no box touches (still flag 0) flag 1 (good). Off leaves them 0.",
         },
     }
 
@@ -99,13 +135,17 @@ class manual_qc(BaseQC):
             self.boxes = []
         self.boxes = [self._check_box(b) for b in self.boxes]
 
-        targets = []
+        targets = [self.y_variable]
+        axes = [self.x_variable, self.y_variable]
         for box in self.boxes:
+            axes += [box["x_variable"], box["y_variable"]]
             for var in box["variables"]:
                 if var not in targets:
                     targets.append(var)
         self.target_variables = targets
-        self.required_variables = list(dict.fromkeys([self.x_variable, self.y_variable] + targets))
+        if self.colour_variable:
+            axes.append(self.colour_variable)
+        self.required_variables = list(dict.fromkeys(axes + targets))
         self.qc_outputs = [f"{var}_QC" for var in targets]
 
     def _check_box(self, box):
@@ -114,8 +154,10 @@ class manual_qc(BaseQC):
         out = dict(box)
         for axis in ("x", "y"):
             bounds = out.get(axis)
-            if not isinstance(bounds, (list, tuple)) or len(bounds) != 2:
-                raise ValueError(f"[{self.qc_name}] box {axis!r} must be [lo, hi], got {bounds!r}.")
+            if not isinstance(bounds, (list, tuple)) or len(bounds) not in (1, 2):
+                raise ValueError(f"[{self.qc_name}] box {axis!r} must be [lo, hi] or [value], got {bounds!r}.")
+        if len(out["x"]) != len(out["y"]):
+            raise ValueError(f"[{self.qc_name}] a point needs single x and y values, got {out['x']!r}, {out['y']!r}.")
         flag = out.get("flag")
         if isinstance(flag, bool) or not isinstance(flag, int) or not 0 <= flag <= 9:
             raise ValueError(f"[{self.qc_name}] box flag {flag!r} must be an Argo QC flag 0-9.")
@@ -123,10 +165,13 @@ class manual_qc(BaseQC):
         if mode not in ("inside", "outside"):
             raise ValueError(f"[{self.qc_name}] box mode must be 'inside' or 'outside', got {mode!r}.")
         out["mode"] = mode
-        variables = out.get("variables") or [self.y_variable]
+        out["x_variable"] = str(out.get("x_variable") or self.x_variable)
+        out["y_variable"] = str(out.get("y_variable") or self.y_variable)
+        variables = out.get("variables") or [out["y_variable"]]
         if isinstance(variables, str):
             variables = [variables]
         out["variables"] = list(variables)
+        out["override"] = bool(out.get("override", True))
         return out
 
     def _axis_values(self, var):
@@ -143,23 +188,50 @@ class manual_qc(BaseQC):
         return float(value)
 
     def _box_mask(self, box, x, x_time, y, y_time):
-        x0, x1 = sorted(self._bound(v, x_time) for v in box["x"])
-        y0, y1 = sorted(self._bound(v, y_time) for v in box["y"])
         valid = np.isfinite(x) & np.isfinite(y)
-        inside = valid & (x >= x0) & (x <= x1) & (y >= y0) & (y <= y1)
+        if len(box["x"]) == 1:
+            inside = np.zeros_like(valid)
+            if valid.any():
+                # Nearest valid sample, distances normalised by each axis' data range.
+                px, py = self._bound(box["x"][0], x_time), self._bound(box["y"][0], y_time)
+                sx = np.ptp(x[valid]) or 1.0
+                sy = np.ptp(y[valid]) or 1.0
+                d = np.where(valid, ((x - px) / sx) ** 2 + ((y - py) / sy) ** 2, np.inf)
+                inside[int(np.argmin(d))] = True
+        else:
+            x0, x1 = sorted(self._bound(v, x_time) for v in box["x"])
+            y0, y1 = sorted(self._bound(v, y_time) for v in box["y"])
+            inside = valid & (x >= x0) & (x <= x1) & (y >= y0) & (y <= y1)
         return inside if box["mode"] == "inside" else (valid & ~inside)
 
     def return_qc(self):
-        n = len(self.data["N_MEASUREMENTS"])
-        x, x_time = self._axis_values(self.x_variable)
-        y, y_time = self._axis_values(self.y_variable)
+        axes = {}
+        for box in self.boxes:
+            for var in (box["x_variable"], box["y_variable"]):
+                if var not in axes:
+                    axes[var] = self._axis_values(var)
 
-        qc_arrays = {var: np.zeros(n, dtype=int) for var in self.target_variables}
-        for box in sorted(self.boxes, key=lambda b: b["flag"], reverse=True):
-            hit = self._box_mask(box, x, x_time, y, y_time)
+        # Start from the flags as they stand (Apply QC's store when run there).
+        existing = getattr(self, "existing_flags", None)
+        qc_arrays = {}
+        for var in self.target_variables:
+            col = f"{var}_QC"
+            if existing is not None and col in existing:
+                qc = existing[col].values.astype(int).copy()
+            elif col in self.data:
+                qc = self.data[col].fillna(9).values.astype(int)
+            else:
+                qc = np.where(np.isfinite(self.data[var].values.astype(float)), 0, 9)
+            qc_arrays[var] = qc
+        for box in self.boxes:
+            hit = self._box_mask(box, *axes[box["x_variable"]], *axes[box["y_variable"]])
             for var in box["variables"]:
                 qc = qc_arrays[var]
-                qc[hit & (qc == 0)] = box["flag"]
+                hit_var = hit & (qc != 9)
+                qc[hit_var] = box["flag"] if box["override"] else QC_COMBINATRIX[qc[hit_var], box["flag"]]
+        if self.flag_remaining_good:
+            for qc in qc_arrays.values():
+                qc[qc == 0] = 1
 
         self.flags = xr.Dataset(coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]})
         for var, qc in qc_arrays.items():
@@ -173,29 +245,71 @@ class manual_qc(BaseQC):
         y = self.data[yv].values
         x_time = np.issubdtype(x.dtype, np.datetime64)
 
-        # Show what the merged result will look like: existing flags (if any) combined
-        # with this test's, so untouched points keep their colour rather than reading as 0.
-        n = len(y)
-        shown = np.zeros(n, dtype=int)
-        if f"{yv}_QC" in self.data:
-            shown = self.data[f"{yv}_QC"].fillna(9).values.astype(int)
-        if self.flags is not None and f"{yv}_QC" in self.flags:
-            shown = QC_COMBINATRIX[shown, self.flags[f"{yv}_QC"].values]
+        # Colour by the result (this test's flags include the existing ones), but
+        # draw one series per (existing, result) pair with the existing flag in the
+        # gid: the dashboard's live preview restarts from it. One legend entry per result.
+        existing = getattr(self, "existing_flags", None)
+        if existing is not None and f"{yv}_QC" in existing:
+            before = existing[f"{yv}_QC"].values.astype(int)
+        elif f"{yv}_QC" in self.data:
+            before = self.data[f"{yv}_QC"].fillna(9).values.astype(int)
+        else:
+            before = np.where(np.isfinite(y.astype(float)), 0, 9)
+        shown = self.flags[f"{yv}_QC"].values if self.flags is not None and f"{yv}_QC" in self.flags else before
 
-        fig, axes = fig_spec.new_fig()
+        cv = self.colour_variable
+        profile = bool(cv and self.profile_plot)
+        fig, axes = fig_spec.new_fig(1, 2, sharey=True, width_ratios=(3, 1)) if profile else fig_spec.new_fig()
         ax = axes[0][0]
-        fig_spec.flag_points(ax, x, y, shown)
+        labelled = set()
+        for f in range(10):
+            for b in range(10):
+                m = (shown == f) & (before == b)
+                if not m.any():
+                    continue
+                label = fig_spec.flag_label(f) if f not in labelled else "_"
+                labelled.add(f)
+                if cv:
+                    # Flag as a ring under the coloured fill (drawn after, below); good
+                    # points get an invisible ring so the live preview can recolour it.
+                    ax.plot(x[m], y[m], ls="", marker="o", markersize=fig_spec.MARKER * 1.9,
+                            markeredgewidth=0, color=fig_spec.FLAG_COLOURS[f],
+                            alpha=0.0 if f == 1 else 1.0, label=label)
+                    ax.lines[-1].set_gid(f"ring:{b}")
+                else:
+                    fig_spec.points(ax, x[m], y[m], color=fig_spec.FLAG_COLOURS[f], label=label)
+                    ax.lines[-1].set_gid(f"flag:{b}")
+        if cv:
+            c = self.data[cv].values.astype(float)
+            # No colorbar (it would drop the dashboard view to PNG); the range is in the title.
+            ax.scatter(x, y, c=c, cmap="viridis", s=fig_spec.MARKER ** 2, linewidths=0, label="_fill")
+        if profile:
+            # Profile view: colour variable on x, same y. Every step-th sample (budget
+            # 100k); the gid tells the dashboard the stride back into the main fill.
+            step = max(1, int(np.ceil(len(y) / 100_000)))
+            pax = axes[0][1]
+            pax.scatter(c[::step], y[::step], c=c[::step], cmap="viridis", s=fig_spec.MARKER ** 2,
+                        linewidths=0, label="_profile")
+            pax.collections[-1].set_gid(f"profile:{step}")
+            fig_spec.style_axes(pax, xlabel=fig_spec.axis_label(cv, self.data[cv].attrs.get("units")))
+            pax.tick_params(labelleft=False)
 
-        # Box outlines, coloured by their flag; underscore labels keep them out of the legend.
+        # Box outlines (points as rings), coloured by flag; underscore labels keep them out of the legend.
         for box in self.boxes:
+            if (box["x_variable"], box["y_variable"]) != (xv, yv):
+                continue
             try:
-                x0, x1 = sorted(pd.Timestamp(v).to_datetime64() if x_time else float(v) for v in box["x"])
-                y0, y1 = sorted(float(v) for v in box["y"])
+                bx = sorted(pd.Timestamp(v).to_datetime64() if x_time else float(v) for v in box["x"])
+                by = sorted(float(v) for v in box["y"])
             except (TypeError, ValueError):
                 continue
+            colour = fig_spec.FLAG_COLOURS.get(box["flag"], "k")
+            if len(bx) == 1:
+                ax.plot(bx, by, "o", mfc="none", mec=colour, ms=9, mew=1.5, label="_point")
+                continue
+            (x0, x1), (y0, y1) = bx, by
             ax.plot(
-                [x0, x1, x1, x0, x0], [y0, y0, y1, y1, y0], "--", lw=1.2,
-                color=fig_spec.FLAG_COLOURS.get(box["flag"], "k"), label="_box",
+                [x0, x1, x1, x0, x0], [y0, y0, y1, y1, y0], "--", lw=1.2, color=colour, label="_box",
             )
 
         fig_spec.style_axes(
@@ -208,5 +322,9 @@ class manual_qc(BaseQC):
         if yv in ("PRES", "DEPTH"):
             ax.invert_yaxis()
         fig_spec.legend(ax, title="Flag")
-        fig_spec.finish(fig, suptitle=f"Manual QC — {yv} vs {xv}")
+        title = f"Manual QC — {yv} vs {xv}"
+        if cv:
+            lo, hi = np.nanmin(c), np.nanmax(c)
+            title += f" · coloured by {cv} ({lo:.3g} – {hi:.3g}, viridis)"
+        fig_spec.finish(fig, suptitle=title)
         plt.show(block=True)

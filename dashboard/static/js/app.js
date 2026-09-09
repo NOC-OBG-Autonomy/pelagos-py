@@ -528,8 +528,11 @@ async function boot() {
   // run controls
   Run.initScroll();
   // Doubles as Continue while paused — see Run.setRunButton().
-  document.getElementById('btn-run').addEventListener('click', () =>
-    Run.pausedStep !== null ? Run.continueRun() : Run.start(editor.getValue()));
+  document.getElementById('btn-run').addEventListener('click', () => {
+    if (Run.pausedStep === null) Run.start(editor.getValue());
+    else if (ManualQC.isActive()) ManualQC.applyAndContinue();
+    else Run.continueRun();
+  });
   document.getElementById('btn-stop').addEventListener('click', () =>
     Run.stopBtnMode === 'clear' ? Run.clearRun() : Run.stop());
   // From another tab: jump back to the paused step's review panel.
@@ -543,6 +546,8 @@ async function boot() {
     Run.showTab();
   });
   document.getElementById('btn-rerun').addEventListener('click', () => Run.rerunStep());
+  document.getElementById('btn-manual-rerun').addEventListener('click', () => ManualQC.apply());
+  document.getElementById('btn-manual-continue').addEventListener('click', () => ManualQC.applyAndContinue());
 
   // If a pipeline is already running (e.g. the page was refreshed mid-run),
   // reattach to its log stream instead of showing a Run button that would 409.

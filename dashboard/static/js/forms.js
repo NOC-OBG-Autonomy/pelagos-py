@@ -143,6 +143,7 @@ const Forms = {
       const row = document.createElement('div');
       row.className = 'file-row';
       input.placeholder = 'Path to your input NetCDF file';
+      input.onchange = () => { values[spec.name] = input.value; syncOutputPath(input.value); onChange(); };
       const browse = document.createElement('button');
       browse.type = 'button';
       browse.className = 'ghost';
@@ -152,7 +153,7 @@ const Forms = {
         browse.disabled = true;
         try {
           const path = await API.browseFile(input.value);
-          if (path) { input.value = path; values[spec.name] = path; onChange(); }
+          if (path) { input.value = path; values[spec.name] = path; syncOutputPath(path); onChange(); }
         } catch (e) { alert(e.message); }
         finally { browse.disabled = false; }
       };
