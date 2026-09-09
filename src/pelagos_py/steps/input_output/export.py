@@ -20,6 +20,7 @@
 from pelagos_py.steps.base_step import BaseStep, register_step
 import pelagos_py.utils.diagnostics as diag
 import json
+import netCDF4
 
 
 @register_step
@@ -125,6 +126,9 @@ class ExportStep(BaseStep):
         if export_format == "csv":
             data.to_dataframe().to_csv(output_path, index=False)
         elif export_format == "netcdf":
+            # Chunk cache below one chunk so HDF5 writes through instead of
+            # holding ~every variable in cache until the file closes (GBs).
+            netCDF4.set_chunk_cache(1_000_000, *netCDF4.get_chunk_cache()[1:])
             data.to_netcdf(output_path, engine="netcdf4", encoding=encoding)
         elif export_format == "hdf5":
             data.to_netcdf(output_path, engine="h5netcdf", encoding=encoding)

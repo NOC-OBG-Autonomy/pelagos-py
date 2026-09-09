@@ -142,7 +142,9 @@ class DeriveUncalibratedPhase(BaseStep, QCHandlingMixin):
 
     step_name = "Derive Uncalibrated Phase"
     provided_variables = ["UNCAL_PHASE_DOXY"]
+    optional_variables = ["TIME", "PRES"]
     variable_parameters = ["blue_phase_name", "red_phase_name"]
+    uses_data_subset = True
 
     parameter_schema = {
         "blue_phase_name": {
@@ -210,7 +212,7 @@ class DeriveUncalibratedPhase(BaseStep, QCHandlingMixin):
         if self.diagnostics:
             self.generate_diagnostics()
 
-        self.context["data"] = self.data
+        self.context["data"].update(self.data)
         return self.context
 
     def generate_diagnostics(self):
@@ -222,7 +224,9 @@ class DeriveOptodeTemperature(BaseStep, QCHandlingMixin):
 
     step_name = "Derive Optode Temperature"
     provided_variables = ["TEMP_DOXY"]
+    optional_variables = ["TIME", "PRES"]
     variable_parameters = ["temp_voltage_name"]
+    uses_data_subset = True
 
     parameter_schema = {
         "temp_voltage_name": {
@@ -289,7 +293,7 @@ class DeriveOptodeTemperature(BaseStep, QCHandlingMixin):
         if self.diagnostics:
             self.generate_diagnostics()
 
-        self.context["data"] = self.data
+        self.context["data"].update(self.data)
         return self.context
 
     def generate_diagnostics(self):
@@ -302,7 +306,9 @@ class PhasePressureCorrection(BaseStep, QCHandlingMixin):
     step_name = "Phase Pressure Correction"
     required_variables = ["UNCAL_PHASE_DOXY"]
     provided_variables = ["UNCAL_PHASE_DOXY_PCORR"]
+    optional_variables = ["TIME"]
     variable_parameters = ["optode_pressure_name"]
+    uses_data_subset = True
 
     parameter_schema = {
         "optode_pressure_name": {
@@ -369,7 +375,7 @@ class PhasePressureCorrection(BaseStep, QCHandlingMixin):
         if self.diagnostics:
             self.generate_diagnostics()
 
-        self.context["data"] = self.data
+        self.context["data"].update(self.data)
         return self.context
 
     def generate_diagnostics(self):
@@ -422,7 +428,10 @@ class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
 
     step_name = "Shift Oxygen To CTD"
     required_variables = ["PROFILE_NUMBER"]
-    variable_parameters = ["shift_vars"]
+    optional_variables = ["TIME", "PROFILE_GRADIENT", "PRES"]
+    variable_parameters = ["shift_vars", "pitch_name", "cast_id_var"]
+    variable_parameters_optional = ("pitch_name", "cast_id_var")  # unused with lag_seconds
+    uses_data_subset = True
 
     parameter_schema = {
         "shift_vars": {
@@ -605,7 +614,7 @@ class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
         if self.diagnostics:
             self.generate_diagnostics()
 
-        self.context["data"] = self.data
+        self.context["data"].update(self.data)
         return self.context
 
     def generate_diagnostics(self):
@@ -618,7 +627,9 @@ class DeriveCalibratedPhase(BaseStep, QCHandlingMixin):
 
     step_name = "Derive Calibrated Phase"
     provided_variables = ["CAL_PHASE_DOXY"]
+    optional_variables = ["TIME", "PRES"]
     variable_parameters = ["uncalibrated_phase_name"]
+    uses_data_subset = True
 
     parameter_schema = {
         "uncalibrated_phase_name": {
@@ -687,7 +698,7 @@ class DeriveCalibratedPhase(BaseStep, QCHandlingMixin):
         if self.diagnostics:
             self.generate_diagnostics()
 
-        self.context["data"] = self.data
+        self.context["data"].update(self.data)
         return self.context
 
     def generate_diagnostics(self):
@@ -700,7 +711,9 @@ class DeriveOxygenConcentration(BaseStep, QCHandlingMixin):
     step_name = "Derive Oxygen Concentration"
     required_variables = ["CAL_PHASE_DOXY"]
     provided_variables = ["MOLAR_DOXY"]
+    optional_variables = ["TIME", "PRES"]
     variable_parameters = ["temperature_name"]
+    uses_data_subset = True
 
     parameter_schema = {
         "method": {
@@ -831,7 +844,7 @@ class DeriveOxygenConcentration(BaseStep, QCHandlingMixin):
         if self.diagnostics:
             self.generate_diagnostics()
 
-        self.context["data"] = self.data
+        self.context["data"].update(self.data)
         return self.context
 
     def generate_diagnostics(self):
@@ -844,7 +857,9 @@ class MolarDOXYSalinityCorrection(BaseStep, QCHandlingMixin):
     step_name = "Molar DOXY Salinity Correction"
     required_variables = ["MOLAR_DOXY"]
     provided_variables = ["MOLAR_DOXY_PSAL"]
+    optional_variables = ["TIME", "PRES"]
     variable_parameters = ["salinity_name", "temperature_name"]
+    uses_data_subset = True
 
     parameter_schema = {
         "salinity_name": {
@@ -974,7 +989,7 @@ class MolarDOXYSalinityCorrection(BaseStep, QCHandlingMixin):
         if self.diagnostics:
             self.generate_diagnostics()
 
-        self.context["data"] = self.data
+        self.context["data"].update(self.data)
         return self.context
 
     def generate_diagnostics(self):
@@ -986,7 +1001,9 @@ class MolarDOXYPressureCorrection(BaseStep, QCHandlingMixin):
 
     step_name = "Molar DOXY Pressure Correction"
     provided_variables = ["MOLAR_DOXY_PSAL_PRES"]
+    optional_variables = ["TIME"]
     variable_parameters = ["pressure_name", "temperature_name", "molar_doxy_name"]
+    uses_data_subset = True
 
     parameter_schema = {
         "pressure_name": {
@@ -1085,7 +1102,7 @@ class MolarDOXYPressureCorrection(BaseStep, QCHandlingMixin):
         if self.diagnostics:
             self.generate_diagnostics()
 
-        self.context["data"] = self.data
+        self.context["data"].update(self.data)
         return self.context
 
     def generate_diagnostics(self):

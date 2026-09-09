@@ -1313,7 +1313,6 @@ def qc_hist(
     dataset_label: str = None,
     xlims: list = [-0.6, 9.6],
     hislim=range(10),
-    bins=None,
     ext=".png",
     source_all_nan: bool = None,
     flag_all_nan: bool = None,
@@ -1336,8 +1335,6 @@ def qc_hist(
     ylims = [1, data[var].size]  #   Log axis cannot be 0
     if any(y < 1 for y in ylims):
         raise ValueError
-    if bins is None:  #   If not specified, center the bins around each flag integer
-        bins = np.arange(len(hislim) + 1) - 0.5
 
     #   Plot the source variable using xarray.plot for speed.
     #   If all NaN, clarify that on the plot.
@@ -1365,17 +1362,23 @@ def qc_hist(
     if flag_all_nan:
         axs[1].text(0.2, 0.5, f"Flags ({var}) are NaN", transform=axs[1].transAxes)
     else:
-        data[var].plot.hist(
-            yscale="log", bins=bins, xticks=hislim, xlim=xlims, ylim=ylims, ax=axs[1]
-        )
-        bars = axs[1].containers[0]  #   Number of points in each bin
-        #   Rotate the counts upright so large numbers don't spill past the bars.
-        axs[1].bar_label(bars, fontsize=7, label_type="center", rotation=90)
+        #   Flags are small integers: np.histogram sorts 7M values per figure,
+        #   bincount doesn't. Labels are drawn by hand (bar_label's lambda makes
+        #   the figure unpicklable, forcing a slow foreground save).
+        flags = np.asarray(data[var].values).ravel()
+        flags = flags[np.isfinite(flags)].astype(np.int64)
+        counts = np.bincount(flags[flags >= 0], minlength=len(hislim))[: len(hislim)]
+        centres = np.arange(len(hislim))
+        axs[1].bar(centres, counts, width=1.0)
+        for x, c in zip(centres, counts):
+            if c > 0:  #   visual centre of the bar on a log axis starting at 1
+                axs[1].annotate(f"{c:g}", (x, np.sqrt(c)), ha="center", va="center",
+                                fontsize=7, rotation=90)
         axs[1].set_yscale("log")
-        #   xarray labels the axis with the flag's (often long) description;
-        #   force a short, consistent label instead.
+        axs[1].set_xticks(hislim)
+        axs[1].set_xlim(xlims)
+        axs[1].set_ylim(ylims)
         axs[1].set_xlabel("Quality Flag")
-        axs[1].set_title("")
 
     #   A single title across the multiplot, just the variable name.
     fig.suptitle(var_source)

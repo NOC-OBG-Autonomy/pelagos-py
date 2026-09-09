@@ -702,6 +702,8 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .mem-stat b { color: var(--ink); font-weight: 600; }
 .mem-stat.mem-peak b { color: var(--warn); }
 .mem-stat.mem-data b { color: var(--accent); }
+.mem-stat.mem-time { flex: 0 0 auto; }
+.mem-stat.mem-time.paused b { color: var(--muted); }
 .mem-spark { flex: 1 1 auto; height: 34px; min-width: 120px; overflow: visible; }
 .mem-spark-area { fill: var(--accent); opacity: .12; stroke: none; }
 .mem-spark-line { fill: none; stroke: var(--accent); stroke-width: 1; vector-effect: non-scaling-stroke; }
@@ -709,6 +711,8 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .mem-spark-dot { fill: var(--accent); }
 .mem-spark-dot.peak { fill: var(--warn); }
 .mem-spark-dot.active { r: 3.4px; stroke: var(--ink); stroke-width: 1px; }
+.mem-spark-dot.quiet { opacity: 0; }
+.mem-spark-dot.quiet.active { opacity: 1; }
 
 .mem-tooltip {
   position: fixed; z-index: 50; pointer-events: none;

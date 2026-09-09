@@ -33,6 +33,8 @@ const Run = {
   //   __PELAGOS_RERUN__ <index>                      re-running the paused unit
   //   __PELAGOS_MEM__ <rss>\t<peak>\t<data>\t<label> RSS after a step (MB)
   //   __PELAGOS_REPORT__ <abspath>\t<filename>          a PDF report was written
+  //   __PELAGOS_TIME__ <active s>\t<paused>\t<epoch>    processing clock (see RunClock)
+  //   __PELAGOS_SAMPLE__ <active s>\t<rss>            RSS sample (server-side, every 0.5 s)
   FIG_MARKER: '__PELAGOS_FIG__ ',
   LOG_MARKER: '__PELAGOS_LOG__ ',
   FAIL_MARKER: '__PELAGOS_FAIL__ ',
@@ -42,6 +44,8 @@ const Run = {
   MEM_MARKER: '__PELAGOS_MEM__ ',
   REPORT_MARKER: '__PELAGOS_REPORT__ ',
   VARS_MARKER: '__PELAGOS_VARS__ ',
+  TIME_MARKER: '__PELAGOS_TIME__ ',
+  SAMPLE_MARKER: '__PELAGOS_SAMPLE__ ',
   variables: [], // dataset variables at the current pause (for Manual QC's axis pickers)
 
   // Whether the unit currently paused on failed its most recent attempt
@@ -189,7 +193,8 @@ const Run = {
   markerAt(plain) {
     let best = null;
     for (const marker of [Run.FIG_MARKER, Run.LOG_MARKER, Run.FAIL_MARKER, Run.STEP_MARKER,
-      Run.PAUSE_MARKER, Run.RERUN_MARKER, Run.MEM_MARKER, Run.REPORT_MARKER, Run.VARS_MARKER]) {
+      Run.PAUSE_MARKER, Run.RERUN_MARKER, Run.MEM_MARKER, Run.REPORT_MARKER, Run.VARS_MARKER,
+      Run.TIME_MARKER, Run.SAMPLE_MARKER]) {
       const at = plain.indexOf(marker);
       if (at >= 0 && (best === null || at < best.at)) best = { marker, at };
     }
@@ -205,7 +210,8 @@ const Run = {
     if (hit) {
       // Anything before the marker is real console output that got glued on.
       if (hit.at > 0) Run.renderLine(plain.slice(0, hit.at));
-      Run.finalizeProgress();
+      // RAM samples arrive mid-step, so they must not freeze a live bar.
+      if (hit.marker !== Run.SAMPLE_MARKER) Run.finalizeProgress();
       Run.handleMarker(hit.marker, plain.slice(hit.at));
       return;
     }
@@ -217,6 +223,14 @@ const Run = {
       // Payload is "<rss>\t<peak>\t<data>\t<label>" — the RAM meter's, not a
       // step marker. Kept out of the console: it's a visual, not a log line.
       Mem.add(plain.slice(marker.length));
+      return;
+    }
+    if (marker === Run.SAMPLE_MARKER) {
+      Mem.sample(plain.slice(marker.length));
+      return;
+    }
+    if (marker === Run.TIME_MARKER) {
+      RunClock.update(plain.slice(marker.length));
       return;
     }
     if (marker === Run.VARS_MARKER) {
@@ -711,6 +725,7 @@ const Run = {
       Run.scrollToBottom(); // fresh log starts stuck to the tail
       Run.clearPlots();
       Mem.reset();
+      RunClock.reset();
     }
     Run.hidePause();
     RunLock.begin(); // freeze the config for as long as the run owns it
@@ -725,6 +740,7 @@ const Run = {
     Run.source.addEventListener('progress', (ev) => Run.handleProgress(ev.data));
     Run.source.addEventListener('end', (ev) => {
       Run.finalizeProgress();
+      RunClock.stop();
       const code = Number(ev.data);
       if (Run.stopping) {
         Run.setStatus('stopped', 'err');

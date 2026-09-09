@@ -590,6 +590,31 @@ class _Run:
         self.finished = False
         self.returncode: int | None = None
         self._lock = threading.Lock()
+        # Processing clock mirrored from the runner's __PELAGOS_TIME__ markers
+        # (see _commit): the RAM sampler stamps each sample with active seconds
+        # and stays quiet while the run is paused, so the meter's x-axis is the
+        # same clock the dashboard's runtime readout shows.
+        self._active = 0.0
+        self._since: float | None = None
+
+    def _sample_mem(self, proc):
+        # Poll the child's RSS from here rather than inside the run: costs the
+        # pipeline nothing and can't interleave with its own console output.
+        try:
+            import psutil
+            child = psutil.Process(proc.pid)
+        except Exception:  # noqa: BLE001 - the meter is a bonus, never fatal
+            return
+        while proc.poll() is None:
+            try:
+                rss = child.memory_info().rss / 1024 ** 2
+            except Exception:  # noqa: BLE001 - child just exited
+                return
+            with self._lock:
+                if self._since is not None:
+                    x = self._active + time.time() - self._since
+                    self.lines.append(f"__PELAGOS_SAMPLE__ {x:.1f}\t{rss:.1f}")
+            time.sleep(0.5)
 
     def is_running(self) -> bool:
         return self.proc is not None and self.proc.poll() is None
@@ -638,7 +663,9 @@ class _Run:
         self.live_after = 0
         self.finished = False
         self.returncode = None
+        self._active, self._since = 0.0, None
         threading.Thread(target=self._pump, daemon=True).start()
+        threading.Thread(target=self._sample_mem, args=(self.proc,), daemon=True).start()
 
     def _commit(self, text: str):
         """A finished (newline-terminated) line: append it and clear live progress."""
@@ -646,6 +673,13 @@ class _Run:
             self.lines.append(text)
             self.live = None
             self.live_after = len(self.lines)
+            if text.startswith("__PELAGOS_TIME__ "):
+                try:
+                    active, paused, _ = text.split(" ", 1)[1].split("\t")
+                    self._active = float(active)
+                    self._since = None if paused.strip() == "1" else time.time()
+                except ValueError:
+                    pass
 
     def _progress(self, text: str):
         """A transient in-place redraw (bar tick): update live, don't accumulate."""

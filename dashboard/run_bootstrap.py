@@ -44,6 +44,7 @@ See ``_emit_fail`` and ``pelagos_py.pipeline.resolve_continue_on_step_fail``.
 
 import base64
 import contextlib
+import gc
 import io
 import json
 import os
@@ -97,6 +98,12 @@ _mem = {
 }
 _mem_lock = threading.Lock()
 
+# Processing clock for the dashboard's runtime readout. Stops while the run
+# sits paused on stdin (review / manual QC), so it reads as time actually
+# spent processing. ``__PELAGOS_TIME__ <active s>\t<paused 0/1>\t<epoch s>``:
+# the epoch lets the browser tick on from the marker even after a reconnect.
+_clock = {"active": 0.0, "since": time.time()}
+
 
 def _rss_mb():
     """This process's resident set in MB, or None if psutil is unavailable."""
@@ -136,8 +143,8 @@ def _emit_mem(context):
 
     Fields (tab-separated; labels may contain spaces but not tabs):
       settle RSS · run peak · dataset MB · step label · in-step peak · peak step
-      · step-start RSS
-    The last lets the meter show each step's *own* growth (peak - start),
+      · step-start RSS · active seconds (the runtime clock, for the x-axis)
+    The step-start field lets the meter show each step's *own* growth (peak - start),
     isolating what a step added from the ratcheted baseline it sat on.
     Best-effort: no psutil -> no marker, never fatal.
     """
@@ -161,9 +168,10 @@ def _emit_mem(context):
             data_mb = f"{nbytes / 1024 ** 2:.1f}"
     except Exception:  # noqa: BLE001 - dataset size is optional detail
         data_mb = ""
+    active = _clock["active"] + (time.time() - _clock["since"] if _clock["since"] else 0)
     print(
         f"__PELAGOS_MEM__ {rss_mb:.1f}\t{run_peak:.1f}\t{data_mb}\t{label}"
-        f"\t{step_peak:.1f}\t{run_peak_label}\t{step_start:.1f}",
+        f"\t{step_peak:.1f}\t{run_peak_label}\t{step_start:.1f}\t{active:.1f}",
         flush=True,
     )
 
@@ -455,6 +463,14 @@ def _drop_captures(pipeline, mark):
     del figs[mark:]
 
 
+def _emit_time(paused):
+    now = time.time()
+    if _clock["since"] is not None:
+        _clock["active"] += now - _clock["since"]
+    _clock["since"] = None if paused else now
+    print(f"__PELAGOS_TIME__ {_clock['active']:.3f}\t{int(paused)}\t{now:.3f}", flush=True)
+
+
 def _read_command():
     """Block until the dashboard sends a control line on stdin.
 
@@ -493,6 +509,7 @@ def main():
         from pelagos_py.utils.valid_config_check import check_pipeline_variables
 
         _patch_diagnostics_capture()
+        _emit_time(paused=False)
         pipeline = Pipeline(config_path=config_path)
 
         # Mirror Pipeline.run()'s pre-flight validation.
@@ -524,6 +541,7 @@ def main():
         # can inspect it, tweak that step's params in the dashboard, and re-run
         # just that step before continuing.
         context = pipeline._context
+        gc.freeze()  # see Pipeline.run(): keeps the per-step gc.collect() cheap
         # A QC step becomes several units, one per test; everything else is a
         # single unit. `idx` stays the step's index in the config either way, so
         # figures and the re-run form still line up with the builder card.
@@ -597,7 +615,9 @@ def main():
             _emit_vars(context)
             while True:
                 print(f"__PELAGOS_PAUSE__ {idx}\t{label}", flush=True)
+                _emit_time(paused=True)
                 action, params = _read_command()
+                _emit_time(paused=False)
                 if action == "continue":
                     if failed and not has_result:
                         pipeline.logger.log(
@@ -653,6 +673,7 @@ def main():
         print("Pipeline stopped.", flush=True)
         sys.exit(130)
     finally:
+        _emit_time(paused=True)  # final processing time
         if report_present:
             # Figures have been embedded by the report writer by now.
             shutil.rmtree(pipeline._capture_dir, ignore_errors=True)

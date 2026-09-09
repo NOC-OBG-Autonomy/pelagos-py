@@ -464,6 +464,10 @@ class Pipeline(ConfigMirrorMixin):
             # falls back to skip-and-continue here (the dashboard's own driver
             # loop interprets "auto" itself -- see run_bootstrap.py).
             continue_on_step_fail = True
+        # The per-step gc.collect() in execute_step otherwise walks every
+        # object the imported libraries own (~35 ms each); freezing them
+        # leaves only what the run itself creates for the collector to visit.
+        gc.freeze()
         try:
             with backend_ctx:
                 for step in self.steps:
@@ -479,6 +483,7 @@ class Pipeline(ConfigMirrorMixin):
                             SEVERE, "Step '%s' failed and was skipped.", step["name"]
                         )
         finally:
+            gc.unfreeze()
             if report_present:
                 #   Figures have been embedded by the report writer by now.
                 shutil.rmtree(self._capture_dir, ignore_errors=True)

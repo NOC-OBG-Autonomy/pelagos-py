@@ -20,6 +20,7 @@
 from pelagos_py.steps.base_step import BaseStep, register_step
 import pelagos_py.utils.diagnostics as diag
 
+import netCDF4
 import xarray as xr
 import pandas as pd
 import numpy as np
@@ -111,7 +112,9 @@ class LoadOG1(BaseStep):
                 "Check the 'file_path' parameter points to an existing file."
             )
 
-        # load data from xarray
+        # netCDF-C's 64 MB-per-variable chunk cache is dead weight for whole-variable
+        # reads and stays allocated while the file is open: shrink it below one chunk.
+        netCDF4.set_chunk_cache(1_000_000, *netCDF4.get_chunk_cache()[1:])
         self.data = xr.open_dataset(self.file_path)
         self.log(f"Loaded data from {self.file_path}")
 
@@ -151,7 +154,8 @@ class LoadOG1(BaseStep):
                 valid_mask &= time_array >= np.datetime64(deploy_time)
 
             time_dim = self.data["TIME"].dims[0]
-            self.data = self.data.isel({time_dim: valid_mask.values})
+            if not bool(valid_mask.all()):  # isel copies the whole dataset
+                self.data = self.data.isel({time_dim: valid_mask.values})
             new_len = len(self.data["TIME"])
 
             if new_len < orig_len:

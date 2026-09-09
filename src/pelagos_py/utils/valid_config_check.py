@@ -117,19 +117,31 @@ def _deep_correction_output(step_class, parameters):
 #: and a segfault can't be caught with try/except -- it takes the caller down
 #: with it. Isolating it in a short-lived subprocess means a crash there is
 #: just a failed subprocess, handled like any other unreadable file.
+#: netCDF4 rather than xarray (a fraction of the import time), scanning in
+#: slices so a variable with real data is settled by its first slice.
 _READ_VARIABLES_SCRIPT = (
     "import sys, json\n"
     "import numpy as np\n"
-    "import xarray as xr\n"
+    "import netCDF4\n"
     "candidates = json.loads(sys.argv[2]) if len(sys.argv) > 2 else None\n"
-    "with xr.open_dataset(sys.argv[1]) as ds:\n"
+    "def all_nan(v):\n"
+    "    if v.ndim == 0:\n"
+    "        x = np.ma.filled(np.ma.asarray(v[...]).astype(float), np.nan)\n"
+    "        return bool(np.isnan(x).all())\n"
+    "    for start in range(0, v.shape[0], 500_000):\n"
+    "        x = np.ma.filled(np.ma.asarray(v[start:start + 500_000]).astype(float), np.nan)\n"
+    "        if not np.isnan(x).all():\n"
+    "            return False\n"
+    "    return True\n"
+    "with netCDF4.Dataset(sys.argv[1]) as ds:\n"
     "    names = list(ds.variables)\n"
     "    to_check = names if candidates is None else [v for v in candidates if v in names]\n"
-    "    all_nan = [\n"
+    "    nan_vars = [\n"
     "        v for v in to_check\n"
-    "        if np.issubdtype(ds[v].dtype, np.floating) and bool(np.isnan(ds[v].values).all())\n"
+    "        if (ds[v].dtype.kind == 'f' or any(hasattr(ds[v], a) for a in\n"
+    "            ('scale_factor', 'add_offset', '_FillValue', 'missing_value'))) and all_nan(ds[v])\n"
     "    ]\n"
-    "    print(json.dumps({'variables': names, 'all_nan': all_nan}))\n"
+    "    print(json.dumps({'variables': names, 'all_nan': nan_vars}))\n"
 )
 
 #: Single-entry (path, mtime, candidates) -> variable-names cache. The
