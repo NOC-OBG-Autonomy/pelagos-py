@@ -21,7 +21,7 @@ from pelagos_py.steps.base_qc import BaseQC, register_qc
 
 #### Custom imports ####
 import matplotlib.pyplot as plt
-import polars as pl
+from pelagos_py.utils.processing_utils import interpolate_by_time
 import xarray as xr
 import numpy as np
 import matplotlib
@@ -43,54 +43,27 @@ class impossible_speed_qc(BaseQC):
     qc_outputs = ["TIME_QC", "LATITUDE_QC", "LONGITUDE_QC"]
 
     def return_qc(self):
-        # Convert to polars
-        self.df = pl.from_pandas(
-            self.data[self.required_variables].to_dataframe(), nan_to_null=False
-        )
+        time = self.data["TIME"].values
+        dt = np.diff(time.astype("datetime64[ns]").astype("int64"), prepend=np.int64(0)) * 1e-9
+        dt[0] = np.nan  # no preceding sample
 
-        self.df = self.df.with_columns(
-            (pl.col("TIME").diff().cast(pl.Float64) * 1e-9).alias("dt")
-        )
-        for label in ["LATITUDE", "LONGITUDE"]:
-            self.df = self.df.with_columns(
-                pl.col(label)
-                .replace([np.inf, -np.inf, np.nan], None)
-                .interpolate_by("TIME")
-                .diff()
-                .alias(f"delta_{label}")
-            )
-            self.df = self.df.with_columns(
-                (pl.col(f"delta_{label}") / pl.col("dt")).alias(f"{label}_speed")
-            )
-        # Define absolute speed
-        self.df = self.df.with_columns(
-            (
-                (pl.col("LATITUDE_speed") ** 2 + pl.col("LONGITUDE_speed") ** 2) ** 0.5
-            ).alias("absolute_speed")
-        )
+        # Degrees/second per axis, on gap-filled positions (non-finite -> interpolated)
+        speeds = {}
+        with np.errstate(divide="ignore", invalid="ignore"):
+            for label in ["LATITUDE", "LONGITUDE"]:
+                filled = interpolate_by_time(self.data[label].values, time)
+                speeds[label] = np.diff(filled, prepend=np.nan) / dt
+            absolute_speed = (speeds["LATITUDE"] ** 2 + speeds["LONGITUDE"] ** 2) ** 0.5
 
-        # TODO: Does this need a flag for potentially bad data for cases where speed is inf?
-        self.df = self.df.with_columns(
-            (
-                (pl.col("absolute_speed") < 3)  #  Speed threshold
-                & pl.col("absolute_speed").is_not_null()
-                & pl.col("absolute_speed").is_finite()
-            ).alias("speed_is_valid")
-        )
+            # TODO: Does this need a flag for potentially bad data for cases where speed is inf?
+            speed_is_valid = np.isfinite(absolute_speed) & (absolute_speed < 3)  # Speed threshold
+        self.absolute_speed = absolute_speed  # for plot_diagnostics
+        qc = np.where(speed_is_valid, 1, 4)
 
-        for label in ["LATITUDE", "LONGITUDE", "TIME"]:
-            self.df = self.df.with_columns(
-                pl.when(pl.col("speed_is_valid"))
-                .then(1)
-                .otherwise(4)
-                .alias(f"{label}_QC")
-            )
-
-        # Convert back to xarray
-        flags = self.df.select(pl.col("^.*_QC$"))
         self.flags = xr.Dataset(
             data_vars={
-                col: ("N_MEASUREMENTS", flags[col].to_numpy()) for col in flags.columns
+                f"{label}_QC": ("N_MEASUREMENTS", qc.copy())
+                for label in ["LATITUDE", "LONGITUDE", "TIME"]
             },
             coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]},
         )
@@ -102,9 +75,9 @@ class impossible_speed_qc(BaseQC):
         fig, axes = fig_spec.new_fig()
         ax = axes[0][0]
         fig_spec.flag_points(
-            ax, self.df["TIME"], self.df["absolute_speed"], self.df["LATITUDE_QC"]
+            ax, self.data["TIME"].values, self.absolute_speed, self.flags["LATITUDE_QC"].values
         )
-        fig_spec.date_axis(ax, which="x", index=self.df["TIME"].to_numpy())
+        fig_spec.date_axis(ax, which="x", index=self.data["TIME"].values)
         ax.set_ylim(0, 4)
         ax.axhline(3, ls="--", c="k")
         fig_spec.style_axes(

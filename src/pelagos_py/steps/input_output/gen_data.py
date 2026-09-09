@@ -16,7 +16,7 @@
 
 """Step for generating synthetic data for testing pipelines"""
 
-import polars as pl
+import pandas as pd
 import xarray as xr
 import numpy as np
 from pelagos_py.steps.base_step import BaseStep, register_step
@@ -97,7 +97,7 @@ class GenerateData(BaseStep):
             column_names = ["A", "B", "C"][:ncols]
             qc_values = np.array(list(itertools.product(range(10), repeat=ncols)))
             values = [[i] * int(10**ncols) for i in range(1, ncols + 1)]
-            df = pl.DataFrame(
+            df = pd.DataFrame(
                 {
                     **{col: values[i] for i, col in enumerate(column_names)},
                     **{
@@ -132,13 +132,14 @@ class GenerateData(BaseStep):
                 self.log(f"[Generate Data] Variables: {variable_limits}")
 
             # Make time index for dataframe (df)
-            df = pl.select(
-                pl.datetime_range(
-                    date(*map(int, start_date.split("-"))),
-                    date(*map(int, end_date.split("-"))),
-                    timedelta(seconds=sample_period),
-                    time_unit="ns",
-                ).alias("TIME")
+            df = pd.DataFrame(
+                {
+                    "TIME": pd.date_range(
+                        date(*map(int, start_date.split("-"))),
+                        date(*map(int, end_date.split("-"))),
+                        freq=timedelta(seconds=sample_period),
+                    ).values.astype("datetime64[ns]")
+                }
             )
             data_length = len(df)
 
@@ -158,13 +159,9 @@ class GenerateData(BaseStep):
                     lower, upper = [0, 1]
 
                 # Add the new column
-                df = df.with_columns(
-                    pl.lit(np.random.uniform(lower, upper, data_length)).alias(
-                        variable_name
-                    )
-                )
+                df[variable_name] = np.random.uniform(lower, upper, data_length)
 
-            # Make the xarray data from the polars dataframe and ship it
+            # Make the xarray data from the dataframe and ship it
             # TODO: Add metadata flexibility
 
         data_vars = {col: ("N_MEASUREMENTS", df[col].to_numpy()) for col in df.columns}

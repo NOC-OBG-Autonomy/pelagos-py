@@ -22,7 +22,7 @@ from pelagos_py.utils.qc_handling import QCHandlingMixin
 import pelagos_py.utils.diagnostics as diag
 
 #### Custom imports ####
-import polars as pl
+from pelagos_py.utils.processing_utils import interpolate_by_time
 import numpy as np
 import xarray as xr
 import matplotlib
@@ -135,31 +135,15 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
 
         max_interp_seconds = self._max_interp_seconds()
 
-        # Convert to polars dataframe
-        self.df = pl.from_pandas(
-            self.data[variables + ["TIME"]].to_dataframe(),
-            nan_to_null=False,
-        )
-        self.unprocessed_df = (
-            self.df.clone()
-        )  # Making a copy for plotting change in diagnostics
+        # Keep the pre-interpolation values for the diagnostics plot
+        self.unprocessed = {var: self.data[var].values.copy() for var in variables}
 
-        # Interpolate
-        self.df = self.df.with_columns(
-            pl.col(var)
-            .replace({np.nan: None})
-            .interpolate_by("TIME")
-            .replace({None: np.nan})
-            for var in variables
-        )
-
-        time = self.df["TIME"].to_numpy()
+        time = self.data["TIME"].values
         for var in variables:
-            interpolated = self.df[var].to_numpy().copy()
+            interpolated = interpolate_by_time(self.unprocessed[var], time)
             if max_interp_seconds:
-                was_nan = self.unprocessed_df[var].is_nan().to_numpy()
+                was_nan = np.isnan(self.unprocessed[var])
                 self._limit_gap_fill(time, interpolated, was_nan, max_interp_seconds)
-            self.df = self.df.with_columns(pl.Series(var, interpolated))
             filled = np.isnan(self.data[var].values) & np.isfinite(interpolated)
             self.data[var][:] = interpolated
             self.data[f"{var}_QC"] = xr.where(filled, 8, self.data[f"{var}_QC"])
@@ -213,9 +197,9 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
         ax = axes[0][0]
 
         plot_var = next(iter(self.filter_settings))
-        time = self.df["TIME"].to_numpy()
-        original = self.unprocessed_df[plot_var].to_numpy()
-        filled = self.df[plot_var].to_numpy()
+        time = self.data["TIME"].values
+        original = self.unprocessed[plot_var]
+        filled = self.data[plot_var].values
         was_nan = np.isnan(original) & ~np.isnan(filled)
         fig_spec.points(ax, time[~was_nan], filled[~was_nan], color=fig_spec.CATEGORY[1], label="original")
         fig_spec.points(ax, time[was_nan], filled[was_nan], color=fig_spec.CATEGORY[3], label="interpolated")

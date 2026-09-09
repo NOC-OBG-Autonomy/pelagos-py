@@ -1,6 +1,5 @@
 import pytest
 import xarray as xr
-import polars as pl
 import numpy as np
 import pandas as pd
 from datetime import datetime
