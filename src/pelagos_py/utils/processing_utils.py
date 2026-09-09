@@ -25,6 +25,21 @@ def cndc_scale_factor(units):
 
 
 # ----------------------------- NaN Handling ------------------------------
+def interpolate_by_time(values, time):
+    """Linearly fill non-finite ``values`` against ``time``; ends stay NaN (no extrapolation)."""
+    v = np.asarray(values, dtype=float)
+    ok = np.isfinite(v)
+    if ok.sum() < 2:
+        return v
+    t = np.asarray(time).astype("datetime64[ns]").astype("int64").astype(float)
+    out = v.copy()
+    out[~ok] = np.interp(t[~ok], t[ok], v[ok])
+    first, last = np.flatnonzero(ok)[[0, -1]]
+    out[:first] = np.nan
+    out[last + 1 :] = np.nan
+    return out
+
+
 def find_nans(data: np.ndarray):
     """
     Handles generation of masks and location indices of nans.

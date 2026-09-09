@@ -20,7 +20,7 @@
 from pelagos_py.steps.base_qc import BaseQC, register_qc
 
 #### Custom imports ####
-import polars as pl
+import numpy as np
 import xarray as xr
 from datetime import datetime
 import matplotlib
@@ -43,33 +43,17 @@ class impossible_date_qc(BaseQC):
     qc_outputs = ["TIME_QC"]
 
     def return_qc(self):
-        # Convert to polars
-        self.df = pl.from_pandas(
-            self.data[self.required_variables].to_dataframe(), nan_to_null=False
-        )
+        time = self.data["TIME"].values
 
         # Check if any of the datetime stamps fall outside 1985 and the current datetime
         # TODO: Add optional bounds via parameters (such as known deployment dates, for example)
-        self.df = self.df.with_columns(
-            pl.when(pl.col("TIME").is_null())
-            .then(9)
-            .when(
-                (
-                    (pl.col("TIME") > datetime(1985, 1, 1))
-                    & (pl.col("TIME") < datetime.now())
-                )
-            )
-            .then(1)
-            .otherwise(4)
-            .alias("TIME_QC")
+        in_range = (time > np.datetime64(datetime(1985, 1, 1))) & (
+            time < np.datetime64(datetime.now())
         )
+        time_qc = np.where(np.isnat(time), 9, np.where(in_range, 1, 4))
 
-        # Convert back to xarray
-        flags = self.df.select(pl.col("^.*_QC$"))
         self.flags = xr.Dataset(
-            data_vars={
-                col: ("N_MEASUREMENTS", flags[col].to_numpy()) for col in flags.columns
-            },
+            data_vars={"TIME_QC": ("N_MEASUREMENTS", time_qc)},
             coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]},
         )
 
@@ -77,10 +61,10 @@ class impossible_date_qc(BaseQC):
 
     def plot_diagnostics(self):
         matplotlib.use("tkagg")
-        df = self.df.with_row_index()
+        time = self.data["TIME"].values
         fig, axes = fig_spec.new_fig()
         ax = axes[0][0]
-        fig_spec.flag_points(ax, df["index"], df["TIME"], df["TIME_QC"])
+        fig_spec.flag_points(ax, np.arange(time.size), time, self.flags["TIME_QC"].values)
         fig_spec.date_axis(ax, which="y")
         fig_spec.style_axes(ax, xlabel="Index", ylabel="TIME")
         fig_spec.legend(ax, title="Flags")

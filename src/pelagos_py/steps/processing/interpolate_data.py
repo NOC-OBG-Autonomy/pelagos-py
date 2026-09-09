@@ -22,7 +22,7 @@ from pelagos_py.utils.qc_handling import QCHandlingMixin
 import pelagos_py.utils.diagnostics as diag
 
 #### Custom imports ####
-import polars as pl
+from pelagos_py.utils.processing_utils import interpolate_by_time
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -120,31 +120,15 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
 
         max_interp_seconds = self._max_interp_seconds()
 
-        # Convert to polars dataframe
-        self.df = pl.from_pandas(
-            self.data[list(self.filter_settings.keys() | {"TIME"})].to_dataframe(),
-            nan_to_null=False,
-        )
-        self.unprocessed_df = (
-            self.df.clone()
-        )  # Making a copy for plotting change in diagnostics
+        # Keep the pre-interpolation values for the diagnostics plot
+        self.unprocessed = {var: self.data[var].values.copy() for var in self.filter_settings}
 
-        # Interpolate
-        self.df = self.df.with_columns(
-            pl.col(var)
-            .replace({np.nan: None})
-            .interpolate_by("TIME")
-            .replace({None: np.nan})
-            for var in self.filter_settings.keys()
-        )
-
-        time = self.df["TIME"].to_numpy()
+        time = self.data["TIME"].values
         for var in self.filter_settings.keys():
-            interpolated = self.df[var].to_numpy().copy()
+            interpolated = interpolate_by_time(self.unprocessed[var], time)
             if max_interp_seconds:
-                was_nan = self.unprocessed_df[var].is_nan().to_numpy()
+                was_nan = np.isnan(self.unprocessed[var])
                 self._limit_gap_fill(time, interpolated, was_nan, max_interp_seconds)
-            self.df = self.df.with_columns(pl.Series(var, interpolated))
             self.data[var][:] = interpolated
 
         self.reconstruct_data()
@@ -211,8 +195,10 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
 
         plot_var = list(self.filter_settings.keys())[0]
         titles = ["Original", "Interpolated"]
-        for ax, data, title in zip(axes[:, 0], [self.unprocessed_df, self.df], titles):
-            ax.plot(data[plot_var], color=fig_spec.CATEGORY[1])
+        for ax, values, title in zip(
+            axes[:, 0], [self.unprocessed[plot_var], self.data[plot_var].values], titles
+        ):
+            ax.plot(values, color=fig_spec.CATEGORY[1])
             fig_spec.style_axes(ax, title=title, ylabel=plot_var)
 
         fig_spec.finish(fig, suptitle=f"Interpolation: {plot_var}")

@@ -20,7 +20,7 @@
 from pelagos_py.steps.base_qc import BaseQC, register_qc
 
 #### Custom imports ####
-import polars as pl
+import numpy as np
 import xarray as xr
 import matplotlib
 import matplotlib.pyplot as plt
@@ -42,29 +42,16 @@ class impossible_location_qc(BaseQC):
     qc_outputs = ["LATITUDE_QC", "LONGITUDE_QC"]
 
     def return_qc(self):
-        # Convert to polars
-        self.df = pl.from_pandas(
-            self.data[self.required_variables].to_dataframe(), nan_to_null=False
-        )
-
         # Check LAT/LONG exist within expected bounds
         # TODO: Add optional bounds via parameters (such as Southern Hemisphere, for example)
+        flags = {}
         for label, bounds in zip(["LATITUDE", "LONGITUDE"], [(-90, 90), (-180, 180)]):
-            self.df = self.df.with_columns(
-                pl.when(pl.col(label).is_nan())
-                .then(9)
-                .when((pl.col(label) > bounds[0]) & (pl.col(label) < bounds[1]))
-                .then(1)
-                .otherwise(4)
-                .alias(f"{label}_QC")
-            )
+            values = self.data[label].values
+            in_bounds = (values > bounds[0]) & (values < bounds[1])
+            flags[f"{label}_QC"] = np.where(np.isnan(values), 9, np.where(in_bounds, 1, 4))
 
-        # Convert back to xarray
-        flags = self.df.select(pl.col("^.*_QC$"))
         self.flags = xr.Dataset(
-            data_vars={
-                col: ("N_MEASUREMENTS", flags[col].to_numpy()) for col in flags.columns
-            },
+            data_vars={col: ("N_MEASUREMENTS", qc) for col, qc in flags.items()},
             coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]},
         )
 
@@ -72,13 +59,13 @@ class impossible_location_qc(BaseQC):
 
     def plot_diagnostics(self):
         matplotlib.use("tkagg")
-        df = self.df.with_row_index()
+        index = np.arange(self.data.sizes["N_MEASUREMENTS"])
         fig, axes = fig_spec.new_fig(nrows=2, sharex=True)
 
         for ax, var, bounds in zip(
             axes[:, 0], ["LATITUDE", "LONGITUDE"], [(-90, 90), (-180, 180)]
         ):
-            fig_spec.flag_points(ax, df["index"], df[var], df[f"{var}_QC"])
+            fig_spec.flag_points(ax, index, self.data[var].values, self.flags[f"{var}_QC"].values)
             ylabel = fig_spec.axis_label(var, self.data[var].attrs.get("units"))
             fig_spec.style_axes(ax, xlabel="Index", ylabel=ylabel)
             fig_spec.legend(ax, title="Flags")
