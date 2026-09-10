@@ -145,6 +145,8 @@ server so a clicked point reports exact values. Per figure the runner writes
 | `static/js/manual.js` | Manual QC tab: draw flag boxes on the paused test's plot |
 | `static/js/inspect.js` | Inspect tab: variables, sensors and attributes of the config's input file |
 | `static/js/demos.js` | Demos tab: demo deployments as cards grouped by mission |
+| `static/js/outputs.js` | Report tab, lower half: files runs left in the output folders (reports, exports, logs) with open/delete |
+| `static/js/build.js` | Build panel: when a file is picked (demo card or Browse…) lists what the template must change for it, then builds the config on Confirm (`pelagos_py.utils.config_builder`) |
 | `static/js/icons.js` | Inline SVG line-icons (no icon font or CDN) |
 | `fig_spec.py` | matplotlib figure → plot spec + float32 data (dashboard-only, best-effort) |
 | `static/js/app.js` | Bootstrap and wiring |

@@ -228,8 +228,11 @@ button:hover { background: var(--panel-2); border-color: var(--muted); }
 button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 button.primary:hover { background: #4287bb; border-color: #4287bb; }
 button.ghost { background: #fff; }
-button.danger { color: var(--danger); border-color: transparent; background: transparent; }
-button.danger:hover { background: var(--danger-soft); border-color: transparent; }
+/* Solid tinted fills, no border: red for stop/delete, amber for clear-outs. */
+button.danger { color: var(--danger); border-color: transparent; background: var(--danger-soft); }
+button.danger:hover { background: color-mix(in srgb, var(--danger) 22%, #fff); border-color: transparent; }
+button.warn { color: var(--warn); border-color: transparent; background: var(--warn-soft); }
+button.warn:hover { background: color-mix(in srgb, var(--warn) 26%, #fff); border-color: transparent; }
 button:disabled { opacity: .45; cursor: not-allowed; }
 
 /* ---------- Palette ---------- */
@@ -483,6 +486,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   border-bottom: 1px solid var(--border); flex: 0 0 auto;
 }
 .tab-list { display: flex; gap: 4px; }
+.tab-right { display: flex; align-items: center; gap: 14px; }
 .tab-actions { display: flex; align-items: center; gap: 6px; }
 .tab {
   display: inline-flex; align-items: center; gap: 7px;
@@ -534,6 +538,45 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .CodeMirror .cm-step-highlight { background: rgba(88, 166, 255, 0.14); }
 
 /* ---------- Validation panel (sleek) ---------- */
+/* ---------- Build panel ----------
+   Replaces the step list (and the toolbar: validating an unbuilt config is
+   meaningless) while a picked file's config is being built. Deliberately not
+   a step card: a tinted call-to-action with the confirm button on the head. */
+.builder.building #pipeline-settings, .builder.building #pipeline-steps,
+.builder.building #empty-hint, .builder.building #validation,
+.builder.building .builder-bar { display: none; }
+.build-panel {
+  border-radius: var(--radius); background: var(--accent-soft);
+  padding: 16px 18px; margin: 14px 0 12px; font-size: 12px;
+}
+.build-head { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+.build-head strong { font-size: 15px; font-family: var(--display); font-weight: 620; }
+.build-head span { color: var(--muted); line-height: 1.45; }
+.build-list { display: flex; flex-direction: column; gap: 6px; }
+.build-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 12px; border-radius: var(--radius-sm); background: #fff;
+}
+.build-row.auto { background: color-mix(in srgb, #fff 55%, transparent); }
+.build-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.build-text strong { font-size: 12px; }
+.build-text span { color: var(--muted); line-height: 1.35; }
+.build-row select {
+  flex: 0 0 auto; max-width: 45%; min-width: 150px; height: 32px;
+  border: 1px solid var(--border); border-radius: 7px; padding: 0 30px 0 10px;
+  font-size: 12px; font-family: var(--sans); font-weight: 600; color: var(--ink);
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2355555c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 9px center;
+  appearance: none; -webkit-appearance: none; cursor: pointer;
+}
+.build-row select:hover { border-color: var(--accent); }
+.build-row select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px #fff; }
+.build-tag {
+  flex: 0 0 auto; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--muted); background: var(--panel-2); border-radius: 999px; padding: 3px 9px;
+}
+.build-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.build-actions .primary { padding: 9px 16px; font-size: 12.5px; }
+
 .validation { margin-bottom: 4px; font-size: 12px; }
 .validation:empty { display: none; }
 
@@ -677,10 +720,58 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .log-console .ansi-bright-white { color: #ffffff; }
 .log-console .ansi-bold { font-weight: 700; }
 .log-console .ansi-dim { opacity: .65; }
-.run-status { font-size: 12px; color: var(--muted); align-self: center; }
-.run-status.running { color: var(--accent); }
-.run-status.ok { color: var(--ok); }
-.run-status.err { color: var(--danger); }
+/* Status pill: solid tint, no border; a pulsing dot while the run is live. */
+.run-status {
+  display: inline-flex; align-items: center; gap: 7px; align-self: center;
+  font-size: 11.5px; font-weight: 600; padding: 5px 10px; border-radius: 999px;
+  background: var(--panel-2); color: var(--muted);
+}
+.run-status:empty { display: none; }
+.run-status::before {
+  content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor;
+}
+.run-status.running { color: var(--accent); background: var(--accent-soft); }
+.run-status.running::before { animation: status-pulse 1.2s ease-in-out infinite; }
+.run-status.ok { color: var(--ok); background: var(--ok-soft); }
+.run-status.err { color: var(--danger); background: var(--danger-soft); }
+@keyframes status-pulse { 50% { opacity: .25; transform: scale(.7); } }
+
+/* Dashboard-side console lines: a tag where the pipeline puts its timestamp. */
+.log-console .lvl-note { display: block; color: #9fb3c8; }
+.log-console .note-tag {
+  display: inline-block; min-width: 60px; margin-right: 10px; padding: 0 6px;
+  border-radius: 4px; background: #3a4a5c; color: #c9d6e3;
+  font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  text-align: center;
+}
+.log-console .note-ok { color: #b6e8b2; }
+.log-console .note-ok .note-tag { background: #2e9e63; color: #fff; }
+.log-console .note-err { color: #f0908f; }
+.log-console .note-err .note-tag { background: var(--danger); color: #fff; }
+
+/* Milestone lines in the console: start, stop, finish. A tinted full-width
+   line with an icon; 'starting' animates dots until the first real line lands. */
+.log-console .lvl-banner {
+  display: flex; align-items: center; gap: 9px; margin: 3px 0; padding: 6px 10px;
+  border-radius: 6px; background: #33414f; color: #e4ebf1; animation: banner-in .25s ease-out;
+}
+.log-console .lvl-banner strong { font-weight: 700; }
+.log-console .banner-sub { color: #9fb3c8; }
+.log-console .banner-ico {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 50%; flex: 0 0 auto;
+}
+.log-console .banner-starting strong::after {
+  content: ''; display: inline-block; width: 1.2em; text-align: left;
+  animation: banner-dots 1.2s steps(4, end) infinite;
+}
+.log-console .banner-stopped { background: color-mix(in srgb, var(--danger) 22%, #26313e); }
+.log-console .banner-ok { background: color-mix(in srgb, var(--ok) 28%, #26313e); }
+.log-console .banner-ok .banner-ico { background: var(--ok); color: #fff; }
+.log-console .banner-err { background: color-mix(in srgb, var(--danger) 28%, #26313e); }
+.log-console .banner-err .banner-ico { background: var(--danger); color: #fff; }
+@keyframes banner-in { from { opacity: 0; transform: translateY(4px); } }
+@keyframes banner-dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
 .note { color: var(--muted); font-size: 11px; margin-top: 8px; line-height: 1.5; }
 
 /* Live RAM meter shown above the run console. */
@@ -779,8 +870,9 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 }
 .log-card-text.error-card-text { color: #a33; }
 
-/* ---------- Report tab: a PDF report the run produced ---------- */
-.report-view { flex: 1; display: flex; flex-direction: column; min-height: 360px; gap: 10px; }
+/* ---------- Report tab: a PDF report the run produced, then the output files ---------- */
+.tab-panel[data-panel="report"] { overflow-y: auto; }
+.report-view { flex: 0 0 auto; height: 72vh; display: flex; flex-direction: column; min-height: 360px; gap: 10px; }
 .report-head {
   display: flex; align-items: center; gap: 10px; flex: 0 0 auto;
   padding: 9px 12px; border-radius: var(--radius-sm);
@@ -807,6 +899,37 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   flex: 1; width: 100%; min-height: 320px; border: 1px solid var(--border);
   border-radius: var(--radius-sm); background: #fff;
 }
+.outputs { flex: 0 0 auto; margin-top: 16px; }
+.outputs-head, .demos-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.outputs-title { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+.outputs-title strong { font-size: 13px; }
+.outputs-sub { font-size: 11px; color: var(--muted); }
+.demos-head .outputs-sub { flex: 1; }
+.outputs-kind {
+  margin: 12px 0 6px; font-size: 10.5px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--muted);
+}
+.outputs-kind:first-child { margin-top: 0; }
+.output-row {
+  display: flex; align-items: center; gap: 10px; padding: 7px 10px; margin-bottom: 4px;
+  border-radius: var(--radius-sm); background: var(--panel-2);
+}
+.output-row.output-pdf { cursor: pointer; }
+.output-row.output-pdf:hover { background: var(--accent-soft); }
+.output-ico { display: inline-flex; color: var(--muted); flex: 0 0 auto; }
+.output-ico.output-report { color: var(--ok); }
+.output-ico.output-data { color: var(--cat-io-ink); }
+.output-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.output-text strong { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.output-meta { font-size: 10.5px; color: var(--muted); font-family: var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.output-size { font-size: 11px; color: var(--muted); flex: 0 0 auto; }
+.output-row .icon-btn {
+  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
+  width: 26px; height: 26px; padding: 0; border: none; border-radius: 6px;
+  background: transparent; color: var(--muted); text-decoration: none;
+}
+.output-row .icon-btn:hover { color: var(--ink); background: var(--border); }
+.output-row .icon-btn.danger:hover { color: var(--danger); background: var(--danger-soft); }
 
 /* ---------- Inspect tab: variables/sensors/attributes of the loaded file ---------- */
 .inspect-search-wrap { position: relative; margin-bottom: 8px; flex: 0 0 auto; }
@@ -991,10 +1114,37 @@ body.run-locked .drag { pointer-events: none; opacity: .45; }
 }
 .demos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
 .demo-card {
+  display: flex; align-items: center; gap: 6px; cursor: pointer;
   justify-content: flex-start; text-align: left; padding: 8px 10px; font-weight: 500;
-  background: #fff;
+  font-size: 12px; border-radius: var(--radius-sm); background: var(--panel-2);
+  transition: background .12s;
 }
-.demo-card.active { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.demo-card:hover { background: var(--accent-soft); }
+.demo-card.active { color: var(--accent); font-weight: 600; background: var(--accent-soft); }
+/* Not on disk yet: paler, dashed outline. While downloading the card fills
+   left-to-right with the accent tint (--p set by Demos.setProgress). */
+.demo-card.needs-download { background: #fff; box-shadow: inset 0 0 0 1px var(--border); color: var(--muted); }
+.demo-card.needs-download .demo-card-ico { color: var(--muted); }
+.demo-card.downloading {
+  --p: 0%; color: var(--ink); box-shadow: inset 0 0 0 1px var(--accent);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 28%, #fff) var(--p), #fff var(--p));
+  transition: background .4s linear;
+}
+.demo-card.downloading .demo-card-ico { color: var(--accent); }
+.demo-card.downloading .demo-card-ico .ico { animation: v-spin 1s linear infinite; }
+.demo-card.downloading .demo-card-hint { color: var(--accent); font-weight: 600; }
+.demo-card.downloading.indeterminate {
+  background: linear-gradient(90deg, #fff, color-mix(in srgb, var(--accent) 28%, #fff), #fff);
+  background-size: 200% 100%; animation: dl-sweep 1.4s linear infinite;
+}
+@keyframes dl-sweep { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.demo-card-del {
+  flex: 0 0 auto; width: 24px; height: 24px; padding: 0; margin: -4px -4px -4px 0;
+  justify-content: center; border: none; background: transparent; color: var(--muted);
+  opacity: 0; transition: opacity .12s;
+}
+.demo-card:hover .demo-card-del, .demo-card-del:focus { opacity: 1; }
+.demo-card-del:hover { color: var(--danger); background: var(--danger-soft); }
 .demo-card-ico { display: inline-flex; color: var(--accent); }
 .demo-card-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .demo-card-hint { font-size: 10.5px; color: var(--muted); }

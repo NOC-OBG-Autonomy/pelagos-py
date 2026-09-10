@@ -71,3 +71,10 @@ def test_mask_does_not_mutate_the_data():
     before = step.data["CHLA"].values.copy()
     step.calculation_mask(["CHLA"])
     assert np.array_equal(step.data["CHLA"].values, before)
+
+
+def test_generate_qc_unchecked_parent_does_not_downgrade():
+    step = make_step({"A": [1, 2, 4, 0], "B": [0, 0, 0, 1]})
+    step.data["C"] = ("N_MEASUREMENTS", np.zeros(4))
+    step.generate_qc({"C_QC": ["A_QC", "B_QC"]})
+    assert list(step.data["C_QC"].values) == [1, 2, 4, 1]

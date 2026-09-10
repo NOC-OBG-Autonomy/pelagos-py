@@ -21,6 +21,9 @@ from pelagos_py.steps.base_step import BaseStep, register_step
 from pelagos_py.utils.processing_utils import small_netcdf_chunk_cache
 import pelagos_py.utils.diagnostics as diag
 import json
+import os
+import threading
+import time
 
 
 @register_step
@@ -76,16 +79,14 @@ class ExportStep(BaseStep):
     }
 
     def run(self):
-        self.log(
-            f"Exporting data in {self.parameters['export_format']} format to {self.parameters['output_path']}"
-        )
+        self.log(f"Exporting {self.parameters['export_format']} to {self.parameters['output_path']}")
 
         # Check if the data is in the context
         self.check_data()
         data = self.context["data"]
         # Add exiting notes on QC history if available TODO: Move earlier to individual QC steps on each data variable attribute
         if "qc_history" in self.context:
-            self.log(f"QC history found in context.")
+            self.log("QC history found in context.", console=False)
             data.attrs["delayed_qc_history"] = json.dumps(self.context["qc_history"])
 
         export_format = self.parameters["export_format"]
@@ -124,18 +125,48 @@ class ExportStep(BaseStep):
 
         # Export data based on the specified format
         if export_format == "csv":
-            data.to_dataframe().to_csv(output_path, index=False)
+            write = lambda: data.to_dataframe().to_csv(output_path, index=False)
         elif export_format == "netcdf":
             small_netcdf_chunk_cache()
-            data.to_netcdf(output_path, engine="netcdf4", encoding=encoding)
+            write = lambda: data.to_netcdf(output_path, engine="netcdf4", encoding=encoding)
         elif export_format == "hdf5":
-            data.to_netcdf(output_path, engine="h5netcdf", encoding=encoding)
+            write = lambda: data.to_netcdf(output_path, engine="h5netcdf", encoding=encoding)
         elif export_format == "parquet":
-            data.to_dataframe().to_parquet(output_path, index=False)
+            write = lambda: data.to_dataframe().to_parquet(output_path, index=False)
         else:
             raise ValueError(f"Unsupported export format: {export_format}")
-        self.log(f"Data exported successfully to {output_path}")
+        started = time.time()
+        self._write_with_progress(write, output_path, data.nbytes)
+        size_mb = os.path.getsize(output_path) / 1024**2
+        self.log(f"Exported {size_mb:.0f} MB to {output_path} in {time.time() - started:.1f}s")
         return self.context
+
+    def _write_with_progress(self, write, output_path, nbytes):
+        # The writers give no progress, so a thread watches the file grow; the
+        # total is the in-memory size, so compressed output finishes early.
+        total_mb = max(1, int(nbytes / 1024**2))
+        bar = self.log_progress(total=total_mb, desc="Writing", unit="MB")
+        done = threading.Event()
+
+        def watch():
+            while not done.wait(0.25):
+                try:
+                    mb = int(os.path.getsize(output_path) / 1024**2)
+                except OSError:
+                    continue
+                if mb > bar.n:
+                    bar.update(min(mb, total_mb - 1) - bar.n)
+
+        watcher = threading.Thread(target=watch, daemon=True)
+        watcher.start()
+        try:
+            write()
+            done.set()
+            watcher.join()
+            bar.update(total_mb - bar.n)
+        finally:
+            done.set()
+            bar.close()
 
     def generate_diagnostics(self):
         """

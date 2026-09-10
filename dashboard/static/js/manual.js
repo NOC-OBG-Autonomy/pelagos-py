@@ -20,13 +20,9 @@ const ManualQC = {
   // Same palette as pelagos_py.utils.fig_spec.FLAG_COLOURS.
   COLOURS: { 0: '#9aa5ad', 1: '#1f6fd6', 2: '#7fb2e5', 3: '#e8912b', 4: '#d6392f',
     5: '#9aa5ad', 6: '#9aa5ad', 7: '#9aa5ad', 8: '#17b6c4', 9: '#111111' },
-  // Argo merge table, as ApplyQC.organise_flags: COMBINATRIX[existing][new].
-  COMBINATRIX: [
-    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [1, 1, 2, 3, 4, 5, 1, 1, 8, 9], [2, 2, 2, 3, 4, 5, 2, 2, 8, 9],
-    [3, 3, 3, 3, 4, 3, 3, 3, 3, 9], [4, 4, 4, 4, 4, 4, 4, 4, 4, 9], [5, 5, 5, 3, 4, 5, 5, 5, 8, 9],
-    [6, 1, 2, 3, 4, 5, 6, 6, 8, 9], [7, 1, 2, 3, 4, 5, 6, 7, 8, 9], [8, 8, 8, 3, 4, 8, 8, 8, 8, 9],
-    [9, 9, 9, 9, 9, 9, 9, 9, 9, 9],
-  ],
+  // Argo merge table, COMBINATRIX[existing][new]: the one in
+  // pelagos_py.utils.qc_handling, shipped by /api/registry so there is a single copy.
+  get COMBINATRIX() { return STATE.registry.combinatrix; },
   // Box outlines: a darker shade of the flag colour, so a box stays visible
   // over points of the same flag.
   border(flag) {

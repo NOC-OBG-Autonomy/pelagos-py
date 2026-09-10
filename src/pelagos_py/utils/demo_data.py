@@ -30,7 +30,6 @@ class DemoEntry:
     url: str
     filename: str
     window: tuple[str, str] | None
-    template: str  # "default" or "alr" -- which shipped config to derive from
     label: str  # glider display name, shared by its nrt/delayed variants
     mode: str  # "nrt" or "delayed"
 
@@ -45,70 +44,70 @@ _GLIDER_DATA = "https://linkedsystems.uk/erddap/files/Public_Glider_Data_0711"
 
 
 def _variants(
-    base: str, folder: str, template: str, label: str,
+    base: str, folder: str, label: str,
     *, nrt: str | None = None, delayed: str | None = None, window=None,
 ) -> dict:
     entries = {}
     if nrt:
         entries[f"{base}_nrt"] = DemoEntry(
-            f"{_OG1_NRT}/{folder}/{nrt}", nrt, None, template, label, "nrt",
+            f"{_OG1_NRT}/{folder}/{nrt}", nrt, None, label, "nrt",
         )
     if delayed:
         entries[f"{base}_delayed"] = DemoEntry(
-            f"{_OG1_DELAYED}/{folder}/{delayed}", delayed, window, template, label, "delayed",
+            f"{_OG1_DELAYED}/{folder}/{delayed}", delayed, window, label, "delayed",
         )
     return entries
 
 
 DEMOS = {
     # --- Bio-Carbon ---
-    **_variants("nelson", "Nelson_20240528", "default", "Nelson",
+    **_variants("nelson", "Nelson_20240528", "Nelson",
                 nrt="Nelson_646_R.nc", delayed="Nelson_646.nc"),
-    **_variants("doombar", "Doombar_20240528", "default", "Doombar",
+    **_variants("doombar", "Doombar_20240528", "Doombar",
                 nrt="Doombar_648_R.nc", delayed="Doombar_648.nc"),
-    **_variants("churchill", "Churchill_20240528", "default", "Churchill",
+    **_variants("churchill", "Churchill_20240528", "Churchill",
                 nrt="Churchill_647_R.nc", delayed="Churchill_647.nc",
                 window=("2024-08-01", "2024-09-01")),
-    **_variants("alr4", "ALR_4_20240609", "alr", "ALR 4",
+    **_variants("alr4", "ALR_4_20240609", "ALR 4",
                 nrt="ALR_4_649_R.nc", delayed="ALR_4_649.nc"),
-    **_variants("alr6", "ALR_6_20240611", "alr", "ALR 6",
+    **_variants("alr6", "ALR_6_20240611", "ALR 6",
                 nrt="ALR_6_650_R.nc", delayed="ALR_6_650.nc"),
-    **_variants("cabot", "Cabot_20240528", "default", "Cabot",
+    **_variants("cabot", "Cabot_20240528", "Cabot",
                 nrt="Cabot_645_R.nc", delayed="Cabot_645.nc"),
     # --- Custard 1 ---
-    **_variants("custard1_churchill", "Churchill_20181204", "default", "Churchill",
+    **_variants("custard1_churchill", "Churchill_20181204", "Churchill",
                 nrt="Churchill_501_R.nc", delayed="Churchill_501.nc"),
-    **_variants("pancake", "Pancake_20181209", "default", "Pancake",
+    **_variants("pancake", "Pancake_20181209", "Pancake",
                 nrt="Pancake_502_R.nc"),  # no delayed-mode file hosted
     "custard1_doombar_nrt": DemoEntry(
         f"{_GLIDER_DATA}/Doombar_20181204/Doombar_503_R.nc",
-        "Doombar_503_R.nc", None, "default", "Doombar", "nrt",
+        "Doombar_503_R.nc", None, "Doombar", "nrt",
     ),  # only hosted on the raw glider-data store, not the OG1 one
     # --- Custard 2 ---
-    **_variants("bellamite", "Bellamite_20191206", "default", "Bellamite",
+    **_variants("bellamite", "Bellamite_20191206", "Bellamite",
                 nrt="Bellamite_538_R.nc", delayed="Bellamite_538.nc"),
-    **_variants("custard2_zephyr", "Zephyr_20191206", "default", "Zephyr",
+    **_variants("custard2_zephyr", "Zephyr_20191206", "Zephyr",
                 delayed="Zephyr_539.nc"),  # no NRT file hosted
     # --- ReBELS ---
-    **_variants("rebels_zephyr", "Zephyr_20250323", "default", "Zephyr",
+    **_variants("rebels_zephyr", "Zephyr_20250323", "Zephyr",
                 nrt="Zephyr_675_R.nc", delayed="Zephyr_675.nc"),
-    **_variants("omg1", "OMG-1_20250324", "default", "OMG-1",
+    **_variants("omg1", "OMG-1_20250324", "OMG-1",
                 nrt="OMG-1_676_R.nc"),  # no delayed-mode file hosted
-    **_variants("9ja", "9JA_20250812", "default", "9JA",
+    **_variants("9ja", "9JA_20250812", "9JA",
                 nrt="9JA_699_R.nc", delayed="9JA_699.nc"),
-    **_variants("growler", "Growler_20250323", "default", "Growler",
+    **_variants("growler", "Growler_20250323", "Growler",
                 nrt="Growler_677_R.nc", delayed="Growler_677.nc"),
-    **_variants("rebels_stella", "Stella_20250323", "default", "Stella",
+    **_variants("rebels_stella", "Stella_20250323", "Stella",
                 nrt="Stella_678_R.nc", delayed="Stella_678.nc"),
     # --- ReBELS 2 ---
-    **_variants("stella2026", "Stella_20260403", "default", "Stella",
+    **_variants("stella2026", "Stella_20260403", "Stella",
                 nrt="Stella_713_R.nc"),  # no delayed-mode file hosted (yet)
     # --- VOTO --- (hosted on VOTO's own erddap, not the BODC catalogue above)
     "voto_og_dm": DemoEntry(
         "https://erddap.observations.voiceoftheocean.org/erddap/files/"
         "OG_complete_SEA063_M75/SEA063_20240724T0737_delayed.nc",
         "SEA063_20240724T0737_delayed.nc",
-        ("2024-07-25", "2024-08-03"), "default", "SEA063", "delayed",
+        ("2024-07-25", "2024-08-03"), "SEA063", "delayed",
     ),
 }
 

@@ -20,6 +20,7 @@ pipeline:
   description: A blank starting template (based on the Nelson demo) with no glider file loaded yet.
   out_directory: examples/data/OG1/
   log_file: complete_processing.log
+  on_step_fail: pause  # pause (fix and re-run, or skip), skip, or stop
 
 # Steps in the pipeline
 # For further details on step parameters, see all_step_configs.yaml
@@ -31,6 +32,15 @@ steps:
   - name: Load OG1
     parameters:
       file_path: "" # Set this to your input NetCDF file
+    diagnostics: false
+
+# Normalise the file onto the names/units the steps below expect: LATITUDE from
+# LATITUDE_GPS/ALATPT01 when missing, CNDC rescaled if mislabelled, and a raw
+# beta shipped as BBP700 renamed to BETA_BACKSCATTERING700. Only what the file
+# needs is applied, and each fix is logged.
+  - name: Prepare OG1
+    parameters:
+      bbp700_is_beta: true # Treat BBP700 with no BETA_BACKSCATTERING700 alongside as raw beta
     diagnostics: false
 
 # Check the loaded file against the OG1 standard. With no 'src', it reuses the
@@ -214,17 +224,6 @@ steps:
 # ===========================================================
 # Backscatter is processed before chlorophyll because the quenching correction
 # below relies on the despiked BBP baseline.
-
-# Older Nelson NRT files carry raw beta directly under BBP700 instead of
-# BETA_BACKSCATTERING700. Normalise onto the newer name here (optional: true
-# skips silently on files that already have BETA_BACKSCATTERING700) so the rest
-# of the pipeline only ever has to deal with one name.
-  - name: Correct Values
-    parameters:
-      target_variable: BBP700
-      output_as: BETA_BACKSCATTERING700
-      optional: true
-    diagnostics: false
 
 # QC the raw beta before converting it. Backscatter cannot physically be
 # negative, but a small negative reading is just the sensor's dark-offset noise

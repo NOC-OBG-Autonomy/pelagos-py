@@ -33,6 +33,7 @@ WebGL-safe rules:
 
 import matplotlib.dates as mdates
 import numpy as np
+import pandas as pd
 from functools import partial
 
 # Geometry: single panel is 16:9; multi-panel keeps width, grows height by ROW_H/row.
@@ -169,8 +170,10 @@ def points(ax, x, y, *, color, label=None, size=MARKER, alpha=ALPHA):
 def flag_points(ax, x, y, flags):
     """y vs x coloured by QC flag: one series per present flag (0..9)."""
     flags, x, y = np.asarray(flags), np.asarray(x), np.asarray(y)
+    # A flag with nothing drawable (e.g. 9 on NaN samples) gets no legend entry.
+    drawable = np.isfinite(y) if np.issubdtype(y.dtype, np.number) else ~pd.isnull(y)
     for f in range(10):
-        idx = np.flatnonzero(flags == f)
+        idx = np.flatnonzero((flags == f) & drawable)
         if MAX_POINTS:
             idx = idx[thin_idx(idx.size)]  # thin before gathering x/y
         if idx.size:

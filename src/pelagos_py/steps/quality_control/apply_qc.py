@@ -20,7 +20,7 @@
 from pelagos_py.steps.base_step import BaseStep, register_step
 import pelagos_py.utils.diagnostics as diag
 from pelagos_py.steps import QC_CLASSES
-from pelagos_py.steps.base_qc import QC_COMBINATRIX
+from pelagos_py.utils.qc_handling import QC_COMBINATRIX
 
 #### Custom imports ####
 import xarray as xr
@@ -288,6 +288,12 @@ class ApplyQC(BaseStep):
             # this matters when the report writer force-enables diagnostics to
             # capture plots for every test.
             if test_diagnostics:
+                # Plot the merged flags, i.e. the state after this test, not the
+                # test's own output alone.
+                for col in returned_flags.data_vars:
+                    for holder in (qc_test_instance.data, getattr(qc_test_instance, "flags", None)):
+                        if holder is not None and col in holder:
+                            holder[col] = self.flag_store[col]
                 try:
                     qc_test_instance.plot_diagnostics()
                 except Exception as exc:  # noqa: BLE001 - diagnostics must not be fatal

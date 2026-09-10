@@ -153,7 +153,10 @@ const Forms = {
         browse.disabled = true;
         try {
           const path = await API.browseFile(input.value);
-          if (path) { input.value = path; values[spec.name] = path; syncOutputPath(path); onChange(); }
+          if (path) {
+            input.value = path; values[spec.name] = path; syncOutputPath(path); onChange();
+            Build.start({ name: null, filePath: path }); // cancel keeps just the path
+          }
         } catch (e) { alert(e.message); }
         finally { browse.disabled = false; }
       };

@@ -23,6 +23,8 @@ const Run = {
   pausedStep: null, // index of the step the run is paused after, or null
   pausedName: null, // its step name, used to guard a re-run against edits
   pausedTest: null, // the QC test within it, when the step was split
+  reportName: null, // the PDF this run wrote, once its marker arrives
+  pendingStart: false, // Run was just pressed: connect() plants the starting banner
 
   // Marker prefixes run_bootstrap.py prints on stdout; formats in its module docstring.
   FIG_MARKER: '__PELAGOS_FIG__ ',
@@ -145,6 +147,7 @@ const Run = {
   },
 
   append(line) {
+    Run.settleStart();
     const c = document.getElementById('log-console');
     const span = document.createElement('span');
     // Fallback colouring for lines the pipeline sent uncoloured; any real ANSI
@@ -154,6 +157,52 @@ const Run = {
     span.innerHTML = Run.ansiToHtml(line) + '\n';
     c.appendChild(span);
     Run.autoScroll();
+  },
+
+  // A dashboard-side line (a captured plot, a report, a re-run): a small tag
+  // in place of a timestamp, so it reads apart from the pipeline's own log.
+  note(tag, text, cls = '') {
+    const c = document.getElementById('log-console');
+    const span = document.createElement('span');
+    span.className = 'lvl-note' + (cls ? ' note-' + cls : '');
+    span.innerHTML = `<span class="note-tag">${escapeHtml(tag)}</span>${escapeHtml(text)}`;
+    c.appendChild(span);
+    Run.autoScroll();
+  },
+
+  // A highlighted console line for the run's milestones: 'starting' (dots
+  // animate until the first real line lands, no icon), then 'ok' / 'err' at the end.
+  banner(kind, title, sub = '') {
+    const c = document.getElementById('log-console');
+    const span = document.createElement('span');
+    span.className = 'lvl-banner banner-' + kind;
+    span.innerHTML = (kind === 'starting' ? ''
+      : `<span class="banner-ico">${Icon.svg(kind === 'ok' ? 'check' : 'alert', 13)}</span>`)
+      + `<strong>${escapeHtml(title)}</strong>`
+      + (sub ? `<span class="banner-sub">${escapeHtml(sub)}</span>` : '');
+    c.appendChild(span);
+    Run.autoScroll();
+    return span;
+  },
+
+  // The pending banner ("Starting…" / "Stopping…") settles in place once the
+  // pipeline has answered: the dots stop and the wording turns past tense.
+  settle(kind, title, sub = '') {
+    const el = document.querySelector('#log-console .banner-starting');
+    if (!el) return;
+    el.className = 'lvl-banner banner-' + kind;
+    el.querySelector('strong').textContent = title;
+    let subEl = el.querySelector('.banner-sub');
+    if (sub && !subEl) {
+      subEl = document.createElement('span');
+      subEl.className = 'banner-sub';
+      el.appendChild(subEl);
+    }
+    if (subEl) subEl.textContent = sub;
+  },
+
+  settleStart() {
+    if (!Run.stopping) Run.settle('started', 'Pipeline started');
   },
 
   // "<PREFIX><index>\t<name>[\t<qc test>]" -> [index, name, test|null].
@@ -231,14 +280,15 @@ const Run = {
       const name = (parts[1] || '').trim() || path;
       if (path) {
         Run.showReport(path, name);
-        Run.append('  · report: ' + name + ' (open it in the Report tab)');
+        Run.reportName = name;
+        Run.note('report', name + ' — open it in the Report tab', 'ok');
       }
       return;
     }
     if (marker === Run.LOG_MARKER || marker === Run.FAIL_MARKER) {
       // Payload is "<index>\t<step>\t<qc test>\t<base64 text>" for both: a
       // log-only step's diagnostics text, or a step's error text when it
-      // raised and continue_on_step_fail is "auto". Base64 so newlines/tabs in
+      // raised and on_step_fail is "pause". Base64 so newlines/tabs in
       // the captured text can't break the marker line.
       const parts = plain.slice(marker.length).split('\t');
       const idx = parseInt(parts[0], 10);
@@ -251,9 +301,9 @@ const Run = {
         Run.addLog(idx, name, test, text, { isError });
         if (isError) {
           Run.pauseFailed = true;
-          Run.append('  · step failed: ' + text.split('\n')[0]);
+          Run.note('failed', text.split('\n')[0], 'err');
         } else {
-          Run.append('  · diagnostics: ' + (test || name) + ' (log)');
+          Run.note('diagnostics', (test || name) + ' (log)');
         }
       }
       return;
@@ -269,7 +319,7 @@ const Run = {
       const spec = (parts[2] || '').trim();
       const reason = (parts[3] || '').trim();
       Run.addPlot(fname, caption, spec);
-      Run.append('  · plot: ' + (caption || fname) +
+      Run.note('plot', (caption || fname) +
         (spec ? ' (interactive)' : reason ? ` (image only — ${reason})` : ''));
     } else if (marker === Run.STEP_MARKER) {
       // Which step is executing, so its figures group under it. A garbled index
@@ -291,7 +341,8 @@ const Run = {
   renderLine(line) {
     // The final bar frame arrives newline-terminated: finalise it in place
     // rather than appending a duplicate below the live progress line.
-    if (Run.progressEl && Run.looksLikeProgress(Run.stripAnsi(line))) {
+    if (Run.progressEl && Run.looksLikeProgress(Run.stripAnsi(line))
+        && Run.barDesc(line) === Run.barDesc(Run.progressEl.textContent || '')) {
       Run.progressEl.innerHTML = Run.ansiToHtml(line) + '\n';
       Run.progressEl = null;
       Run.autoScroll();
@@ -299,6 +350,12 @@ const Run = {
     }
     Run.finalizeProgress(); // any active bar is now permanent as last drawn
     Run.append(line);
+  },
+
+  // The text before the percentage: "<time>  <step>  <desc>", minus the time.
+  barDesc(plain) {
+    const m = Run.stripAnsi(plain).match(/^\S+\s+(.*?)\s*\d+%\|/);
+    return m ? m[1] : Run.stripAnsi(plain);
   },
 
   // A closed tqdm bar (leave=False) erases itself rather than printing a final
@@ -319,7 +376,16 @@ const Run = {
 
   // A transient in-place redraw: update the one live progress span.
   handleProgress(line) {
+    Run.settleStart();
     const c = document.getElementById('log-console');
+    const plain = Run.stripAnsi(line);
+    if (!plain.trim()) return; // a closing bar's blank erase frame
+    // A different bar (new description) while one is live: a step running
+    // several loops back to back. Keep the finished one, start another line.
+    if (Run.progressEl && Run.looksLikeProgress(plain)
+        && Run.barDesc(plain) !== Run.barDesc(Run.progressEl.textContent || '')) {
+      Run.finalizeProgress();
+    }
     if (!Run.progressEl) {
       Run.progressEl = document.createElement('span');
       Run.progressEl.className = 'lvl-progress';
@@ -619,14 +685,13 @@ const Run = {
     // screen, so replace that attempt instead of stacking a duplicate next to it.
     const latest = Run.groupsFor(Run.unitKey(idx, test)).slice(-1)[0];
     if (latest && latest.params && Forms.equal(latest.params, params)) {
-      Run.append('  · re-run with unchanged parameters — replacing attempt ' +
-        Run.attemptNo(latest));
+      Run.note('re-run', 'unchanged parameters — replacing attempt ' + Run.attemptNo(latest));
       Run.dropGroup(latest);
     }
     // Record exactly what leaves the browser: the log is then a full account of
     // what each attempt ran with, rather than something to be inferred.
-    Run.append('  · re-run step ' + (idx + 1) + (test ? ` (${test})` : '') +
-      ' with: ' + JSON.stringify(params));
+    Run.note('re-run', 'step ' + (idx + 1) + (test ? ` (${test})` : '') +
+      ' with ' + JSON.stringify(params));
     // Handed to the group the re-run's figures will land in, so the comparison
     // strip can say what changed between attempts.
     Run.pendingParams = params;
@@ -645,11 +710,12 @@ const Run = {
   // btn-run doubles as Continue while paused, so its label/action follow the
   // run state: 'idle' (nothing running), 'running', 'paused' (Continue,
   // enabled) or 'busy' (paused but a re-run is in flight — Continue disabled).
+  // Paused on a failed attempt it reads Skip, since that is what moving on does.
   setRunButton(mode) {
     const btn = document.getElementById('btn-run');
     if (mode === 'paused' || mode === 'busy') {
       btn.disabled = mode === 'busy';
-      btn.innerHTML = Icon.svg('play') + 'Continue';
+      btn.innerHTML = Icon.svg('play') + (Run.pauseFailed ? 'Skip step' : 'Continue');
     } else {
       btn.disabled = mode === 'running';
       btn.innerHTML = Icon.svg('play') + 'Run pipeline';
@@ -662,6 +728,8 @@ const Run = {
   setStopButton(mode) {
     const btn = document.getElementById('btn-stop');
     Run.stopBtnMode = mode;
+    btn.classList.toggle('warn', mode === 'clear');
+    btn.classList.toggle('danger', mode !== 'clear');
     if (mode === 'clear') {
       btn.disabled = false;
       btn.innerHTML = Icon.svg('trash2') + 'Clear';
@@ -672,9 +740,11 @@ const Run = {
   },
 
   async start(yamlContent) {
+    Run.showTab();
     Run.setRunButton('running');
     Run.setStopButton('stop');
     Run.setStatus('starting…', 'running');
+    Run.pendingStart = true; // connect() clears the console, then plants the banner
     try {
       await API.run(yamlContent);
     } catch (e) {
@@ -687,6 +757,8 @@ const Run = {
         return;
       }
       Run.setStatus('failed to start: ' + e.message, 'err');
+      Run.pendingStart = false;
+      Run.banner('err', 'Could not start', e.message);
       Run.setRunButton('idle');
       Run.setStopButton('idle');
       return;
@@ -702,9 +774,12 @@ const Run = {
       document.getElementById('log-console').textContent = '';
       Run.scrollToBottom(); // fresh log starts stuck to the tail
       Run.clearPlots();
+      Run.reportName = null;
       Mem.reset();
       RunClock.reset();
+      if (Run.pendingStart) Run.banner('starting', 'Starting pipeline');
     }
+    Run.pendingStart = false;
     Run.hidePause();
     RunLock.begin(); // freeze the config for as long as the run owns it
     Run.setRunButton('running');
@@ -720,13 +795,21 @@ const Run = {
       Run.finalizeProgress();
       RunClock.stop();
       const code = Number(ev.data);
+      const took = RunClock.epoch === null ? '' : RunClock.fmt(RunClock.seconds());
       if (Run.stopping) {
         Run.setStatus('stopped', 'err');
+        Run.settle('stopped', 'Pipeline stopped', took);
+      } else if (code === 0) {
+        Run.setStatus('finished', 'ok');
+        Run.banner('ok', 'Pipeline finished', [took,
+          Run.plotCount ? `${Run.plotCount} plot${Run.plotCount === 1 ? '' : 's'}` : '',
+          Run.reportName ? 'report ready in the Report tab' : ''].filter(Boolean).join(' · '));
       } else {
-        Run.setStatus(code === 0 ? 'finished' : `exited (code ${ev.data})`,
-          code === 0 ? 'ok' : 'err');
+        Run.setStatus(`exited (code ${ev.data})`, 'err');
+        Run.banner('err', 'Pipeline failed', `exit code ${ev.data}` + (took ? ' · ' + took : ''));
       }
       Run.cleanup();
+      Outputs.refresh();
     });
     Run.source.onerror = () => Run.handleDrop();
   },
@@ -778,8 +861,10 @@ const Run = {
   showTab(name = 'run') {
     document.querySelectorAll('.tab').forEach((t) =>
       t.classList.toggle('active', t.dataset.tab === name));
-    document.querySelectorAll('.tab-panel, .tab-actions').forEach((p) =>
+    document.querySelectorAll('.tab-panel, .tab-actions[data-panel]').forEach((p) =>
       p.classList.toggle('hidden', p.dataset.panel !== name));
+    document.querySelector('.tab-actions-run').classList.toggle('hidden', name === 'manual');
+    if (name === 'report') Outputs.refresh();
     Run.onTabChange();
   },
 
@@ -807,6 +892,7 @@ const Run = {
   async stop() {
     Run.stopping = true;
     Run.setStatus('stopping…', 'running');
+    Run.banner('starting', 'Stopping pipeline');
     await API.stopRun();
     // Stopping discards the run, so its figures go with it — the next run
     // starts from a clean gallery either way.

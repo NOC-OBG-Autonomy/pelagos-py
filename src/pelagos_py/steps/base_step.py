@@ -155,6 +155,10 @@ class BaseStep(ConfigMirrorMixin):
         """
         pass
 
+    def plot_failure(self):
+        # Optional: draw what the step had when it raised (see Pipeline.execute_step)
+        pass
+
     def _wrap_diagnostics_timing(self):
         """
         Wrap the step's diagnostics method so the performance timer stops the

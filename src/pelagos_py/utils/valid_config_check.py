@@ -14,14 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-import os
-import subprocess
-import sys
-from pathlib import Path
-
 from pelagos_py.steps import STEP_CLASSES, QC_CLASSES
-from pelagos_py.utils import parameter_spec
+from pelagos_py.utils import file_probe, parameter_spec
 
 #: Steps that supply the pipeline's base data -- the only steps allowed to
 #: provide TIME/LATITUDE/etc from nothing. Referenced by name rather than by
@@ -105,105 +99,23 @@ def _deep_correction_output(step_class, parameters):
     return [apply_to if apply_to.endswith("_ADJUSTED") else f"{apply_to}_ADJUSTED"]
 
 
-#: Opens `file_path` and prints its variable names, plus the subset of
-#: `candidates` (argv[2], a JSON list) that are floating-point and entirely
-#: NaN (e.g. a placeholder field a data centre ships with no real values), as
-#: JSON. Restricted to `candidates` rather than every variable in the file
-#: because loading a variable's full data to check it is far more expensive
-#: than listing names, and a raw OG1 file typically has many variables no
-#: step in a given pipeline ever reads. Run in a subprocess (see
-#: _read_file_variables) rather than in-process: certain netCDF4/HDF5 + h5py
-#: combinations segfault the whole interpreter on open in some environments,
-#: and a segfault can't be caught with try/except -- it takes the caller down
-#: with it. Isolating it in a short-lived subprocess means a crash there is
-#: just a failed subprocess, handled like any other unreadable file.
-#: netCDF4 rather than xarray (a fraction of the import time), scanning in
-#: slices so a variable with real data is settled by its first slice.
-_READ_VARIABLES_SCRIPT = (
-    "import sys, json\n"
-    "import numpy as np\n"
-    "import netCDF4\n"
-    "candidates = json.loads(sys.argv[2]) if len(sys.argv) > 2 else None\n"
-    "def all_nan(v):\n"
-    "    if v.ndim == 0:\n"
-    "        x = np.ma.filled(np.ma.asarray(v[...]).astype(float), np.nan)\n"
-    "        return bool(np.isnan(x).all())\n"
-    "    for start in range(0, v.shape[0], 500_000):\n"
-    "        x = np.ma.filled(np.ma.asarray(v[start:start + 500_000]).astype(float), np.nan)\n"
-    "        if not np.isnan(x).all():\n"
-    "            return False\n"
-    "    return True\n"
-    "with netCDF4.Dataset(sys.argv[1]) as ds:\n"
-    "    names = list(ds.variables)\n"
-    "    to_check = names if candidates is None else [v for v in candidates if v in names]\n"
-    "    nan_vars = [\n"
-    "        v for v in to_check\n"
-    "        if (ds[v].dtype.kind == 'f' or any(hasattr(ds[v], a) for a in\n"
-    "            ('scale_factor', 'add_offset', '_FillValue', 'missing_value'))) and all_nan(ds[v])\n"
-    "    ]\n"
-    "    print(json.dumps({'variables': names, 'all_nan': nan_vars}))\n"
-)
-
-#: Single-entry (path, mtime, candidates) -> variable-names cache. The
-#: dashboard's /api/validate fires on every keystroke with the file_path
-#: usually unchanged, so this avoids re-spawning a Python interpreter just to
-#: open the same file again while the user edits an unrelated part of the config.
-_file_vars_cache = {}
-
-
-def _read_file_variables(file_path, logger, candidate_vars=None, timeout=20):
-    """Variable names actually present in ``file_path``, and the subset of
-    ``candidate_vars`` (or of all variables, if ``None``) that are
-    floating-point and entirely NaN (e.g. a placeholder field shipped with no
-    real data), as ``(names, all_nan)``. Both are ``None`` if the file can't
-    be read (missing, wrong format, timed out, etc).
-
-    ``candidate_vars`` should be every variable the pipeline actually reads --
-    checking only those keeps the (relatively expensive, since it loads real
-    data) all-NaN check fast on files with many unused variables.
-
-    Callers fall back to the usual "assume file-native" behaviour on
-    ``None`` rather than blocking validation on a filesystem/format problem
-    the run-time load will report anyway.
-    """
-    try:
-        cache_key = (
-            str(file_path), Path(file_path).stat().st_mtime,
-            frozenset(candidate_vars) if candidate_vars is not None else None,
-        )
-    except OSError as exc:
-        logger.info("Could not read '%s' to cross-check its variables: %s", file_path, exc)
+def _read_file_variables(file_path, logger):
+    """``(names, all_nan)`` of the variables in ``file_path`` (see
+    :func:`file_probe.probe_file`), or ``(None, None)`` if it can't be read --
+    callers then fall back to assuming file-native variables exist."""
+    probe = file_probe.probe_file(file_path, logger)
+    if probe is None:
         return None, None
-    if cache_key in _file_vars_cache:
-        return _file_vars_cache[cache_key]
+    return set(probe), {v for v, info in probe.items() if info["all_nan"]}
 
-    try:
-        # HDF5 file locking can transiently fail (Errno -101) if the load
-        # step reopens the file right after this subprocess closes it.
-        env = dict(os.environ, HDF5_USE_FILE_LOCKING="FALSE")
-        cmd = [sys.executable, "-c", _READ_VARIABLES_SCRIPT, str(file_path)]
-        if candidate_vars is not None:
-            cmd.append(json.dumps(sorted(candidate_vars)))
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=timeout, env=env,
-        )
-        if result.returncode == 0:
-            payload = json.loads(result.stdout)
-            file_vars, all_nan = set(payload["variables"]), set(payload["all_nan"])
-        else:
-            file_vars, all_nan = None, None
-        if file_vars is None:
-            logger.info(
-                "Could not read '%s' to cross-check its variables: %s",
-                file_path, (result.stderr or "").strip().splitlines()[-1:] or "unknown error",
-            )
-    except Exception as exc:
-        logger.info("Could not read '%s' to cross-check its variables: %s", file_path, exc)
-        file_vars, all_nan = None, None
 
-    _file_vars_cache.clear()  # only the most recently checked file is worth keeping
-    _file_vars_cache[cache_key] = (file_vars, all_nan)
-    return file_vars, all_nan
+def _prepare_outputs(steps_list, file_vars):
+    # Variables a "Prepare OG1" step in the pipeline will rename into existence.
+    prep = next((s for s in steps_list if isinstance(s, dict) and s.get("name") == "Prepare OG1"), None)
+    if prep is None or file_vars is None:
+        return set()
+    cls = STEP_CLASSES.get("Prepare OG1")
+    return set(cls.renames_for(file_vars, prep.get("parameters") or {}).values())
 
 
 def _raise_missing_variables(
@@ -413,38 +325,6 @@ def _known_derived_variables():
     return known
 
 
-def _all_required_variables(steps_list):
-    """Every variable name any step or QC test in `steps_list` might read.
-
-    Used to limit the all-NaN check in :func:`_read_file_variables` to
-    variables the pipeline actually consumes, rather than every variable the
-    input file happens to contain (checking each one means loading its real
-    data, which is comparatively slow on a file with many unused variables).
-    """
-    required = set(LOADER_PROVIDED_VARIABLES)
-    for step_config in steps_list:
-        if not isinstance(step_config, dict):
-            continue
-        step_class = STEP_CLASSES.get(step_config.get("name"))
-        if not step_class:
-            continue
-        parameters = step_config.get("parameters", {}) or {}
-        required.update(getattr(step_class, "required_variables", []))
-        required.update(_variable_parameter_names(step_class, parameters))
-        if step_config.get("name") == "Apply QC":
-            for qc_name, qc_params in (parameters.get("qc_settings") or {}).items():
-                qc_class = QC_CLASSES.get(qc_name)
-                if qc_class is None:
-                    continue
-                qc_params = {k: v for k, v in (qc_params or {}).items() if k != "diagnostics"}
-                try:
-                    qc_required, _ = _qc_test_io(qc_class, qc_params)
-                except Exception:
-                    continue
-                required.update(qc_required)
-    return required
-
-
 def check_pipeline_variables(steps_list, logger, available_vars=None):
     file_vars = None
     file_all_nan = None
@@ -495,15 +375,15 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
                 # against what it actually contains (including whether required
                 # variables hold only placeholder/all-NaN data), rather than
                 # only what the pipeline's steps declare.
-                file_vars, file_all_nan = _read_file_variables(
-                    file_path, logger, _all_required_variables(steps_list)
-                )
+                file_vars, file_all_nan = _read_file_variables(file_path, logger)
                 if file_vars is not None:
-                    # A later step (e.g. "Correct Values" renaming
-                    # LATITUDE_GPS -> LATITUDE) can legitimately supply a base
-                    # variable the raw file stores under a different name, so
-                    # only flag it if no *other* step provides it either.
+                    # A later step (e.g. "Prepare OG1" renaming LATITUDE_GPS ->
+                    # LATITUDE) can legitimately supply a base variable the raw
+                    # file stores under a different name, so only flag it if no
+                    # *other* step provides it either.
+                    real_vars = file_vars - (file_all_nan or set())
                     other_provided = _non_loader_provided_variables(steps_list)
+                    other_provided |= _prepare_outputs(steps_list, real_vars)
                     missing_base = sorted(
                         v for v in LOADER_PROVIDED_VARIABLES
                         if v not in file_vars and v not in other_provided
@@ -705,6 +585,8 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
                 own_provided.update(_deep_correction_output(step_class, parameters))
             if step_name == "Shift Oxygen To CTD":
                 own_provided.update(_shift_oxygen_output(parameters))
+            if step_name == "Prepare OG1" and file_vars is not None:
+                own_provided.update(_prepare_outputs([step_config], file_vars - (file_all_nan or set())))
 
             # An `optional: true` step skips at run time when its target_variable
             # is absent, so its outputs must not count as provided either.

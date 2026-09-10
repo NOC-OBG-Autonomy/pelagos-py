@@ -30,6 +30,10 @@ pipeline:
  #   Default behavior overwrites the previous log file.
  #   Console logging is always on. If log_file is not set (or set to None/null), no log file is written.
  log_file: last_run.log
+ # [on_step_fail]: pause | skip | stop
+ #   What happens when a step fails. pause (default) lets the dashboard show the step's
+ #   failure plot so you can fix it and re-run, or skip it; outside the dashboard it skips.
+ on_step_fail: pause
 
 # All step configs
 # The general structure of a step follows:

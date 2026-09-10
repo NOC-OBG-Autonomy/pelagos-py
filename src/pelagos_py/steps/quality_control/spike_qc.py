@@ -102,10 +102,12 @@ class spike_qc(BaseQC):
 
         # Generate the variable-specific flags
         groups = profile_indices(self.data["PROFILE_NUMBER"].values)
+        self._untested = {}
         for var, sensitivity in self.variables.items():
             spike_qc = np.full(len(self.data[var]), 0)
             values = self.data[var].values
             qc_flags = self.data[f"{var}_QC"].values if f"{var}_QC" in self.data else None
+            untested = 0
 
             # Apply the checks across individual profiles
             for indices in self.log_progress(groups.values(), desc=f"[{var}]", unit="prof", total=len(groups)):
@@ -120,6 +122,7 @@ class spike_qc(BaseQC):
 
                 var_data = profile[usable]
                 if len(var_data) < self.window_size:
+                    untested += 1  # left 0: Apply QC's merge keeps the existing flag
                     continue
 
                 # Calculate the residules from the running median of the data
@@ -143,6 +146,13 @@ class spike_qc(BaseQC):
                 profile_flags = np.where(missing, 9, 1)
                 profile_flags[usable] = spike_flags
                 spike_qc[indices] = profile_flags
+
+            self._untested[var] = (untested, len(groups))
+            if untested:
+                self.log_warn(
+                    f"{untested} of {len(groups)} profiles have fewer than {self.window_size} "
+                    f"usable {var} points (window_size) and were not tested."
+                )
 
             # Add the flags to the data
             self.data[f"{var}_QC"] = (["N_MEASUREMENTS"], spike_qc)
@@ -182,7 +192,11 @@ class spike_qc(BaseQC):
 
             fig_spec.flag_points(ax, x, self.data[var], self.data[f"{var}_QC"])
             ylabel = fig_spec.axis_label(var, self.data[var].attrs.get("units"))
-            fig_spec.style_axes(ax, title=f"{var} Spike Test", ylabel=ylabel)
+            untested, total = self._untested.get(var, (0, 0))
+            title = f"{var} Spike Test"
+            if untested:
+                title += f" — {untested} of {total} profiles untested (< window_size points)"
+            fig_spec.style_axes(ax, title=title, ylabel=ylabel)
             fig_spec.legend(ax, title="Flags")
         fig_spec.x_axis(axes[-1][0], x)
 

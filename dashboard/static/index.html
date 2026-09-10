@@ -51,25 +51,29 @@
           <button class="tab" data-tab="inspect"><span data-icon="search" data-icon-size="15"></span>Inspect</button>
           <button class="tab tab-demos" data-tab="demos"><span data-icon="download" data-icon-size="15"></span>Demos</button>
         </div>
-        <div class="tab-actions hidden" data-panel="yaml">
-          <select id="theme-select" title="Editor colour theme">
-            <option value="vscode-dark">Dark Modern</option>
-            <option value="vscode-darkplus">Dark+</option>
-            <option value="one-dark">One Dark Pro</option>
-            <option value="dracula">Dracula</option>
-            <option value="vscode-light">Light Modern</option>
-          </select>
-          <button id="btn-copy" class="ghost"><span data-icon="copy"></span>Copy</button>
-        </div>
-        <div class="tab-actions" data-panel="run">
-          <span id="run-status" class="run-status"></span>
-          <button id="btn-stop" class="ghost danger" disabled><span data-icon="stop"></span>Stop</button>
-          <button id="btn-run" class="primary"><span data-icon="play"></span>Run pipeline</button>
-        </div>
-        <div class="tab-actions hidden" data-panel="manual">
-          <span id="manual-status" class="run-status"></span>
-          <button id="btn-manual-rerun" class="ghost"><span data-icon="rerun"></span>Re-run test</button>
-          <button id="btn-manual-continue" class="primary"><span data-icon="play"></span>Continue</button>
+        <div class="tab-right">
+          <div class="tab-actions hidden" data-panel="yaml">
+            <select id="theme-select" title="Editor colour theme">
+              <option value="vscode-dark">Dark Modern</option>
+              <option value="vscode-darkplus">Dark+</option>
+              <option value="one-dark">One Dark Pro</option>
+              <option value="dracula">Dracula</option>
+              <option value="vscode-light">Light Modern</option>
+            </select>
+            <button id="btn-copy" class="ghost"><span data-icon="copy"></span>Copy</button>
+          </div>
+          <!-- Run controls stay up on every tab (bar Manual QC, which has its
+               own); Run switches to the Run tab. -->
+          <div class="tab-actions tab-actions-run">
+            <span id="run-status" class="run-status"></span>
+            <button id="btn-stop" class="ghost danger" disabled><span data-icon="stop"></span>Stop</button>
+            <button id="btn-run" class="primary"><span data-icon="play"></span>Run pipeline</button>
+          </div>
+          <div class="tab-actions hidden" data-panel="manual">
+            <span id="manual-status" class="run-status"></span>
+            <button id="btn-manual-rerun" class="ghost"><span data-icon="rerun"></span>Re-run test</button>
+            <button id="btn-manual-continue" class="primary"><span data-icon="play"></span>Continue</button>
+          </div>
         </div>
       </div>
 
@@ -112,6 +116,7 @@
             </div>
           </div>
           <div id="validation" class="validation"></div>
+          <div id="build-panel" class="build-panel" hidden></div>
           <div id="pipeline-settings"></div>
           <div id="pipeline-steps"></div>
           <div class="empty-hint" id="empty-hint">
@@ -195,6 +200,18 @@
               If the pipeline writes a PDF report (a <strong>Write Data Report</strong>
               step), it appears here when the run reaches it — ready to open.
             </p>
+            <!-- Everything runs have left in the output folders (see outputs.js). -->
+            <section id="outputs" class="outputs">
+              <div class="outputs-head">
+                <div class="outputs-title">
+                  <strong>Output files</strong>
+                  <span id="outputs-sub" class="outputs-sub"></span>
+                </div>
+                <button id="btn-outputs-reveal" class="ghost" title="Open the output folder in Finder"><span data-icon="folder"></span>Open folder</button>
+                <button id="btn-outputs-clean" class="ghost warn"><span data-icon="trash2"></span>Delete all</button>
+              </div>
+              <div id="outputs-list" class="outputs-list"></div>
+            </section>
           </div>
 
           <div class="tab-panel hidden" data-panel="inspect">
@@ -233,6 +250,10 @@
               glider file. Files are downloaded on first use. To process your
               own data, choose a file in the <strong>Load OG1</strong> step instead.
             </div>
+            <div class="demos-head">
+              <span id="demos-sub" class="outputs-sub"></span>
+              <button id="btn-demos-clean" class="ghost warn"><span data-icon="trash2"></span>Delete all downloads</button>
+            </div>
             <div id="demos-list" class="demos-list"></div>
           </div>
         </section>
@@ -245,6 +266,7 @@
   <script src="/js/forms.js"></script>
   <script src="/js/builder.js"></script>
   <script src="/js/config.js"></script>
+  <script src="/js/build.js"></script>
   <!-- plot.js is the WebGL figure viewer; no plotting library is vendored. -->
   <script src="/js/plot.js"></script>
   <script src="/js/viewer.js"></script>
@@ -252,6 +274,7 @@
   <script src="/js/review.js"></script>
   <script src="/js/inspect.js"></script>
   <script src="/js/demos.js"></script>
+  <script src="/js/outputs.js"></script>
   <script src="/js/mem.js"></script>
   <script src="/js/run.js"></script>
   <script src="/js/app.js"></script>

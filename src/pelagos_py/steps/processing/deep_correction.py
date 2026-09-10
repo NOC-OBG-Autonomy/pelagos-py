@@ -31,6 +31,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import pelagos_py.utils.palettes as palettes
+from pelagos_py.utils import fig_spec
 
 # A depth_threshold shallower than this warns the user.
 MIN_DEEP_THRESHOLD = 300
@@ -183,6 +184,9 @@ class deep_correction(BaseStep, QCHandlingMixin):
     def compute_dark_value(self):
         # Per-profile diagnostics for plotting; empty when dark_value is given.
         self._profile_diagnostics = {}
+        # Every candidate examined, with why it was rejected, for plot_failure.
+        self._candidates = []
+        self._deep_reach = None
 
         if self.dark_value is not None:
             self.log(f"Using dark value from config: {self.dark_value}", console=False)
@@ -219,6 +223,7 @@ class deep_correction(BaseStep, QCHandlingMixin):
         # Profiles reaching past the threshold, in order of occurrence; coverage
         # is checked below before a candidate spends an n_profiles slot.
         deep_reach = df.groupby("PROFILE_NUMBER")[depth].max()
+        self._deep_reach = deep_reach
         candidates = deep_reach[deep_reach > self.depth_threshold].index.to_numpy()
         if len(candidates) == 0:
             self.halt(
@@ -237,7 +242,13 @@ class deep_correction(BaseStep, QCHandlingMixin):
             n_points = int(profile[var].notna().sum())
             below = profile[profile[depth] > self.depth_threshold]
             n_deep_points = int(below[var].notna().sum())
+            cand = {
+                "profile": int(profile_number), "n_points": n_points, "n_deep": n_deep_points,
+                "depth": profile[depth].to_numpy(), "raw": profile[var].to_numpy(),
+            }
+            self._candidates.append(cand)
             if n_points < self.min_profile_points or n_deep_points < self.min_valid_points:
+                cand["reason"] = "too few points"
                 skipped.append(int(profile_number))
                 continue
 
@@ -262,11 +273,15 @@ class deep_correction(BaseStep, QCHandlingMixin):
             self._profile_diagnostics[profile_number] = record
 
             deep_vals = smoothed[deep_mask]
+            cand["smoothed"] = smoothed.to_numpy()
             if int(deep_vals.notnull().sum()) >= self.min_valid_points:
                 idxmin = deep_vals.idxmin()
                 record["min_value"] = float(deep_vals.loc[idxmin])
                 record["min_depth"] = float(profile.loc[idxmin, depth])
                 minima.append(record["min_value"])
+                cand["reason"] = "used"
+            else:
+                cand["reason"] = "no valid deep values"
 
         if skipped:
             self.log(
@@ -307,6 +322,54 @@ class deep_correction(BaseStep, QCHandlingMixin):
             "comment"
         ] = f"{self.apply_to} with dark value correction (dark_value={self.dark_value:.6f})"
         self.data[self.output_as].attrs["dark_value"] = self.dark_value
+
+    def plot_failure(self):
+        # Why no dark value: the deep-reaching profiles examined, coloured by
+        # why each was rejected (left), and how deep every profile gets (right).
+        if getattr(self, "_deep_reach", None) is None:
+            return
+        reasons = {"too few points": fig_spec.CATEGORY[2], "no valid deep values": fig_spec.CATEGORY[3],
+                   "used": fig_spec.CATEGORY[0]}
+        n_cand = int((self._deep_reach > self.depth_threshold).sum())
+        # No candidates (nothing reached the threshold): only the depth panel.
+        fig, axes = fig_spec.new_fig(1, 2 if self._candidates else 1, sharey=True)
+        ax_reach = axes[0][-1]
+        seen = set()
+        for cand in self._candidates:
+            ax_prof = axes[0][0]
+            colour = reasons[cand["reason"]]
+            label = None if cand["reason"] in seen else f"{cand['reason']} ({sum(c['reason'] == cand['reason'] for c in self._candidates)})"
+            seen.add(cand["reason"])
+            # Markers as well as lines: a sparse profile is isolated points.
+            ax_prof.plot(cand["raw"], cand["depth"], c=colour, alpha=0.3, lw=0.8, marker="o", ms=2)
+            ax_prof.plot(cand.get("smoothed", cand["raw"]), cand["depth"], c=colour, lw=1.2, label=label)
+        if self._candidates:
+            ax_prof.axhline(self.depth_threshold, ls="--", c="grey", lw=1, label=f"depth_threshold ({self.depth_threshold:g})")
+            ax_prof.axvline(self.max_valid_value, ls=":", c="k", lw=1, label=f"max_valid_value ({self.max_valid_value:g})")
+            fig_spec.style_axes(
+                ax_prof, xlabel=self.apply_to, ylabel=self.depth_var,
+                title=f"{len(self._candidates)} of {n_cand} deep profiles examined "
+                      f"(need >= {self.min_valid_points} valid deep points)")
+            fig_spec.legend(ax_prof)
+
+        # Every sample, thinned by fig_spec, so the profile shapes are visible;
+        # samples with a finite value of the variable are drawn on top.
+        pnum = np.asarray(self.data["PROFILE_NUMBER"].values, dtype=float)
+        depth = np.asarray(self.data[self.depth_var].values, dtype=float)
+        has_val = np.isfinite(np.asarray(self.data[self.apply_to].values, dtype=float))
+        ok = np.isfinite(pnum) & np.isfinite(depth)
+        fig_spec.points(ax_reach, pnum[ok & ~has_val], depth[ok & ~has_val],
+                        color="#b2bec3", label=f"no {self.apply_to}")
+        fig_spec.points(ax_reach, pnum[ok & has_val], depth[ok & has_val],
+                        color=fig_spec.CATEGORY[1], label=f"{self.apply_to} present")
+        ax_reach.axhline(self.depth_threshold, ls="--", c="grey", lw=1)
+        ax_reach.invert_yaxis()
+        fig_spec.style_axes(
+            ax_reach, xlabel="PROFILE_NUMBER", ylabel=None if self._candidates else self.depth_var,
+            title=f"{n_cand} of {self._deep_reach.size} profiles reach past {self.depth_threshold:g}")
+        fig_spec.legend(ax_reach)
+        fig_spec.finish(fig, suptitle=f"Deep Correction failed — {self.apply_to}")
+        plt.show(block=True)
 
     def generate_diagnostics(self):
         # Two-panel figure: deep profiles used for the estimate (left) and the

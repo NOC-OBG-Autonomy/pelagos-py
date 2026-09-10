@@ -54,8 +54,7 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
             "description": (
                 "Name of the beta backscatter variable to convert. If not found, "
                 "falls back to any other BETA_BACKSCATTERING<wavelength> variable "
-                "(closest to 700nm if several are present), then to a "
-                "BBP<wavelength> variable."
+                "(closest to 700nm if several are present)."
             ),
         },
         "output_as": {
@@ -149,15 +148,10 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
             self.log_warn(f"'{self.apply_to}' not found; using '{fallback}' instead.")
             return self._pull_into_subset(fallback)
 
-        # TODO: drop once BODC stops labelling raw beta as BBP<wavelength>
-        fallback = self._closest_wavelength_var(full_vars, "BBP")
-        if fallback:
-            self.log_warn(f"No BETA_BACKSCATTERING* variable found; using mislabelled '{fallback}' instead.")
-            return self._pull_into_subset(fallback)
-
+        # Raw beta mislabelled as BBP<wl> is handled upstream by Prepare OG1 (bbp700_is_beta).
         raise ValueError(
-            f"'{self.apply_to}' not found, and no BETA_BACKSCATTERING* or BBP<wavelength> "
-            "variable is present to fall back to."
+            f"'{self.apply_to}' not found, and no BETA_BACKSCATTERING* variable is "
+            "present to fall back to."
         )
 
     def _pull_into_subset(self, name):

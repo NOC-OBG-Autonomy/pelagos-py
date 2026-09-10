@@ -39,23 +39,6 @@ flag_cols = {
 """Map of QC flag values to colors for diagnostics plotting."""
 
 
-# Argo flag-merge matrix: QC_COMBINATRIX[existing, new] never downgrades a flag.
-QC_COMBINATRIX = np.array(
-    [
-        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-        [1, 1, 2, 3, 4, 5, 1, 1, 8, 9],
-        [2, 2, 2, 3, 4, 5, 2, 2, 8, 9],
-        [3, 3, 3, 3, 4, 3, 3, 3, 3, 9],
-        [4, 4, 4, 4, 4, 4, 4, 4, 4, 9],
-        [5, 5, 5, 3, 4, 5, 5, 5, 8, 9],
-        [6, 1, 2, 3, 4, 5, 6, 6, 8, 9],
-        [7, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-        [8, 8, 8, 3, 4, 8, 8, 8, 8, 9],
-        [9, 9, 9, 9, 9, 9, 9, 9, 9, 9],
-    ]
-)
-
-
 def register_qc(cls):
     """Decorator to mark QC tests that can be accessed by the ApplyQC step."""
     qc_name = getattr(cls, "qc_name", None)

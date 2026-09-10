@@ -119,12 +119,8 @@ const Config = {
 
     const pipeline = (cfg && cfg.pipeline) || {};
     for (const spec of STATE.registry.pipeline_fields) {
-      let val = spec.name in pipeline ? pipeline[spec.name] : Forms.defaultValue(spec);
-      // A YAML bool maps onto the three-way "auto"/"true"/"false" select.
-      if (spec.name === 'continue_on_step_fail' && typeof val === 'boolean') {
-        val = val ? 'true' : 'false';
-      }
-      STATE.pipeline.settings[spec.name] = val;
+      STATE.pipeline.settings[spec.name] =
+        spec.name in pipeline ? pipeline[spec.name] : Forms.defaultValue(spec);
     }
 
     const steps = (cfg && cfg.steps) || [];
@@ -188,8 +184,9 @@ const Config = {
   demo: [],         // the demo subset (also locked) — shown as their own group
   missions: {},     // demo config names grouped by deployment mission, in display order
   labels: {},       // display label per demo config name (glider names repeat across missions)
-  reference: [],    // non-demo protected configs (default.yaml, demo_alr.yaml)
+  reference: [],    // non-demo protected configs (default.yaml)
   downloaded: [],   // demo configs whose NetCDF file is already on disk
+  sizes: {},        // bytes on disk per downloaded demo config
   current: null,    // name of the loaded config, or null for an unsaved one
   selected: '',     // name shown in the picker ('' once the config is unsaved)
   loading: false,   // true while loading/booting, so that isn't seen as an edit
@@ -282,18 +279,26 @@ const Config = {
   async load(name) {
     const needsDownload = Config.demo.includes(name) && !Config.downloaded.includes(name);
     if (needsDownload) {
-      Config.setBusy(true, `Downloading ${Config.demoLabel(name)} demo data — this can take a while…`);
+      Config.setBusy(true, '');
+      Demos.trackDownload(name);
     }
     try {
-      const { yaml_content } = await API.loadConfig(name);
-      Config.apply(yaml_content);
-      Config.setCurrent(name);
+      const { yaml_content, build } = await API.loadConfig(name);
       Config.notice('');
+      if (build) {
+        // Demo: the config is generated for its file once the user confirms.
+        await Build.start({
+          name, filePath: build.file_path, description: build.description,
+        });
+      } else {
+        Config.apply(yaml_content);
+        Config.setCurrent(name);
+      }
       // Pick up the now-downloaded status so the picker stops offering to
       // download it again.
       if (needsDownload) await Config.refreshList(Config.selected);
     } finally {
-      if (needsDownload) Config.setBusy(false);
+      if (needsDownload) { Demos.trackDownload(null); Config.setBusy(false); }
     }
   },
 
@@ -308,10 +313,10 @@ const Config = {
       Config._runWasDisabled = runBtn ? runBtn.disabled : false;
       if (trigger) trigger.disabled = true;
       if (runBtn) runBtn.disabled = true;
-      Config.notice(message, { sticky: true });
+      if (message) Config.notice(message, { sticky: true });
     } else {
       if (trigger) trigger.disabled = false;
-      if (runBtn) runBtn.disabled = !!Config._runWasDisabled;
+      if (runBtn) runBtn.disabled = !!Config._runWasDisabled || Build.active; // the build panel keeps Run off
     }
   },
 
@@ -461,6 +466,7 @@ const Config = {
     Config.labels = info.labels || {};
     Config.reference = info.reference || [];
     Config.downloaded = info.downloaded || [];
+    Config.sizes = info.sizes || {};
     if (selected !== undefined) Config.selected = selected || '';
     if (Config.selected && !Config.known.includes(Config.selected)) Config.selected = '';
     Config.renderPicker();

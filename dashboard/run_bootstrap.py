@@ -32,14 +32,14 @@ marker instead::
 so the dashboard can show that text where a plot would otherwise go. See
 ``_patch_diagnostics_capture``.
 
-A step that raises, with ``continue_on_step_fail: auto`` (the default), pauses
-the same way a diagnostics step does rather than being silently skipped or
-halting the run, so the user can fix its parameters and re-run it, or Continue
-to skip it::
+A step that raises, with ``on_step_fail: pause`` (the default), pauses the same
+way a diagnostics step does rather than being skipped or halting the run, so
+the user can fix its parameters and re-run it, or Skip it (its failure plot, if
+it draws one, is captured like any other figure)::
 
     __PELAGOS_FAIL__ <step index>\t<step name>\t<QC test or "">\t<base64 text>
 
-See ``_emit_fail`` and ``pelagos_py.pipeline.resolve_continue_on_step_fail``.
+See ``_emit_fail`` and ``pelagos_py.pipeline.resolve_on_step_fail``.
 """
 
 import base64
@@ -64,7 +64,7 @@ plt.switch_backend = lambda *args, **kwargs: None
 
 import numpy as np  # noqa: E402
 import fig_spec  # noqa: E402  (dashboard-local; this script's directory is on sys.path)
-from pelagos_py.pipeline import REPORT_STEP_NAME, SEVERE, STOP, Pipeline, resolve_continue_on_step_fail  # noqa: E402
+from pelagos_py.pipeline import REPORT_STEP_NAME, SEVERE, STOP, Pipeline, resolve_on_step_fail  # noqa: E402
 
 FIG_DIR = sys.argv[2]
 _saved = {"n": 0}
@@ -435,11 +435,13 @@ def main():
     try:
         _patch_diagnostics_capture()
         _emit_time(paused=False)
-        _run(Pipeline(config_path=config_path))
+        pipeline = Pipeline(config_path=config_path)
+        pipeline._diagnose_failures = True  # a failed step's plot goes to the review panel
+        _run(pipeline)
     except KeyboardInterrupt:
         # The Stop button sends SIGINT (works while paused on stdin too); exit
-        # cleanly instead of dumping a traceback from wherever it landed.
-        print("Pipeline stopped.", flush=True)
+        # cleanly instead of dumping a traceback from wherever it landed. The
+        # dashboard writes its own "stopped" line.
         sys.exit(130)
     finally:
         _emit_time(paused=True)  # final processing time
@@ -494,21 +496,19 @@ def _run(pipeline):
                 has_result = True
             except (RuntimeError, SystemExit) as exc:
                 _diag_capture["chunks"] = None
-                # Mirror Pipeline.run()'s continue_on_step_fail handling, which
-                # this loop otherwise bypasses by driving execute_step() itself.
-                fail_mode = resolve_continue_on_step_fail(
-                    pipeline.global_parameters.get("continue_on_step_fail", "auto")
-                )
-                if fail_mode is False:
+                # Mirror Pipeline.run()'s on_step_fail handling, which this
+                # loop otherwise bypasses by driving execute_step() itself.
+                fail_mode = resolve_on_step_fail(pipeline.global_parameters.get("on_step_fail"))
+                if fail_mode == "stop":
                     pipeline.logger.log(STOP, "Pipeline stopped at step '%s'.", label)
                     sys.exit(1)
-                if fail_mode is True:
+                if fail_mode == "skip":
                     # The fatal-error log from execute_step() already carries the
                     # detail; this just marks the step skipped.
                     pipeline.logger.log(SEVERE, "Step '%s' failed and was skipped.", label)
                     continue
-                # fail_mode == "auto": pause so the user can fix the step's
-                # parameters and re-run it, or accept the skip with Continue.
+                # "pause": so the user can fix the step's parameters and re-run
+                # it, or accept the skip.
                 failed = True
                 _emit_fail(idx, name, test, exc)
             if not failed:

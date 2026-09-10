@@ -18,7 +18,8 @@
 
 #### Mandatory imports ####
 import numpy as np
-from pelagos_py.steps.base_qc import BaseQC, QC_COMBINATRIX, register_qc
+from pelagos_py.steps.base_qc import BaseQC, register_qc
+from pelagos_py.utils.qc_handling import QC_COMBINATRIX
 
 #### Custom imports ####
 import matplotlib

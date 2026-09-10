@@ -33,6 +33,7 @@ import json
 import logging
 import os
 import re
+import shutil
 import signal
 import subprocess
 import sys
@@ -83,8 +84,10 @@ if str(SRC_DIR) not in sys.path:
 # Importing the package runs discover_steps(), which populates the registries.
 from pelagos_py.steps import STEP_CLASSES, QC_CLASSES, resolve_step_name  # noqa: E402
 from pelagos_py.utils import parameter_spec  # noqa: E402
+from pelagos_py.utils.qc_handling import QC_COMBINATRIX  # noqa: E402
 from pelagos_py.utils.demo_data import DEMOS as DEMO_FILES, DEMO_DATA_DIR, MISSIONS  # noqa: E402
 from pelagos_py.utils.valid_config_check import check_pipeline_variables  # noqa: E402
+from pelagos_py.utils import config_builder, file_probe  # noqa: E402
 
 
 # The top ``pipeline:`` block has no step schema, so its keys are described here.
@@ -97,12 +100,12 @@ PIPELINE_FIELDS = [
      "description": "Output directory for generated files (logs, reports, figures)."},
     {"name": "log_file", "type": "str", "required": False, "default": None,
      "description": "Log file name. Leave blank/null for console-only logging."},
-    {"name": "continue_on_step_fail", "type": "str", "options": ["auto", "true", "false"],
-     "required": False, "default": "auto",
-     "description": "What happens when a step fails. 'auto' pauses so you can fix "
-                     "its parameters and re-run it, or continue to skip it (outside "
-                     "the dashboard this behaves like 'true'). 'true' always skips "
-                     "the failed step and continues. 'false' always stops the run."},
+    {"name": "on_step_fail", "type": "str", "options": ["pause", "skip", "stop"],
+     "required": False, "default": "pause",
+     "description": "What happens when a step fails. 'pause' shows its failure plot "
+                     "so you can fix its parameters and re-run it, or skip it (outside "
+                     "the dashboard this behaves like 'skip'). 'skip' moves straight "
+                     "on to the next step. 'stop' ends the run."},
 ]
 
 
@@ -187,6 +190,7 @@ def registry():
         "steps": steps,
         "qc": qc,
         "pipeline_fields": PIPELINE_FIELDS,
+        "combinatrix": QC_COMBINATRIX.tolist(),  # Manual QC merges boxes with the same table
     }
 
 
@@ -286,12 +290,12 @@ class SavePayload(BaseModel):
     yaml_content: str
 
 
-# Virtual, one per demo glider: no file on disk, YAML synthesised by _demo_yaml.
+# Virtual, one per demo glider: no file on disk, YAML built per file by /api/build.
 DEMO_CONFIGS = {f"demo_{key}.yaml" for key in DEMO_FILES}
 
 # Read-only: the UI forks edits to custom_run_N.yaml and the API refuses to
 # save/delete these, so a stale tab or hand-crafted request can't destroy them.
-PROTECTED_CONFIGS = {"default.yaml", "demo_alr.yaml"} | DEMO_CONFIGS
+PROTECTED_CONFIGS = {"default.yaml"} | DEMO_CONFIGS
 
 
 def _safe_config_path(name: str) -> Path:
@@ -336,25 +340,186 @@ def list_configs():
         # Non-demo protected configs, shown as their own "Default" group.
         "reference": sorted((PROTECTED_CONFIGS - DEMO_CONFIGS) & set(files)),
         "downloaded": sorted(name for name in demo if _demo_dest(name).exists()),
+        "sizes": {name: _demo_dest(name).stat().st_size
+                  for name in demo if _demo_dest(name).exists()},
     }
 
 
-@app.post("/api/configs/reveal")
-def reveal_configs():
-    """Open the configs folder in the OS file browser (on the server machine)."""
+def _reveal(folder: Path) -> dict:
+    # Open a folder in the OS file browser (on the server machine).
     if sys.platform == "darwin":
-        cmd = ["open", str(CONFIG_DIR)]
+        cmd = ["open", str(folder)]
     elif os.name == "nt":
-        cmd = ["explorer", str(CONFIG_DIR)]
+        cmd = ["explorer", str(folder)]
     else:
-        cmd = ["xdg-open", str(CONFIG_DIR)]
+        cmd = ["xdg-open", str(folder)]
     try:
         subprocess.Popen(cmd)
     except OSError as exc:
         raise HTTPException(
-            status_code=500, detail=f"Could not open {CONFIG_DIR}: {exc}"
+            status_code=500, detail=f"Could not open {folder}: {exc}"
         ) from exc
-    return {"status": "opened", "path": str(CONFIG_DIR)}
+    return {"status": "opened", "path": str(folder)}
+
+
+@app.post("/api/configs/reveal")
+def reveal_configs():
+    return _reveal(CONFIG_DIR)
+
+
+# ================================ Demo files ================================
+def _no_run_in_flight():
+    if _run.is_running():
+        raise HTTPException(status_code=409, detail="Stop the running pipeline first.")
+
+
+def _delete_demo(config_name: str) -> bool:
+    dest = _demo_dest(config_name)
+    if dest is None:
+        return False
+    dest.with_name(dest.name + ".part").unlink(missing_ok=True)
+    if not dest.exists():
+        return False
+    dest.unlink()
+    return True
+
+
+@app.delete("/api/demos/{name}")
+def delete_demo(name: str):
+    if name not in DEMO_CONFIGS:
+        raise HTTPException(status_code=404, detail="Unknown demo.")
+    _no_run_in_flight()
+    return {"status": "deleted" if _delete_demo(name) else "absent", "name": name}
+
+
+@app.post("/api/demos/clean")
+def clean_demos():
+    _no_run_in_flight()
+    removed = [name for name in sorted(DEMO_CONFIGS) if _delete_demo(name)]
+    return {"status": "deleted", "removed": removed}
+
+
+# ================================= Outputs =================================
+# Everything a run leaves behind (reports, exports, logs, kept report figures),
+# so a pip-installed user can find and clear them without knowing the folder.
+_OUTPUT_KINDS = {
+    ".pdf": "report", ".log": "log", ".nc": "data", ".csv": "data",
+    ".parquet": "data", ".h5": "data", ".hdf5": "data", ".rst": "report",
+}
+_DEMO_INPUTS = {entry.filename for entry in DEMO_FILES.values()}
+_listed_outputs: set[Path] = set()  # only these may be served or deleted
+
+
+class OutputsPayload(BaseModel):
+    dirs: list[str] = []
+    inputs: list[str] = []  # data files the config reads: never shown as outputs
+
+
+def _output_dirs(dirs: list[str]) -> list[Path]:
+    seen, out = set(), []
+    for d in [DEMO_DATA_DIR, *dirs]:
+        path = Path(d)
+        if not path.is_absolute():
+            path = REPO_ROOT / path
+        path = path.resolve()
+        if path in seen or not path.is_dir():
+            continue
+        seen.add(path)
+        out.append(path)
+    return out
+
+
+def _dir_size(path: Path) -> int:
+    return sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
+
+
+def _list_outputs(payload: OutputsPayload) -> dict:
+    inputs = _DEMO_INPUTS | {Path(f).name for f in payload.inputs if f}
+    dirs = _output_dirs(payload.dirs)
+    files = []
+    _listed_outputs.clear()
+    for d in dirs:
+        for entry in sorted(d.iterdir()):
+            if entry.name.startswith("."):
+                continue
+            if entry.is_dir():
+                if "_report_figures_" not in entry.name and entry.name != "_build":
+                    continue
+                kind, size = "figures", _dir_size(entry)
+            else:
+                kind = _OUTPUT_KINDS.get(entry.suffix.lower())
+                if kind is None or entry.name in inputs:
+                    continue
+                size = entry.stat().st_size
+            _listed_outputs.add(entry)
+            files.append({
+                "path": str(entry), "name": entry.name, "dir": str(d),
+                "kind": kind, "size": size, "mtime": entry.stat().st_mtime,
+            })
+    files.sort(key=lambda f: -f["mtime"])
+    return {"dirs": [str(d) for d in dirs], "files": files}
+
+
+@app.post("/api/outputs")
+def list_outputs(payload: OutputsPayload):
+    return _list_outputs(payload)
+
+
+def _listed_output(path: str) -> Path:
+    p = Path(path)
+    if p not in _listed_outputs or not p.exists():
+        raise HTTPException(status_code=404, detail="File not found.")
+    return p
+
+
+@app.get("/api/outputs/file")
+def output_file(path: str):
+    p = _listed_output(path)
+    if p.is_dir():
+        raise HTTPException(status_code=400, detail="Not a file.")
+    inline = p.suffix.lower() in (".pdf", ".log", ".rst")
+    return FileResponse(
+        p, media_type="application/pdf" if p.suffix.lower() == ".pdf" else None,
+        headers={"Content-Disposition": f'{"inline" if inline else "attachment"}; filename="{p.name}"'},
+    )
+
+
+def _remove(p: Path):
+    if p.is_dir():
+        shutil.rmtree(p, ignore_errors=True)
+    else:
+        p.unlink(missing_ok=True)
+
+
+@app.delete("/api/outputs/file")
+def delete_output(path: str):
+    _no_run_in_flight()
+    p = _listed_output(path)
+    _remove(p)
+    _listed_outputs.discard(p)
+    return {"status": "deleted", "path": str(p)}
+
+
+@app.post("/api/outputs/clean")
+def clean_outputs(payload: OutputsPayload):
+    _no_run_in_flight()
+    listing = _list_outputs(payload)
+    for f in listing["files"]:
+        _remove(Path(f["path"]))
+    _listed_outputs.clear()
+    return {"status": "deleted", "removed": len(listing["files"])}
+
+
+class RevealPayload(BaseModel):
+    path: str = ""
+
+
+@app.post("/api/outputs/reveal")
+def reveal_outputs(payload: RevealPayload):
+    dirs = _output_dirs([payload.path] if payload.path else [])
+    if not dirs:
+        raise HTTPException(status_code=404, detail="Folder not found.")
+    return _reveal(dirs[-1] if payload.path else dirs[0])
 
 
 class BrowsePayload(BaseModel):
@@ -401,39 +566,65 @@ def _ensure_demo_file(config_name: str) -> None:
     # Files are 100s of MB: bound only the connect phase, not the transfer.
     response = requests.get(entry.url, stream=True, timeout=(15, None))
     response.raise_for_status()
+    total = int(response.headers.get("Content-Length") or 0)
+    done = 0
+    _DOWNLOADS[config_name] = (0, total)
     tmp = dest.with_name(dest.name + ".part")
     try:
         with open(tmp, "wb") as f:
             for chunk in response.iter_content(chunk_size=1 << 20):
                 f.write(chunk)
+                done += len(chunk)
+                _DOWNLOADS[config_name] = (done, total)
         tmp.rename(dest)
     finally:
         tmp.unlink(missing_ok=True)  # left behind only if the download failed
+        _DOWNLOADS.pop(config_name, None)
 
 
-_DEMO_FIELD_RE = {
-    field: re.compile(rf"(?m)^(\s*{field}:).*$")
-    for field in ("file_path", "output_path", "description")
-}
+# Demo downloads in flight: config name -> (bytes done, total or 0 if unknown).
+_DOWNLOADS: dict[str, tuple[int, int]] = {}
 
 
-def _demo_yaml(config_name: str) -> str:
-    # Patch the glider's paths/description into its "default" or "alr" template.
-    entry = DEMO_FILES[_demo_key(config_name)]
-    template_name = "demo_alr.yaml" if entry.template == "alr" else "default.yaml"
-    text = (CONFIG_DIR / template_name).read_text()
-    rel_path = f"{DEMO_DATA_DIR}/{entry.filename}"
-    stem = Path(entry.filename).stem
-    text = _DEMO_FIELD_RE["file_path"].sub(
-        rf"\1 {rel_path}  # Path to the input NetCDF file", text, count=1,
-    )
-    text = _DEMO_FIELD_RE["output_path"].sub(
-        rf'\1 "{DEMO_DATA_DIR}/{stem}_Processed.nc"', text, count=1,
-    )
-    text = _DEMO_FIELD_RE["description"].sub(
-        rf"\1 A demo pipeline using {entry.display_label} data.", text, count=1,
-    )
-    return text
+@app.get("/api/demos/progress")
+def demo_progress():
+    return {name: {"done": d, "total": t} for name, (d, t) in _DOWNLOADS.items()}
+
+
+class BuildPayload(BaseModel):
+    file_path: str
+    choices: dict | None = None
+    description: str | None = None
+
+
+def _template_text() -> str:
+    return (CONFIG_DIR / "default.yaml").read_text()
+
+
+@app.post("/api/build/decisions")
+def build_decisions(payload: BuildPayload):
+    """What the template must change for this file (see config_builder.decisions)."""
+    path = _resolve_inspect_path(payload.file_path)
+    probe = file_probe.probe_file(path)
+    if probe is None:
+        raise HTTPException(status_code=400, detail=f"Could not read '{path.name}'.")
+    return {"path": str(path), "decisions": config_builder.decisions(probe)}
+
+
+@app.post("/api/build")
+def build_config(payload: BuildPayload):
+    """The template adapted to this file with the given (or default) choices."""
+    path = _resolve_inspect_path(payload.file_path)
+    probe = file_probe.probe_file(path)
+    if probe is None:
+        raise HTTPException(status_code=400, detail=f"Could not read '{path.name}'.")
+    # Keep demo paths repo-relative so the config reads the same on any checkout.
+    file_path = payload.file_path
+    if not Path(file_path).is_absolute():
+        file_path = str(path.relative_to(REPO_ROOT))
+    return {"yaml_content": config_builder.build(
+        _template_text(), file_path, probe, payload.choices, payload.description,
+    )}
 
 
 @app.get("/api/configs/{name}")
@@ -442,11 +633,20 @@ def load_config(name: str):
     if demo_name in DEMO_CONFIGS:
         try:
             _ensure_demo_file(demo_name)
-            return {"name": demo_name, "yaml_content": _demo_yaml(demo_name)}
         except Exception as exc:
             raise HTTPException(
                 status_code=502, detail=f"Could not download demo data: {exc}"
             ) from exc
+        # Demo configs are built per file (see /api/build) once the user confirms
+        # the builder's decisions, so this only says which file to build for.
+        entry = DEMO_FILES[_demo_key(demo_name)]
+        return {
+            "name": demo_name,
+            "build": {
+                "file_path": f"{DEMO_DATA_DIR}/{entry.filename}",
+                "description": f"A demo pipeline using {entry.display_label} data.",
+            },
+        }
     path = _safe_config_path(name)
     if not path.exists():
         raise HTTPException(status_code=404, detail="Config not found.")

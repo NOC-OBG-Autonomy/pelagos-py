@@ -218,7 +218,9 @@ const Viewer = {
       cap.textContent = it.caption;
       fig.appendChild(cap);
     }
-    fig.onclick = () => Viewer.open(items, index);
+    // Log/error cards have no image: leave them out of the lightbox sequence.
+    const figs = items.filter((f) => !f.isLog);
+    fig.onclick = () => Viewer.open(figs, figs.indexOf(it));
     if (it.spec) fig.classList.add('has-plot');
     fig.title = it.spec ? 'Click to open — this plot is interactive' : 'Click to view full size';
     return fig;

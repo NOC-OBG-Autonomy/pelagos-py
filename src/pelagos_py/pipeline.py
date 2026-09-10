@@ -45,14 +45,16 @@ _PIPELINE_LOGGER_NAME = "pelagos_py.pipeline"
 """Global logger name for the pipeline. Used to create child loggers for steps."""
 
 
-def resolve_continue_on_step_fail(value):
-    """Bool or "true"/"false"/"auto"; "auto" = pause for review where possible (dashboard), else continue."""
-    if isinstance(value, str):
-        v = value.strip().lower()
-        if v == "auto":
-            return "auto"
-        return v == "true"
-    return bool(value)
+ON_STEP_FAIL = ("skip", "pause", "stop")
+
+
+def resolve_on_step_fail(value):
+    """The pipeline's ``on_step_fail`` setting: "skip", "pause" (dashboard only;
+    behaves as "skip" elsewhere) or "stop". Defaults to "pause"."""
+    v = str(value or "pause").strip().lower()
+    if v not in ON_STEP_FAIL:
+        raise ValueError(f"on_step_fail must be one of {ON_STEP_FAIL}, got {value!r}")
+    return v
 
 
 def _setup_logging(out_dir=None, log_file=None, level=logging.INFO):
@@ -171,6 +173,7 @@ class Pipeline(ConfigMirrorMixin):
         self.steps = []  # hierarchical step configs
         self.global_parameters = {}  # mirrors _parameters["pipeline"]
         self._context = None
+        self._diagnose_failures = False  # dashboard: draw a step's failure plot on every fail
 
         # initialise config mirror system
         self._init_config_mirror()
@@ -395,11 +398,23 @@ class Pipeline(ConfigMirrorMixin):
 
             return result
 
+        except SystemExit:  # step.halt(): already logged, propagates as is
+            self._plot_failure(step, user_diagnostics)
+            raise
         except Exception as e:
             self.logger.error(
                 f"Fatal error encountered while executing step '{step.name}': {e}"
             )
+            self._plot_failure(step, user_diagnostics)
             raise RuntimeError(f"Pipeline failed at step '{step.name}': {e}") from e
+
+    def _plot_failure(self, step, user_diagnostics):
+        if not (self._diagnose_failures or user_diagnostics):
+            return
+        try:
+            step.plot_failure()
+        except Exception as exc:  # noqa: BLE001 - never mask the real error
+            self.logger.warning("Failure plot for '%s' failed: %s", step.name, exc)
 
     def run_last_step(self):
         """
@@ -416,11 +431,8 @@ class Pipeline(ConfigMirrorMixin):
         """
         Runs the entire pipeline.
         """
-        continue_on_step_fail = resolve_continue_on_step_fail(
-            self.global_parameters.get("continue_on_step_fail", "auto")
-        )
-        if continue_on_step_fail == "auto":
-            continue_on_step_fail = True  # nothing to pause for outside the dashboard
+        # Pausing needs the dashboard; here it just skips.
+        stop_on_fail = resolve_on_step_fail(self.global_parameters.get("on_step_fail")) == "stop"
         with self.run_context() as report_present:
             # Headless Agg for the whole run: toggling the backend per step can crash on Windows
             backend_ctx = (
@@ -433,7 +445,7 @@ class Pipeline(ConfigMirrorMixin):
                     try:
                         self._context = self.execute_step(step, self._context)
                     except (RuntimeError, SystemExit):
-                        if not continue_on_step_fail:
+                        if stop_on_fail:
                             raise
                         # execute_step/halt() already logged the underlying
                         # error; this just marks the step as skipped and moves

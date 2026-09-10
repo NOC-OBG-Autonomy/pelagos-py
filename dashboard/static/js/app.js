@@ -516,8 +516,10 @@ async function boot() {
 
   // run controls
   Run.initScroll();
+  Outputs.init();
   // Doubles as Continue while paused — see Run.setRunButton().
   document.getElementById('btn-run').addEventListener('click', () => {
+    if (Build.active) return;
     if (Run.pausedStep === null) Run.start(editor.getValue());
     else if (ManualQC.isActive()) ManualQC.applyAndContinue();
     else Run.continueRun();

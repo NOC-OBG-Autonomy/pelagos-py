@@ -1793,6 +1793,11 @@ class WriteDataReportPython(BaseStep):
         #   shown on the title page.
         glob_params = self.context["global_parameters"]
 
+        #   One bar for the whole step, opened before any work so it takes over
+        #   from the export's the moment that finishes: track map 5%, cross-section
+        #   +10, QC histograms +80, PDF assembly fills the rest.
+        report_bar = progress_bar(total=100, desc="", unit="%", step_name=self.name)
+
         #   Title-page glider track map. Best-effort: any failure (no
         #   coordinates, cartopy/Natural Earth unavailable) just omits the map.
         try:
@@ -1800,15 +1805,11 @@ class WriteDataReportPython(BaseStep):
         except Exception as exc:  # noqa: BLE001 - the map must never break the report
             self.log_warn(f"Could not build the title-page track map: {exc}")
             track_map_path = None
+        report_bar.update(5)
 
         try:
             #   All figures are drawn first and rasterised by background workers
             #   (save_figure); the PDF is assembled once every PNG exists.
-            #   One bar for the whole build: cross-section to 10%, QC histograms
-            #   fill 20 -> 100%; the quick middle sections read as the 10 -> 20 jump.
-            report_bar = progress_bar(
-                total=100, desc="", unit="%", step_name=self.name
-            )
             cross_section_img = None
             if self.parameters.get("show_cross_section_plots", True):
                 cross_section_img = cross_section_figure(data, fig_dir)
@@ -1817,7 +1818,6 @@ class WriteDataReportPython(BaseStep):
             if self.parameters.get("show_qc_plots", True):
                 qc_figures = qc_hist_figures(data, fig_dir, bar=report_bar)
             wait_for_saves()
-            report_bar.close()
 
             #   Build the PDF
             pdf = ReportPDF(
@@ -1885,8 +1885,10 @@ class WriteDataReportPython(BaseStep):
                 index_section(pdf, data)
 
             pdf.output(fout)
+            report_bar.update(report_bar.total - report_bar.n)
             self.log(f"Report written to {fout}")
         finally:
+            report_bar.close()
             if delete_figures:
                 shutil.rmtree(fig_dir, ignore_errors=True)
             else:

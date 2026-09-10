@@ -134,7 +134,7 @@ steps:
 
   - name: "Apply QC"
     parameters:
-      # Unknown test name: passes pre-flight validation, fails at run time -> exercises continue_on_step_fail
+      # Unknown test name: passes pre-flight validation, fails at run time -> exercises on_step_fail
       qc_settings:
         nonexistent qc:
           variable_ranges:
@@ -148,15 +148,15 @@ steps:
 """
 
 
-def _build_failing_step_pipeline(tmp_path, synthetic_nc, continue_on_step_fail=None):
+def _build_failing_step_pipeline(tmp_path, synthetic_nc, on_step_fail=None):
     config = yaml.safe_load(FAILING_STEP_YAML)
     config_file = tmp_path / "failing_step_pipeline.yaml"
     output_nc = tmp_path / "continue_on_fail_output.nc"
 
     config["pipeline"]["out_directory"] = str(tmp_path)
     config["pipeline"]["log_file"] = str(tmp_path / "test.log")
-    if continue_on_step_fail is not None:
-        config["pipeline"]["continue_on_step_fail"] = continue_on_step_fail
+    if on_step_fail is not None:
+        config["pipeline"]["on_step_fail"] = on_step_fail
 
     for step in config["steps"]:
         if step["name"] == "Load OG1":
@@ -171,9 +171,9 @@ def _build_failing_step_pipeline(tmp_path, synthetic_nc, continue_on_step_fail=N
 
 
 @pytest.mark.filterwarnings("ignore:.*monotonically increasing.*")
-def test_step_failure_stops_pipeline_when_disabled(tmp_path, synthetic_nc):
+def test_on_step_fail_stop_raises(tmp_path, synthetic_nc):
     p, output_nc = _build_failing_step_pipeline(
-        tmp_path, synthetic_nc, continue_on_step_fail=False
+        tmp_path, synthetic_nc, on_step_fail="stop"
     )
     with pytest.raises(RuntimeError):
         p.run()
@@ -181,20 +181,20 @@ def test_step_failure_stops_pipeline_when_disabled(tmp_path, synthetic_nc):
 
 
 @pytest.mark.filterwarnings("ignore:.*monotonically increasing.*")
-def test_continue_on_step_fail_skips_failing_step(tmp_path, synthetic_nc):
+def test_on_step_fail_skip_skips_failing_step(tmp_path, synthetic_nc):
     p, output_nc = _build_failing_step_pipeline(
-        tmp_path, synthetic_nc, continue_on_step_fail=True
+        tmp_path, synthetic_nc, on_step_fail="skip"
     )
     p.run()
     assert output_nc.exists(), (
-        "continue_on_step_fail should let the pipeline finish after a step fails."
+        "on_step_fail: skip should let the pipeline finish after a step fails."
     )
 
 
 @pytest.mark.filterwarnings("ignore:.*monotonically increasing.*")
-def test_continue_on_step_fail_defaults_to_enabled(tmp_path, synthetic_nc):
+def test_on_step_fail_defaults_to_pause_which_skips_outside_dashboard(tmp_path, synthetic_nc):
     p, output_nc = _build_failing_step_pipeline(tmp_path, synthetic_nc)
     p.run()
     assert output_nc.exists(), (
-        "continue_on_step_fail should default to enabled (skip on fail)."
+        "the default (pause) should skip on fail outside the dashboard."
     )
