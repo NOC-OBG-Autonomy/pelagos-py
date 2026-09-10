@@ -44,6 +44,8 @@ FS_SUPTITLE, FS_TITLE, FS_LABEL, FS_TICK, FS_LEGEND = 12, 11, 9, 8, 8
 MARKER = 4            # markersize for plot() point series
 ALPHA = 0.7
 RASTER_ABOVE = 5000   # rasterize dense point layers above this many points
+CAPTURE_MAX_POINTS = 100_000  # point cap for figures saved to disk (report capture)
+MAX_POINTS = None  # set by report capture so dense series are thinned when drawn, not only when saved
 
 # Colours (hex, one mapping used everywhere).
 FLAG_COLOURS = {
@@ -67,6 +69,12 @@ def flag_label(flag):
     return f"{flag} ({meaning})" if meaning else str(flag)
 
 
+def thin_idx(n, cap=None):
+    """Indices evenly thinning ``n`` points to ``cap`` (default MAX_POINTS); arange(n) if under the cap."""
+    cap = cap or MAX_POINTS
+    return np.linspace(0, n - 1, cap).astype(int) if cap and n > cap else np.arange(n)
+
+
 def new_fig(nrows=1, ncols=1, sharex=False, sharey=False, height_ratios=None, width_ratios=None):
     """A standard figure + axes at the standard width/dpi. Axes always 2D: axes[r][c].
 
@@ -75,12 +83,8 @@ def new_fig(nrows=1, ncols=1, sharex=False, sharey=False, height_ratios=None, wi
     """
     import matplotlib.pyplot as plt
     height = FIG_H if nrows == 1 else ROW_H * nrows
-    gridspec_kw = {}
-    if height_ratios is not None:
-        gridspec_kw["height_ratios"] = height_ratios
-    if width_ratios is not None:
-        gridspec_kw["width_ratios"] = width_ratios
-    gridspec_kw = gridspec_kw or None
+    gridspec_kw = {k: v for k, v in {"height_ratios": height_ratios, "width_ratios": width_ratios}.items()
+                   if v is not None} or None
     return plt.subplots(nrows, ncols, figsize=(FIG_W, height), dpi=DPI,
                         sharex=sharex, sharey=sharey, squeeze=False,
                         gridspec_kw=gridspec_kw)
@@ -118,10 +122,8 @@ def date_axis(ax, which="x", index=None):
     if index is None or which != "x":
         return
     t = np.asarray(index)
-    pos = np.arange(t.size)
-    if MAX_POINTS and t.size > MAX_POINTS:  # report capture: a thinned index maps just as well
-        pos = np.linspace(0, t.size - 1, MAX_POINTS).astype(int)
-        t = t[pos]
+    pos = thin_idx(t.size)  # report capture: a thinned index maps just as well
+    t = t[pos]
     if np.issubdtype(t.dtype, np.datetime64) or t.dtype == object:
         t = np.asarray(mdates.date2num(t), dtype=float)
     ok = np.isfinite(t)
@@ -153,16 +155,11 @@ def x_axis(ax, x):
         style_axes(ax, xlabel="Index")
 
 
-# Report capture sets this (diagnostic_capture) so dense series are thinned when
-# drawn, not only when saved: same PNG, a fraction of the draw time and memory.
-MAX_POINTS = None
-
-
 def points(ax, x, y, *, color, label=None, size=MARKER, alpha=ALPHA):
     """Standard point series: fast plot() markers, WebGL-safe, one legend entry."""
     x, y = np.asarray(x), np.asarray(y)
-    if MAX_POINTS and x.size > MAX_POINTS:
-        idx = np.linspace(0, x.size - 1, MAX_POINTS).astype(int)
+    if MAX_POINTS:
+        idx = thin_idx(x.size)
         x, y = x[idx], y[idx]
     ax.plot(x, y, ls="", marker="o", markersize=size,
             markeredgewidth=0, color=color, alpha=alpha, label=label,
@@ -174,8 +171,8 @@ def flag_points(ax, x, y, flags):
     flags, x, y = np.asarray(flags), np.asarray(x), np.asarray(y)
     for f in range(10):
         idx = np.flatnonzero(flags == f)
-        if MAX_POINTS and idx.size > MAX_POINTS:  # thin before gathering x/y
-            idx = idx[np.linspace(0, idx.size - 1, MAX_POINTS).astype(int)]
+        if MAX_POINTS:
+            idx = idx[thin_idx(idx.size)]  # thin before gathering x/y
         if idx.size:
             points(ax, x[idx], y[idx], color=FLAG_COLOURS[f], label=flag_label(f))
 

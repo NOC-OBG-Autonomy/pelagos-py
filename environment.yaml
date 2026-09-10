@@ -30,7 +30,7 @@ dependencies:
   - pyyaml
   - pip
 
-  # Dashboard (config authoring/running web UI + native-window launcher)
+  # Dashboard (config authoring/running web UI)
   - fastapi>=0.110
   - uvicorn>=0.29
   - psutil>=5.9
@@ -60,7 +60,6 @@ dependencies:
     - fpdf2
     - compliance-checker
     - cc-plugin-og
-    - pywebview>=5.0  # native desktop-window launcher for the dashboard
     - autoapi
     - sphinx_copybutton
     - sphinx_last_updated_by_git

@@ -26,6 +26,7 @@ import pelagos_py.utils.palettes as palettes
 #### Custom imports ####
 import xarray as xr
 import numpy as np
+from functools import cached_property
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -84,16 +85,6 @@ def check_chl_variables(self, allowed_requests):
     return user_request, output_as
 
 
-def _group_by_key(keys, *arrays):
-    # (key, arrays sliced to that key) per unique key, one stable sort instead of
-    # a full-array mask per key (order within a group is preserved, so sums match).
-    order = np.argsort(keys, kind="stable")
-    uniq, starts = np.unique(keys[order], return_index=True)
-    ends = np.append(starts[1:], order.size)
-    for k, s, e in zip(uniq, starts, ends):
-        yield (k, *(a[order[s:e]] for a in arrays))
-
-
 @register_step
 class chla_quenching_correction(BaseStep, QCHandlingMixin):
     """Correct non-photochemical quenching of chlorophyll fluorescence.
@@ -135,10 +126,7 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         "CHLA", "CHLA_ADJUSTED", "CHLA_FLUORESCENCE", "CHLA_FLUORESCENCE_ADJUSTED",
     ]
     variable_parameters = ["bbp_var", "par_var", "apply_to"]
-    # bbp_var/par_var are only required by some methods (see the comment on
-    # required_variables above) -- excluded from the pipeline validator's
-    # generic variable_parameters check, which otherwise can't tell that apart
-    # from apply_to, which every method needs.
+    # only some methods need these (see required_variables), so the validator can't check them
     variable_parameters_optional = ("bbp_var", "par_var")
     uses_data_subset = True
 
@@ -471,12 +459,10 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
     # ==================================================================
     # Shared helpers - inputs and per-profile quantities used by the methods below
     # ==================================================================
-    @property
+    @cached_property
     def _profile_index(self):
-        # {profile number: sample indices}, built once and shared by every per-profile pass
-        if getattr(self, "_profile_index_cache", None) is None:
-            self._profile_index_cache = profile_indices(self.data["PROFILE_NUMBER"].values)
-        return self._profile_index_cache
+        # {profile number: sample indices}, shared by every per-profile pass
+        return profile_indices(self.data["PROFILE_NUMBER"].values)
 
     def _calc_values(self, profile, var):
         # QC-masked copy of var: read when *deriving* a quantity, not when correcting.
@@ -720,7 +706,8 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         fl_v, bbp_v = fl[valid], bbp[valid]
 
         centres, mean_fl, ratio = [], [], []
-        for k, fl_bin, bbp_bin in _group_by_key(keys, fl_v, bbp_v):
+        for k, idx in profile_indices(keys).items():
+            fl_bin, bbp_bin = fl_v[idx], bbp_v[idx]
             f = np.nanmean(fl_bin) if np.any(np.isfinite(fl_bin)) else np.nan
             b = np.nanmean(bbp_bin) if np.any(np.isfinite(bbp_bin)) else np.nan
             if not (np.isfinite(f) and np.isfinite(b) and b > 0):

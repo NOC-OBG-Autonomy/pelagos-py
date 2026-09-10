@@ -46,13 +46,7 @@ _PIPELINE_LOGGER_NAME = "pelagos_py.pipeline"
 
 
 def resolve_continue_on_step_fail(value):
-    """Interpret the ``continue_on_step_fail`` pipeline setting.
-
-    Accepts a real bool (legacy configs) or the strings ``"true"``/``"false"``/
-    ``"auto"``. ``"auto"`` means "pause for review" in an environment that can
-    do that (the dashboard); a caller that cannot pause (e.g. a plain script
-    run) should treat it the same as ``True`` (skip and continue).
-    """
+    """Bool or "true"/"false"/"auto"; "auto" = pause for review where possible (dashboard), else continue."""
     if isinstance(value, str):
         v = value.strip().lower()
         if v == "auto":
@@ -422,53 +416,18 @@ class Pipeline(ConfigMirrorMixin):
         """
         Runs the entire pipeline.
         """
-        try:
-            check_pipeline_variables(self.steps, self.logger)
-        except ValueError:
-            self.logger.log(
-                STOP,
-                "Pipeline stopped before execution. "
-                "Resolve the validation error above and re-run.",
-            )
-            raise SystemExit(1) from None
-
-        # If the pipeline writes a report, capture each step's diagnostic plots
-        # in the background (regardless of that step's own diagnostics setting)
-        # so they can be embedded in the report. This exercises every step's
-        # diagnostic code, which is why it can slow the run down.
-        report_present = any(s["name"] == REPORT_STEP_NAME for s in self.steps)
-        self._step_index = 0
-        if report_present:
-            self._capture_diagnostics = True
-            self._captured_figures = []
-            self._capture_dir = tempfile.mkdtemp(prefix="pelagos_report_diag_")
-            self.logger.warning(
-                "A report step is enabled: diagnostic plots will be generated in "
-                "the background for every step that produces one, so the pipeline "
-                "may run more slowly than usual."
-            )
-
-        # When capturing for the report, force the headless Agg backend once for
-        # the whole run (see force_headless_backend). Toggling the backend per
-        # step can hard-crash on Windows, so it stays on Agg start to finish.
-        backend_ctx = (
-            diagnostic_capture.force_headless_backend()
-            if report_present
-            else contextlib.nullcontext()
-        )
         continue_on_step_fail = resolve_continue_on_step_fail(
             self.global_parameters.get("continue_on_step_fail", "auto")
         )
         if continue_on_step_fail == "auto":
-            # A plain script run has no way to pause for review, so "auto"
-            # falls back to skip-and-continue here (the dashboard's own driver
-            # loop interprets "auto" itself -- see run_bootstrap.py).
-            continue_on_step_fail = True
-        # The per-step gc.collect() in execute_step otherwise walks every
-        # object the imported libraries own (~35 ms each); freezing them
-        # leaves only what the run itself creates for the collector to visit.
-        gc.freeze()
-        try:
+            continue_on_step_fail = True  # nothing to pause for outside the dashboard
+        with self.run_context() as report_present:
+            # Headless Agg for the whole run: toggling the backend per step can crash on Windows
+            backend_ctx = (
+                diagnostic_capture.force_headless_backend()
+                if report_present
+                else contextlib.nullcontext()
+            )
             with backend_ctx:
                 for step in self.steps:
                     try:
@@ -482,6 +441,37 @@ class Pipeline(ConfigMirrorMixin):
                         self.logger.log(
                             SEVERE, "Step '%s' failed and was skipped.", step["name"]
                         )
+
+    @contextlib.contextmanager
+    def run_context(self):
+        """Pre-flight validation and report-capture/gc setup around a run (shared with the
+        dashboard runner, which drives execute_step itself). Yields whether a report step is present."""
+        try:
+            check_pipeline_variables(self.steps, self.logger)
+        except ValueError:
+            self.logger.log(
+                STOP,
+                "Pipeline stopped before execution. "
+                "Resolve the validation error above and re-run.",
+            )
+            raise SystemExit(1) from None
+
+        # A report captures every step's diagnostic plots (regardless of its own
+        # diagnostics setting) so they can be embedded, which slows the run down.
+        report_present = any(s["name"] == REPORT_STEP_NAME for s in self.steps)
+        self._step_index = 0
+        if report_present:
+            self._capture_diagnostics = True
+            self._captured_figures = []
+            self._capture_dir = tempfile.mkdtemp(prefix="pelagos_report_diag_")
+            self.logger.warning(
+                "A report step is enabled: diagnostic plots will be generated in "
+                "the background for every step that produces one, so the pipeline "
+                "may run more slowly than usual."
+            )
+        gc.freeze()  # keeps the per-step gc.collect() from walking every library object
+        try:
+            yield report_present
         finally:
             gc.unfreeze()
             if report_present:

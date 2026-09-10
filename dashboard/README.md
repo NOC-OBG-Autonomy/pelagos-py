@@ -6,24 +6,16 @@ pipeline configs. It is completely independent of the pipeline: it imports
 pipeline operationally — a config authored in the dashboard is an ordinary YAML
 file you can run any other way.
 
-## What makes it "smart"
-
-- **Auto-discovers steps.** The palette and every parameter form are generated
-  from the live `STEP_CLASSES` / `QC_CLASSES` registries and each step's
-  `describe_parameters()`. Add a new `@register_step` and it appears on the
-  next server start — no dashboard changes.
-- **Real validation.** `Validate` calls the pipeline's own
-  `parameter_spec.resolve()` on the server, so what the dashboard accepts is
-  exactly what the pipeline accepts (types, required params, `options`,
-  unknown-key rejection). No duplicated validation logic to drift.
-- **QC-aware.** Adding an *Apply QC* step gives you a picker of every registered
-  QC test, each configured via its own schema.
+The step palette and parameter forms are generated from the live `STEP_CLASSES`
+/ `QC_CLASSES` registries and each step's `describe_parameters()`, so a newly
+registered step appears on the next server start. Validation calls the
+pipeline's own `parameter_spec.resolve()`, so what the dashboard accepts is
+exactly what the pipeline accepts.
 
 ## Running
 
 ```bash
-pip install -r dashboard/requirements.txt   # fastapi, uvicorn, pyyaml
-# (pelagos_py itself must be importable — installed, or run from the repo root)
+pip install -e ".[dashboard]"
 python dashboard/app.py
 ```
 
@@ -139,6 +131,7 @@ server so a clicked point reports exact values. Per figure the runner writes
 | File | Role |
 |------|------|
 | `app.py` | FastAPI backend: `/api/registry`, `/api/validate`, config CRUD, run + SSE log stream |
+| `run_bootstrap.py` | Subprocess entry point that runs the pipeline and captures each `plt.show()` figure |
 | `static/index.html` | Three-pane UI shell |
 | `static/js/api.js` | Backend fetch wrappers |
 | `static/js/forms.js` | Schema → form-field renderer (generic) |
@@ -148,11 +141,15 @@ server so a clicked point reports exact values. Per figure the runner writes
 | `static/js/review.js` | Paused-step panel: its plots + its parameters + re-run |
 | `static/js/viewer.js` | Full-window figure viewer (lightbox) |
 | `static/js/plot.js` | WebGL renderer: spec + binary → zoomable panels |
+| `static/js/mem.js` | Live RAM meter: per-step RSS sparkline from `__PELAGOS_MEM__` markers |
+| `static/js/manual.js` | Manual QC tab: draw flag boxes on the paused test's plot |
+| `static/js/inspect.js` | Inspect tab: variables, sensors and attributes of the config's input file |
+| `static/js/demos.js` | Demos tab: demo deployments as cards grouped by mission |
+| `static/js/icons.js` | Inline SVG line-icons (no icon font or CDN) |
 | `fig_spec.py` | matplotlib figure → plot spec + float32 data (dashboard-only, best-effort) |
 | `static/js/app.js` | Bootstrap and wiring |
 
 ## Later / offline
 
-CodeMirror and js-yaml load from a CDN for now. To run fully offline (e.g.
-wrapped as a local Tauri/pywebview app), vendor those into `static/vendor/` and
-point `index.html` at the local copies.
+CodeMirror and js-yaml load from a CDN for now. To run fully offline, vendor
+those into `static/vendor/` and point `index.html` at the local copies.

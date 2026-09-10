@@ -134,10 +134,7 @@ steps:
 
   - name: "Apply QC"
     parameters:
-      # An unknown test name: skipped by pre-flight validation (Apply QC
-      # itself raises a clear error for it at run time), so this step reliably
-      # fails only once the pipeline is actually running -- exactly what these
-      # tests need to exercise continue_on_step_fail.
+      # Unknown test name: passes pre-flight validation, fails at run time -> exercises continue_on_step_fail
       qc_settings:
         nonexistent qc:
           variable_ranges:

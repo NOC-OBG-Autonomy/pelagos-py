@@ -18,9 +18,9 @@
 
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
+from pelagos_py.utils.processing_utils import small_netcdf_chunk_cache
 import pelagos_py.utils.diagnostics as diag
 
-import netCDF4
 import xarray as xr
 import pandas as pd
 import numpy as np
@@ -97,10 +97,7 @@ class LoadOG1(BaseStep):
     }
 
     def run(self):
-        # Fail cleanly if the file is missing, rather than surfacing a wrapped
-        # xarray/netCDF4 traceback. An empty file_path (the shipped default
-        # config) gets its own message, since "not a file" reads like a typo
-        # rather than "you haven't set this yet".
+        # Empty path = the shipped default config: say so rather than "not a file".
         if not str(self.file_path).strip():
             self.halt(
                 "'file_path' is empty — this config does not include a data "
@@ -112,9 +109,7 @@ class LoadOG1(BaseStep):
                 "Check the 'file_path' parameter points to an existing file."
             )
 
-        # netCDF-C's 64 MB-per-variable chunk cache is dead weight for whole-variable
-        # reads and stays allocated while the file is open: shrink it below one chunk.
-        netCDF4.set_chunk_cache(1_000_000, *netCDF4.get_chunk_cache()[1:])
+        small_netcdf_chunk_cache()
         self.data = xr.open_dataset(self.file_path)
         self.log(f"Loaded data from {self.file_path}")
 

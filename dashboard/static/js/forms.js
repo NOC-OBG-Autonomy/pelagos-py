@@ -20,7 +20,7 @@ const Forms = {
     if (ts.length === 1 && (ts[0] === 'int' || ts[0] === 'float')) return 'number';
     if (ts.length === 1 && ts[0] === 'str') return 'text';
     // unions / unknown -> safest is a YAML mini-editor
-    return ts.length ? 'yaml' : 'yaml';
+    return 'yaml';
   },
 
   // A reasonable initial value for a spec (its default, else type-appropriate).
@@ -118,7 +118,7 @@ const Forms = {
       input.placeholder = 'YAML / JSON value';
       input.onchange = () => {
         const txt = input.value.trim();
-        if (txt === '') { values[spec.name] = null; input.classList.remove('bad'); onChange(); return; }
+        if (txt === '') { values[spec.name] = null; onChange(); return; }
         try {
           values[spec.name] = jsyaml.load(txt);
           input.style.borderColor = '';

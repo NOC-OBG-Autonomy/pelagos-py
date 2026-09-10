@@ -138,7 +138,7 @@ class GenerateData(BaseStep):
                         date(*map(int, start_date.split("-"))),
                         date(*map(int, end_date.split("-"))),
                         freq=timedelta(seconds=sample_period),
-                    ).values.astype("datetime64[ns]")
+                    ).values
                 }
             )
             data_length = len(df)

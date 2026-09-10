@@ -621,7 +621,7 @@ class Chart {
         this.pending = { x0: this.dx(p, Math.min(b.x0, b.x1)), x1: this.dx(p, Math.max(b.x0, b.x1)),
           y0: this.dy(p, Math.max(b.y0, b.y1)), y1: this.dy(p, Math.min(b.y0, b.y1)) };
         this._drawFG();
-        this.manual.onSelect(this.pending, { x: Math.max(b.x0, b.x1), y: Math.min(b.y0, b.y1) });
+        this.manual.onSelect(this.pending);
         return;
       }
       if (big) {
@@ -689,9 +689,8 @@ class Chart {
     t.bc = t.bcDyn;
   }
 
-  // Nearest visible point (in screen space) within a small radius; brute force
+  // Nearest visible point within 12px of a canvas point, or null; brute force
   // over every point is ~tens of ms even at millions, and only runs on click.
-  // Nearest visible sample within 12px of a canvas point, or null.
   _nearest(p, cx, cy) {
     const R2 = 12 * 12;
     const kx = p.rect.w / (p.view.x1 - p.view.x0), ky = p.rect.h / (p.view.y1 - p.view.y0);
@@ -734,9 +733,9 @@ class Chart {
     const label = pk.trace.spec.label && !pk.trace.spec.label.startsWith('_') ? pk.trace.spec.label : '';
     const ex = pk.exact || {};
     const xs = this._fmt(p, pk.x, s.xdate, p.xlog, ex.x), ys = this._fmt(p, pk.y, s.ydate, p.ylog, ex.y);
-    this.tip.innerHTML = (label ? '<b>' + this._esc(label) + '</b><br>' : '')
-      + '<span>' + this._esc(s.xlabel || 'x') + '</span> ' + this._esc(xs) + '<br>'
-      + '<span>' + this._esc(s.ylabel || 'y') + '</span> ' + this._esc(ys)
+    this.tip.innerHTML = (label ? '<b>' + escapeHtml(label) + '</b><br>' : '')
+      + '<span>' + escapeHtml(s.xlabel || 'x') + '</span> ' + escapeHtml(xs) + '<br>'
+      + '<span>' + escapeHtml(s.ylabel || 'y') + '</span> ' + escapeHtml(ys)
       + '<br><span>index</span> ' + pk.index
       + (pk.exact ? '' : '<br><i>float32 shown; exact values loading…</i>');
     this.tip.classList.remove('hidden');
@@ -746,8 +745,6 @@ class Chart {
     top = Math.max(4, Math.min(this.h - th - 4, top));
     this.tip.style.left = left + 'px'; this.tip.style.top = top + 'px';
   }
-
-  _esc(s) { return String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
 
   // PNG of the current view: the GL layer is redrawn so its buffer is fresh.
   toPNG() {

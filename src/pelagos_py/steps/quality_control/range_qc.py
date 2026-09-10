@@ -18,7 +18,7 @@
 
 #### Mandatory imports ####
 import numpy as np
-from pelagos_py.steps.base_qc import BaseQC, register_qc
+from pelagos_py.steps.base_qc import BaseQC, QC_COMBINATRIX, register_qc
 
 #### Custom imports ####
 import matplotlib
@@ -26,24 +26,6 @@ import matplotlib.pyplot as plt
 import xarray as xr
 from pelagos_py.utils import fig_spec
 
-
-# Argo flag-merge matrix for propagating flags onto a companion: merging an existing
-# flag (row) with a new one (column) gives QC_COMBINATRIX[existing, new], so a worse
-# flag is never downgraded. Same logic as ApplyQC.organise_flags.
-QC_COMBINATRIX = np.array(
-    [
-        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-        [1, 1, 2, 3, 4, 5, 1, 1, 8, 9],
-        [2, 2, 2, 3, 4, 5, 2, 2, 8, 9],
-        [3, 3, 3, 3, 4, 3, 3, 3, 3, 9],
-        [4, 4, 4, 4, 4, 4, 4, 4, 4, 9],
-        [5, 5, 5, 3, 4, 5, 5, 5, 8, 9],
-        [6, 1, 2, 3, 4, 5, 6, 6, 8, 9],
-        [7, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-        [8, 8, 8, 3, 4, 8, 8, 8, 8, 9],
-        [9, 9, 9, 9, 9, 9, 9, 9, 9, 9],
-    ]
-)
 
 @register_qc
 class range_qc(BaseQC):

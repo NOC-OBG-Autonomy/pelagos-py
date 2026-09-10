@@ -20,6 +20,7 @@
 from pelagos_py.steps.base_step import BaseStep, register_step
 import pelagos_py.utils.diagnostics as diag
 from pelagos_py.steps import QC_CLASSES
+from pelagos_py.steps.base_qc import QC_COMBINATRIX
 
 #### Custom imports ####
 import xarray as xr
@@ -38,16 +39,20 @@ def _flag_summary(flags):
 
     def quantile(q):  # numpy 'linear' method, as pandas describe uses
         pos = q * (n - 1)
-        lo, hi = values[np.searchsorted(cum, int(pos), side="right")], values[np.searchsorted(cum, int(np.ceil(pos)), side="right")]
-        t = pos - int(pos)
-        return float(hi - (hi - lo) * (1 - t)) if t >= 0.5 else float(lo + (hi - lo) * t)
+        lo, hi = values[np.searchsorted(cum, [int(pos), int(np.ceil(pos))], side="right")]
+        return float(lo + (hi - lo) * (pos - int(pos)))
 
+    lowest, highest = values[np.flatnonzero(counts)[[0, -1]]]
     stats = {
-        "count": float(n), "mean": mean, "std": std, "min": float(values[counts > 0][0]),
-        "25%": quantile(0.25), "50%": quantile(0.5), "75%": quantile(0.75),
-        "max": float(values[counts > 0][-1]),
+        "count": float(n), "mean": mean, "std": std, "min": float(lowest),
+        "25%": quantile(0.25), "50%": quantile(0.5), "75%": quantile(0.75), "max": float(highest),
     }
     return {i: int(counts[i]) for i in range(10)}, {k: round(v, 5) for k, v in stats.items()}
+
+
+def _split_test_settings(settings):
+    # ``diagnostics`` is a per-test override, not a QC parameter: keep it away from validation
+    return {k: v for k, v in settings.items() if k != "diagnostics"}, settings.get("diagnostics")
 
 
 @register_step
@@ -99,30 +104,15 @@ class ApplyQC(BaseStep):
             Dataset containing new QC flag variables to be merged into the existing flag store.
         """
 
-        # Define combinatrix for handling flag upgrade behaviour
-        qc_combinatrix = np.array(
-            [
-                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-                [1, 1, 2, 3, 4, 5, 1, 1, 8, 9],
-                [2, 2, 2, 3, 4, 5, 2, 2, 8, 9],
-                [3, 3, 3, 3, 4, 3, 3, 3, 3, 9],
-                [4, 4, 4, 4, 4, 4, 4, 4, 4, 9],
-                [5, 5, 5, 3, 4, 5, 5, 5, 8, 9],
-                [6, 1, 2, 3, 4, 5, 6, 6, 8, 9],
-                [7, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-                [8, 8, 8, 3, 4, 8, 8, 8, 8, 9],
-                [9, 9, 9, 9, 9, 9, 9, 9, 9, 9],
-            ]
-        )
-
         # Update existing flag columns
         flag_columns_to_update = set(new_flags.data_vars) & set(
             self.flag_store.data_vars
         )
         for column_name in flag_columns_to_update:
-            self.flag_store[column_name][:] = new_flags[column_name].values if overwrite else qc_combinatrix[
-                self.flag_store[column_name], new_flags[column_name]
-            ]
+            new = new_flags[column_name].values
+            if not overwrite:
+                new = QC_COMBINATRIX[self.flag_store[column_name], new]
+            self.flag_store[column_name][:] = new
 
         # Add new QC flag columns if they dont already exist
         flag_columns_to_add = set(new_flags.data_vars) - set(self.flag_store.data_vars)
@@ -167,14 +157,8 @@ class ApplyQC(BaseStep):
         test_qc_outputs_cols = set({})
         for test in queued_qc:
             if hasattr(test, "dynamic"):
-                # Initialise the test to check its dynamic attributes. Strip the
-                # reserved per-test ``diagnostics`` key so it never reaches the
-                # test's parameter validation.
-                test_params = {
-                    k: v
-                    for k, v in self.qc_settings[test.qc_name].items()
-                    if k != "diagnostics"
-                }
+                # Initialise the test to check its dynamic attributes
+                test_params, _ = _split_test_settings(self.qc_settings[test.qc_name])
                 test_instance = test(None, **test_params)
                 all_required_variables.update(test_instance.required_variables)
                 test_qc_outputs_cols.update(test_instance.qc_outputs)
@@ -241,18 +225,14 @@ class ApplyQC(BaseStep):
 
         # Run through all of the QC steps and add the flags to flag_store
         for qc_qc_name, qc_test_settings in self.qc_settings.items():
-            # Create an instance of this test step. ``diagnostics`` is a reserved
-            # per-test override, not a QC parameter: pop it out (falling back to
-            # the step-level flag) before it reaches the test's validation.
-            qc_test_params = {
-                k: v for k, v in qc_test_settings.items() if k != "diagnostics"
-            }
-            test_diagnostics = qc_test_settings.get("diagnostics", self.diagnostics)
+            qc_test_params, test_diagnostics = _split_test_settings(qc_test_settings)
+            if test_diagnostics is None:
+                test_diagnostics = self.diagnostics
             self.log(
                 f"Applying: {qc_qc_name}"
             )  # print(f"[Apply QC] Applying: {qc_qc_name}")
             qc_test_instance = QC_CLASSES[qc_qc_name](data, **qc_test_params)
-            overwrite = getattr(qc_test_instance, "overwrite_flags", False)
+            overwrite = qc_test_instance.overwrite_flags
             if overwrite:  # the test merges against the store itself
                 qc_test_instance.existing_flags = self.flag_store
             returned_flags = (
@@ -306,8 +286,7 @@ class ApplyQC(BaseStep):
 
             # Diagnostic plotting. Never let a diagnostic-only error abort QC;
             # this matters when the report writer force-enables diagnostics to
-            # capture plots for every test. ``test_diagnostics`` is the per-test
-            # override (falling back to the step-level flag).
+            # capture plots for every test.
             if test_diagnostics:
                 try:
                     qc_test_instance.plot_diagnostics()

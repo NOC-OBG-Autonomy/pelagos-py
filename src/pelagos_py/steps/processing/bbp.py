@@ -43,9 +43,7 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
     # (pre-existing; left as-is to avoid changing pipeline-validation behaviour).
     optional_variables = ["PROFILE_NUMBER"]
     variable_parameters = ["apply_to", "output_as"]
-    # apply_to has a fallback chain (see _resolve_beta_var) resolved by the
-    # step itself at run time, so the generic variable_parameters check can't
-    # tell whether it's actually missing.
+    # apply_to is resolved at run time with fallbacks (see _resolve_beta_var)
     variable_parameters_optional = ("apply_to",)
     uses_data_subset = True
 
@@ -141,22 +139,17 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
         return self.context
 
     def _resolve_beta_var(self):
-        """Resolve the beta backscatter variable, walking down a fallback chain
-        when `apply_to` isn't present: any other BETA_BACKSCATTERING<wavelength>
-        variable (closest to 700nm if several), then a BBP<wavelength> variable.
-        """
+        # apply_to, else the BETA_BACKSCATTERING<wl> closest to 700 nm, else a BBP<wl> one
         full_vars = self.context["data"].data_vars
         if self.apply_to in full_vars:
             return self._pull_into_subset(self.apply_to)
 
-        fallback = self._closest_wavelength_var(full_vars, "BETA_BACKSCATTERING", exclude={self.apply_to})
+        fallback = self._closest_wavelength_var(full_vars, "BETA_BACKSCATTERING")
         if fallback:
             self.log_warn(f"'{self.apply_to}' not found; using '{fallback}' instead.")
             return self._pull_into_subset(fallback)
 
-        # TODO: current glider files from BODC mistakenly label raw beta backscatter
-        # as BBP<wavelength> (a derived-variable name); remove this fallback once
-        # BODC fixes the mislabelling upstream.
+        # TODO: drop once BODC stops labelling raw beta as BBP<wavelength>
         fallback = self._closest_wavelength_var(full_vars, "BBP")
         if fallback:
             self.log_warn(f"No BETA_BACKSCATTERING* variable found; using mislabelled '{fallback}' instead.")
@@ -178,12 +171,12 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
         return name
 
     @staticmethod
-    def _closest_wavelength_var(names, prefix, exclude=()):
+    def _closest_wavelength_var(names, prefix):
         pattern = re.compile(rf"^{re.escape(prefix)}(\d+)$")
         candidates = [
             (abs(int(match.group(1)) - 700), name)
             for name in names
-            if name not in exclude and (match := pattern.match(name))
+            if (match := pattern.match(name))
         ]
         return min(candidates)[1] if candidates else None
 

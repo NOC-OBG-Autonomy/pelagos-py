@@ -211,13 +211,13 @@ class InterpolatePAR(BaseStep, QCHandlingMixin):
         tsec = tidx.asi8.astype(float) / 1e9
         tsec[np.asarray(tidx.isna())] = np.nan
 
-        self._profile_index = profile_indices(prof)
-        profiles = np.array(list(self._profile_index))
+        index = profile_indices(prof)
+        profiles = np.array(list(index))
 
         prof_tsec = {}
         zeu_calc, zipar_calc = {}, {}
         for pn in profiles:
-            sel = self._profile_index[pn]
+            sel = index[pn]
             z, p, t = depth[sel], par[sel], tsec[sel]
             prof_tsec[pn] = np.nanmedian(t) if np.any(np.isfinite(t)) else np.nan
             if self.compute_zeu:
@@ -229,12 +229,12 @@ class InterpolatePAR(BaseStep, QCHandlingMixin):
 
         if self.compute_zeu:
             self._emit_scalar(
-                "ZEU", zeu_calc, prof, profiles, prof_tsec, self.interpolate_zeu,
+                "ZEU", zeu_calc, index, prof_tsec, self.interpolate_zeu,
                 long_name="Euphotic depth (1% light, positive down). NaN where undefined.",
             )
         if self.compute_ipar:
             self._emit_scalar(
-                "Z_IPAR", zipar_calc, prof, profiles, prof_tsec, self.interpolate_ipar,
+                "Z_IPAR", zipar_calc, index, prof_tsec, self.interpolate_ipar,
                 long_name=(
                     f"Depth where downwelling iPAR crosses {self.ipar_level:g} "
                     "umol/m2/s (positive down). NaN where undefined."
@@ -249,10 +249,10 @@ class InterpolatePAR(BaseStep, QCHandlingMixin):
         return self.context
 
     def _emit_scalar(
-        self, name, calc, prof, profiles, prof_tsec, interpolate, *, long_name,
-        extra_attrs=None,
+        self, name, calc, index, prof_tsec, interpolate, *, long_name, extra_attrs=None,
     ):
         # Interpolate (optionally), broadcast to N_MEASUREMENTS and write `name`.
+        profiles = np.array(list(index))
         final = self._interpolate_scalar(calc, profiles, prof_tsec) if interpolate else dict(calc)
 
         n_calc = sum(np.isfinite(v) for v in calc.values())
@@ -265,9 +265,9 @@ class InterpolatePAR(BaseStep, QCHandlingMixin):
         else:
             self.log(f"{name}: computed on {n_calc}/{len(profiles)} profiles (no interpolation).")
 
-        broadcast = np.full(prof.shape, np.nan)
-        for pn in profiles:
-            broadcast[self._profile_index[pn]] = final.get(pn, np.nan)
+        broadcast = np.full(self.data.sizes["N_MEASUREMENTS"], np.nan)
+        for pn, sel in index.items():
+            broadcast[sel] = final.get(pn, np.nan)
 
         self.data[name] = (("N_MEASUREMENTS",), broadcast)
         attrs = {"long_name": long_name, "units": "m", "standard_name": name}

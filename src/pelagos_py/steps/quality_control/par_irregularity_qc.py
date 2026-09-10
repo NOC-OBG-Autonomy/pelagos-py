@@ -195,9 +195,7 @@ def qc_par_flagging(pres, par, sun_elev, nei_par=3e-2):
     # ───────────────────────────────────────────────
     from scipy.stats import shapiro
     _shapiro = getattr(shapiro, "__wrapped__", shapiro)  # skip scipy's axis/nan_policy wrapper (~5x the test itself)
-    # Only the deepest tail with p <= 1e-4 (pa) is used, plus whether every p is
-    # > 0 for night profiles, so scan from the bottom up and stop once both are
-    # settled: same result as testing every tail, at a fraction of the cost.
+    # Scan bottom-up and stop once pa (deepest p <= 1e-4) and, for night, any p <= 0 are known.
     pvals = np.full_like(pres_i, np.nan, dtype=float)
     finite_par = np.isfinite(par_i)
     found_pa, all_positive = False, True

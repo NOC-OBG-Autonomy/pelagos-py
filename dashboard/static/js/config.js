@@ -1,6 +1,5 @@
 // Turn the builder STATE into pipeline YAML and back. The builder is the source
-// of truth; the YAML pane is a live preview plus an escape hatch for hand edits
-// (synced back on demand via "YAML → builder").
+// of truth; the YAML pane is a live preview whose hand edits sync back automatically.
 
 const Config = {
   // Build the plain config object (pre-YAML) from STATE.
@@ -121,8 +120,7 @@ const Config = {
     const pipeline = (cfg && cfg.pipeline) || {};
     for (const spec of STATE.registry.pipeline_fields) {
       let val = spec.name in pipeline ? pipeline[spec.name] : Forms.defaultValue(spec);
-      // Legacy configs store this as a real YAML bool; the field is now a
-      // three-way select ("auto"/"true"/"false"), so normalise to match.
+      // A YAML bool maps onto the three-way "auto"/"true"/"false" select.
       if (spec.name === 'continue_on_step_fail' && typeof val === 'boolean') {
         val = val ? 'true' : 'false';
       }
@@ -224,7 +222,7 @@ const Config = {
     Config.renderPicker();
     Config.updateControls();
     Config.updateSaveLabel();
-    if (typeof Demos !== 'undefined') Demos.render();
+    Demos.render();
   },
 
   // The Save button always writes to whatever name is in the field — typing a
@@ -264,16 +262,11 @@ const Config = {
   // Put `text` into the config editor and the builder, keeping the raw YAML if
   // it doesn't map cleanly onto the registry.
   apply(text) {
-    // Loading a *different* config outright replaces whatever the previous
-    // one's validation showed -- without this it would sit there, looking
-    // like it applies to the new config, until the next debounced check lands.
-    if (typeof showValidating === 'function') showValidating(true);
+    // Replace the previous config's validation result rather than leave it showing.
+    showValidating(true);
     Config.loading = true;
-    // fromYAML below pushes this same text into the builder, so the editor's
-    // own change event must not *also* schedule a deferred YAML→builder sync:
-    // it would land 400ms later and rebuild every step object, undoing whatever
-    // happened in between — which is how a page refresh landing on a paused
-    // step lost the step's unlocked, expanded state.
+    // fromYAML syncs the builder itself; a second, deferred sync from the editor's
+    // change event would rebuild every step object and lose e.g. a paused step's state.
     syncingFromBuilder = true;
     editor.setValue(text);
     syncingFromBuilder = false;
@@ -472,6 +465,6 @@ const Config = {
     if (Config.selected && !Config.known.includes(Config.selected)) Config.selected = '';
     Config.renderPicker();
     Config.updateControls();
-    if (typeof Demos !== 'undefined') Demos.render();
+    Demos.render();
   },
 };

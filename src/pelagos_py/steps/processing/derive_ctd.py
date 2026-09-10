@@ -99,7 +99,6 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
 
         self.filter_qc()
 
-
         # gsw wants conductivity in mS/cm; scale from the units attribute (S/m assumed if unset)
         cndc_factor = cndc_scale_factor(self.data["CNDC"].attrs.get("units"))
 

@@ -6,7 +6,7 @@
 const Mem = {
   points: [],  // {rss, stepPeak, added, data, label, t} per step, in run order
   samples: [], // {t, rss} every 0.5 s of processing time (__PELAGOS_SAMPLE__)
-  peak: 0,     // running max RSS this run — kept only to scale the plot's y-axis
+  peak: 0,     // running max RSS this run — shown in #mem-peak and scales the plot's y-axis
 
   // Shown immediately when a run starts (not hidden) so the meter feels live
   // the instant Run is pressed, rather than popping in once the first step's
@@ -25,26 +25,20 @@ const Mem = {
     });
   },
 
-  // "<rss>\t<runPeak>\t<data>\t<label>\t<stepPeak>\t<peakLabel>\t<stepStart>\t<t>".
-  // runPeak/peakLabel are consumed only for the plot scale / tooltip; trailing
-  // fields are absent on older runners, so fall back gracefully. Values are MB.
+  // "<rss>\t<runPeak>\t<data>\t<label>\t<stepPeak>\t<peakLabel>\t<stepStart>\t<t>", MB.
   add(payload) {
     const parts = payload.split('\t');
     const rss = parseFloat(parts[0]);
     if (!isFinite(rss)) return;
-    const runPeak = parseFloat(parts[1]);
     const data = parseFloat(parts[2]); // NaN when the field is empty
     const label = (parts[3] || '').trim();
-    const stepPeak = isFinite(parseFloat(parts[4])) ? parseFloat(parts[4]) : rss;
-    const stepStart = parseFloat(parts[6]); // NaN on older runners
-    const t = parseFloat(parts[7]);         // processing seconds at step end
-    // A step's own growth: how much RSS it added on top of what it inherited.
-    // Without step-start, fall back to growth over the previous settle.
-    const prev = Mem.points.length ? Mem.points[Mem.points.length - 1].rss : stepPeak;
-    const added = Math.max(0, stepPeak - (isFinite(stepStart) ? stepStart : prev));
-    Mem.peak = isFinite(runPeak) ? runPeak : Math.max(Mem.peak, rss);
-    Mem.points.push({ rss, stepPeak, added, data: isFinite(data) ? data : null, label,
-      t: isFinite(t) ? t : null });
+    const stepPeak = parseFloat(parts[4]);
+    const stepStart = parseFloat(parts[6]);
+    const t = parseFloat(parts[7]); // processing seconds at step end
+    Mem.peak = parseFloat(parts[1]);
+    // added = the step's own growth on top of what it inherited
+    Mem.points.push({ rss, stepPeak, added: Math.max(0, stepPeak - stepStart),
+      data: isFinite(data) ? data : null, label, t });
     document.getElementById('mem-meter').classList.remove('hidden');
     Mem.setNum('mem-cur', rss);
     Mem.setNum('mem-peak', Mem.peak);
@@ -76,51 +70,28 @@ const Mem = {
     if (el) el.textContent = Mem.fmt(mb);
   },
 
-  // Redraw the sparkline. The line is each step's *in-step* peak RSS (the true
-  // high-water while it ran, which the boundary reading alone would miss), so a
-  // step that briefly spikes shows up. The y-axis runs 0..run-peak so a drop
-  // after a spike is obvious. Hover detail is a custom tooltip (see below),
-  // not native <title>s: the dots are only ~2px, far too small a target to
-  // reliably hover, so layout() instead tracks each point's x position and a
-  // mousemove listener picks the nearest one regardless of exact cursor y.
-  //
-  // The viewBox is set to the SVG's actual rendered pixel size (not a fixed
-  // 100-unit box) so 1 user unit == 1px in both axes. Otherwise
-  // preserveAspectRatio="none" stretches x and y by different factors and
-  // circles render as squashed ellipses.
+  // Redraw the sparkline (RSS over processing time, y from 0 to run peak). Hover is a
+  // custom tooltip picking the nearest dot by x, since ~2px dots are too small to hit;
+  // the viewBox matches the rendered pixel size so preserveAspectRatio="none" can't squash circles.
   render() {
     const svg = document.getElementById('mem-spark');
     if (!svg) return;
     const H = 34, pad = 3;
     const W = Math.max(svg.clientWidth || 1, 60);
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-    const n = Mem.points.length;
+    svg.innerHTML = '';
     const top = Mem.peak || 1;
     const y = (mb) => H - pad - (mb / top) * (H - 2 * pad);
-    // With samples the x-axis is processing time and the trace is one series:
-    // the 0.5 s samples plus each step's own end reading, sorted by time (the
-    // two come from different clocks, so an unsorted merge can double back).
-    // The dots sit on that same series, so the line always passes through them.
-    // Without samples (older runner, no psutil on the server) fall back to one
-    // evenly spaced slot per step with the dot at the step's in-step peak.
-    const timed = Mem.samples.length > 0;
-    let series, dotXY;
-    if (timed) {
-      const pts = Mem.points.filter((p) => p.t != null);
-      series = Mem.samples.concat(pts.map((p) => ({ t: p.t, rss: p.rss })))
-        .sort((a, b) => a.t - b.t);
-      const tmax = series[series.length - 1].t || 1;
-      const xt = (t) => pad + (t / tmax) * (W - 2 * pad);
-      series = series.map((s) => ({ x: xt(s.t), y: y(s.rss) }));
-      dotXY = Mem.points.map((p) => (p.t == null ? null : { x: xt(p.t), y: y(p.rss) }));
-    } else {
-      const x = (i) => (n <= 1 ? W / 2 : pad + (i * (W - 2 * pad)) / (n - 1));
-      series = Mem.points.map((p, i) => ({ x: x(i), y: y(p.stepPeak) }));
-      dotXY = series;
-    }
+    // Samples and step-end readings come from different clocks, so sort the merge.
+    const readings = Mem.samples.concat(Mem.points.map((p) => ({ t: p.t, rss: p.rss })))
+      .sort((a, b) => a.t - b.t);
+    if (!readings.length) return;
+    const tmax = readings[readings.length - 1].t || 1;
+    const xt = (t) => pad + (t / tmax) * (W - 2 * pad);
+    const series = readings.map((s) => ({ x: xt(s.t), y: y(s.rss) }));
+    const dotXY = Mem.points.map((p) => ({ x: xt(p.t), y: y(p.rss) }));
     const svgns = 'http://www.w3.org/2000/svg';
-    svg.innerHTML = '';
-    Mem._layout = { xs: dotXY.map((d) => (d ? d.x : -1)) };
+    Mem._layout = { xs: dotXY.map((d) => d.x) };
 
     // Peak guide line, so the ceiling of the run is always marked.
     const guide = document.createElementNS(svgns, 'line');
@@ -147,14 +118,12 @@ const Mem = {
     // back, so they stay invisible until hovered (see showTooltip).
     Mem.points.forEach((p, i) => {
       const d = dotXY[i];
-      if (!d) return;
       const isPeak = p.stepPeak >= Mem.peak;
       const dot = document.createElementNS(svgns, 'circle');
       dot.setAttribute('cx', d.x);
       dot.setAttribute('cy', d.y);
       dot.setAttribute('r', isPeak ? 2.6 : 1.8);
-      dot.setAttribute('class', (isPeak ? 'mem-spark-dot peak' : 'mem-spark-dot') +
-        (timed ? ' quiet' : ''));
+      dot.setAttribute('class', 'mem-spark-dot quiet' + (isPeak ? ' peak' : ''));
       dot.dataset.i = i;
       svg.appendChild(dot);
     });
@@ -170,7 +139,6 @@ const Mem = {
     const mx = (clientX - rect.left) * (viewBox.width / rect.width);
     let best = 0, bestDist = Infinity;
     xs.forEach((xi, i) => {
-      if (xi < 0) return; // step with no time stamp: not drawn
       const d = Math.abs(xi - mx);
       if (d < bestDist) { bestDist = d; best = i; }
     });

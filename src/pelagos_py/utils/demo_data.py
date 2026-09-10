@@ -14,21 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Registry of demo OG1 datasets used by the dashboard's download-on-demand
-config picker (``dashboard/app.py``).
+"""Registry of demo OG1 datasets for the dashboard's download-on-demand config picker.
 
-Each glider deployment can have up to two entries in ``DEMOS``: an NRT
-(near-real-time, "_R" filename) and a Delayed/recovered-mode one, keyed
-``"<base>_nrt"`` / ``"<base>_delayed"`` -- only the modes actually hosted for
-that deployment are present. Every entry carries its download URL, output
-filename, an optional TIME window to keep (``None`` for the whole file),
-which shipped template config to derive its dashboard config from
-("default" -- the standard glider template -- or "alr" for the ALR
-platform's config), and the display label shown in the picker. Most files are
-hosted on the BODC deployment catalogue; see
-https://noc.ac.uk/projects/bio-carbon for context. "voto_og_dm" (SEA063) is
-hosted on VOTO's own erddap instead. ``MISSIONS`` groups the keys by
-deployment campaign, in picker display order.
+``DEMOS`` keys are ``"<glider>_nrt"`` / ``"<glider>_delayed"`` (whichever BODC hosts);
+``MISSIONS`` groups them by campaign in picker order.
 """
 
 from dataclasses import dataclass
@@ -46,9 +35,7 @@ class DemoEntry:
     mode: str  # "nrt" or "delayed"
 
     @property
-    def display_label(self) -> str:
-        """Glider name plus its mode, e.g. "Nelson (NRT)" -- distinguishes
-        the two variants of the same glider in the picker."""
+    def display_label(self) -> str:  # e.g. "Nelson (NRT)"
         return f"{self.label} ({_MODE_LABELS[self.mode]})"
 
 
@@ -61,9 +48,6 @@ def _variants(
     base: str, folder: str, template: str, label: str,
     *, nrt: str | None = None, delayed: str | None = None, window=None,
 ) -> dict:
-    """Build the DEMOS entries for one glider deployment -- an "nrt" one if
-    ``nrt`` (its "_R" filename) is given, a "delayed" one if ``delayed`` is,
-    or both. Missing modes simply aren't hosted for that deployment."""
     entries = {}
     if nrt:
         entries[f"{base}_nrt"] = DemoEntry(
@@ -128,8 +112,7 @@ DEMOS = {
     ),
 }
 
-#: Picker display groups, in order: mission name -> base glider keys, or (for
-#: a glider with a single ungrouped mode, e.g. voto_og_dm) its full DEMOS key.
+# Picker groups in order: mission -> base glider keys (or a full DEMOS key, e.g. voto_og_dm).
 _MISSION_BASE_KEYS = {
     "Bio-Carbon": ["nelson", "doombar", "churchill", "alr4", "alr6", "cabot"],
     "Custard 1": ["custard1_churchill", "pancake", "custard1_doombar"],
@@ -141,9 +124,6 @@ _MISSION_BASE_KEYS = {
 
 
 def _mission_keys(bases: list[str]) -> list[str]:
-    """Expand each base into its DEMOS keys: itself if it's already a full
-    key (e.g. "voto_og_dm"), else its nrt/delayed variants (whichever exist).
-    """
     keys = []
     for base in bases:
         if base in DEMOS:
@@ -153,9 +133,6 @@ def _mission_keys(bases: list[str]) -> list[str]:
     return keys
 
 
-#: mission name -> ordered list of DEMOS keys (nrt then delayed per glider,
-#: whichever modes actually exist for it).
 MISSIONS = {mission: _mission_keys(bases) for mission, bases in _MISSION_BASE_KEYS.items()}
 
-#: Where demo files are downloaded to, relative to the repo root.
 DEMO_DATA_DIR = "examples/data/OG1"

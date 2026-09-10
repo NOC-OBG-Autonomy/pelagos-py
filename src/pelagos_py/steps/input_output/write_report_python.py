@@ -52,6 +52,7 @@ import xarray as xr
 import numpy as np
 
 from pelagos_py.utils.console import progress_bar
+from pelagos_py.utils import fig_spec
 from pelagos_py.utils.diagnostic_capture import save_figure, wait_for_saves
 
 
@@ -1143,16 +1144,7 @@ _CS_MARKER_SIZE = 8.0
 #   other flag (e.g. bad, not-used, missing) are masked out before plotting.
 _CS_ALLOWED_QC_FLAGS = (0, 1, 2, 5, 8)
 
-#   Gliders log millions of measurements; a million-point scatter renders slowly
-#   and bloats the PDF. Thin (consistently across panels, so points stay aligned)
-#   to this cap, which still looks dense on an A4 page. Matches the per-step
-#   diagnostic capture cap (diagnostic_capture._CAPTURE_MAX_POINTS) for consistency.
-_CS_MAX_POINTS = 100_000
-
-#   qc_hist's source-series panel is a single line in a ~4in-wide half-page
-#   panel, not a full A4 page of stacked panels, so it needs far fewer points
-#   to look dense. The histogram panel bins the full flag array unthinned,
-#   since subsampling would change the counts.
+#   qc_hist's source-series panel is a single line on a half page; far fewer points still look dense.
 _QC_HIST_MAX_POINTS = 20_000
 
 
@@ -1344,10 +1336,7 @@ def qc_hist(
         )
     else:
         source = data[var_source]
-        n = source.size
-        if n > _QC_HIST_MAX_POINTS:
-            idx = np.linspace(0, n - 1, _QC_HIST_MAX_POINTS).astype(int)
-            source = source.isel({source.dims[0]: idx})
+        source = source.isel({source.dims[0]: fig_spec.thin_idx(source.size, _QC_HIST_MAX_POINTS)})
         source.plot(ax=axs[0])
     #   xarray labels the axis with the (often long) description; replace it with
     #   a short name + units so the plot stays uncluttered. Skip the units when
@@ -1465,12 +1454,8 @@ def cross_section_figure(data: xr.Dataset, outdir: str, ext: str = ".png") -> st
         return None
     time, pres = time[:n], pres[:n]
 
-    #   Thin (consistently, so every panel keeps the same points) to a cap that
-    #   still looks dense on A4 but renders quickly and keeps the PDF small.
-    if n > _CS_MAX_POINTS:
-        idx = np.linspace(0, n - 1, _CS_MAX_POINTS).astype(int)
-    else:
-        idx = np.arange(n)
+    #   Thin consistently so every panel keeps the same points.
+    idx = fig_spec.thin_idx(n, fig_spec.CAPTURE_MAX_POINTS)
     time, pres = time[idx], pres[idx]
 
     #   matplotlib date numbers for the shared X axis (NaT -> NaN, ignored).

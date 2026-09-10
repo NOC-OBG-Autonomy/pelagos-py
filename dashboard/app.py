@@ -40,39 +40,27 @@ import threading
 import time
 from pathlib import Path
 
-# Matches ANSI/VT100 control sequences (colour, cursor moves, clear-line) that
-# tqdm and coloured loggers emit.
-_ANSI_RE = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
-
-
-def _clean_ansi(text: str) -> str:
-    """Keep colour, drop terminal-only control codes.
-
-    SGR sequences (``CSI … m``) are passed through for the browser console to
-    render as styled spans; cursor moves and clear-line sequences mean nothing
-    there, so they are dropped.
-    """
-    return _ANSI_RE.sub(lambda m: m.group(0) if m.group(0).endswith("m") else "", text)
-
+import h5py
 import numpy as np
 import pandas as pd
 import xarray as xr
 import yaml
-
-try:
-    # HDF5's C library prints its own diagnostic error stack straight to
-    # stderr (bypassing Python's try/except) whenever h5py/h5netcdf fails to
-    # open a file, e.g. a live NRT file that's still being written and is
-    # briefly truncated. That's already handled as an ordinary exception
-    # wherever we open a dataset, so silence the noisy duplicate.
-    import h5py
-    h5py._errors.silence_errors()
-except ImportError:
-    pass
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+
+# HDF5's C library prints its own error stack to stderr on a failed open (e.g. a
+# truncated live NRT file); that's already raised as an exception, so silence it.
+h5py._errors.silence_errors()
+
+_ANSI_RE = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
+
+
+def _clean_ansi(text: str) -> str:
+    # Keep SGR colour codes (the console renders them); drop cursor/clear-line ones.
+    return _ANSI_RE.sub(lambda m: m.group(0) if m.group(0).endswith("m") else "", text)
+
 
 # --- Locate the repo and make pelagos_py importable -------------------------
 DASHBOARD_DIR = Path(__file__).resolve().parent
@@ -80,12 +68,10 @@ REPO_ROOT = DASHBOARD_DIR.parent
 SRC_DIR = REPO_ROOT / "src"
 STATIC_DIR = DASHBOARD_DIR / "static"
 RUN_BOOTSTRAP = DASHBOARD_DIR / "run_bootstrap.py"
-# Diagnostic figures captured from the current run are written here and served
-# to the browser (see run_bootstrap.py). Cleared at the start of each run.
+# Figures captured from the current run (see run_bootstrap.py); cleared per run.
 FIG_DIR = DASHBOARD_DIR / "_run_figures"
 FIG_DIR.mkdir(exist_ok=True)
-# Float64 trace arrays for exact click-lookups (see run_figpoint), loaded from
-# a figure's "_full.npz" lazily and kept only until the next run.
+# Float64 traces for exact click-lookups (run_figpoint), lazily loaded per run.
 _FIGDATA_CACHE: dict[str, dict] = {}
 # Configs authored in the dashboard live here by default.
 CONFIG_DIR = DASHBOARD_DIR / "configs"
@@ -94,17 +80,14 @@ CONFIG_DIR.mkdir(exist_ok=True)
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-# Importing the package triggers discover_steps(), which imports every step/QC
-# module and populates the registries. This is the single source of truth for
-# "what steps exist" -- the dashboard derives everything from it.
-from pelagos_py.steps import STEP_CLASSES, QC_CLASSES  # noqa: E402
+# Importing the package runs discover_steps(), which populates the registries.
+from pelagos_py.steps import STEP_CLASSES, QC_CLASSES, resolve_step_name  # noqa: E402
 from pelagos_py.utils import parameter_spec  # noqa: E402
 from pelagos_py.utils.demo_data import DEMOS as DEMO_FILES, DEMO_DATA_DIR, MISSIONS  # noqa: E402
 from pelagos_py.utils.valid_config_check import check_pipeline_variables  # noqa: E402
 
 
-# Pipeline-level keys (the top ``pipeline:`` block) are not part of any step
-# schema, so they are described here. Kept deliberately small and stable.
+# The top ``pipeline:`` block has no step schema, so its keys are described here.
 PIPELINE_FIELDS = [
     {"name": "name", "type": "str", "required": False, "default": "",
      "description": "A short name for the pipeline."},
@@ -124,7 +107,7 @@ PIPELINE_FIELDS = [
 
 
 def _category(cls) -> str:
-    """Derive a step's category from its module path (processing / qc / io)."""
+    # processing / qc / io, from the module path
     module = getattr(cls, "__module__", "")
     if ".quality_control" in module:
         return "quality_control"
@@ -136,7 +119,6 @@ def _category(cls) -> str:
 
 
 def _short_doc(cls) -> str:
-    """First non-empty paragraph of a class docstring, whitespace-collapsed."""
     doc = (cls.__doc__ or "").strip()
     if not doc:
         return ""
@@ -177,9 +159,7 @@ app = FastAPI(title="pelagos_py dashboard")
 
 @app.middleware("http")
 async def _no_cache(request, call_next):
-    """Turn off caching for development
-    
-    """
+    # Development convenience: never let the browser cache the UI or API.
     response = await call_next(request)
     path = request.url.path
     if path.endswith((".js", ".css", ".html")) or path == "/" or path.startswith("/api/"):
@@ -190,13 +170,8 @@ async def _no_cache(request, call_next):
 # =============================== Introspection ==============================
 @app.get("/api/registry")
 def registry():
-    """Everything the frontend needs to render the step palette and forms.
-
-    Reflects the live registries, so a newly ``@register_step``-ed class shows
-    up here on the next server start with zero dashboard changes.
-    """
-    # Skip the blank template scaffolds -- they are registered so the machinery
-    # is exercised, but they are not real, pickable pipeline steps.
+    """Everything the frontend needs to render the step palette and forms."""
+    # The blank template scaffolds are registered but aren't real pipeline steps.
     def _is_template(cls):
         return ".templates" in getattr(cls, "__module__", "")
 
@@ -220,24 +195,16 @@ class ValidatePayload(BaseModel):
     yaml_content: str
 
 
-# check_pipeline_variables() logs its own "Validation Failed: ..." line -- fine
-# for a real run's log file, but this endpoint fires on every keystroke and has
-# no handler of its own, so without this it falls through to Python's
-# lastResort handler and spams the server's stdout. The UI already renders the
-# same message as an issue card, so nothing is lost by not logging it here.
+# check_pipeline_variables() logs its own "Validation Failed" line; validate fires
+# on every keystroke and the UI shows the message anyway, so swallow it here.
 _VALIDATE_LOGGER = logging.getLogger("pelagos_py.dashboard.validate")
 _VALIDATE_LOGGER.addHandler(logging.NullHandler())
 _VALIDATE_LOGGER.propagate = False
 
 
 def _locate_variable_issue(steps, message):
-    """Best-effort match of a check_pipeline_variables error back to the step
-    (or, for a QC-test-scoped message, the Apply QC step) that caused it, so
-    the UI can point at it the same way a schema issue does. Falls back to
-    ``(None, None)`` -- rendered as a pipeline-level issue -- if the message
-    can't be matched, which should not normally happen since the checker
-    always names the offending step or QC test.
-    """
+    # (index, name) of the step (or Apply QC step) a check_pipeline_variables
+    # message names; (None, None) renders as a pipeline-level issue.
     for index, step in enumerate(steps):
         name = step.get("name") if isinstance(step, dict) else None
         if name and f"'{name}'" in message:
@@ -254,12 +221,8 @@ def _locate_variable_issue(steps, message):
 
 @app.post("/api/validate")
 def validate(payload: ValidatePayload):
-    """Validate a whole config using the pipeline's real ``parameter_spec``.
-
-    Returns structured, per-step issues rather than a single string, so the UI
-    can point at the offending step. Uses the same ``resolve()`` the pipeline
-    uses, so acceptance here == acceptance at run time.
-    """
+    """Validate a whole config with the pipeline's own ``parameter_spec``, returning
+    per-step issues so the UI can point at the offending step."""
     try:
         config = yaml.safe_load(payload.yaml_content)
     except yaml.YAMLError as exc:
@@ -280,16 +243,12 @@ def validate(payload: ValidatePayload):
                            "error": "Each step needs a 'name'."})
             continue
         name = step["name"]
-        cls = STEP_CLASSES.get(name)
-        if cls is None:
-            # case-insensitive courtesy match
-            lowered = {k.lower(): k for k in STEP_CLASSES}
-            canonical = lowered.get(str(name).lower())
-            if canonical is None:
-                issues.append({"index": index, "name": name,
-                               "error": f"Unknown step '{name}'."})
-                continue
-            cls = STEP_CLASSES[canonical]
+        canonical = resolve_step_name(name)
+        if canonical is None:
+            issues.append({"index": index, "name": name,
+                           "error": f"Unknown step '{name}'."})
+            continue
+        cls = STEP_CLASSES[canonical]
 
         schema = getattr(cls, "parameter_schema", None)
         if schema is None:
@@ -303,21 +262,14 @@ def validate(payload: ValidatePayload):
         except ValueError as exc:
             issues.append({"index": index, "name": name, "error": str(exc)})
 
-    # Cross-step variable dependencies (e.g. a QC test needing PROFILE_NUMBER
-    # with no "Find Profiles" step to produce it) -- the same check the
-    # pipeline itself runs before executing. Only run once every step's own
-    # parameters check out clean: with a schema issue already reported,
-    # resolving variables (which may instantiate a QC test with those bad
-    # parameters) would likely just add a confusing, duplicate second error.
+    # Cross-step variable check (same as the pipeline's pre-run one); skipped when
+    # a schema issue exists, since it would instantiate steps with bad parameters.
     if not issues:
         try:
             check_pipeline_variables(steps, _VALIDATE_LOGGER)
         except ValueError as exc:
-            # check_pipeline_variables tags the step it was checking when it
-            # raised -- use that directly rather than the name-matching
-            # fallback, which picks the *first* step with a matching name and
-            # misattributes when the same QC test name appears in more than
-            # one "Apply QC" step.
+            # Prefer the checker's own step_index: name-matching picks the first
+            # step with that name, wrong when a QC test appears in several Apply QC steps.
             index = getattr(exc, "step_index", None)
             if index is not None:
                 name = steps[index].get("name") if isinstance(steps[index], dict) else None
@@ -334,23 +286,16 @@ class SavePayload(BaseModel):
     yaml_content: str
 
 
-#: Demo configs, one per demo glider in pelagos_py.utils.demo_data.DEMOS. These
-#: are virtual -- there is no demo_<key>.yaml on disk for each one -- their
-#: YAML is synthesised on load by patching the glider's file path into one of
-#: the two shipped templates (see _demo_yaml). Read-only for the same reason
-#: as PROTECTED_CONFIGS below, and surfaced separately so the UI can group them.
+# Virtual, one per demo glider: no file on disk, YAML synthesised by _demo_yaml.
 DEMO_CONFIGS = {f"demo_{key}.yaml" for key in DEMO_FILES}
 
-#: Reference configs shipped with the dashboard: the blank glider template and
-#: the ALR template every demo config is patched from. They are read-only: the
-#: UI forks an edited one to a new ``custom_run_N.yaml`` rather than
-#: overwriting, and the API refuses to save or delete them, so a hand-crafted
-#: request (or a stale browser tab) can't destroy them either.
+# Read-only: the UI forks edits to custom_run_N.yaml and the API refuses to
+# save/delete these, so a stale tab or hand-crafted request can't destroy them.
 PROTECTED_CONFIGS = {"default.yaml", "demo_alr.yaml"} | DEMO_CONFIGS
 
 
 def _safe_config_path(name: str) -> Path:
-    """Resolve ``name`` to a path inside CONFIG_DIR, rejecting traversal."""
+    # Rejects path traversal out of CONFIG_DIR.
     candidate = (CONFIG_DIR / name).resolve()
     if candidate.parent != CONFIG_DIR.resolve():
         raise HTTPException(status_code=400, detail="Invalid config name.")
@@ -359,11 +304,12 @@ def _safe_config_path(name: str) -> Path:
     return candidate
 
 
+def _demo_key(config_name: str) -> str:
+    return config_name[len("demo_"):-len(".yaml")]
+
+
 def _demo_dest(config_name: str) -> Path | None:
-    """The local path a demo config's NetCDF file lives (or would be downloaded
-    to), or None if ``config_name`` isn't a demo config."""
-    key = config_name[len("demo_"):-len(".yaml")]
-    entry = DEMO_FILES.get(key)
+    entry = DEMO_FILES.get(_demo_key(config_name))
     if entry is None:
         return None
     return REPO_ROOT / DEMO_DATA_DIR / entry.filename
@@ -375,39 +321,27 @@ def list_configs():
         p.name for p in CONFIG_DIR.iterdir()
         if p.is_file() and p.suffix in (".yaml", ".yml")
     )
-    # Demo configs are virtual (see DEMO_CONFIGS above), so unlike the other
-    # groups they're listed unconditionally rather than filtered by `files`.
-    demo = sorted(DEMO_CONFIGS)
+    demo = sorted(DEMO_CONFIGS)  # virtual, so not filtered by `files`
     return {
         "configs": sorted(set(files) | DEMO_CONFIGS),
         "protected": sorted(PROTECTED_CONFIGS),
         "demo": demo,
-        # Demo config names grouped by deployment mission, in picker display
-        # order, so the UI can show which glider belongs to which campaign.
+        # Grouped by deployment mission, in picker display order.
         "missions": {
             mission: [f"demo_{key}.yaml" for key in keys]
             for mission, keys in MISSIONS.items()
         },
-        # Display label per demo config name (glider names aren't unique --
-        # across missions, e.g. "Churchill" and "Zephyr" each appear twice,
-        # and within one glider, NRT vs Full is a separate entry).
+        # Glider names aren't unique across missions (nor NRT vs Full), hence labels.
         "labels": {f"demo_{key}.yaml": entry.display_label for key, entry in DEMO_FILES.items()},
-        # Non-demo protected configs (default.yaml, demo_alr.yaml), shown as
-        # their own "Default" group in the picker.
+        # Non-demo protected configs, shown as their own "Default" group.
         "reference": sorted((PROTECTED_CONFIGS - DEMO_CONFIGS) & set(files)),
-        # Which demo configs already have their NetCDF file on disk, so the
-        # picker can show download status before the file is needed.
         "downloaded": sorted(name for name in demo if _demo_dest(name).exists()),
     }
 
 
 @app.post("/api/configs/reveal")
 def reveal_configs():
-    """Open the configs folder in the OS file browser.
-
-    Runs on the server, so it only shows a window when the dashboard is being
-    viewed on the machine serving it (the normal 127.0.0.1 case).
-    """
+    """Open the configs folder in the OS file browser (on the server machine)."""
     if sys.platform == "darwin":
         cmd = ["open", str(CONFIG_DIR)]
     elif os.name == "nt":
@@ -429,12 +363,8 @@ class BrowsePayload(BaseModel):
 
 @app.post("/api/browse")
 def browse_file(payload: BrowsePayload):
-    """Open the OS file picker on the server and return the chosen path.
-
-    Browsers never expose a dropped/picked file's real path, and the dashboard
-    only ever runs against local files, so the dialog is opened server-side --
-    it appears on the machine serving the dashboard (the 127.0.0.1 case).
-    """
+    """Open the OS file picker on the server and return the chosen path
+    (browsers never expose a picked file's real path)."""
     start = Path(payload.start).expanduser() if payload.start else None
     start_dir = start.parent if start and start.parent.is_dir() else Path.cwd()
     if sys.platform == "darwin":
@@ -460,24 +390,15 @@ def browse_file(payload: BrowsePayload):
 
 
 def _ensure_demo_file(config_name: str) -> None:
-    """Download a demo config's input NetCDF file if it isn't there yet.
-
-    Demo configs normally get their data from running
-    ``examples/python/get_demo_file.py`` first, but a config picked straight
-    from the dashboard shouldn't just fail to load if that step was skipped.
-    Unlike that script, this doesn't trim churchill's window down to a
-    demo-sized excerpt -- it's a fallback, not a replacement for running it.
-    """
+    # Fallback for get_demo_file.py not having been run; unlike it, doesn't trim churchill.
     dest = _demo_dest(config_name)
     if dest is None or dest.exists():
         return
-    key = config_name[len("demo_"):-len(".yaml")]
-    entry = DEMO_FILES[key]
+    entry = DEMO_FILES[_demo_key(config_name)]
     dest.parent.mkdir(parents=True, exist_ok=True)
     import requests
 
-    # Files are 100s of MB; only bound the connect phase so a slow-but-alive
-    # transfer of a large file isn't mistaken for a hang.
+    # Files are 100s of MB: bound only the connect phase, not the transfer.
     response = requests.get(entry.url, stream=True, timeout=(15, None))
     response.raise_for_status()
     tmp = dest.with_name(dest.name + ".part")
@@ -497,13 +418,8 @@ _DEMO_FIELD_RE = {
 
 
 def _demo_yaml(config_name: str) -> str:
-    """Synthesise a demo config's YAML by patching its glider's file path,
-    output path and description into the shared "default" or "alr" template
-    (see DemoEntry.template) -- every demo glider reuses one of those two
-    configs rather than shipping its own near-duplicate file.
-    """
-    key = config_name[len("demo_"):-len(".yaml")]
-    entry = DEMO_FILES[key]
+    # Patch the glider's paths/description into its "default" or "alr" template.
+    entry = DEMO_FILES[_demo_key(config_name)]
     template_name = "demo_alr.yaml" if entry.template == "alr" else "default.yaml"
     text = (CONFIG_DIR / template_name).read_text()
     rel_path = f"{DEMO_DATA_DIR}/{entry.filename}"
@@ -857,41 +773,36 @@ def stream_logs():
     return StreamingResponse(event_gen(), media_type="text/event-stream")
 
 
+# Files run_bootstrap.py writes per captured figure: PNG, plot spec, float32 traces.
+_FIG_FILES = {
+    ".png": ("image/png", "Figure"),
+    ".json": ("application/json", "Plot spec"),
+    ".f32": ("application/octet-stream", "Plot data"),
+}
+
+
+def _fig_file(name: str, suffix: str) -> FileResponse:
+    media_type, label = _FIG_FILES[suffix]
+    path = FIG_DIR / Path(name).name  # .name strips directories so a crafted name can't escape
+    if path.suffix != suffix or not path.is_file():
+        raise HTTPException(status_code=404, detail=f"{label} not found.")
+    return FileResponse(path, media_type=media_type)
+
+
 @app.get("/api/run/figure/{name}")
 def run_figure(name: str):
-    """Serve a diagnostic figure captured from the current run by filename.
-
-    The browser requests these after seeing a ``__PELAGOS_FIG__`` marker line in
-    the log stream. ``Path(name).name`` strips any directory component so a
-    crafted name can't escape FIG_DIR.
-    """
-    path = FIG_DIR / Path(name).name
-    if not path.is_file():
-        raise HTTPException(status_code=404, detail="Figure not found.")
-    return FileResponse(path, media_type="image/png")
+    return _fig_file(name, ".png")
 
 
 @app.get("/api/run/figspec/{name}")
 def run_figspec(name: str):
-    """Serve the interactive plot spec saved beside a captured figure.
-
-    Written by run_bootstrap.py via fig_spec.py, and requested only for figures
-    whose ``__PELAGOS_FIG__`` marker named one. Same traversal guard as above.
-    """
-    path = FIG_DIR / Path(name).name
-    if path.suffix != ".json" or not path.is_file():
-        raise HTTPException(status_code=404, detail="Plot spec not found.")
-    return FileResponse(path, media_type="application/json")
+    return _fig_file(name, ".json")
 
 
 @app.get("/api/run/figbin/{name}")
 def run_figbin(name: str):
-    """Serve a figure's float32 trace data (see fig_spec.py) for the WebGL viewer.
-    Sent as a plain file so the browser gets a Content-Length for its progress bar."""
-    path = FIG_DIR / Path(name).name
-    if path.suffix != ".f32" or not path.is_file():
-        raise HTTPException(status_code=404, detail="Plot data not found.")
-    return FileResponse(path, media_type="application/octet-stream")
+    # A plain file gives the browser a Content-Length for its progress bar.
+    return _fig_file(name, ".f32")
 
 
 @app.get("/api/run/figpoint/{name}")
@@ -924,13 +835,8 @@ def run_figpoint(name: str, panel: int, trace: int, index: int):
 
 @app.get("/api/run/report")
 def run_report(path: str):
-    """Serve a PDF report produced by the current run, for the Report tab.
-
-    The browser passes the absolute path it saw in a ``__PELAGOS_REPORT__``
-    marker. Restricted to existing ``.pdf`` files; this is a localhost
-    single-user tool that already runs arbitrary configs, so there is no sandbox
-    beyond that. ``inline`` so the browser previews it rather than downloading.
-    """
+    """Serve a PDF report produced by the current run (path from its
+    ``__PELAGOS_REPORT__`` marker), inline so the browser previews it."""
     p = Path(path)
     if p.suffix.lower() != ".pdf" or not p.is_file():
         raise HTTPException(status_code=404, detail="Report not found.")
@@ -941,13 +847,8 @@ def run_report(path: str):
 
 
 # ================================== Inspect ==================================
-@app.get("/api/inspect")
-def inspect_file(file_path: str):
-    """Variables, global attributes and sensors of a NetCDF file, for the Inspect tab.
-
-    ``file_path`` is read straight from the config's 'Load OG1' step, resolved
-    against the repo root the same way the pipeline itself resolves it at run time.
-    """
+def _resolve_inspect_path(file_path):
+    # Relative paths resolve against the repo root, as in the pipeline itself.
     if not file_path:
         raise HTTPException(status_code=400, detail="No file_path given.")
     path = Path(file_path)
@@ -955,7 +856,13 @@ def inspect_file(file_path: str):
         path = REPO_ROOT / path
     if not path.is_file():
         raise HTTPException(status_code=404, detail=f"File not found: {path}")
+    return path
 
+
+@app.get("/api/inspect")
+def inspect_file(file_path: str):
+    """Variables, global attributes and sensors of a NetCDF file, for the Inspect tab."""
+    path = _resolve_inspect_path(file_path)
     try:
         with xr.open_dataset(path) as ds:
             variables = [
@@ -971,8 +878,7 @@ def inspect_file(file_path: str):
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"Could not open '{path.name}': {exc}")
 
-    # Sensors: the 'instrument' global attribute, split into one entry per
-    # instrument (handles a plain "a, b, c" string or a Python-list-style value).
+    # 'instrument' global attribute may be "a, b, c" or a Python-list-style string.
     instr_key = next((k for k in global_attrs if k.lower() == "instrument"), None)
     raw = global_attrs.get(instr_key, "") if instr_key else ""
     sensors = [
@@ -991,17 +897,6 @@ def inspect_file(file_path: str):
 
 _INSPECT_PLOT_MAX = 20_000
 _inspect_plot_lock = threading.Lock()  # pyplot is not thread-safe
-
-
-def _resolve_inspect_path(file_path):
-    if not file_path:
-        raise HTTPException(status_code=400, detail="No file_path given.")
-    path = Path(file_path)
-    if not path.is_absolute():
-        path = REPO_ROOT / path
-    if not path.is_file():
-        raise HTTPException(status_code=404, detail=f"File not found: {path}")
-    return path
 
 
 @app.get("/api/inspect/plot")
@@ -1091,8 +986,11 @@ app.mount("/", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
 if __name__ == "__main__":
+    import webbrowser
+
     import uvicorn
 
     # Bind to the loopback IP but show the friendlier hostname in the URL.
     print("pelagos_py dashboard -> http://localhost:8791")
+    threading.Timer(1.0, lambda: webbrowser.open("http://localhost:8791")).start()
     uvicorn.run(app, host="127.0.0.1", port=8791, log_level="warning")

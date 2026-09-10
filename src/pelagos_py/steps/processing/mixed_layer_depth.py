@@ -22,12 +22,11 @@ from pelagos_py.utils.qc_handling import QCHandlingMixin
 from pelagos_py.utils.processing_utils import profile_indices
 import pelagos_py.utils.diagnostics as diag
 import pelagos_py.utils.palettes as palettes
+from pelagos_py.utils import fig_spec
 
 #### Custom imports ####
 import gsw
 import numpy as np
-
-from pelagos_py.utils import fig_spec
 import matplotlib
 import matplotlib.pyplot as plt
 

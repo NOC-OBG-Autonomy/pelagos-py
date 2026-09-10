@@ -66,13 +66,8 @@ function initValues(def) {
 }
 
 // ------------------------------------------------------- all-diagnostics
-// A step-count-agnostic "on / off / custom" summary of every diagnostics
-// switch in the pipeline (step-level, plus per-QC-test where those exist),
-// so the pipeline-settings card can offer one place to flip them all at once.
-// Only leaves that actually gate a plot are counted: for an Apply QC step
-// with tests configured, that's each test's *effective* value (its own
-// override, or the step's master); an Apply QC step with no tests yet counts
-// its master, since that's what a newly added test would inherit.
+// Every diagnostics switch that gates a plot: per QC test (its effective value)
+// for an Apply QC step with tests, else the step's own switch.
 function diagnosticsLeaves() {
   const leaves = [];
   for (const item of STATE.pipeline.items) {
@@ -352,8 +347,6 @@ function moveSectionTo(id, index) {
 let dragState = null;
 let dropIndicator = null;
 
-// The drop host under the pointer: a section body, or the root (loose steps).
-// Sections never nest, so a section drag always resolves to the root.
 // The Apply QC card a dragged QC test is over, if any.
 function qcCardAt(target) {
   if (!dragState || dragState.kind !== 'qc') return null;
@@ -363,6 +356,8 @@ function qcCardAt(target) {
   return item && item.name === dragState.container ? { card, item } : null;
 }
 
+// The drop host under the pointer: a section body, or the root (loose steps).
+// Sections never nest, so a section drag always resolves to the root.
 function dropHostAt(target) {
   const root = document.getElementById('pipeline-steps');
   if (dragState && dragState.kind === 'section') return root;
@@ -490,11 +485,8 @@ function renderSettings() {
   renderAllDiagnosticsRow();
 }
 
-// A UI-only control (nothing here is written to the YAML — it just drives
-// every step's own `diagnostics`/per-test switch at once) that summarises
-// whether diagnostics are uniformly on, uniformly off, or a mix, with one
-// click to force them all one way. Kept live via renderAllDiagnosticsRow(),
-// called on every pipeline change so it never shows a stale summary.
+// UI-only on/off/custom summary of every diagnostics switch, with buttons to flip
+// them all; nothing of its own is written to the YAML.
 function makeAllDiagnosticsRow() {
   const row = document.createElement('div');
   row.id = 'all-diag-row';
@@ -601,9 +593,7 @@ const RunLock = {
     RunLock.test = test;
     document.body.classList.toggle('run-locked', running);
     // The YAML pane is the other way into the config, so it locks with it.
-    if (typeof editor !== 'undefined' && editor) {
-      editor.setOption('readOnly', running ? 'nocursor' : false);
-    }
+    if (editor) editor.setOption('readOnly', running ? 'nocursor' : false);
     renderSettings();
     renderPipeline();
   },
@@ -904,7 +894,7 @@ function renderStepCard(item) {
 
   card.appendChild(body);
   return card;
-  }
+}
 
 // Expand and scroll to a step card by index (driven by the YAML cursor). Only
 // re-renders when it has to un-collapse the target, to stay cheap on every

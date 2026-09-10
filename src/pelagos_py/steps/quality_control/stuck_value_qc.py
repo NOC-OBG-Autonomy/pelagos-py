@@ -84,8 +84,7 @@ class stuck_value_qc(BaseQC):
 
     def return_qc(self):
         # Subset the data
-        keep = self.required_variables + [v for v in ["TIME"] if v in self.data and v not in self.required_variables]
-        self.data = self.data[keep]
+        self.data = self.data[self.keep_vars()]
 
         # Generate the variable-specific flags
         for var, n_stuck in self.variables.items():

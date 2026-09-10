@@ -1,4 +1,8 @@
 // Thin wrappers around the backend API.
+async function _fail(r, msg) {
+  throw new Error((await r.json().catch(() => ({}))).detail || msg);
+}
+
 const API = {
   async registry() {
     const r = await fetch('/api/registry');
@@ -20,12 +24,7 @@ const API = {
   },
   async loadConfig(name) {
     const r = await fetch('/api/configs/' + encodeURIComponent(name));
-    if (!r.ok) {
-      // A demo config's file is downloaded on demand here, so a failure is
-      // often a real, specific reason (network error, bad URL) worth showing
-      // rather than a generic "load failed".
-      throw new Error((await r.json().catch(() => ({}))).detail || 'load failed');
-    }
+    if (!r.ok) await _fail(r, 'load failed');
     return r.json();
   },
   async saveConfig(name, yamlContent) {
@@ -34,24 +33,18 @@ const API = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, yaml_content: yamlContent }),
     });
-    if (!r.ok) {
-      throw new Error((await r.json().catch(() => ({}))).detail || 'save failed');
-    }
+    if (!r.ok) await _fail(r, 'save failed');
     return r.json();
   },
   async deleteConfig(name) {
     const r = await fetch('/api/configs/' + encodeURIComponent(name), { method: 'DELETE' });
-    if (!r.ok) {
-      throw new Error((await r.json().catch(() => ({}))).detail || 'delete failed');
-    }
+    if (!r.ok) await _fail(r, 'delete failed');
   },
   // Open the configs folder in the OS file browser (server-side, so this only
   // does anything when the dashboard is viewed on the machine running it).
   async revealConfigs() {
     const r = await fetch('/api/configs/reveal', { method: 'POST' });
-    if (!r.ok) {
-      throw new Error((await r.json().catch(() => ({}))).detail || 'could not open folder');
-    }
+    if (!r.ok) await _fail(r, 'could not open folder');
     return r.json();
   },
   // Opens a native file dialog on the server; resolves to the path or null.
@@ -60,7 +53,7 @@ const API = {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ start: start || '' }),
     });
-    if (!r.ok) throw new Error((await r.json()).detail || 'Browse failed');
+    if (!r.ok) await _fail(r, 'Browse failed');
     return (await r.json()).path;
   },
   async run(yamlContent) {
@@ -69,10 +62,7 @@ const API = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ yaml_content: yamlContent }),
     });
-    if (!r.ok) {
-      const detail = (await r.json().catch(() => ({}))).detail || 'run failed';
-      throw new Error(detail);
-    }
+    if (!r.ok) await _fail(r, 'run failed');
     return r.json();
   },
   async stopRun() {

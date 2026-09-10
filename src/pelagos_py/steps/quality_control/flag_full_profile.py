@@ -101,8 +101,7 @@ class flag_full_profile(BaseQC):
     def return_qc(self):
         # TODO: Add support for flagging if threshold is a mix of 3 (questionable) and 4 (definitely bad) flags
         # Subset the data
-        keep = self.required_variables + [v for v in ["TIME"] if v in self.data and v not in self.required_variables]
-        self.data = self.data[keep]
+        self.data = self.data[self.keep_vars()]
 
         for var, threshold in self.check_vars.items():
             flag_counts = (

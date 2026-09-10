@@ -39,31 +39,24 @@ from matplotlib.collections import PathCollection
 from matplotlib.lines import Line2D
 from pelagos_py.utils import fig_spec
 
-#   Report PNGs render at a fixed size regardless of how many points a step
-#   plotted, so a million-point diagnostic costs as much to rasterize as the
-#   thumbnail needs to look dense. Decimate dense point layers just for the
-#   save, restoring the original data immediately after - a step's own
-#   interactive display (diagnostics enabled by the user) still gets every
-#   point, only the saved-to-disk copy is thinned.
-_CAPTURE_MAX_POINTS = 100_000
-
-
 def _decimate(fig):
     """Thin dense Line2D/scatter artists in ``fig`` to a point cap; returns what to restore."""
+    # Only the saved copy is thinned; the step's own interactive display keeps every point.
+    cap = fig_spec.CAPTURE_MAX_POINTS
     restore = []
     for ax in fig.axes:
         for artist in ax.lines:
             x, y = artist.get_data()
-            if len(x) > _CAPTURE_MAX_POINTS:
-                idx = np.linspace(0, len(x) - 1, _CAPTURE_MAX_POINTS).astype(int)
+            if len(x) > cap:
+                idx = fig_spec.thin_idx(len(x), cap)
                 restore.append((artist, x, y))
                 artist.set_data(np.asarray(x)[idx], np.asarray(y)[idx])
         for artist in ax.collections:
             if not isinstance(artist, PathCollection):
                 continue
             offsets = artist.get_offsets()
-            if len(offsets) > _CAPTURE_MAX_POINTS:
-                idx = np.linspace(0, len(offsets) - 1, _CAPTURE_MAX_POINTS).astype(int)
+            if len(offsets) > cap:
+                idx = fig_spec.thin_idx(len(offsets), cap)
                 array = artist.get_array()
                 restore.append((artist, offsets, array))
                 artist.set_offsets(offsets[idx])
@@ -107,7 +100,7 @@ def force_headless_backend():
     original_backend = matplotlib.get_backend()
     matplotlib.use("Agg", force=True)
     matplotlib.use = lambda *args, **kwargs: None
-    fig_spec.MAX_POINTS = _CAPTURE_MAX_POINTS
+    fig_spec.MAX_POINTS = fig_spec.CAPTURE_MAX_POINTS
     try:
         yield
     finally:
@@ -131,7 +124,7 @@ _next_worker = 0
 
 
 def _worker(i):
-    while len(_workers) <= i:
+    if i == len(_workers):
         proc = subprocess.Popen(
             [sys.executable, os.path.join(os.path.dirname(__file__), "fig_save_worker.py")],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True,

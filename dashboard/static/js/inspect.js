@@ -4,7 +4,6 @@
 
 const Inspect = {
   lastPath: null,
-  data: null,
 
   // First 'Load OG1' step's file_path, straight out of the YAML text (not
   // the builder state) so this works while the builder is mid-resync too.
@@ -21,7 +20,6 @@ const Inspect = {
     const filePath = Inspect.extractFilePath(yamlText);
     if (!filePath) {
       Inspect.lastPath = null;
-      Inspect.data = null;
       renderInspectEmpty();
       return;
     }
@@ -38,24 +36,18 @@ const Inspect = {
       })
       .then((data) => {
         if (filePath !== Inspect.lastPath) return; // superseded by a later edit
-        Inspect.data = data;
         renderInspect(data);
       })
       .catch((e) => {
         if (filePath !== Inspect.lastPath) return;
-        Inspect.data = null;
         renderInspectError(e.message);
       });
   },
 };
 
-let inspectDebounceT = null;
-Inspect.schedule = function () {
-  clearTimeout(inspectDebounceT);
-  inspectDebounceT = setTimeout(() => {
-    if (typeof editor !== 'undefined' && editor) Inspect.refresh(editor.getValue());
-  }, 400);
-};
+// Built on first call: debounce() lives in app.js, which loads after this file.
+Inspect.schedule = () =>
+  (Inspect._schedule ||= debounce(() => Inspect.refresh(editor.getValue()), 400))();
 
 function inspectShowEmptyState(html) {
   document.getElementById('inspect-body').classList.add('hidden');

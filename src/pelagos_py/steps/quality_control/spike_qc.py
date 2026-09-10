@@ -98,9 +98,7 @@ class spike_qc(BaseQC):
     def return_qc(self):
         # Subset the data, keeping any existing _QC so already-bad samples can be
         # excluded from the baseline below.
-        qc_cols = [f"{v}_QC" for v in self.variables if f"{v}_QC" in self.data]
-        keep = [v for v in ["TIME"] if v in self.data and v not in self.required_variables]
-        self.data = self.data[self.required_variables + qc_cols + keep]
+        self.data = self.data[self.keep_vars(*(f"{v}_QC" for v in self.variables))]
 
         # Generate the variable-specific flags
         groups = profile_indices(self.data["PROFILE_NUMBER"].values)

@@ -110,24 +110,6 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
         super().__init__(name, parameters, diagnostics, context)
 
     def run(self):
-        """
-        Execute the interpolation workflow.
-
-        This method performs the following steps:
-
-        1. Filters data based on quality control flags
-        2. Converts xarray data to a Polars DataFrame
-        3. Interpolates missing values using time as the reference dimension
-        4. QC and data reconstruction based on user specification
-        5. Updates QC flags for interpolated values
-        6. Generates diagnostic plots if enabled
-
-        Returns
-        -------
-        dict
-            The updated context dictionary containing the interpolated dataset
-            under the "data" key.
-        """
         self.log(f"Interpolating variables...")
 
         self.filter_qc()
@@ -135,18 +117,19 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
 
         max_interp_seconds = self._max_interp_seconds()
 
-        # Keep the pre-interpolation values for the diagnostics plot
-        self.unprocessed = {var: self.data[var].values.copy() for var in variables}
-
+        self.filled = {}  # per variable, which samples were filled (for the diagnostics plot)
         time = self.data["TIME"].values
         for var in variables:
-            interpolated = interpolate_by_time(self.unprocessed[var], time)
+            was_nan = np.isnan(self.data[var].values)
+            interpolated = interpolate_by_time(self.data[var].values, time)
             if max_interp_seconds:
-                was_nan = np.isnan(self.unprocessed[var])
                 self._limit_gap_fill(time, interpolated, was_nan, max_interp_seconds)
-            filled = np.isnan(self.data[var].values) & np.isfinite(interpolated)
-            self.data[var][:] = interpolated
-            self.data[f"{var}_QC"] = xr.where(filled, 8, self.data[f"{var}_QC"])
+            filled = self.filled[var] = was_nan & np.isfinite(interpolated)
+            # Only filled samples change; flagged ones that stay unfilled keep their original value
+            values = self.data_copy[var].values.copy()
+            values[filled] = interpolated[filled]
+            self.data[var][:] = values
+            self.data[f"{var}_QC"].values[filled] = 8  # in place: xr.where would drop the attrs
 
         if self.diagnostics:
             self.generate_diagnostics()
@@ -198,11 +181,9 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
 
         plot_var = next(iter(self.filter_settings))
         time = self.data["TIME"].values
-        original = self.unprocessed[plot_var]
-        filled = self.data[plot_var].values
-        was_nan = np.isnan(original) & ~np.isnan(filled)
-        fig_spec.points(ax, time[~was_nan], filled[~was_nan], color=fig_spec.CATEGORY[1], label="original")
-        fig_spec.points(ax, time[was_nan], filled[was_nan], color=fig_spec.CATEGORY[3], label="interpolated")
+        values, was_nan = self.data[plot_var].values, self.filled[plot_var]
+        fig_spec.points(ax, time[~was_nan], values[~was_nan], color=fig_spec.CATEGORY[1], label="original")
+        fig_spec.points(ax, time[was_nan], values[was_nan], color=fig_spec.CATEGORY[3], label="interpolated")
         fig_spec.style_axes(ax, ylabel=plot_var)
         fig_spec.x_axis(ax, time)
         fig_spec.legend(ax)

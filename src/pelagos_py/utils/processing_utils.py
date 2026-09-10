@@ -106,6 +106,13 @@ def interpolate_nans(data, coords):
     return filled_data
 
 
+def small_netcdf_chunk_cache():
+    """Shrink netCDF-C's 64 MB-per-variable chunk cache below one chunk: whole-variable
+    reads/writes don't benefit, and it stays allocated (GBs) until the file closes."""
+    import netCDF4
+    netCDF4.set_chunk_cache(1_000_000, *netCDF4.get_chunk_cache()[1:])
+
+
 # ----------------------------- Filtering ---------------------------------
 def remove_outliers(data):
     """

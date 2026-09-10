@@ -18,14 +18,13 @@
 
 #### Mandatory imports ####
 import numpy as np
-from pelagos_py.steps.base_qc import BaseQC, register_qc
+from pelagos_py.steps.base_qc import BaseQC, QC_COMBINATRIX, register_qc
 
 #### Custom imports ####
 import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
 import xarray as xr
-from pelagos_py.steps.quality_control.range_qc import QC_COMBINATRIX
 from pelagos_py.utils import fig_spec
 
 
@@ -131,8 +130,6 @@ class manual_qc(BaseQC):
 
     def __init__(self, data, **kwargs):
         super().__init__(data, **kwargs)
-        if self.boxes is None:
-            self.boxes = []
         self.boxes = [self._check_box(b) for b in self.boxes]
 
         targets = [self.y_variable]
@@ -204,6 +201,15 @@ class manual_qc(BaseQC):
             inside = valid & (x >= x0) & (x <= x1) & (y >= y0) & (y <= y1)
         return inside if box["mode"] == "inside" else (valid & ~inside)
 
+    def _start_flags(self, var):
+        # Flags as they stand: Apply QC's store when run there, else the data's _QC, else 0/9
+        col = f"{var}_QC"
+        if self.existing_flags is not None and col in self.existing_flags:
+            return self.existing_flags[col].values.astype(int)
+        if col in self.data:
+            return self.data[col].fillna(9).values.astype(int)
+        return np.where(np.isfinite(self.data[var].values.astype(float)), 0, 9)
+
     def return_qc(self):
         axes = {}
         for box in self.boxes:
@@ -211,18 +217,7 @@ class manual_qc(BaseQC):
                 if var not in axes:
                     axes[var] = self._axis_values(var)
 
-        # Start from the flags as they stand (Apply QC's store when run there).
-        existing = getattr(self, "existing_flags", None)
-        qc_arrays = {}
-        for var in self.target_variables:
-            col = f"{var}_QC"
-            if existing is not None and col in existing:
-                qc = existing[col].values.astype(int).copy()
-            elif col in self.data:
-                qc = self.data[col].fillna(9).values.astype(int)
-            else:
-                qc = np.where(np.isfinite(self.data[var].values.astype(float)), 0, 9)
-            qc_arrays[var] = qc
+        qc_arrays = {var: self._start_flags(var) for var in self.target_variables}
         for box in self.boxes:
             hit = self._box_mask(box, *axes[box["x_variable"]], *axes[box["y_variable"]])
             for var in box["variables"]:
@@ -248,37 +243,29 @@ class manual_qc(BaseQC):
         # Colour by the result (this test's flags include the existing ones), but
         # draw one series per (existing, result) pair with the existing flag in the
         # gid: the dashboard's live preview restarts from it. One legend entry per result.
-        existing = getattr(self, "existing_flags", None)
-        if existing is not None and f"{yv}_QC" in existing:
-            before = existing[f"{yv}_QC"].values.astype(int)
-        elif f"{yv}_QC" in self.data:
-            before = self.data[f"{yv}_QC"].fillna(9).values.astype(int)
-        else:
-            before = np.where(np.isfinite(y.astype(float)), 0, 9)
-        shown = self.flags[f"{yv}_QC"].values if self.flags is not None and f"{yv}_QC" in self.flags else before
+        before = self._start_flags(yv)
+        shown = self.flags[f"{yv}_QC"].values
 
         cv = self.colour_variable
         profile = bool(cv and self.profile_plot)
         fig, axes = fig_spec.new_fig(1, 2, sharey=True, width_ratios=(3, 1)) if profile else fig_spec.new_fig()
         ax = axes[0][0]
         labelled = set()
-        for f in range(10):
-            for b in range(10):
-                m = (shown == f) & (before == b)
-                if not m.any():
-                    continue
-                label = fig_spec.flag_label(f) if f not in labelled else "_"
-                labelled.add(f)
-                if cv:
-                    # Flag as a ring under the coloured fill (drawn after, below); good
-                    # points get an invisible ring so the live preview can recolour it.
-                    ax.plot(x[m], y[m], ls="", marker="o", markersize=fig_spec.MARKER * 1.9,
-                            markeredgewidth=0, color=fig_spec.FLAG_COLOURS[f],
-                            alpha=0.0 if f == 1 else 1.0, label=label)
-                    ax.lines[-1].set_gid(f"ring:{b}")
-                else:
-                    fig_spec.points(ax, x[m], y[m], color=fig_spec.FLAG_COLOURS[f], label=label)
-                    ax.lines[-1].set_gid(f"flag:{b}")
+        for code in np.unique(shown * 10 + before):
+            f, b = divmod(int(code), 10)
+            m = (shown == f) & (before == b)
+            label = fig_spec.flag_label(f) if f not in labelled else "_"
+            labelled.add(f)
+            if cv:
+                # Flag as a ring under the coloured fill (drawn after, below); good
+                # points get an invisible ring so the live preview can recolour it.
+                ax.plot(x[m], y[m], ls="", marker="o", markersize=fig_spec.MARKER * 1.9,
+                        markeredgewidth=0, color=fig_spec.FLAG_COLOURS[f],
+                        alpha=0.0 if f == 1 else 1.0, label=label)
+                ax.lines[-1].set_gid(f"ring:{b}")
+            else:
+                fig_spec.points(ax, x[m], y[m], color=fig_spec.FLAG_COLOURS[f], label=label)
+                ax.lines[-1].set_gid(f"flag:{b}")
         if cv:
             c = self.data[cv].values.astype(float)
             # No colorbar (it would drop the dashboard view to PNG); the range is in the title.

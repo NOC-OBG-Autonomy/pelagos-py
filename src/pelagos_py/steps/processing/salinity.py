@@ -249,6 +249,7 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
         self._usable_ct = self.calculation_mask(["CNDC", "TEMP", "PRES"])
         self._usable_cndc = self.calculation_mask(["CNDC"])
         self._usable_temp = self.calculation_mask(["TEMP"])
+        self._profile_index = profile_indices(self.data["PROFILE_NUMBER"].values)
 
         # Correct conductivity-temperature response time misalignment (C-T Lag)
         self.correct_ct_lag()
@@ -299,9 +300,6 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
         self.per_profile_optimal_lag = np.full((len(profile_numbers), 2), np.nan)
         self._ct_cost_data = None
 
-        prof_arr = self.data["PROFILE_NUMBER"].values
-        self._profile_index = profile_indices(prof_arr)
-
         # Randomly permute to ensure uniform sampling across the dataset
         indices = np.random.permutation(len(profile_numbers))
 
@@ -314,6 +312,7 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
         # span and count) to find how many profiles qualify, so the bar total matches what
         # will actually be processed and reaches 100%.
         time_arr = self.data[self.time_col].values
+        prof_arr = self.data["PROFILE_NUMBER"].values
         finite = ~pd.isnull(time_arr) & ~pd.isnull(prof_arr)
         grouped_times = pd.Series(time_arr[finite]).groupby(prof_arr[finite])
         durations = grouped_times.max() - grouped_times.min()

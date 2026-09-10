@@ -24,17 +24,7 @@ const Run = {
   pausedName: null, // its step name, used to guard a re-run against edits
   pausedTest: null, // the QC test within it, when the step was split
 
-  // Marker prefixes run_bootstrap.py prints on stdout:
-  //   __PELAGOS_FIG__ <filename>\t<caption>          a saved diagnostic figure
-  //   __PELAGOS_LOG__ <idx>\t<step>\t<qc test>\t<b64> a log-only step's diagnostics text
-  //   __PELAGOS_FAIL__ <idx>\t<step>\t<qc test>\t<b64> a step raised (continue_on_step_fail: auto)
-  //   __PELAGOS_STEP__ <index>\t<step>[\t<qc test>]  about to execute
-  //   __PELAGOS_PAUSE__ <index>\t<step>[\t<qc test>] paused, awaiting the user
-  //   __PELAGOS_RERUN__ <index>                      re-running the paused unit
-  //   __PELAGOS_MEM__ <rss>\t<peak>\t<data>\t<label> RSS after a step (MB)
-  //   __PELAGOS_REPORT__ <abspath>\t<filename>          a PDF report was written
-  //   __PELAGOS_TIME__ <active s>\t<paused>\t<epoch>    processing clock (see RunClock)
-  //   __PELAGOS_SAMPLE__ <active s>\t<rss>            RSS sample (server-side, every 0.5 s)
+  // Marker prefixes run_bootstrap.py prints on stdout; formats in its module docstring.
   FIG_MARKER: '__PELAGOS_FIG__ ',
   LOG_MARKER: '__PELAGOS_LOG__ ',
   FAIL_MARKER: '__PELAGOS_FAIL__ ',
@@ -53,8 +43,6 @@ const Run = {
   // Reset on every __PELAGOS_STEP__ and set by __PELAGOS_FAIL__, so it always
   // reflects the outcome of the most recent execution attempt for that unit.
   pauseFailed: false,
-
-  report: null, // {path, name} of the PDF report the run produced, if any
 
   // ---- ANSI colour ----
   // The server forwards the pipeline's SGR colour codes (everything else is
@@ -75,7 +63,6 @@ const Run = {
   // Turn SGR codes into styled spans. Text is HTML-escaped first, so log
   // output can never inject markup.
   ansiToHtml(text) {
-    const esc = (s) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
     let out = '', fg = null, bold = false, dim = false, open = false, last = 0;
     const close = () => { if (open) { out += '</span>'; open = false; } };
     const openSpan = () => {
@@ -83,7 +70,7 @@ const Run = {
       if (cls) { out += `<span class="${cls}">`; open = true; }
     };
     for (const m of text.matchAll(Run.ANSI_SGR)) {
-      out += esc(text.slice(last, m.index));
+      out += escapeHtml(text.slice(last, m.index));
       last = m.index + m[0].length;
       close();
       const parts = (m[1] || '0').split(';');
@@ -104,7 +91,7 @@ const Run = {
       }
       openSpan();
     }
-    out += esc(text.slice(last));
+    out += escapeHtml(text.slice(last));
     close();
     return out;
   },
@@ -342,24 +329,25 @@ const Run = {
     Run.autoScroll();
   },
 
+  // The attempt group figures for `cur` land in, opening a new one if needed.
+  _groupFor(cur) {
+    if (!Run.activeGroup || Run.activeGroup.key !== cur.key) {
+      Run.activeGroup = {
+        index: cur.index, key: cur.key, step: cur.name, test: cur.test,
+        figs: [], params: Run.pendingParams,
+      };
+      Run.pendingParams = null;
+      Run.groups.push(Run.activeGroup);
+    }
+    return Run.activeGroup;
+  },
+
   // Record a captured figure against the current step/attempt.
   addPlot(fname, caption, spec) {
     if (!fname) return;
     const cur = Run.currentStep ||
       { index: -1, name: 'Diagnostics', test: null, key: Run.unitKey(-1, null) };
-    if (!Run.activeGroup || Run.activeGroup.key !== cur.key) {
-      Run.activeGroup = {
-        index: cur.index,
-        key: cur.key,
-        step: cur.name,
-        test: cur.test,
-        figs: [],
-        params: Run.pendingParams,
-      };
-      Run.pendingParams = null;
-      Run.groups.push(Run.activeGroup);
-    }
-    Run.activeGroup.figs.push({
+    Run._groupFor(cur).figs.push({
       fname, caption, spec: spec || null, url: Viewer.freshUrl(fname),
     });
     Run.plotCount += 1;
@@ -378,15 +366,7 @@ const Run = {
     const cur = Run.currentStep && Run.currentStep.index === idx
       ? Run.currentStep
       : { index: idx, name, test, key: Run.unitKey(idx, test) };
-    if (!Run.activeGroup || Run.activeGroup.key !== cur.key) {
-      Run.activeGroup = {
-        index: cur.index, key: cur.key, step: cur.name || name, test: cur.test,
-        figs: [], params: Run.pendingParams,
-      };
-      Run.pendingParams = null;
-      Run.groups.push(Run.activeGroup);
-    }
-    Run.activeGroup.figs.push({ isLog: true, isError, text, caption: '' });
+    Run._groupFor(cur).figs.push({ isLog: true, isError, text, caption: '' });
     Run.renderGallery();
     if (Review.active && Review.key === cur.key) Review.renderPlots();
   },
@@ -479,7 +459,6 @@ const Run = {
   // Show the PDF report a report step just wrote: a preview iframe plus an
   // "Open" link, and a dot on the Report tab so it's noticed on another tab.
   showReport(path, name) {
-    Run.report = { path, name };
     const url = '/api/run/report?path=' + encodeURIComponent(path);
     const view = document.getElementById('report-view');
     view.innerHTML = '';
@@ -510,7 +489,6 @@ const Run = {
   },
 
   clearReport() {
-    Run.report = null;
     const view = document.getElementById('report-view');
     if (view) { view.innerHTML = ''; view.classList.add('hidden'); }
     const empty = document.getElementById('report-empty');
@@ -753,12 +731,8 @@ const Run = {
     Run.source.onerror = () => Run.handleDrop();
   },
 
-  // The stream died. Suspending the laptop or sleeping the tab kills the SSE
-  // connection while the pipeline carries on (very often sitting paused), so a
-  // drop must not be read as "the run is over" — that is what left the Run
-  // button live, the pause panel gone, and Run answering "already running".
-  // Re-attach instead; the stream replays the whole backlog, rebuilding the log,
-  // the figures and the paused-step panel exactly as they were.
+  // A dropped SSE stream (laptop sleep etc.) is not "run over": the pipeline carries
+  // on, so re-attach and let the replayed backlog rebuild the log, figures and pause panel.
   handleDrop() {
     if (Run.source) { Run.source.close(); Run.source = null; }
     clearTimeout(Run._retry);

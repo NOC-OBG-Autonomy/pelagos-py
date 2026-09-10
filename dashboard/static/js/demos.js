@@ -1,6 +1,5 @@
-// Demos tab: the demo deployments from Config (missions/labels/downloaded),
-// as cards grouped by mission. Clicking one is the same as picking it from
-// the old Open menu — Config.load handles the download-first case.
+// Demos tab: the demo deployments from Config (missions/labels/downloaded), as
+// cards grouped by mission. Clicking one calls Config.load, which downloads first if needed.
 const Demos = {
   render() {
     const root = document.getElementById('demos-list');
@@ -43,7 +42,7 @@ const Demos = {
     hint.textContent = active ? 'loaded' : downloaded ? 'ready' : 'download';
     el.appendChild(hint);
     el.addEventListener('click', async () => {
-      if (Config.busy || (typeof RunLock !== 'undefined' && RunLock.running)) return;
+      if (Config.busy || RunLock.running) return;
       try { await Config.load(name); }
       catch (e) { Config.notice('Could not load ' + name + ': ' + e.message, { sticky: true, err: true }); }
     });

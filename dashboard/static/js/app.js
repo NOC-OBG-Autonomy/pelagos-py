@@ -113,7 +113,7 @@ function syncYamlToBuilder() {
     // fromObject builds fresh item objects, so a paused step's card is now a
     // different object: re-apply the lock so it is still the unlocked, expanded
     // one rather than a locked card like any other.
-    if (typeof RunLock !== 'undefined' && RunLock.running && RunLock.index !== null) {
+    if (RunLock.running && RunLock.index !== null) {
       RunLock.pauseAt(RunLock.index, RunLock.test);
     }
   } catch (e) { /* structurally odd but parseable: leave builder, Validate reports it */ }
@@ -136,13 +136,8 @@ function markYamlError(e) {
   editor.addLineClass(errorLineHandle, 'gutter', 'cm-error-line');
 }
 
-// Placeholder so the status row is never empty (e.g. before the first
-// validation completes on page load). By default a no-op once a result is
-// already showing, so ordinary typing doesn't flicker the pill every
-// keystroke -- pass force:true (e.g. right after loading a different config)
-// to replace whatever's showing immediately, so a slow validate call (the
-// file-content check can take a moment) never leaves the *previous* config's
-// result on screen looking like it belongs to the new one.
+// Placeholder so the status row is never empty. A no-op once a result is showing
+// (no flicker while typing) unless force:true, e.g. right after loading another config.
 function showValidating(force = false) {
   const statusHost = document.getElementById('validation-status');
   if (!statusHost || (statusHost.firstChild && !force)) return;
@@ -445,13 +440,8 @@ async function boot() {
   // tabs
   document.querySelectorAll('.tab').forEach((tab) => {
     tab.addEventListener('click', () => {
-      document.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
-      tab.classList.add('active');
-      const which = tab.dataset.tab;
-      document.querySelectorAll('.tab-panel, .tab-actions').forEach((p) =>
-        p.classList.toggle('hidden', p.dataset.panel !== which));
-      if (which === 'yaml') setTimeout(() => editor.refresh(), 0);
-      Run.onTabChange();
+      Run.showTab(tab.dataset.tab);
+      if (tab.dataset.tab === 'yaml') setTimeout(() => editor.refresh(), 0);
     });
   });
 
@@ -464,7 +454,6 @@ async function boot() {
   });
   document.getElementById('btn-add-section').addEventListener('click', addSection);
 
-  // YAML pane controls (Validate + YAML→builder are automatic now)
   document.getElementById('btn-copy').addEventListener('click', () => {
     navigator.clipboard.writeText(editor.getValue());
   });

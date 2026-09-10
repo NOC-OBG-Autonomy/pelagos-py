@@ -1,17 +1,5 @@
-// The paused-step review panel.
-//
-// When a run pauses after a `diagnostics: true` step, the Run tab swaps its log
-// console for this panel: the figures that step just produced, the attempts
-// that came before them, and a form holding *only that step's* parameters — or,
-// for an Apply QC step (which the runner splits so it pauses test by test),
-// only the paused test's parameters. The
-// form is bound to the same values object the builder card uses, so an edit
-// here lands in the builder and the YAML immediately -- when you finally hit
-// Continue, the config already holds the values you settled on.
-//
-// Cycle: tweak a parameter -> Re-run step (the pipeline re-executes just that
-// step from its pre-step snapshot) -> compare against the previous attempt ->
-// repeat until happy -> Continue.
+// The paused-step review panel: the paused step's (or QC test's) figures, earlier
+// attempts, and its parameter form bound to the builder's own values object.
 
 const Review = {
   active: false,
@@ -49,11 +37,8 @@ const Review = {
     Review.apply();
   },
 
-  // Show/hide the panel against the console. The pause banner itself stays up
-  // on screen for as long as the run is paused, on every tab, so "paused after
-  // step N" reads the same whichever view is showing; only its "Review step"
-  // button — the way back to the panel — hides once the panel is already on
-  // screen, where it would be redundant.
+  // Show/hide the panel against the console; the banner's "Review step" button
+  // hides only while the panel itself is on screen.
   apply() {
     const tab = document.querySelector('.tab.active')?.dataset.tab;
     const onRunTab = tab === 'run';
@@ -302,24 +287,6 @@ const Review = {
       more.className = 'review-chip';
       more.textContent = `+${keys.length - (compact ? 3 : 8)} more`;
       wrap.appendChild(more);
-    }
-    return wrap;
-  },
-
-  // "what changed after this attempt" — the parameters that differ between an
-  // attempt and the one that followed it, so the strip explains itself.
-  diffChips(before, after) {
-    if (!before || !after) return null;
-    const keys = [...new Set([...Object.keys(before), ...Object.keys(after)])]
-      .filter((k) => !Forms.equal(before[k], after[k]));
-    if (!keys.length) return null;
-    const wrap = document.createElement('div');
-    wrap.className = 'review-diff';
-    for (const k of keys.slice(0, 4)) {
-      const chip = document.createElement('span');
-      chip.className = 'review-chip';
-      chip.textContent = `${k}: ${Review.short(before[k])} → ${Review.short(after[k])}`;
-      wrap.appendChild(chip);
     }
     return wrap;
   },

@@ -17,6 +17,8 @@
 
 import logging
 
+import numpy as np
+
 from pelagos_py.utils import parameter_spec
 
 REGISTERED_QC = {}
@@ -35,6 +37,23 @@ flag_cols = {
     9: "black",
 }
 """Map of QC flag values to colors for diagnostics plotting."""
+
+
+# Argo flag-merge matrix: QC_COMBINATRIX[existing, new] never downgrades a flag.
+QC_COMBINATRIX = np.array(
+    [
+        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        [1, 1, 2, 3, 4, 5, 1, 1, 8, 9],
+        [2, 2, 2, 3, 4, 5, 2, 2, 8, 9],
+        [3, 3, 3, 3, 4, 3, 3, 3, 3, 9],
+        [4, 4, 4, 4, 4, 4, 4, 4, 4, 9],
+        [5, 5, 5, 3, 4, 5, 5, 5, 8, 9],
+        [6, 1, 2, 3, 4, 5, 6, 6, 8, 9],
+        [7, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        [8, 8, 8, 3, 4, 8, 8, 8, 8, 9],
+        [9, 9, 9, 9, 9, 9, 9, 9, 9, 9],
+    ]
+)
 
 
 def register_qc(cls):
@@ -69,6 +88,8 @@ class BaseQC:
     parameter_schema = {}
     required_variables = []
     qc_outputs = []
+    overwrite_flags = False  # True: return_qc merges against existing_flags itself (Apply QC sets it)
+    existing_flags = None
 
     def __init__(self, data, **kwargs):
         # data may be None when a test is instantiated to introspect its
@@ -90,6 +111,12 @@ class BaseQC:
             setattr(self, k, v)
 
         self.flags = None
+
+    def keep_vars(self, *extra):
+        # required variables plus TIME (for plots) and any extra present in the data
+        return self.required_variables + [
+            v for v in ("TIME", *extra) if v in self.data and v not in self.required_variables
+        ]
 
     @classmethod
     def describe_parameters(cls):
