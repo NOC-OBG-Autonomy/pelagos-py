@@ -157,8 +157,9 @@ steps:
     parameters:
       qc_settings:
           valid profile qc:
-            profile_length: 50 # Profiles must be at least 100 points long
-            depth_range: [0, 1000] # and must contain data within 0 and 1000 m
+            min_length: 50          # Profiles must be at least 50 points long
+            depth_range: [0, 1000]  # and reach into 0-1000 dbar (PRES)
+            flag: 4                 # Flag given to every row of a failing profile
     diagnostics: false
 
 # ===========================================================

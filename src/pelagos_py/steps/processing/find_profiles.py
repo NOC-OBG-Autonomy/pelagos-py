@@ -252,6 +252,39 @@ def _assign_profile_and_cycle(phase, chunk_id):
     return profile_num, cycle
 
 
+def _fill_from_neighbours(out, classified_index):
+    # Rows left out of the classification (flagged/interpolated/missing depth)
+    # take the labels of the nearest classified rows either side in time where
+    # those agree; GRADIENT is interpolated between them. Returns a per-row QC:
+    # 2 classified, 8 filled from neighbours, 9 neither.
+    n = len(out)
+    order = np.argsort(out["TIME"].to_numpy(), kind="stable")
+    time = out["TIME"].to_numpy().astype("datetime64[ns]").astype("int64")[order]
+    classified = out.index.isin(classified_index)[order]
+    has_time = out["TIME"].notna().to_numpy()[order]
+    label_qc = np.where(classified, 2, 9)
+    pos = np.flatnonzero(classified)
+    if pos.size >= 2:
+        nxt = np.searchsorted(pos, np.arange(n), side="left")
+        fill = ~classified & has_time & (nxt > 0) & (nxt < pos.size)
+        nxt = np.clip(nxt, 1, pos.size - 1)
+        lo, hi = pos[nxt - 1], pos[nxt]
+        w = (time - time[lo]) / np.maximum(time[hi] - time[lo], 1)
+        for col in DERIVED_COLUMNS:
+            v = out[col].to_numpy(dtype=float)[order]
+            if col == "GRADIENT":
+                new = v[lo] + w * (v[hi] - v[lo])
+            else:
+                agree = (v[lo] == v[hi]) | (np.isnan(v[lo]) & np.isnan(v[hi]))
+                new = np.where(agree, v[lo], np.nan)
+            v[fill] = new[fill]
+            out.iloc[order, out.columns.get_loc(col)] = v
+        label_qc[fill] = 8
+    result = np.empty(n, dtype=np.int8)
+    result[order] = label_qc
+    return result
+
+
 def find_profiles(
     df_raw,
     depth_col="PRES",
@@ -271,6 +304,7 @@ def find_profiles(
         df_raw["PROFILE_DIRECTION"] = np.nan
         df_raw["CYCLE"] = 1
         df_raw["GRADIENT"] = np.nan
+        df_raw["LABEL_QC"] = 9
         return df_raw
 
     # astype("int64") on a datetime64 array assumes its native unit; pandas'
@@ -316,6 +350,7 @@ def find_profiles(
 
     out = df_raw.copy()
     out[DERIVED_COLUMNS] = result.reindex(out.index)
+    out["LABEL_QC"] = _fill_from_neighbours(out, df.index)
     out["SCI_PHASE"] = out["SCI_PHASE"].fillna(UNKNOWN).astype(int)
     out["CYCLE"] = out["CYCLE"].ffill().fillna(1).astype(int)
     return out
@@ -496,8 +531,8 @@ class FindProfilesStep(BaseStep, QCHandlingMixin):
         cols_to_extract = ["TIME", depth_col]
         df_raw = self.data[cols_to_extract].to_dataframe().reset_index()
 
-        # Flagged samples must not shape the depth smoothing/velocity, but every
-        # sample is still labelled: results are merged back on TIME, untouched here.
+        # Flagged samples must not shape the depth smoothing/velocity; they are
+        # labelled afterwards from their neighbours in time (see _fill_from_neighbours).
         # Interpolated (flag 8) depth is excluded too, on top of the default
         # calculation_mask (3/4/9): a linearly-interpolated ramp across a real gap
         # (e.g. surface comms) would otherwise be read as genuine depth movement.
@@ -570,13 +605,12 @@ class FindProfilesStep(BaseStep, QCHandlingMixin):
             "flag_meanings": "unknown ascent descent surfacing parking inflection propelled transition"
         }
 
-        self.generate_qc({
-            "PROFILE_NUMBER_QC": ["TIME_QC", f"{depth_col}_QC"],
-            "PROFILE_DIRECTION_QC": ["TIME_QC", f"{depth_col}_QC"],
-            "PROFILE_GRADIENT_QC": ["TIME_QC", f"{depth_col}_QC"],
-            "CYCLE_QC": ["TIME_QC", f"{depth_col}_QC"],
-            "SCI_PHASE_QC": ["TIME_QC", f"{depth_col}_QC"]
-        })
+        # 2 classified from real depth, 8 filled from neighbouring rows, 9 neither.
+        label_qc = df_final["LABEL_QC"].to_numpy()
+        for var in ["PROFILE_NUMBER", "PROFILE_DIRECTION", "PROFILE_GRADIENT", "CYCLE", "SCI_PHASE"]:
+            values = self.data[var].values
+            missing = values == UNKNOWN if var == "SCI_PHASE" else np.isnan(values)
+            self.data[f"{var}_QC"] = (("N_MEASUREMENTS",), np.where(missing, 9, label_qc).astype(np.int8))
 
         self.context["data"].update(self.data)
         return self.context

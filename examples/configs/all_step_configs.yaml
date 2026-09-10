@@ -261,16 +261,14 @@ steps:
           #   Plots data coloured by flag for the variables listed.
           plot: [PRES, LATITUDE]
 
-        # valid_profile_test (*/valid_profile_test.py):
-        #   Flag: 4 (bad), 3 (probably bad)
-        #   Checks if profiles have at least N datapoints and contain data in a specific depth range
+        # valid_profile_qc (*/valid_profile_qc.py):
+        #   Flag: `flag` (default 4)
+        #   Flags whole profiles with fewer than min_length rows or no sample in depth_range
         valid profile qc:
-          # [profile_length]:
-          #   Number of datapoints per profile below which the entire profile will be flagged 4
-          profile_length: 1000
-          # [depth_range]:
-          #   DEPTH range that a profile must have at least one point in, otherwise it is flagged 3
-          depth_range: [0, .inf]
+          min_length: 1000        # Rows per profile below which the whole profile is flagged
+          depth_range: [0, .inf]  # OPTIONAL: depth_var window a profile must have a sample in
+          depth_var: PRES         # Variable used for depth_range
+          flag: 4                 # QC flag for failing profiles
 
         # flag_full_profile (*/flag_full_profile.py):
         #   Flag: 4 (bad)

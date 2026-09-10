@@ -124,3 +124,29 @@ def test_gap_ending_before_surface_stays_ascent():
     profile_numbers = result["PROFILE_NUMBER"].dropna()
     assert profile_numbers.nunique() >= 2
     assert result["CYCLE"].nunique() >= 2
+
+
+def test_excluded_rows_labelled_from_neighbours():
+    # Rows with no usable depth (e.g. a science sensor on its own timebase, or
+    # flagged/interpolated PRES) sit between classified rows and inherit their labels.
+    df = make_dive_dataframe(n_cycles=1)
+    extra = df.iloc[10:-10].copy()
+    extra["TIME"] += pd.Timedelta(seconds=5)
+    extra["PRES"] = np.nan
+    extra["N_MEASUREMENTS"] += len(df)
+    result = run(pd.concat([df, extra], ignore_index=True))
+
+    filled = result[result["PRES"].isna()]
+    assert (filled["LABEL_QC"] == 8).all()
+    assert (result[result["PRES"].notna()]["LABEL_QC"] == 2).all()
+    assert filled["PROFILE_NUMBER"].notna().sum() > 0
+    assert set(filled["PROFILE_NUMBER"].dropna()) <= set(result["PROFILE_NUMBER"].dropna())
+    assert filled["GRADIENT"].notna().all()
+
+    # An unlabelled row after the last classified one cannot be bracketed.
+    tail = df.iloc[[-1]].copy()
+    tail["TIME"] += pd.Timedelta(minutes=1)
+    tail["PRES"] = np.nan
+    result = run(pd.concat([df, tail], ignore_index=True))
+    assert result["LABEL_QC"].iloc[-1] == 9
+    assert np.isnan(result["PROFILE_NUMBER"].iloc[-1])

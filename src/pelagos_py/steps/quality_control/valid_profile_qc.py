@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""QC tests for assessing validity of a glider profile, based on different definitions of successful data."""
+"""Flag whole profiles that are too short or never reach a target depth range."""
 
 #### Mandatory imports ####
 from pelagos_py.steps.base_qc import BaseQC, register_qc
@@ -35,95 +35,75 @@ class valid_profile_qc(BaseQC):
 
     | **Target variable:** ``PROFILE_NUMBER``
     | **Variables flagged:** ``PROFILE_NUMBER``
-    | **Flags applied:** 1 (good), 3 (probably bad), 4 (bad), 9 (missing)
+    | **Flags applied:** ``flag`` (default 4, bad)
 
-    Each profile (a group of measurements sharing a ``PROFILE_NUMBER``, as produced
-    by :doc:`Find Profiles <../processing/find_profiles/index>`) is assessed as a
-    whole and every row in that profile receives the same ``PROFILE_NUMBER_QC``:
-
-    - **9 (missing)** — the row has no profile (``PROFILE_NUMBER`` is NaN, e.g.
-      surfacing rows or data gaps).
-    - **4 (bad)** — the profile contains fewer than ``profile_length`` measurements.
-    - **3 (probably bad)** — the profile is long enough but has no measurement whose
-      ``DEPTH`` falls inside ``depth_range``.
-    - **1 (good)** — the profile passes both checks.
-
-    Only ``PROFILE_NUMBER_QC`` is written; the underlying data is never modified.
-
-    Parameters
-    ----------
-    profile_length : int, optional
-        Minimum number of measurements a profile must contain to be kept. Profiles
-        shorter than this are flagged bad (4). Default ``100``.
-    depth_range : tuple of float, optional
-        ``(min, max)`` depth window (in the same units/sign convention as ``DEPTH``,
-        i.e. positive downward) that a profile must reach into. A profile with no data
-        inside this window is flagged probably bad (3). Default ``(0, 1000)``.
+    Every row of a profile (rows sharing a ``PROFILE_NUMBER`` from
+    :doc:`Find Profiles <../processing/find_profiles/index>`) gets ``flag`` when the
+    profile has fewer than ``min_length`` rows or, if ``depth_range`` is set, no
+    ``depth_var`` sample inside it. Passing profiles are flagged 1; rows without a
+    profile are left unchecked (0), so their existing flag is kept.
 
     Examples
     --------
-    The check works with its defaults, so the minimal configuration sets no
-    parameters:
-
-    .. code-block:: yaml
-
-        - name: "Apply QC"
-          parameters:
-            qc_settings:
-              valid profile qc: {}
-
-    Both parameters may be tuned — here profiles must be at least 50 points long and
-    contain data somewhere between 1000 m depth and the surface:
-
     .. code-block:: yaml
 
         - name: "Apply QC"
           parameters:
             qc_settings:
               valid profile qc:
-                profile_length: 50
-                depth_range: [0, 1000]
-          diagnostics: true  # plot DEPTH vs index, coloured by the resulting flag
+                min_length: 50          # rows per profile
+                depth_range: [0, 1000]  # PRES window the profile must reach into
+                flag: 4
+          diagnostics: true
     """
 
     qc_name = "valid profile qc"
     parameter_schema = {
-        "profile_length": {
+        "min_length": {
             "type": int,
             "default": 100,
-            "description": "Minimum number of measurements a profile must contain to be kept.",
+            "description": "Minimum number of rows a profile must contain.",
         },
         "depth_range": {
             "type": list,
-            "default": (0, 1000),
-            "description": "(min, max) depth window a profile must reach into.",
+            "default": None,
+            "description": "Optional [min, max] depth_var window a profile must have a sample in.",
+        },
+        "depth_var": {
+            "type": str,
+            "default": "PRES",
+            "description": "Vertical-coordinate variable used for depth_range.",
+        },
+        "flag": {
+            "type": int,
+            "default": 4,
+            "description": "QC flag given to every row of a failing profile.",
         },
     }
-    required_variables = ["PROFILE_NUMBER", "DEPTH"]
+    required_variables = ["PROFILE_NUMBER"]
     qc_outputs = ["PROFILE_NUMBER_QC"]
 
+    def __init__(self, data, **kwargs):
+        super().__init__(data, **kwargs)
+        if not 0 <= self.flag <= 9:
+            raise ValueError(f"[{self.qc_name}] invalid QC flag {self.flag!r}; expected 0-9.")
+        self.required_variables = ["PROFILE_NUMBER"] + ([self.depth_var] if self.depth_range else [])
+
     def return_qc(self):
-        profile_number = self.data["PROFILE_NUMBER"].values
-        depth = self.data["DEPTH"].values
-        lower, upper = self.depth_range
+        profile = pd.Series(self.data["PROFILE_NUMBER"].values)
+        has_profile = profile.notna().to_numpy()
+        bad = profile.groupby(profile).transform("size").to_numpy() < self.min_length
+        if self.depth_range:
+            lower, upper = self.depth_range
+            depth = self.data[self.depth_var].values
+            in_range = pd.Series((depth >= lower) & (depth <= upper))
+            bad |= ~in_range.groupby(profile).transform("any").fillna(False).to_numpy(dtype=bool)
 
-        # Per-sample: length of its profile, and whether the profile reaches the depth
-        # range (samples without a profile number get NaN here and are flagged 9 below)
-        by_profile = pd.Series((depth >= lower) & (depth <= upper)).groupby(profile_number)
-        count = by_profile.transform("size").to_numpy(dtype=float)
-        in_depth_range = by_profile.transform("any").fillna(False).to_numpy(dtype=bool)
-
-        qc = np.select(
-            [pd.isna(profile_number), count < self.profile_length, ~in_depth_range],
-            [9, 4, 3],
-            default=1,
-        )
-
+        qc = np.where(has_profile, np.where(bad, self.flag, 1), 0).astype(np.int8)
         self.flags = xr.Dataset(
-            data_vars={"PROFILE_NUMBER_QC": ("N_MEASUREMENTS", qc)},
+            {"PROFILE_NUMBER_QC": ("N_MEASUREMENTS", qc)},
             coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]},
         )
-
         return self.flags
 
     def plot_diagnostics(self):
@@ -131,8 +111,10 @@ class valid_profile_qc(BaseQC):
         x = fig_spec.x_time(self.data)
         fig, axes = fig_spec.new_fig()
         ax = axes[0][0]
-        fig_spec.flag_points(ax, x, self.data["DEPTH"].values, self.flags["PROFILE_NUMBER_QC"].values)
-        fig_spec.style_axes(ax, ylabel="Pressure")
+        y = self.data[self.depth_var]
+        fig_spec.flag_points(ax, x, y.values, self.flags["PROFILE_NUMBER_QC"].values)
+        fig_spec.style_axes(ax, ylabel=fig_spec.axis_label(self.depth_var, y.attrs.get("units")))
+        ax.invert_yaxis()
         fig_spec.x_axis(ax, x)
         fig_spec.legend(ax, title="Flags")
         fig_spec.finish(fig, suptitle="Valid Profile Test")
