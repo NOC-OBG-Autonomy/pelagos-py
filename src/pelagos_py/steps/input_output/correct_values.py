@@ -195,7 +195,9 @@ class CorrectValues(BaseStep):
 
         vals = self.data[var].values.astype(float)
         self._raw_data = vals.copy()
+        self._outs = outs
         self.applied = False
+        self._skip_reason = None
 
         valid_mask = ~np.isnan(vals)
         if not np.any(valid_mask):
@@ -215,41 +217,45 @@ class CorrectValues(BaseStep):
                 window &= times >= np.datetime64(self.time_start)
             if self.time_end is not None:
                 window &= times <= np.datetime64(self.time_end)
+        self._window = window
 
         # Decide whether the correction is needed, judging by the windowed data.
-        do_scale = True
         if self.expected_range is not None:
             lo, hi = float(self.expected_range[0]), float(self.expected_range[1])
             sample = vals[valid_mask & window]
             median_val = float(np.nanmedian(sample)) if sample.size else np.nan
             if np.isfinite(median_val) and lo <= median_val <= hi:
-                self.log(
-                    f"'{var}' median ({median_val:.4g}) is within expected range "
-                    f"[{lo}, {hi}]; skipping correction."
+                self._skip_reason = (
+                    f"median ({median_val:.4g}) already within expected range [{lo:g}, {hi:g}]"
                 )
-                do_scale = False
             elif np.isfinite(median_val):
                 self.log(
                     f"'{var}' median ({median_val:.4g}) is outside expected range "
                     f"[{lo}, {hi}]; applying correction."
                 )
-
-        # Nothing changes when there is no scaling, no rename/copy and no comment to set.
-        no_description = self.append_description is None and self.overwrite_description is None
-        if not do_scale and outs == [var] and no_description:
-            self.context["data"] = self.data
-            return self.context
+        if self._skip_reason is None and self.slope == 1.0 and self.intercept == 0.0:
+            self._skip_reason = "slope 1 / intercept 0 is the identity"
+        if self._skip_reason is not None:
+            self.log(f"'{var}' {self._skip_reason}; values unchanged.")
 
         # Apply the affine correction within the window (NaNs propagate harmlessly).
         corrected = vals.copy()
-        if do_scale:
+        if self._skip_reason is None:
             corrected[window] = self.slope * vals[window] + self.intercept
             self.applied = True
+
+        if self.diagnostics:
+            self.plot_diagnostics()
+
+        # Nothing changes when there is no scaling, no rename/copy and no comment to set.
+        no_description = self.append_description is None and self.overwrite_description is None
+        if not self.applied and outs == [var] and no_description:
+            self.context["data"] = self.data
+            return self.context
 
         # Write to each output name (a copy/rename when it differs from target_variable).
         for out in outs:
             self.data[out] = self.data[var].copy(data=corrected)
-        self._outs = outs
 
         names = ", ".join(f"'{o}'" for o in outs)
         if self.applied:
@@ -273,48 +279,83 @@ class CorrectValues(BaseStep):
         if self.corrected_units is not None:
             self.log(f"Set {names} units to '{self.corrected_units}'.")
 
-        if self.diagnostics:
-            self.plot_diagnostics()
-
         self.context["data"] = self.data
         return self.context
 
     def plot_diagnostics(self):
-        if not self.applied:
-            return
-
-        var = self.target_variable
-        corrected = self.data[self._outs[0]].values
-
-        # Plot against TIME if available, otherwise against sample index.
-        if "TIME" in self.data:
-            x = self.data["TIME"].values
-            xlabel = "Time"
-        else:
-            x = np.arange(len(corrected))
-            xlabel = "Sample index"
+        # Layout follows what the step did: value + difference panels for a real
+        # correction, a single QC-coloured panel for a rename/identity/skip.
+        var, outs = self.target_variable, self._outs
+        raw = self._raw_data
+        corrected = self.slope * raw + self.intercept if self.applied else raw
+        if self.applied:
+            corrected = np.where(self._window, corrected, raw)
+        flags = self.data[f"{var}_QC"].values if f"{var}_QC" in self.data else None
+        x = fig_spec.x_time(self.data)
 
         matplotlib.use("tkagg")
-        fig, axes = fig_spec.new_fig()
+        if self.applied:
+            fig, axes = fig_spec.new_fig(nrows=2, sharex=True, height_ratios=(3, 2))
+        else:
+            fig, axes = fig_spec.new_fig()
         ax = axes[0][0]
 
-        fig_spec.points(ax, x, self._raw_data, color=fig_spec.FLAGGED, label="Raw")
-        fig_spec.points(ax, x, corrected, color=fig_spec.CATEGORY[1], label="Corrected")
-
+        if self.applied:
+            fig_spec.points(ax, x, raw, color=fig_spec.FLAGGED, label="raw")
+        self._series(ax, x, corrected, flags)
         if self.expected_range is not None:
             lo, hi = float(self.expected_range[0]), float(self.expected_range[1])
-            ax.axhline(hi, color="black", linestyle="--", alpha=0.6, linewidth=1, label=f"Max ({hi})")
-            ax.axhline(lo, color="black", linestyle="--", alpha=0.6, linewidth=1, label=f"Min ({lo})")
+            ax.axhline(hi, color="black", linestyle="--", alpha=0.6, linewidth=1,
+                       label=f"expected range [{lo:g}, {hi:g}]")
+            ax.axhline(lo, color="black", linestyle="--", alpha=0.6, linewidth=1)
+        for bound in (self.time_start, self.time_end):
+            if bound is not None and "TIME" in self.data:
+                ax.axvline(np.datetime64(bound), color="black", linestyle=":", linewidth=1)
+        units = (self.corrected_units if self.applied else None) or self.data[var].attrs.get("units")
+        ylabel = fig_spec.axis_label(outs[0], units)
+        fig_spec.style_axes(ax, ylabel=ylabel)
+        fig_spec.legend(ax, title="Flags" if flags is not None else None)
 
-        if xlabel == "Time":
-            fig_spec.date_axis(ax, which="x", index=x)
-        ylabel = fig_spec.axis_label(var, self.data[var].attrs.get("units"))
-        fig_spec.style_axes(ax, xlabel=xlabel, ylabel=ylabel)
-        fig_spec.legend(ax)
+        if self.applied:
+            ax2 = axes[1][0]
+            self._series(ax2, x, corrected - raw, flags)
+            ax2.axhline(0, color="black", linewidth=1, alpha=0.6)
+            fig_spec.style_axes(ax2, ylabel="corrected - raw")
+            fig_spec.x_axis(ax2, x)
+        else:
+            fig_spec.x_axis(ax, x)
 
-        fig_spec.finish(
-            fig,
-            suptitle=f"Value Correction: {var}\n"
-            f"(corrected = {self.slope} * value + {self.intercept})",
-        )
+        fig_spec.finish(fig, suptitle=self._title())
         plt.show(block=True)
+
+    @staticmethod
+    def _series(ax, x, y, flags):
+        if flags is not None:
+            fig_spec.flag_points(ax, x, y, flags)
+        else:
+            fig_spec.points(ax, x, y, color=fig_spec.CATEGORY[1], label="corrected")
+
+    def _title(self):
+        var, outs = self.target_variable, self._outs
+        head = f"Correct Values: {var}"
+        renamed = [o for o in outs if o != var]
+        if renamed:
+            head += f" -> {', '.join(renamed)}"
+        note = self.overwrite_description or self.append_description
+        if note:
+            head += f"  -  {note}"
+
+        if self.applied:
+            n_changed = int(np.sum(self._window & np.isfinite(self._raw_data)))
+            n_valid = int(np.sum(np.isfinite(self._raw_data)))
+            what = f"corrected = {self.slope:g} * value + {self.intercept:g}"
+            if self.time_start or self.time_end:
+                what += f"  |  window {self.time_start or '...'} to {self.time_end or '...'}"
+            what += f"  |  {n_changed:,} of {n_valid:,} points changed"
+        elif renamed:
+            what = f"Values unchanged ({self._skip_reason}); copied to {', '.join(renamed)}"
+        else:
+            what = f"NOT applied: {self._skip_reason}"
+            if "identity" in self._skip_reason:
+                what += "  -  placeholder, values unchanged"
+        return f"{head}\n{what}"

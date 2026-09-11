@@ -20,7 +20,6 @@
 from pelagos_py.steps.base_qc import BaseQC, register_qc
 
 #### Custom imports ####
-from geodatasets import get_path
 import matplotlib.pyplot as plt
 import shapely as sh
 import numpy as np
@@ -44,14 +43,8 @@ class position_on_land_qc(BaseQC):
     qc_outputs = ["LATITUDE_QC", "LONGITUDE_QC"]
 
     def return_qc(self):
-        # Concat the polygons into a MultiPolygon object
-        import geopandas
-        self.world = geopandas.read_file(get_path("naturalearth.land"))
-        land_polygons = sh.ops.unary_union(self.world.geometry)
-
-        # Check if lat, long coords fall within the area of the land polygons
         lon, lat = self.data["LONGITUDE"].values, self.data["LATITUDE"].values
-        on_land = sh.contains_xy(land_polygons, lon, lat)
+        on_land = sh.contains_xy(fig_spec.land_polygons("110m"), lon, lat)
         qc = np.where(np.isnan(lon) | np.isnan(lat), 9, np.where(on_land, 4, 1))
 
         # The same flags go on LATITUDE as well.
@@ -67,21 +60,26 @@ class position_on_land_qc(BaseQC):
 
     def plot_diagnostics(self):
         matplotlib.use("tkagg")
-        fig, axes = fig_spec.new_fig()
-        ax = axes[0][0]
+        lon, lat = self.data["LONGITUDE"].values, self.data["LATITUDE"].values
+        flags = self.flags["LATITUDE_QC"].values
+        bad = flags == 4
+        # Left: the track in its regional context. Right: tight on the flagged
+        # positions when there are any, else on the track itself.
+        views = [("Region", fig_spec.map_extent(lon, lat, pad=2.0))]
+        if bad.any():
+            views.append(("Flagged positions", fig_spec.map_extent(lon[bad], lat[bad], pad=0.3)))
+        else:
+            views.append(("Track", fig_spec.map_extent(lon, lat, pad=0.05)))
 
-        # Plot land boundaries
-        self.world.plot(ax=ax, facecolor="lightgray", edgecolor="black", alpha=0.3)
-
-        fig_spec.flag_points(
-            ax, self.data["LONGITUDE"].values, self.data["LATITUDE"].values,
-            self.flags["LATITUDE_QC"].values,
-        )
-        fig_spec.style_axes(
-            ax,
-            xlabel=fig_spec.axis_label("LONGITUDE", self.data["LONGITUDE"].attrs.get("units")),
-            ylabel=fig_spec.axis_label("LATITUDE", self.data["LATITUDE"].attrs.get("units")),
-        )
-        fig_spec.legend(ax, title="Flags")
+        fig, axes = fig_spec.new_fig(1, 2)
+        for ax, (title, extent) in zip(axes[0], views):
+            fig_spec.flag_points(ax, lon, lat, flags)
+            fig_spec.style_axes(
+                ax, title=title,
+                xlabel=fig_spec.axis_label("LONGITUDE", self.data["LONGITUDE"].attrs.get("units")),
+                ylabel=fig_spec.axis_label("LATITUDE", self.data["LATITUDE"].attrs.get("units")),
+            )
+            fig_spec.coastlines(ax, extent)
+        fig_spec.legend(axes[0][1], title="Flags")
         fig_spec.finish(fig, suptitle="Position On Land Test")
         plt.show(block=True)

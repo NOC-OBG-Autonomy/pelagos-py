@@ -240,8 +240,8 @@ class IsolateBBPSpikes(BaseStep, QCHandlingMixin):
         },
         "window_size": {
             "type": int,
-            "default": 50,
-            "description": "Median/minmax filter window size in samples.",
+            "default": 7,
+            "description": "Median/minmax filter window size in samples (7-point filter of Briggs et al. 2011).",
         },
         "method": {
             "type": str,
@@ -259,7 +259,7 @@ class IsolateBBPSpikes(BaseStep, QCHandlingMixin):
             - name: "Isolate BBP Spikes"
               parameters:
                 apply_to: "BBP700"
-                window_size: 50
+                window_size: 7
                 method: "median"
               diagnostics: false
 

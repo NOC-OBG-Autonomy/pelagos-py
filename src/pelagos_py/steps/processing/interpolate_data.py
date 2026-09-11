@@ -185,6 +185,8 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
         fig_spec.points(ax, time[~was_nan], values[~was_nan], color=fig_spec.CATEGORY[1], label="original")
         fig_spec.points(ax, time[was_nan], values[was_nan], color=fig_spec.CATEGORY[3], label="interpolated")
         fig_spec.style_axes(ax, ylabel=plot_var)
+        if plot_var in ("PRES", "DEPTH"):
+            ax.invert_yaxis()
         fig_spec.x_axis(ax, time)
         fig_spec.legend(ax)
 

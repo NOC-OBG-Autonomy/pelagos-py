@@ -192,3 +192,49 @@ def finish(fig, suptitle=None):
     if suptitle:
         fig.suptitle(suptitle, fontsize=FS_SUPTITLE, fontweight="bold")
     fig.tight_layout()
+
+
+def land_polygons(resolution="110m"):
+    """Natural Earth land as one shapely geometry (cartopy caches the download)."""
+    import cartopy.io.shapereader as sr
+    import shapely
+
+    path = sr.natural_earth(resolution=resolution, category="physical", name="land")
+    return shapely.unary_union(list(sr.Reader(path).geometries()))
+
+
+def map_extent(lon, lat, pad=0.3, min_span=0.05):
+    """[lon0, lon1, lat0, lat1] around the finite positions; longitude widened by 1/cos(lat) so land keeps its shape."""
+    lon, lat = np.asarray(lon, float), np.asarray(lat, float)
+    ok = np.isfinite(lon) & np.isfinite(lat)
+    lon, lat = lon[ok], lat[ok]
+    lon_mid, lat_mid = (lon.min() + lon.max()) / 2, (lat.min() + lat.max()) / 2
+    half = max(lon.max() - lon.min(), lat.max() - lat.min(), min_span) * (0.5 + pad)
+    cos = max(np.cos(np.deg2rad(lat_mid)), 0.2)
+    return [lon_mid - half / cos, lon_mid + half / cos, lat_mid - half, lat_mid + half]
+
+
+def coastlines(ax, extent, *, color="0.35", linewidth=0.8, fill=None):
+    """Coastlines clipped to extent as a single plot() call (WebGL-safe); fill=<colour> adds land fill (PNG-only)."""
+    import shapely
+
+    span = max(extent[1] - extent[0], extent[3] - extent[2])
+    res = "10m" if span < 3 else "50m" if span < 20 else "110m"
+    # Clip a little beyond the extent so the cut edges fall outside the axes.
+    m = 0.05 * span
+    land = shapely.clip_by_rect(land_polygons(res), extent[0] - m, extent[2] - m, extent[1] + m, extent[3] + m)
+    xs, ys = [], []
+    for poly in getattr(land, "geoms", [land]):
+        if poly.is_empty or poly.geom_type != "Polygon":
+            continue
+        if fill:
+            ax.fill(*poly.exterior.xy, color=fill, lw=0, zorder=0)
+        for ring in (poly.exterior, *poly.interiors):
+            x, y = ring.xy
+            xs += [*x, np.nan]
+            ys += [*y, np.nan]
+    ax.plot(xs, ys, color=color, lw=linewidth, zorder=1)
+    ax.grid(False)
+    ax.set_xlim(extent[0], extent[1])
+    ax.set_ylim(extent[2], extent[3])
+    ax.set_aspect(1 / max(np.cos(np.deg2rad((extent[2] + extent[3]) / 2)), 0.2))

@@ -80,6 +80,7 @@ class valid_profile_qc(BaseQC):
             "description": "QC flag given to every row of a failing profile.",
         },
     }
+    dynamic = True
     required_variables = ["PROFILE_NUMBER"]
     qc_outputs = ["PROFILE_NUMBER_QC"]
 

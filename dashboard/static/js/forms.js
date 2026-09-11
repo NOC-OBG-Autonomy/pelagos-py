@@ -13,8 +13,8 @@ const Forms = {
 
   // How should this spec be rendered?
   kind(spec) {
-    if (spec.options) return 'select';
     const ts = Forms.types(spec);
+    if (spec.options) return ts.includes('list') ? 'multiselect' : 'select';
     if (ts.length === 1 && ts[0] === 'bool') return 'bool';
     if (ts.some((t) => ['dict', 'list', 'tuple'].includes(t))) return 'yaml';
     if (ts.length === 1 && (ts[0] === 'int' || ts[0] === 'float')) return 'number';
@@ -30,6 +30,7 @@ const Forms = {
       case 'bool': return false;
       case 'number': return null;
       case 'select': return spec.options[0];
+      case 'multiselect': return [];
       case 'yaml': return null;
       default: return '';
     }
@@ -93,6 +94,24 @@ const Forms = {
         input.appendChild(o);
       }
       input.onchange = () => { values[spec.name] = spec.options[input.selectedIndex]; onChange(); };
+    } else if (kind === 'multiselect') {
+      input = document.createElement('div');
+      input.className = 'multiselect';
+      const chosen = new Set(Array.isArray(cur) ? cur : []);
+      for (const opt of spec.options) {
+        const item = document.createElement('label');
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.checked = chosen.has(opt);
+        box.onchange = () => {
+          box.checked ? chosen.add(opt) : chosen.delete(opt);
+          values[spec.name] = spec.options.filter((o) => chosen.has(o)); // keep schema order
+          onChange();
+        };
+        item.appendChild(box);
+        item.appendChild(document.createTextNode(String(opt)));
+        input.appendChild(item);
+      }
     } else if (kind === 'bool') {
       const sw = Forms.switchEl(!!cur, (v) => { values[spec.name] = v; onChange(); });
       input = sw.input;

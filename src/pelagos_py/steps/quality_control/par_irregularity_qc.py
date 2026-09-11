@@ -27,6 +27,7 @@ from pelagos_py.utils.processing_utils import profile_indices
 #### Custom imports ####
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+from pelagos_py.utils import fig_spec
 import numpy as np
 from datetime import datetime
 import warnings
@@ -292,7 +293,7 @@ class par_irregularity_qc(BaseQC):
         "plot_profiles": {
             "type": list,
             "default": [],
-            "description": "Profile numbers to plot in diagnostics.",
+            "description": "Profile numbers to plot per-profile in diagnostics (default: whole record vs time).",
         },
     }
     required_variables = [
@@ -351,7 +352,17 @@ class par_irregularity_qc(BaseQC):
         mpl.use("tkagg")
 
         if len(self.plot_profiles) == 0:
-            self.log("To see diagnostics, please specify the plot_profiles setting.")
+            # Default: whole record vs time; plot_profiles gives the per-profile grid
+            x = fig_spec.x_time(self.data)
+            fig, axes = fig_spec.new_fig()
+            ax = axes[0][0]
+            y = self.data["DOWNWELLING_PAR"]
+            fig_spec.flag_points(ax, x, y.values, self.flags["DOWNWELLING_PAR_QC"].values)
+            fig_spec.style_axes(ax, ylabel=fig_spec.axis_label("DOWNWELLING_PAR", y.attrs.get("units")))
+            fig_spec.x_axis(ax, x)
+            fig_spec.legend(ax, title="Flags")
+            fig_spec.finish(fig, suptitle="PAR irregularity test")
+            plt.show(block=True)
             return
 
         nrows = int(np.ceil(len(self.plot_profiles) / 3))

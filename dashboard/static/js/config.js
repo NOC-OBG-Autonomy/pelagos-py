@@ -245,8 +245,8 @@ const Config = {
     const del = document.getElementById('btn-delete');
     if (!del) return;
     const chosen = Config.selected;
-    del.disabled = !chosen || Config.isLocked(chosen);
-    del.title = Config.isLocked(chosen)
+    del.disabled = !chosen || Config.isLocked(chosen) || RunLock.running;
+    del.title = RunLock.running ? 'Locked while the pipeline is running' : Config.isLocked(chosen)
       ? `${chosen} is a locked reference config and cannot be deleted`
       : 'Delete the selected config';
   },

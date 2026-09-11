@@ -88,7 +88,7 @@ steps:
               3: [-2.4, -5, inside] # Pressure in this range is flagged as probably bad (3)
               4: [-5, -.inf, inside] # and bad (4) in this range.
             TEMP: # 'outside' -> flag TEMP when it falls OUTSIDE the band
-              3: [0, 30, outside]
+              3: [-1, 30, outside]
               4: [-2.5, 40, outside]
             CNDC: # S/m
               3: [0.5, 4.2, outside]
@@ -269,7 +269,7 @@ steps:
 # filter, leaving BBP700_BASELINE for the quenching step to use.
   - name: Isolate BBP Spikes
     parameters:
-      window_size: 50          # Filter window size in samples
+      window_size: 7           # Filter window size in samples (Briggs et al. 2011)
       method: median           # Filter method used to determine the baseline
     diagnostics: false
 

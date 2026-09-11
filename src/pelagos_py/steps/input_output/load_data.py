@@ -222,15 +222,5 @@ class LoadOG1(BaseStep):
             )
 
     def generate_diagnostics(self):
-        """
-        Print a structural summary of the loaded dataset.
-
-        Called automatically at the end of :meth:`run` when ``diagnostics`` is
-        enabled. Delegates to
-        :func:`pelagos_py.utils.diagnostics.generate_info`, which prints the
-        dataset's dimensions, variables and global attributes (via
-        :meth:`xarray.Dataset.info`) to stdout — a quick check that the data
-        was loaded as expected.
-        """
         self.log_generating_diagnostics()
         diag.generate_info(self.data)

@@ -19,7 +19,7 @@
 #### Mandatory imports ####
 import numpy as np
 from pelagos_py.steps.base_qc import BaseQC, register_qc
-from pelagos_py.utils.qc_handling import QC_COMBINATRIX
+from pelagos_py.utils.qc_handling import propagate_flags
 
 #### Custom imports ####
 import matplotlib
@@ -66,7 +66,7 @@ class range_qc(BaseQC):
                     4: [-5, -.inf, inside]
                     9: 0.0                  # single scalar -> flag the exact fill value 0.0
                   TEMP:
-                    3: [0, 30, outside]     # good band: flag data OUTSIDE it
+                    3: [-1, 30, outside]     # good band: flag data OUTSIDE it
                     4: [-2.5, 40, outside]
                   CNDC:
                     # one flag, two bands: flag bad both inside [2, 3] and outside [0.1, 10]
@@ -259,7 +259,7 @@ class range_qc(BaseQC):
                     continue
                 for companion in companions:
                     base = qc_arrays.get(companion, np.zeros(n, dtype=int))
-                    qc_arrays[companion] = QC_COMBINATRIX[base, src]
+                    qc_arrays[companion] = propagate_flags(base, src)
 
         # Drop the flag_instead sources now their flags have been propagated.
         for var in self.flag_instead:

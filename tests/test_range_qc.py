@@ -263,3 +263,14 @@ def test_unknown_param_raises():
     """mode/plot were removed; supplying them is now an unknown-parameter error."""
     with pytest.raises(ValueError, match="mode"):
         range_qc(None, variable_ranges={"TEMP": {4: [0, 30]}}, mode="inside")
+
+
+def test_also_flag_chains_through_companions():
+    # NaN TEMP is not 9 in range qc, so this checks PRES -> TEMP -> CNDC chaining
+    data = make_data(PRES=[5.0, 500.0], TEMP=[np.nan, 11.0], CNDC=[4.0, 4.0])
+    qc = range_qc(data, variable_ranges={"PRES": {4: [0, 100]}, "TEMP": {4: [0, 30]}},
+                  also_flag={"PRES": ["TEMP"], "TEMP": ["CNDC"]})
+
+    flags = qc.return_qc()
+    assert list(flags["TEMP_QC"].values) == [1, 4]
+    assert list(flags["CNDC_QC"].values) == [1, 4]

@@ -210,9 +210,7 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
         if "TIME" not in self.data:
             return
 
-        # Combine physical inputs and derived outputs, filtering for what actually exists
-        target_variables = ["PRES", "CNDC", "TEMP"] + self.provided_variables
-        plot_vars = [var for var in target_variables if var in self.data]
+        plot_vars = [var for var in self.provided_variables if var in self.to_derive and var in self.data]
 
         if not plot_vars:
             return

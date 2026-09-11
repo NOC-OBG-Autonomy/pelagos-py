@@ -30,3 +30,23 @@ def test_spike_in_long_profile_is_flagged():
 
     flags = qc.return_qc()["CHLA_QC"].values
     assert flags[7] == 4 and set(np.delete(flags, 7)) == {1}
+
+
+def test_also_flag_does_not_propagate_missing():
+    # CNDC present where PRES is NaN: CNDC must not inherit flag 9
+    n = 30
+    pres = np.linspace(0, 100, n)
+    pres[5] = np.nan
+    data = xr.Dataset(
+        {
+            "PRES": ("N_MEASUREMENTS", pres),
+            "CNDC": ("N_MEASUREMENTS", np.full(n, 4.0)),
+            "PROFILE_NUMBER": ("N_MEASUREMENTS", np.zeros(n)),
+        },
+        coords={"N_MEASUREMENTS": np.arange(n)},
+    )
+    qc = spike_qc(data, variables={"PRES": 3}, also_flag={"PRES": ["CNDC"]}, window_size=5)
+    flags = qc.return_qc()
+    assert flags["PRES_QC"].values[5] == 9
+    assert flags["CNDC_QC"].values[5] == 0
+    assert (flags["CNDC_QC"].values[[0, 10]] == flags["PRES_QC"].values[[0, 10]]).all()

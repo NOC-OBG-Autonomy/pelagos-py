@@ -188,7 +188,8 @@ const Run = {
   // The pending banner ("Starting…" / "Stopping…") settles in place once the
   // pipeline has answered: the dots stop and the wording turns past tense.
   settle(kind, title, sub = '') {
-    const el = document.querySelector('#log-console .banner-starting');
+    const els = document.querySelectorAll('#log-console .banner-starting');
+    const el = els[els.length - 1]; // the newest pending banner, not an older one
     if (!el) return;
     el.className = 'lvl-banner banner-' + kind;
     el.querySelector('strong').textContent = title;
@@ -890,6 +891,7 @@ const Run = {
   },
 
   async stop() {
+    Run.settleStart(); // a still-pending "Starting" banner must not outlive the run
     Run.stopping = true;
     Run.setStatus('stopping…', 'running');
     Run.banner('starting', 'Stopping pipeline');

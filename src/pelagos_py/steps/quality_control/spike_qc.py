@@ -21,6 +21,7 @@ import numpy as np
 import pandas as pd
 from pelagos_py.steps.base_qc import BaseQC, register_qc
 from pelagos_py.utils.processing_utils import profile_indices
+from pelagos_py.utils.qc_handling import propagate_flags
 
 #### Custom imports ####
 import matplotlib.pyplot as plt
@@ -78,7 +79,7 @@ class spike_qc(BaseQC):
         "plot": {
             "type": list,
             "default": [],
-            "description": "Variables to plot in diagnostics.",
+            "description": "Variables to plot in diagnostics (default: every tested variable).",
         },
         "window_size": {
             "type": int,
@@ -160,7 +161,10 @@ class spike_qc(BaseQC):
             # Broadcast the QC found for var into variables specified by "also_flag"
             if extra_vars := self.also_flag.get(var):
                 for extra_var in extra_vars:
-                    self.data[f"{extra_var}_QC"] = self.data[f"{var}_QC"]
+                    base = self.data.get(f"{extra_var}_QC", xr.zeros_like(self.data[f"{var}_QC"]))
+                    self.data[f"{extra_var}_QC"] = (
+                        ["N_MEASUREMENTS"], propagate_flags(base, self.data[f"{var}_QC"])
+                    )
 
         # Select just the flags
         self.flags = self.data[
@@ -172,17 +176,12 @@ class spike_qc(BaseQC):
     def plot_diagnostics(self):
         matplotlib.use("tkagg")
 
-        # If not plots were specified
-        if len(self.plot) == 0:
-            print(
-                f"WARNING: In '{self.qc_name}', diagnostics were called but no variables were specified for plotting."
-            )
-            return
+        plot_vars = self.plot or list(self.variables)  # default to every tested variable
 
         # Plot the QC output
-        fig, axes = fig_spec.new_fig(nrows=len(self.plot), sharex=True)
+        fig, axes = fig_spec.new_fig(nrows=len(plot_vars), sharex=True)
         x = fig_spec.x_time(self.data)
-        for ax, var in zip(axes[:, 0], self.plot):
+        for ax, var in zip(axes[:, 0], plot_vars):
             # Check that the user specified var exists in the test set
             if f"{var}_QC" not in self.qc_outputs:
                 print(
@@ -197,6 +196,8 @@ class spike_qc(BaseQC):
             if untested:
                 title += f" — {untested} of {total} profiles untested (< window_size points)"
             fig_spec.style_axes(ax, title=title, ylabel=ylabel)
+            if var in ("PRES", "DEPTH"):
+                ax.invert_yaxis()
             fig_spec.legend(ax, title="Flags")
         fig_spec.x_axis(axes[-1][0], x)
 

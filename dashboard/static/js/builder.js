@@ -622,6 +622,7 @@ function applyRunLock() {
     const b = document.getElementById(id);
     if (b) b.disabled = running;
   }
+  Config.updateControls(); // Delete follows the picker lock
   const picker = document.querySelector('#config-select .cfg-trigger');
   if (picker) {
     picker.disabled = running;

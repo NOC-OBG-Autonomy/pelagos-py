@@ -59,26 +59,20 @@ def _step(parameters, global_parameters):
 # --------------------------- console_summary helper ---------------------------
 
 
-def test_console_summary_parses_missing_and_counts_other():
+def test_console_summary_ranks_failing_checks():
     result = {"scored_points": 27, "possible_points": 35, "all_priorities": OG_PRIORITIES}
-    lines = format_check.console_summary("og", result, passed=False)
-    joined = "\n".join(lines)
-
-    assert "og: FAIL — score 27/35" in joined
-    assert "Mandatory global attributes missing (2): contributing_institutions, start_date" in joined
-    assert "Mandatory variables missing (1): DEPTH" in joined
-    # The lowercase check's 3 messages are summarised, not listed.
-    assert "+ 3 other issue(s) not shown" in joined
+    line = format_check.console_summary("og", result, passed=False, top=2)
+    assert line.startswith("OG1: failed (27/35) — 6 issue(s) in 3 check(s): ")
+    assert "all attribute names are lowercase (3), mandatory global attributes (2), +1 more" in line
 
 
-def test_console_summary_pass_header():
+def test_console_summary_pass():
     result = {"scored_points": 35, "possible_points": 35, "all_priorities": []}
-    lines = format_check.console_summary("og", result, passed=True)
-    assert lines[0] == "og: PASS — score 35/35"
-    assert len(lines) == 1  # nothing missing, no "other" line
+    assert format_check.console_summary("og", result, passed=True) == "OG1: passed (35/35)"
 
 
-# --------------------------------- run() --------------------------------------
+def test_header_names_standards():
+    assert format_check.join_labels([format_check.standard_label(c) for c in ["cf", "og"]]) == "CF and OG1"
 
 
 def test_console_only_run_succeeds():

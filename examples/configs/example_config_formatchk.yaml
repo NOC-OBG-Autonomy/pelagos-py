@@ -41,7 +41,7 @@ steps:
               3: [-5, -2.4, outside]
               4: [-.inf, -5, outside]
             TEMP:
-              3: [0, 30, outside]
+              3: [-1, 30, outside]
               4: [-2.5, 40, outside]
             CNDC:
               3: [5, 42, outside]

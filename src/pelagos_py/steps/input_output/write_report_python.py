@@ -1065,17 +1065,12 @@ def index_section(pdf: ReportPDF, data: xr.Dataset) -> None:
 ### Plot builders (save a figure, return its path)
 
 
-#   Title-page map palette, echoing the "globe" web view: a muted navy ocean,
-#   slate land, faint graticule, and a gold track that brightens from the oldest
-#   fix to the newest. Kept a mid-tone (rather than near-black) so the map reads
-#   as a softer, lighter panel while the gold track still stands out.
+#   Title-page map palette: muted navy ocean, slate land, gold track that
+#   brightens from the oldest fix to the newest.
 _MAP_OCEAN = "#2b3a57"
 _MAP_LAND = "#45526d"
 _MAP_COAST = "#7889ad"
-_MAP_GRID = "#8294b6"
-_MAP_GRID_TEXT = "#d2dcee"
 _MAP_GOLD_STOPS = ["#4a3c10", "#b8922a", "#ffd700", "#fff4bf"]
-_MAP_START = "#9fe0a0"
 
 
 #   Cross-section panels (PRES vs TIME, coloured by a variable). Each panel
@@ -1191,105 +1186,43 @@ def _find_lonlat(data: xr.Dataset):
 
 
 def glider_track_map(data: xr.Dataset, outdir: str, ext: str = ".png") -> str:
-    #   Render the glider track as a dark, web-style map (navy ocean, slate land,
-    #   time-faded gold track) for the title page, using cartopy's Natural Earth
-    #   basemap. Returns the saved image path, or None when no track/no cartopy.
-    try:
-        import cartopy.crs as ccrs
-        import cartopy.feature as cfeature
-        from matplotlib.collections import LineCollection
-        from matplotlib.colors import LinearSegmentedColormap
-    except Exception:  # noqa: BLE001 - cartopy is optional; skip the map if absent
-        return None
+    # Dark, web-style map of the glider track for the title page. Returns the
+    # saved image path, or None when there is no track to draw.
+    from matplotlib.collections import LineCollection
+    from matplotlib.colors import LinearSegmentedColormap
 
     lon, lat = _find_lonlat(data)
     if lon is None:
         return None
-
     lon = np.asarray(lon, dtype=float).ravel()
     lat = np.asarray(lat, dtype=float).ravel()
     valid = np.isfinite(lon) & np.isfinite(lat)
     lon, lat = lon[valid], lat[valid]
     if lon.size < 2:
         return None
+    #   Thin millions of fixes to a few thousand without changing the track's shape.
+    stride = max(1, int(np.ceil(lon.size / 3000)))
+    lon, lat = lon[::stride], lat[::stride]
 
-    #   Gliders log millions of fixes; thin to a few thousand so the line
-    #   collection stays light without changing the track's shape.
-    max_pts = 3000
-    if lon.size > max_pts:
-        stride = int(np.ceil(lon.size / max_pts))
-        lon, lat = lon[::stride], lat[::stride]
-
-    #   Padded extent centred on the track.
-    lon_mid = 0.5 * (np.nanmin(lon) + np.nanmax(lon))
-    lat_mid = 0.5 * (np.nanmin(lat) + np.nanmax(lat))
-    span = max(np.nanmax(lon) - np.nanmin(lon), np.nanmax(lat) - np.nanmin(lat))
-    span = max(span, 0.05) * 1.6  #   breathing room (and a floor for short tracks)
-
-    #   One degree of longitude covers cos(latitude) times the ground distance of
-    #   one degree of latitude, so an equal-degree box stretches the coastline
-    #   east-west at high latitudes (e.g. Iceland looks squashed). Widen the
-    #   longitude extent by 1/cos(lat) and stretch the axis by the same factor:
-    #   the map stays square on the page but the land keeps its true proportions.
-    cos_lat = max(np.cos(np.deg2rad(lat_mid)), 0.2)  # floor avoids a near-pole blow-up
-    lat_half = span / 2
-    lon_half = lat_half / cos_lat
-    extent = [lon_mid - lon_half, lon_mid + lon_half,
-              lat_mid - lat_half, lat_mid + lat_half]
-    #   Finer coastline for tighter views; coarser (and cheaper) when zoomed out.
-    scale = "10m" if span < 3 else "50m" if span < 20 else "110m"
-
-    proj = ccrs.PlateCarree()
-    #   Square figure (1:1) so the map renders proportionally on the title page.
-    fig = plt.figure(figsize=(6, 6))
-    ax = fig.add_subplot(1, 1, 1, projection=proj)
+    fig, ax = plt.subplots(figsize=(6, 6))
     fig.patch.set_facecolor(_MAP_OCEAN)
     ax.set_facecolor(_MAP_OCEAN)
+    ax.set_axis_off()
     try:
-        ax.set_extent(extent, crs=proj)
-        ax.set_aspect(1.0 / cos_lat)  #   latitude-correct proportions (see above)
-    except Exception:  # noqa: BLE001 - degenerate extents fall back to autoscale
-        pass
-
-    #   Land + coastline, with a graceful drop to coarser data (or none) so a
-    #   failed Natural Earth download never breaks the report.
-    for sc in (scale, "110m"):
-        try:
-            ax.add_feature(
-                cfeature.LAND.with_scale(sc),
-                facecolor=_MAP_LAND, edgecolor="none", zorder=0,
-            )
-            ax.coastlines(resolution=sc, color=_MAP_COAST, linewidth=0.6, zorder=1)
-            break
-        except Exception:  # noqa: BLE001 - try the next scale, else skip the basemap
-            continue
-
-    try:
-        gl = ax.gridlines(
-            draw_labels=True, linewidth=0.4, color=_MAP_GRID,
-            alpha=0.4, linestyle=":",
+        fig_spec.coastlines(
+            ax, fig_spec.map_extent(lon, lat), color=_MAP_COAST, linewidth=0.6, fill=_MAP_LAND
         )
-        gl.top_labels = gl.right_labels = False
-        gl.xlabel_style = {"size": 7, "color": _MAP_GRID_TEXT}
-        gl.ylabel_style = {"size": 7, "color": _MAP_GRID_TEXT}
-    except Exception:  # noqa: BLE001 - labels are decorative
+    except Exception:  # noqa: BLE001 - a failed Natural Earth download never breaks the report
         pass
 
-    #   Track as a time-faded gold gradient (oldest faint -> newest bright),
-    #   with a soft glow underneath so it reads on the dark ocean.
+    #   Time-faded gold gradient (oldest faint -> newest bright) over a soft glow.
     pts = np.column_stack([lon, lat]).reshape(-1, 1, 2)
     segs = np.concatenate([pts[:-1], pts[1:]], axis=1)
     cmap = LinearSegmentedColormap.from_list("glidergold", _MAP_GOLD_STOPS)
-    glow = LineCollection(
-        segs, colors="#ffd70022", linewidth=4.5, transform=proj, zorder=2
-    )
-    track = LineCollection(segs, cmap=cmap, linewidth=1.8, transform=proj, zorder=3)
+    ax.add_collection(LineCollection(segs, colors="#ffd70022", linewidth=4.5, zorder=2))
+    track = LineCollection(segs, cmap=cmap, linewidth=1.8, zorder=3)
     track.set_array(np.linspace(0, 1, len(segs)))
-    ax.add_collection(glow)
     ax.add_collection(track)
-
-    #   The track's brightening gold already shows direction of travel (oldest
-    #   faint -> newest bright), so no start/end/position marker is drawn.
 
     fig.tight_layout(pad=0.3)
     fname = outdir + "glider_track" + ext

@@ -539,7 +539,7 @@ steps:
       apply_to: BBP700
       # [window_size]:
       #   Median/minmax filter window size in sample number
-      window_size: 50
+      window_size: 7
       # [method]:
       #   Method used to filter the data to determine the baseline
       method: median

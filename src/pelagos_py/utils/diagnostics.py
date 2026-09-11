@@ -109,13 +109,19 @@ def plot_correlation_matrix(data, variables=None, title="Correlation Matrix", **
 
 
 def generate_info(data):
-    """Generate info for a given dataset"""
-    if isinstance(data, xr.Dataset):
-        # For xarray, we'll summarize each data variable
-        print("Data Info:")
-        print(data.info())
-    else:
+    """Print one line per variable: name, dtype, units, and whether a QC companion exists."""
+    if not isinstance(data, xr.Dataset):
         print("Data Info only supported for xarray Dataset ")
+        return
+    names = sorted(v for v in data.variables if not str(v).endswith("_QC"))
+    n_qc = sum(f"{v}_QC" in data.variables for v in names)
+    print("Dimensions: " + ", ".join(f"{k}={v}" for k, v in data.sizes.items()))
+    print(f"Variables: {len(names)} ({n_qc} with QC flags)")
+    width = min(max((len(str(v)) for v in names), default=0), 24)
+    for v in names:
+        units = str(data[v].attrs.get("units", ""))
+        qc = "QC" if f"{v}_QC" in data.variables else ""
+        print(f"  {str(v):<{width}} {str(data[v].dtype):<14} {units:<12} {qc}".rstrip())
 
 
 def check_missing_values(data):

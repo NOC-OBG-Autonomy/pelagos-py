@@ -16,9 +16,8 @@
 
 """Checks the format of a file against OG1/CF standards and reports the result.
 
-A short pass/fail summary is always logged to the console. Full detail is only
-written to disk when the user asks for it (``output_type``) and an
-``out_directory`` is configured.
+A short pass/fail summary is always logged; the full report is printed when
+``diagnostics`` is on, and saved to disk when ``output_type`` names a format.
 """
 
 #### Mandatory imports ####
@@ -27,98 +26,42 @@ from pelagos_py.steps.base_step import BaseStep, register_step
 #### Custom imports ####
 from compliance_checker.runner import ComplianceChecker, CheckSuite, stdout_redirector
 from pathlib import Path
-import re
 
-#: The compliance checker's strictness levels map to integer score limits;
-#: "lenient" keeps every priority (1=high … 3=low) in the report.
+# The compliance checker's strictness levels map to integer score limits;
+# "lenient" keeps every priority (1=high ... 3=low) in the report.
 _LENIENT_LIMIT = 3
 
-#: A missing global attribute / variable reads e.g. "Global attribute X is
-#: missing" or "Variable X is missing"; pull out the bare name for the summary.
-_MISSING_RE = re.compile(r"\b(?:attribute|Variable)\s+([A-Za-z0-9_]+)\s+is missing")
+_STANDARD_LABELS = {"cf": "CF", "og": "OG1"}
 
 
-def _is_named(entry, *keywords):
-    """Whether a check entry's name contains all the given keywords."""
-    name = entry.get("name", "").lower()
-    return all(k in name for k in keywords)
+def standard_label(name):
+    return _STANDARD_LABELS.get(name.lower(), name.upper())
 
 
-def _named_check(priorities, *keywords):
-    """Return the ``msgs`` of the first check whose name contains all keywords.
-
-    Used to locate the OG1 "mandatory global attributes"/"mandatory variables"
-    checks by substring. Returns ``None`` when no such check ran (e.g. a checker
-    that does not define it), which the caller distinguishes from "ran, none
-    missing" (an empty list).
-    """
-    for entry in priorities:
-        if _is_named(entry, *keywords):
-            return entry.get("msgs", [])
-    return None
+def join_labels(labels):
+    return " and ".join(labels) if len(labels) <= 2 else ", ".join(labels[:-1]) + f" and {labels[-1]}"
 
 
-def _missing_names(msgs):
-    """Pull the bare attribute/variable names out of "... is missing" messages."""
-    names = []
-    for msg in msgs or []:
-        match = _MISSING_RE.search(msg)
-        names.append(match.group(1) if match else msg)
-    return names
-
-
-def console_summary(checker_name, result, passed):
-    """Build a compact console summary for one checker's result.
-
-    Parameters
-    ----------
-    checker_name : str
-        The checker that produced ``result`` (e.g. ``"og"``).
-    result : dict
-        A single checker's :meth:`CheckSuite.dict_output` dict.
-    passed : bool
-        Whether the dataset passed this checker at the chosen strictness.
-
-    Returns
-    -------
-    list of str
-        Lines to log. Kept deliberately short: a pass/fail header, the missing
-        mandatory global attributes and variables, then a count of everything
-        else so the console is not flooded with detail (that goes to the file).
-    """
-    priorities = result.get("all_priorities", [])
+def console_summary(checker_name, result, passed, top=3):
+    """One-line summary of a checker's result: score, issue count and the worst checks."""
     scored = result.get("scored_points")
     possible = result.get("possible_points")
-
-    lines = [
-        f"{checker_name}: {'PASS' if passed else 'FAIL'} — score {scored}/{possible}"
+    label = standard_label(checker_name)
+    if passed:
+        return f"{label}: passed ({scored}/{possible})"
+    failing = [
+        (len(entry.get("msgs", [])), entry.get("name", "").rstrip(".").removeprefix("Check for ").removeprefix("Check that "))
+        for entry in result.get("all_priorities", [])
+        if entry.get("msgs")
     ]
-
-    global_attrs = _named_check(priorities, "mandatory", "global attribute")
-    variables = _named_check(priorities, "mandatory", "variable")
-
-    if global_attrs:
-        names = _missing_names(global_attrs)
-        lines.append(
-            f"  Mandatory global attributes missing ({len(names)}): {', '.join(names)}"
-        )
-    if variables:
-        names = _missing_names(variables)
-        lines.append(
-            f"  Mandatory variables missing ({len(names)}): {', '.join(names)}"
-        )
-
-    # Everything else is summarised as a count only, to keep the console terse.
-    other = sum(
-        len(entry.get("msgs", []))
-        for entry in priorities
-        if not _is_named(entry, "mandatory", "global attribute")
-        and not _is_named(entry, "mandatory", "variable")
+    failing.sort(key=lambda item: -item[0])
+    n_issues = sum(count for count, _ in failing)
+    worst = ", ".join(f"{name} ({count})" for count, name in failing[:top])
+    if len(failing) > top:
+        worst += f", +{len(failing) - top} more"
+    return (
+        f"{label}: failed ({scored}/{possible}) — {n_issues} issue(s) in {len(failing)} check(s): {worst}"
     )
-    if other:
-        lines.append(f"  + {other} other issue(s) not shown")
-
-    return lines
 
 
 @register_step
@@ -126,10 +69,10 @@ class FormatCheck(BaseStep):
     """
     Run the IOOS file-format compliance checker and report the result.
 
-    Does not run on the in-memory dataset; it re-reads the file from disk
-    (its own loading routine). A short pass/fail summary is always printed to
-    the console. JSON and/or RST report files are written only when requested
-    via ``output_type`` and an ``out_directory`` is set.
+    Does not run on the in-memory dataset; it re-reads the file from disk.
+    A short pass/fail summary is always logged. With ``diagnostics`` on the
+    full report is printed as well; JSON and/or RST report files are written
+    when requested via ``output_type`` and an ``out_directory`` is set.
 
     Parameters
     ----------
@@ -139,9 +82,8 @@ class FormatCheck(BaseStep):
     standards : list of str
         Standards to check, e.g. ``['cf', 'og']`` (``og`` = OG1).
     output_type : str or list of str, optional
-        Report file(s) to save *in addition to* the console summary: ``'json'``,
-        ``'rst'``, or a list of both. Omit (default) for console only. Saving
-        requires ``out_directory`` to be set in the pipeline config.
+        Report file(s) to save: ``'json'``, ``'rst'``, or a list of both. Omit
+        (default) to save nothing. Requires ``out_directory`` in the config.
     proceed_on_fail : bool
         If False, halt the pipeline when the file fails the checks.
     """
@@ -160,10 +102,9 @@ class FormatCheck(BaseStep):
         },
         "output_type": {
             "type": [str, list],
-            "default": ["console"],
-            "options": ["console", "json", "rst"],
-            "description": "Outputs to produce: 'console' for the in-log detail summary, "
-            "'json'/'rst' to also save a report file. Default ['console']. Saving files requires out_directory.",
+            "default": None,
+            "options": ["json", "rst"],
+            "description": "Report file(s) to save: 'json', 'rst' or both. Omit to save nothing. Requires out_directory.",
         },
         "proceed_on_fail": {
             "type": bool,
@@ -172,20 +113,12 @@ class FormatCheck(BaseStep):
         },
     }
 
-    #: Recognised entries for ``output_type``.
-    _OUTPUT_OPTIONS = ("console", "json", "rst")
-
-    def _resolve_outputs(self):
-        """Normalise ``output_type`` to a list drawn from {'console', 'json', 'rst'}.
-
-        Accepts a single string or a list; unrecognised entries are dropped. The
-        overall result header is always logged regardless of this selection.
-        """
+    def _save_formats(self):
         raw = self.parameters.get("output_type")
         if not raw:
             return []
         values = [raw] if isinstance(raw, str) else list(raw)
-        return [v.lower() for v in values if isinstance(v, str) and v.lower() in self._OUTPUT_OPTIONS]
+        return [v.lower() for v in values if isinstance(v, str) and v.lower() in ("json", "rst")]
 
     def run(self):
         check_suite = CheckSuite()
@@ -212,11 +145,7 @@ class FormatCheck(BaseStep):
                 f"Install the matching plugin (e.g. 'pip install cc-plugin-og' for 'og')."
             )
 
-        #   Resolve outputs: 'console' toggles the detail log; 'json'/'rst' save files.
-        outputs = self._resolve_outputs()
-        console_on = "console" in outputs
-        save_formats = [fmt for fmt in outputs if fmt in ("json", "rst")]
-
+        save_formats = self._save_formats()
         out_dir = self.context.get("global_parameters", {}).get("out_directory")
         if save_formats and not out_dir:
             self.log_warn(
@@ -233,7 +162,6 @@ class FormatCheck(BaseStep):
         score_groups = check_suite.run_all(ds, cnames)
         score_dict = {src: score_groups}
 
-        #   Gather a short per-checker summary; track the overall pass/fail.
         overall_pass = True
         summary_lines = []
         cc_results = {}
@@ -241,42 +169,28 @@ class FormatCheck(BaseStep):
             passed = check_suite.passtree(groups, _LENIENT_LIMIT)
             overall_pass = overall_pass and passed
             result = check_suite.dict_output(checker_name, groups, src, _LENIENT_LIMIT)
-            summary_lines += console_summary(checker_name, result, passed)
+            summary_lines.append(console_summary(checker_name, result, passed))
             cc_results[checker_name] = result
 
-        #   Stash the structured results so the data report can render a Format
-        #   Checker section regardless of whether a report file was saved.
+        #   Structured results let the data report render a Format Checker section
+        #   regardless of whether a report file was saved.
         self.context["cc_results"] = cc_results
 
-        #   Write the detailed report file(s), if requested and possible.
         saved = self._write_reports(check_suite, score_dict, out_dir, fname, save_formats)
 
-        #   --- Log 1: overall result (WARNING on fail, INFO on pass). Always emitted.
-        header = (
-            f"'{fname}' {'passed' if overall_pass else 'FAILED'} "
-            f"format compliance check(s): {', '.join(cnames)}."
-        )
+        labels = join_labels([standard_label(c) for c in cnames])
+        header = f"'{fname}' {'passed' if overall_pass else 'failed'} {labels} format checks."
         (self.log if overall_pass else self.log_warn)(header)
-
-        #   --- Log 2: the detail summary, only when 'console' is selected.
-        #   Each line is logged on its own so it carries the same time/step prefix
-        #   as every other line (info lines are greyed by the console formatter).
-        if console_on:
-            detail = list(summary_lines)
-            if ComplianceChecker.check_errors(score_groups, verbose=0):
-                detail.append("! Errors occurred while running the checker — see a saved report.")
-            for line in detail:
-                self.log(line)
-
-        #   --- Log 3: where the full detail lives, or how to save it.
+        for line in summary_lines:
+            self.log(line)
+        if ComplianceChecker.check_errors(score_groups, verbose=0):
+            self.log_warn("Errors occurred while running the checker — see the full report.")
         if saved:
-            self.log(
-                "  ".join(f"{fmt.upper()} report saved to: {path}" for fmt, path in saved.items())
-            )
-        else:
-            self.log(
-                "Add 'json' or 'rst' to output_type (with an out_directory) to save a full report."
-            )
+            self.log("  ".join(f"{fmt.upper()} report saved to: {path}" for fmt, path in saved.items()))
+
+        if self.diagnostics:
+            self._check_suite, self._score_dict = check_suite, score_dict
+            self.generate_diagnostics()
 
         if not overall_pass and self.parameters.get("proceed_on_fail") == False:
             self.halt(
@@ -285,13 +199,14 @@ class FormatCheck(BaseStep):
 
         return self.context
 
-    def _write_reports(self, check_suite, score_dict, out_dir, fname, save_formats):
-        """Write the requested report file(s) and record one for the report step.
+    def generate_diagnostics(self):
+        # Full checker report (the same text as the RST file) to stdout, so the
+        # console shows it and the dashboard captures it as the step's review text.
+        self.log_generating_diagnostics()
+        ComplianceChecker.stdout_output(self._check_suite, self._score_dict, 1, _LENIENT_LIMIT)
 
-        Returns a ``{format: path}`` dict of what was written (empty for
-        console-only). When both are written, the JSON path is registered as the
-        ``cc_file`` the data report embeds, since it is the richer source.
-        """
+    def _write_reports(self, check_suite, score_dict, out_dir, fname, save_formats):
+        # Returns {format: path}; JSON is preferred as the data report's cc_file.
         if not save_formats:
             return {}
 

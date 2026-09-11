@@ -43,6 +43,11 @@ QC_COMBINATRIX = np.array(
 )
 
 
+def propagate_flags(base, src):
+    """Merge ``src`` flags onto companion ``base``; missing (9) is per-variable so is not carried over."""
+    return QC_COMBINATRIX[np.asarray(base), np.where(np.asarray(src) == 9, 0, src)]
+
+
 class QCHandlingMixin:
     def __init__(self):
         qc_settings = self.parameters.get("qc_handling_settings") or {}

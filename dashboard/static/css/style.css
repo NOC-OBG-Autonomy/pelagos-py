@@ -234,6 +234,10 @@ button.danger:hover { background: color-mix(in srgb, var(--danger) 22%, #fff); b
 button.warn { color: var(--warn); border-color: transparent; background: var(--warn-soft); }
 button.warn:hover { background: color-mix(in srgb, var(--warn) 26%, #fff); border-color: transparent; }
 button:disabled { opacity: .45; cursor: not-allowed; }
+/* Delete actions are inert while a run owns the outputs/inputs (see RunLock). */
+body.run-locked :is(#btn-outputs-clean, #btn-demos-clean, .output-row .icon-btn.danger, .demo-card-del) {
+  opacity: .45; pointer-events: none;
+}
 
 /* ---------- Palette ---------- */
 #palette-search {
@@ -423,6 +427,8 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
 }
 .field.checkbox { display: flex; align-items: center; gap: 9px; }
+.field .multiselect { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.field .multiselect label { display: flex; align-items: center; gap: 5px; font-weight: 400; margin: 0; }
 .field.checkbox label { margin: 0; }
 .diag-row { display: flex; align-items: center; gap: 9px; margin-top: 6px; padding-top: 10px; border-top: 1px dashed var(--border); }
 
@@ -857,6 +863,8 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .plot-card.log-card { cursor: default; max-width: 480px; }
 .plot-card.log-card:hover { border-color: var(--border); }
 .plot-card.log-card.big { max-width: 100%; }
+/* In the review panel the panel itself scrolls, so let the text run full height. */
+.plot-card.log-card.big .log-card-text { max-height: none; }
 .log-card-text {
   margin: 0; font-family: var(--mono); font-size: 11px; line-height: 1.5;
   white-space: pre-wrap; word-break: break-word; max-height: 320px; overflow-y: auto;
