@@ -415,7 +415,7 @@ steps:
         spike qc:
           variables:
             CHLA: 2
-          window_size: 50
+          window_size: 7
           plot: [CHLA]
     diagnostics: false
 
