@@ -83,7 +83,7 @@ class spike_qc(BaseQC):
         },
         "window_size": {
             "type": int,
-            "default": 50,
+            "default": 7,
             "description": "Rolling-median window size used for spike detection.",
         },
     }
