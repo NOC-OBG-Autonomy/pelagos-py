@@ -67,6 +67,29 @@ def test_depth_is_never_modified():
     assert np.array_equal(out["DEPTH"].values, before, equal_nan=True)
 
 
+def _seawater_beta(temp=10.0, sal=35.0, theta=124.0):
+    import glidertools as gt
+    beta_sw, _ = gt.flo_functions.flo_zhang_scatter_coeffs(temp, sal, theta, 700)
+    return float(beta_sw)
+
+
+def test_pure_seawater_beta_gives_zero_bbp():
+    ctx = make_beta_context()
+    ctx["data"]["BBP700"].values[:] = _seawater_beta()
+    out = make_beta_step(ctx).run()["data"]
+    assert out["BBP700_OUT"].values == pytest.approx(0.0, abs=1e-9)
+
+
+def test_bbp_is_particulate_definition():
+    # BBP = 2*pi*chi*(beta - beta_sw); the old flo_bback_total added b_bsw/2 (~3e-4) on top.
+    beta = 2e-4
+    ctx = make_beta_context()
+    ctx["data"]["BBP700"].values[:] = beta
+    out = make_beta_step(ctx).run()["data"]
+    expected = 2 * np.pi * 1.076 * (beta - _seawater_beta())
+    assert out["BBP700_OUT"].values == pytest.approx(expected, rel=1e-9)
+
+
 # --- Isolate BBP Spikes -----------------------------------------------------
 
 

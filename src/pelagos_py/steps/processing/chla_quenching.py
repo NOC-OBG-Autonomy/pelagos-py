@@ -926,8 +926,7 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
 
         Each daytime profile is corrected against its most recent preceding
         night's mean fl:bbp ratio profile. Above the quenching depth QD,
-        fluorescence is reset to ``(Fl_NT/bbp_NT) * bbp_DT``, kept only where that
-        raises it. QD comes from the night-minus-day fluorescence difference
+        fluorescence is reset to ``(Fl_NT/bbp_NT) * bbp_DT``. QD comes from the night-minus-day fluorescence difference
         within the photic layer (shallower than ``max_photic_depth``, following
         glidertools; needs backscatter, no PAR).
         """
@@ -957,7 +956,9 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         # Night fl:bbp ratio and mean fluorescence interpolated onto day depths;
         # NaN outside the night's sampled depth range rather than clamping to the
         # nearest endpoint, so unsampled depths can't manufacture a night-day diff.
-        ratio_at_z = np.interp(depth, ref["z"], ref["ratio"], left=np.nan, right=np.nan)
+        # The ratio alone is extended up to the surface from the shallowest night
+        # bin, so QC-excluded surface samples (e.g. the top 2 m) still get corrected.
+        ratio_at_z = np.interp(depth, ref["z"], ref["ratio"], right=np.nan)
         fl_night_at_z = np.interp(depth, ref["z"], ref["fl"], left=np.nan, right=np.nan)
 
         # QD is derived, so the quenched top of the profile cannot set it if flagged.
@@ -973,15 +974,12 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
 
         corrected = ratio_at_z * bbp
         chl_corr = np.copy(chlf)
-        # Correct from the surface to the quenching depth, keeping the result
-        # only where it raises the (quenched) daytime fluorescence.
+        # Replace everything from the surface to QD, as in the paper.
         fill = (
-            (depth >= 0)
-            & (depth <= qd)
+            (depth <= qd)
             & np.isfinite(bbp)
             & (~np.isnan(chlf))
             & np.isfinite(corrected)
-            & (corrected > chlf)
         )
         chl_corr[fill] = corrected[fill]
 

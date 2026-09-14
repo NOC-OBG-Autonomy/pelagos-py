@@ -104,20 +104,17 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
         # Gaps in TEMP/PRAC_SALINITY are left as NaN: BBP is not derived there and is
         # flagged missing (9) below. Add an Interpolate Data step first for gap-free BBP.
 
-        # Apply the correction
-        bbp_corrected = gt.flo_functions.flo_bback_total(
-            self.data_subset[self.beta_var],
-            self.data_subset["TEMP"],
-            self.data_subset["PRAC_SALINITY"],
-            self.theta,
-            700,
-            self.xfactor,
+        # Particulate only (BGC-Argo, Schmechtig et al.): 2*pi*chi*(beta - beta_sw).
+        # glidertools' flo_bback_total adds the seawater backscatter (~3e-4 m-1) back in.
+        beta_sw, _ = gt.flo_functions.flo_zhang_scatter_coeffs(
+            self.data_subset["TEMP"], self.data_subset["PRAC_SALINITY"], self.theta, 700
         )
+        bbp_corrected = 2 * np.pi * self.xfactor * (self.data_subset[self.beta_var] - beta_sw)
 
         # Stitch back into the data
         self.data[self.output_as] = bbp_corrected
         self.data[self.output_as].attrs["units"] = "m-1"
-        self.data[self.output_as].attrs["long_name"] = "Total particulate backscatter"
+        self.data[self.output_as].attrs["long_name"] = "Particulate backscatter"
         self.data[self.output_as].attrs["standard_name"] = self.output_as
 
         self.reconstruct_data()

@@ -426,8 +426,8 @@ steps:
         range qc:
           variable_ranges:
             DEPTH:
-              3: [0, 2, inside]
-              2: [0, 2, outside]
+              3: [-.inf, 2, inside]
+              2: [-.inf, 2, outside]
           flag_instead:
             DEPTH: [CHLA, CHLA_ADJUSTED]
     diagnostics: false
