@@ -300,6 +300,7 @@ const Review = {
   // Pause-banner status + button state while a re-run is in flight.
   setBusy(busy, text) {
     Review.busy = busy;
+    ManualQC.setBusy(busy);
     for (const id of ['run-pause-status', 'manual-status'])
       document.getElementById(id).textContent = text || '';
     for (const id of ['btn-rerun', 'btn-manual-rerun'])

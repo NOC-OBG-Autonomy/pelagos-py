@@ -26,7 +26,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
 import xarray as xr
-from pelagos_py.utils import fig_spec
+from pelagos_py.utils import fig_spec, palettes
 
 
 @register_qc
@@ -251,6 +251,15 @@ class manual_qc(BaseQC):
         profile = bool(cv and self.profile_plot)
         fig, axes = fig_spec.new_fig(1, 2, sharey=True, width_ratios=(3, 1)) if profile else fig_spec.new_fig()
         ax = axes[0][0]
+        if cv:
+            c = self.data[cv].values.astype(float)
+            cmap = palettes.cmap_for_variable(cv, default=plt.get_cmap("viridis"))
+            # Samples with no colour value: grey, drawn under everything (zorder and,
+            # in the dashboard, as a line before the collections).
+            nocol = ~np.isfinite(c)
+            if nocol.any():
+                ax.plot(x[nocol], y[nocol], ls="", marker="o", markersize=fig_spec.MARKER,
+                        markeredgewidth=0, color="#d0d4d8", zorder=0.5, label=f"no {cv}")
         labelled = set()
         for code in np.unique(shown * 10 + before):
             f, b = divmod(int(code), 10)
@@ -268,15 +277,22 @@ class manual_qc(BaseQC):
                 fig_spec.points(ax, x[m], y[m], color=fig_spec.FLAG_COLOURS[f], label=label)
                 ax.lines[-1].set_gid(f"flag:{b}")
         if cv:
-            c = self.data[cv].values.astype(float)
             # No colorbar (it would drop the dashboard view to PNG); the range is in the title.
-            ax.scatter(x, y, c=c, cmap="viridis", s=fig_spec.MARKER ** 2, linewidths=0, label="_fill")
+            ax.scatter(x, y, c=c, cmap=cmap, s=fig_spec.MARKER ** 2, linewidths=0, label="_fill")
+            # None (JSON null) when the variable has no finite values at all.
+            lo, hi = (float(np.nanmin(c)), float(np.nanmax(c))) if (~nocol).any() else (None, None)
+            # A real colorbar would drop the dashboard view to PNG: the viewer draws this one.
+            ax._pelagos_cbar = {
+                "label": fig_spec.axis_label(cv, self.data[cv].attrs.get("units")), "lo": lo, "hi": hi,
+                "stops": [matplotlib.colors.to_hex(cmap(t)) for t in np.linspace(0, 1, 32)],
+                "missing": bool(nocol.any()),
+            }
         if profile:
             # Profile view: colour variable on x, same y. Every step-th sample (budget
             # 100k); the gid tells the dashboard the stride back into the main fill.
             step = max(1, int(np.ceil(len(y) / 100_000)))
             pax = axes[0][1]
-            pax.scatter(c[::step], y[::step], c=c[::step], cmap="viridis", s=fig_spec.MARKER ** 2,
+            pax.scatter(c[::step], y[::step], c=c[::step], cmap=cmap, s=fig_spec.MARKER ** 2,
                         linewidths=0, label="_profile")
             pax.collections[-1].set_gid(f"profile:{step}")
             fig_spec.style_axes(pax, xlabel=fig_spec.axis_label(cv, self.data[cv].attrs.get("units")))
@@ -312,7 +328,6 @@ class manual_qc(BaseQC):
         fig_spec.legend(ax, title="Flag")
         title = f"Manual QC — {yv} vs {xv}"
         if cv:
-            lo, hi = np.nanmin(c), np.nanmax(c)
-            title += f" · coloured by {cv} ({lo:.3g} – {hi:.3g}, viridis)"
+            title += f" · coloured by {cv}" + (f" ({lo:.3g} – {hi:.3g})" if lo is not None else " (no values)")
         fig_spec.finish(fig, suptitle=title)
         plt.show(block=True)

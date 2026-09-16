@@ -306,6 +306,7 @@ def serialise(fig):
             "cell": _grid_cell(ax), "share_x": share_x[i], "share_y": share_y[i],
             "traces": specs, "reflines": reflines,
             "top_axis": _top_axis(ax, x_date, t0),
+            "cbar": getattr(ax, "_pelagos_cbar", None),
         })
 
     width, height = fig.get_size_inches()

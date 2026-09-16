@@ -358,19 +358,23 @@ const ManualQC = {
     x.className = 'hint manual-plot-x'; x.textContent = 'vs ' + ManualQC.xVar();
     bar.appendChild(x);
     // Colour by a third variable: flags then show as rings around non-good points.
+    const cl = document.createElement('label');
+    cl.className = 'hint manual-plot-cl'; cl.textContent = 'colour by';
+    bar.appendChild(cl);
     const colour = document.createElement('select');
     colour.className = 'manual-plot-add manual-plot-colour';
     colour.title = 'Colour points by a variable (flags become rings)';
     const none = document.createElement('option');
-    none.value = ''; none.textContent = 'colour: flag';
+    none.value = ''; none.textContent = 'flag';
     colour.appendChild(none);
     const curC = (values && values.colour_variable) || '';
     for (const v of ManualQC.variables()) {
       if (v === 'TIME') continue;
       const o = document.createElement('option');
-      o.value = v; o.textContent = 'colour: ' + v; if (v === curC) o.selected = true;
+      o.value = v; o.textContent = v; if (v === curC) o.selected = true;
       colour.appendChild(o);
     }
+    cl.onclick = () => colour.focus();
     colour.onchange = () => {
       const vals = ManualQC.values();
       if (!vals) return;
@@ -500,7 +504,8 @@ const ManualQC = {
       const m = /^(flag|ring):(\d)$/.exec(t.spec.gid || '');
       const ring = !!m && m[1] === 'ring';
       const base = m ? +m[2] : parseInt(t.spec.label);
-      const fallback = rgb[isNaN(base) ? 0 : base];
+      const h = t.spec.color || '#9aa5ad';
+      const fallback = isNaN(base) ? [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)] : rgb[base];
       for (let i = 0; i < t.n; i++) {
         let f = base;
         if (!isNaN(f) && f !== 9) {
@@ -580,6 +585,12 @@ const ManualQC = {
     if (!ManualQC.dirty) { Run.continueRun(); return; }
     ManualQC.continueAfter = true;
     ManualQC.apply();
+  },
+
+  // Re-run in flight: grey and lock the editor until the new plot lands.
+  setBusy(on) {
+    ManualQC.host().classList.toggle('busy', on);
+    ManualQC.rail().classList.toggle('busy', on);
   },
 
   buttons() {

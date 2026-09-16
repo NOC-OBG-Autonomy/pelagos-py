@@ -1167,7 +1167,7 @@ body.manual-full #manual-rail { display: flex; }
 body.manual-full .layout { grid-template-columns: 1fr; }
 .manual-rail { display: none; flex: 1; flex-direction: column; min-height: 0; margin: 0 -18px; padding: 0 18px 14px; }
 .tab-manual { color: var(--accent); }
-.manual-ws { flex: 1; display: flex; min-height: 0; }
+.manual-ws { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 /* Plot switcher above the chart. */
 .manual-plots { display: flex; align-items: center; gap: 4px; margin-bottom: 8px; flex-wrap: wrap; }
 .manual-plot {
@@ -1187,10 +1187,19 @@ body.manual-full .layout { grid-template-columns: 1fr; }
 }
 .manual-plot-x { margin-left: auto; }
 .manual-plot-profile:disabled { opacity: .45; cursor: not-allowed; }
+.manual-plot-cl { margin-left: 6px; }
 .manual-plot-colour { border-style: solid; color: var(--ink); max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
 .manual-stage {
   flex: 1; position: relative; min-width: 0; min-height: 420px; overflow: hidden;
   background: #fff; border: 1px solid var(--border); border-radius: var(--radius-sm);
+}
+
+/* Re-run in flight: controls lock and the chart gets an overlay (manual.js setBusy). */
+.manual-ws.busy .manual-plots, .manual-rail.busy .manual-side { pointer-events: none; opacity: .4; }
+.manual-ws.busy .manual-stage { pointer-events: none; }
+.manual-ws.busy .manual-stage::after {
+  content: 'Plotting…'; position: absolute; inset: 0; z-index: 5; display: flex; align-items: center;
+  justify-content: center; background: rgba(255, 255, 255, .65); color: var(--muted); font-size: 14px; font-weight: 600;
 }
 
 /* Rail: tools on top (scroll on their own), the box list below (ditto). */

@@ -173,6 +173,7 @@ void main() {
   o = vec4(vc.rgb * vc.a, vc.a);  // premultiplied, matching the canvas compositor
 }`;
 
+const CBAR_W = 70; // right gutter reserved for a value-coloured panel's colourbar
 const FG = '#222', MUTED = '#666', GRID = '#e8eaee', FRAME = '#8a8f98', ACCENT = '#0b6bcb';
 const FONT = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 const FONT_B = '600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
@@ -350,7 +351,8 @@ class Chart {
       const mt = (p.spec.title ? 18 : 0) + (p.spec.top_axis ? 32 : 10);
       const mb = p.xHidden ? 8 : (p.spec.xdate ? 34 : 22) + (p.spec.xlabel ? 16 : 0);
       p.outer = outer;
-      p.rect = { x: outer.x + ml, y: outer.y + mt, w: Math.max(20, outer.w - ml - 16), h: Math.max(20, outer.h - mt - mb) };
+      const mr = p.spec.cbar ? 16 + CBAR_W : 16;
+      p.rect = { x: outer.x + ml, y: outer.y + mt, w: Math.max(20, outer.w - ml - mr), h: Math.max(20, outer.h - mt - mb) };
     });
   }
 
@@ -427,6 +429,38 @@ class Chart {
     }
     fg.restore(); fg.setLineDash([]); fg.globalAlpha = 1;
     this._drawLegend(p, fg);
+    this._drawColourbar(p, fg);
+  }
+
+  // Colour scale for a value-coloured scatter (panel spec.cbar): a tall thin bar
+  // in the gutter right of the panel, a grey "missing" swatch beneath it.
+  _drawColourbar(p, fg) {
+    const cb = p.spec.cbar;
+    if (!cb) return;
+    const r = p.rect, bw = 10, x = r.x + r.w + 14;
+    const mh = cb.missing ? 22 : 0;
+    const bh = Math.max(20, r.h - mh);
+    fg.font = FONT; fg.textAlign = 'left'; fg.textBaseline = 'middle';
+    if (cb.lo != null) {
+      const g = fg.createLinearGradient(0, r.y + bh, 0, r.y);
+      cb.stops.forEach((c, i) => g.addColorStop(i / (cb.stops.length - 1), c));
+      fg.fillStyle = g; fg.fillRect(x, r.y, bw, bh);
+      fg.strokeStyle = FRAME; fg.lineWidth = 1; fg.strokeRect(x + 0.5, r.y + 0.5, bw - 1, bh - 1);
+      fg.fillStyle = FG; fg.strokeStyle = FRAME;
+      for (const t of Ticks.numeric(cb.lo, cb.hi, Math.max(2, bh / 60))) {
+        const ty = r.y + bh - (t.v - cb.lo) / ((cb.hi - cb.lo) || 1) * bh;
+        fg.beginPath(); fg.moveTo(x + bw, ty); fg.lineTo(x + bw + 3, ty); fg.stroke();
+        fg.fillText(t.label, x + bw + 5, ty);
+      }
+    }
+    if (cb.missing) {
+      const my = r.y + r.h - 8;
+      fg.fillStyle = '#d0d4d8'; fg.beginPath(); fg.arc(x + bw / 2, my, 3.5, 0, Math.PI * 2); fg.fill();
+      fg.fillStyle = FG; fg.fillText('missing', x + bw + 5, my);
+    }
+    // Label along the bar, rotated like a y-axis label.
+    fg.save(); fg.translate(x + CBAR_W - 6, r.y + bh / 2); fg.rotate(-Math.PI / 2);
+    fg.textAlign = 'center'; fg.fillStyle = MUTED; fg.fillText(cb.label, 0, 0); fg.restore();
   }
 
   // N_MEASUREMENTS along the top: index ticks placed at their interpolated time.
