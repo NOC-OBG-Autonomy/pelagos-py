@@ -476,6 +476,20 @@ steps:
     diagnostics: false
 
 # ===========================================================
+#                       MANUAL QC
+# ===========================================================
+# Flag by hand: the run pauses here and boxes drawn on the plot in the
+# dashboard are saved into 'boxes', so the same flags are repeated on re-runs.
+  - name: Apply QC
+    parameters:
+      qc_settings:
+        manual qc:
+          x_variable: TIME
+          y_variable: PRES
+          boxes: []
+    diagnostics: true
+
+# ===========================================================
 #                      EXPORT DATA
 # ===========================================================
 # Exporting the output data to the same folder as the input data

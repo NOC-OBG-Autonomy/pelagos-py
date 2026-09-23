@@ -363,3 +363,15 @@ A template for a static check is provided in
 
    steps
    quality_control
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Variable processing
+   :hidden:
+
+   Temperature <user_guide/Pelagos-py_TEMP>
+   Salinity <user_guide/pelagos-py_SALINITY>
+   PAR <user_guide/Pelagos-py_PAR>
+   Chlorophyll-a <user_guide/Pelagos-py_CHLA>
+   Chlorophyll-a flowchart <user_guide/Pelagos-py_CHLA_Flowchart>
+   Backscatter <user_guide/Pelagos-py_BBP>

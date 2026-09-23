@@ -66,7 +66,7 @@ templates_path = ["_templates"]
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "user_guide/README.md"]
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
@@ -212,6 +212,8 @@ copybutton_prompt_is_regexp = True
 
 myst_enable_extensions = [
     "colon_fence",  # ::: fenced blocks
+    "dollarmath",  # $...$ and $$...$$ maths in the user-guide markdown
+    "amsmath",  # \\begin{cases} etc.
     "deflist",  # definition lists
     "linkify",  # auto-detect bare links
     "smartquotes",  # nicer quotes/dashes

@@ -85,3 +85,11 @@ def test_renames_for_matches_run():
         "LATITUDE_GPS": "LATITUDE", "BBP700": "BETA_BACKSCATTERING700", "DOXY": "MOLAR_DOXY",
     }
     assert "BBP700" not in PrepareOG1.renames_for(names, {"bbp700_is_beta": False})
+
+
+def test_user_renames_apply_only_when_canonical_absent():
+    ctx = make_context(PAR=([1.0, 2.0], None), TEMP=([10.0, 11.0], None), TEMP2=([0.0, 0.0], None))
+    ctx["data"]["PAR_QC"] = ("N_MEASUREMENTS", np.array([1, 1], dtype=np.int8))
+    out = run(ctx, renames={"DOWNWELLING_PAR": "PAR", "TEMP": "TEMP2"})
+    assert "DOWNWELLING_PAR" in out and "DOWNWELLING_PAR_QC" in out and "PAR" not in out
+    assert "TEMP2" in out and float(out["TEMP"][0]) == 10.0

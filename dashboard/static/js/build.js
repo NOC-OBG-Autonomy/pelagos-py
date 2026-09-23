@@ -51,8 +51,20 @@ const Build = {
         }
         sel.value = d.default;
         choices[d.id] = d.default;
-        sel.onchange = () => { choices[d.id] = sel.value; };
+        const note = document.createElement('div');
+        note.className = 'build-changed hidden';
+        const defaultLabel = d.options.find((o) => o.key === d.default).label;
+        note.innerHTML = `Changed from the default (${escapeHtml(defaultLabel)}) — are you sure? `
+          + '<a href="#">Restore default</a>';
+        note.querySelector('a').onclick = (e) => { e.preventDefault(); sel.value = d.default; sel.onchange(); };
+        sel.onchange = () => {
+          choices[d.id] = sel.value;
+          const changed = sel.value !== d.default;
+          note.classList.toggle('hidden', !changed);
+          row.classList.toggle('changed', changed);
+        };
         row.appendChild(sel);
+        text.appendChild(note);
       } else {
         const tag = document.createElement('span');
         tag.className = 'build-tag';

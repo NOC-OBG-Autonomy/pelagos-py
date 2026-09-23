@@ -54,6 +54,8 @@ class PrepareOG1(BaseStep):
       Genuine mS/cm data is left alone.
     - With ``bbp700_is_beta`` (default), a ``BBP700`` with no ``BETA_BACKSCATTERING700``
       alongside is treated as raw beta and renamed, so ``BBP from Beta`` converts it.
+    - ``renames`` maps a canonical name to the file's own name for it (e.g.
+      ``DOWNWELLING_PAR: PAR``), applied when the canonical one is absent.
 
     Examples
     --------
@@ -66,6 +68,8 @@ class PrepareOG1(BaseStep):
           - name: Prepare OG1
             parameters:
               bbp700_is_beta: true
+              renames:
+                DOWNWELLING_PAR: PAR
     """
 
     step_name = "Prepare OG1"
@@ -79,6 +83,12 @@ class PrepareOG1(BaseStep):
             "description": "Treat a BBP700 with no BETA_BACKSCATTERING700 alongside as raw "
                            "beta and rename it, so 'BBP from Beta' converts it.",
         },
+        "renames": {
+            "type": dict,
+            "default": {},
+            "description": "Canonical name -> the file's name for it (e.g. "
+                           "{DOWNWELLING_PAR: PAR}); renamed when the canonical one is absent.",
+        },
     }
 
     @classmethod
@@ -86,7 +96,8 @@ class PrepareOG1(BaseStep):
         # {source: canonical} this step would apply to a file holding `names` --
         # shared with the config validator so it can predict the step's outputs.
         out = {}
-        for canonical, sources in RENAMES.items():
+        user = (parameters or {}).get("renames") or {}
+        for canonical, sources in {**RENAMES, **{k: [v] for k, v in user.items()}}.items():
             if canonical in names:
                 continue
             src = next((s for s in sources if s in names), None)
@@ -106,7 +117,7 @@ class PrepareOG1(BaseStep):
             v for v in self.data.data_vars
             if self.data[v].dtype.kind != "f" or bool(np.isfinite(self.data[v].values).any())
         }
-        for src, dst in self.renames_for(real, {"bbp700_is_beta": self.bbp700_is_beta}).items():
+        for src, dst in self.renames_for(real, {"bbp700_is_beta": self.bbp700_is_beta, "renames": self.renames}).items():
             mapping = {src: dst}
             if f"{src}_QC" in self.data and f"{dst}_QC" not in self.data:
                 mapping[f"{src}_QC"] = f"{dst}_QC"
