@@ -191,6 +191,35 @@ def test_oxygen_none_and_no_par_drop_sections():
                               "CHLA Quenching", "Data Export"]
 
 
+def test_missing_par_can_be_renamed_from_another_variable():
+    probe = {**BASE, "BETA_BACKSCATTERING700": var(), "PAR": var(), "PAR_QC": var()}
+    d = ids(cb.decisions(probe))["par"]
+    assert d["default"] == "remove"
+    assert [o["key"] for o in d["options"]][:2] == ["remove", "rename:BETA_BACKSCATTERING700"]
+    assert "rename:PAR_QC" not in [o["key"] for o in d["options"]]
+    text = cb.build(TEMPLATE, "/data/g.nc", probe, choices={"par": "rename:PAR"})
+    assert "PAR QC" in text and "Interpolate PAR" in steps_of(text)
+    prep = next(s for s in yaml.safe_load(text)["steps"] if s["name"] == "Prepare OG1")
+    assert prep["parameters"] == {"bbp700_is_beta": True, "renames": {"DOWNWELLING_PAR": "PAR"}}
+
+
+def test_missing_oxygen_can_be_renamed_to_molar_doxy():
+    probe = {**BASE, "OXY_UMOL": var()}
+    d = ids(cb.decisions(probe))["oxygen"]
+    assert [o["key"] for o in d["options"]][0] == "none" and "rename:OXY_UMOL" in [o["key"] for o in d["options"]]
+    assert "rename:" not in str(ids(cb.decisions({**BASE, "DOXY": var()}))["oxygen"]["options"])
+    text = cb.build(TEMPLATE, "/data/g.nc", probe, choices={"oxygen": "rename:OXY_UMOL"})
+    assert "MOLAR_DOXY: OXY_UMOL" in text and "MOLAR_DOXY_ADJUSTED" in text
+    assert "Derive Uncalibrated Phase" not in steps_of(text) and "Correct Values" in steps_of(text)
+
+
+def test_missing_beta_can_be_renamed_instead_of_dropped():
+    probe = {**BASE, "VSF700": var()}
+    text = cb.build(TEMPLATE, "/data/g.nc", probe, choices={"bbp": "rename:VSF700"})
+    assert "BBP from Beta" in steps_of(text) and "CHLA Quenching" in steps_of(text)
+    assert "BETA_BACKSCATTERING700: VSF700" in text
+
+
 def test_cndc_states():
     mislabelled = {**BASE, "CNDC": var("S m-1", median=10.9)}
     assert ids(cb.decisions(mislabelled))["cndc"]["title"] == "CNDC units mislabelled"
@@ -207,7 +236,8 @@ def test_missing_coordinates_reported():
     d = ids(cb.decisions({**probe, "ALATPT01": var()}))["coord_latitude"]
     assert "ALATPT01" in d["title"] and not d["options"]
     d = ids(cb.decisions(probe))["coord_latitude"]
-    assert d["title"] == "LATITUDE missing"
+    assert d["title"] == "LATITUDE missing" and d["default"] == "none"
+    assert "rename:TEMP" in [o["key"] for o in d["options"]]
 
 
 def test_validator_credits_prepare_renames(monkeypatch):

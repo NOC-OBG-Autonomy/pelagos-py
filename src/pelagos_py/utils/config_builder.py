@@ -133,6 +133,22 @@ def _decision(id_, title, detail, options=(), default=None):
             "options": [{"key": k, "label": l} for k, l in options], "default": default}
 
 
+def _rename_options(real, canonical):
+    # One "rename:<var>" option per file variable that could stand in for `canonical`.
+    return [(f"rename:{v}", f"Use {v} as {canonical}")
+            for v in sorted(real) if not v.endswith("_QC")]
+
+
+def _renames(choices):
+    # {canonical: source} from every "rename:<source>" choice on a missing-variable decision.
+    return {RENAME_TARGETS[k]: v.split(":", 1)[1]
+            for k, v in (choices or {}).items() if k in RENAME_TARGETS and v.startswith("rename:")}
+
+
+RENAME_TARGETS = {"coord_latitude": "LATITUDE", "coord_longitude": "LONGITUDE",
+                  "bbp": BETA_NAME, "oxygen": "MOLAR_DOXY", "par": "DOWNWELLING_PAR"}
+
+
 def _oxygen_phase(probe):
     return next((v for v in PHASE_CANDIDATES if present(probe, v)), None)
 
@@ -178,7 +194,9 @@ def decisions(probe):
             out.append(_decision(
                 f"coord_{canonical.lower()}", f"{canonical} missing",
                 f"No {canonical} or any known alternative ({', '.join(RENAMES[canonical])}) "
-                "in the file -- position QC and profile finding will fail.",
+                "in the file -- position QC and profile finding will fail unless it is "
+                "held under another name.",
+                [("none", "Leave missing")] + _rename_options(real, canonical), "none",
             ))
 
     cndc = _cndc_state(probe)
@@ -216,7 +234,10 @@ def decisions(probe):
         out.append(_decision(
             "bbp", "No backscatter",
             "Neither BETA_BACKSCATTERING700 nor BBP700 is in the file: the Backscatter "
-            "section and the CHLA Quenching step (which needs BBP) are removed.",
+            "section and the CHLA Quenching step (which needs BBP) are removed, unless "
+            "raw beta is held under another name.",
+            [("remove", "Remove the Backscatter section")] + _rename_options(real, BETA_NAME),
+            "remove",
         ))
 
     phase, molar = _oxygen_phase(probe), _oxygen_molar(probe)
@@ -226,6 +247,8 @@ def decisions(probe):
     if molar:
         opts.append(("shipped", f"Use {molar} as shipped"))
     opts.append(("none", "No oxygen processing"))
+    if not phase and not molar:
+        opts += _rename_options(real, "MOLAR_DOXY")
     if "FREQUENCY_DOXY" in real:
         notes.append("FREQUENCY_DOXY (SBE43 frequency) is present but no step converts it yet.")
     empty = [v for v in PHASE_CANDIDATES if v in (probe or {}) and v not in real]
@@ -239,7 +262,8 @@ def decisions(probe):
         detail = f"Only {molar} is available: the derivation steps are dropped and it is exposed as MOLAR_DOXY_ADJUSTED."
     else:
         title = "No oxygen"
-        detail = "No optode phase or oxygen concentration in the file: the Oxygen section is removed."
+        detail = ("No optode phase or oxygen concentration in the file: the Oxygen section is "
+                  "removed, unless the concentration is held under another name.")
     # A lone "none" option is no choice: shown as automatic (default_choices skips it).
     out.append(_decision("oxygen", title, " ".join([detail] + notes),
                          opts if len(opts) > 1 else (), opts[0][0]))
@@ -248,7 +272,10 @@ def decisions(probe):
         extra = " (DPAR is present but in a different unit and is not used.)" if "DPAR" in real else ""
         out.append(_decision(
             "par", "No PAR",
-            f"DOWNWELLING_PAR is missing: the PAR QC section is removed.{extra}",
+            f"DOWNWELLING_PAR is missing: the PAR QC section is removed, unless PAR is "
+            f"held under another name.{extra}",
+            [("remove", "Remove the PAR QC section")] + _rename_options(real, "DOWNWELLING_PAR"),
+            "remove",
         ))
     return out
 
@@ -303,6 +330,14 @@ def build(template_text, file_path, probe=None, choices=None, description=None, 
             if _section(b) == "CTD" and "CNDC" in (b.params.get("qc_settings", {}).get("range qc", {}).get("variable_ranges", {})):
                 _scale_cndc_ranges(b)
 
+    renames = _renames(choices)
+    if renames:
+        for b in blocks:
+            if b.name == "Prepare OG1":
+                b.sub(r"(?m)^(\s*)(bbp700_is_beta:.*)$", lambda m: m.group(1) + m.group(2)
+                      + "\n" + m.group(1) + "renames:  # file's name for a missing OG1 variable\n"
+                      + "".join(f"{m.group(1)}  {k}: {v}\n" for k, v in renames.items()).rstrip("\n"))
+
     bbp = choices.get("bbp") if "bbp" in ids else None
     if bbp == "direct":
         drop(lambda b: b.name == "BBP from Beta")
@@ -311,10 +346,12 @@ def build(template_text, file_path, probe=None, choices=None, description=None, 
                 b.sub(r"(?m)^(\s*bbp700_is_beta:).*$", r"\1 false")
             elif _section(b) == "BACKSCATTER":
                 b.sub(BETA_NAME, BBP_NAME, count=0)
-    elif "bbp" in ids and bbp is None:  # no backscatter at all
+    elif bbp == "remove":  # no backscatter at all
         drop(lambda b: _section(b) == "BACKSCATTER" or b.name == "CHLA Quenching")
 
     oxygen = choices.get("oxygen", "none")
+    if oxygen.startswith("rename:"):  # renamed to MOLAR_DOXY by Prepare OG1, then used as shipped
+        oxygen = "shipped"
     phase = _oxygen_phase(probe)
     if oxygen == "phase" and phase:
         for b in blocks:
@@ -329,7 +366,7 @@ def build(template_text, file_path, probe=None, choices=None, description=None, 
     else:
         drop(lambda b: _section(b) == "OXYGEN")
 
-    if "par" in ids:
+    if choices.get("par") == "remove":
         drop(lambda b: _section(b) == "PAR QC")
 
     return _render(head, blocks, tail)
