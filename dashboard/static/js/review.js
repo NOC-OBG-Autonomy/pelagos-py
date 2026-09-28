@@ -40,7 +40,7 @@ const Review = {
   // Show/hide the panel against the console; the banner's "Review step" button
   // hides only while the panel itself is on screen.
   apply() {
-    const tab = document.querySelector('.tab.active')?.dataset.tab;
+    const tab = document.querySelector('.tab.on')?.dataset.tab;
     const onRunTab = tab === 'run';
     const panelVisible = Review.active && !Review.showLog;
     Review.host().classList.toggle('hidden', !panelVisible);
@@ -140,7 +140,7 @@ const Review = {
       : 'Edit this step in the pipeline builder on the left — it is the only ' +
         'part of the config unlocked while the run is paused.';
     const jump = document.createElement('button');
-    jump.className = 'ghost review-jump';
+    jump.className = 'review-jump';
     jump.textContent = 'Show me';
     jump.title = 'Scroll the builder to this step';
     jump.onclick = () => RunLock.pauseAt(Review.index, Review.test);
@@ -202,7 +202,7 @@ const Review = {
       where.className = 'hint review-where';
       where.textContent = 'Boxes are drawn in the Manual QC tab.';
       const go = document.createElement('button');
-      go.className = 'ghost review-jump'; go.textContent = 'Open Manual QC';
+      go.className = 'review-jump'; go.textContent = 'Open Manual QC';
       go.onclick = () => Run.showTab('manual');
       where.appendChild(go);
       host.prepend(where);
@@ -244,7 +244,7 @@ const Review = {
         // them is still an explicit Re-run, so nothing happens behind your back.
         if (g.params && g !== attempts[attempts.length - 1]) {
           const use = document.createElement('button');
-          use.className = 'ghost review-use';
+          use.className = 'sm review-use';
           use.textContent = 'Use these';
           use.title = 'Load these parameters into the form (does not re-run)';
           use.onclick = (e) => { e.stopPropagation(); Review.applyParams(g.params); };

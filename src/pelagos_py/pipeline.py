@@ -174,6 +174,7 @@ class Pipeline(ConfigMirrorMixin):
         self.global_parameters = {}  # mirrors _parameters["pipeline"]
         self._context = None
         self._diagnose_failures = False  # dashboard: draw a step's failure plot on every fail
+        self.headless = False  # True: never open plot windows, even for diagnostics: true steps
 
         # initialise config mirror system
         self._init_config_mirror()
@@ -348,7 +349,8 @@ class Pipeline(ConfigMirrorMixin):
         step._report_capture = bool(capture and not user_diagnostics)
         captured_images = []
         if capture:
-            step.diagnostics = True
+            if not step.diagnostics:  # keep a user's own figure selection
+                step.diagnostics = True
             diagnostic_capture.make_diagnostics_safe(step)
 
         try:
@@ -366,7 +368,7 @@ class Pipeline(ConfigMirrorMixin):
                     # Steps the user explicitly enabled diagnostics on still get
                     # their interactive blocking popup (in addition to being
                     # saved into the report); force-captured steps stay headless.
-                    interactive=user_diagnostics,
+                    interactive=user_diagnostics and not self.headless,
                 )
                 if capture
                 else contextlib.nullcontext()

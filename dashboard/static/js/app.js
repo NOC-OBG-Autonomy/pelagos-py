@@ -190,6 +190,8 @@ function statusBar(kind, title, sub) {
   return bar;
 }
 
+const TAG_STYLE = { value: 'warn', type: 'warn', missing: 'danger', unknown: 'qc', load: 'solid' };
+
 // One schema issue, rendered as a card. Clicking it locates the offending
 // step in the YAML pane (highlight + scroll) via the existing machinery.
 function issueCard(issue) {
@@ -202,7 +204,7 @@ function issueCard(issue) {
   const icon = parsed.critical ? `<span class="v-issue-icon">${Icon.svg('alert', 14)}</span>` : '';
   card.innerHTML =
     `<div class="v-issue-head">${icon}` +
-    `<span class="v-tag v-tag-${parsed.kind}">${escapeHtml(parsed.tag)}</span>` +
+    `<span class="tag ${TAG_STYLE[parsed.kind] || ''}">${escapeHtml(parsed.tag)}</span>` +
     `<span class="v-where">${where}</span></div>` +
     `<div class="v-issue-body">${parsed.html}</div>`;
 
@@ -241,7 +243,7 @@ function parseIssue(raw) {
   m = msg.match(/^Missing variables for(?: QC test)? '([^']+)':\s*([^.]+)\.\s*(?:[^.]*\.\s*)*No data-loading step[^.]*\.\s*(.*)$/s);
   if (m) {
     return { kind: 'load', tag: 'No data source', critical: true,
-      html: `<div class="v-msg"><span class="v-param">${escapeHtml(m[1])}</span> needs ` +
+      html: `<div class="v-msg"><span class="chip">${escapeHtml(m[1])}</span> needs ` +
         `${chips(splitNames(m[2]), 'bad')}, but nothing in the pipeline loads data.</div>` +
         `<div class="v-detail">${escapeHtml(m[3])}</div>` };
   }
@@ -277,7 +279,7 @@ function formatValueSegment(seg) {
   if (!m) return `<div class="v-detail">${escapeHtml(seg.trim())}</div>`;
   const options = pyTokens(m[2]);
   const got = pyTokens(m[3]);
-  return `<div class="v-detail"><span class="v-param">${escapeHtml(m[1])}</span>: ` +
+  return `<div class="v-detail"><span class="chip">${escapeHtml(m[1])}</span>: ` +
     `${chips(got, 'bad')} not allowed.</div>` +
     `<div class="v-detail v-muted">Allowed: ${chips(options)}</div>`;
 }
@@ -286,7 +288,7 @@ function formatValueSegment(seg) {
 function formatTypeSegment(seg) {
   const m = seg.match(/^\s*(\S+)\s*\(expected\s*(.+?),\s*got\s*(.+?)\)\s*$/s);
   if (!m) return `<div class="v-detail">${escapeHtml(seg.trim())}</div>`;
-  return `<div class="v-detail"><span class="v-param">${escapeHtml(m[1])}</span>: ` +
+  return `<div class="v-detail"><span class="chip">${escapeHtml(m[1])}</span>: ` +
     `expected <span class="v-good">${escapeHtml(m[2])}</span>, ` +
     `got <span class="v-got">${escapeHtml(m[3])}</span></div>`;
 }
@@ -295,7 +297,7 @@ function formatTypeSegment(seg) {
 function chips(items, cls = '') {
   if (!items.length) return '<span class="v-muted">(none)</span>';
   return `<span class="v-chips">` +
-    items.map((t) => `<span class="v-chip ${cls === 'bad' ? 'v-chip-bad' : ''}">${escapeHtml(t)}</span>`).join('') +
+    items.map((t) => `<span class="chip ${cls === 'bad' ? 'bad' : ''}">${escapeHtml(t)}</span>`).join('') +
     `</span>`;
 }
 
@@ -375,6 +377,7 @@ async function boot() {
   // defined locally in style.css (no CDN theme files).
   let savedTheme = 'vscode-dark';
   try { savedTheme = localStorage.getItem('yamlTheme') || savedTheme; } catch (e) { /* private mode */ }
+  if (savedTheme === 'vscode-darkplus') savedTheme = 'vscode-dark'; // removed theme
   editor = CodeMirror.fromTextArea(document.getElementById('yaml-editor'), {
     mode: 'yaml',
     theme: savedTheme,
@@ -412,14 +415,16 @@ async function boot() {
   });
 
   showValidating();
-  renderPalette();
+  document.querySelectorAll('#view-toggle button').forEach((b) =>
+    b.addEventListener('click', () => setViewMode(b.dataset.view)));
   renderSettings();
-  renderPipeline();
+  setViewMode(viewMode);
   initBuilderDnD();
   Config.loading = true;
   refreshYAML();
   Config.loading = false;
   await Config.refreshList();
+  await Defaults.load();
 
   // Auto-load default.yaml on startup if present, so the dashboard opens on a
   // ready-made config rather than an empty pipeline. If a run is already in
@@ -433,9 +438,6 @@ async function boot() {
     if (opening) await Config.load(opening);
   } catch (e) { /* no default; start empty */ }
 
-  // palette search
-  document.getElementById('palette-search').addEventListener('input', (e) =>
-    renderPalette(e.target.value));
 
   // tabs
   document.querySelectorAll('.tab').forEach((tab) => {

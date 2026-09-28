@@ -112,6 +112,39 @@ const Config = {
     Config.fromObject(jsyaml.load(text) || {}, Config.sectionsFromYAML(text));
   },
 
+  // Registry name for a config's step name (matched case-insensitively).
+  stepName(name) {
+    if (STATE.stepsByName[name]) return name;
+    const low = String(name).toLowerCase();
+    return Object.keys(STATE.stepsByName).find((n) => n.toLowerCase() === low);
+  },
+
+  // A builder item for one config step entry, or null for an unknown step.
+  itemFromStep(s) {
+    if (!s || !s.name) return null;
+    const canonical = Config.stepName(s.name);
+    const def = STATE.stepsByName[canonical];
+    if (!def) return null;
+    const item = {
+      id: ++STATE._seq,
+      name: canonical,
+      def,
+      values: initValues(def),
+      // true/false, 'all', or a list of figure names (steps with a figure registry)
+      diagnostics: (s.diagnostics === 'all' || Array.isArray(s.diagnostics)) ? s.diagnostics : !!s.diagnostics,
+      collapsed: true,
+    };
+    const params = s.parameters || {};
+    const described = new Set((def.parameters || []).map((p) => p.name));
+    item.extras = {};
+    for (const [k, v] of Object.entries(params)) {
+      if (described.has(k)) item.values[k] = Forms.clone(v);
+      else item.extras[k] = Forms.clone(v); // kept verbatim, re-emitted by toObject
+    }
+    if (isQcContainer(def) && !item.values.qc_settings) item.values.qc_settings = {};
+    return item;
+  },
+
   // Best-effort load of a config object back into the builder. `sections` is
   // the banner list from sectionsFromYAML (absent when loading a bare object).
   fromObject(cfg, sections = []) {
@@ -124,8 +157,6 @@ const Config = {
     }
 
     const steps = (cfg && cfg.steps) || [];
-    const lowered = {};
-    for (const n of Object.keys(STATE.stepsByName)) lowered[n.toLowerCase()] = n;
 
     // Banner index -> section, opened as the step at that index is reached. A
     // section stays open until the next banner, so steps before the first
@@ -141,26 +172,8 @@ const Config = {
 
     steps.forEach((s, idx) => {
       openSectionsAt(idx);
-      if (!s || !s.name) return;
-      const canonical = STATE.stepsByName[s.name] ? s.name : lowered[String(s.name).toLowerCase()];
-      const def = STATE.stepsByName[canonical];
-      if (!def) return; // unknown step: skip (surfaced by Validate)
-      const item = {
-        id: ++STATE._seq,
-        name: canonical,
-        def,
-        values: initValues(def),
-        diagnostics: !!s.diagnostics,
-        collapsed: true,
-      };
-      const params = s.parameters || {};
-      const described = new Set((def.parameters || []).map((p) => p.name));
-      item.extras = {};
-      for (const [k, v] of Object.entries(params)) {
-        if (described.has(k)) item.values[k] = v;
-        else item.extras[k] = v; // kept verbatim, re-emitted by toObject
-      }
-      if (isQcContainer(def) && !item.values.qc_settings) item.values.qc_settings = {};
+      const item = Config.itemFromStep(s);
+      if (!item) return; // unknown step: skip (surfaced by Validate)
       const last = nodes[nodes.length - 1];
       if (isSection(last)) last.steps.push(item);
       else nodes.push(item);
@@ -184,6 +197,8 @@ const Config = {
   demo: [],         // the demo subset (also locked) — shown as their own group
   missions: {},     // demo config names grouped by deployment mission, in display order
   labels: {},       // display label per demo config name (glider names repeat across missions)
+  gliders: {},      // glider name per demo config
+  modes: {},        // 'nrt' | 'delayed' per demo config
   reference: [],    // non-demo protected configs (default.yaml)
   downloaded: [],   // demo configs whose NetCDF file is already on disk
   sizes: {},        // bytes on disk per downloaded demo config
@@ -464,6 +479,8 @@ const Config = {
     Config.demo = info.demo || [];
     Config.missions = info.missions || {};
     Config.labels = info.labels || {};
+    Config.gliders = info.gliders || {};
+    Config.modes = info.modes || {};
     Config.reference = info.reference || [];
     Config.downloaded = info.downloaded || [];
     Config.sizes = info.sizes || {};

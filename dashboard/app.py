@@ -140,6 +140,10 @@ def _describe_step(name: str, cls) -> dict:
         # ``parameter_schema is None`` => not yet migrated to strict validation.
         "schema_declared": getattr(cls, "parameter_schema", None) is not None,
         "parameters": cls.describe_parameters(),
+        # whether the step has extra figures beyond 'diagnostics: true' (drawn by 'all')
+        "more_diagnostics": any(
+            level is False for _, level in (getattr(cls, "diagnostic_figures", None) or {}).values()
+        ),
     }
 
 
@@ -337,6 +341,8 @@ def list_configs():
         },
         # Glider names aren't unique across missions (nor NRT vs Full), hence labels.
         "labels": {f"demo_{key}.yaml": entry.display_label for key, entry in DEMO_FILES.items()},
+        "gliders": {f"demo_{key}.yaml": entry.label for key, entry in DEMO_FILES.items()},
+        "modes": {f"demo_{key}.yaml": entry.mode for key, entry in DEMO_FILES.items()},
         # Non-demo protected configs, shown as their own "Default" group.
         "reference": sorted((PROTECTED_CONFIGS - DEMO_CONFIGS) & set(files)),
         "downloaded": sorted(name for name in demo if _demo_dest(name).exists()),
@@ -520,6 +526,63 @@ def reveal_outputs(payload: RevealPayload):
     if not dirs:
         raise HTTPException(status_code=404, detail="Folder not found.")
     return _reveal(dirs[-1] if payload.path else dirs[0])
+
+
+class PathsPayload(BaseModel):
+    paths: list[str] = []
+
+
+@app.post("/api/files/info")
+def files_info(payload: PathsPayload):
+    # Existence + size of the user's own files (kept client-side, never uploaded).
+    out = {}
+    for p in payload.paths:
+        f = Path(p).expanduser()
+        out[p] = {"exists": f.is_file(), "size": f.stat().st_size if f.is_file() else 0}
+    return out
+
+
+@app.post("/api/files/reveal")
+def reveal_file(payload: RevealPayload):
+    f = Path(payload.path).expanduser()
+    if not f.exists():
+        raise HTTPException(status_code=404, detail="File not found.")
+    return _reveal(f.parent)
+
+
+@app.post("/api/files/pick")
+def pick_files(payload: BrowsePayload):
+    # Native picker for NetCDF files and/or folders (a folder adds its *.nc, recursively).
+    start = Path(payload.start).expanduser() if payload.start else None
+    start_dir = start.parent if start and start.parent.is_dir() else Path.cwd()
+    if sys.platform == "darwin":
+        # `of type public.folder` lets the file dialog select folders too.
+        script = (
+            'set fs to choose file of type {"public.folder", "public.data"} with prompt '
+            f'"Choose OG1 NetCDF files or a folder" with multiple selections allowed default location POSIX file "{start_dir}"\n'
+            'if class of fs is not list then set fs to {fs}\n'
+            'set out to ""\nrepeat with f in fs\nset out to out & POSIX path of f & linefeed\nend repeat\nreturn out'
+        )
+        proc = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
+        chosen = proc.stdout.splitlines() if proc.returncode == 0 else []
+    else:
+        try:
+            import tkinter
+            from tkinter import filedialog
+        except ImportError as exc:
+            raise HTTPException(status_code=500, detail=f"No file dialog available: {exc}")
+        root = tkinter.Tk()
+        root.withdraw()
+        root.attributes("-topmost", True)
+        chosen = list(filedialog.askopenfilenames(initialdir=str(start_dir), filetypes=[("NetCDF", "*.nc")]))
+        root.destroy()
+    paths = []
+    for c in chosen:
+        if not c:
+            continue
+        p = Path(c)
+        paths.extend(sorted(str(f) for f in p.rglob("*.nc")) if p.is_dir() else [str(p)])
+    return {"paths": [p for p in paths if p.endswith(".nc")]}
 
 
 class BrowsePayload(BaseModel):

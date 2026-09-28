@@ -144,16 +144,59 @@ class BaseStep(ConfigMirrorMixin):
         raise NotImplementedError(f"Step '{self.name}' must implement a run() method.")
         return self.context
 
+    #: Named diagnostic figures: ``{name: (title, level)}`` with level ``True``
+    #: (drawn by ``diagnostics: true``), ``False`` (extra, drawn by ``"all"``) or
+    #: ``None`` (only when listed by name, e.g. a panel of a composite figure).
+    #: A step that fills this in draws them via :meth:`draw_figure`.
+    diagnostic_figures = {}
+
+    def draw_figure(self, name):
+        """Build and return the matplotlib figure registered under ``name`` (or ``None`` to skip)."""
+        raise NotImplementedError(f"Step '{self.name}' has no figure '{name}'.")
+
+    def selected_figures(self):
+        """Figure names this run draws, resolved from the ``diagnostics`` setting."""
+        selection = self.diagnostics
+        if not selection or not self.diagnostic_figures:
+            return []
+        if selection is True:
+            return [n for n, (_, level) in self.diagnostic_figures.items() if level is True]
+        if selection == "all":
+            return [n for n, (_, level) in self.diagnostic_figures.items() if level is not None]
+        names = [selection] if isinstance(selection, str) else list(selection)
+        unknown = [n for n in names if n not in self.diagnostic_figures]
+        if unknown:
+            self.halt(
+                f"Unknown diagnostics figure(s) {unknown}; choose from "
+                f"{list(self.diagnostic_figures)} (or true / all)."
+            )
+        return names
+
     def generate_diagnostics(self):
         """
         Optional hook for emitting step diagnostics.
 
-        Subclasses override this to log or plot information about their output;
-        the base implementation does nothing.
+        Draws every figure in :meth:`selected_figures` and shows them; steps
+        without a figure registry override this (or leave it as a no-op).
 
         :meta private:
         """
-        pass
+        names = self.selected_figures()
+        if not names:
+            return
+        import matplotlib as mpl
+        import matplotlib.pyplot as plt
+
+        mpl.use("tkagg")  # report capture neutralises this; standalone runs pop a window
+        drawn = 0
+        for name in names:
+            fig = self.draw_figure(name)
+            if fig is None:
+                continue
+            fig._pelagos_figure = name  # names the saved file under report capture
+            drawn += 1
+        if drawn:
+            plt.show(block=True)
 
     def plot_failure(self):
         # Optional: draw what the step had when it raised (see Pipeline.execute_step)

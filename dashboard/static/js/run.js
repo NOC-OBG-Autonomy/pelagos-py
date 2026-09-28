@@ -536,7 +536,7 @@ const Run = {
     meta.innerHTML = `<strong>${escapeHtml(name)}</strong>` +
       `<span class="report-path">${escapeHtml(path)}</span>`;
     const open = document.createElement('a');
-    open.className = 'primary report-open';
+    open.className = 'btn primary';
     open.href = url;
     open.target = '_blank';
     open.rel = 'noopener';
@@ -861,7 +861,7 @@ const Run = {
   // panel / Manual QC editor from the pause banner on another tab).
   showTab(name = 'run') {
     document.querySelectorAll('.tab').forEach((t) =>
-      t.classList.toggle('active', t.dataset.tab === name));
+      t.classList.toggle('on', t.dataset.tab === name));
     document.querySelectorAll('.tab-panel, .tab-actions[data-panel]').forEach((p) =>
       p.classList.toggle('hidden', p.dataset.panel !== name));
     document.querySelector('.tab-actions-run').classList.toggle('hidden', name === 'manual');
@@ -873,7 +873,7 @@ const Run = {
   // panel isn't already on screen, so it has to be re-evaluated whenever the
   // visible tab changes. The Manual QC tab hides the palette and builder.
   onTabChange() {
-    const which = document.querySelector('.tab.active')?.dataset.tab;
+    const which = document.querySelector('.tab.on')?.dataset.tab;
     document.body.classList.toggle('manual-full', which === 'manual');
     if (Review.active) Review.apply();
   },

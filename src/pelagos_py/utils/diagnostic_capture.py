@@ -192,7 +192,9 @@ def _save_open_figures(
     safe = f"{step_index:02d}_" + step_name.replace(os.sep, "_").replace(" ", "_")
     for num in plt.get_fignums():
         fig = plt.figure(num)
-        path = os.path.join(outdir, f"{safe}_{len(images) + 1}.png")
+        # registry figures carry their name (BaseStep.generate_diagnostics); others are numbered
+        suffix = getattr(fig, "_pelagos_figure", None) or str(len(images) + 1)
+        path = os.path.join(outdir, f"{safe}_{suffix}.png")
         try:
             if close:
                 _decimate(fig)

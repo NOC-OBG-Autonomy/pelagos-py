@@ -26,6 +26,20 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r docs/requirements.txt
+          pip install -e .
+
+      # The user-guide figures are drawn by the steps themselves from a small
+      # OG1 file (docs/scripts/make_docs_dataset.py). PELAGOS_DOCS_DATA_URL is a
+      # repository variable pointing at that file (e.g. a release asset).
+      - name: Fetch docs dataset
+        if: vars.PELAGOS_DOCS_DATA_URL != ''
+        run: |
+          mkdir -p examples/data/docs
+          curl -sSL "${{ vars.PELAGOS_DOCS_DATA_URL }}" -o examples/data/docs/Growler_677_docs.nc
+
+      - name: Render user-guide figures
+        if: vars.PELAGOS_DOCS_DATA_URL != ''
+        run: python docs/scripts/render_figures.py
 
       - name: Clean Python Cache and Docs Artifacts
         run: |

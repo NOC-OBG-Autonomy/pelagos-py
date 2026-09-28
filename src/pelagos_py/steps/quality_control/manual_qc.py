@@ -64,20 +64,13 @@ class manual_qc(BaseQC):
               manual qc:
                 x_variable: TIME              # default
                 y_variable: PRES              # default; the dashboard dropdown changes it
-                boxes:
-                  - x: ["2024-05-02T10:00:00", "2024-05-02T14:30:00"]
-                    y: [0, 15]
-                    flag: 4
-                    mode: inside              # flag samples inside the box
-                    variables: [PRES, TEMP]   # optional, defaults to [y_variable]
-                  - x: ["2024-05-01", "2024-05-20"]
-                    y: [0, 1000]
-                    flag: 3
-                    mode: outside             # flag everything outside the box
-                    override: false           # merge by combinatrix, never lower a flag
-                  - x: ["2024-05-03T08:12:30"]
-                    y: [42.5]
-                    flag: 4                   # a point: the nearest sample only
+                boxes:                        # one line per box; block style works too
+                  # inside the box; variables optional, defaults to [y_variable]
+                  - {x: ["2024-05-02T10:00:00", "2024-05-02T14:30:00"], y: [0, 15], flag: 4, mode: inside, variables: [PRES, TEMP]}
+                  # everything outside; override false merges by combinatrix, never lowers a flag
+                  - {x: ["2024-05-01", "2024-05-20"], y: [0, 1000], flag: 3, mode: outside, override: false}
+                  # a point: the nearest sample only
+                  - {x: ["2024-05-03T08:12:30"], y: [42.5], flag: 4}
                   - x: ["2024-05-04", "2024-05-05"]
                     y: [10, 12]
                     flag: 3

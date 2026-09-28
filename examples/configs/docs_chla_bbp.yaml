@@ -1,0 +1,97 @@
+# Chlorophyll-a and backscatter processing as described in the user guide
+# (docs/user_guide/Pelagos-py_CHLA.md, Pelagos-py_BBP.md). The user-guide
+# figures are rendered from this config by docs/scripts/render_figures.py.
+pipeline:
+  name: "Docs: CHLA and BBP processing"
+  description: "Worked CHLA / BBP example; source of the user-guide figures"
+  visualisation: false
+
+steps:
+  - name: Load OG1
+    parameters:
+      file_path: examples/data/docs/Growler_677_docs.nc
+      filter_bad_time: true
+
+  - name: Apply QC
+    parameters:
+      qc_settings:
+        impossible date qc: {}
+        impossible location qc: {}
+        range qc:
+          variable_ranges:
+            PRES:
+              3: [-5, -2.4, inside]
+              4: [-.inf, -5, inside]
+            CHLA:
+              4: [-0.2, 100, outside]
+            BETA_BACKSCATTERING700:
+              3: [0, 0.01, outside]
+              4: [-1.0e-4, 0.05, outside]
+            DOWNWELLING_PAR:
+              4: [-5, 2500, outside]
+          also_flag:
+            PRES: [CNDC, TEMP]
+        stuck value qc:
+          variables:
+            PRES: 2
+            DOWNWELLING_PAR: 5
+          also_flag:
+            PRES: [CNDC, TEMP]
+
+  - name: Interpolate Data
+    parameters:
+      variables:
+        PRES: [3, 4, 9]
+        LATITUDE: [3, 4, 9]
+        LONGITUDE: [3, 4, 9]
+
+  - name: Derive CTD
+    parameters:
+      to_derive: [DEPTH]
+
+  - name: Find Profiles
+
+  - name: Derive CTD
+    parameters:
+      to_derive: [PRAC_SALINITY, ABS_SALINITY, CONS_TEMP]
+
+  - name: Mixed Layer Depth
+
+  - name: Interpolate PAR
+
+  - name: BBP from Beta
+    parameters:
+      apply_to: BETA_BACKSCATTERING700
+      output_as: BBP700
+    diagnostics: all
+
+  - name: Isolate BBP Spikes
+    parameters:
+      apply_to: BBP700
+      window_size: 50
+      method: median
+    diagnostics: all
+
+  - name: Deep Correction
+    parameters:
+      apply_to: CHLA
+      depth_var: DEPTH
+      depth_threshold: 950
+
+  # surface flagging: top 5 m of CHLA_ADJUSTED is kept out of NPQ reference calculations
+  - name: Apply QC
+    parameters:
+      qc_settings:
+        range qc:
+          variable_ranges:
+            DEPTH:
+              3: [0, 5, inside]
+              2: [0, 5, outside]
+          flag_instead:
+            DEPTH: [CHLA_ADJUSTED]
+
+  - name: CHLA Quenching
+    parameters:
+      method: xing2018
+      apply_to: CHLA_ADJUSTED
+    diagnostics: [method_comparison, timeseries, example_profile]

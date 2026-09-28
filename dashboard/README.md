@@ -6,7 +6,7 @@ pipeline configs. It is completely independent of the pipeline: it imports
 pipeline operationally — a config authored in the dashboard is an ordinary YAML
 file you can run any other way.
 
-The step palette and parameter forms are generated from the live `STEP_CLASSES`
+The step picker and parameter forms are generated from the live `STEP_CLASSES`
 / `QC_CLASSES` registries and each step's `describe_parameters()`, so a newly
 registered step appears on the next server start. Validation calls the
 pipeline's own `parameter_spec.resolve()`, so what the dashboard accepts is
@@ -135,7 +135,7 @@ server so a clicked point reports exact values. Per figure the runner writes
 | `static/index.html` | Three-pane UI shell |
 | `static/js/api.js` | Backend fetch wrappers |
 | `static/js/forms.js` | Schema → form-field renderer (generic) |
-| `static/js/builder.js` | Step palette, pipeline list, sections, QC editor |
+| `static/js/builder.js` | Step picker, flow/list pipeline views, sections, QC editor |
 | `static/js/config.js` | Builder ⇄ YAML, save/load |
 | `static/js/run.js` | Run, streamed log console, captured-figure model |
 | `static/js/review.js` | Paused-step panel: its plots + its parameters + re-run |
@@ -144,7 +144,7 @@ server so a clicked point reports exact values. Per figure the runner writes
 | `static/js/mem.js` | Live RAM meter: per-step RSS sparkline from `__PELAGOS_MEM__` markers |
 | `static/js/manual.js` | Manual QC tab: draw flag boxes on the paused test's plot |
 | `static/js/inspect.js` | Inspect tab: variables, sensors and attributes of the config's input file |
-| `static/js/demos.js` | Demos tab: demo deployments as cards grouped by mission |
+| `static/js/demos.js` | Files tab: the user's own input files (paths kept in the browser) and demo deployments as cards grouped by mission |
 | `static/js/outputs.js` | Report tab, lower half: files runs left in the output folders (reports, exports, logs) with open/delete |
 | `static/js/build.js` | Build panel: when a file is picked (demo card or Browse…) lists what the template must change for it, then builds the config on Confirm (`pelagos_py.utils.config_builder`) |
 | `static/js/icons.js` | Inline SVG line-icons (no icon font or CDN) |

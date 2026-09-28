@@ -113,7 +113,7 @@ const ManualQC = {
     ManualQC.dirty = false; ManualQC.continueAfter = false;
     const tab = ManualQC.tab();
     tab.classList.add('hidden');
-    if (tab.classList.contains('active')) Run.showTab('run');
+    if (tab.classList.contains('on')) Run.showTab('run');
     ManualQC.host().innerHTML = ''; ManualQC.rail().innerHTML = '';
   },
 
@@ -188,8 +188,6 @@ const ManualQC = {
     const t = ManualQC.tool;
 
     const mouse = ManualQC.section('Mouse');
-    const seg = document.createElement('div');
-    seg.className = 'manual-seg';
     const hint = document.createElement('div');
     hint.className = 'hint';
     const mod = navigator.platform.toLowerCase().includes('mac') ? '⌘' : 'Ctrl';
@@ -198,15 +196,9 @@ const ManualQC = {
         ? `Drag to draw a box · click a point to flag just it · ${mod}-drag to zoom · double-click resets zoom`
         : `Drag to zoom · ${mod}-drag to draw a box · ${mod}-click a point to flag just it · double-click resets zoom`;
     };
-    const segBtns = [];
-    for (const [draw, text] of [[true, 'Draw boxes'], [false, 'Zoom']]) {
-      const b = document.createElement('button');
-      b.type = 'button'; b.className = 'manual-seg-btn' + (t.draw === draw ? ' on' : ''); b.textContent = text;
-      b.onclick = () => { t.draw = draw; segBtns.forEach((x) => x.classList.toggle('on', x === b)); setHint(); };
-      segBtns.push(b); seg.appendChild(b);
-    }
     setHint();
-    mouse.appendChild(seg); mouse.appendChild(hint);
+    mouse.appendChild(Forms.seg([[true, 'Draw boxes'], [false, 'Zoom']], t.draw, (draw) => { t.draw = draw; setHint(); }, 'fill'));
+    mouse.appendChild(hint);
     tools.appendChild(mouse);
 
     const flags = ManualQC.section('Flag new boxes as');
@@ -282,7 +274,7 @@ const ManualQC = {
     const wrap = document.createElement('div');
     wrap.className = 'manual-pick';
     const btn = document.createElement('button');
-    btn.type = 'button'; btn.className = 'manual-pick-btn';
+    btn.type = 'button'; btn.className = 'selectish manual-pick-btn';
     const summary = () => {
       const v = [...chosen];
       btn.textContent = v.length ? v.join(', ') : 'Choose variables…';
@@ -332,28 +324,17 @@ const ManualQC = {
     bar.className = 'manual-plots';
     const values = ManualQC.values();
     const cur = ManualQC.yVar();
+    const seg = Forms.el('div', { class: 'seg' });
     for (const y of ManualQC.plots()) {
       const n = (values ? values.boxes : []).filter((b) => b && ManualQC.boxY(b) === y).length;
-      const t = document.createElement('button');
-      t.type = 'button'; t.className = 'manual-plot' + (y === cur ? ' on' : '');
-      t.innerHTML = `<span>${y}</span>` + (n ? `<i>${n}</i>` : '');
-      t.title = `${y} vs ${ManualQC.xVar()}` + (n ? ` · ${n} box${n === 1 ? '' : 'es'}` : '');
-      t.onclick = () => ManualQC.setPlot(y);
-      bar.appendChild(t);
+      seg.appendChild(Forms.button('', { cls: 'manual-plot' + (y === cur ? ' on' : ''), onclick: () => ManualQC.setPlot(y),
+        html: `<span>${y}</span>` + (n ? `<i>${n}</i>` : ''),
+        title: `${y} vs ${ManualQC.xVar()}` + (n ? ` · ${n} box${n === 1 ? '' : 'es'}` : '') }));
     }
-    const add = document.createElement('select');
-    add.className = 'manual-plot-add';
-    const ph = document.createElement('option');
-    ph.value = ''; ph.textContent = '+ plot'; ph.selected = true;
-    add.appendChild(ph);
-    for (const v of ManualQC.variables()) {
-      if (v === 'TIME' || ManualQC.plots().includes(v)) continue;
-      const o = document.createElement('option');
-      o.value = v; o.textContent = v;
-      add.appendChild(o);
-    }
-    add.onchange = () => { if (add.value) ManualQC.setPlot(add.value); };
-    bar.appendChild(add);
+    bar.appendChild(seg);
+    const vars = ManualQC.variables().filter((v) => v !== 'TIME');
+    bar.appendChild(Forms.select(vars.filter((v) => !ManualQC.plots().includes(v)), null,
+      (v) => { if (v) ManualQC.setPlot(v); }, { placeholder: '+ plot', cls: 'sm' }));
     const x = document.createElement('span');
     x.className = 'hint manual-plot-x'; x.textContent = 'vs ' + ManualQC.xVar();
     bar.appendChild(x);
@@ -361,33 +342,22 @@ const ManualQC = {
     const cl = document.createElement('label');
     cl.className = 'hint manual-plot-cl'; cl.textContent = 'colour by';
     bar.appendChild(cl);
-    const colour = document.createElement('select');
-    colour.className = 'manual-plot-add manual-plot-colour';
-    colour.title = 'Colour points by a variable (flags become rings)';
-    const none = document.createElement('option');
-    none.value = ''; none.textContent = 'flag';
-    colour.appendChild(none);
     const curC = (values && values.colour_variable) || '';
-    for (const v of ManualQC.variables()) {
-      if (v === 'TIME') continue;
-      const o = document.createElement('option');
-      o.value = v; o.textContent = v; if (v === curC) o.selected = true;
-      colour.appendChild(o);
-    }
-    cl.onclick = () => colour.focus();
-    colour.onchange = () => {
+    const colour = Forms.select(vars, curC, (v) => {
       const vals = ManualQC.values();
       if (!vals) return;
-      if (colour.value) vals.colour_variable = colour.value; else delete vals.colour_variable;
+      if (v) vals.colour_variable = v; else delete vals.colour_variable;
       ManualQC.commit();
       ManualQC.apply();
-    };
+    }, { placeholder: 'flag', cls: 'sm manual-plot-colour' });
+    colour.title = 'Colour points by a variable (flags become rings)';
+    cl.onclick = () => colour.focus();
     bar.appendChild(colour);
     // Profile side panel (colour variable vs y), greyed outside the main zoom.
     const prof = document.createElement('button');
     prof.type = 'button';
     const on = !!(values && values.profile_plot && curC);
-    prof.className = 'manual-plot manual-plot-profile' + (on ? ' on' : '');
+    prof.className = 'sm manual-plot' + (on ? ' on' : '');
     prof.textContent = 'Profile';
     prof.disabled = !curC;
     prof.title = curC ? 'Side panel: ' + curC + ' vs ' + cur + ', greyed outside the main zoom' : 'Pick a colour variable first';
@@ -599,10 +569,8 @@ const ManualQC = {
     if (!rerun || !cont) return;
     rerun.lastChild.textContent = ManualQC.dirty ? 'Apply & re-run' : 'Re-run test';
     rerun.classList.toggle('primary', ManualQC.dirty);
-    rerun.classList.toggle('ghost', !ManualQC.dirty);
     cont.lastChild.textContent = ManualQC.dirty ? 'Apply & continue' : 'Continue';
     cont.classList.toggle('primary', !ManualQC.dirty);
-    cont.classList.toggle('ghost', ManualQC.dirty);
   },
 
   // Compact box list: one line each, hover/click highlights it on the chart;
@@ -665,31 +633,17 @@ const ManualQC = {
         (point ? `${short(b.x[0])}, ${short(b.y[0])}` : `${short(b.y[0])}–${short(b.y[1])}`) +
         (b.variables ? ` · ${b.variables.join(', ')}` : '');
       head.appendChild(txt);
-      const rm = document.createElement('button');
-      rm.className = 'manual-row-rm'; rm.textContent = '×'; rm.title = 'remove this box';
-      rm.onclick = (e) => { e.stopPropagation(); ManualQC.remove(i); };
-      head.appendChild(rm);
+      head.appendChild(Forms.button('×', { cls: 'icon-btn reveal manual-row-rm', title: 'remove this box',
+        onclick: (e) => { e.stopPropagation(); ManualQC.remove(i); } }));
       row.appendChild(head);
 
       if (i === ManualQC.sel) {
         const edit = document.createElement('div');
         edit.className = 'manual-row-edit';
-        const flag = document.createElement('select');
-        for (const [f, meaning] of ManualQC.FLAGS) {
-          const o = document.createElement('option');
-          o.value = f; o.textContent = `${f} ${meaning}`; if (f === b.flag) o.selected = true;
-          flag.appendChild(o);
-        }
-        flag.onchange = () => { b.flag = Number(flag.value); ManualQC.commit(); };
-        edit.appendChild(flag);
-        const mode = document.createElement('select');
-        for (const m of ['inside', 'outside']) {
-          const o = document.createElement('option');
-          o.value = m; o.textContent = m; if ((b.mode || 'inside') === m) o.selected = true;
-          mode.appendChild(o);
-        }
-        mode.onchange = () => { b.mode = mode.value; ManualQC.commit(); };
-        edit.appendChild(mode);
+        edit.appendChild(Forms.select(ManualQC.FLAGS.map(([f, m]) => [f, `${f} ${m}`]), b.flag,
+          (v) => { b.flag = Number(v); ManualQC.commit(); }, { cls: 'sm' }));
+        edit.appendChild(Forms.select(['inside', 'outside'], b.mode || 'inside',
+          (v) => { b.mode = v; ManualQC.commit(); }, { cls: 'sm' }));
         const ov = document.createElement('label');
         ov.className = 'manual-row-ov'; ov.title = 'override existing flags';
         const ovc = document.createElement('input');

@@ -142,5 +142,7 @@ const Outputs = {
       catch (e) { alert(e.message); }
     });
     document.getElementById('btn-demos-clean').addEventListener('click', () => Demos.clean());
+    Files.init();
+    Demos.initSection();
   },
 };

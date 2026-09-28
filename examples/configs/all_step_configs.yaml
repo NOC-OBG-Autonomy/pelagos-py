@@ -481,6 +481,12 @@ steps:
       #   fl:bbp ratio within the MLD, needs BBP + MLD) and 'swart2015' (max fl:bbp
       #   ratio within the euphotic zone, needs BBP + PAR).
       method: xing2012
+      # [night_reference]:
+      #   thomalla2018 only. 'preceding' (default) uses the most recent night's
+      #   reference; 'mz' / 'flz' interpolate it in time between the bracketing
+      #   nights (Mitchell et al. 2024): between their mean profiles, or between the
+      #   last profile of the preceding night and the first of the following one.
+      night_reference: preceding
       # [hybrid]:
       #   Only used when method is 'xing2018'. When true (the default), shallow-mixing
       #   profiles (iPAR=15 depth > MLD) use the Terrats et al. (2020) X18_S08 hybrid
@@ -500,6 +506,11 @@ steps:
       # Note: the MLD-based methods ('xing2012'/'xing2018'/'sackmann2008')
       #   read the 'MLD' variable produced by a preceding 'Mixed Layer Depth' step;
       #   configure the MLD method and thresholds there, not here.
+    # [diagnostics]:
+    #   true: one overview figure (method comparison, corrected sections, example
+    #   profile). all: also the annotated 'profile' for plot_profiles and the
+    #   method's reference / quenching-depth / sigmoid figures ("more diagnostics"
+    #   in the dashboard). A list of figure names selects individually.
     diagnostics: false
 
 

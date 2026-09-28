@@ -44,6 +44,7 @@ def make_profile(
 
 def make_step(sun_angle=40.0, hybrid=True):
     step = Quenching.__new__(Quenching)
+    step.night_reference = "preceding"
     step.apply_to = "CHLA"
     step.bbp_var = "BBP700"
     step.par_var = "DOWNWELLING_PAR"
@@ -220,7 +221,7 @@ def test_quenching_depth_picks_steepest_gradient_point():
     z = np.array([2, 6, 10, 15, 20, 30.0])
     fl_day = np.array([0.4, 0.5, 0.7, 0.9, 1.0, 0.75])
     fl_night = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 0.75])  # D returns to 0 by depth
-    qd, reason = Quenching._quenching_depth(z, fl_day, fl_night, max_photic_depth=38.0)
+    qd, reason, _ = Quenching._quenching_depth(z, fl_day, fl_night, max_photic_depth=38.0)
     assert qd == 15.0
     assert reason == "ok"
 
@@ -357,3 +358,40 @@ def test_require_scalar_on_days_halts_when_a_daytime_profile_lacks_the_scalar():
         step._require_scalar_on_days("ZEU", "interpolate_zeu", [1, 2, 3])
     # ...but not when the gap is a night profile that no method corrects.
     step._require_scalar_on_days("ZEU", "interpolate_zeu", [1, 3])
+
+
+# --- Thomalla 2018 with Mitchell 2024 night_reference -----------------------
+def _night(time_ns, ratio, first=None, last=None):
+    z = np.array([2, 6, 10, 15, 20, 30, 45, 60, 80.0])
+    ref = {"z": z, "fl": np.full(9, 1.0), "ratio": np.full(9, float(ratio)), "time": float(time_ns)}
+    ref["first"] = first and _night(time_ns, first)
+    ref["last"] = last and _night(time_ns, last)
+    return ref
+
+
+def _bracketed_step(mode, day_time_ns=3):
+    import pandas as pd
+    step = make_step()
+    step.night_reference = mode
+    step._night_refs = [_night(0, 100.0, first=50.0, last=200.0), _night(4, 300.0, first=400.0, last=500.0)]
+    step._thomalla_day_night = {101: 0}
+    step.sun_args = pd.DataFrame({"TIME": [pd.Timestamp(day_time_ns)]}, index=[101])
+    return step
+
+
+def _recon(step):
+    prof = make_profile(np.full(9, 0.1), np.array([2, 6, 10, 15, 20, 30, 45, 60, 80.0]), bbp=np.full(9, 1e-3))
+    return step._thomalla2018(prof)[1]["recon"][0][1]
+
+
+def test_night_reference_mz_interpolates_the_bracketing_night_means():
+    # alpha = 3/4 between ratios 100 and 300 -> 250 -> 0.25 at bbp 1e-3
+    assert _recon(_bracketed_step("mz")) == pytest.approx(0.25)
+
+
+def test_night_reference_flz_uses_last_and_first_profiles():
+    assert _recon(_bracketed_step("flz")) == pytest.approx(0.35)  # 200 -> 400 at alpha 3/4
+
+
+def test_night_reference_falls_back_to_preceding_when_not_bracketed():
+    assert _recon(_bracketed_step("mz", day_time_ns=9)) == pytest.approx(0.1)  # preceding night alone

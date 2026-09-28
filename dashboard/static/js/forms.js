@@ -36,9 +36,50 @@ const Forms = {
     }
   },
 
-  clone(v) { return v == null ? v : JSON.parse(JSON.stringify(v)); },
+  clone(v) { return v == null ? v : structuredClone(v); }, // JSON would turn ±Infinity (YAML .inf) into null
 
   _uid: 0,
+
+  // ---- DOM helpers ----
+  el(tag, props = {}, ...children) {
+    const e = document.createElement(tag);
+    for (const [k, v] of Object.entries(props)) {
+      if (k === 'class') e.className = v;
+      else if (k === 'html') e.innerHTML = v;
+      else if (k in e) e[k] = v;
+      else e.setAttribute(k, v);
+    }
+    e.append(...children.filter((c) => c != null));
+    return e;
+  },
+
+  button(label, { icon, iconSize = 16, cls = '', ...props } = {}) {
+    const b = Forms.el('button', { type: 'button', class: cls, html: icon ? Icon.svg(icon, iconSize) : '', ...props });
+    b.append(label);
+    return b;
+  },
+
+  // `options`: values or [value, label] pairs; a placeholder is an empty-valued first option.
+  select(options, value, onChange, { placeholder, cls = '' } = {}) {
+    const sel = Forms.el('select', { class: cls });
+    if (placeholder) sel.appendChild(Forms.el('option', { value: '', textContent: placeholder }));
+    for (const o of options) {
+      const [v, label] = Array.isArray(o) ? o : [o, o];
+      sel.appendChild(Forms.el('option', { value: String(v), textContent: String(label), selected: v === value }));
+    }
+    if (onChange) sel.onchange = () => onChange(sel.value, sel);
+    return sel;
+  },
+
+  // Segmented control of [value, label] pairs; `seg.set(v)` moves the highlight.
+  seg(options, value, onChange, cls = '') {
+    const seg = Forms.el('div', { class: 'seg ' + cls });
+    const btns = options.map(([v, label]) => Forms.button(label, { onclick: () => { seg.set(v); onChange(v); } }));
+    seg.append(...btns);
+    seg.set = (v) => btns.forEach((b, i) => b.classList.toggle('on', options[i][0] === v));
+    seg.set(value);
+    return seg;
+  },
 
   // Build an Apple-style slide toggle. Returns { el, input } where `el` is the
   // <span class="switch"> to place in the DOM and `input` is the checkbox.
@@ -68,6 +109,7 @@ const Forms = {
     const kind = Forms.kind(spec);
     const wrap = document.createElement('div');
     wrap.className = 'field' + (kind === 'bool' ? ' checkbox' : '');
+    wrap.dataset.param = spec.name;
 
     const label = document.createElement('label');
     label.textContent = spec.name;
@@ -86,14 +128,7 @@ const Forms = {
     const cur = spec.name in values ? values[spec.name] : Forms.defaultValue(spec);
 
     if (kind === 'select') {
-      input = document.createElement('select');
-      for (const opt of spec.options) {
-        const o = document.createElement('option');
-        o.value = String(opt); o.textContent = String(opt);
-        if (opt === cur) o.selected = true;
-        input.appendChild(o);
-      }
-      input.onchange = () => { values[spec.name] = spec.options[input.selectedIndex]; onChange(); };
+      input = Forms.select(spec.options, cur, (v, sel) => { values[spec.name] = spec.options[sel.selectedIndex]; onChange(); });
     } else if (kind === 'multiselect') {
       input = document.createElement('div');
       input.className = 'multiselect';
@@ -163,11 +198,7 @@ const Forms = {
       row.className = 'file-row';
       input.placeholder = 'Path to your input NetCDF file';
       input.onchange = () => { values[spec.name] = input.value; syncOutputPath(input.value); onChange(); };
-      const browse = document.createElement('button');
-      browse.type = 'button';
-      browse.className = 'ghost';
-      browse.appendChild(Icon.el('folder', 14));
-      browse.appendChild(document.createTextNode('Browse…'));
+      const browse = Forms.button('Browse…', { icon: 'folder' });
       browse.onclick = async () => {
         browse.disabled = true;
         try {
@@ -183,6 +214,16 @@ const Forms = {
       row.appendChild(browse);
       wrap.appendChild(label);
       wrap.appendChild(row);
+    } else if (kind === 'yaml' && Array.isArray(cur) && cur.length > 3) {
+      // Long lists (manual QC boxes) fold behind a count so the card stays short.
+      const details = document.createElement('details');
+      details.className = 'yaml-fold';
+      const summary = document.createElement('summary');
+      summary.textContent = `${cur.length} entries`;
+      details.appendChild(summary);
+      details.appendChild(input);
+      wrap.appendChild(label);
+      wrap.appendChild(details);
     } else {
       wrap.appendChild(label);
       wrap.appendChild(input);
@@ -212,6 +253,15 @@ const Forms = {
 
   _scalarText(x) { return jsyaml.dump(x, { flowLevel: 0, lineWidth: -1 }).trimEnd(); },
 
+  // Keys whose list-of-maps items go one per line (`- {x: [..], y: [..], flag: 4}`):
+  // a manual QC config with many boxes would otherwise be mostly boxes.
+  _FLOW_KEYS: new Set(['boxes']),
+
+  _flowMap(m) {
+    const parts = Object.keys(m).map((k) => `${Forms._scalarText(k)}: ${Forms._emit(m[k], '')}`);
+    return '{' + parts.join(', ') + '}';
+  },
+
   _emit(v, indent) {
     if (Array.isArray(v)) {
       if (v.length === 0) return '[]';
@@ -229,7 +279,11 @@ const Forms = {
       const keys = Object.keys(v);
       if (keys.length === 0) return '{}';
       const parts = keys.map((k) => {
-        const c = Forms._emit(v[k], indent + '  ');
+        const flow = Forms._FLOW_KEYS.has(k) && Array.isArray(v[k]) && v[k].length &&
+          v[k].every((m) => m && typeof m === 'object' && !Array.isArray(m) &&
+            Object.values(m).every((x) => Forms._isScalar(x) || (Array.isArray(x) && x.every(Forms._isScalar))));
+        const c = flow ? '\n' + v[k].map((m) => indent + '  - ' + Forms._flowMap(m)).join('\n')
+          : Forms._emit(v[k], indent + '  ');
         // Integer mapping keys (Argo QC flags, flag_mapping, …) stay unquoted
         // so the pipeline reads them as ints, not strings.
         const key = /^-?\d+$/.test(k) ? k : Forms._scalarText(k);

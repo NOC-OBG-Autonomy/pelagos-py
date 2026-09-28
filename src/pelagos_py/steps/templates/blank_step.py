@@ -68,5 +68,10 @@ class BlankStep(BaseStep, QCHandlingMixin):
         self.context["data"] = self.data
         return self.context
 
-    def generate_diagnostics(self):
+    # Named figures: config `diagnostics: true` draws the defaults, `all` or a
+    # list of names selects; report capture and the docs pick them up by name.
+    diagnostic_figures = {}  # EXAMPLE: {"overview": ("Raw vs processed", True)}
+
+    def draw_figure(self, name):
+        # Return one matplotlib Figure per name, built with pelagos_py.utils.fig_spec
         pass

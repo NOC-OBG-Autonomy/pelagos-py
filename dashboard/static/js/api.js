@@ -111,6 +111,28 @@ const API = {
     if (!r.ok) await _fail(r, 'could not open folder');
     return r.json();
   },
+  async filesInfo(paths) {
+    const r = await fetch('/api/files/info', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ paths }),
+    });
+    if (!r.ok) await _fail(r, 'could not stat files');
+    return r.json();
+  },
+  // Native picker for .nc files and/or folders; resolves to the .nc paths.
+  async pickFiles(start) {
+    const r = await fetch('/api/files/pick', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ start: start || '' }),
+    });
+    if (!r.ok) await _fail(r, 'Browse failed');
+    return (await r.json()).paths;
+  },
+  async revealFile(path) {
+    const r = await fetch('/api/files/reveal', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path }),
+    });
+    if (!r.ok) await _fail(r, 'could not open folder');
+    return r.json();
+  },
   // Opens a native file dialog on the server; resolves to the path or null.
   async browseFile(start) {
     const r = await fetch('/api/browse', {

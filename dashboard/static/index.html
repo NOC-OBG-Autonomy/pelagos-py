@@ -12,67 +12,60 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/yaml/yaml.min.js"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Ubuntu:wght@500&display=swap" />
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
   <div class="shell">
-    <!-- Left rail: step palette (auto-generated from the registry) -->
+    <!-- Left rail: only shown on the Manual QC tab, where it holds the
+         editor's controls (see manual.js). Steps are added from the builder's
+         "Add step" buttons. -->
     <aside class="palette">
-      <div class="brand">
-        <img class="logo" src="/img/NOC_logo.svg" alt="NOC logo" height="32" />
-        <div class="title">pelagos-py</div>
-      </div>
-      <!-- Manual QC tab: the rail holds the editor's controls instead of the
-           palette (see manual.js); the palette parts hide via body.manual-full. -->
       <div id="manual-rail" class="manual-rail"></div>
-      <input id="palette-search" placeholder="Search steps…" />
-      <div id="palette-list"></div>
-      <a class="rail-foot" href="https://noc-obg-autonomy.github.io/pelagos-py/"
-         target="_blank" rel="noopener noreferrer">
-        <span class="rf-ico" data-icon="book" data-icon-size="18"></span>
-        <span class="rf-text">
-          <span class="rf-title">Documentation</span>
-          <span class="rf-sub">Guides &amp; step reference</span>
-        </span>
-        <span class="rf-out" data-icon="external" data-icon-size="14"></span>
-      </a>
     </aside>
 
     <div class="main-col">
+      <!-- Two columns matching .layout: brand over the builder, tabs + actions
+           over the output panel they switch. -->
       <div class="tabs">
-        <div class="tab-list">
-          <button class="tab" data-tab="yaml"><span data-icon="code" data-icon-size="15"></span>YAML</button>
-          <button class="tab active" data-tab="run"><span data-icon="play" data-icon-size="15"></span>Run</button>
-          <!-- Only while a run is paused on the `manual qc` test; takes the
-               whole window (palette + builder hide) — see manual.js. -->
-          <button class="tab tab-manual hidden" data-tab="manual"><span data-icon="image" data-icon-size="15"></span>Manual QC</button>
-          <button class="tab" data-tab="plots"><span data-icon="image" data-icon-size="15"></span>Plots</button>
-          <button class="tab" data-tab="report"><span data-icon="file" data-icon-size="15"></span>Report</button>
-          <button class="tab" data-tab="inspect"><span data-icon="search" data-icon-size="15"></span>Inspect</button>
-          <button class="tab tab-demos" data-tab="demos"><span data-icon="download" data-icon-size="15"></span>Demos</button>
+        <div class="tab-left">
+          <!-- Name is filled from document.title; sizes are fitted by logo.js. -->
+          <div class="brand">
+            <img class="logo" src="/img/NOC_logo.svg" alt="" />
+            <div class="brand-text">
+              <span class="brand-name"></span>
+              <span class="brand-org">National Oceanography Centre</span>
+            </div>
+          </div>
+          <a class="docs-link btn" href="https://noc-obg-autonomy.github.io/pelagos-py/"
+             target="_blank" rel="noopener noreferrer" title="Guides &amp; step reference">
+            <span data-icon="book" data-icon-size="15"></span>Docs</a>
         </div>
-        <div class="tab-right">
-          <div class="tab-actions hidden" data-panel="yaml">
-            <select id="theme-select" title="Editor colour theme">
-              <option value="vscode-dark">Dark Modern</option>
-              <option value="vscode-darkplus">Dark+</option>
-              <option value="one-dark">One Dark Pro</option>
-              <option value="dracula">Dracula</option>
-              <option value="vscode-light">Light Modern</option>
-            </select>
-            <button id="btn-copy" class="ghost"><span data-icon="copy"></span>Copy</button>
+        <div class="tab-main">
+          <div class="seg lg">
+            <button class="tab" data-tab="yaml"><span data-icon="code" data-icon-size="17"></span>YAML</button>
+            <button class="tab on" data-tab="run"><span data-icon="file" data-icon-size="17"></span>Log</button>
+            <!-- Only while a run is paused on the `manual qc` test; takes the
+                 whole window (palette + builder hide) — see manual.js. -->
+            <button class="tab tab-manual hidden" data-tab="manual"><span data-icon="image" data-icon-size="17"></span>Manual QC</button>
+            <button class="tab" data-tab="plots"><span data-icon="image" data-icon-size="17"></span>Plots</button>
+            <button class="tab" data-tab="report"><span data-icon="file" data-icon-size="17"></span>Report</button>
+            <button class="tab" data-tab="inspect"><span data-icon="search" data-icon-size="17"></span>Inspect</button>
+            <button class="tab tab-files" data-tab="files"><span data-icon="folder" data-icon-size="17"></span>Files</button>
           </div>
-          <!-- Run controls stay up on every tab (bar Manual QC, which has its
-               own); Run switches to the Run tab. -->
-          <div class="tab-actions tab-actions-run">
-            <span id="run-status" class="run-status"></span>
-            <button id="btn-stop" class="ghost danger" disabled><span data-icon="stop"></span>Stop</button>
-            <button id="btn-run" class="primary"><span data-icon="play"></span>Run pipeline</button>
-          </div>
-          <div class="tab-actions hidden" data-panel="manual">
-            <span id="manual-status" class="run-status"></span>
-            <button id="btn-manual-rerun" class="ghost"><span data-icon="rerun"></span>Re-run test</button>
-            <button id="btn-manual-continue" class="primary"><span data-icon="play"></span>Continue</button>
+          <div class="tab-right">
+            <!-- Run controls stay up on every tab (bar Manual QC, which has its
+                 own); Run switches to the Run tab. -->
+            <div class="tab-actions tab-actions-run">
+              <span id="run-status" class="run-status"></span>
+              <button id="btn-stop" class="danger" disabled><span data-icon="stop"></span>Stop</button>
+              <button id="btn-run" class="primary"><span data-icon="play"></span>Run pipeline</button>
+            </div>
+            <div class="tab-actions hidden" data-panel="manual">
+              <span id="manual-status" class="run-status"></span>
+              <button id="btn-manual-rerun"><span data-icon="rerun"></span>Re-run test</button>
+              <button id="btn-manual-continue" class="primary"><span data-icon="play"></span>Continue</button>
+            </div>
           </div>
         </div>
       </div>
@@ -80,6 +73,7 @@
       <main class="layout">
         <!-- Centre: pipeline builder -->
         <section class="builder">
+          <div class="builder-scroll">
           <div class="builder-head">
             <div class="topbar-top">
               <h1 class="page-title">Pipeline</h1>
@@ -88,9 +82,8 @@
                 <!-- Custom dropdown (not a <select>) so reference configs can be
                      colour-coded rather than labelled "(locked)". -->
                 <div id="config-select" class="cfg-select" title="Switch to a different saved pipeline">
-                  <button type="button" class="cfg-trigger" aria-haspopup="listbox" aria-expanded="false">
+                  <button type="button" class="cfg-trigger selectish" aria-haspopup="listbox" aria-expanded="false">
                     <span class="cfg-current">Choose a pipeline…</span>
-                    <span class="cfg-caret" data-icon="down" data-icon-size="14"></span>
                   </button>
                   <ul class="cfg-menu hidden" role="listbox"></ul>
                 </div>
@@ -101,18 +94,22 @@
               <div class="cfg-file-group" title="Saves the pipeline under this name — a new name creates a new pipeline, the current name overwrites it">
                 <span class="cfg-label">Save pipeline as</span>
                 <input id="config-name" placeholder="config name" />
-                <button id="btn-save" class="ghost"><span data-icon="save"></span><span class="btn-label">Save</span></button>
-                <button id="btn-delete" class="ghost danger"><span data-icon="trash"></span>Delete</button>
+                <button id="btn-save"><span data-icon="save"></span><span class="btn-label">Save</span></button>
+                <button id="btn-delete" class="danger"><span data-icon="trash"></span>Delete</button>
               </div>
-              <button id="btn-reveal" class="ghost" title="Open the configs folder in Finder — saved pipelines live there as .yaml files">
+              <button id="btn-reveal" title="Open the configs folder in Finder — saved pipelines live there as .yaml files">
                 <span data-icon="folder"></span>Open folder</button>
             </div>
           </div>
           <div class="builder-bar">
             <div id="validation-status" class="validation-status"></div>
             <div class="panel-actions">
-              <button id="btn-add-section" class="ghost"><span data-icon="plus"></span>Section</button>
-              <button id="btn-clear" class="ghost"><span data-icon="trash2"></span>Clear</button>
+              <div class="seg" id="view-toggle" title="How the pipeline is drawn">
+                <button data-view="flow" class="on">Flow</button>
+                <button data-view="list">List</button>
+              </div>
+              <button id="btn-add-section"><span data-icon="plus"></span>Container</button>
+              <button id="btn-clear"><span data-icon="trash2"></span>Clear</button>
             </div>
           </div>
           <div id="validation" class="validation"></div>
@@ -120,8 +117,11 @@
           <div id="pipeline-settings"></div>
           <div id="pipeline-steps"></div>
           <div class="empty-hint" id="empty-hint">
-            Click a step on the left to add it to the pipeline.
+            Use “Add step” to start building a pipeline.
           </div>
+          </div>
+          <!-- Flow view's legend, pinned under the scrolling builder (filled by flow.js). -->
+          <div id="flow-legend" class="fc-legend hidden"></div>
         </section>
 
         <!-- Right: YAML + validation + run -->
@@ -141,13 +141,24 @@
             </div>
             <span id="run-pause-status" class="run-pause-status"></span>
             <div class="run-pause-actions">
-              <button id="btn-log" class="ghost">Log</button>
-              <button id="btn-rerun" class="ghost"><span data-icon="rerun"></span>Re-run step</button>
-              <button id="btn-review" class="ghost"><span data-icon="image"></span>Review step</button>
+              <button id="btn-log">Log</button>
+              <button id="btn-rerun"><span data-icon="rerun"></span>Re-run step</button>
+              <button id="btn-review"><span data-icon="image"></span>Review step</button>
             </div>
           </div>
 
           <div class="tab-panel hidden" data-panel="yaml">
+            <!-- Floats over the editor's top-right corner. -->
+            <div class="seg yaml-tools">
+              <select id="theme-select" title="Editor colour theme">
+                <option value="vscode-dark">Dark Modern</option>
+                <option value="one-dark">One Dark Pro</option>
+                <option value="dracula">Dracula</option>
+                <option value="vscode-light">Light Modern</option>
+              </select>
+              <button id="btn-copy" title="Copy the YAML to the clipboard">
+                <span data-icon="copy"></span>Copy</button>
+            </div>
             <textarea id="yaml-editor"></textarea>
           </div>
 
@@ -170,7 +181,7 @@
                  diagnostics step: that step's plots + just its parameters. -->
             <div id="step-review" class="step-review hidden"></div>
             <div id="log-wrap" class="log-wrap">
-              <button id="log-to-bottom" class="log-to-bottom hidden"
+              <button id="log-to-bottom" class="icon-btn log-to-bottom hidden"
                       title="Jump to latest" aria-label="Jump to latest">
                 <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"
                      aria-hidden="true"><path d="M10 3h4v9h4l-6 7-6-7h4z"/></svg>
@@ -207,8 +218,8 @@
                   <strong>Output files</strong>
                   <span id="outputs-sub" class="outputs-sub"></span>
                 </div>
-                <button id="btn-outputs-reveal" class="ghost" title="Open the output folder in Finder"><span data-icon="folder"></span>Open folder</button>
-                <button id="btn-outputs-clean" class="ghost warn"><span data-icon="trash2"></span>Delete all</button>
+                <button id="btn-outputs-reveal" title="Open the output folder in Finder"><span data-icon="folder"></span>Open folder</button>
+                <button id="btn-outputs-clean" class="warn"><span data-icon="trash2"></span>Delete all</button>
               </div>
               <div id="outputs-list" class="outputs-list"></div>
             </section>
@@ -240,32 +251,54 @@
             </p>
           </div>
 
-          <!-- Demos: sample glider deployments for trying the tool out. Picking
-               one loads a ready-made pipeline (downloading its data first if
-               needed) — for real work, set your own file in Load OG1. -->
-          <div class="tab-panel hidden" data-panel="demos">
-            <div class="demos-intro">
-              <strong>Demo data for trying pelagos-py out.</strong>
-              Pick a deployment to load a ready-made pipeline against a sample
-              glider file. Files are downloaded on first use. To process your
-              own data, choose a file in the <strong>Load OG1</strong> step instead.
+          <!-- Files: the user's own input files (paths kept in the browser, the
+               file stays where it is) above the demo deployments. Picking one
+               sets up a pipeline for it (demos download first if needed). -->
+          <div class="tab-panel hidden" data-panel="files">
+            <div class="files-scroll">
+              <section class="files-section">
+                <div class="demos-head">
+                  <strong>Your files</strong>
+                  <input id="files-path" placeholder="Paste paths to OG1 NetCDF files" spellcheck="false" />
+                  <button id="btn-files-add" disabled>Add</button>
+                  <button id="btn-files-browse"><span data-icon="folder"></span>Browse…</button>
+                </div>
+                <div id="files-list"></div>
+              </section>
+              <section class="files-section" id="demos-section">
+                <div class="demos-head demos-toggle" id="demos-toggle">
+                  <span class="sec-chevron" id="demos-chevron"></span>
+                  <strong>Demo data</strong>
+                  <span id="demos-sub" class="outputs-sub"></span>
+                </div>
+                <div id="demos-body">
+                  <div id="demos-list" class="demos-list"></div>
+                  <div class="fc-legend">
+                    <span class="fc-legend-title">Data mode</span>
+                    <span class="fc-legend-item"><span class="tag accent">NRT</span>near real time: decimated, sent over satellite at sea</span>
+                    <span class="fc-legend-item"><span class="tag ok">Delayed</span>delayed mode: full dataset, offloaded after recovery</span>
+                  </div>
+                  <div class="demos-foot">
+                    <span>Data provided by <a href="https://www.bodc.ac.uk/" target="_blank" rel="noopener">BODC</a> (<a href="https://noc.ac.uk/" target="_blank" rel="noopener">NOC</a>) and <a href="https://voiceoftheocean.org/" target="_blank" rel="noopener">VOTO</a></span>
+                    <button id="btn-demos-clean" class="sm warn hidden"><span data-icon="trash2" data-icon-size="12"></span>Delete all downloads</button>
+                  </div>
+                </div>
+              </section>
             </div>
-            <div class="demos-head">
-              <span id="demos-sub" class="outputs-sub"></span>
-              <button id="btn-demos-clean" class="ghost warn"><span data-icon="trash2"></span>Delete all downloads</button>
-            </div>
-            <div id="demos-list" class="demos-list"></div>
           </div>
         </section>
       </main>
     </div>
   </div>
 
+  <script src="/js/logo.js"></script>
   <script src="/js/icons.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/forms.js"></script>
   <script src="/js/builder.js"></script>
+  <script src="/js/flow.js"></script>
   <script src="/js/config.js"></script>
+  <script src="/js/defaults.js"></script>
   <script src="/js/build.js"></script>
   <!-- plot.js is the WebGL figure viewer; no plotting library is vendored. -->
   <script src="/js/plot.js"></script>

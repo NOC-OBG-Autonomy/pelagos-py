@@ -128,8 +128,9 @@ def _section(block):
 # ----------------------------------------------------------------------------
 # Decisions
 # ----------------------------------------------------------------------------
-def _decision(id_, title, detail, options=(), default=None):
-    return {"id": id_, "title": title, "detail": detail,
+def _decision(id_, title, detail, options=(), default=None, section=None):
+    # `section`: the template section the choice can drop (shown as skipped by the dashboard).
+    return {"id": id_, "title": title, "detail": detail, "section": section,
             "options": [{"key": k, "label": l} for k, l in options], "default": default}
 
 
@@ -228,7 +229,7 @@ def decisions(probe):
             "'BBP from Beta') or trust it as already-converted BBP and skip the conversion.",
             [("as_beta", "Use BBP700 as raw beta and convert it"),
              ("direct", "Use BBP700 directly, skip conversion")],
-            "as_beta",
+            "as_beta", section="BACKSCATTER",
         ))
     else:
         out.append(_decision(
@@ -237,7 +238,7 @@ def decisions(probe):
             "section and the CHLA Quenching step (which needs BBP) are removed, unless "
             "raw beta is held under another name.",
             [("remove", "Remove the Backscatter section")] + _rename_options(real, BETA_NAME),
-            "remove",
+            "remove", section="BACKSCATTER",
         ))
 
     phase, molar = _oxygen_phase(probe), _oxygen_molar(probe)
@@ -266,7 +267,7 @@ def decisions(probe):
                   "removed, unless the concentration is held under another name.")
     # A lone "none" option is no choice: shown as automatic (default_choices skips it).
     out.append(_decision("oxygen", title, " ".join([detail] + notes),
-                         opts if len(opts) > 1 else (), opts[0][0]))
+                         opts if len(opts) > 1 else (), opts[0][0], section="OXYGEN"))
 
     if not present(probe, "DOWNWELLING_PAR"):
         extra = " (DPAR is present but in a different unit and is not used.)" if "DPAR" in real else ""
@@ -275,7 +276,7 @@ def decisions(probe):
             f"DOWNWELLING_PAR is missing: the PAR QC section is removed, unless PAR is "
             f"held under another name.{extra}",
             [("remove", "Remove the PAR QC section")] + _rename_options(real, "DOWNWELLING_PAR"),
-            "remove",
+            "remove", section="PAR QC",
         ))
     return out
 

@@ -171,26 +171,23 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
         ]
         return min(candidates)[1] if candidates else None
 
-    def generate_diagnostics(self):
-        mpl.use("tkagg")
+    diagnostic_figures = {"boxplot": ("Beta vs BBP value distributions", True)}
 
-        # Clean both datasets
+    def draw_figure(self, name):
         beta_clean = remove_outliers(self.data_subset[self.beta_var])
         bbp_clean = remove_outliers(self.data[self.output_as])
-
-        # Plot
-        plt.figure(figsize=(10, 6))
-        plt.boxplot(
-            [beta_clean, bbp_clean],
-            vert=True,
-            patch_artist=True,
-            labels=["Beta", "BBP"],
-        )
-
-        plt.title("Beta vs BBP")
-        plt.ylabel("Value")
-        plt.grid(True, linestyle="--", alpha=0.6)
-        plt.show(block=True)
+        fig, axes = fig_spec.new_fig()
+        ax = axes[0][0]
+        # boxplot is not WebGL-safe (PNG-only in the dashboard) but is the point of this figure
+        ax.boxplot([beta_clean, bbp_clean], patch_artist=True,
+                   boxprops=dict(facecolor=fig_spec.CATEGORY[1], alpha=0.6))
+        ax.set_xticks([1, 2], [
+            fig_spec.axis_label(self.beta_var, self.data_subset[self.beta_var].attrs.get("units")),
+            fig_spec.axis_label(self.output_as, "m-1"),
+        ])
+        fig_spec.style_axes(ax, ylabel="value")
+        fig_spec.finish(fig, f"{self.beta_var} vs {self.output_as}")
+        return fig
 
 
 def _rolling(arr, n, name):
@@ -302,9 +299,9 @@ class IsolateBBPSpikes(BaseStep, QCHandlingMixin):
         self.context["data"].update(self.data)
         return self.context
 
-    def generate_diagnostics(self):
-        mpl.use("tkagg")
+    diagnostic_figures = {"baseline_spikes": ("Raw, baseline and isolated spikes", True)}
 
+    def draw_figure(self, name):
         raw = self.data[self.apply_to]
         time = self.data["TIME"]
 
@@ -329,4 +326,4 @@ class IsolateBBPSpikes(BaseStep, QCHandlingMixin):
         fig_spec.style_axes(ax2, xlabel="Time", ylabel=ylabel)
 
         fig_spec.finish(fig, suptitle=f"{self.apply_to}: Baseline Timeseries & Spikes")
-        plt.show(block=True)
+        return fig

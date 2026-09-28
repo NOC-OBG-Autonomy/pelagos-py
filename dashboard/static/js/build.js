@@ -8,6 +8,7 @@ const Build = {
     if (!root) return;
     root.innerHTML = '';
     root.hidden = false;
+    Build.name = name; // the demo config the open panel is for, if any
     document.querySelector('.builder').classList.add('building');
     // The old config is still what Run would execute: not what's on screen.
     Build.lockRun(true);
@@ -42,14 +43,7 @@ const Build = {
       text.innerHTML = `<strong>${escapeHtml(d.title)}</strong><span>${escapeHtml(d.detail)}</span>`;
       row.appendChild(text);
       if (d.options.length) {
-        const sel = document.createElement('select');
-        for (const o of d.options) {
-          const opt = document.createElement('option');
-          opt.value = o.key;
-          opt.textContent = o.label;
-          sel.appendChild(opt);
-        }
-        sel.value = d.default;
+        const sel = Forms.select(d.options.map((o) => [o.key, o.label]), d.default);
         choices[d.id] = d.default;
         const note = document.createElement('div');
         note.className = 'build-changed hidden';
@@ -77,15 +71,8 @@ const Build = {
 
     const actions = document.createElement('div');
     actions.className = 'build-actions';
-    const cancel = document.createElement('button');
-    cancel.type = 'button';
-    cancel.className = 'ghost';
-    cancel.textContent = 'Cancel';
-    cancel.onclick = () => { Build.close(); if (onCancel) onCancel(); };
-    const confirm = document.createElement('button');
-    confirm.type = 'button';
-    confirm.className = 'primary';
-    confirm.innerHTML = Icon.svg('check') + 'Build pipeline';
+    const cancel = Forms.button('Cancel', { onclick: () => { Build.close(); if (onCancel) onCancel(); } });
+    const confirm = Forms.button('Build pipeline', { icon: 'check', cls: 'primary' });
     confirm.onclick = async () => {
       confirm.disabled = cancel.disabled = true;
       try {
