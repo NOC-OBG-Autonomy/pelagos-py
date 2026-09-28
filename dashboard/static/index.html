@@ -104,10 +104,6 @@
           <div class="builder-bar">
             <div id="validation-status" class="validation-status"></div>
             <div class="panel-actions">
-              <div class="seg" id="view-toggle" title="How the pipeline is drawn">
-                <button data-view="flow" class="on">Flow</button>
-                <button data-view="list">List</button>
-              </div>
               <button id="btn-add-section"><span data-icon="plus"></span>Container</button>
               <button id="btn-clear"><span data-icon="trash2"></span>Clear</button>
             </div>
@@ -120,8 +116,13 @@
             Use “Add step” to start building a pipeline.
           </div>
           </div>
-          <!-- Flow view's legend, pinned under the scrolling builder (filled by flow.js). -->
-          <div id="flow-legend" class="fc-legend hidden"></div>
+          <div class="fc-legend step-legend">
+            <span class="fc-legend-title">Step type</span>
+            <span class="fc-legend-item"><span class="step-ico k-io" data-icon="file" data-icon-size="11"></span>Load / export</span>
+            <span class="fc-legend-item"><span class="step-ico k-proc" data-icon="activity" data-icon-size="11"></span>Processing</span>
+            <span class="fc-legend-item"><span class="step-ico k-qc" data-icon="shield" data-icon-size="11"></span>Quality control</span>
+            <span class="fc-legend-item"><span class="step-ico k-manual" data-icon="pen" data-icon-size="11"></span>Manual QC</span>
+          </div>
         </section>
 
         <!-- Right: YAML + validation + run -->
@@ -296,7 +297,6 @@
   <script src="/js/api.js"></script>
   <script src="/js/forms.js"></script>
   <script src="/js/builder.js"></script>
-  <script src="/js/flow.js"></script>
   <script src="/js/config.js"></script>
   <script src="/js/defaults.js"></script>
   <script src="/js/build.js"></script>

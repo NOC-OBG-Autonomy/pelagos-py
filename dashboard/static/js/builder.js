@@ -213,14 +213,51 @@ function paletteItem(name, description, drag, onClick) {
   return el;
 }
 
-// The connector drawn between two slots of a list (or after its last one,
-// `tail`), carrying the "+" that inserts a step at that position.
+// The arrow between two slots of a list (or after its last one, `tail`); hovering
+// it offers the "+" that inserts a step there. While running, arrows into steps
+// already reached are lit and the one into the executing step flows.
 function flowLink(list, index, tail = false) {
   const el = document.createElement('div');
   el.className = 'flow-link' + (tail ? ' tail' : '');
-  el.appendChild(Forms.button(tail ? 'Add step' : '', { icon: 'plus', iconSize: 12, cls: 'add-step sm', title: 'Insert a step here',
+  const next = list[index];
+  const into = STATE.pipeline.items.indexOf(isSection(next) ? next.steps[0] : next);
+  const cur = RunLock.running ? (RunLock.runningIndex ?? RunLock.index) : null;
+  if (cur != null && into >= 0 && into <= cur) el.classList.add(into === cur && RunLock.runningIndex != null ? 'flow' : 'done');
+  const end = tail && list === STATE.pipeline.nodes; // only the pipeline's own end is labelled
+  el.appendChild(Forms.button(end ? 'Add step' : '', { icon: 'plus', iconSize: 12, cls: 'add-step sm',
+    title: tail && !end ? 'Add a step at the end of this container' : 'Insert a step here',
     onclick: (e) => { e.stopPropagation(); el.classList.add('open'); openStepPicker(el, list, index); } }));
   return el;
+}
+
+// Step type → the glyph on its tile (manual QC is the human-in-the-loop kind).
+const KIND_ICON = { io: 'file', proc: 'activity', qc: 'shield', manual: 'pen' };
+function stepKind(item) {
+  if (isQcContainer(item.def)) return 'manual qc' in (item.values.qc_settings || {}) ? 'manual' : 'qc';
+  return { input_output: 'io', quality_control: 'qc' }[item.def.category] || 'proc';
+}
+function stepIcon(kind) {
+  const el = document.createElement('span');
+  el.className = 'step-ico k-' + kind;
+  el.innerHTML = Icon.svg(KIND_ICON[kind], 14);
+  return el;
+}
+function testLabel(test) {
+  if (test === 'manual qc') return 'Manual QC';
+  const t = test.replace(/\s+qc$/, '');
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+function testVars(tv) {
+  const v = tv && (tv.variable_ranges || tv.variables);
+  return !v ? [] : Array.isArray(v) ? v : Object.keys(v);
+}
+// Icon, name and (optionally) a grey summary line.
+function stepText(name, sub, nameCls = 'step-name') {
+  const text = document.createElement('span');
+  text.className = 'step-text';
+  text.appendChild(Forms.el('span', { class: nameCls, textContent: name }));
+  if (sub) text.appendChild(Forms.el('span', { class: 'step-sub', textContent: sub }));
+  return text;
 }
 
 // Manual QC only makes sense paused on its plot, so it starts with diagnostics on.
@@ -380,7 +417,7 @@ let dropIndicator = null;
 // The Apply QC card a dragged QC test is over, if any.
 function qcCardAt(target) {
   if (!dragState || dragState.kind !== 'qc') return null;
-  const card = target && target.closest ? target.closest('.step-card, .fc-chip[data-step-id]') : null;
+  const card = target && target.closest ? target.closest('.step-card') : null;
   if (!card) return null;
   const item = STATE.pipeline.items.find((i) => i.id === Number(card.dataset.stepId));
   return item && item.name === dragState.container ? { card, item } : null;
@@ -390,10 +427,9 @@ function qcCardAt(target) {
 // Sections never nest, so a section drag always resolves to the root.
 function dropHostAt(target) {
   const root = document.getElementById('pipeline-steps');
-  const flowRow = root.querySelector(':scope > .fc-row');
-  if (dragState && dragState.kind === 'section') return flowRow || root;
+  if (dragState && dragState.kind === 'section') return root;
   const body = target && target.closest ? target.closest('.section-body') : null;
-  return body || flowRow || root;
+  return body || root;
 }
 
 // The list a host writes into: a section's steps, or the root node list.
@@ -409,30 +445,27 @@ function listForHost(host) {
 function dropSlots(host) {
   const kids = host.children;
   return [...kids].filter((el) =>
-    ['step-card', 'section-card', 'fc-chip', 'fc-stage', 'fc-cell'].some((c) => el.classList.contains(c)));
+    el.classList.contains('step-card') || el.classList.contains('section-card'));
 }
 
-function computeDropIndex(host, x, y) {
+function computeDropIndex(host, y) {
   const slots = dropSlots(host);
-  const row = host.classList.contains('fc-row'); // cells are laid out in columns
   for (let i = 0; i < slots.length; i++) {
     const r = slots[i].getBoundingClientRect();
-    if (!row) { if (y < r.top + r.height / 2) return i; continue; }
-    if (y < r.top || (y <= r.bottom && x < r.left + r.width / 2)) return i;
+    if (y < r.top + r.height / 2) return i;
   }
   return slots.length;
 }
 
-function showDropIndicator(host, x, y) {
+function showDropIndicator(host, y) {
   if (!dropIndicator) {
     dropIndicator = document.createElement('div');
     dropIndicator.className = 'drop-indicator';
   }
-  const index = computeDropIndex(host, x, y);
+  const index = computeDropIndex(host, y);
   const slots = dropSlots(host);
   const at = index < slots.length ? slots[index] : null;
   if (at) at.parentElement.insertBefore(dropIndicator, at); else host.appendChild(dropIndicator);
-  if (host.classList.contains('fc-row')) Flow.placeIndicator(dropIndicator, at || slots[slots.length - 1], !at);
 }
 
 function clearDropIndicator() {
@@ -454,7 +487,7 @@ function initBuilderDnD() {
     if (qc) { qc.card.classList.add('drag-active'); return; }
     const host = dropHostAt(e.target);
     host.classList.add('drag-active');
-    showDropIndicator(host, e.clientX, e.clientY);
+    showDropIndicator(host, e.clientY);
   });
   root.addEventListener('dragleave', (e) => {
     if (!root.contains(e.relatedTarget)) clearDropIndicator();
@@ -463,7 +496,7 @@ function initBuilderDnD() {
     if (!dragState) return;
     e.preventDefault();
     const host = dropHostAt(e.target);
-    const index = computeDropIndex(host, e.clientX, e.clientY);
+    const index = computeDropIndex(host, e.clientY);
     const list = listForHost(host);
     const st = dragState;
     const qc = qcCardAt(e.target);
@@ -587,7 +620,6 @@ const RunLock = {
     if (item && test) item.qcOpen = { [test]: true };
     RunLock.set(true, index, test || null);
     focusStepInBuilder(index);
-    if (viewMode === 'flow' && item) Flow.openDialog(item);
   },
 
   // Called as each step (or split QC test) starts executing. Collapses every
@@ -604,7 +636,6 @@ const RunLock = {
     const item = STATE.pipeline.items[index];
     const sec = item && sectionOfStep(item.id);
     if (sec) sec.collapsed = false;
-    Flow.closeDialog();
     renderPipeline();
     const card = stepElement(index);
     if (card) card.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -651,7 +682,7 @@ function applyRunLock() {
     picker.disabled = running;
     picker.title = running ? 'Locked while the pipeline is running' : '';
   }
-  document.querySelectorAll('#pipeline-steps :is(.add-step, .fc-plus)').forEach((b) => { b.disabled = running; });
+  document.querySelectorAll('#pipeline-steps .add-step').forEach((b) => { b.disabled = running; });
   if (!running) return;
   const settings = document.getElementById('pipeline-settings');
   if (settings) {
@@ -681,9 +712,8 @@ function lockCard(card, index) {
   if (RunLock.test) freezeControls(card.querySelector('.step-body'), test || undefined);
 }
 
-// The element drawn for step `index` in whichever view is showing.
 function stepElement(index) {
-  return document.querySelectorAll('#pipeline-steps .step-card, #pipeline-steps .fc-chip[data-step-id]')[index];
+  return document.querySelectorAll('#pipeline-steps .step-card')[index];
 }
 
 // ---------------------------------------------------------------- steps
@@ -702,8 +732,7 @@ function onFieldEdit() {
 
 function refreshDefaultMarks() {
   defaultsView = Defaults.compute();
-  if (viewMode === 'flow') Flow.render(document.getElementById('pipeline-steps'));
-  for (const card of document.querySelectorAll('#pipeline-steps .step-card[data-step-id], .fc-dialog .step-card[data-step-id]')) {
+  for (const card of document.querySelectorAll('#pipeline-steps .step-card[data-step-id]')) {
     const item = STATE.pipeline.items.find((i) => i.id === Number(card.dataset.stepId));
     if (item) applyDefaultMarks(card, item);
   }
@@ -737,7 +766,8 @@ function applyDefaultMarks(card, item) {
 
   const body = card.querySelector(':scope > .step-body');
   card.classList.toggle('extra', !!(info && info.extra));
-  setBadge(card.querySelector('.step-head .step-name'), info && info.extra ? 'extra' : diff && diff.count ? 'edited' : null);
+  const name = card.querySelector('.step-head .step-name'); // absent on a collapsed Apply QC (its tests show instead)
+  if (name) setBadge(name, info && info.extra ? 'extra' : diff && diff.count ? 'edited' : null);
   setNote(body, diff && diff.count ? changesNote(diff.count, 'default pipeline', () => Defaults.restoreStep(item, info.base)) : null);
   markFields(body, diff && diff.params, item.values);
 
@@ -763,21 +793,6 @@ function appendStepCard(host, item) {
 }
 
 // ---------------------------------------------------------------- view
-// 'flow' draws collapsed steps as compact chips joined by arrows (a flowchart);
-// 'list' is the plain card list. Same DOM either way, the mode is a body class.
-let viewMode = 'flow';
-try { viewMode = localStorage.getItem('pelagos.view') || 'flow'; } catch (e) { /* no storage */ }
-
-function setViewMode(mode) {
-  viewMode = mode;
-  try { localStorage.setItem('pelagos.view', mode); } catch (e) { /* no storage */ }
-  document.body.classList.toggle('view-flow', mode === 'flow');
-  document.getElementById('flow-legend').classList.toggle('hidden', mode !== 'flow');
-  document.querySelectorAll('#view-toggle button').forEach((b) => b.classList.toggle('on', b.dataset.view === mode));
-  Flow.closeDialog();
-  renderPipeline();
-}
-
 // One line of "what it acts on" for a chip, read off the step's parameters.
 const SUMMARY_KEYS = ['to_derive', 'target_variable', 'apply_to', 'shift_vars', 'par_var', 'variables', 'variable', 'method', 'export_format', 'standards'];
 function stepSummary(item) {
@@ -809,14 +824,6 @@ function renderPipeline() {
   defaultsView = Defaults.compute();
   document.getElementById('empty-hint').style.display =
     STATE.pipeline.nodes.length ? 'none' : 'block';
-  if (viewMode === 'flow') {
-    Flow.render(host);
-    applyRunLock();
-    renderAllDiagnosticsRow();
-    scroller.scrollTop = top;
-    return;
-  }
-  host.className = '';
 
   for (const g of defaultsView.sectionsFirst) host.appendChild(Defaults.ghostSection(g));
   for (const g of defaultsView.first) host.appendChild(Defaults.ghostStep(g, null));
@@ -860,9 +867,7 @@ function renderSection(sec, index = 0) {
 
   const head = document.createElement('div');
   head.className = 'section-head';
-  head.innerHTML =
-    `<span class="drag" title="Drag to move the whole container">${Icon.svg('grip')}</span>` +
-    `<span class="sec-chevron">${Icon.svg(sec.collapsed ? 'right' : 'down', 14)}</span>`;
+  head.innerHTML = `<span class="sec-chevron">${Icon.svg('right', 13)}</span><span class="sec-dot"></span>`;
 
   const title = document.createElement('input');
   title.className = 'section-title';
@@ -872,17 +877,22 @@ function renderSection(sec, index = 0) {
   title.onclick = (e) => e.stopPropagation(); // clicking the name shouldn't collapse
   head.appendChild(title);
 
-  const count = document.createElement('span');
-  count.className = 'sec-count';
-  count.textContent = sec.steps.length + (sec.steps.length === 1 ? ' step' : ' steps');
-  head.appendChild(count);
+  // Collapsed, the container lists what it holds (QC tests by name) on one line.
+  const names = sec.steps.flatMap((s) => isQcContainer(s.def) && Object.keys(s.values.qc_settings || {}).length
+    ? Object.keys(s.values.qc_settings).map(testLabel) : [s.name]);
+  head.appendChild(Forms.el('span', { class: sec.collapsed ? 'sec-seq' : 'sec-count',
+    textContent: sec.collapsed ? names.join('  ›  ') : sec.steps.length + (sec.steps.length === 1 ? ' step' : ' steps') }));
 
+  const tools = document.createElement('span');
+  tools.className = 'step-tools';
+  tools.innerHTML = `<span class="drag" title="Drag to move the whole container">${Icon.svg('grip', 14)}</span>`;
   const del = document.createElement('button');
   del.className = 'icon-btn';
-  del.innerHTML = Icon.svg('close');
+  del.innerHTML = Icon.svg('close', 14);
   del.title = 'remove container and its steps';
   del.onclick = (e) => { e.stopPropagation(); removeSection(sec.id); };
-  head.appendChild(del);
+  tools.appendChild(del);
+  head.appendChild(tools);
 
   head.addEventListener('click', (e) => {
     if (e.target.closest('button') || e.target.closest('.drag')) return;
@@ -930,48 +940,49 @@ function renderStepCard(item) {
   if (isQcContainer(item.def) && 'manual qc' in (item.values.qc_settings || {})) card.classList.add('manual-qc');
   card.dataset.stepId = item.id;
 
-  // header
   const head = document.createElement('div');
   head.className = 'step-head';
-  head.innerHTML =
-    `<span class="drag" title="Drag to reorder">${Icon.svg('grip')}</span>`;
-
-  // Up/down stacked into one compact control, sat right next to the grip.
-  const move = document.createElement('span');
-  move.className = 'step-move';
-  const mkMove = (ico, delta, title) => {
-    const b = document.createElement('button');
-    b.className = 'icon-btn move-btn'; b.innerHTML = Icon.svg(ico, 12); b.title = title;
-    b.onclick = (e) => { e.stopPropagation(); moveStep(item.id, delta); };
-    return b;
-  };
-  move.appendChild(mkMove('up', -1, 'move up'));
-  move.appendChild(mkMove('down', 1, 'move down'));
-  head.appendChild(move);
-
-  // Name, plus — for a collapsed Apply QC step — the QC tests it holds as chips
-  // inline on the same bar, so its contents are visible without opening it.
-  // (Expanded, the QC editor below shows them, so they'd only be duplicated.)
   const title = document.createElement('span');
   title.className = 'step-title';
-  const name = document.createElement('span');
-  name.className = 'step-name'; name.textContent = item.name;
-  title.appendChild(name);
   const info = defaultsView.byId.get(item.id);
-  const sub = stepSummary(item);
-  if (sub && item.collapsed) {
-    const el = document.createElement('span');
-    el.className = 'step-sub'; el.textContent = sub;
-    title.appendChild(el);
-  }
-  if (isQcContainer(item.def) && item.collapsed) {
-    for (const t of Object.keys(item.values.qc_settings || {})) {
-      title.appendChild(Forms.el('span', { class: 'tag qc', textContent: t }));
-    }
+  const tests = isQcContainer(item.def) && item.collapsed ? Object.keys(item.values.qc_settings || {}) : [];
+  if (tests.length) {
+    // A collapsed Apply QC shows its tests as steps in their own right, one row
+    // each; clicking one opens the editor on that test.
+    head.classList.add('qc-stack');
+    tests.forEach((t, i) => {
+      if (i) title.appendChild(Forms.el('span', { class: 'qc-link' }));
+      const row = document.createElement('span');
+      row.className = 'qc-row';
+      row.appendChild(stepIcon(t === 'manual qc' ? 'manual' : 'qc'));
+      row.appendChild(stepText(testLabel(t), testVars(item.values.qc_settings[t]).join(', '), 'qc-row-name'));
+      row.onclick = (e) => { e.stopPropagation(); item.collapsed = false; item.qcOpen = { [t]: true }; renderPipeline(); };
+      title.appendChild(row);
+    });
+  } else {
+    title.appendChild(stepIcon(stepKind(item)));
+    title.appendChild(stepText(item.name, item.collapsed ? stepSummary(item) : ''));
   }
   head.appendChild(title);
 
-  // Expand/collapse: a quiet chevron that rotates to point at its state.
+  // Drag grip, up/down and remove only show on hover.
+  const tools = document.createElement('span');
+  tools.className = 'step-tools';
+  tools.innerHTML = `<span class="drag" title="Drag to reorder">${Icon.svg('grip', 14)}</span>`;
+  const mkMove = (ico, delta, t) => {
+    const b = document.createElement('button');
+    b.className = 'icon-btn move-btn'; b.innerHTML = Icon.svg(ico, 13); b.title = t;
+    b.onclick = (e) => { e.stopPropagation(); moveStep(item.id, delta); };
+    return b;
+  };
+  tools.appendChild(mkMove('up', -1, 'move up'));
+  tools.appendChild(mkMove('down', 1, 'move down'));
+  const del = document.createElement('button');
+  del.className = 'icon-btn step-del'; del.innerHTML = Icon.svg('close', 14); del.title = 'remove';
+  del.onclick = (e) => { e.stopPropagation(); removeStep(item.id); };
+  tools.appendChild(del);
+  head.appendChild(tools);
+
   const expand = document.createElement('button');
   expand.className = 'icon-btn step-expand' + (item.collapsed ? ' collapsed' : '');
   expand.innerHTML = Icon.svg('down', 15);
@@ -979,16 +990,11 @@ function renderStepCard(item) {
   expand.setAttribute('aria-expanded', String(!item.collapsed));
   expand.onclick = (e) => { e.stopPropagation(); item.collapsed = !item.collapsed; renderPipeline(); };
   head.appendChild(expand);
-
-  const del = document.createElement('button');
-  del.className = 'icon-btn step-del'; del.innerHTML = Icon.svg('close'); del.title = 'remove';
-  del.onclick = (e) => { e.stopPropagation(); removeStep(item.id); };
-  head.appendChild(del);
   card.appendChild(head);
 
   // Click anywhere on the header (except a button or the drag handle) toggles.
   head.addEventListener('click', (e) => {
-    if (e.target.closest('button') || e.target.closest('.drag') || Flow.dialogFor === item.id) return;
+    if (e.target.closest('button') || e.target.closest('.drag')) return;
     item.collapsed = !item.collapsed;
     renderPipeline();
   });
@@ -1085,7 +1091,7 @@ function focusStepInBuilder(index) {
   const items = STATE.pipeline.items;
   if (index < 0 || index >= items.length) return;
   const sec = sectionOfStep(items[index].id);
-  if (viewMode !== 'flow' && (items[index].collapsed || (sec && sec.collapsed))) {
+  if (items[index].collapsed || (sec && sec.collapsed)) {
     items[index].collapsed = false;
     if (sec) sec.collapsed = false;
     renderPipeline();

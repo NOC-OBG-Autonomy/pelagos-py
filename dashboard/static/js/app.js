@@ -415,10 +415,8 @@ async function boot() {
   });
 
   showValidating();
-  document.querySelectorAll('#view-toggle button').forEach((b) =>
-    b.addEventListener('click', () => setViewMode(b.dataset.view)));
   renderSettings();
-  setViewMode(viewMode);
+  renderPipeline();
   initBuilderDnD();
   Config.loading = true;
   refreshYAML();

@@ -135,7 +135,7 @@ server so a clicked point reports exact values. Per figure the runner writes
 | `static/index.html` | Three-pane UI shell |
 | `static/js/api.js` | Backend fetch wrappers |
 | `static/js/forms.js` | Schema → form-field renderer (generic) |
-| `static/js/builder.js` | Step picker, flow/list pipeline views, sections, QC editor |
+| `static/js/builder.js` | Step picker, the pipeline flow list, sections, QC editor |
 | `static/js/config.js` | Builder ⇄ YAML, save/load |
 | `static/js/run.js` | Run, streamed log console, captured-figure model |
 | `static/js/review.js` | Paused-step panel: its plots + its parameters + re-run |
