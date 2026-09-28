@@ -23,7 +23,7 @@ from pelagos_py.steps.base_qc import BaseQC, register_qc
 from geodatasets import get_path
 import matplotlib.pyplot as plt
 import shapely as sh
-import polars as pl
+import numpy as np
 import xarray as xr
 import matplotlib
 import geopandas
@@ -45,41 +45,20 @@ class position_on_land_qc(BaseQC):
     qc_outputs = ["LATITUDE_QC", "LONGITUDE_QC"]
 
     def return_qc(self):
-        # Convert to polars
-        self.df = pl.from_pandas(
-            self.data[self.required_variables].to_dataframe(), nan_to_null=False
-        )
-
         # Concat the polygons into a MultiPolygon object
         self.world = geopandas.read_file(get_path("naturalearth.land"))
         land_polygons = sh.ops.unary_union(self.world.geometry)
 
         # Check if lat, long coords fall within the area of the land polygons
-        self.df = self.df.with_columns(
-            pl.when(pl.col("LONGITUDE").is_nan() | pl.col("LATITUDE").is_nan())
-            .then(9)
-            .otherwise(
-                pl.struct("LONGITUDE", "LATITUDE")
-                .map_batches(
-                    lambda x: sh.contains_xy(
-                        land_polygons,
-                        x.struct.field("LONGITUDE").to_numpy(),
-                        x.struct.field("LATITUDE").to_numpy(),
-                    )
-                    * 4
-                )
-                .replace({0: 1})
-            )
-            .alias("LONGITUDE_QC")
-        )
-        # Add the flags to LATITUDE as well.
-        self.df = self.df.with_columns(pl.col("LONGITUDE_QC").alias("LATITUDE_QC"))
+        lon, lat = self.data["LONGITUDE"].values, self.data["LATITUDE"].values
+        on_land = sh.contains_xy(land_polygons, lon, lat)
+        qc = np.where(np.isnan(lon) | np.isnan(lat), 9, np.where(on_land, 4, 1))
 
-        # Convert back to xarray
-        flags = self.df.select(pl.col("^.*_QC$"))
+        # The same flags go on LATITUDE as well.
         self.flags = xr.Dataset(
             data_vars={
-                col: ("N_MEASUREMENTS", flags[col].to_numpy()) for col in flags.columns
+                "LONGITUDE_QC": ("N_MEASUREMENTS", qc),
+                "LATITUDE_QC": ("N_MEASUREMENTS", qc.copy()),
             },
             coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]},
         )
@@ -95,7 +74,8 @@ class position_on_land_qc(BaseQC):
         self.world.plot(ax=ax, facecolor="lightgray", edgecolor="black", alpha=0.3)
 
         fig_spec.flag_points(
-            ax, self.df["LONGITUDE"], self.df["LATITUDE"], self.df["LATITUDE_QC"]
+            ax, self.data["LONGITUDE"].values, self.data["LATITUDE"].values,
+            self.flags["LATITUDE_QC"].values,
         )
         fig_spec.style_axes(
             ax,

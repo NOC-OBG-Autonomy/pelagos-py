@@ -14,7 +14,6 @@ matplotlib==3.11.0
 seaborn
 requests
 graphviz
-polars
 geodatasets
 shapely
 geopandas

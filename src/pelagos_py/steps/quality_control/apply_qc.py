@@ -22,7 +22,6 @@ import pelagos_py.utils.diagnostics as diag
 from pelagos_py.steps import QC_CLASSES
 
 #### Custom imports ####
-import polars as pl
 import xarray as xr
 import numpy as np
 import json
@@ -171,7 +170,6 @@ class ApplyQC(BaseStep):
         subset_names.update(var[:-3] for var in test_qc_outputs_cols)
         subset_vars = [name for name in subset_names if name in full_data.variables]
         data = full_data[subset_vars].copy(deep=True)
-        # Convert data to polars for fast processing
         # Fetch existing flags from the data and create a place to store them
         existing_flags = [
             flag_col for flag_col in data.data_vars if flag_col in test_qc_outputs_cols
