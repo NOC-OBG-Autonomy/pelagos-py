@@ -212,6 +212,8 @@ copybutton_prompt_is_regexp = True
 
 myst_enable_extensions = [
     "colon_fence",  # ::: fenced blocks
+    "dollarmath",  # $...$ and $$...$$ maths in the user-guide markdown
+    "amsmath",  # \\begin{cases} etc.
     "deflist",  # definition lists
     "linkify",  # auto-detect bare links
     "smartquotes",  # nicer quotes/dashes
