@@ -51,6 +51,8 @@ class impossible_speed_qc(BaseQC):
         speeds = {}
         with np.errstate(divide="ignore", invalid="ignore"):
             for label in ["LATITUDE", "LONGITUDE"]:
+                if np.isfinite(self.data[label].values).sum() < 2:
+                    self.log_warn(f"{label} has fewer than 2 valid values; speeds can't be computed.")
                 filled = interpolate_by_time(self.data[label].values, time)
                 speeds[label] = np.diff(filled, prepend=np.nan) / dt
             absolute_speed = (speeds["LATITUDE"] ** 2 + speeds["LONGITUDE"] ** 2) ** 0.5
