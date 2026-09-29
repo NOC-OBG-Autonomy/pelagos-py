@@ -16,7 +16,7 @@
 
 """Build a file-specific pipeline config from the full template.
 
-The template (``dashboard/configs/default.yaml``) does everything; a given file
+The template (``DEFAULT_CONFIG``, shared with the dashboard) does everything; a given file
 usually can't support all of it (no PAR, no optode phase, raw beta shipped as
 BBP700...). :func:`decisions` inspects the file and lists what must change,
 each with a default choice; :func:`build` applies the choices to the template
@@ -35,11 +35,13 @@ from pelagos_py.steps.input_output.prepare_og1 import (
     BBP_NAME, BETA_NAME, CNDC_MSCM_ABOVE, RENAMES, PrepareOG1,
 )
 
+DEFAULT_CONFIG = Path(__file__).parents[1] / "default_config.yaml"
 PHASE_CANDIDATES = ("BPHASE_DOXY", "DPHASE_DOXY", "TPHASE_DOXY")
 _BAR = re.compile(r"^\s*#\s*[=~-]{5,}\s*$")
 _TITLE = re.compile(r"^\s*#\s*(\S.*?)\s*$")
 _STEP = re.compile(r"^  - name:")
-_FIELD = {f: re.compile(rf"(?m)^(\s*{f}:).*$") for f in ("file_path", "output_path", "description")}
+_FIELD = {f: re.compile(rf"(?m)^(\s*{f}:).*$")
+          for f in ("file_path", "output_path", "description", "out_directory")}
 
 RENAME_TARGETS = {"coord_latitude": "LATITUDE", "coord_longitude": "LONGITUDE",
                   "bbp": BETA_NAME, "oxygen": "MOLAR_DOXY", "par": "DOWNWELLING_PAR"}
@@ -306,6 +308,38 @@ def default_choices(decs):
     return {d["id"]: d["default"] for d in decs if d["options"]}
 
 
+def ask_choices(decs, ask=input):
+    # Terminal version of the dashboard's Build panel; Enter keeps the default.
+    choices = {}
+    for d in decs:
+        print(f"\n{d['title']}\n  {d['detail']}")
+        if not d["options"]:
+            continue
+        # Rename options list every file variable, too many to number; typed by name instead.
+        listed = [o for o in d["options"] if not o["key"].startswith("rename:")]
+        renamable = {o["key"].removeprefix("rename:") for o in d["options"] if o not in listed}
+        for n, option in enumerate(listed, 1):
+            default = "  (default)" if option["key"] == d["default"] else ""
+            print(f"  {n}) {option['label']}{default}")
+        prompt = "Choice (Enter for default"
+        if renamable:
+            prompt += ", or the name of a file variable to use instead"
+        prompt += "): "
+        while True:
+            answer = ask(prompt).strip()
+            if not answer:
+                choices[d["id"]] = d["default"]
+                break
+            if answer.isdigit() and 1 <= int(answer) <= len(listed):
+                choices[d["id"]] = listed[int(answer) - 1]["key"]
+                break
+            if answer in renamable:
+                choices[d["id"]] = f"rename:{answer}"
+                break
+            print("  Not an option, try again.")
+    return choices
+
+
 # ----------------------------------------------------------------------------
 # Build
 # ----------------------------------------------------------------------------
@@ -363,6 +397,7 @@ def build(template_text, file_path, probe=None, choices=None, description=None, 
     output_path = output_path or str(Path(file_path).with_name(f"{stem}_Processed.nc"))
     head = _FIELD["description"].sub(
         rf"\1 {description or f'Pipeline built for {Path(file_path).name}.'}", head, count=1)
+    head = _FIELD["out_directory"].sub(rf"\1 {Path(file_path).parent}/", head, count=1)
     for b in blocks:
         if b.name == "Load OG1":
             b.sub(_FIELD["file_path"].pattern, rf"\1 {file_path}  # Path to the input NetCDF file")

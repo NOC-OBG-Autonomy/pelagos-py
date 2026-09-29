@@ -58,7 +58,7 @@ DEMOS = {
 
 # Work from the repo root so the relative paths below resolve the same way no
 # matter where the script was started from.
-_config = "examples/configs/example_config_nelson.yaml"
+_config = "examples/configs/all_step_configs.yaml"
 if not Path(_config).exists() and Path("../..", _config).exists():
     import os
 

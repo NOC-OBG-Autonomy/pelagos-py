@@ -237,3 +237,10 @@ def test_missing_coordinates_reported():
     d = ids(cb.decisions(probe))["coord_latitude"]
     assert d["title"] == "LATITUDE missing" and d["default"] == "none"
     assert "rename:TEMP" in option_keys(d)
+
+
+def test_ask_choices_takes_numbers_defaults_and_variable_names():
+    probe = {**BASE, "BBP700": var(), "PAR": var()}
+    answers = iter(["9", "2", "", "PAR"])  # bad number is asked again
+    choices = cb.ask_choices(cb.decisions(probe), ask=lambda prompt: next(answers))
+    assert choices == {"bbp": "direct", "oxygen": "none", "par": "rename:PAR"}

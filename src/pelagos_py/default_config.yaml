@@ -17,9 +17,10 @@
 # Pipeline Configuration
 pipeline:
   name: Complete processing pipeline
-  description: A complete demonstration pipeline using Nelson Near Realtime data.
+  description: Default template for Pipeline.make_config and the dashboard, with no glider file loaded yet.
   out_directory: examples/data/OG1/
   log_file: complete_processing.log
+  on_step_fail: pause  # pause (fix and re-run, or skip), skip, or stop
 
 # Steps in the pipeline
 # For further details on step parameters, see all_step_configs.yaml
@@ -30,7 +31,16 @@ steps:
 # ===========================================================
   - name: Load OG1
     parameters:
-      file_path: examples/data/OG1/Nelson_646_R.nc # Path to the input NetCDF file
+      file_path: "" # Set this to your input NetCDF file
+    diagnostics: false
+
+# Normalise the file onto the names/units the steps below expect: LATITUDE from
+# LATITUDE_GPS/ALATPT01 when missing, CNDC rescaled if mislabelled, and a raw
+# beta shipped as BBP700 renamed to BETA_BACKSCATTERING700. Only what the file
+# needs is applied, and each fix is logged.
+  - name: Prepare OG1
+    parameters:
+      bbp700_is_beta: true # Treat BBP700 with no BETA_BACKSCATTERING700 alongside as raw beta
     diagnostics: false
 
 # Check the loaded file against the OG1 standard. With no 'src', it reuses the
@@ -71,7 +81,7 @@ steps:
               3: [-2.4, -5, inside] # Pressure in this range is flagged as probably bad (3)
               4: [-5, -.inf, inside] # and bad (4) in this range.
             TEMP: # 'outside' -> flag TEMP when it falls OUTSIDE the band
-              3: [0, 30, outside]
+              3: [-1, 30, outside]
               4: [-2.5, 40, outside]
             CNDC: # S/m
               3: [0.5, 4.2, outside]
@@ -115,19 +125,10 @@ steps:
 # process CTD, we need to intepolate to fill in the missing data.
   - name: Interpolate Data
     parameters:
-      qc_handling_settings:
-        # This QC filtering functionality can be specified in most processing steps by
-        # adding the qc_handling_settings parameter. Here we are using it to nan-out bad (4)
-        # probably bad (3) and missing (9) data so that it can be interpolated over.
-        flag_filter_settings:
-          PRES: [3, 4, 9]
-          LATITUDE: [3, 4, 9]
-          LONGITUDE: [3, 4, 9]
-        reconstruction_behaviour: replace
-        flag_mapping: # The QC flags where bad data has been replaced turn into 8 (interpolated)
-          3: 8
-          4: 8
-          9: 8
+      variables:  # per variable, the QC flags treated as gaps to fill
+        PRES: [3, 4, 9]
+        LATITUDE: [3, 4, 9]
+        LONGITUDE: [3, 4, 9]
     diagnostics: false # Plot the outcome after interpolation
 
 # ===========================================================
@@ -149,8 +150,9 @@ steps:
     parameters:
       qc_settings:
           valid profile qc:
-            profile_length: 50 # Profiles must be at least 100 points long
-            depth_range: [0, 1000] # and must contain data within 0 and 1000 m
+            min_length: 50          # Profiles must be at least 50 points long
+            depth_range: [0, 1000]  # and reach into 0-1000 dbar (PRES)
+            flag: 4                 # Flag given to every row of a failing profile
     diagnostics: false
 
 # ===========================================================
@@ -212,16 +214,10 @@ steps:
 # nan'd out, interpolated over, and reflagged as interpolated (8).
   - name: Interpolate Data
     parameters:
-      qc_handling_settings:
-        flag_filter_settings:
-          TEMP: [3, 4, 9]
-          PRES: [3, 4, 9]
-          PRAC_SALINITY: [3, 4, 9]
-        reconstruction_behaviour: replace
-        flag_mapping:
-          3: 8
-          4: 8
-          9: 8
+      variables:  # per variable, the QC flags treated as gaps to fill
+        TEMP: [3, 4, 9]
+        PRES: [3, 4, 9]
+        PRAC_SALINITY: [3, 4, 9]
     diagnostics: false
 
 # ===========================================================
@@ -236,25 +232,27 @@ steps:
 # far enough out to be nonsense. Note there is deliberately NO spike test here:
 # BBP spikes are individual particles/aggregates, i.e. real signal, and the
 # Isolate BBP Spikes step below separates them rather than discarding them.
-# The BBP from Beta step writes its output back over BBP700, so these flags stay
+# The BBP from Beta step writes its output to BBP700, so these flags stay
 # attached to the converted variable.
   - name: Apply QC
     parameters:
       qc_settings:
         range qc:
           variable_ranges:
-            BBP700:
+            BETA_BACKSCATTERING700:
               3: [0, 0.01, outside]     # Negative = dark-offset noise, high = suspect
               4: [-1.0e-4, 0.05, outside] # Physically absurd / sensor rail
         stuck value qc: # A frozen reading means a dead sensor
           variables:
-            BBP700: 3
+            BETA_BACKSCATTERING700: 3
     diagnostics: false
 
 # Convert the raw backscatter angle measurement (beta) into the particulate
 # backscattering coefficient BBP, using the scattering angle and chi factor.
   - name: BBP from Beta
     parameters:
+      apply_to: BETA_BACKSCATTERING700
+      output_as: BBP700
       theta: 124               # Effective optical backscatter scattering angle (degrees)
       xfactor: 1.076           # Chi factor scaling particulate scattering to total backscatter
     diagnostics: false
@@ -264,25 +262,13 @@ steps:
 # filter, leaving BBP700_BASELINE for the quenching step to use.
   - name: Isolate BBP Spikes
     parameters:
-      window_size: 50          # Filter window size in samples
+      window_size: 7           # Filter window size in samples (Briggs et al. 2011)
       method: median           # Filter method used to determine the baseline
     diagnostics: false
 
 # ===========================================================
 #                        OXYGEN
 # ===========================================================
-# Range test on the raw dissolved oxygen (MOLAR_DOXY, micromole/l), computed
-# on-board by the instrument: flag bad (4) outside 100-400. Kept as a sanity
-# check on the manufacturer's own value, ahead of the recomputed pipeline below.
-  - name: Apply QC
-    parameters:
-      qc_settings:
-        range qc:
-          variable_ranges:
-            MOLAR_DOXY:
-              4: [100, 400, outside]
-    diagnostics: false
-
 # Recompute MOLAR_DOXY from the raw phase rather than trust the instrument's
 # on-board value, so the pressure/salinity corrections and geometric time-shift
 # below are all applied consistently.
@@ -291,9 +277,9 @@ steps:
       blue_phase_name: "BPHASE_DOXY"
     diagnostics: false
 
-# Nelson has no optode temperature at all (no TEMP_DOXY / TEMP_VOLTAGE_DOXY),
-# so "Derive Optode Temperature" is skipped and CTD TEMP is used everywhere
-# below instead.
+# If your glider has no optode temperature at all (no TEMP_DOXY /
+# TEMP_VOLTAGE_DOXY), skip "Derive Optode Temperature" and use CTD TEMP
+# everywhere below instead, as this template does.
 
 # Pcoef1 for the aa4831 optode (RISC_DO_Optode calibration_sheets).
   - name: "Phase Pressure Correction"
@@ -333,11 +319,8 @@ steps:
       calib_coefficients: [0, 1, 0, 0]
     diagnostics: false
 
-# Stern-Volmer-Uchida conversion using the manufacturer SVUFoilCoef0-6 for
-# optode SN 144 (RISC_DO_Optode/RISC_DO_Optode_scripts/calibration_sheets/
-# calibration_sheet_aa4831_397.py). TODO: confirm this is the right
-# calibration sheet for Nelson's optode - the notebook's glider/optode table
-# lists SN 144 against glider ID "397", not 646.
+# Stern-Volmer-Uchida conversion using the manufacturer SVUFoilCoef0-6.
+# Replace with the calibration sheet coefficients for your own optode.
   - name: "Derive Oxygen Concentration"
     parameters:
       method: "SVU"
@@ -425,6 +408,17 @@ steps:
               4: [-0.2, 100, outside]
     diagnostics: false
 
+# Spike-test CHLA (per-profile MAD-style residual test).
+  - name: Apply QC
+    parameters:
+      qc_settings:
+        spike qc:
+          variables:
+            CHLA: 2
+          window_size: 7
+          plot: [CHLA]
+    diagnostics: false
+
 # Chlorophyll fluorescence needs two corrections. First, a deep (dark-offset)
 # correction removes the sensor's baseline drift. The dark value is the residual
 # fluorescence measured deep down where there should be no chlorophyll, so it is
@@ -452,8 +446,8 @@ steps:
         range qc:
           variable_ranges:
             DEPTH:
-              3: [0, 2, inside]
-              2: [0, 2, outside]
+              3: [-.inf, 2, inside]
+              2: [-.inf, 2, outside]
           flag_instead:
             DEPTH: [CHLA, CHLA_ADJUSTED]
     diagnostics: false
@@ -482,13 +476,27 @@ steps:
     diagnostics: false
 
 # ===========================================================
+#                       MANUAL QC
+# ===========================================================
+# Flag by hand: the run pauses here and boxes drawn on the plot in the
+# dashboard are saved into 'boxes', so the same flags are repeated on re-runs.
+  - name: Apply QC
+    parameters:
+      qc_settings:
+        manual qc:
+          x_variable: TIME
+          y_variable: PRES
+          boxes: []
+    diagnostics: true
+
+# ===========================================================
 #                      EXPORT DATA
 # ===========================================================
 # Exporting the output data to the same folder as the input data
   - name: "Data Export"
     parameters:
       export_format: "netcdf"
-      output_path: "examples/data/OG1/Nelson_646_R_Processed.nc"
+      output_path: "examples/data/OG1/Processed.nc"
 
 # Report assembly
   - name: Write Data Report (Python)

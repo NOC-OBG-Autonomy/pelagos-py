@@ -1,3 +1,5 @@
+import shutil
+
 import pytest
 import yaml
 from pelagos_py.pipeline import Pipeline
@@ -197,3 +199,17 @@ def test_continue_on_step_fail_defaults_to_enabled(tmp_path, synthetic_nc):
     assert output_nc.exists(), (
         "continue_on_step_fail should default to enabled (skip on fail)."
     )
+
+
+def test_make_config_saves_yaml_next_to_file(tmp_path, synthetic_nc):
+    nc = tmp_path / "glider.nc"
+    shutil.copy(synthetic_nc, nc)
+
+    pipeline = Pipeline.make_config(nc)
+
+    saved = tmp_path / "glider.yaml"
+    config = yaml.safe_load(saved.read_text())
+    assert config["steps"][0]["parameters"]["file_path"] == str(nc)
+    assert config["pipeline"]["out_directory"] == f"{tmp_path}/"
+    assert "Interpolate PAR" not in [s["name"] for s in config["steps"]]  # no PAR in the file
+    assert Pipeline.load_config(saved).steps == pipeline.steps

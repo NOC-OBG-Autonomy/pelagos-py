@@ -28,3 +28,5 @@ except PackageNotFoundError:
     __version__ = "0.0.0+unknown"
 
 __credits__ = "National Oceanography Centre"
+
+from pelagos_py.pipeline import Pipeline  # so users can write `from pelagos_py import Pipeline`
