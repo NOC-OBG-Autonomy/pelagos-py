@@ -79,17 +79,40 @@
   "api/pelagos_py/steps/input_output/write_report_python/index": [],
   "api/pelagos_py/steps/processing/bbp/index": [
     {
+      "source": ".. admonition:: Example\n",
+      "names": [],
+      "example": {
+        "document": "api/pelagos_py/steps/processing/bbp/index",
+        "ref_id": "module-pelagos_py.steps.processing.bbp",
+        "headings": [
+          "pelagos_py.steps.processing.bbp"
+        ]
+      },
+      "doc_lineno": null
+    },
+    {
       "source": "- name: \"BBP from Beta\"\n  parameters:\n    apply_to: \"BBP700\"\n    output_as: \"BBP700\"\n    theta: 124\n    xfactor: 1.076\n  diagnostics: false",
       "names": [],
       "example": {
         "document": "api/pelagos_py/steps/processing/bbp/index",
         "ref_id": "module-pelagos_py.steps.processing.bbp",
         "headings": [
-          "pelagos_py.steps.processing.bbp",
-          "Example"
+          "pelagos_py.steps.processing.bbp"
         ]
       },
       "doc_lineno": 40
+    },
+    {
+      "source": ".. admonition:: Example\n",
+      "names": [],
+      "example": {
+        "document": "api/pelagos_py/steps/processing/bbp/index",
+        "ref_id": "module-pelagos_py.steps.processing.bbp",
+        "headings": [
+          "pelagos_py.steps.processing.bbp"
+        ]
+      },
+      "doc_lineno": null
     },
     {
       "source": "- name: \"Isolate BBP Spikes\"\n  parameters:\n    apply_to: \"BBP700\"\n    window_size: 50\n    method: \"median\"\n  diagnostics: false",
@@ -98,9 +121,7 @@
         "document": "api/pelagos_py/steps/processing/bbp/index",
         "ref_id": "module-pelagos_py.steps.processing.bbp",
         "headings": [
-          "pelagos_py.steps.processing.bbp",
-          "Example",
-          "Example"
+          "pelagos_py.steps.processing.bbp"
         ]
       },
       "doc_lineno": 100
@@ -158,17 +179,40 @@
   "api/pelagos_py/steps/processing/mixed_layer_depth/index": [],
   "api/pelagos_py/steps/processing/oxygen/index": [
     {
+      "source": ".. admonition:: Example\n",
+      "names": [],
+      "example": {
+        "document": "api/pelagos_py/steps/processing/oxygen/index",
+        "ref_id": "module-pelagos_py.steps.processing.oxygen",
+        "headings": [
+          "pelagos_py.steps.processing.oxygen"
+        ]
+      },
+      "doc_lineno": null
+    },
+    {
       "source": "- name: \"Derive Uncalibrated Phase\"\n  parameters:\n    #  <MANDATORY>\n    blue_phase_name: \"BPHASE_DOXY\"\n    # <OPTIONAL>\n    red_phase_name: \"RPHASE_DOXY\"\n  diagnostics: false",
       "names": [],
       "example": {
         "document": "api/pelagos_py/steps/processing/oxygen/index",
         "ref_id": "module-pelagos_py.steps.processing.oxygen",
         "headings": [
-          "pelagos_py.steps.processing.oxygen",
-          "Example"
+          "pelagos_py.steps.processing.oxygen"
         ]
       },
       "doc_lineno": 67
+    },
+    {
+      "source": ".. admonition:: Example\n",
+      "names": [],
+      "example": {
+        "document": "api/pelagos_py/steps/processing/oxygen/index",
+        "ref_id": "module-pelagos_py.steps.processing.oxygen",
+        "headings": [
+          "pelagos_py.steps.processing.oxygen"
+        ]
+      },
+      "doc_lineno": null
     },
     {
       "source": "- name: \"Derive Optode Temperature\"\n  parameters:\n    temp_voltage_name: \"TEMP_VOLTAGE_DOXY\"\n    calib_coefficients: [0, 1, 0, 0, 0, 0]\n  diagnostics: false",
@@ -177,12 +221,22 @@
         "document": "api/pelagos_py/steps/processing/oxygen/index",
         "ref_id": "module-pelagos_py.steps.processing.oxygen",
         "headings": [
-          "pelagos_py.steps.processing.oxygen",
-          "Example",
-          "Example"
+          "pelagos_py.steps.processing.oxygen"
         ]
       },
       "doc_lineno": 127
+    },
+    {
+      "source": ".. admonition:: Example\n",
+      "names": [],
+      "example": {
+        "document": "api/pelagos_py/steps/processing/oxygen/index",
+        "ref_id": "module-pelagos_py.steps.processing.oxygen",
+        "headings": [
+          "pelagos_py.steps.processing.oxygen"
+        ]
+      },
+      "doc_lineno": null
     },
     {
       "source": "- name: \"Phase Pressure Correction\"\n  parameters:\n    optode_pressure_name: \"PRES\"\n    correction_coefficient: 0.1\n  diagnostics: false",
@@ -191,13 +245,22 @@
         "document": "api/pelagos_py/steps/processing/oxygen/index",
         "ref_id": "module-pelagos_py.steps.processing.oxygen",
         "headings": [
-          "pelagos_py.steps.processing.oxygen",
-          "Example",
-          "Example",
-          "Example"
+          "pelagos_py.steps.processing.oxygen"
         ]
       },
       "doc_lineno": 185
+    },
+    {
+      "source": ".. admonition:: Example\n",
+      "names": [],
+      "example": {
+        "document": "api/pelagos_py/steps/processing/oxygen/index",
+        "ref_id": "module-pelagos_py.steps.processing.oxygen",
+        "headings": [
+          "pelagos_py.steps.processing.oxygen"
+        ]
+      },
+      "doc_lineno": null
     },
     {
       "source": "- name: \"Shift Oxygen To CTD\"\n  parameters:\n    # <MANDATORY>\n    shift_vars: [\"UNCAL_PHASE_DOXY\", \"TEMP_DOXY\"]\n    # <OPTIONAL>\n    lag_seconds: null\n    pitch_name: \"GLIDER_PITCH\"\n    distance_cm: 90\n    cast_id_var: \"PROFILE_DIRECTION\"\n  diagnostics: false",
@@ -206,14 +269,22 @@
         "document": "api/pelagos_py/steps/processing/oxygen/index",
         "ref_id": "module-pelagos_py.steps.processing.oxygen",
         "headings": [
-          "pelagos_py.steps.processing.oxygen",
-          "Example",
-          "Example",
-          "Example",
-          "Example"
+          "pelagos_py.steps.processing.oxygen"
         ]
       },
       "doc_lineno": 243
+    },
+    {
+      "source": ".. admonition:: Example\n",
+      "names": [],
+      "example": {
+        "document": "api/pelagos_py/steps/processing/oxygen/index",
+        "ref_id": "module-pelagos_py.steps.processing.oxygen",
+        "headings": [
+          "pelagos_py.steps.processing.oxygen"
+        ]
+      },
+      "doc_lineno": null
     },
     {
       "source": "- name: \"Derive Calibrated Phase\"\n  parameters:\n    uncalibrated_phase_name: \"UNCAL_PHASE_DOXY\"\n    calib_coefficients: [0, 1, 0, 0]\n  diagnostics: false",
@@ -222,15 +293,22 @@
         "document": "api/pelagos_py/steps/processing/oxygen/index",
         "ref_id": "module-pelagos_py.steps.processing.oxygen",
         "headings": [
-          "pelagos_py.steps.processing.oxygen",
-          "Example",
-          "Example",
-          "Example",
-          "Example",
-          "Example"
+          "pelagos_py.steps.processing.oxygen"
         ]
       },
       "doc_lineno": 319
+    },
+    {
+      "source": ".. admonition:: Example\n",
+      "names": [],
+      "example": {
+        "document": "api/pelagos_py/steps/processing/oxygen/index",
+        "ref_id": "module-pelagos_py.steps.processing.oxygen",
+        "headings": [
+          "pelagos_py.steps.processing.oxygen"
+        ]
+      },
+      "doc_lineno": null
     },
     {
       "source": "- name: \"Derive Oxygen Concentration\"\n  parameters:\n    # <MANDATORY>\n    method: \"SVU\"\n    # <METHOD DEPENDENT>\n    # The following params are for \"SVU\" method\n    temperature_name: \"TEMP_DOXY\"\n    svu_coefficients: [c0, c1, c2, c3, c4, c5, c6]  # manufacturer SVUFoilCoef0-6\n  diagnostics: false",
@@ -239,16 +317,22 @@
         "document": "api/pelagos_py/steps/processing/oxygen/index",
         "ref_id": "module-pelagos_py.steps.processing.oxygen",
         "headings": [
-          "pelagos_py.steps.processing.oxygen",
-          "Example",
-          "Example",
-          "Example",
-          "Example",
-          "Example",
-          "Example"
+          "pelagos_py.steps.processing.oxygen"
         ]
       },
       "doc_lineno": 377
+    },
+    {
+      "source": ".. admonition:: Example\n",
+      "names": [],
+      "example": {
+        "document": "api/pelagos_py/steps/processing/oxygen/index",
+        "ref_id": "module-pelagos_py.steps.processing.oxygen",
+        "headings": [
+          "pelagos_py.steps.processing.oxygen"
+        ]
+      },
+      "doc_lineno": null
     },
     {
       "source": "- name: \"Molar DOXY Salinity Correction\"\n  parameters:\n    # <MANDATORY>\n    salinity_name: \"PRAC_SALINITY\"\n    temperature_name: \"TEMP\"\n    # <OPTIONAL>\n    reference_salinity: 0\n  diagnostics: false",
@@ -257,17 +341,22 @@
         "document": "api/pelagos_py/steps/processing/oxygen/index",
         "ref_id": "module-pelagos_py.steps.processing.oxygen",
         "headings": [
-          "pelagos_py.steps.processing.oxygen",
-          "Example",
-          "Example",
-          "Example",
-          "Example",
-          "Example",
-          "Example",
-          "Example"
+          "pelagos_py.steps.processing.oxygen"
         ]
       },
       "doc_lineno": 443
+    },
+    {
+      "source": ".. admonition:: Example\n",
+      "names": [],
+      "example": {
+        "document": "api/pelagos_py/steps/processing/oxygen/index",
+        "ref_id": "module-pelagos_py.steps.processing.oxygen",
+        "headings": [
+          "pelagos_py.steps.processing.oxygen"
+        ]
+      },
+      "doc_lineno": null
     },
     {
       "source": "- name: \"Molar DOXY Pressure Correction\"\n  parameters:\n    # <MANDATORY>\n    pressure_name: \"PRES\"\n    temperature_name: \"TEMP\"\n    molar_doxy_name: \"MOLAR_DOXY_PSAL\"\n    uncalibrated_phase_correction_applied: true\n  diagnostics: false",
@@ -276,15 +365,7 @@
         "document": "api/pelagos_py/steps/processing/oxygen/index",
         "ref_id": "module-pelagos_py.steps.processing.oxygen",
         "headings": [
-          "pelagos_py.steps.processing.oxygen",
-          "Example",
-          "Example",
-          "Example",
-          "Example",
-          "Example",
-          "Example",
-          "Example",
-          "Example"
+          "pelagos_py.steps.processing.oxygen"
         ]
       },
       "doc_lineno": 504

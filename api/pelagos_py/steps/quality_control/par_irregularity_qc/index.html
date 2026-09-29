@@ -489,9 +489,9 @@
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>latitude</strong> (<em>array-like</em><em> or </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Latitude(s) of the observation point(s) in decimal degrees. Positive north.</p></li>
-<li><p><strong>longitude</strong> (<em>array-like</em><em> or </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Longitude(s) of the observation point(s) in decimal degrees. Positive east.</p></li>
-<li><p><strong>datetime</strong> (<em>array-like</em><em> or </em><a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex" title="(in pandas v3.0.5)"><em>pandas.DatetimeIndex</em></a>) – Datetime(s) of observation. Can be any format convertible by <cite>pandas.to_datetime</cite>.</p></li>
+<li><p><strong>latitude</strong> (<em>array-like</em><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Latitude(s) of the observation point(s) in decimal degrees. Positive north.</p></li>
+<li><p><strong>longitude</strong> (<em>array-like</em><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Longitude(s) of the observation point(s) in decimal degrees. Positive east.</p></li>
+<li><p><strong>datetime</strong> (<em>array-like</em><em> or </em><a class="reference external" href="https://pandas.pydata.org/docs/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex" title="(in pandas v3.0.6)"><em>pandas.DatetimeIndex</em></a>) – Datetime(s) of observation. Can be any format convertible by <cite>pandas.to_datetime</cite>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -524,8 +524,8 @@ It is designed for irregularly spaced glider or float data.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>pres</strong> (<em>array-like</em>) – Pressure or depth (dbar or m), increasing with depth.</p></li>
 <li><p><strong>par</strong> (<em>array-like</em>) – Downwelling PAR (µmol photons m⁻² s⁻¹).</p></li>
-<li><p><strong>sun_elev</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Solar elevation (degrees). &gt;0 = day, ≤0 = night.</p></li>
-<li><p><strong>nei_par</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Noise Equivalent Irradiance (µmol photons m⁻² s⁻¹).
+<li><p><strong>sun_elev</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Solar elevation (degrees). &gt;0 = day, ≤0 = night.</p></li>
+<li><p><strong>nei_par</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><em>optional</em>) – Noise Equivalent Irradiance (µmol photons m⁻² s⁻¹).
 Default = 3×10⁻² (Jutard et al. 2021).</p></li>
 </ul>
 </dd>
