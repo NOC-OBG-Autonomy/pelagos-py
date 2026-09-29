@@ -94,13 +94,17 @@ def _summarise(v, want_median):
     if not can_be_nan:
         return info
     info["all_nan"] = True
+    finite_parts = []
     for x in _chunks(v):
         finite = x[np.isfinite(x)]
         if finite.size:
             info["all_nan"] = False
-            if want_median:
-                info["median"] = float(np.median(finite))
-            break
+            if not want_median:
+                break
+            finite_parts.append(finite)
+    # Median of the whole variable, matching what Prepare OG1 computes at run time.
+    if finite_parts:
+        info["median"] = float(np.median(np.concatenate(finite_parts)))
     return info
 
 

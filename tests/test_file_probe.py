@@ -29,3 +29,13 @@ def test_unreadable_file_returns_none(tmp_path):
     bad = tmp_path / "bad.nc"
     bad.write_text("not a netcdf file")
     assert file_probe.probe_file(bad) is None
+
+
+def test_median_covers_every_chunk(tmp_path, monkeypatch):
+    # First chunk in air (~0), the rest in seawater (mS/cm): the median must see it all.
+    monkeypatch.setattr(file_probe, "CHUNK", 2)
+    path = tmp_path / "g.nc"
+    cndc = np.array([0.0, 0.0, 36.0, 36.0, 36.0, 36.0])
+    xr.Dataset({"CNDC": ("N", cndc, {"units": "S/m"})}).to_netcdf(path)
+    assert file_probe._summarise_file(str(path), ["CNDC"])["CNDC"]["median"] == 36.0
+

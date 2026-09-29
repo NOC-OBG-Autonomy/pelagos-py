@@ -54,4 +54,4 @@ def test_download_is_cut_to_window(demo_dir, tmp_path_factory, monkeypatch):
     with xr.open_dataset(path) as ds:
         assert ds["TEMP"].values.tolist() == [1.0, 3.0]
     assert progress == [source.stat().st_size]
-    assert not list(demo_dir.glob("*.part")) and not list(demo_dir.glob("*.full.nc"))
+    assert sorted(p.name for p in demo_dir.iterdir()) == ["tiny.nc"]
