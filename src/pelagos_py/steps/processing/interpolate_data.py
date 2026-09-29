@@ -121,6 +121,8 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
         time = self.data["TIME"].values
         for var in variables:
             was_nan = np.isnan(self.data[var].values)
+            if (~was_nan).sum() < 2:
+                self.log_warn(f"{var} has fewer than 2 valid values; skipping interpolation.")
             interpolated = interpolate_by_time(self.data[var].values, time)
             if max_interp_seconds:
                 self._limit_gap_fill(time, interpolated, was_nan, max_interp_seconds)

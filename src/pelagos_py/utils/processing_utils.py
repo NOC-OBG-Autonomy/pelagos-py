@@ -41,12 +41,9 @@ def interpolate_by_time(values, time):
     ok = np.isfinite(v)
     if ok.sum() < 2:
         return v
-    t = np.asarray(time).astype("datetime64[ns]").astype("int64").astype(float)
+    t = np.asarray(time).astype("datetime64[ns]").astype("int64")
     out = v.copy()
-    out[~ok] = np.interp(t[~ok], t[ok], v[ok])
-    first, last = np.flatnonzero(ok)[[0, -1]]
-    out[:first] = np.nan
-    out[last + 1 :] = np.nan
+    out[~ok] = np.interp(t[~ok], t[ok], v[ok], left=np.nan, right=np.nan)
     return out
 
 
