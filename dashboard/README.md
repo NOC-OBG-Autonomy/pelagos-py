@@ -24,8 +24,8 @@ Then open <http://localhost:8791>.
 Steps can be grouped into **sections** (Pipeline → *Section*): a named,
 contiguous run of steps that can be renamed, collapsed, dragged around as a
 block, and dropped into. Sections are written to the YAML as `# ==== TITLE ====`
-banner comments and read back from them, so hand-written configs like
-`examples/configs/example_config_nelson.yaml` open with their sections intact.
+banner comments and read back from them, so hand-written configs like the
+default template (`src/pelagos_py/default_config.yaml`) open with their sections intact.
 The pipeline itself never sees them.
 
 Configs you save live in `dashboard/configs/`. The pipeline runs as a

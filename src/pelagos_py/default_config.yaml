@@ -17,7 +17,7 @@
 # Pipeline Configuration
 pipeline:
   name: Complete processing pipeline
-  description: A blank starting template (based on the Nelson demo) with no glider file loaded yet.
+  description: Default template for Pipeline.make_config and the dashboard, with no glider file loaded yet.
   out_directory: examples/data/OG1/
   log_file: complete_processing.log
   on_step_fail: pause  # pause (fix and re-run, or skip), skip, or stop

@@ -118,5 +118,4 @@ dashboard/_run_figures/
 
 # Dashboard configs: only the shipped templates are tracked (see PROTECTED_CONFIGS in app.py)
 dashboard/configs/*.yaml
-!dashboard/configs/default.yaml
 !dashboard/configs/demo_*.yaml

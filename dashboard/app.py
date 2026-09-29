@@ -85,7 +85,7 @@ if str(SRC_DIR) not in sys.path:
 from pelagos_py.steps import STEP_CLASSES, QC_CLASSES, resolve_step_name  # noqa: E402
 from pelagos_py.utils import parameter_spec  # noqa: E402
 from pelagos_py.utils.qc_handling import QC_COMBINATRIX  # noqa: E402
-from pelagos_py.utils.demo_data import DEMOS as DEMO_FILES, DEMO_DATA_DIR, MISSIONS  # noqa: E402
+from pelagos_py.utils.demo_data import DEMOS as DEMO_FILES, DEMO_DATA_DIR, MISSIONS, get_demo_file  # noqa: E402
 from pelagos_py.utils.valid_config_check import check_pipeline_variables  # noqa: E402
 from pelagos_py.utils import config_builder, file_probe  # noqa: E402
 
@@ -297,9 +297,12 @@ class SavePayload(BaseModel):
 # Virtual, one per demo glider: no file on disk, YAML built per file by /api/build.
 DEMO_CONFIGS = {f"demo_{key}.yaml" for key in DEMO_FILES}
 
+# The package's default template, shown as a (virtual) config.
+DEFAULT_CONFIG_NAME = "default.yaml"
+
 # Read-only: the UI forks edits to custom_run_N.yaml and the API refuses to
 # save/delete these, so a stale tab or hand-crafted request can't destroy them.
-PROTECTED_CONFIGS = {"default.yaml"} | DEMO_CONFIGS
+PROTECTED_CONFIGS = {DEFAULT_CONFIG_NAME} | DEMO_CONFIGS
 
 
 def _safe_config_path(name: str) -> Path:
@@ -320,7 +323,7 @@ def _demo_dest(config_name: str) -> Path | None:
     entry = DEMO_FILES.get(_demo_key(config_name))
     if entry is None:
         return None
-    return REPO_ROOT / DEMO_DATA_DIR / entry.filename
+    return DEMO_DATA_DIR / entry.filename
 
 
 @app.get("/api/configs")
@@ -331,7 +334,7 @@ def list_configs():
     )
     demo = sorted(DEMO_CONFIGS)  # virtual, so not filtered by `files`
     return {
-        "configs": sorted(set(files) | DEMO_CONFIGS),
+        "configs": sorted(set(files) | DEMO_CONFIGS | {DEFAULT_CONFIG_NAME}),
         "protected": sorted(PROTECTED_CONFIGS),
         "demo": demo,
         # Grouped by deployment mission, in picker display order.
@@ -618,30 +621,17 @@ def browse_file(payload: BrowsePayload):
 
 
 def _ensure_demo_file(config_name: str) -> None:
-    # Fallback for get_demo_file.py not having been run; unlike it, doesn't trim churchill.
     dest = _demo_dest(config_name)
     if dest is None or dest.exists():
         return
-    entry = DEMO_FILES[_demo_key(config_name)]
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    import requests
 
-    # Files are 100s of MB: bound only the connect phase, not the transfer.
-    response = requests.get(entry.url, stream=True, timeout=(15, None))
-    response.raise_for_status()
-    total = int(response.headers.get("Content-Length") or 0)
-    done = 0
-    _DOWNLOADS[config_name] = (0, total)
-    tmp = dest.with_name(dest.name + ".part")
+    def progress(done, total):
+        _DOWNLOADS[config_name] = (done, total)
+
+    progress(0, 0)
     try:
-        with open(tmp, "wb") as f:
-            for chunk in response.iter_content(chunk_size=1 << 20):
-                f.write(chunk)
-                done += len(chunk)
-                _DOWNLOADS[config_name] = (done, total)
-        tmp.rename(dest)
+        get_demo_file(_demo_key(config_name), on_progress=progress)
     finally:
-        tmp.unlink(missing_ok=True)  # left behind only if the download failed
         _DOWNLOADS.pop(config_name, None)
 
 
@@ -661,7 +651,7 @@ class BuildPayload(BaseModel):
 
 
 def _template_text() -> str:
-    return (CONFIG_DIR / "default.yaml").read_text()
+    return config_builder.DEFAULT_CONFIG.read_text()
 
 
 @app.post("/api/build/decisions")
@@ -706,10 +696,12 @@ def load_config(name: str):
         return {
             "name": demo_name,
             "build": {
-                "file_path": f"{DEMO_DATA_DIR}/{entry.filename}",
+                "file_path": str((DEMO_DATA_DIR / entry.filename).relative_to(REPO_ROOT)),
                 "description": f"A demo pipeline using {entry.display_label} data.",
             },
         }
+    if demo_name == DEFAULT_CONFIG_NAME:
+        return {"name": DEFAULT_CONFIG_NAME, "yaml_content": _template_text()}
     path = _safe_config_path(name)
     if not path.exists():
         raise HTTPException(status_code=404, detail="Config not found.")

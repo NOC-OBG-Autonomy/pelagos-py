@@ -29,12 +29,13 @@ import difflib
 import contextlib
 import shutil
 import tempfile
+from pathlib import Path
 
 from pelagos_py.utils.config_mirror import ConfigMirrorMixin
 from pelagos_py.utils.valid_config_check import check_pipeline_variables
 from pelagos_py.utils.log_levels import STOP, SEVERE
 from pelagos_py.utils.console import make_console_handler, progress_bar
-from pelagos_py.utils import diagnostic_capture
+from pelagos_py.utils import config_builder, diagnostic_capture, file_probe
 
 REPORT_STEP_NAME = "Write Data Report (Python)"
 """Name of the report step that triggers background diagnostic capture."""
@@ -186,9 +187,9 @@ class Pipeline(ConfigMirrorMixin):
 
         has_config = config_path is not None or config is not None
         if config_path is not None:
-            self.load_config_from_file(config_path, mirror_keys=["pipeline"])
+            self._load_config_file(config_path, mirror_keys=["pipeline"])
         elif config is not None:
-            self.load_config(config, mirror_keys=["pipeline"])
+            self._load_config_dict(config, mirror_keys=["pipeline"])
 
         if has_config:
             # set convenience alias for user-facing access
@@ -207,6 +208,55 @@ class Pipeline(ConfigMirrorMixin):
             # build steps from loaded config
             self.build_steps(self._parameters.get("steps", []))
             self.logger.info("Pipeline initialised")
+
+    @classmethod
+    def load_config(cls, config_path):
+        """
+        Create a pipeline from a YAML config file (same as ``Pipeline(config_path=...)``).
+
+        .. code-block:: python
+
+            Pipeline.load_config("my_pipeline.yaml").run()
+        """
+        return cls(config_path=config_path)
+
+    @classmethod
+    def make_config(cls, file_path, ask=False, config_path=None):
+        """
+        Build a config for an OG1 file from the default template and create a pipeline from it.
+
+        The template's steps are adapted to what the file holds (e.g. the PAR steps are
+        dropped if it has no PAR) and the config is saved to ``config_path`` (default:
+        ``<file name>.yaml`` next to the file), so the run can be edited and repeated with
+        :meth:`load_config`. With ``ask=True`` each choice is asked in the terminal;
+        otherwise the defaults are used and logged.
+
+        .. code-block:: python
+
+            Pipeline.make_config("glider.nc").run()
+            Pipeline.make_config("glider.nc", ask=True)  # build and save only
+        """
+        probe = file_probe.probe_file(file_path)
+        if probe is None:
+            raise ValueError(f"Could not read '{file_path}' to build a config for it.")
+        config_path = Path(config_path or Path(file_path).with_suffix(".yaml"))
+        if ask and config_path.exists():
+            if input(f"{config_path} already exists. Overwrite it? [y/N] ").strip().lower() != "y":
+                raise FileExistsError(f"{config_path} exists; pass config_path= to save elsewhere.")
+
+        decisions = config_builder.decisions(probe)
+        choices = config_builder.ask_choices(decisions) if ask else None
+        template = config_builder.DEFAULT_CONFIG.read_text()
+        replaced = config_path.exists()
+        config_path.write_text(config_builder.build(template, str(file_path), probe, choices))
+
+        pipeline = cls(config_path=str(config_path))
+        pipeline.logger.info(f"{'Replaced' if replaced else 'Wrote'} config {config_path}")
+        if not ask:
+            for d in decisions:
+                chosen = next((o["label"] for o in d["options"] if o["key"] == d["default"]), None)
+                pipeline.logger.warning(f"{d['title']}: {chosen or d['detail']}")
+        return pipeline
 
     def build_steps(self, steps_config):
         """

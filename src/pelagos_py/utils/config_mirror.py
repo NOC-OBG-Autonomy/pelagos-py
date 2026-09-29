@@ -25,7 +25,7 @@ class ConfigMirrorMixin:
     Selected public attributes are mirrored to/from _parameters.
 
     - Call self._init_config_mirror() once in __init__ of subclasses.
-    - Use load_config[_from_file]() to populate _parameters.
+    - Use _load_config_dict() or _load_config_file() to populate _parameters.
     - set mirror keys with _reset_parameter_bridge([...]).
     """
 
@@ -75,14 +75,14 @@ class ConfigMirrorMixin:
         self._sync_parameters_to_attributes()
 
     # ---- load / save ----
-    def load_config(self, config_dict: dict, mirror_keys=None):
+    def _load_config_dict(self, config_dict: dict, mirror_keys=None):
         self._parameters = dict(config_dict or {})
         self._reset_parameter_bridge(mirror_keys)
 
-    def load_config_from_file(self, path: str, mirror_keys=None):
+    def _load_config_file(self, path: str, mirror_keys=None):
         with open(path, "r") as f:
             cfg = yaml_safe_load(f) or {}
-        self.load_config(cfg, mirror_keys=mirror_keys)
+        self._load_config_dict(cfg, mirror_keys=mirror_keys)
         return cfg
 
     def save_config(self, path: str):

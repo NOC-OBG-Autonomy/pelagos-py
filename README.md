@@ -52,11 +52,25 @@ See [Getting Started](https://noc-obg-autonomy.github.io/pelagos-py/getting_star
 1. ### Initialization
 
 
-Import the 'Pipeline' class and create a pipeline using your config (see below for example)
+Import the 'Pipeline' class and create a pipeline, either by letting pelagos-py build a config for your OG1 file or from a config you already have:
 ```python
- from pelagos_py.pipeline import Pipeline
- pipeline = Pipeline(config_path="my_pipeline.yaml")
+from pelagos_py import Pipeline
 
+# Build a config for the file from the default template, saved as glider.yaml next to it
+pipeline = Pipeline.make_config("glider.nc")
+
+# Same, but ask about each choice (e.g. what to do about missing PAR) instead of using the defaults
+pipeline = Pipeline.make_config("glider.nc", ask=True)
+
+# Or load a config you already have, e.g. glider.yaml after editing it
+pipeline = Pipeline.load_config("my_pipeline.yaml")
+```
+
+To try it without your own data, `get_demo_file` downloads a demo OG1 file into `examples/data/OG1` (only the first time) and returns its path; `get_demo_file()` lists the demos. `examples/python/run_demo.py` does this end to end.
+```python
+from pelagos_py import Pipeline, get_demo_file
+
+pipeline = Pipeline.make_config(get_demo_file("nelson_646_r"))
 ```
 
 

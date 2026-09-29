@@ -20,7 +20,7 @@ raw DOWNWELLING_PAR
   └─ Stage 3  CHLA Quenching       the only consumer
 ```
 
-Order matters throughout. The sequence below is the one used in `example_config_nelson.yaml` and `example_config_churchill.yaml`, both PAR-carrying missions; `examples/configs/all_step_configs.yaml` is the fully annotated reference config, listing every parameter of every step.
+Order matters throughout. The sequence below is the one used in the default template (`src/pelagos_py/default_config.yaml`), which `Pipeline.make_config` adapts to each file; `examples/configs/all_step_configs.yaml` is the fully annotated reference config, listing every parameter of every step.
 
 ```yaml
 - name: Load OG1            # DOWNWELLING_PAR arrives from the OG1 file
@@ -36,7 +36,7 @@ Order matters throughout. The sequence below is the one used in `example_config_
 - name: Data Export
 ```
 
-If your platform has no PAR, `example_config_alr.yaml` is the worked example: the ALR carries no radiometer, so the PAR QC and `Interpolate PAR` steps are omitted and the quenching method is `thomalla2018` (or an MLD-based method), which needs no light input. Nothing else changes, because the pipeline is configuration-driven: removing PAR means deleting steps, not editing code.
+If your platform has no PAR (e.g. the ALR gliders, which carry no radiometer), `Pipeline.make_config` omits the PAR QC and `Interpolate PAR` steps and the quenching method is `thomalla2018` (or an MLD-based method), which needs no light input. Nothing else changes, because the pipeline is configuration-driven: removing PAR means deleting steps, not editing code.
 
 **Where things live** (under `src/pelagos_py/steps/`): PAR shape QC `quality_control/par_irregularity_qc.py`; ZEU and `Z_IPAR` `processing/interpolate_par.py`; consumption `processing/chla_quenching.py`.
 

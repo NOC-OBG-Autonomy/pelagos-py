@@ -39,6 +39,9 @@ dependencies = { file = [
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+pelagos_py = ["default_config.yaml"]
+
 [tool.setuptools_scm]
 write_to = "src/pelagos_py/_version.py"
 write_to_template = "__version__ = '{version}'"

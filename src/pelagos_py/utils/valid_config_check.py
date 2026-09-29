@@ -115,7 +115,7 @@ def _prepare_outputs(steps_list, file_vars):
     if prep is None or file_vars is None:
         return set()
     cls = STEP_CLASSES.get("Prepare OG1")
-    return set(cls.renames_for(file_vars, prep.get("parameters") or {}).values())
+    return set(cls.renames_for(file_vars, **(prep.get("parameters") or {})).values())
 
 
 def _raise_missing_variables(

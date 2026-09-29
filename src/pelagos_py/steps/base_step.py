@@ -105,10 +105,6 @@ class BaseStep(ConfigMirrorMixin):
         # the reported time/RAM cover the processing only (not a blocking plot).
         self._wrap_diagnostics_timing()
 
-        # Stop the diagnostics timer as soon as diagnostics generation begins, so
-        # the reported time/RAM cover the processing only (not a blocking plot).
-        self._wrap_diagnostics_timing()
-
         # Continue method resolution order
         super().__init__()
 

@@ -16,7 +16,7 @@
 
 """Build a file-specific pipeline config from the full template.
 
-The template (``dashboard/configs/default.yaml``) does everything; a given file
+The template (``DEFAULT_CONFIG``) does everything; a given file
 usually can't support all of it (no PAR, no optode phase, raw beta shipped as
 BBP700...). :func:`decisions` inspects the file and lists what must change,
 each with a default choice; :func:`build` applies the choices to the template
@@ -35,11 +35,16 @@ from pelagos_py.steps.input_output.prepare_og1 import (
     BBP_NAME, BETA_NAME, CNDC_MSCM_ABOVE, RENAMES, PrepareOG1,
 )
 
+DEFAULT_CONFIG = Path(__file__).parents[1] / "default_config.yaml"
 PHASE_CANDIDATES = ("BPHASE_DOXY", "DPHASE_DOXY", "TPHASE_DOXY")
 _BAR = re.compile(r"^\s*#\s*[=~-]{5,}\s*$")
 _TITLE = re.compile(r"^\s*#\s*(\S.*?)\s*$")
 _STEP = re.compile(r"^  - name:")
-_FIELD = {f: re.compile(rf"(?m)^(\s*{f}:).*$") for f in ("file_path", "output_path", "description")}
+_FIELD = {f: re.compile(rf"(?m)^(\s*{f}:).*$")
+          for f in ("file_path", "output_path", "description", "out_directory")}
+
+RENAME_TARGETS = {"coord_latitude": "LATITUDE", "coord_longitude": "LONGITUDE",
+                  "bbp": BETA_NAME, "oxygen": "MOLAR_DOXY", "par": "DOWNWELLING_PAR"}
 
 
 # ----------------------------------------------------------------------------
@@ -48,10 +53,11 @@ _FIELD = {f: re.compile(rf"(?m)^(\s*{f}:).*$") for f in ("file_path", "output_pa
 # comment lines plus the step itself) so both are dropped together.
 # ----------------------------------------------------------------------------
 class _Block:
-    def __init__(self, section, lines):
-        self.section = section
+    def __init__(self, section, banner, lines):
+        self.section = section  # banner title, e.g. "CTD"
+        self.banner = banner
         self.lines = lines
-        body = "\n".join(l for l in lines if not l.startswith("#"))
+        body = "\n".join(line for line in lines if not line.startswith("#"))
         self.step = (yaml.safe_load(body) or [{}])[0]
 
     @property
@@ -76,22 +82,29 @@ def _continues(lines, i):
     return i < len(lines) and lines[i].startswith(" ") and not _STEP.match(lines[i])
 
 
+def _is_banner(lines, i):
+    return (i + 2 < len(lines) and _BAR.match(lines[i])
+            and _TITLE.match(lines[i + 1]) and _BAR.match(lines[i + 2]))
+
+
 def _parse(text):
-    """``(head, blocks, tail)``: text up to and including ``steps:``, one
-    _Block per step (banners are kept as the block's ``section`` and emitted
-    once before its first surviving block), trailing text."""
+    # (head, blocks, tail): text up to and including `steps:`, one _Block per step
+    # (each carries its section's banner, emitted once before its first surviving
+    # block), trailing text.
     lines = text.split("\n")
     try:
-        start = next(i for i, l in enumerate(lines) if re.match(r"^steps:\s*$", l)) + 1
+        start = next(i for i, line in enumerate(lines) if re.match(r"^steps:\s*$", line)) + 1
     except StopIteration:
         raise ValueError("Template has no 'steps:' list.")
     head = "\n".join(lines[:start])
-    blocks, pending, section = [], [], None
+    blocks, pending = [], []
+    section, banner = None, []
     i = start
     while i < len(lines):
         line = lines[i]
-        if _BAR.match(line) and i + 2 < len(lines) and _BAR.match(lines[i + 2]) and _TITLE.match(lines[i + 1]):
-            section = (_TITLE.match(lines[i + 1]).group(1), pending + lines[i:i + 3])
+        if _is_banner(lines, i):
+            section = _TITLE.match(lines[i + 1]).group(1)
+            banner = pending + lines[i:i + 3]
             pending = []
             i += 3
             continue
@@ -102,7 +115,7 @@ def _parse(text):
                     not lines[i].strip() and _continues(lines, i + 1))):
                 body.append(lines[i])
                 i += 1
-            blocks.append(_Block(section, pending + body))
+            blocks.append(_Block(section, banner, pending + body))
             pending = []
             continue
         pending.append(line)
@@ -111,18 +124,14 @@ def _parse(text):
 
 
 def _render(head, blocks, tail):
-    out, last_section = [head], None
+    parts, last_section = [head], None
     for b in blocks:
-        if b.section is not None and b.section is not last_section:
-            out.append("\n".join(b.section[1]))
+        if b.section is not None and b.section != last_section:
+            parts.append("\n".join(b.banner))
             last_section = b.section
-        out.append(b.text())
-    out.append("\n".join(tail))
-    return "\n".join(out)
-
-
-def _section(block):
-    return block.section[0] if block.section else None
+        parts.append(b.text())
+    parts.append("\n".join(tail))
+    return "\n".join(parts)
 
 
 # ----------------------------------------------------------------------------
@@ -131,23 +140,19 @@ def _section(block):
 def _decision(id_, title, detail, options=(), default=None, section=None):
     # `section`: the template section the choice can drop (shown as skipped by the dashboard).
     return {"id": id_, "title": title, "detail": detail, "section": section,
-            "options": [{"key": k, "label": l} for k, l in options], "default": default}
+            "options": [{"key": key, "label": label} for key, label in options], "default": default}
 
 
-def _rename_options(real, canonical):
-    # One "rename:<var>" option per file variable that could stand in for `canonical`.
-    return [(f"rename:{v}", f"Use {v} as {canonical}")
+def _rename_options(real, expected):
+    # One "rename:<var>" option per file variable that could stand in for `expected`.
+    return [(f"rename:{v}", f"Use {v} as {expected}")
             for v in sorted(real) if not v.endswith("_QC")]
 
 
 def _renames(choices):
-    # {canonical: source} from every "rename:<source>" choice on a missing-variable decision.
+    # {expected: source} from every "rename:<source>" choice on a missing-variable decision.
     return {RENAME_TARGETS[k]: v.split(":", 1)[1]
             for k, v in (choices or {}).items() if k in RENAME_TARGETS and v.startswith("rename:")}
-
-
-RENAME_TARGETS = {"coord_latitude": "LATITUDE", "coord_longitude": "LONGITUDE",
-                  "bbp": BETA_NAME, "oxygen": "MOLAR_DOXY", "par": "DOWNWELLING_PAR"}
 
 
 def _oxygen_phase(probe):
@@ -174,55 +179,56 @@ def _cndc_state(probe):
     return "mscm" if values_mscm else "ok"
 
 
-def decisions(probe):
-    """What the template must change for this file, as a list of
-    ``{id, title, detail, options, default}``; ``options`` is empty for an
-    automatic fix that is only reported."""
-    real = {v for v in (probe or {}) if present(probe, v)}
-    out = []
-
+def _coordinate_decisions(real):
+    decs = []
     renames = PrepareOG1.renames_for(real)
-    for canonical in ("LATITUDE", "LONGITUDE"):
-        src = next((s for s, d in renames.items() if d == canonical), None)
-        if canonical in real:
+    for expected in ("LATITUDE", "LONGITUDE"):
+        if expected in real:
             continue
+        src = next((s for s, d in renames.items() if d == expected), None)
         if src:
-            out.append(_decision(
-                f"coord_{canonical.lower()}", f"{canonical} renamed from {src}",
-                f"The file has no {canonical}: {src} will be renamed to {canonical}.",
+            decs.append(_decision(
+                f"coord_{expected.lower()}", f"{expected} renamed from {src}",
+                f"The file has no {expected}: {src} will be renamed to {expected}.",
             ))
         else:
-            out.append(_decision(
-                f"coord_{canonical.lower()}", f"{canonical} missing",
-                f"No {canonical} or any known alternative ({', '.join(RENAMES[canonical])}) "
+            decs.append(_decision(
+                f"coord_{expected.lower()}", f"{expected} missing",
+                f"No {expected} or any known alternative ({', '.join(RENAMES[expected])}) "
                 "in the file -- position QC and profile finding will fail unless it is "
                 "held under another name.",
-                [("none", "Leave missing")] + _rename_options(real, canonical), "none",
+                [("none", "Leave missing")] + _rename_options(real, expected), "none",
             ))
+    return decs
 
+
+def _cndc_decision(probe):
     cndc = _cndc_state(probe)
     units = (probe or {}).get("CNDC", {}).get("units", "")
     if cndc == "mislabelled":
-        out.append(_decision(
+        return _decision(
             "cndc", "CNDC units mislabelled",
             f"CNDC is labelled '{units}' but its values are mS/cm: it will be scaled "
             "x0.1 to S/m so the range test and gsw see the right units.",
-        ))
-    elif cndc == "relabel":
-        out.append(_decision(
+        )
+    if cndc == "relabel":
+        return _decision(
             "cndc", "CNDC units mislabelled",
             f"CNDC is labelled '{units}' but its values are S/m: it will be relabelled S/m.",
-        ))
-    elif cndc == "mscm":
-        out.append(_decision(
+        )
+    if cndc == "mscm":
+        return _decision(
             "cndc", "CNDC in mS/cm",
             "CNDC is genuinely in mS/cm; left as is, with the CTD range test scaled to match.",
-        ))
+        )
+    return None
 
+
+def _bbp_decision(real):
     if BETA_NAME in real:
-        pass
-    elif BBP_NAME in real:
-        out.append(_decision(
+        return None
+    if BBP_NAME in real:
+        return _decision(
             "bbp", "BETA_BACKSCATTERING700 missing, BBP700 present",
             "Some files ship raw beta under BBP700 before it has been converted. Either "
             "treat BBP700 as beta (renamed to BETA_BACKSCATTERING700 and converted by "
@@ -230,17 +236,18 @@ def decisions(probe):
             [("as_beta", "Use BBP700 as raw beta and convert it"),
              ("direct", "Use BBP700 directly, skip conversion")],
             "as_beta", section="BACKSCATTER",
-        ))
-    else:
-        out.append(_decision(
-            "bbp", "No backscatter",
-            "Neither BETA_BACKSCATTERING700 nor BBP700 is in the file: the Backscatter "
-            "section and the CHLA Quenching step (which needs BBP) are removed, unless "
-            "raw beta is held under another name.",
-            [("remove", "Remove the Backscatter section")] + _rename_options(real, BETA_NAME),
-            "remove", section="BACKSCATTER",
-        ))
+        )
+    return _decision(
+        "bbp", "No backscatter",
+        "Neither BETA_BACKSCATTERING700 nor BBP700 is in the file: the Backscatter "
+        "section and the CHLA Quenching step (which needs BBP) are removed, unless "
+        "raw beta is held under another name.",
+        [("remove", "Remove the Backscatter section")] + _rename_options(real, BETA_NAME),
+        "remove", section="BACKSCATTER",
+    )
 
+
+def _oxygen_decision(probe, real):
     phase, molar = _oxygen_phase(probe), _oxygen_molar(probe)
     opts, notes = [], []
     if phase:
@@ -266,41 +273,111 @@ def decisions(probe):
         detail = ("No optode phase or oxygen concentration in the file: the Oxygen section is "
                   "removed, unless the concentration is held under another name.")
     # A lone "none" option is no choice: shown as automatic (default_choices skips it).
-    out.append(_decision("oxygen", title, " ".join([detail] + notes),
-                         opts if len(opts) > 1 else (), opts[0][0], section="OXYGEN"))
+    return _decision("oxygen", title, " ".join([detail] + notes),
+                     opts if len(opts) > 1 else (), opts[0][0], section="OXYGEN")
 
-    if not present(probe, "DOWNWELLING_PAR"):
-        extra = " (DPAR is present but in a different unit and is not used.)" if "DPAR" in real else ""
-        out.append(_decision(
-            "par", "No PAR",
-            f"DOWNWELLING_PAR is missing: the PAR QC section is removed, unless PAR is "
-            f"held under another name.{extra}",
-            [("remove", "Remove the PAR QC section")] + _rename_options(real, "DOWNWELLING_PAR"),
-            "remove", section="PAR QC",
-        ))
-    return out
+
+def _par_decision(probe, real):
+    if present(probe, "DOWNWELLING_PAR"):
+        return None
+    extra = " (DPAR is present but in a different unit and is not used.)" if "DPAR" in real else ""
+    return _decision(
+        "par", "No PAR",
+        f"DOWNWELLING_PAR is missing: the PAR QC section is removed, unless PAR is "
+        f"held under another name.{extra}",
+        [("remove", "Remove the PAR QC section")] + _rename_options(real, "DOWNWELLING_PAR"),
+        "remove", section="PAR QC",
+    )
+
+
+def decisions(probe):
+    """What the template must change for this file, as a list of
+    ``{id, title, detail, options, default}``; ``options`` is empty for an
+    automatic fix that is only reported."""
+    real = {v for v in (probe or {}) if present(probe, v)}
+    decs = _coordinate_decisions(real) + [
+        _cndc_decision(probe),
+        _bbp_decision(real),
+        _oxygen_decision(probe, real),
+        _par_decision(probe, real),
+    ]
+    return [d for d in decs if d is not None]
 
 
 def default_choices(decs):
     return {d["id"]: d["default"] for d in decs if d["options"]}
 
 
+def ask_choices(decs, ask=input):
+    # Terminal version of the dashboard's Build panel; Enter keeps the default.
+    choices = {}
+    for d in decs:
+        print(f"\n{d['title']}\n  {d['detail']}")
+        if not d["options"]:
+            continue
+        # Rename options list every file variable, too many to number; typed by name instead.
+        listed = [o for o in d["options"] if not o["key"].startswith("rename:")]
+        renamable = {o["key"].removeprefix("rename:") for o in d["options"] if o not in listed}
+        for n, option in enumerate(listed, 1):
+            default = "  (default)" if option["key"] == d["default"] else ""
+            print(f"  {n}) {option['label']}{default}")
+        prompt = "Choice (Enter for default"
+        if renamable:
+            prompt += ", or the name of a file variable to use instead"
+        prompt += "): "
+        while True:
+            answer = ask(prompt).strip()
+            if not answer:
+                choices[d["id"]] = d["default"]
+                break
+            if answer.isdigit() and 1 <= int(answer) <= len(listed):
+                choices[d["id"]] = listed[int(answer) - 1]["key"]
+                break
+            if answer in renamable:
+                choices[d["id"]] = f"rename:{answer}"
+                break
+            print("  Not an option, try again.")
+    return choices
+
+
 # ----------------------------------------------------------------------------
 # Build
 # ----------------------------------------------------------------------------
+def _times_ten(match):
+    # "[0.5, 4.2, outside]" -> "[5.0, 42.0, outside]"
+    items = []
+    for item in match.group(1).split(","):
+        item = item.strip()
+        if re.fullmatch(r"-?[\d.]+", item):
+            item = str(float(item) * 10)
+        items.append(item)
+    return "[" + ", ".join(items) + "]"
+
+
 def _scale_cndc_ranges(block):
     # x10 the CNDC bands of the CTD range test (template values are S/m).
     lines, in_cndc = [], False
-    for l in block.lines:
-        if re.match(r"^\s*CNDC:", l):
+    for line in block.lines:
+        if re.match(r"^\s*CNDC:", line):
             in_cndc = True
-        elif in_cndc and re.match(r"^\s*\d+:\s*\[", l):
-            l = re.sub(r"\[([^\]]*)\]", lambda m: "[" + ", ".join(
-                str(float(x) * 10) if re.fullmatch(r"-?[\d.]+", x.strip()) else x.strip()
-                for x in m.group(1).split(",")) + "]", l, count=1)
-        elif in_cndc and not re.match(r"^\s{14,}", l):
+        elif in_cndc and re.match(r"^\s*\d+:\s*\[", line):
+            line = re.sub(r"\[([^\]]*)\]", _times_ten, line, count=1)
+        elif in_cndc and not re.match(r"^\s{14,}", line):
             in_cndc = False
-        lines.append(l)
+        lines.append(line)
+    block.lines = lines
+
+
+def _add_renames(block, renames):
+    # Insert a `renames:` mapping under `bbp700_is_beta:` in the Prepare OG1 step.
+    lines = []
+    for line in block.lines:
+        lines.append(line)
+        if line.strip().startswith("bbp700_is_beta:"):
+            indent = line[:len(line) - len(line.lstrip())]
+            lines.append(f"{indent}renames:  # file's name for a missing OG1 variable")
+            for expected, source in renames.items():
+                lines.append(f"{indent}  {expected}: {source}")
     block.lines = lines
 
 
@@ -320,6 +397,7 @@ def build(template_text, file_path, probe=None, choices=None, description=None, 
     output_path = output_path or str(Path(file_path).with_name(f"{stem}_Processed.nc"))
     head = _FIELD["description"].sub(
         rf"\1 {description or f'Pipeline built for {Path(file_path).name}.'}", head, count=1)
+    head = _FIELD["out_directory"].sub(rf"\1 {Path(file_path).parent}/", head, count=1)
     for b in blocks:
         if b.name == "Load OG1":
             b.sub(_FIELD["file_path"].pattern, rf"\1 {file_path}  # Path to the input NetCDF file")
@@ -328,16 +406,15 @@ def build(template_text, file_path, probe=None, choices=None, description=None, 
 
     if _cndc_state(probe) == "mscm":
         for b in blocks:
-            if _section(b) == "CTD" and "CNDC" in (b.params.get("qc_settings", {}).get("range qc", {}).get("variable_ranges", {})):
+            ranges = b.params.get("qc_settings", {}).get("range qc", {}).get("variable_ranges", {})
+            if b.section == "CTD" and "CNDC" in ranges:
                 _scale_cndc_ranges(b)
 
     renames = _renames(choices)
     if renames:
         for b in blocks:
             if b.name == "Prepare OG1":
-                b.sub(r"(?m)^(\s*)(bbp700_is_beta:.*)$", lambda m: m.group(1) + m.group(2)
-                      + "\n" + m.group(1) + "renames:  # file's name for a missing OG1 variable\n"
-                      + "".join(f"{m.group(1)}  {k}: {v}\n" for k, v in renames.items()).rstrip("\n"))
+                _add_renames(b, renames)
 
     bbp = choices.get("bbp") if "bbp" in ids else None
     if bbp == "direct":
@@ -345,10 +422,10 @@ def build(template_text, file_path, probe=None, choices=None, description=None, 
         for b in blocks:
             if b.name == "Prepare OG1":
                 b.sub(r"(?m)^(\s*bbp700_is_beta:).*$", r"\1 false")
-            elif _section(b) == "BACKSCATTER":
+            elif b.section == "BACKSCATTER":
                 b.sub(BETA_NAME, BBP_NAME, count=0)
     elif bbp == "remove":  # no backscatter at all
-        drop(lambda b: _section(b) == "BACKSCATTER" or b.name == "CHLA Quenching")
+        drop(lambda b: b.section == "BACKSCATTER" or b.name == "CHLA Quenching")
 
     oxygen = choices.get("oxygen", "none")
     if oxygen.startswith("rename:"):  # renamed to MOLAR_DOXY by Prepare OG1, then used as shipped
@@ -359,15 +436,15 @@ def build(template_text, file_path, probe=None, choices=None, description=None, 
             if b.name == "Derive Uncalibrated Phase":
                 b.sub(r'(?m)^(\s*blue_phase_name:).*$', rf'\1 "{phase}"')
     elif oxygen == "shipped":
-        drop(lambda b: _section(b) == "OXYGEN" and b.name != "Correct Values")
+        drop(lambda b: b.section == "OXYGEN" and b.name != "Correct Values")
         for b in blocks:
-            if _section(b) == "OXYGEN":
+            if b.section == "OXYGEN":
                 b.sub(r"(?m)^(\s*target_variable:).*$", r"\1 MOLAR_DOXY")
                 b.sub(r"(?m)^(\s*append_description:).*$", r"\1 Shipped MOLAR_DOXY, renamed.")
     else:
-        drop(lambda b: _section(b) == "OXYGEN")
+        drop(lambda b: b.section == "OXYGEN")
 
     if choices.get("par") == "remove":
-        drop(lambda b: _section(b) == "PAR QC")
+        drop(lambda b: b.section == "PAR QC")
 
     return _render(head, blocks, tail)
