@@ -14,10 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Cheap metadata probe of an OG1 NetCDF file, shared by the config validator,
-the config builder and the dashboard: variable names, units, which float
-variables are entirely NaN, and a median for a few variables whose *values*
-decide how they must be treated (e.g. CNDC unit mislabelling)."""
+"""Cheap metadata probe of an OG1 NetCDF file for the config builder: variable
+names, units, which float variables are entirely NaN, and a median for a few
+variables whose *values* decide how they must be treated (e.g. CNDC unit
+mislabelling)."""
 
 import functools
 import json

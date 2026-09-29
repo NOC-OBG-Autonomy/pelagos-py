@@ -29,4 +29,6 @@ except PackageNotFoundError:
 
 __credits__ = "National Oceanography Centre"
 
-from pelagos_py.pipeline import Pipeline  # so users can write `from pelagos_py import Pipeline`
+# So users can write `from pelagos_py import Pipeline, get_demo_file`.
+from pelagos_py.pipeline import Pipeline
+from pelagos_py.utils.demo_data import get_demo_file

@@ -17,10 +17,9 @@
 # Pipeline Configuration
 pipeline:
   name: Complete processing pipeline
-  description: Default template for Pipeline.make_config and the dashboard, with no glider file loaded yet.
+  description: Default template for Pipeline.make_config, with no glider file loaded yet.
   out_directory: examples/data/OG1/
   log_file: complete_processing.log
-  on_step_fail: pause  # pause (fix and re-run, or skip), skip, or stop
 
 # Steps in the pipeline
 # For further details on step parameters, see all_step_configs.yaml
@@ -125,10 +124,19 @@ steps:
 # process CTD, we need to intepolate to fill in the missing data.
   - name: Interpolate Data
     parameters:
-      variables:  # per variable, the QC flags treated as gaps to fill
-        PRES: [3, 4, 9]
-        LATITUDE: [3, 4, 9]
-        LONGITUDE: [3, 4, 9]
+      qc_handling_settings:
+        # This QC filtering functionality can be specified in most processing steps by
+        # adding the qc_handling_settings parameter. Here we are using it to nan-out bad (4)
+        # probably bad (3) and missing (9) data so that it can be interpolated over.
+        flag_filter_settings:
+          PRES: [3, 4, 9]
+          LATITUDE: [3, 4, 9]
+          LONGITUDE: [3, 4, 9]
+        reconstruction_behaviour: replace
+        flag_mapping: # The QC flags where bad data has been replaced turn into 8 (interpolated)
+          3: 8
+          4: 8
+          9: 8
     diagnostics: false # Plot the outcome after interpolation
 
 # ===========================================================
@@ -150,9 +158,8 @@ steps:
     parameters:
       qc_settings:
           valid profile qc:
-            min_length: 50          # Profiles must be at least 50 points long
-            depth_range: [0, 1000]  # and reach into 0-1000 dbar (PRES)
-            flag: 4                 # Flag given to every row of a failing profile
+            profile_length: 50      # Profiles must be at least 50 points long
+            depth_range: [0, 1000]  # and must contain data within 0 and 1000 m
     diagnostics: false
 
 # ===========================================================
@@ -214,10 +221,16 @@ steps:
 # nan'd out, interpolated over, and reflagged as interpolated (8).
   - name: Interpolate Data
     parameters:
-      variables:  # per variable, the QC flags treated as gaps to fill
-        TEMP: [3, 4, 9]
-        PRES: [3, 4, 9]
-        PRAC_SALINITY: [3, 4, 9]
+      qc_handling_settings:
+        flag_filter_settings:
+          TEMP: [3, 4, 9]
+          PRES: [3, 4, 9]
+          PRAC_SALINITY: [3, 4, 9]
+        reconstruction_behaviour: replace
+        flag_mapping:
+          3: 8
+          4: 8
+          9: 8
     diagnostics: false
 
 # ===========================================================
@@ -474,20 +487,6 @@ steps:
               3: [0, 50, outside]
               4: [0, 100, outside]
     diagnostics: false
-
-# ===========================================================
-#                       MANUAL QC
-# ===========================================================
-# Flag by hand: the run pauses here and boxes drawn on the plot in the
-# dashboard are saved into 'boxes', so the same flags are repeated on re-runs.
-  - name: Apply QC
-    parameters:
-      qc_settings:
-        manual qc:
-          x_variable: TIME
-          y_variable: PRES
-          boxes: []
-    diagnostics: true
 
 # ===========================================================
 #                      EXPORT DATA

@@ -16,7 +16,7 @@
 
 """Build a file-specific pipeline config from the full template.
 
-The template (``DEFAULT_CONFIG``, shared with the dashboard) does everything; a given file
+The template (``DEFAULT_CONFIG``) does everything; a given file
 usually can't support all of it (no PAR, no optode phase, raw beta shipped as
 BBP700...). :func:`decisions` inspects the file and lists what must change,
 each with a default choice; :func:`build` applies the choices to the template

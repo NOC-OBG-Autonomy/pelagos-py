@@ -23,7 +23,7 @@ Whilst the tool itself is written in python, interfacing with it requires little
    # Or build a config for an OG1 file from the default template, then run it
    Pipeline.make_config("glider.nc").run()
 
-The only involved part is defining your ``config.yaml`` which determines the details of how your raw data will be processed. YAML files are designed to be "human readable" so it should
+The only involved part is defining your ``config.yaml`` (``make_config`` builds one for your file to start from), which determines the details of how your raw data will be processed. YAML files are designed to be "human readable" so it should
 be fairly intuitive to set them up. We have provided extensive details in ``examples/configs/all_step_configs.yaml`` which should help you - but if you see anything that doesn't
 make sense, let us know so we can improve it.
 
