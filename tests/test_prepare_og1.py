@@ -45,6 +45,13 @@ def test_all_nan_alternative_does_not_count():
     assert "LATITUDE_GPS" in out
 
 
+def test_all_nan_expected_variable_is_replaced_by_real_alternative():
+    ctx = make_context(LATITUDE=([np.nan, np.nan], None), LATITUDE_GPS=([50.0, 51.0], None))
+    out = run(ctx)
+    assert np.allclose(out["LATITUDE"].values, [50.0, 51.0])
+    assert "LATITUDE_GPS" not in out
+
+
 def test_cndc_mislabelled_as_s_per_m_is_rescaled():
     ctx = make_context(CNDC=([35.0, 36.0], "S m-1"))
     out = run(ctx)

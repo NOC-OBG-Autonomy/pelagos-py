@@ -121,6 +121,8 @@ class PrepareOG1(BaseStep):
             if self.data[v].dtype.kind != "f" or bool(np.isfinite(self.data[v].values).any())
         }
         for src, dst in self.renames_for(present, self.renames, self.bbp700_is_beta).items():
+            # `dst` can only exist here as an all-NaN placeholder, which would block the rename.
+            self.data = self.data.drop_vars([dst, f"{dst}_QC"], errors="ignore")
             mapping = {src: dst}
             if f"{src}_QC" in self.data and f"{dst}_QC" not in self.data:
                 mapping[f"{src}_QC"] = f"{dst}_QC"

@@ -133,7 +133,7 @@ def test_full_file_needs_no_choices():
     assert [d["id"] for d in decs] == ["oxygen"]
     text = cb.build(TEMPLATE, "/data/g.nc", probe)
     assert steps_of(text) == steps_of(TEMPLATE)
-    assert "file_path: /data/g.nc" in text
+    assert 'file_path: "/data/g.nc"' in text
     assert 'output_path: "/data/g_Processed.nc"' in text
 
 
@@ -244,3 +244,11 @@ def test_ask_choices_takes_numbers_defaults_and_variable_names():
     answers = iter(["9", "2", "", "PAR"])  # bad number is asked again
     choices = cb.ask_choices(cb.decisions(probe), ask=lambda prompt: next(answers))
     assert choices == {"bbp": "direct", "oxygen": "none", "par": "rename:PAR"}
+
+
+def test_paths_with_backslashes_and_hashes_survive():
+    path = r"C:\Users\me\glider #1.nc"
+    config = yaml.safe_load(cb.build(TEMPLATE, path, BASE))
+    load = next(s for s in config["steps"] if s["name"] == "Load OG1")
+    assert load["parameters"]["file_path"] == path
+

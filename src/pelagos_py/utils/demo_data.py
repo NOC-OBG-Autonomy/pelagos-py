@@ -191,7 +191,10 @@ def _cut_to_window(path, start, end):
         subset[v].encoding = {}
         if subset[v].dtype.kind in "fiu":
             encoding[v] = {"zlib": True, "complevel": 2}
-    tmp = path.with_suffix(".full.nc")
-    path.rename(tmp)
-    subset.to_netcdf(path, encoding=encoding)
-    tmp.unlink()  # drop the full download, keep only the window
+    # Swap the trimmed file in only once it's fully written, so a failed write never leaves a partial file.
+    tmp = path.with_suffix(".cut.nc")
+    try:
+        subset.to_netcdf(tmp, encoding=encoding)
+        tmp.replace(path)
+    finally:
+        tmp.unlink(missing_ok=True)

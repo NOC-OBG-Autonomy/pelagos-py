@@ -23,6 +23,7 @@ each with a default choice; :func:`build` applies the choices to the template
 text, keeping its comments, so the result is still a readable config.
 """
 
+import json
 import re
 from pathlib import Path
 
@@ -272,6 +273,8 @@ def _oxygen_decision(probe, real):
         title = "No oxygen"
         detail = ("No optode phase or oxygen concentration in the file: the Oxygen section is "
                   "removed, unless the concentration is held under another name.")
+    # Known issue: "phase" is the default whenever it exists, but the template's SVU coefficients
+    # are for one optode (aa4831). Revisit once it's decided how optode coefficients are supplied.
     # A lone "none" option is no choice: shown as automatic (default_choices skips it).
     return _decision("oxygen", title, " ".join([detail] + notes),
                      opts if len(opts) > 1 else (), opts[0][0], section="OXYGEN")
@@ -381,6 +384,11 @@ def _add_renames(block, renames):
     block.lines = lines
 
 
+def _yaml_string(value):
+    # JSON strings are valid YAML, and quoting keeps "#", ": " and backslashes literal.
+    return json.dumps(str(value))
+
+
 def build(template_text, file_path, probe=None, choices=None, description=None, output_path=None):
     """The template adapted to ``file_path``: paths patched in and each
     decision's choice applied (defaults where ``choices`` doesn't say)."""
@@ -393,16 +401,20 @@ def build(template_text, file_path, probe=None, choices=None, description=None, 
     def drop(pred):
         blocks[:] = [b for b in blocks if not pred(b)]
 
+    def set_field(value, comment=""):
+        # A function, not a "\1 value" template, so backslashes in e.g. Windows paths stay literal.
+        return lambda m: f"{m.group(1)} {_yaml_string(value)}{comment}"
+
     stem = Path(file_path).stem
     output_path = output_path or str(Path(file_path).with_name(f"{stem}_Processed.nc"))
-    head = _FIELD["description"].sub(
-        rf"\1 {description or f'Pipeline built for {Path(file_path).name}.'}", head, count=1)
-    head = _FIELD["out_directory"].sub(rf"\1 {Path(file_path).parent}/", head, count=1)
+    description = description or f"Pipeline built for {Path(file_path).name}."
+    head = _FIELD["description"].sub(set_field(description), head, count=1)
+    head = _FIELD["out_directory"].sub(set_field(f"{Path(file_path).parent}/"), head, count=1)
     for b in blocks:
         if b.name == "Load OG1":
-            b.sub(_FIELD["file_path"].pattern, rf"\1 {file_path}  # Path to the input NetCDF file")
+            b.sub(_FIELD["file_path"].pattern, set_field(file_path, "  # Path to the input NetCDF file"))
         if b.name == "Data Export":
-            b.sub(_FIELD["output_path"].pattern, rf'\1 "{output_path}"')
+            b.sub(_FIELD["output_path"].pattern, set_field(output_path))
 
     if _cndc_state(probe) == "mscm":
         for b in blocks:
