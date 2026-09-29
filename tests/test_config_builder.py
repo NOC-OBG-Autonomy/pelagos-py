@@ -117,6 +117,10 @@ def ids(decs):
     return {d["id"]: d for d in decs}
 
 
+def option_keys(decision):
+    return [o["key"] for o in decision["options"]]
+
+
 def test_parse_render_round_trip():
     head, blocks, tail = cb._parse(TEMPLATE)
     assert cb._render(head, blocks, tail) == TEMPLATE
@@ -136,7 +140,7 @@ def test_full_file_needs_no_choices():
 def test_bbp700_as_beta_default_and_direct_choice():
     probe = {**BASE, "BBP700": var("m-1", median=1e-4), "BPHASE_DOXY": var(), "DOWNWELLING_PAR": var()}
     d = ids(cb.decisions(probe))["bbp"]
-    assert d["default"] == "as_beta" and [o["key"] for o in d["options"]] == ["as_beta", "direct"]
+    assert d["default"] == "as_beta" and option_keys(d) == ["as_beta", "direct"]
 
     text = cb.build(TEMPLATE, "/data/g.nc", probe)
     assert "BBP from Beta" in steps_of(text)
@@ -189,8 +193,8 @@ def test_missing_par_can_be_renamed_from_another_variable():
     probe = {**BASE, "BETA_BACKSCATTERING700": var(), "PAR": var(), "PAR_QC": var()}
     d = ids(cb.decisions(probe))["par"]
     assert d["default"] == "remove"
-    assert [o["key"] for o in d["options"]][:2] == ["remove", "rename:BETA_BACKSCATTERING700"]
-    assert "rename:PAR_QC" not in [o["key"] for o in d["options"]]
+    assert option_keys(d)[:2] == ["remove", "rename:BETA_BACKSCATTERING700"]
+    assert "rename:PAR_QC" not in option_keys(d)
     text = cb.build(TEMPLATE, "/data/g.nc", probe, choices={"par": "rename:PAR"})
     assert "PAR QC" in text and "Interpolate PAR" in steps_of(text)
     prep = next(s for s in yaml.safe_load(text)["steps"] if s["name"] == "Prepare OG1")
@@ -200,7 +204,8 @@ def test_missing_par_can_be_renamed_from_another_variable():
 def test_missing_oxygen_can_be_renamed_to_molar_doxy():
     probe = {**BASE, "OXY_UMOL": var()}
     d = ids(cb.decisions(probe))["oxygen"]
-    assert [o["key"] for o in d["options"]][0] == "none" and "rename:OXY_UMOL" in [o["key"] for o in d["options"]]
+    assert option_keys(d)[0] == "none"
+    assert "rename:OXY_UMOL" in option_keys(d)
     assert "rename:" not in str(ids(cb.decisions({**BASE, "DOXY": var()}))["oxygen"]["options"])
     text = cb.build(TEMPLATE, "/data/g.nc", probe, choices={"oxygen": "rename:OXY_UMOL"})
     assert "MOLAR_DOXY: OXY_UMOL" in text and "MOLAR_DOXY_ADJUSTED" in text
@@ -231,4 +236,4 @@ def test_missing_coordinates_reported():
     assert "ALATPT01" in d["title"] and not d["options"]
     d = ids(cb.decisions(probe))["coord_latitude"]
     assert d["title"] == "LATITUDE missing" and d["default"] == "none"
-    assert "rename:TEMP" in [o["key"] for o in d["options"]]
+    assert "rename:TEMP" in option_keys(d)

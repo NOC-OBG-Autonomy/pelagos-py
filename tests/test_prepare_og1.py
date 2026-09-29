@@ -19,7 +19,7 @@ def run(context, **parameters):
     return PrepareOG1(name="prepare", parameters=parameters, context=context).run()["data"]
 
 
-def test_renames_gps_coordinates_when_canonical_missing():
+def test_renames_gps_coordinates_when_expected_missing():
     ctx = make_context(LATITUDE_GPS=([50.0, 51.0], "degree_north"), LONGITUDE_GPS=([-5.0, -6.0], "degree_east"))
     ctx["data"]["LATITUDE_GPS_QC"] = ("N_MEASUREMENTS", np.array([1, 1], dtype=np.int8))
 
@@ -84,10 +84,10 @@ def test_renames_for_matches_run():
     assert PrepareOG1.renames_for(names) == {
         "LATITUDE_GPS": "LATITUDE", "BBP700": "BETA_BACKSCATTERING700", "DOXY": "MOLAR_DOXY",
     }
-    assert "BBP700" not in PrepareOG1.renames_for(names, {"bbp700_is_beta": False})
+    assert "BBP700" not in PrepareOG1.renames_for(names, bbp700_is_beta=False)
 
 
-def test_user_renames_apply_only_when_canonical_absent():
+def test_user_renames_apply_only_when_expected_absent():
     ctx = make_context(PAR=([1.0, 2.0], None), TEMP=([10.0, 11.0], None), TEMP2=([0.0, 0.0], None))
     ctx["data"]["PAR_QC"] = ("N_MEASUREMENTS", np.array([1, 1], dtype=np.int8))
     out = run(ctx, renames={"DOWNWELLING_PAR": "PAR", "TEMP": "TEMP2"})
