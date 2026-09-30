@@ -36,6 +36,9 @@ dependencies = { file = [
   "requirements.txt",
 ] }
 
+[project.scripts]
+pelagos-py = "pelagos_py.cli:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
@@ -81,8 +84,4 @@ color = true
 test = [
     "pytest",
     "pytest-cov",
-]
-dashboard = [
-    "fastapi>=0.110",
-    "uvicorn>=0.29",
 ]

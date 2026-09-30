@@ -49,6 +49,20 @@ See [Getting Started](https://noc-obg-autonomy.github.io/pelagos-py/getting_star
 
 ## How to run
 
+### From the terminal
+
+Installing pelagos-py adds a `pelagos-py` command:
+```bash
+pelagos-py dashboard              # opens the dashboard (works from your git clone)
+pelagos-py build glider.nc        # writes glider.yaml   (--ask to choose options, -o to save elsewhere)
+pelagos-py run glider.nc          # builds a config, then runs it
+pelagos-py run my_pipeline.yaml   # runs an existing config
+pelagos-py demo                   # lists demo datasets
+pelagos-py demo nelson_646_r      # downloads one and prints its path
+```
+
+### From Python
+
 1. ### Initialization
 
 

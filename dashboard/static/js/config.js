@@ -205,7 +205,7 @@ const Config = {
   current: null,    // name of the loaded config, or null for an unsaved one
   selected: '',     // name shown in the picker ('' once the config is unsaved)
   loading: false,   // true while loading/booting, so that isn't seen as an edit
-  busy: false,      // true while a config is loading/downloading (blocks Run + the picker)
+  picks: 0,         // bumped on every pick, so a finished download only opens if nothing else was picked since
 
   isLocked(name) {
     return !!name && Config.locked.includes(Config.withExt(name));
@@ -225,6 +225,47 @@ const Config = {
     return `custom_run_${n + 1}`;
   },
 
+  // One line under the pipeline controls: where the open pipeline came from and
+  // whether it matches what's saved.
+  builtFor: null,   // data file the open pipeline was generated for, until it's saved
+  savedText: '',    // editor text as last loaded from / saved to disk
+  updateStatus() {
+    const el = document.getElementById('config-status');
+    if (!el || !editor) return;
+    const onDisk = !!Config.current && Config.known.includes(Config.current);
+    const edited = editor.getValue() !== Config.savedText;
+    let text;
+    if (Config.builtFor) text = `Built automatically for ${Config.builtFor} · not saved`;
+    else if (onDisk && Config.isLocked(Config.current)) text = 'Reference pipeline · edits save as a copy';
+    else if (!onDisk) text = 'New pipeline · not saved';
+    else text = edited ? 'Edited · not saved' : 'Saved';
+    el.textContent = text;
+  },
+
+  // Manual QC boxes are drawn on one file's data: when Load OG1 moves to another
+  // file, offer to clear them (only in the open copy; the saved .yaml is untouched).
+  dataFile: null,
+  checkDataFile() {
+    const load = STATE.pipeline.items.find((i) => (i.def.parameters || []).some((p) => p.name === 'file_path'));
+    const path = (load && load.values.file_path) || '';
+    const previous = Config.dataFile;
+    Config.dataFile = path;
+    if (Config.loading || !previous || path === previous) return;
+    const manual = STATE.pipeline.items
+      .filter((i) => isQcContainer(i.def))
+      .map((i) => (i.values.qc_settings || {})['manual qc'])
+      .filter((t) => t && (t.boxes || []).length);
+    if (!manual.length) return;
+    Config.notice('Manual QC boxes were drawn on the previous data file.', { sticky: true, action: {
+      label: 'Clear boxes',
+      onClick: () => {
+        for (const t of manual) t.boxes = [];
+        Config.notice('');
+        Defaults.commit();
+      },
+    } });
+  },
+
   // Note which config is loaded, and reflect it in the toolbar.
   setCurrent(name) {
     Config.current = name ? Config.withExt(name) : null;
@@ -234,6 +275,7 @@ const Config = {
     Config.renderPicker();
     Config.updateControls();
     Config.updateSaveLabel();
+    Config.updateStatus();
     Demos.render();
   },
 
@@ -282,56 +324,33 @@ const Config = {
     syncingFromBuilder = true;
     editor.setValue(text);
     syncingFromBuilder = false;
+    Config.dataFile = null;
+    Config.builtFor = null;
     try { Config.fromYAML(text); refreshYAML(); }
     catch (e) { Config.notice('Loaded as raw YAML — the builder could not read it: ' + e.message); }
+    Config.savedText = editor.getValue();
     Config.loading = false;
+    Config.updateStatus();
   },
 
-  // Downloads the demo's NetCDF file first if it isn't on disk yet (see
-  // app.py's _ensure_demo_file), which can take a while for a large file —
-  // Config.busy locks the picker and Run button for the duration and keeps a
-  // banner up so that wait is never silent or mistakeable for "did nothing".
+  // A demo whose data isn't on disk downloads first while the dashboard stays
+  // usable; it only opens afterwards if nothing else was picked in the meantime.
   async load(name) {
-    const needsDownload = Config.demo.includes(name) && !Config.downloaded.includes(name);
-    if (needsDownload) {
-      Config.setBusy(true, '');
-      Demos.trackDownload(name);
+    const pick = ++Config.picks;
+    if (Config.demo.includes(name) && !Config.downloaded.includes(name)) {
+      await Demos.download(name);
+      if (pick !== Config.picks || !Config.downloaded.includes(name)) return;
     }
-    try {
-      const { yaml_content, build } = await API.loadConfig(name);
-      Config.notice('');
-      if (build) {
-        // Demo: the config is generated for its file once the user confirms.
-        await Build.start({
-          name, filePath: build.file_path, description: build.description,
-        });
-      } else {
-        Config.apply(yaml_content);
-        Config.setCurrent(name);
-      }
-      // Pick up the now-downloaded status so the picker stops offering to
-      // download it again.
-      if (needsDownload) await Config.refreshList(Config.selected);
-    } finally {
-      if (needsDownload) { Demos.trackDownload(null); Config.setBusy(false); }
-    }
-  },
-
-  // Locks the config picker and Run button while a config is loading (in
-  // particular, while a demo's data is downloading) so the old config can't
-  // be run — and can't look like it silently reverted — mid-swap.
-  setBusy(isBusy, message) {
-    Config.busy = isBusy;
-    const trigger = document.querySelector('#config-select .cfg-trigger');
-    const runBtn = document.getElementById('btn-run');
-    if (isBusy) {
-      Config._runWasDisabled = runBtn ? runBtn.disabled : false;
-      if (trigger) trigger.disabled = true;
-      if (runBtn) runBtn.disabled = true;
-      if (message) Config.notice(message, { sticky: true });
+    const { yaml_content, build } = await API.loadConfig(name);
+    Config.notice('');
+    if (build) {
+      // Demo: the config is generated for its file once the user confirms.
+      await Build.start({
+        name, filePath: build.file_path, description: build.description,
+      });
     } else {
-      if (trigger) trigger.disabled = false;
-      if (runBtn) runBtn.disabled = !!Config._runWasDisabled || Build.active; // the build panel keeps Run off
+      Config.apply(yaml_content);
+      Config.setCurrent(name);
     }
   },
 
@@ -346,31 +365,25 @@ const Config = {
   renderPicker() {
     const root = document.getElementById('config-select');
     if (!root) return;
-    const label = root.querySelector('.cfg-current');
-    const isDemo = Config.demo.includes(Config.selected);
-    label.textContent = Config.selected
-      ? (isDemo ? 'Demo: ' + Config.demoLabel(Config.selected) : Config.selected)
-      : '— saved configs —';
-    label.classList.toggle('ref', Config.isLocked(Config.selected));
-    label.classList.toggle('demo', isDemo);
-
     const menu = root.querySelector('.cfg-menu');
     menu.innerHTML = '';
     if (!Config.known.length) {
       const li = document.createElement('li');
       li.className = 'cfg-opt';
-      li.textContent = 'no configs found';
+      li.textContent = 'no saved pipelines';
       menu.appendChild(li);
       return;
     }
 
-    const makeOpt = (name, { demo = false, hint } = {}) => {
+    // `unsaved`: the open pipeline, not a file yet, so picking it just closes the menu.
+    const makeOpt = (name, { demo = false, hint, label, title, unsaved = false } = {}) => {
       const locked = Config.locked.includes(name);
       const needsDownload = demo && !Config.downloaded.includes(name);
       const li = document.createElement('li');
       li.className = 'cfg-opt' + (locked ? ' ref' : '') + (demo ? ' demo' : '') +
-        (needsDownload ? ' needs-download' : '') + (name === Config.selected ? ' selected' : '');
+        (needsDownload ? ' needs-download' : '') + (name === Config.selected || unsaved ? ' selected' : '');
       li.setAttribute('role', 'option');
+      if (title) li.title = title;
       // Not-yet-downloaded demos get a download icon instead of the plain
       // reference dot, so picking one visibly means "fetch its data first".
       if (needsDownload) {
@@ -382,9 +395,10 @@ const Config = {
       }
       const text = document.createElement('span');
       text.className = 'cfg-opt-text';
-      text.textContent = demo ? Config.demoLabel(name) : name;
+      text.textContent = label ?? (demo ? Config.demoLabel(name) : name);
       li.appendChild(text);
-      const hintText = hint ?? (needsDownload ? 'download' : locked ? 'reference' : '');
+      const edited = name === Config.current && editor && editor.getValue() !== Config.savedText;
+      const hintText = hint ?? (needsDownload ? 'download' : edited ? 'edited · not saved' : '');
       if (hintText) {
         const h = document.createElement('span');
         h.className = 'cfg-hint';
@@ -392,8 +406,8 @@ const Config = {
         li.appendChild(h);
       }
       li.addEventListener('click', async () => {
-        if (Config.busy) return; // a load/download is already in flight
         Config.closePicker();
+        if (unsaved) return;
         try { await Config.load(name); }
         catch (e) {
           Config.notice('Could not load ' + name + ': ' + e.message, { sticky: true, err: true });
@@ -409,19 +423,27 @@ const Config = {
       menu.appendChild(h);
     };
 
+    const LAST_RUN = '_last_run.yaml';
     const referenceNames = Config.known.filter((n) => Config.reference.includes(n));
     const otherNames = Config.known.filter(
-      (n) => !Config.demo.includes(n) && !Config.reference.includes(n)
+      (n) => !Config.demo.includes(n) && !Config.reference.includes(n) && n !== LAST_RUN
     );
+    const unsaved = Config.current && !Config.known.includes(Config.current);
 
-    // Demo configs live on the Demos tab (demos.js), not in this menu.
+    // Demo configs live on the Files tab (demos.js), not in this menu.
     if (referenceNames.length) {
-      group('Default');
+      group('Template');
       for (const name of referenceNames) menu.appendChild(makeOpt(name));
     }
-    if (otherNames.length) {
-      group('Your configs');
+    if (otherNames.length || unsaved) {
+      group('Your pipelines');
+      if (unsaved) menu.appendChild(makeOpt(Config.current, { hint: 'not saved', unsaved: true }));
       for (const name of otherNames) menu.appendChild(makeOpt(name));
+    }
+    if (Config.known.includes(LAST_RUN)) {
+      group('Automatic');
+      menu.appendChild(makeOpt(LAST_RUN, { label: 'Last run', hint: 'copy of what last ran',
+        title: 'The exact pipeline of your most recent run, saved automatically each time you press Run' }));
     }
   },
 
@@ -456,16 +478,22 @@ const Config = {
     Config.renderPicker();
     Config.updateControls();
     Config.updateSaveLabel();
-    Config.notice(`${from} is locked — your changes will save as ${forked}.yaml`);
+    Config.notice('Editing a copy — save it in the', { action: {
+      label: 'YAML tab', onClick: () => document.querySelector('.tab[data-tab="yaml"]').click() } });
   },
 
   // sticky: stays up until the next notice() call instead of auto-clearing —
   // used for errors and while a demo download is in progress, so neither is
   // ever missed because it faded out.
-  notice(text, { sticky = false, err = false } = {}) {
+  notice(text, { sticky = false, err = false, action = null } = {}) {
     const el = document.getElementById('config-note');
     if (!el) return;
     el.textContent = text;
+    el.title = text;
+    if (action) {
+      el.appendChild(Forms.button(action.label, { onclick: action.onClick }));
+      el.title = text + ' ' + action.label;
+    }
     el.classList.toggle('hidden', !text);
     el.classList.toggle('err', !!err);
     clearTimeout(Config._noticeTimer);
@@ -488,6 +516,7 @@ const Config = {
     if (Config.selected && !Config.known.includes(Config.selected)) Config.selected = '';
     Config.renderPicker();
     Config.updateControls();
+    Config.updateStatus();
     Demos.render();
   },
 };

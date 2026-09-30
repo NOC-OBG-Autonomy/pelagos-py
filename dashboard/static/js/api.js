@@ -46,6 +46,12 @@ const API = {
     if (!r.ok) await _fail(r, 'build failed');
     return r.json();
   },
+  // Raw columns from the paused run, packed like a figure's .f32 (see run_bootstrap._emit_columns).
+  async runColumns(names) {
+    const r = await fetch('/api/run/columns?names=' + encodeURIComponent(names.join(',')));
+    if (!r.ok) await _fail(r, 'columns failed');
+    return r.arrayBuffer();
+  },
   async saveConfig(name, yamlContent) {
     const r = await fetch('/api/configs', {
       method: 'POST',
@@ -69,6 +75,11 @@ const API = {
   // -> {name: {done, total}} for demo downloads in flight
   async demoProgress() {
     return (await fetch('/api/demos/progress')).json();
+  },
+  async downloadDemo(name) {
+    const r = await fetch('/api/demos/' + encodeURIComponent(name) + '/download', { method: 'POST' });
+    if (!r.ok) await _fail(r, 'download failed');
+    return r.json();
   },
   async deleteDemo(name) {
     const r = await fetch('/api/demos/' + encodeURIComponent(name), { method: 'DELETE' });

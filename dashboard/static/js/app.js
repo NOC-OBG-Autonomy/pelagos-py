@@ -5,7 +5,10 @@ let syncingFromBuilder = false;
 let errorLineHandle = null; // CodeMirror line handle currently marked red, if any
 let activeStepId = null;    // builder step whose YAML lines are highlighted
 let stepHighlightLines = null; // {start, end} of the current YAML highlight
+let activeFieldPath = null;  // key path of the builder box whose lines are highlighted
+let fieldHighlightLines = null; // {start, end} of that box's lines
 let lastFocusedStep = null; // step index last expanded from the YAML cursor
+let lastFocusedKey = null;  // step + key path last marked from the YAML cursor
 
 function debounce(fn, ms) {
   let t;
@@ -41,36 +44,116 @@ function stepIndexAtLine(line) {
   return null;
 }
 
+// Indent of a YAML line, counting a list dash as one more level so `- DEPTH`
+// under `to_derive:` nests inside it even at the same column.
+function yamlIndent(line) {
+  const m = line.match(/^(\s*)(-\s)?/);
+  return m[1].length + (m[2] ? 1 : 0);
+}
+
+// The mapping key a YAML line opens (quotes stripped), or null.
+function yamlKey(line) {
+  const m = line.match(/^\s*(?:-\s+)?(['"]?)(.+?)\1\s*:(?:\s|$)/);
+  return m ? m[2] : null;
+}
+
+const yamlBlank = (line) => !line.trim() || line.trim().startsWith('#');
+
+// Keys from a step's (or the document's) top down to `line`, e.g.
+// ['parameters', 'qc_settings', 'range qc', 'variable_ranges'].
+function yamlPathAtLine(line) {
+  const lines = editor.getValue().split('\n');
+  if (line >= lines.length || yamlBlank(lines[line])) return [];
+  const stepRange = stepLineRanges().find((r) => line >= r.start && line <= r.end);
+  const top = stepRange ? stepRange.start : -1;
+  const path = [];
+  let indent = Infinity;
+  for (let i = line; i > top; i--) {
+    if (yamlBlank(lines[i]) || yamlIndent(lines[i]) >= indent) continue;
+    indent = yamlIndent(lines[i]);
+    const key = yamlKey(lines[i]);
+    if (key != null) path.unshift(key);
+    if (indent === 0) break;
+  }
+  return path;
+}
+
+// Line span of `path` inside [from, to], narrowing one key at a time and only
+// matching keys at the block's own depth (not a same-named key deeper down).
+function yamlBlockForPath(from, to, path) {
+  const lines = editor.getValue().split('\n');
+  let block = { start: from, end: Math.min(to, lines.length - 1) };
+  let inner = from; // first line of the block's children (a matched key's own line is skipped)
+  for (const key of path) {
+    const depth = Math.min(...lines.slice(inner, block.end + 1).filter((l) => !yamlBlank(l)).map(yamlIndent));
+    let found = null;
+    for (let i = inner; i <= block.end; i++) {
+      if (yamlBlank(lines[i]) || yamlIndent(lines[i]) !== depth || yamlKey(lines[i]) !== key) continue;
+      let end = i;
+      for (let j = i + 1; j <= block.end; j++) {
+        if (yamlBlank(lines[j])) continue;
+        if (yamlIndent(lines[j]) <= depth) break;
+        end = j;
+      }
+      found = { start: i, end };
+      break;
+    }
+    if (!found) return null;
+    block = found;
+    inner = found.start + 1;
+  }
+  return block;
+}
+
 function clearStepHighlight() {
   if (editor && stepHighlightLines) {
     for (let ln = stepHighlightLines.start; ln <= stepHighlightLines.end && ln < editor.lineCount(); ln++) {
       editor.removeLineClass(ln, 'background', 'cm-step-highlight');
     }
   }
+  if (editor && fieldHighlightLines) {
+    for (let ln = fieldHighlightLines.start; ln <= fieldHighlightLines.end && ln < editor.lineCount(); ln++) {
+      editor.removeLineClass(ln, 'background', 'cm-field-highlight');
+    }
+  }
   stepHighlightLines = null;
+  fieldHighlightLines = null;
 }
 
-// Highlight (and scroll to) the YAML lines for a builder step. Called when a
-// step card is focused/edited; re-applied after every YAML regeneration since
-// setValue drops line classes.
-function highlightYamlForStep(id) {
+// Highlight (and scroll to) the YAML lines for a builder step, and within it
+// the box being edited (`path`, e.g. ['parameters', 'to_derive']). A null id
+// with a ['pipeline', key] path is a Pipeline Settings box. Re-applied after
+// every YAML regeneration since setValue drops line classes.
+function highlightYamlForStep(id, path = null) {
   activeStepId = id;
+  activeFieldPath = path;
   applyStepHighlight();
 }
 
 function applyStepHighlight() {
   if (!editor) return;
   clearStepHighlight();
-  if (activeStepId == null) return;
-  const idx = STATE.pipeline.items.findIndex((i) => i.id === activeStepId);
-  if (idx < 0) return;
-  const r = stepLineRanges()[idx];
-  if (!r) return;
-  for (let ln = r.start; ln <= r.end && ln < editor.lineCount(); ln++) {
-    editor.addLineClass(ln, 'background', 'cm-step-highlight');
+  let r = { start: 0, end: editor.lineCount() - 1 };
+  if (activeStepId != null) {
+    const idx = STATE.pipeline.items.findIndex((i) => i.id === activeStepId);
+    r = idx < 0 ? null : stepLineRanges()[idx];
+    if (!r) return;
+    for (let ln = r.start; ln <= r.end && ln < editor.lineCount(); ln++) {
+      editor.addLineClass(ln, 'background', 'cm-step-highlight');
+    }
+    stepHighlightLines = r;
+  } else if (!activeFieldPath) {
+    return;
   }
-  stepHighlightLines = r;
-  editor.scrollIntoView({ from: { line: r.start, ch: 0 }, to: { line: r.end, ch: 0 } });
+  // A step's own `- name:` line sits one level above its keys, so start below it.
+  const from = activeStepId != null ? r.start + 1 : r.start;
+  const f = activeFieldPath && yamlBlockForPath(from, r.end, activeFieldPath);
+  if (f) {
+    for (let ln = f.start; ln <= f.end; ln++) editor.addLineClass(ln, 'background', 'cm-field-highlight');
+    fieldHighlightLines = f;
+  }
+  const view = f || stepHighlightLines;
+  if (view) editor.scrollIntoView({ from: { line: view.start, ch: 0 }, to: { line: view.end, ch: 0 } });
 }
 
 function refreshYAML() {
@@ -81,6 +164,8 @@ function refreshYAML() {
   syncingFromBuilder = false;
   clearYamlError();
   applyStepHighlight(); // setValue drops line classes; re-mark the active step
+  Config.checkDataFile();
+  Config.updateStatus();
   scheduleValidate();
   Inspect.schedule();
 }
@@ -110,6 +195,7 @@ function syncYamlToBuilder() {
   }
   try {
     Config.fromObject(cfg || {}, Config.sectionsFromYAML(editor.getValue()));
+    Config.checkDataFile();
     // fromObject builds fresh item objects, so a paused step's card is now a
     // different object: re-apply the lock so it is still the unlocked, expanded
     // one rather than a locked card like any other.
@@ -143,25 +229,22 @@ function showValidating(force = false) {
   if (!statusHost || (statusHost.firstChild && !force)) return;
   statusHost.innerHTML = '';
   statusHost.appendChild(statusBar('pending', 'Validating…', 'Checking the config against the step schemas'));
-  if (force) document.getElementById('validation').innerHTML = '';
+  if (force) document.getElementById('top-slot').classList.remove('has-error');
 }
 
 function renderValidation(result) {
-  const host = document.getElementById('validation');
-  // The status pill lives in the builder toolbar row; issue cards below it.
   const statusHost = document.getElementById('validation-status');
-  host.innerHTML = '';
   statusHost.innerHTML = '';
+  setIssueMarks(issueMarksFor(result.issues || []));
+  document.getElementById('top-slot').classList.toggle('has-error', !result.ok);
 
   if (result.yaml_error) {
     const y = formatYamlError(result.yaml_error);
-    statusHost.appendChild(statusBar('err', 'YAML syntax error', y.location || 'Check the YAML pane'));
-    const card = document.createElement('div');
-    card.className = 'v-issue v-yaml';
+    const bar = statusBar('err', 'YAML syntax error', y.location || 'Check the YAML pane');
     let body = `<div class="v-msg">${escapeHtml(y.message)}</div>`;
     if (y.snippet) body += `<pre class="v-snippet">${escapeHtml(y.snippet)}</pre>`;
-    card.innerHTML = `<div class="v-issue-body">${body}</div>`;
-    host.appendChild(card);
+    bar.appendChild(issueBody(body));
+    statusHost.appendChild(bar);
     return;
   }
 
@@ -170,16 +253,48 @@ function renderValidation(result) {
     return;
   }
 
-  const n = result.issues.length;
-  statusHost.appendChild(statusBar('err', `${n} issue${n === 1 ? '' : 's'}`, 'Fix before running'));
   // No data to work with is the most fundamental thing that can be wrong with
   // a config, so surface it above any other issue rather than in list order.
   const ranked = [...result.issues].sort((a, b) =>
     (parseIssue(b.error).critical ? 1 : 0) - (parseIssue(a.error).critical ? 1 : 0));
-  for (const issue of ranked) host.appendChild(issueCard(issue));
+
+  // A single issue is the box itself; several get one row each inside it.
+  if (ranked.length === 1) {
+    const issue = ranked[0];
+    const parsed = parseIssue(issue.error);
+    const bar = statusBar('err', parsed.tag, issueWhere(issue));
+    bar.classList.add('v-single');
+    bar.appendChild(issueBody(parsed.html));
+    linkToStep(bar, issue);
+    statusHost.appendChild(bar);
+    return;
+  }
+  const bar = statusBar('err', `${ranked.length} issues`, 'Fix before running');
+  for (const issue of ranked) {
+    const parsed = parseIssue(issue.error);
+    const row = issueBody(
+      `<div class="v-msg"><strong>${escapeHtml(parsed.tag)}</strong> ` +
+      `<span class="v-muted">· ${issueWhere(issue)}</span></div>${parsed.html}`);
+    linkToStep(row, issue);
+    bar.appendChild(row);
+  }
+  statusHost.appendChild(bar);
 }
 
-// The green/red header pill at the top of the validation panel.
+// Step id -> the fields each issue names, for the builder to mark.
+function issueMarksFor(issues) {
+  const marks = new Map();
+  for (const issue of issues) {
+    const item = issue.index == null ? null : STATE.pipeline.items[issue.index];
+    if (!item) continue;
+    const fields = marks.get(item.id) || [];
+    fields.push(...(parseIssue(issue.error).fields || []));
+    marks.set(item.id, fields);
+  }
+  return marks;
+}
+
+// The green/red validation box at the top of the builder.
 function statusBar(kind, title, sub) {
   const bar = document.createElement('div');
   bar.className = `v-status v-${kind}`;
@@ -190,34 +305,33 @@ function statusBar(kind, title, sub) {
   return bar;
 }
 
-const TAG_STYLE = { value: 'warn', type: 'warn', missing: 'danger', unknown: 'qc', load: 'solid' };
+function issueBody(html) {
+  const body = document.createElement('div');
+  body.className = 'v-body';
+  body.innerHTML = html;
+  return body;
+}
 
-// One schema issue, rendered as a card. Clicking it locates the offending
-// step in the YAML pane (highlight + scroll) via the existing machinery.
-function issueCard(issue) {
-  const parsed = parseIssue(issue.error);
-  const card = document.createElement('div');
-  card.className = 'v-issue' + (parsed.critical ? ' v-issue-critical' : '');
-  const where = issue.index == null
-    ? 'Pipeline'
-    : `Step ${issue.index + 1}${issue.name ? ' · ' + escapeHtml(issue.name) : ''}`;
-  const icon = parsed.critical ? `<span class="v-issue-icon">${Icon.svg('alert', 14)}</span>` : '';
-  card.innerHTML =
-    `<div class="v-issue-head">${icon}` +
-    `<span class="tag ${TAG_STYLE[parsed.kind] || ''}">${escapeHtml(parsed.tag)}</span>` +
-    `<span class="v-where">${where}</span></div>` +
-    `<div class="v-issue-body">${parsed.html}</div>`;
+function issueWhere(issue) {
+  if (issue.index == null) return 'Pipeline';
+  return `Step ${issue.index + 1}${issue.name ? ' · ' + escapeHtml(issue.name) : ''}`;
+}
 
+// Clicking an issue locates its step in the YAML pane and the builder.
+function linkToStep(el, issue) {
   const item = issue.index == null ? null : STATE.pipeline.items[issue.index];
-  if (item) {
-    card.classList.add('v-clickable');
-    card.title = 'Show in YAML and the builder';
-    card.onclick = () => {
-      highlightYamlForStep(item.id);
-      focusStepInBuilder(issue.index);
-    };
-  }
-  return card;
+  if (!item) return;
+  el.classList.add('v-clickable');
+  el.title = 'Show in YAML and the builder';
+  el.onclick = (e) => {
+    if (e.target.closest('[data-tab]')) {
+      e.preventDefault();
+      Run.showTab(e.target.closest('[data-tab]').dataset.tab);
+      return;
+    }
+    highlightYamlForStep(item.id);
+    focusStepInBuilder(issue.index);
+  };
 }
 
 // Turn a parameter_spec ValueError string into a {kind, tag, html} object. The
@@ -237,8 +351,23 @@ function parseIssue(raw) {
   m = msg.match(/^'Load OG1' has no 'file_path' set[^.]*\.\s*(.*)$/s);
   if (m) {
     return { kind: 'load', tag: 'No file set', critical: true,
-      html: `<div class="v-msg">This config does not include a data file.</div>` +
-        `<div class="v-detail">${escapeHtml(m[1])}</div>` };
+      fields: [{ param: 'file_path', text: 'No file set' }],
+      html: `<div class="v-msg">Choose an input file, or get a demo from ` +
+        `<a href="#" data-tab="files">Files</a>.</div>` };
+  }
+  m = msg.match(/^Data file '(.*)' is not a NetCDF \(\.nc\) file\.$/s);
+  if (m) {
+    return { kind: 'load', tag: 'Not a NetCDF file', critical: true,
+      fields: [{ param: 'file_path', text: 'Not a .nc file' }],
+      html: `<div class="v-msg">Choose a .nc file, or get a demo from ` +
+        `<a href="#" data-tab="files">Files</a>.</div>` };
+  }
+  m = msg.match(/^Could not find data file '(.*)'\.$/s);
+  if (m) {
+    return { kind: 'load', tag: 'File not found', critical: true,
+      fields: [{ param: 'file_path', text: 'File not found' }],
+      html: `<div class="v-msg">Check the path, or get a demo from ` +
+        `<a href="#" data-tab="files">Files</a>.</div>` };
   }
   m = msg.match(/^Missing variables for(?: QC test)? '([^']+)':\s*([^.]+)\.\s*(?:[^.]*\.\s*)*No data-loading step[^.]*\.\s*(.*)$/s);
   if (m) {
@@ -251,16 +380,19 @@ function parseIssue(raw) {
   m = msg.match(/^invalid parameter value\(s\):\s*(.+)$/s);
   if (m) {
     return { kind: 'value', tag: 'Invalid value',
+      fields: segmentParams(m[1], 'Value not allowed'),
       html: m[1].split(';').map(formatValueSegment).join('') };
   }
   m = msg.match(/^invalid parameter type\(s\):\s*(.+)$/s);
   if (m) {
     return { kind: 'type', tag: 'Wrong type',
+      fields: segmentParams(m[1], 'Wrong type'),
       html: m[1].split(';').map(formatTypeSegment).join('') };
   }
   m = msg.match(/^missing required parameter\(s\):\s*(.+)$/s);
   if (m) {
     return { kind: 'missing', tag: 'Missing',
+      fields: splitNames(m[1]).map((param) => ({ param, text: 'Required' })),
       html: `<div class="v-detail">Add ${chips(splitNames(m[1]))}</div>` };
   }
   m = msg.match(/^unknown parameter\(s\):\s*([^.]+)\.\s*Valid parameters:\s*(.+?)\.?$/s);
@@ -271,6 +403,11 @@ function parseIssue(raw) {
   }
   // Fallback: show the message verbatim (minus the [label] prefix).
   return { kind: 'other', tag: 'Error', html: `<div class="v-msg">${escapeHtml(msg)}</div>` };
+}
+
+// "a (expected ...); b (expected ...)" -> [{param: 'a', text}, {param: 'b', text}].
+function segmentParams(segments, text) {
+  return segments.split(';').map((seg) => ({ param: seg.trim().split(/[\s(]/)[0], text }));
 }
 
 // "to_derive (expected one of ['A','B'], got ['X'])" → param + allowed chips + bad value.
@@ -397,6 +534,7 @@ async function boot() {
   editor.on('change', () => {
     if (syncingFromBuilder) return;
     Config.noteEdit(); // hand-edited YAML forks a locked config too
+    Config.updateStatus();
     scheduleYamlToBuilder();
     scheduleValidate();
     Inspect.schedule();
@@ -405,13 +543,18 @@ async function boot() {
   // YAML → builder focus: as the cursor moves through the YAML, expand and
   // scroll to the matching step card in the builder. Working in the YAML pane
   // means the builder is a read-out, so drop any builder→YAML highlight.
-  editor.on('focus', () => { activeStepId = null; clearStepHighlight(); });
+  editor.on('focus', () => { activeStepId = null; activeFieldPath = null; clearStepHighlight(); });
   editor.on('cursorActivity', () => {
     if (syncingFromBuilder) return;
-    const idx = stepIndexAtLine(editor.getCursor().line);
-    if (idx == null || idx === lastFocusedStep) return;
+    const line = editor.getCursor().line;
+    const idx = stepIndexAtLine(line);
+    const path = yamlPathAtLine(line);
+    const key = idx + '|' + path.join('/');
+    if (key === lastFocusedKey) return;
+    lastFocusedKey = key;
+    if (idx != null && idx !== lastFocusedStep) focusStepInBuilder(idx);
     lastFocusedStep = idx;
-    focusStepInBuilder(idx);
+    focusFieldInBuilder(idx, path);
   });
 
   showValidating();
@@ -422,6 +565,7 @@ async function boot() {
   refreshYAML();
   Config.loading = false;
   await Config.refreshList();
+  Demos.resume();
   await Defaults.load();
 
   // Auto-load default.yaml on startup if present, so the dashboard opens on a
@@ -446,13 +590,6 @@ async function boot() {
   });
 
   // builder controls
-  document.getElementById('btn-clear').addEventListener('click', () => {
-    if (!confirm('Clear all steps?')) return;
-    STATE.pipeline.nodes = [];
-    renderPipeline();
-    refreshYAML();
-  });
-  document.getElementById('btn-add-section').addEventListener('click', addSection);
 
   document.getElementById('btn-copy').addEventListener('click', () => {
     navigator.clipboard.writeText(editor.getValue());
@@ -497,6 +634,8 @@ async function boot() {
       alert(e.message);
       return;
     }
+    Config.savedText = editor.getValue();
+    Config.builtFor = null;
     await Config.refreshList(Config.withExt(name));
     Config.setCurrent(name);
   });
@@ -526,19 +665,8 @@ async function boot() {
   });
   document.getElementById('btn-stop').addEventListener('click', () =>
     Run.stopBtnMode === 'clear' ? Run.clearRun() : Run.stop());
-  // From another tab: jump back to the paused step's review panel.
-  document.getElementById('btn-review').addEventListener('click', () => {
-    Review.showLog = false;
-    Run.showTab();
-  });
-  // From the review panel (or another tab): swap to the run log.
-  document.getElementById('btn-log').addEventListener('click', () => {
-    Review.showLog = true;
-    Run.showTab();
-  });
-  document.getElementById('btn-rerun').addEventListener('click', () => Run.rerunStep());
-  document.getElementById('btn-manual-rerun').addEventListener('click', () => ManualQC.apply());
-  document.getElementById('btn-manual-continue').addEventListener('click', () => ManualQC.applyAndContinue());
+  document.getElementById('btn-rerun').addEventListener('click', () =>
+    ManualQC.isActive() ? ManualQC.apply() : Run.rerunStep());
 
   // If a pipeline is already running (e.g. the page was refreshed mid-run),
   // reattach to its log stream instead of showing a Run button that would 409.

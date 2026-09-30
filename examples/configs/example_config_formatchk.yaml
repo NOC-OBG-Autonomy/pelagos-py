@@ -68,8 +68,6 @@ steps:
 # ----------------------- Report assembly ---------------------
   - name: Write Data Report
     parameters:
-      title:
-      fname: formatchk_demo.rst
-      build: false
-      extent: [5, -35, 45, 70]
+      title:  # Goes on the title page. Blank uses the filename core.
+      fname: formatchk_demo.pdf # Output .pdf, written to the pipeline's "out_directory". Blank uses the filename core.
 

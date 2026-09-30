@@ -23,7 +23,7 @@ import pandas as pd
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-from pelagos_py.utils import fig_spec
+from pelagos_py.utils import fig_spec, palettes
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -38,16 +38,7 @@ INFLECTION = 5
 PROPELLED = 6
 TRANSITION = 7
 
-PHASE_COLOURS = {
-    UNKNOWN: "#9ca3af",
-    ASCENT: "#22c55e",
-    DESCENT: "#3b82f6",
-    SURFACING: "#f97316",
-    PARKING: "#a855f7",
-    INFLECTION: "#06b6d4",
-    PROPELLED: "#ef4444",
-    TRANSITION: "#eab308",
-}
+PHASE_COLOURS = palettes.CATEGORICAL["SCI_PHASE"]
 
 PHASE_NAMES = {
     UNKNOWN: "0 Unknown",

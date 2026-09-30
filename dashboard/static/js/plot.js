@@ -351,7 +351,10 @@ class Chart {
       const mt = (p.spec.title ? 18 : 0) + (p.spec.top_axis ? 32 : 10);
       const mb = p.xHidden ? 8 : (p.spec.xdate ? 34 : 22) + (p.spec.xlabel ? 16 : 0);
       p.outer = outer;
-      const mr = p.spec.cbar ? 16 + CBAR_W : 16;
+      const cb = p.spec.cbar;
+      // A categorical key is as wide as its longest label (dot + gap before it).
+      const keyW = cb && cb.categories ? Math.max(ctx.measureText(cb.label).width, ...cb.categories.map(([l]) => ctx.measureText(l).width + 16)) + 10 : CBAR_W;
+      const mr = cb ? 16 + keyW : 16;
       p.rect = { x: outer.x + ml, y: outer.y + mt, w: Math.max(20, outer.w - ml - mr), h: Math.max(20, outer.h - mt - mb) };
     });
   }
@@ -433,11 +436,24 @@ class Chart {
   }
 
   // Colour scale for a value-coloured scatter (panel spec.cbar): a tall thin bar
-  // in the gutter right of the panel, a grey "missing" swatch beneath it.
+  // in the gutter right of the panel, a grey "missing" swatch beneath it; for a
+  // categorical variable (cbar.categories: [[label, colour]]) a list of swatches.
   _drawColourbar(p, fg) {
     const cb = p.spec.cbar;
     if (!cb) return;
     const r = p.rect, bw = 10, x = r.x + r.w + 14;
+    if (cb.categories) {
+      fg.font = FONT; fg.textAlign = 'left'; fg.textBaseline = 'middle';
+      let y = r.y + 6;
+      fg.fillStyle = MUTED; fg.fillText(cb.label, x, y);
+      const rows = cb.categories.concat(cb.missing ? [['missing', '#d0d4d8']] : []);
+      for (const [label, colour] of rows) {
+        y += 16;
+        fg.fillStyle = colour; fg.beginPath(); fg.arc(x + 4, y, 4, 0, Math.PI * 2); fg.fill();
+        fg.fillStyle = FG; fg.fillText(label, x + 14, y);
+      }
+      return;
+    }
     const mh = cb.missing ? 22 : 0;
     const bh = Math.max(20, r.h - mh);
     fg.font = FONT; fg.textAlign = 'left'; fg.textBaseline = 'middle';
@@ -749,6 +765,7 @@ class Chart {
     const pick = { panel: p, trace: t, index: best.index, x: t.x[best.index], y: t.y[best.index], exact: null };
     this.pick = pick;
     this._drawFG();
+    if (!this.name) return; // built in the browser (Manual QC profile view): no float64 copy to fetch
     fetch(Plot.pointUrl(this.name, this.panels.indexOf(p), best.traceIndex, best.index))
       .then((r) => (r.ok ? r.json() : null))
       .then((ex) => { if (this.pick === pick && ex) { pick.exact = ex; this._drawFG(); } })
@@ -771,7 +788,7 @@ class Chart {
       + '<span>' + escapeHtml(s.xlabel || 'x') + '</span> ' + escapeHtml(xs) + '<br>'
       + '<span>' + escapeHtml(s.ylabel || 'y') + '</span> ' + escapeHtml(ys)
       + '<br><span>index</span> ' + pk.index
-      + (pk.exact ? '' : '<br><i>float32 shown; exact values loading…</i>');
+      + (pk.exact || !this.name ? '' : '<br><i>float32 shown; exact values loading…</i>');
     this.tip.classList.remove('hidden');
     const tw = this.tip.offsetWidth, th = this.tip.offsetHeight;
     let left = x + 14, top = y - th / 2;

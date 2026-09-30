@@ -499,4 +499,4 @@ steps:
       output_path: "examples/data/OG1/Processed.nc"
 
 # Report assembly
-  - name: Write Data Report (Python)
+  - name: Write Data Report

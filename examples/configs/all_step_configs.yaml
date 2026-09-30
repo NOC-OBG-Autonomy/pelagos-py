@@ -657,24 +657,24 @@ steps:
   - name: Write Data Report
     parameters:
       # [title]: string of the title
-      #   The title of the report, which will go on the title page
+      #   The title of the report, which will go on the title page.
       #   If left blank, it will use the filename core.
       title: "Data Pipeline Report"
-      # [fname]: string of the .rst filename
-      #   The filename of the main .rst file which will be written to within the pipeline's 
-      #   `out_directory`. If left blank, it will use the filename core.
-      fname: "data_report.rst"
-      # [build]: true/false
-      #   Whether to run Sphinx on the .rst at the end and generate the specified PDF
-      build: false
-      # [extent]: list of lat/lon
-      #   This is for use on the geographic extent of the inset figure. Helpful for providing
-      #   context to each glider mission, which can vary. Defaults to the Baltic Sea.
-      extent: [min_lon max_lon min_lat max_lon]
-
-      ### Below are additional reporting parameters for the future
-      # ext_format: pdf   # Something to eventually support - singletext, html
-      # overwrite: True   # Delete _build from within the "out_directory", if it exists
-      # template: None    # Could define conf.py or report generation orders different from the current base one
-      # figures: png      # Add .svg, .pdf support for vector formats
-      # method: Sphinx    # if Sphinx is found to be problematic on certain systems, attempt with another system
+      # [fname]: string of the .pdf filename
+      #   Written within the pipeline's `out_directory`. If left blank, it will use the filename core.
+      fname: "data_report.pdf"
+      # [delete_figures]: true/false
+      #   Delete the plot images once the PDF is built; false keeps them in a folder beside it.
+      delete_figures: true
+      # [show_*]: true/false
+      #   Include each section of the report.
+      show_format_check: true
+      show_configuration: true
+      show_diagnostic_plots: true
+      show_qc_summary: true
+      show_qc_plots: true
+      show_cross_section_plots: true
+      show_logs: true
+      show_index: true
+      # [logo_path]: path to a title-page logo image. Defaults to the NOC logo.
+      logo_path:

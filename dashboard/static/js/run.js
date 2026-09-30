@@ -5,6 +5,7 @@ const Run = {
   progressEl: null, // the single <span> a progress bar redraws in place
   stopping: false,  // set once the user hits Stop, so the end event reads as "stopped"
   stopBtnMode: 'idle', // 'idle' | 'stop' | 'clear' — what btn-stop currently does
+  runBtnMode: 'idle', // 'idle' | 'running' | 'paused' | 'busy' — see setRunButton
   // The step currently executing, from the __PELAGOS_STEP__ marker:
   // {index, name, test, key}. Figures are attributed by *index* (so a config
   // that repeats a step name still gets one group per occurrence) and, for a QC
@@ -282,7 +283,7 @@ const Run = {
       if (path) {
         Run.showReport(path, name);
         Run.reportName = name;
-        Run.note('report', name + ' — open it in the Report tab', 'ok');
+        Run.note('report', name + ' — open it in the Output tab', 'ok');
       }
       return;
     }
@@ -329,7 +330,7 @@ const Run = {
       Run.currentStep = { index: idx, name: rest, test, key: Run.unitKey(idx, test) };
       Run.activeGroup = null; // each execution of a step opens a fresh attempt
       Run.pauseFailed = false; // reflects the outcome of this attempt, not the last
-      RunLock.stepStarted(idx);
+      RunLock.stepStarted(idx, test);
     } else if (marker === Run.PAUSE_MARKER) {
       if (!Number.isInteger(idx)) return;
       Run.showPause(idx, rest, test);
@@ -482,12 +483,14 @@ const Run = {
   },
 
   // The Plots tab: the whole run's figures, in order, grouped by step and (for
-  // a step re-run more than once) by attempt.
+  // a step re-run more than once) by attempt. The paused step's are shown big
+  // above, by Review, so they are left out here.
   renderGallery() {
     const gallery = document.getElementById('plots-gallery');
     gallery.innerHTML = '';
-    document.getElementById('plots-empty').classList.toggle('hidden', !!Run.groups.length);
-    for (const g of Run.groups) {
+    const shown = Run.groups.filter((g) => !(Review.active && g.key === Review.key));
+    document.getElementById('plots-empty').classList.toggle('hidden', !!shown.length || Review.active);
+    for (const g of shown) {
       const total = Run.groupsFor(g.key).length;
       const sec = document.createElement('section');
       sec.className = 'plot-step';
@@ -524,7 +527,7 @@ const Run = {
   },
 
   // Show the PDF report a report step just wrote: a preview iframe plus an
-  // "Open" link, and a dot on the Report tab so it's noticed on another tab.
+  // "Open" link, and a dot on the Output tab so it's noticed on another tab.
   showReport(path, name) {
     const url = '/api/run/report?path=' + encodeURIComponent(path);
     const view = document.getElementById('report-view');
@@ -552,7 +555,7 @@ const Run = {
     view.classList.remove('hidden');
     document.getElementById('report-empty').classList.add('hidden');
     const tab = document.querySelector('.tab[data-tab="report"]');
-    if (tab) tab.textContent = 'Report •';
+    if (tab) tab.classList.add('has-new');
   },
 
   clearReport() {
@@ -561,7 +564,7 @@ const Run = {
     const empty = document.getElementById('report-empty');
     if (empty) empty.classList.remove('hidden');
     const tab = document.querySelector('.tab[data-tab="report"]');
-    if (tab) tab.textContent = 'Report';
+    if (tab) tab.classList.remove('has-new');
   },
 
   showPause(idx, name, test) {
@@ -579,27 +582,15 @@ const Run = {
     // A re-run that drew nothing leaves these set; don't carry them into the
     // next step's first figure.
     Run.pendingParams = null;
-    // A split QC step pauses per test, so the test is the headline and the
-    // step it belongs to is the context.
-    document.getElementById('run-pause-name').textContent = test || name;
-    document.getElementById('run-pause-sub').textContent = Run.pauseFailed
-      ? (test ? `${name} — step ${idx + 1} failed` : `Step ${idx + 1} failed`)
-      : (test ? `Paused after ${name} — step ${idx + 1}` : `Paused after step ${idx + 1}`);
-    document.getElementById('run-pause').classList.toggle('run-pause-failed', Run.pauseFailed);
-    const rerunBtn = document.getElementById('btn-rerun');
-    rerunBtn.lastChild.textContent = test ? 'Re-run test' : 'Re-run step';
-    rerunBtn.title = test
-      ? 'Re-run just this QC test with the parameters in the builder'
-      : 'Re-run just this step with the parameters in the builder';
     Run.setStatus(Run.pauseFailed ? 'step failed' : 'paused', Run.pauseFailed ? 'err' : 'running');
     Run.setRunButton('paused');
     // Unlock this step (or QC test) in the builder and scroll it into view —
     // that is where its parameters are edited.
     RunLock.pauseAt(idx, test);
     if (Review.active && Review.key === key) {
-      Review.setBusy(false, '');   // a re-run finished: same panel, new plots
-      Review.select(null);         // the new attempt becomes the selected one
-      Review.apply();
+      Review.setBusy(false);   // a re-run finished: same panel, new plots
+      Review.select(null);     // the new attempt becomes the selected one
+      Review.renderTitle();
     } else {
       Review.show(idx, name, test);
     }
@@ -697,7 +688,8 @@ const Run = {
     // strip can say what changed between attempts.
     Run.pendingParams = params;
     Run.activeGroup = null; // next figure starts a new attempt
-    Review.setBusy(true, 're-running…');
+    Review.setBusy(true);
+    Run.setStatus('re-running…', 'running');
     Run.setRunButton('busy');
     await API.rerunStep(params);
   },
@@ -706,6 +698,7 @@ const Run = {
     const el = document.getElementById('run-status');
     el.textContent = text;
     el.className = 'run-status' + (cls ? ' ' + cls : '');
+    if (text) document.getElementById('mem-meter').classList.remove('hidden');
   },
 
   // btn-run doubles as Continue while paused, so its label/action follow the
@@ -714,13 +707,28 @@ const Run = {
   // Paused on a failed attempt it reads Skip, since that is what moving on does.
   setRunButton(mode) {
     const btn = document.getElementById('btn-run');
+    Run.runBtnMode = mode;
     if (mode === 'paused' || mode === 'busy') {
       btn.disabled = mode === 'busy';
       btn.innerHTML = Icon.svg('play') + (Run.pauseFailed ? 'Skip step' : 'Continue');
     } else {
       btn.disabled = mode === 'running';
-      btn.innerHTML = Icon.svg('play') + 'Run pipeline';
+      btn.innerHTML = Icon.svg('play') + 'Run';
     }
+    Run.syncRunButtons();
+  },
+
+  // One control at a time: Run, then Stop while running, then Clear once over.
+  // Only a paused run shows more (Stop + Re-run + Continue).
+  syncRunButtons() {
+    const running = Run.runBtnMode === 'running';
+    const over = Run.stopBtnMode === 'clear';
+    const paused = Run.runBtnMode === 'paused' || Run.runBtnMode === 'busy';
+    document.getElementById('btn-run').classList.toggle('hidden', running || over);
+    document.getElementById('btn-stop').classList.toggle('hidden', Run.stopBtnMode === 'idle');
+    const rerun = document.getElementById('btn-rerun');
+    rerun.classList.toggle('hidden', !paused);
+    rerun.disabled = Run.runBtnMode === 'busy';
   },
 
   // btn-stop does double duty: "Stop" while a run is live, "Clear" once it has
@@ -738,6 +746,7 @@ const Run = {
       btn.disabled = mode === 'idle';
       btn.innerHTML = Icon.svg('stop') + 'Stop';
     }
+    Run.syncRunButtons();
   },
 
   async start(yamlContent) {
@@ -804,10 +813,14 @@ const Run = {
         Run.setStatus('finished', 'ok');
         Run.banner('ok', 'Pipeline finished', [took,
           Run.plotCount ? `${Run.plotCount} plot${Run.plotCount === 1 ? '' : 's'}` : '',
-          Run.reportName ? 'report ready in the Report tab' : ''].filter(Boolean).join(' · '));
+          Run.reportName ? 'report ready in the Output tab' : ''].filter(Boolean).join(' · '));
+      } else if (code < 0) {
+        // Killed by a signal we didn't send, most often the OS reclaiming memory.
+        Run.setStatus('killed', 'err');
+        Run.banner('err', 'Pipeline killed', ['possibly out of memory', took].filter(Boolean).join(' · '));
       } else {
-        Run.setStatus(`exited (code ${ev.data})`, 'err');
-        Run.banner('err', 'Pipeline failed', `exit code ${ev.data}` + (took ? ' · ' + took : ''));
+        Run.setStatus('failed', 'err');
+        Run.banner('err', 'Pipeline failed');
       }
       Run.cleanup();
       Outputs.refresh();
@@ -857,25 +870,20 @@ const Run = {
     } catch (e) { /* server not ready; ignore */ }
   },
 
-  // Switch to a tab (used when auto-resuming, and to get back to the review
-  // panel / Manual QC editor from the pause banner on another tab).
+  // Switch to a tab (used when starting or auto-resuming a run, and on pause).
   showTab(name = 'run') {
     document.querySelectorAll('.tab').forEach((t) =>
       t.classList.toggle('on', t.dataset.tab === name));
-    document.querySelectorAll('.tab-panel, .tab-actions[data-panel]').forEach((p) =>
+    document.querySelectorAll('.tab-panel').forEach((p) =>
       p.classList.toggle('hidden', p.dataset.panel !== name));
-    document.querySelector('.tab-actions-run').classList.toggle('hidden', name === 'manual');
     if (name === 'report') Outputs.refresh();
     Run.onTabChange();
   },
 
-  // The pause banner's "Review step" button is only needed when the review
-  // panel isn't already on screen, so it has to be re-evaluated whenever the
-  // visible tab changes. The Manual QC tab hides the palette and builder.
+  // The Manual QC tab hides the builder and takes the whole window.
   onTabChange() {
     const which = document.querySelector('.tab.on')?.dataset.tab;
     document.body.classList.toggle('manual-full', which === 'manual');
-    if (Review.active) Review.apply();
   },
 
   // The run is genuinely over (finished, stopped, or gone). Only called on a

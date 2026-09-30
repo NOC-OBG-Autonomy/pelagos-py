@@ -1,12 +1,9 @@
-"""Tests the step 'Write Report'"""
+"""Tests the step 'Write Data Report' (fpdf2-based report)."""
 
 #   Test module import
-from pelagos_py.steps.input_output import write_report
+from pelagos_py.steps.input_output import write_report as wrp
 import pytest
-from unittest.mock import (
-    patch,
-    MagicMock,
-)  #   Patch for OS, MagicMock for .rst stream object and function calls
+from unittest.mock import patch, MagicMock
 
 #   Other imports
 from datetime import datetime, timezone
@@ -27,12 +24,19 @@ def qc_dataset():
         "gross_range_test_flag_cts": json.dumps({"1": 8}),
         # intentionally omit stats to test default {}
         "gross_range_test_params": json.dumps({"fail": [0, 20]}),
+        #   Glossary is read from the first QC var carrying these.
+        "flag_values": [0, 1, 2],
+        "flag_meanings": "NO_QC GOOD PROB_GOOD",
+        "long_name": "Sea temperature QC",
+        "units": "1",
     }
 
     ds["TEMP_QC"] = xr.DataArray(np.zeros(5), attrs=attrs)
 
     #   Non-QC variable for reference
-    ds["TEMP"] = xr.DataArray(np.zeros(5))
+    ds["TEMP"] = xr.DataArray(
+        np.zeros(5), attrs={"long_name": "Sea temperature", "units": "degC"}
+    )
     ds["LONGITUDE"] = xr.DataArray(np.linspace(10, 11, 5))  #   Near gburg
     ds["LATITUDE"] = xr.DataArray(np.linspace(57, 58, 5))
     ds.attrs["dataset_id"] = "glider_test_run"
@@ -40,22 +44,52 @@ def qc_dataset():
     return ds
 
 
+### Small pure helpers
+
+
+def test_sanitize_replaces_unicode():
+    #   Known symbols swap to readable equivalents, anything else is replaced
+    #   rather than raising on latin-1 output.
+    assert wrp.sanitize("α β γ") == "alpha beta gamma"
+    assert wrp.sanitize("“quote”") == '"quote"'
+    #   An out-of-range char survives (replaced, not raised).
+    out = wrp.sanitize("emoji 😀")
+    assert isinstance(out, str)
+    out.encode("latin-1")  #   Must not raise
+
+
+def test_long_date_suffixes():
+    assert wrp.long_date(datetime(2026, 6, 23, 22, 49)) == "23rd June 2026, 22:49 UTC"
+    assert wrp.long_date(datetime(2026, 6, 1, 0, 0)).startswith("1st June")
+    assert wrp.long_date(datetime(2026, 6, 2, 0, 0)).startswith("2nd June")
+    #   The teens are all "th" regardless of last digit.
+    assert wrp.long_date(datetime(2026, 6, 11, 0, 0)).startswith("11th June")
+    assert wrp.long_date(datetime(2026, 6, 12, 0, 0)).startswith("12th June")
+
+
+def test_pelagos_version_unknown():
+    with patch.object(wrp, "version", side_effect=PackageNotFoundError):
+        assert wrp.pelagos_version() == "unknown"
+
+    with patch.object(wrp, "version", return_value="1.2.3"):
+        assert wrp.pelagos_version() == "1.2.3"
+
+
 def test_current_info():
-    #   Better test - uses mock to emulate OS with context managers
-    #   import getpass becomes import write_report.getpass within mock
+    #   Mirrors the rst report's test: mock the OS / environment.
     fixed_now = datetime(2026, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
     with (
-        patch.object(write_report, "datetime") as mock_datetime,
-        patch.object(write_report.getpass, "getuser", return_value="aaron-mau"),
-        patch.object(write_report, "version", return_value="0.1.dev318+gdaacfb0d8"),
-        patch.object(write_report.platform, "python_version", return_value="3.14.2"),
-        patch.object(write_report.platform, "system", return_value="Linux"),
-        patch.object(write_report.platform, "release", return_value="6.17.0-8-generic"),
+        patch.object(wrp, "datetime") as mock_datetime,
+        patch.object(wrp.getpass, "getuser", return_value="aaron-mau"),
+        patch.object(wrp, "version", return_value="0.1.dev318+gdaacfb0d8"),
+        patch.object(wrp.platform, "python_version", return_value="3.14.2"),
+        patch.object(wrp.platform, "system", return_value="Linux"),
+        patch.object(wrp.platform, "release", return_value="6.17.0-8-generic"),
     ):
         mock_datetime.now.return_value = fixed_now
-        result = write_report.current_info()
+        result = wrp.current_info()
 
-    expected = {
+    assert result == {
         "timestamp_utc": fixed_now.isoformat(),
         "user": "aaron-mau",
         "version": "0.1.dev318+gdaacfb0d8",
@@ -63,659 +97,290 @@ def test_current_info():
         "system": "Linux: 6.17.0-8-generic",
     }
 
-    assert result == expected
 
-    #   Do it again, but throw the PackageNotFoundError
-    with (
-        patch.object(write_report, "datetime") as mock_datetime,
-        patch.object(write_report.getpass, "getuser", return_value="aaron-mau"),
-        patch.object(write_report, "version", side_effect=PackageNotFoundError),
-        patch.object(write_report.platform, "python_version", return_value="3.14.2"),
-        patch.object(write_report.platform, "system", return_value="Linux"),
-        patch.object(write_report.platform, "release", return_value="6.17.0-8-generic"),
-    ):
-        mock_datetime.now.return_value = fixed_now
-        result = write_report.current_info()
-
-    expected["version"] = "unknown"
-
-    assert result == expected
-
-
-def test_write_conf_py(tmp_path):
-    conf = tmp_path / "conf.py"
-    #   conf.py is written to the specified source directory and contains expected params
-    write_report.write_conf_py(
-        tmp_path,
-        project="Test project",
-        author="Author A",
-        master_doc="index",
-        subtitle="Sub title",
-    )
-    assert conf.exists()
-    content = (conf).read_text()
-    assert "Test project" in content
-    assert "Author A" in content
-    assert "master_doc = 'index'" in content
-    assert "Sub title" in content
-
-    #   Nesting
-    nested = tmp_path / "a" / "b" / "c"
-    write_report.write_conf_py(nested, project="P", author="A")
-    assert (nested / "conf.py").exists()
-
-    write_report.write_conf_py(
-        tmp_path,
-        project="Test project",
-        author="Author A",
-        master_doc="index",
-    )  #   Confirm it still works w/o optional subtitle being defined
-    content = (conf).read_text()
-    assert "project = 'Test project'" in content
-
-
-def test_run_sphinx(tmp_path):
-    #   Should break if no conf.py is specified
-    with pytest.raises(RuntimeError, match="conf.py not found"):
-        write_report.run_sphinx(tmp_path)
-
-    (tmp_path / "conf.py").write_text("# dummy config")
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value = MagicMock(returncode=0)
-
-        write_report.run_sphinx(tmp_path)
-
-        #   Check subprocess.run was called once
-        assert mock_run.call_count == 1
-
-        #   Grab the actual args
-        args = mock_run.call_args[0][0]  #   first positional arg in subprocess.run
-        assert args[0] == "sphinx-build"
-        assert "-M" in args
-        assert "latexpdf" in args
-        assert str(tmp_path.resolve()) in args
-
-    #   Now with a custom build_dir
-    custom_build = tmp_path / "custom_build"
-
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value = MagicMock(returncode=0)
-
-        write_report.run_sphinx(tmp_path, build_dir=custom_build)
-
-        called_args = mock_run.call_args[0][0]
-        build_dir_arg = called_args[-2]  #   source_dir, build_dir, -q
-        assert build_dir_arg == str(custom_build.resolve())
+### QC dictionary builders
 
 
 def test_build_qc_dict(qc_dataset):
-    result = write_report.build_qc_dict(qc_dataset)
+    result = wrp.build_qc_dict(qc_dataset)
 
     assert "TEMP_QC" in result
     assert "range_test" in result["TEMP_QC"]
     assert "gross_range_test" in result["TEMP_QC"]
 
     range_test = result["TEMP_QC"]["range_test"]
-
     assert range_test["params"] == {"threshold": [-2.5, 40]}
     assert range_test["flag_counts"] == {"1": 10, "4": 2}
     assert range_test["stats"] == {"mean": 1.2}
 
+    #   stats was intentionally omitted -> defaults to {}
+    assert result["TEMP_QC"]["gross_range_test"]["stats"] == {}
 
-def test_flatten_qc_dict(qc_dataset):
+
+def test_flatten_qc_dict():
     qc_dict = {
         "TEMP_QC": {
             "range_test": {
-                "stats": {"min": 0, "max": 30},
-                "flag_counts": {
-                    0: 0,
-                    1: 2212921,
-                    2: 0,
-                    3: 2500,
-                    4: 0,
-                    5: 0,
-                    6: 0,
-                    7: 0,
-                    8: 0,
-                    9: 0,
-                },
+                "flag_counts": {1: 2212921, 3: 2500, 4: 0},  #   0 dropped
             }
         },
-        "CNDC_QC": {},  # should be skipped entirely
+        "CNDC_QC": {},  #   empty tests -> skipped entirely
     }
 
-    result = write_report.flatten_qc_dict(qc_dict)
+    result = wrp.flatten_qc_dict(qc_dict)
 
-    expected = [
+    assert result == [
         ["TEMP_QC", "range_test", 1, "2,212,921"],
         ["TEMP_QC", "range_test", 3, "2,500"],
     ]
 
-    assert result == expected
-    assert "CNDC_QC" not in [item for sublist in expected for item in sublist]
+
+### Index / glossary rows
 
 
-### RST writers
+def test_qc_flag_glossary_rows_from_dataset(qc_dataset):
+    rows = wrp.qc_flag_glossary_rows(qc_dataset)
+    #   Read from TEMP_QC's flag_values/flag_meanings (3 entries here).
+    assert rows == [
+        ["0", "NO_QC", "No QC performed"],
+        ["1", "GOOD", "Good data"],
+        ["2", "PROB_GOOD", "Probably good data"],
+    ]
+
+
+def test_qc_flag_glossary_rows_fallback():
+    #   No QC var carries flag_values/meanings -> Argo default table.
+    ds = xr.Dataset({"TEMP": xr.DataArray(np.zeros(3))})
+    rows = wrp.qc_flag_glossary_rows(ds)
+    assert len(rows) == len(wrp._DEFAULT_QC_FLAGS)
+    assert rows[0] == ["0", "NO_QC", "No QC performed"]
+
+
+def test_variable_index_rows(qc_dataset):
+    rows = wrp.variable_index_rows(qc_dataset)
+    by_var = {r[0]: r for r in rows}
+
+    assert by_var["TEMP"] == ["TEMP", "Sea temperature", "degC"]
+    #   "1" is kept; LONGITUDE has no attrs -> blank long name and units.
+    assert by_var["LONGITUDE"] == ["LONGITUDE", "", ""]
+
+
+def test_variable_index_rows_units_none():
+    #   Units of "None" (string) are blanked rather than printed literally.
+    ds = xr.Dataset()
+    ds["PHASE"] = xr.DataArray(np.zeros(3), attrs={"units": "None"})
+    rows = wrp.variable_index_rows(ds)
+    assert rows == [["PHASE", "", ""]]
+
+
+### YAML config
+
+
+def test_config_to_yaml_is_clean():
+    config = {"pipeline": {"name": "demo"}, "steps": [{"name": "Load Data"}]}
+    out = wrp.config_to_yaml(config)
+    #   Insertion order preserved (sort_keys=False) and no document markers.
+    assert out.startswith("pipeline:")
+    assert "name: demo" in out
+    assert "---" not in out
+
+
+### Section builders (pdf is a recording mock)
+
+
+def test_qc_section(qc_dataset):
+    pdf = MagicMock()
+    wrp.qc_section(pdf, qc_dataset)
+
+    pdf.add_page.assert_called_once()
+    pdf.section_heading.assert_called_once_with("Quality Control Summary")
+    pdf.add_table.assert_called_once()
+
+    headers = pdf.add_table.call_args[0][0]
+    rows = pdf.add_table.call_args[0][1]
+    assert headers == ["QC Variable", "Test", "Flag", "Count"]
+    assert len(rows) > 0
+
+
+def test_qc_section_no_rows(qc_dataset):
+    pdf = MagicMock()
+    with patch.object(wrp, "flatten_qc_dict", return_value=[]):
+        wrp.qc_section(pdf, qc_dataset)
+
+    pdf.body.assert_called_once_with("No QC tests found.")
+    pdf.add_table.assert_not_called()
 
 
 def test_add_log(tmp_path):
-    log_content = """\
-2026-02-17 12:56:08 - INFO - pelagos_py.pipeline - Logging to file: /pelagos_py/examples/data/OG1/testing/processing.log
-2026-02-17 12:56:08 - INFO - pelagos_py.pipeline - Assembling steps to run from config.
-2026-02-17 12:56:08 - INFO - pelagos_py.pipeline - Step 'Load OG1' added successfully!
-
-2026-02-17 12:56:18 - WARNING - pelagos_py.pipeline.step.Apply QC - [Apply QC] PROFILE_NUMBER_QC is all 0 after running all QC steps. Check intended QC variables and test requirements.
-2026-02-17 12:56:23 - WARNING - pelagos_py.pipeline.step.Write Data Report - [Write Data Report] Lines below this will not be captured in the run report. See logfile if other steps follow this one.
-"""  #   Blank line should get ignored
-
+    log_content = (
+        "2026-02-17 12:56:08 - INFO - pelagos_py.pipeline - Logging to file\n"
+        "\n"  #   blank line -> ignored
+        "2026-02-17 12:56:18 - WARNING - pelagos_py.pipeline.step.Apply QC - flagged\n"
+        "not a properly formatted line\n"  #   wrong field count -> skipped
+    )
     logfile = tmp_path / "processing.log"
     logfile.write_text(log_content)
 
-    doc = MagicMock()
+    pdf = MagicMock()
+    wrp.add_log(str(logfile), pdf)
 
-    write_report.add_log(str(logfile), doc)
-    doc.h2.assert_called_once_with("Logfile of run")
+    pdf.section_heading.assert_called_once_with("Logfile of run")
+    rows = pdf.terminal_block.call_args[0][0]
 
-    #   Pull the data out of the output table
-    kwargs = doc.table_list.call_args.kwargs
-    assert kwargs["headers"] == ["Time", "Level", "Location", "Message"]
-    rows = kwargs["data"]
-
-    assert rows[0] == (
-        "12:56:08",  #  Shouldn't have a date on it
-        "INFO",
-        "pipeline",  #  Prefix should be removed
-        "Logging to file: /pelagos_py/examples/data/OG1/testing/processing.log",
-    )
-
-    # Check WARNING row with deeper path
-    assert rows[3][0] == "12:56:18"
-    assert rows[3][1] == "WARNING"
-    assert rows[3][2] == "pipeline.step.Apply QC"
-
-    # Ensure padding applied for formatting difficulties
-    assert len(rows) >= 28
-
-    doc.newline.assert_called()
-
-    #   Something that cannot be split
-    log_content = "This is not a properly formatted log line\n"
-    logfile = tmp_path / "bad.log"
-    logfile.write_text(log_content)
-
-    doc = MagicMock()
-    write_report.add_log(str(logfile), doc)
-
-    kwargs = doc.table_list.call_args.kwargs
-    rows = kwargs["data"]
-    # Only padding rows should be present
-    assert all(all(cell == "" for cell in row) for row in rows)
+    #   Date stripped, pelagos_py. prefix removed.
+    assert rows[0] == ("12:56:08", "INFO", "pipeline", "Logging to file")
+    assert rows[1][0] == "12:56:18"
+    assert rows[1][1] == "WARNING"
+    assert rows[1][2] == "pipeline.step.Apply QC"
+    assert len(rows) == 2  #   blank + malformed lines dropped
 
 
-def test_add_cc_ascii(tmp_path):
-    #   Make sure the bad chars get replaced
-    ascii_content = """\
+def test_add_log_missing_file(tmp_path):
+    pdf = MagicMock()
+    wrp.add_log(str(tmp_path / "nope.log"), pdf)
+    pdf.body.assert_called_once_with("Logfile not found.")
+    pdf.terminal_block.assert_not_called()
 
 
---------------------------------------------------------------------------------
-                         IOOS Compliance Checker Report                         
-                                 Version X.Y.Z                                  
-                     Report generated 2026-01-01T00:00:00Z                      
-                                     og:1.0                                     
-  https://oceangliderscommunity.github.io/OG-format-user-manual/OG_Format.html  
---------------------------------------------------------------------------------
-                               Corrective Actions                               
-Replace these characters: α, β, γ, σ, μ, °, ±
-"""
-    # json_content =
-    cc_file = tmp_path / "example_check.rst"
-    cc_file.write_text(ascii_content)
-    doc = MagicMock()
-
-    write_report.add_cc(str(cc_file), doc)
-    doc.h2.assert_called_once_with("Compliance Checker results")
-    doc.codeblock.assert_called_once()
-
-    codeblock_out = doc.codeblock.call_args.args[0]  #   Extract the actual text
-    assert "oceangliderscommunity" in codeblock_out
-    for k, v in write_report.REPLACEMENTS.items():
-        if k in ascii_content:
-            assert v in codeblock_out
-
-
-def test_add_cc_json(tmp_path):
+def test_format_checker_section_json_file(tmp_path):
     cc_data = {
         "og": {
             "scored_points": 478,
             "possible_points": 524,
             "all_priorities": [
-                {
-                    "name": "Check for mandatory global attributes",
-                    "weight": 3,
-                    "value": [13, 17],
-                    "msgs": [
-                        "Global attribute contributing_institutions is missing",
-                        "Global attribute contributing_institutions_role is missing",
-                        "Global attribute contributing_institutions_role_vocabulary is missing",
-                        "Global attribute start_date is missing",
-                    ],
-                    "children": [],
-                },
-                {
-                    "name": "redundant test",  #   Should be redundant
-                    "msgs": ["message 1", "message 2"],
-                },
-                {
-                    "name": "redundant test",
-                    "msgs": ["message 3"],
-                },
+                {"name": "Check globals", "msgs": ["attr is missing"]},
+                {"name": "No-message check", "msgs": []},  #   skipped (no msgs)
             ],
         }
     }
-
     ccfile = tmp_path / "cc.json"
     ccfile.write_text(json.dumps(cc_data))
 
-    doc = MagicMock()
+    pdf = MagicMock()
+    #   No structured cc_results -> falls back to the saved JSON file.
+    wrp.format_checker_section(pdf, cc_results=None, ccfile=str(ccfile))
 
-    write_report.add_cc(str(ccfile), doc)
-    doc.h2.assert_called_once_with("Compliance Checker results")
-    doc.h3.assert_called_once_with("og: CC score of 478/524")
+    pdf.section_heading.assert_called_once_with("Format Checker results")
+    #   Known checker "og" -> OG1 label + docs link.
+    label, url, score = pdf.cc_heading.call_args[0]
+    assert label == "OG1"
+    assert url == wrp.OG1_MANUAL_URL
+    assert score == "Compliance score: 478/524"
 
-    # Break the table out
-    kwargs = doc.table_list.call_args.kwargs
-    assert kwargs["headers"] == ["Name", "og message"]
-
-    rows = kwargs["data"]
-    assert len(rows) == 7
-    assert rows[0] == [
-        "Check for mandatory global attributes",
-        "Global attribute contributing_institutions is missing",
-    ]
-    assert rows[-1] == ["", "message 3"]  #   Should have a blank first column
+    blocks = pdf.cc_checks.call_args[0][0]
+    assert blocks == [("Check globals", ["attr is missing"])]
 
 
-def test_qc_section(qc_dataset):
-    doc = (
-        MagicMock()
-    )  #   Fake object that records what is done to it (representing the file)
-
-    write_report.qc_section(doc, qc_dataset)
-
-    #   Header called once, table and newline called however many times
-    doc.h2.assert_called_once_with("Quality Control Summary")
-    assert doc.table.called
-    assert doc.newline.called
-
-    headers, rows = doc.table.call_args[0]
-
-    assert headers == [
-        "QC Variable",
-        "Test",
-        "Flag",
-        "Count",
-    ]
-    assert len(rows) > 0
-
-
-def test_qc_section_no_rows(qc_dataset):
-    #   TODO: Break up tests like this
-    doc = MagicMock()
-
-    #   Patch build_qc_dict normally but force flatten_qc_dict to return empty
-    with (
-        patch.object(write_report, "build_qc_dict", return_value={"dummy": "data"}),
-        patch.object(write_report, "flatten_qc_dict", return_value=[]),
-    ):
-        write_report.qc_section(doc, qc_dataset)
-
-    doc.paragraph.assert_called_once_with("No QC tests found.")
-    doc.newline.assert_called_once()  #   At the top
-    doc.table.assert_not_called()
-
-
-def test_info_page(tmp_path):
-    doc = MagicMock()
-    params = {"out_directory": "/tmp/", "log_file": "run.log"}
-    glatters = {
-        "glider_serial": "77",
-        "dataset_id": "delayed_SEA077_M21",
-        "start_date": "20230316T1019",
-        "platform_vocabulary": "long NERC link",
-    }
-
-    with patch.object(write_report, "current_info", return_value={"user": "user_name"}):
-        write_report.run_info_page(doc, params, glatters)
-
-    assert doc.table.call_count == 2  #   2 for each time run_info_page is called
-    doc.table_list.assert_called_once()  #   "platform_vocabulary" should make it happen
-
-    headers_arg = doc.table_list.call_args[1]["headers"]
-    assert headers_arg == ["", "Glider information"]
-
-    doc.h2.assert_called_once_with("Pipeline run information")
-
-
-def test_img_rst():
-    doc = MagicMock()
-    write_report.img_rst(doc, "/some/output/dir/TEMP_QC.png")
-    doc.directive.assert_called_once_with(name="image", arg="TEMP_QC.*", fields=None)
-    assert doc.newline.call_count == 2
-
-
-def test_basic_geo(qc_dataset, tmp_path):
-    #   Confirm that the file gets made and img_rst is called
-    doc = MagicMock()
-    mock_ax = MagicMock()
-    outdir = str(tmp_path) + "/"
-    ext = ".png"
-    g_extent = [10, 11, 57, 58]
-
-    with (
-        patch.object(write_report.plt, "savefig") as mock_save,
-        patch.object(write_report, "img_rst") as mock_img,
-        patch.object(write_report.plt, "axes", return_value=mock_ax) as mock_axes,
-    ):
-        write_report.basic_geo(doc, qc_dataset, g_extent, ext, outdir)
-
-    expected_fname = outdir + "geographic.png"
-    mock_save.assert_called_once_with(expected_fname)
-    mock_img.assert_called_once_with(doc, expected_fname)
-
-    mock_axes.assert_called_once()
-    mock_ax.set_extent.assert_called_once()
-    mock_ax.add_feature.assert_called_once()
-    mock_ax.gridlines.assert_called_once()
-    mock_ax.coastlines.assert_called_once()
-    mock_ax.scatter.assert_called_once()
-
-
-def test_inset_geo(qc_dataset, tmp_path):
-    doc = MagicMock()
-    mock_fig = (
-        MagicMock()
-    )  #   for figure testing - fake fig, axes, gridlines (and more)
-    mock_ax_main = MagicMock()  #   for ax_main
-    mock_inset_ax = MagicMock()  #   for inset_ax
-    mock_gl = MagicMock()  #   for the gridlines
-    outdir = str(tmp_path) + "/"
-
-    mock_ax_main.gridlines.return_value = mock_gl  #   gridlines()
-    mock_fig.add_subplot.return_value = mock_ax_main  #   add_subplot()
-    mock_fig.add_axes.return_value = mock_inset_ax  #   add_axes()
-
-    with (
-        patch.object(write_report.plt, "savefig") as mock_save,
-        patch.object(write_report.plt, "close") as mock_close,
-        patch.object(write_report, "img_rst") as mock_img,
-        patch.object(write_report.plt, "figure", return_value=mock_fig) as mock_figure,
-    ):
-        write_report.inset_geo(doc, qc_dataset, outdir=outdir)
-
-    expected_fname = outdir + "geographic.png"
-
-    mock_save.assert_called_once_with(expected_fname)
-    mock_close.assert_called_once()
-    mock_img.assert_called_once_with(doc, expected_fname)
-
-    mock_figure.assert_called_once_with(figsize=(8, 6))
-    mock_fig.add_subplot.assert_called_once()
-    mock_fig.add_axes.assert_called_once()
-    mock_ax_main.set_extent.assert_called_once()
-    mock_ax_main.scatter.assert_called_once()
-    mock_ax_main.gridlines.assert_called_once()
-    mock_ax_main.coastlines.assert_called_once()
-    mock_ax_main.set_title.assert_called_once()
-    assert mock_gl.top_labels is False
-    assert mock_gl.right_labels is False
-    assert mock_gl.bottom_labels is True
-    assert mock_gl.left_labels is True
-    mock_inset_ax.set_extent.assert_called_once()
-    mock_inset_ax.add_feature.assert_called()
-    mock_inset_ax.coastlines.assert_called_once()
-    mock_inset_ax.plot.assert_called_once()
-
-
-def test_qc_hist(qc_dataset, tmp_path):
-    doc = MagicMock()
-    outdir = str(tmp_path) + "/"
-
-    with (
-        patch.object(write_report.plt, "savefig") as mock_save,
-        patch.object(write_report, "img_rst") as mock_img,
-    ):
-        write_report.qc_hist(doc, qc_dataset, outdir, "TEMP_QC")
-
-    expected_fname = outdir + "TEMP_QC.png"
-
-    mock_save.assert_called_once_with(expected_fname)
-    mock_img.assert_called_once_with(doc, expected_fname)
-
-    #   Make sure it breaks by resetting QC param
-    empty_ds = xr.Dataset(
-        {"TEMP_QC": xr.DataArray(np.array([])), "TEMP": xr.DataArray(np.array([]))},
-        attrs={"dataset_id": "TEST_DS"},
+def test_format_checker_section_no_results():
+    pdf = MagicMock()
+    wrp.format_checker_section(pdf, cc_results=None, ccfile=None)
+    pdf.body.assert_called_once_with(
+        "Format Checker ran but produced no detailed results."
     )
 
-    with pytest.raises(ValueError):
-        write_report.qc_hist(doc, empty_ds, outdir, "TEMP_QC")
+
+### Full step (builds a real PDF; heavy plotting is patched out)
 
 
-def test_qc_hist_all_nan(qc_dataset, tmp_path):
-    #   Repeat from before, but now test for when they are all NaN
-    doc = MagicMock()
-    outdir = str(tmp_path) + "/"
-
-    #   Reset TEMP and QC to skip plotting and just do text
-    qc_dataset["TEMP"] = xr.DataArray(
-        np.full(5, np.nan), attrs=qc_dataset["TEMP"].attrs
-    )
-    qc_dataset["TEMP_QC"] = xr.DataArray(
-        np.full(5, np.nan), attrs=qc_dataset["TEMP_QC"].attrs
-    )
-
-    #   More MagicMock objects to check on the actual figure params
-    mock_fig = MagicMock()
-    mock_ax0 = MagicMock()
-    mock_ax1 = MagicMock()
-    mock_ax1.containers = [MagicMock()]
-
-    with (
-        patch.object(
-            write_report.plt, "subplots", return_value=(mock_fig, [mock_ax0, mock_ax1])
-        ),
-        patch.object(write_report.plt, "savefig"),
-        patch.object(write_report, "img_rst"),
-    ):
-        write_report.qc_hist(doc, qc_dataset, outdir, "TEMP_QC")
-
-    #   Should write text instead of plotting
-    mock_ax0.text.assert_called_once()
-    mock_ax0.set_title.assert_called_once()
-    assert not mock_ax0.plot.called
+def _make_step(context, parameters):
+    step = wrp.WriteDataReport.__new__(wrp.WriteDataReport)
+    step.name = "Write Data Report"
+    step.context = context
+    step.parameters = parameters
+    step.log = MagicMock()
+    step.log_warn = MagicMock()
+    return step
 
 
-def test_make_plots(qc_dataset, tmp_path):
-    doc = MagicMock()
-    outdir = str(tmp_path) + "/"
-
-    with (
-        patch.object(write_report, "inset_geo") as mock_inset,
-        patch.object(write_report, "qc_hist") as mock_hist,
-    ):
-        write_report.make_plots(doc, qc_dataset, outdir)
-
-    doc.h2.assert_called_once_with("Plots")
-    mock_inset.assert_called_once()
-
-    #   Can add more if qc_dataset is modified in tests
-    mock_hist.assert_called_once_with(doc, qc_dataset, outdir, "TEMP_QC")
-
-
-def test_write_data_report(tmp_path, qc_dataset):
-    #   Test the whole step with Sphinx enabled to write out
-    rst_file = tmp_path / "glider_test_run_check.rst"  # _check.rst Expected from the CC
-    rst_file.write_text("")
-
+def test_write_data_report_python(tmp_path, qc_dataset):
     context = {
         "global_parameters": {
             "out_directory": str(tmp_path) + "/",
             "log_file": "run.log",
             "filename_core": "glider_test_run",
+            "name": "Demo pipeline",
+            "description": "A short description",
         },
         "data": qc_dataset,
+        "pipeline_config": {
+            "pipeline": {"name": "Demo pipeline"},
+            "steps": [{"name": "Load Data"}, {"name": "Apply QC"}],
+        },
     }
     (tmp_path / "run.log").write_text(
         "2026-02-17 12:00:00 - INFO - pelagos_py.pipeline - Test message\n"
     )
 
-    step = write_report.WriteDataReport.__new__(write_report.WriteDataReport)
-    step.context = context
-    step.parameters = {"fname": "report.rst", "title": "Test Report", "build": True}
-    step.log = MagicMock()
-    step.log_warn = MagicMock()
-
-    with (
-        patch.object(write_report, "make_plots"),
-        patch.object(write_report, "write_conf_py") as mock_conf,
-        patch.object(write_report, "run_sphinx") as mock_sphinx,
-    ):
-        step.run()
-
-    mock_conf.assert_called_once()
-    mock_sphinx.assert_called_once()
-
-
-def test_write_data_report_no_build(tmp_path, qc_dataset):
-    #   Repeat above, no build
-    rst_file = tmp_path / "glider_test_run_check.rst"  # _check.rst Expected from the CC
-    rst_file.write_text("")
-
-    context = {
-        "global_parameters": {
-            "out_directory": str(tmp_path) + "/",
-            "log_file": "run.log",
-            "filename_core": "glider_test_run",
-        },
-        "data": qc_dataset,
-    }
-    (tmp_path / "run.log").write_text(
-        "2026-02-17 12:00:00 - INFO - pelagos_py.pipeline - Test message\n"
+    step = _make_step(
+        context,
+        {"fname": "report", "title": "Test Report", "show_qc_plots": False},
     )
 
-    step = write_report.WriteDataReport.__new__(write_report.WriteDataReport)
-    step.context = context
-    step.parameters = {
-        "fname": "report.rst",
-        "title": "Test Report",
-        "build": False,
-    }
-
-    step.log = MagicMock()
-    step.log_warn = MagicMock()
-
+    #   Skip the expensive/figure-producing bits; the real FPDF still writes a PDF.
     with (
-        patch.object(write_report, "make_plots"),
-        patch.object(write_report, "write_conf_py") as mock_conf,
-        patch.object(write_report, "run_sphinx") as mock_sphinx,
+        patch.object(wrp, "make_plots") as mock_plots,
+        patch.object(wrp, "glider_track_map", return_value=None),
     ):
-        step.run()
+        result = step.run()
 
-    mock_conf.assert_not_called()
-    mock_sphinx.assert_not_called()
+    #   "report" -> "report.pdf", written to out_directory and actually exists.
+    out = tmp_path / "report.pdf"
+    assert out.exists()
+    assert out.read_bytes().startswith(b"%PDF")
+    #   show_qc_plots=False, so make_plots is never called.
+    mock_plots.assert_not_called()
+    assert result is context
 
 
-def test_write_data_report_with_cc(tmp_path, qc_dataset):
-    #   Since last tests were written, "filename_core" is automatically added to the global context when
-    #   data are loaded and it serves as the default if the user doesn't specify title, fname
+def test_write_data_report_python_defaults(tmp_path, qc_dataset):
+    #   No fname/title -> derived from filename_core.
     context = {
         "global_parameters": {
             "out_directory": str(tmp_path) + "/",
             "log_file": "run.log",
             "filename_core": "test_filename",
-            "cc_file": "cc.json",
         },
         "data": qc_dataset,
+        "pipeline_config": {},
     }
-
     (tmp_path / "run.log").write_text("log line\n")
 
-    step = write_report.WriteDataReport.__new__(write_report.WriteDataReport)
-    step.context = context
-    step.parameters = {
-        "title": None,
-        "fname": None,
-        "build": False,
-    }
-
-    step.log = MagicMock()
-    step.log_warn = MagicMock()
+    step = _make_step(context, {"show_qc_plots": False})
 
     with (
-        patch.object(write_report, "RstCloth") as mock_rst,
-        patch.object(write_report, "make_plots"),
-        patch.object(write_report, "write_conf_py") as mock_conf,
-        patch.object(write_report, "add_cc") as mock_cc,
+        patch.object(wrp, "make_plots"),
+        patch.object(wrp, "glider_track_map", return_value=None),
     ):
-        doc = MagicMock()
-        mock_rst.return_value = doc
         step.run()
 
-    mock_cc.assert_called_once()
-
-    #   Check defaults
-    doc.h1.assert_called_once_with(
-        "Data report test filename"
-    )  #   Underscores should have been removed
-    assert (
-        tmp_path / "test_filename.rst"
-    ).exists()  #   Should default to filename_core
+    assert (tmp_path / "test_filename.pdf").exists()
 
 
-def test_write_data_report_missing_dataset_id(tmp_path, qc_dataset):
-    #   Test again without dataset_id
+def test_write_data_report_python_missing_dataset_id(tmp_path, qc_dataset):
     qc_dataset = qc_dataset.copy()
     qc_dataset.attrs.pop("dataset_id", None)
-
-    rst_file = tmp_path / "glider_test_run_check.rst"  # _check.rst Expected from the CC
-    rst_file.write_text("")
 
     context = {
         "global_parameters": {
             "out_directory": str(tmp_path) + "/",
             "log_file": "run.log",
-            "filename_core": "glider_test_run",  # Manually add this since we aren't loading a dataset.
+            "filename_core": "glider_test_run",
         },
         "data": qc_dataset,
+        "pipeline_config": {},
     }
-    (tmp_path / "run.log").write_text(
-        "2026-02-17 12:00:00 - INFO - pelagos_py.pipeline - Test message\n"
-    )
+    (tmp_path / "run.log").write_text("log line\n")
 
-    step = write_report.WriteDataReport.__new__(write_report.WriteDataReport)
-    step.context = context
-    step.parameters = {
-        "fname": "report.rst",
-        "title": "Test Report",
-        "build": True,
-    }
-
-    step.log = MagicMock()
-    step.log_warn = MagicMock()
+    step = _make_step(context, {"fname": "report", "show_qc_plots": False})
 
     with (
-        patch.object(write_report, "make_plots"),
-        patch.object(write_report, "write_conf_py") as mock_conf,
-        patch.object(write_report, "run_sphinx"),
-        patch.object(write_report, "current_info", return_value={"user": "tester"}),
+        patch.object(wrp, "make_plots"),
+        patch.object(wrp, "glider_track_map", return_value=None),
     ):
         step.run()
 
     step.log_warn.assert_any_call(
-        "Dataset ID missing from OG1 file. Reporting with unk platform information."
+        "Dataset ID missing from OG1 file. Reporting with unknown platform information."
     )
-    _, kwargs = mock_conf.call_args
-    assert kwargs["subtitle"] == "Dataset ID: unknown dataset ID"
-    assert (
-        qc_dataset.attrs["dataset_id"] == "unknown dataset ID"
-    )  #   This also should have changed
+    #   A placeholder ID is stamped onto the dataset for downstream sections.
+    assert qc_dataset.attrs["dataset_id"] == wrp.UNKNOWN_DATASET_ID

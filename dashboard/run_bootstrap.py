@@ -47,10 +47,17 @@ import contextlib
 import io
 import json
 import os
+import signal
 import sys
 import threading
 import time
 from pathlib import Path
+
+# The imports below take seconds: start the dashboard's clock now, and let Stop
+# during them exit quietly rather than dump the import traceback.
+_START = time.time()
+print(f"__PELAGOS_TIME__ 0.000\t0\t{_START:.3f}", flush=True)
+signal.signal(signal.SIGINT, lambda *args: sys.exit(130))
 
 import matplotlib
 
@@ -65,6 +72,8 @@ plt.switch_backend = lambda *args, **kwargs: None
 import numpy as np  # noqa: E402
 import fig_spec  # noqa: E402  (dashboard-local; this script's directory is on sys.path)
 from pelagos_py.pipeline import REPORT_STEP_NAME, SEVERE, STOP, Pipeline, resolve_on_step_fail  # noqa: E402
+
+signal.signal(signal.SIGINT, signal.default_int_handler)  # imports done: Stop is a KeyboardInterrupt again
 
 FIG_DIR = sys.argv[2]
 _saved = {"n": 0}
@@ -92,7 +101,7 @@ _mem_lock = threading.Lock()
 # sits paused on stdin (review / manual QC), so it reads as time actually
 # spent processing. ``__PELAGOS_TIME__ <active s>\t<paused 0/1>\t<epoch s>``:
 # the epoch lets the browser tick on from the marker even after a reconnect.
-_clock = {"active": 0.0, "since": time.time()}
+_clock = {"active": 0.0, "since": _START}
 
 
 def _rss_mb():
@@ -393,6 +402,47 @@ def _emit_vars(context):
         pass
 
 
+def _emit_columns(context, snapshot, request):
+    # __PELAGOS_DATA__ <id>: the requested columns (float32; dates float64 epoch ms) packed
+    # into cols_<id>.bin for the Manual QC profile view. _QC columns are the flags from before
+    # this step, the same starting point manual qc uses, so the browser can replay the boxes.
+    request_id = int(request.get("id", 0))
+    try:
+        from pelagos_py.utils import palettes
+        from pelagos_py.utils.fig_spec import categories
+
+        data = context["data"]
+        before = (snapshot or context)["data"]
+        header, arrays = [], []
+        for name in request.get("names", []):
+            base = name[:-3] if name.endswith("_QC") else None
+            if base and name in before:
+                values = before[name].fillna(9).values.astype("<f4")
+            elif base and base in data:
+                values = np.where(np.isfinite(data[base].values.astype(float)), 0, 9).astype("<f4")
+            elif name in data.variables and data[name].dims == ("N_MEASUREMENTS",):
+                values = data[name].values
+            else:
+                continue
+            entry = {"name": name, "dtype": "f4", "n": len(values)}
+            if np.issubdtype(values.dtype, np.datetime64):
+                values = values.astype("datetime64[ms]").astype("<f8")
+                entry["dtype"] = "f8"
+            else:
+                values = values.astype("<f4")
+                cmap = palettes.cmap_for_variable(name, default=plt.get_cmap("viridis"))
+                entry["stops"] = [matplotlib.colors.to_hex(cmap(t)) for t in np.linspace(0, 1, 32)]
+                if name in data.variables:
+                    entry["categories"] = categories(data[name])
+            header.append(entry)
+            arrays.append(values)
+        with open(os.path.join(FIG_DIR, f"cols_{request_id}.bin"), "wb") as handle:
+            handle.write(fig_spec._pack({"columns": header}, arrays))
+    except Exception as exc:  # noqa: BLE001 - the dashboard gets an empty answer, never a crash
+        print(f"Could not send columns to the dashboard: {exc}", flush=True)
+    print(f"__PELAGOS_DATA__ {request_id}", flush=True)
+
+
 def _drop_captures(pipeline, mark):
     """Discard report figures captured since ``mark`` (the previous attempt's)."""
     figs = getattr(pipeline, "_captured_figures", None)
@@ -416,17 +466,18 @@ def _emit_time(paused):
 
 
 def _read_command():
-    # One line on stdin: "continue" or "rerun <json params>"; EOF counts as continue so a
+    # One line on stdin: "continue", "rerun <json params>" or "data <json request>"; EOF counts as continue so a
     # dropped channel never hangs the run (Stop is a SIGINT, see app.py)
     line = sys.stdin.readline()
     if not line:
         return ("continue", None)
     line = line.rstrip("\n")
-    if line.startswith("rerun "):
-        try:
-            return ("rerun", json.loads(line[len("rerun "):]))
-        except Exception:  # noqa: BLE001 - a malformed command just continues
-            return ("continue", None)
+    for action in ("rerun", "data"):
+        if line.startswith(action + " "):
+            try:
+                return (action, json.loads(line[len(action) + 1:]))
+            except Exception:  # noqa: BLE001 - a malformed command just continues
+                return ("continue", None)
     return ("continue", None)
 
 
@@ -525,6 +576,9 @@ def _run(pipeline):
                 print(f"__PELAGOS_PAUSE__ {idx}\t{label}", flush=True)
                 _emit_time(paused=True)
                 action, params = _read_command()
+                while action == "data":  # served while paused, without leaving the pause
+                    _emit_columns(context, snapshot, params)
+                    action, params = _read_command()
                 _emit_time(paused=False)
                 if action == "continue":
                     if failed and not has_result:

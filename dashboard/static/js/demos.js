@@ -46,16 +46,16 @@ const Demos = {
   card(name) {
     const downloaded = Config.downloaded.includes(name);
     const active = name === Config.selected;
-    const busy = name === Demos.downloading;
+    const busy = Demos.downloading.has(name);
     const el = document.createElement('div');
     el.className = 'demo-card' + (active ? ' active' : '') + (downloaded ? '' : ' needs-download')
-      + (busy ? ' downloading' : '');
+      + (busy ? ' downloading indeterminate' : '');
     el.dataset.name = name;
     el.setAttribute('role', 'button');
     el.tabIndex = 0;
     el.title = downloaded ? 'Load this demo pipeline' : 'Not downloaded yet — loading fetches its data file first';
     const load = async () => {
-      if (Config.busy || RunLock.running) return;
+      if (RunLock.running) return;
       try { await Config.load(name); }
       catch (e) { Config.notice('Could not load ' + name + ': ' + e.message, { sticky: true, err: true }); }
     };
@@ -63,8 +63,8 @@ const Demos = {
     const mode = Config.modes[name];
     if (mode) el.appendChild(Forms.el('span', { class: 'tag ' + (mode === 'nrt' ? 'accent' : 'ok'), textContent: mode === 'nrt' ? 'NRT' : 'Delayed' }));
     el.appendChild(downloaded || busy
-      ? Forms.el('span', { class: 'demo-card-hint', textContent: busy ? 'connecting…' : active ? 'loaded' : fmtBytes(Config.sizes[name] || 0) })
-      : Forms.button('Download', { cls: 'sm demo-card-hint', onclick: (e) => { e.stopPropagation(); load(); } }));
+      ? Forms.el('span', { class: 'demo-card-hint', textContent: busy ? '' : active ? 'loaded' : fmtBytes(Config.sizes[name] || 0) })
+      : Forms.button('Download', { cls: 'sm demo-card-hint', onclick: (e) => { e.stopPropagation(); Demos.download(name); } }));
     if (downloaded) {
       el.appendChild(Forms.button('', { icon: 'trash2', iconSize: 13, cls: 'icon-btn demo-card-del',
         title: 'Delete the downloaded file', onclick: (e) => { e.stopPropagation(); Demos.remove(name); } }));
@@ -74,21 +74,59 @@ const Demos = {
     return el;
   },
 
-  // Poll the server while `name` downloads and fill its card with colour.
-  // Called with null once the load settles (success or failure).
-  downloading: null,
-  trackDownload(name) {
-    clearTimeout(Demos._pollTimer);
-    Demos.downloading = name;
-    if (!name) { Demos.render(); return; }
+  // Demos downloading right now; one poll loop fills all their cards.
+  downloading: new Set(),
+  resumed: new Set(), // picked up after a page reload, so no request of ours ends them
+  _polling: false,
+
+  // After a page reload: show any downloads the server is still running.
+  async resume() {
+    let all = {};
+    try { all = await API.demoProgress(); } catch (e) { return; }
+    for (const name of Object.keys(all)) {
+      Demos.resumed.add(name);
+      Demos.trackDownload(name, true);
+    }
+  },
+
+  // Download without loading, so several can run at once; picking a demo that's
+  // already downloading waits on the same request.
+  requests: new Map(),
+  download(name) {
+    if (!Demos.downloading.has(name)) Demos.requests.set(name, Demos.fetchFile(name));
+    return Demos.requests.get(name);
+  },
+
+  async fetchFile(name) {
+    Demos.trackDownload(name, true);
+    try { await API.downloadDemo(name); }
+    catch (e) { Config.notice('Could not download ' + Config.demoLabel(name) + ': ' + e.message, { sticky: true, err: true }); }
+    Demos.trackDownload(name, false);
+    Demos.requests.delete(name);
+    await Config.refreshList(Config.selected);
+  },
+
+  trackDownload(name, on) {
+    if (on) Demos.downloading.add(name);
+    else Demos.downloading.delete(name);
     Demos.render();
+    if (!on || Demos._polling) return;
     Run.showTab('files');
+    Demos._polling = true;
     const poll = async () => {
-      if (Demos.downloading !== name) return;
-      let p = null;
-      try { p = (await API.demoProgress())[name] || null; } catch (e) { /* retry */ }
-      Demos.setProgress(name, p);
-      Demos._pollTimer = setTimeout(poll, 500);
+      if (!Demos.downloading.size) { Demos._polling = false; return; }
+      let all = {};
+      try { all = await API.demoProgress(); } catch (e) { /* retry */ }
+      for (const n of Demos.downloading) {
+        if (Demos.resumed.has(n) && !all[n]) {
+          Demos.resumed.delete(n);
+          Demos.trackDownload(n, false);
+          Config.refreshList(Config.selected);
+        } else {
+          Demos.setProgress(n, all[n] || null);
+        }
+      }
+      setTimeout(poll, 500);
     };
     poll();
   },
@@ -98,10 +136,9 @@ const Demos = {
     if (!el) return;
     const frac = p && p.total ? p.done / p.total : 0;
     el.style.setProperty('--p', (frac * 100).toFixed(1) + '%');
-    el.classList.toggle('indeterminate', !!p && !p.total);
+    el.classList.toggle('indeterminate', !p || !p.total);
     const hint = el.querySelector('.demo-card-hint');
-    hint.textContent = !p ? 'connecting…'
-      : p.total ? `${Math.round(frac * 100)}% of ${fmtBytes(p.total)}` : fmtBytes(p.done);
+    hint.textContent = !p ? '' : p.total ? `${Math.round(frac * 100)}%` : fmtBytes(p.done);
   },
 
   async remove(name) {
@@ -197,7 +234,7 @@ const Files = {
       onclick: async (e) => { e.stopPropagation(); try { await API.revealFile(path); } catch (err) { alert(err.message); } } }));
     el.appendChild(Forms.button('', { icon: 'close', iconSize: 13, cls: 'icon-btn', title: 'Remove from this list (the file is not deleted)',
       onclick: (e) => { e.stopPropagation(); Files.forget(path); } }));
-    const pick = () => { if (!Config.busy && !RunLock.running) Build.start({ name: null, filePath: path }); };
+    const pick = () => { if (!RunLock.running) Build.start({ name: null, filePath: path }); };
     el.addEventListener('click', pick);
     el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
     return el;

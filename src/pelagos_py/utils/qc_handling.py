@@ -48,6 +48,31 @@ def propagate_flags(base, src):
     return QC_COMBINATRIX[np.asarray(base), np.where(np.asarray(src) == 9, 0, src)]
 
 
+def prefer_adjusted(settings, names):
+    """Swap each variable name in QC ``settings`` for its ``_ADJUSTED`` version if
+    present in ``names``, else its raw version. Other values are left unchanged."""
+    if isinstance(settings, str):
+        raw = settings.removesuffix("_ADJUSTED")
+        for candidate in (f"{raw}_ADJUSTED", raw):
+            if candidate in names:
+                return candidate
+        return settings
+    if isinstance(settings, dict):
+        resolved = {}
+        for key, value in settings.items():
+            # CHLA and CHLA_ADJUSTED may both resolve to one name: keep the first.
+            resolved.setdefault(prefer_adjusted(key, names), prefer_adjusted(value, names))
+        return resolved
+    if isinstance(settings, list):
+        resolved = []
+        for value in settings:
+            value = prefer_adjusted(value, names)
+            if not (isinstance(value, str) and value in resolved):
+                resolved.append(value)
+        return resolved
+    return settings
+
+
 class QCHandlingMixin:
     def __init__(self):
         qc_settings = self.parameters.get("qc_handling_settings") or {}

@@ -1,4 +1,4 @@
-// Report tab, lower half: every file runs have left in the output folders
+// Output tab, lower half: every file runs have left in the output folders
 // (reports, exports, logs, kept report figures), with open/delete. The folders
 // come from the loaded config (out_directory + each output_path) plus the
 // demo data folder, so nothing depends on knowing where pip put the package.

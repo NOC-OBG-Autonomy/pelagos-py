@@ -16,6 +16,7 @@
 
 from pelagos_py.steps import STEP_CLASSES, QC_CLASSES
 from pelagos_py.utils import file_probe, parameter_spec
+from pelagos_py.utils.qc_handling import prefer_adjusted
 
 #: Steps that supply the pipeline's base data -- the only steps allowed to
 #: provide TIME/LATITUDE/etc from nothing. Referenced by name rather than by
@@ -555,6 +556,7 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
                     # no step at all (add the step), or -- once Load OG1's file has
                     # been opened -- genuinely absent from the input file too.
                     # Otherwise assumed file-native and left for the run-time check.
+                    qc_params = prefer_adjusted(qc_params, available_vars)
                     qc_required, qc_outputs = _qc_test_io(qc_class, qc_params)
                     qc_missing = [v for v in qc_required if v not in available_vars]
                     if qc_missing:

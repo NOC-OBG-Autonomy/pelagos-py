@@ -47,7 +47,7 @@ import pandas as pd
 import xarray as xr
 import yaml
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -227,6 +227,18 @@ def _locate_variable_issue(steps, message):
     return None, None
 
 
+# A blank path is left to the pipeline's own check ("No file set").
+def _data_file_error(file_path):
+    if not file_path or not str(file_path).strip():
+        return None
+    path = Path(str(file_path)).expanduser()
+    if path.suffix.lower() != ".nc":
+        return f"Data file '{file_path}' is not a NetCDF (.nc) file."
+    if not path.is_file():
+        return f"Could not find data file '{file_path}'."
+    return None
+
+
 @app.post("/api/validate")
 def validate(payload: ValidatePayload):
     """Validate a whole config with the pipeline's own ``parameter_spec``, returning
@@ -269,6 +281,10 @@ def validate(payload: ValidatePayload):
             )
         except ValueError as exc:
             issues.append({"index": index, "name": name, "error": str(exc)})
+        if canonical == "Load OG1":
+            file_error = _data_file_error(params.get("file_path"))
+            if file_error:
+                issues.append({"index": index, "name": name, "error": file_error})
 
     # Cross-step variable check (same as the pipeline's pre-run one); skipped when
     # a schema issue exists, since it would instantiate steps with bad parameters.
@@ -346,8 +362,8 @@ def list_configs():
         "labels": {f"demo_{key}.yaml": entry.display_label for key, entry in DEMO_FILES.items()},
         "gliders": {f"demo_{key}.yaml": entry.label for key, entry in DEMO_FILES.items()},
         "modes": {f"demo_{key}.yaml": entry.mode for key, entry in DEMO_FILES.items()},
-        # Non-demo protected configs, shown as their own "Default" group.
-        "reference": sorted((PROTECTED_CONFIGS - DEMO_CONFIGS) & set(files)),
+        # Non-demo protected configs, shown as their own "Template" group.
+        "reference": sorted((PROTECTED_CONFIGS - DEMO_CONFIGS) & (set(files) | {DEFAULT_CONFIG_NAME})),
         "downloaded": sorted(name for name in demo if _demo_dest(name).exists()),
         "sizes": {name: _demo_dest(name).stat().st_size
                   for name in demo if _demo_dest(name).exists()},
@@ -399,6 +415,18 @@ def delete_demo(name: str):
         raise HTTPException(status_code=404, detail="Unknown demo.")
     _no_run_in_flight()
     return {"status": "deleted" if _delete_demo(name) else "absent", "name": name}
+
+
+# Download only (no config load), so several demos can download side by side.
+@app.post("/api/demos/{name}/download")
+def download_demo(name: str):
+    if name not in DEMO_CONFIGS:
+        raise HTTPException(status_code=404, detail="Unknown demo.")
+    try:
+        _ensure_demo_file(name)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Could not download demo data: {exc}") from exc
+    return {"status": "downloaded", "name": name}
 
 
 @app.post("/api/demos/clean")
@@ -553,6 +581,10 @@ def reveal_file(payload: RevealPayload):
     return _reveal(f.parent)
 
 
+class BrowsePayload(BaseModel):
+    start: str = ""
+
+
 @app.post("/api/files/pick")
 def pick_files(payload: BrowsePayload):
     # Native picker for NetCDF files and/or folders (a folder adds its *.nc, recursively).
@@ -586,10 +618,6 @@ def pick_files(payload: BrowsePayload):
         p = Path(c)
         paths.extend(sorted(str(f) for f in p.rglob("*.nc")) if p.is_dir() else [str(p)])
     return {"paths": [p for p in paths if p.endswith(".nc")]}
-
-
-class BrowsePayload(BaseModel):
-    start: str = ""
 
 
 @app.post("/api/browse")
@@ -767,6 +795,10 @@ class _Run:
         # same clock the dashboard's runtime readout shows.
         self._active = 0.0
         self._since: float | None = None
+        # Column requests to the paused runner (see columns): ids answered so far.
+        self._columns = threading.Condition()
+        self._columns_done: set[int] = set()
+        self._columns_id = 0
 
     def _sample_mem(self, proc):
         # Poll the child's RSS from here rather than inside the run: costs the
@@ -812,7 +844,7 @@ class _Run:
         # Fresh figure dir per run so the Plots tab only shows this run's plots.
         # .json/.f32 are the interactive plot spec and its float32 data,
         # _full.npz the float64 copy for exact point lookups, beside each .png.
-        for pattern in ("*.png", "*.json", "*.f32", "*_full.npz"):
+        for pattern in ("*.png", "*.json", "*.f32", "*_full.npz", "cols_*.bin"):
             for old in FIG_DIR.glob(pattern):
                 old.unlink(missing_ok=True)
         _FIGDATA_CACHE.clear()
@@ -840,6 +872,11 @@ class _Run:
 
     def _commit(self, text: str):
         """A finished (newline-terminated) line: append it and clear live progress."""
+        if text.startswith("__PELAGOS_DATA__ "):  # a reply to columns(), not a log line
+            with self._columns:
+                self._columns_done.add(int(text.split(" ", 1)[1]))
+                self._columns.notify_all()
+            return
         with self._lock:
             self.lines.append(text)
             self.live = None
@@ -929,6 +966,25 @@ class _Run:
                 pass
 
 
+    def columns(self, names: list[str], timeout: float = 60.0) -> bytes | None:
+        """Ask the paused runner for raw columns; the packed bytes, or None if it didn't answer."""
+        with self._columns:
+            self._columns_id += 1
+            request_id = self._columns_id
+        self.send("data " + json.dumps({"id": request_id, "names": names}))
+        with self._columns:
+            answered = self._columns.wait_for(
+                lambda: request_id in self._columns_done or not self.is_running(), timeout
+            )
+            self._columns_done.discard(request_id)
+        path = FIG_DIR / f"cols_{request_id}.bin"
+        if not answered or not path.is_file():
+            return None
+        blob = path.read_bytes()
+        path.unlink(missing_ok=True)
+        return blob
+
+
 _run = _Run()
 
 
@@ -969,6 +1025,15 @@ def rerun_step(payload: RerunPayload):
     """Re-run the currently paused step with edited parameters, then re-pause."""
     _run.send("rerun " + json.dumps(payload.parameters))
     return {"status": "rerunning"}
+
+
+@app.get("/api/run/columns")
+def run_columns(names: str):
+    """Raw columns (comma-separated names) from the paused run, for the Manual QC profile view."""
+    blob = _run.columns([n for n in names.split(",") if n])
+    if blob is None:
+        raise HTTPException(status_code=409, detail="The run is not paused, or did not answer.")
+    return Response(blob, media_type="application/octet-stream")
 
 
 @app.get("/api/run/status")

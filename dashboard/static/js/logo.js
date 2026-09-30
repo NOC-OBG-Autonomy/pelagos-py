@@ -1,7 +1,9 @@
-// Fits the brand text to the icon: both lines equal width, cap-top to descender
-// bottom spanning the icon height. Measures real ink via canvas, not line boxes.
+// Fits the brand text to the icon: both lines equal width, inset from the icon's
+// top/bottom with a gap between, as fractions of the icon height (matched to the
+// original logo). Measures real ink via canvas, not line boxes; the insets are
+// padding on .brand-text in style.css.
 (function () {
-  const GAP = 0.06, R = 200;
+  const INSET = 0.08, GAP = 0.144, R = 200;
   const ctx = document.createElement('canvas').getContext('2d');
 
   function measure(text, font) {
@@ -29,7 +31,7 @@
     const vals = [n.w, n.h, n.shift, o.w, o.h, o.shift];
     if (!n.w || !o.w || !n.h || !o.h || vals.some(v => !Number.isFinite(v))) return;
     const ratio = n.w / o.w;
-    const nameFs = (1 - GAP) / (n.h + o.h * ratio);
+    const nameFs = (1 - INSET - GAP) / (n.h + o.h * ratio);
     apply(nameEl, nameFs, n);
     apply(orgEl, nameFs * ratio, o);
   }

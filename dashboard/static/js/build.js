@@ -6,6 +6,7 @@ const Build = {
   async start({ name, filePath, description, onCancel }) {
     const root = document.getElementById('build-panel');
     if (!root) return;
+    Config.picks++;
     root.innerHTML = '';
     root.hidden = false;
     Build.name = name; // the demo config the open panel is for, if any
@@ -79,6 +80,7 @@ const Build = {
         const { yaml_content } = await API.build(filePath, choices, description);
         Build.close();
         Config.apply(yaml_content);
+        Config.builtFor = file;
         if (name) Config.setCurrent(name);
         else Config.noteEdit(); // built over a locked config: fork it
       } catch (e) {

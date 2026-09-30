@@ -56,7 +56,6 @@ dependencies:
   # Pypi only
   - pip:
     - glidertools
-    - rstcloth
     - fpdf2
     - compliance-checker
     - cc-plugin-og

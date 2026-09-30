@@ -99,15 +99,8 @@ steps:
 # ----------------------- Report assembly ---------------------
   - name: Write Data Report
     parameters:
-      title:  # Goes on the title page. Leave it blank or empty to automatically set it to the filename.
-      fname: # Main .rst file Sphinx can build from, RstCloth will write to within pipeline's "out_directory"
-      build: true   #  Whether to run sphinx
-      extent: [7, 25, 54, 65] # Min Max longitude and Min Max latitude for geographic plotting
-      # ext_format: pdf   # Something to eventually support - singletext, html
-      # overwrite: True   # Delete _build from within the "out_directory", if it exists
-      # template: None  # Could define conf.py or report generation orders different from the current base one
-      # figures: png  # Add .svg, .pdf support for vector formats
-      # template: qc  # If using a template, such as a conf.py or other method of report generation
+      title:  # Goes on the title page. Blank uses the filename core.
+      fname: # Output .pdf, written to the pipeline's "out_directory". Blank uses the filename core.
 
 
 ### Guiding ideas, brainstorms

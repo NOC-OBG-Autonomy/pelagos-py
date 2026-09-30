@@ -46,7 +46,9 @@ class manual_qc(BaseQC):
     point: it flags just the one sample nearest to it (cmd/ctrl-click in the
     dashboard). A box may name its own ``x_variable``/``y_variable`` (the plot
     it was drawn on; the dashboard's plot switcher does this), else it uses the
-    test's. ``y_variable`` is always flagged, so its existing ``_QC`` is loaded
+    test's. A box with ``profiles`` (or ``cycles``) only touches samples whose
+    ``PROFILE_NUMBER`` (or ``CYCLE``) is listed; the dashboard's profile view
+    writes these, and needs Find Profiles to have run. ``y_variable`` is always flagged, so its existing ``_QC`` is loaded
     and shown on the plot. Samples no box touches get flag 1 when
     ``flag_remaining_good`` is on (the default), else keep what they had.
 
@@ -75,6 +77,8 @@ class manual_qc(BaseQC):
                     y: [10, 12]
                     flag: 3
                     y_variable: TEMP          # drawn on the TEMP plot, flags TEMP
+                  # drawn in the dashboard's profile view: only profile 42
+                  - {x: [0.8, 3], y: [0, 20], flag: 4, x_variable: CHLA, y_variable: PRES, variables: [CHLA], profiles: [42]}
                 flag_remaining_good: true     # untouched samples become 1 (good)
           diagnostics: true                   # the plot the dashboard pauses on
     """
@@ -99,8 +103,8 @@ class manual_qc(BaseQC):
             "type": list,
             "default": [],
             "description": "List of {x: [lo, hi], y: [lo, hi], flag: 0-9, mode: inside|outside, "
-                           "variables: [...], override: true} boxes; single-value x/y is a point "
-                           "(nearest sample). Drawn in the dashboard, or written by hand.",
+                           "variables: [...], override: true, profiles|cycles: [...]} boxes; single-value x/y "
+                           "is a point (nearest sample). Drawn in the dashboard, or written by hand.",
         },
         "colour_variable": {
             "type": str,
@@ -130,6 +134,8 @@ class manual_qc(BaseQC):
         axes = [self.x_variable, self.y_variable]
         for box in self.boxes:
             axes += [box["x_variable"], box["y_variable"]]
+            if box["scope"]:
+                axes.append(box["scope"][0])
             for var in box["variables"]:
                 if var not in targets:
                     targets.append(var)
@@ -163,6 +169,13 @@ class manual_qc(BaseQC):
             variables = [variables]
         out["variables"] = list(variables)
         out["override"] = bool(out.get("override", True))
+        if "profiles" in out and "cycles" in out:
+            raise ValueError(f"[{self.qc_name}] a box can limit to profiles or cycles, not both.")
+        out["scope"] = None
+        for key, var in (("profiles", "PROFILE_NUMBER"), ("cycles", "CYCLE")):
+            if key in out:
+                ids = out[key] if isinstance(out[key], (list, tuple)) else [out[key]]
+                out["scope"] = (var, [float(i) for i in ids])
         return out
 
     def _axis_values(self, var):
@@ -180,6 +193,9 @@ class manual_qc(BaseQC):
 
     def _box_mask(self, box, x, x_time, y, y_time):
         valid = np.isfinite(x) & np.isfinite(y)
+        if box["scope"]:
+            var, ids = box["scope"]
+            valid &= np.isin(self.data[var].values, ids)
         if len(box["x"]) == 1:
             inside = np.zeros_like(valid)
             if valid.any():
@@ -247,6 +263,14 @@ class manual_qc(BaseQC):
         if cv:
             c = self.data[cv].values.astype(float)
             cmap = palettes.cmap_for_variable(cv, default=plt.get_cmap("viridis"))
+            fill = c
+            cats = fig_spec.categories(self.data[cv])
+            if cats:
+                # A categorical variable (e.g. SCI_PHASE): one fixed colour per category, not a scale.
+                cmap = None
+                fill = np.tile(matplotlib.colors.to_rgba("#d0d4d8"), (len(c), 1))
+                for value, _, colour in cats:
+                    fill[c == value] = matplotlib.colors.to_rgba(colour)
             # Samples with no colour value: grey, drawn under everything (zorder and,
             # in the dashboard, as a line before the collections).
             nocol = ~np.isfinite(c)
@@ -271,21 +295,22 @@ class manual_qc(BaseQC):
                 ax.lines[-1].set_gid(f"flag:{b}")
         if cv:
             # No colorbar (it would drop the dashboard view to PNG); the range is in the title.
-            ax.scatter(x, y, c=c, cmap=cmap, s=fig_spec.MARKER ** 2, linewidths=0, label="_fill")
+            ax.scatter(x, y, c=fill, cmap=cmap, s=fig_spec.MARKER ** 2, linewidths=0, label="_fill")
             # None (JSON null) when the variable has no finite values at all.
             lo, hi = (float(np.nanmin(c)), float(np.nanmax(c))) if (~nocol).any() else (None, None)
             # A real colorbar would drop the dashboard view to PNG: the viewer draws this one.
-            ax._pelagos_cbar = {
-                "label": fig_spec.axis_label(cv, self.data[cv].attrs.get("units")), "lo": lo, "hi": hi,
-                "stops": [matplotlib.colors.to_hex(cmap(t)) for t in np.linspace(0, 1, 32)],
-                "missing": bool(nocol.any()),
-            }
+            ax._pelagos_cbar = {"label": fig_spec.axis_label(cv, self.data[cv].attrs.get("units")),
+                                "missing": bool(nocol.any())}
+            if cats:
+                ax._pelagos_cbar["categories"] = [[f"{v} {m}", col] for v, m, col in cats if (c == v).any()]
+            else:
+                ax._pelagos_cbar.update(lo=lo, hi=hi, stops=[matplotlib.colors.to_hex(cmap(t)) for t in np.linspace(0, 1, 32)])
         if profile:
             # Profile view: colour variable on x, same y. Every step-th sample (budget
             # 100k); the gid tells the dashboard the stride back into the main fill.
             step = max(1, int(np.ceil(len(y) / 100_000)))
             pax = axes[0][1]
-            pax.scatter(c[::step], y[::step], c=c[::step], cmap=cmap, s=fig_spec.MARKER ** 2,
+            pax.scatter(c[::step], y[::step], c=fill[::step], cmap=cmap, s=fig_spec.MARKER ** 2,
                         linewidths=0, label="_profile")
             pax.collections[-1].set_gid(f"profile:{step}")
             fig_spec.style_axes(pax, xlabel=fig_spec.axis_label(cv, self.data[cv].attrs.get("units")))
@@ -321,6 +346,8 @@ class manual_qc(BaseQC):
         fig_spec.legend(ax, title="Flag")
         title = f"Manual QC — {yv} vs {xv}"
         if cv:
-            title += f" · coloured by {cv}" + (f" ({lo:.3g} – {hi:.3g})" if lo is not None else " (no values)")
+            title += f" · coloured by {cv}"
+            if not cats:
+                title += f" ({lo:.3g} – {hi:.3g})" if lo is not None else " (no values)"
         fig_spec.finish(fig, suptitle=title)
         plt.show(block=True)

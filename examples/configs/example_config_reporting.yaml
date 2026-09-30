@@ -59,8 +59,6 @@ steps:
 # ----------------------- Report assembly ---------------------
   - name: Write Data Report
     parameters:
-      title:  # Goes on the title page. Leave it blank or empty to automatically set it to the filename.
-      fname:  # Main .rst file Sphinx can build from, RstCloth will write to within pipeline's "out_directory".
-      build: true   #  Whether to run sphinx, which will build the PDF.
-      extent: [7, 25, 54, 65] # Extent for an inset figure. Optional.
+      title:  # Goes on the title page. Blank uses the filename core.
+      fname: # Output .pdf, written to the pipeline's "out_directory". Blank uses the filename core.
 

@@ -91,6 +91,7 @@ def test_no_boxes_still_targets_y_variable():
     {"x": [0, 1, 2], "y": [0, 1], "flag": 4},
     {"x": [0, 1], "y": [0, 1], "flag": 10},
     {"x": [0, 1], "y": [0, 1], "flag": 4, "mode": "sideways"},
+    {"x": [0, 1], "y": [0, 1], "flag": 4, "profiles": [1], "cycles": [1]},
 ])
 def test_invalid_box_rejected(box):
     with pytest.raises(ValueError):
@@ -105,3 +106,14 @@ def test_box_on_its_own_axes():
     flags = qc.return_qc()
     assert list(flags["TEMP_QC"].values) == [0, 0, 0, 4, 0, 0]
     assert list(flags["PRES_QC"].values) == [0, 0, 0, 0, 9, 0]
+
+
+def test_box_limited_to_profiles():
+    data = make_data().assign(PROFILE_NUMBER=("N_MEASUREMENTS", [1.0, 1.0, 1.0, 2.0, 2.0, 2.0]))
+    qc = manual_qc(data, flag_remaining_good=False, boxes=[
+        {"x": [0, 10], "y": [0, 100], "flag": 4, "x_variable": "TEMP", "profiles": [2]},
+        # A point picks the nearest sample within the profile, not the nearest overall.
+        {"x": [2.0], "y": [10.0], "flag": 3, "x_variable": "TEMP", "profiles": [2]},
+    ])
+    assert "PROFILE_NUMBER" in qc.required_variables
+    assert list(qc.return_qc()["PRES_QC"].values) == [0, 0, 0, 3, 9, 4]

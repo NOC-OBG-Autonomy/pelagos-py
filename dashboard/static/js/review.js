@@ -1,5 +1,5 @@
-// The paused-step review panel: the paused step's (or QC test's) figures, earlier
-// attempts, and its parameter form bound to the builder's own values object.
+// The paused-step review at the top of the Plots tab: the paused step's (or QC
+// test's) figures and earlier attempts. Its parameters are edited in the builder.
 
 const Review = {
   active: false,
@@ -7,7 +7,6 @@ const Review = {
   name: null,      // step name, used to match figures and guard the re-run
   test: null,      // QC test, when the runner split this step test by test
   key: null,       // Run.unitKey(index, test) — what figures are grouped under
-  showLog: false,  // Log toggle: show the console instead of the panel
   busy: false,     // true between "Re-run" and the next pause
   selected: null,  // attempt shown in the main view; null = the latest one
 
@@ -21,35 +20,22 @@ const Review = {
     Review.test = test || null;
     Review.key = Run.unitKey(index, test);
     Review.busy = false;
-    Review.showLog = false;
     Review.selected = null;
     Review.build();
+    Review.host().classList.remove('hidden');
     if (ManualQC.isActive()) ManualQC.open();
+    else Run.showTab('plots');
     Review.renderPlots();
-    Review.apply();
+    Run.renderGallery();
   },
 
   hide() {
     Review.active = false;
     Review.busy = false;
     Review.host().innerHTML = '';
+    Review.host().classList.add('hidden');
     ManualQC.close();
-    Review.apply();
-  },
-
-  // Show/hide the panel against the console; the banner's "Review step" button
-  // hides only while the panel itself is on screen.
-  apply() {
-    const tab = document.querySelector('.tab.on')?.dataset.tab;
-    const onRunTab = tab === 'run';
-    const panelVisible = Review.active && !Review.showLog;
-    Review.host().classList.toggle('hidden', !panelVisible);
-    document.getElementById('log-wrap').classList.toggle('hidden', panelVisible);
-    document.getElementById('run-note').classList.toggle('hidden', panelVisible);
-    // The Manual QC tab carries its own Re-run/Continue, so no banner there.
-    document.getElementById('run-pause').classList.toggle('hidden', !Review.active || tab === 'manual');
-    document.getElementById('btn-review').classList.toggle('hidden', panelVisible && onRunTab);
-    document.getElementById('btn-log').classList.toggle('hidden', !panelVisible && onRunTab);
+    Run.renderGallery();
   },
 
   // The builder step this pause refers to. Indices line up with the running
@@ -117,37 +103,27 @@ const Review = {
   },
 
   // ---- rendering ----
-  // Built once per pause; the plots and the header status refresh on their own
-  // so re-running never re-renders (and un-focuses) the parameter form.
+  // Built once per pause; the plots and the title refresh on their own so
+  // re-running never re-renders the rest.
   build() {
     const host = Review.host();
     host.innerHTML = '';
-
-    // The step/test name, "Log"/"Review step" and "Re-run step" all live in
-    // the pause banner above (it's on screen for as long as this panel is),
-    // so the panel itself is just the plots and where to edit their params.
+    const title = document.createElement('h4');
+    title.className = 'plot-step-title review-title'; title.id = 'review-title';
     const plots = document.createElement('div');
-    plots.className = 'review-plots'; plots.id = 'review-plots';
-
-    // The parameters live in the builder, which has just unlocked this step
-    // (and, for a QC step, opened the paused test) — one editing surface, not
-    // two copies of the same form.
-    const where = document.createElement('div');
-    where.className = 'hint review-where';
-    where.textContent = Review.test
-      ? `Edit '${Review.test}' in the pipeline builder on the left — it is the ` +
-        'only part of the config unlocked while the run is paused.'
-      : 'Edit this step in the pipeline builder on the left — it is the only ' +
-        'part of the config unlocked while the run is paused.';
-    const jump = document.createElement('button');
-    jump.className = 'review-jump';
-    jump.textContent = 'Show me';
-    jump.title = 'Scroll the builder to this step';
-    jump.onclick = () => RunLock.pauseAt(Review.index, Review.test);
-    where.appendChild(jump);
-
+    plots.id = 'review-plots';
+    host.appendChild(title);
     host.appendChild(plots);
-    host.appendChild(where);
+    Review.renderTitle();
+  },
+
+  // A split QC step pauses per test, so the test is the headline.
+  renderTitle() {
+    const title = document.getElementById('review-title');
+    if (!title) return;
+    const where = Review.test ? `${Review.name}, step ${Review.index + 1}` : `step ${Review.index + 1}`;
+    title.textContent = `${Review.test ? testLabel(Review.test) : Review.name} · ${Run.pauseFailed ? 'failed' : 'paused'} (${where})`;
+    title.classList.toggle('failed', Run.pauseFailed);
   },
 
   // Latest attempt large, earlier attempts as a comparison strip underneath.
@@ -193,19 +169,11 @@ const Review = {
       main.appendChild(cards);
       host.appendChild(main);
     }
-    // Manual QC: the plot is the editor, in its own tab. The latest attempt is
-    // what it edits; this panel keeps the attempt strip for comparison.
+    // Manual QC: the plot is the editor, in its own tab (in place of Plots),
+    // and the latest attempt is what it edits.
     if (ManualQC.isActive()) {
       const latest = attempts[attempts.length - 1];
       ManualQC.render(latest && latest.figs.length && latest.figs[0].spec ? latest.figs[0] : null);
-      const where = document.createElement('div');
-      where.className = 'hint review-where';
-      where.textContent = 'Boxes are drawn in the Manual QC tab.';
-      const go = document.createElement('button');
-      go.className = 'review-jump'; go.textContent = 'Open Manual QC';
-      go.onclick = () => Run.showTab('manual');
-      where.appendChild(go);
-      host.prepend(where);
     }
 
     if (attempts.length > 1) {
@@ -297,13 +265,8 @@ const Review = {
     return s.length > 18 ? s.slice(0, 17) + '…' : s;
   },
 
-  // Pause-banner status + button state while a re-run is in flight.
-  setBusy(busy, text) {
+  setBusy(busy) {
     Review.busy = busy;
     ManualQC.setBusy(busy);
-    for (const id of ['run-pause-status', 'manual-status'])
-      document.getElementById(id).textContent = text || '';
-    for (const id of ['btn-rerun', 'btn-manual-rerun'])
-      document.getElementById(id).disabled = busy;
   },
 };

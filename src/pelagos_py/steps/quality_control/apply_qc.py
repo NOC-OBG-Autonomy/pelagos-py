@@ -20,7 +20,7 @@
 from pelagos_py.steps.base_step import BaseStep, register_step
 import pelagos_py.utils.diagnostics as diag
 from pelagos_py.steps import QC_CLASSES
-from pelagos_py.utils.qc_handling import QC_COMBINATRIX
+from pelagos_py.utils.qc_handling import QC_COMBINATRIX, prefer_adjusted
 
 #### Custom imports ####
 import xarray as xr
@@ -148,6 +148,11 @@ class ApplyQC(BaseStep):
         # Check if the data is in the context
         self.check_data()
         full_data = self.context["data"]
+
+        resolved_settings = prefer_adjusted(self.qc_settings, set(full_data.variables))
+        if resolved_settings != self.qc_settings:
+            self.log(f"Resolved variable names (preferring _ADJUSTED):{json.dumps(resolved_settings)}", console=False)
+        self.qc_settings = resolved_settings
 
         # Try and fetch the qc history from context and update it
         qc_history = self.context.setdefault("qc_history", {})

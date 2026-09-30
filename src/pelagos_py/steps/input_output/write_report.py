@@ -14,52 +14,149 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Writes reports on the current data passed through the pipeline."""
+"""Writes PDF reports on the current data passed through the pipeline.
+
+The report is built entirely in Python with `fpdf2 <https://py-pdf.github.io/fpdf2/>`_,
+so no external toolchain (LaTeX, Sphinx) is required to produce the PDF.
+"""
+
+#   Builds on the original write-report work by Aaron Mau.
 
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
 import pelagos_py.utils.diagnostics as di
+import pelagos_py.utils.palettes as palettes
 
 #### Custom imports ####
-from rstcloth import RstCloth
+from fpdf import FPDF
+from fpdf.enums import (
+    XPos,
+    YPos,
+    WrapMode,
+    MethodReturnValue,
+    TableBordersLayout,
+    TableCellStyle,
+)
+from fpdf.fonts import FontFace
 from datetime import datetime, timezone
 import getpass
+import os
 import platform
-import subprocess
 import json
+import shutil
+import tempfile
+import yaml
 from importlib.metadata import version, PackageNotFoundError
 import matplotlib.pyplot as plt
 import xarray as xr
-from tqdm import tqdm
 import numpy as np
 
-from pathlib import Path
+from pelagos_py.utils.console import progress_bar
+from pelagos_py.utils import fig_spec
+from pelagos_py.utils.diagnostic_capture import save_figure, wait_for_saves
 
-#   Handle Sphinx-incompatible items with math
-REPLACEMENTS = {
-    "α": r"$\alpha$",
-    "β": r"$\beta$",
-    "γ": r"$\gamma$",
-    "σ": r"$\sigma$",
-    "μ": r"$\mu$",
-    "°": r"$^\circ$",
-    "±": r"$\pm$",
+
+#   The core PDF fonts are latin-1 only. Map the symbols we expect to plain
+#   text/latin-1 equivalents so they render rather than raising on output.
+CHAR_REPLACEMENTS = {
+    "α": "alpha",
+    "β": "beta",
+    "γ": "gamma",
+    "σ": "sigma",
+    "μ": "u",
+    "–": "-",
+    "—": "-",
+    "“": '"',
+    "”": '"',
+    "‘": "'",
+    "’": "'",
 }
 
-def current_info() -> dict:
-    """Returns current operator information from when the report is being generated."""
 
-    now = datetime.now(timezone.utc)
+def sanitize(text) -> str:
+    #   Make text safe for FPDF's latin-1 core fonts: swap known unicode symbols
+    #   for readable equivalents, replace anything else so output() never raises.
+    text = str(text)
+    for k, v in CHAR_REPLACEMENTS.items():
+        text = text.replace(k, v)
+    return text.encode("latin-1", errors="replace").decode("latin-1")
 
+
+#   Project metadata shown on the report.
+GITHUB_URL = "https://github.com/NOC-OBG-Autonomy/pelagos-py"
+
+#   Hyperlink colour: a dark teal (rather than the default web blue) so links sit
+#   more comfortably against the report's traditional, Times-set look.
+_LINK_TEAL = (0, 102, 102)
+
+#   The OG1 format user manual, linked from the Format Checker heading when the
+#   compliance checker that ran is the OG1 one.
+OG1_MANUAL_URL = "https://github.com/OceanGlidersCommunity/OG-format-user-manual"
+
+#   Compliance-checker codes that we render with a friendlier label and a link
+#   to the format's documentation, keyed by the lower-cased checker name.
+CC_CHECKER_LABELS = {
+    "og": ("OG1", OG1_MANUAL_URL),
+    "og1": ("OG1", OG1_MANUAL_URL),
+}
+
+#   Placeholder written into ``dataset_id`` when the OG1 file lacks one. Used to
+#   suppress the (meaningless) ID label on the QC plots.
+UNKNOWN_DATASET_ID = "unknown dataset ID"
+
+#   Human-readable descriptions for the Argo QC flag mnemonics stored in each
+#   QC variable's ``flag_meanings`` attribute, used for the end-of-report index.
+QC_FLAG_DESCRIPTIONS = {
+    "NO_QC": "No QC performed",
+    "GOOD": "Good data",
+    "PROB_GOOD": "Probably good data",
+    "PROB_BAD": "Probably bad data",
+    "BAD": "Bad data",
+    "VALUE_CHANGED": "Value changed / adjusted",
+    "NOT_USED": "Not used",
+    "ESTIMATED": "Estimated / interpolated value",
+    "MISSING": "Missing value",
+}
+
+#   Fallback Argo flag table (value, mnemonic) used when the dataset carries no
+#   QC variable with flag_values/flag_meanings attributes to read from.
+_DEFAULT_QC_FLAGS = [
+    (0, "NO_QC"), (1, "GOOD"), (2, "PROB_GOOD"), (3, "PROB_BAD"), (4, "BAD"),
+    (5, "VALUE_CHANGED"), (6, "NOT_USED"), (7, "NOT_USED"), (8, "ESTIMATED"),
+    (9, "MISSING"),
+]
+#   The NOC logo lives in utils/ (alongside the other shared, non-step assets)
+#   rather than in a dedicated assets folder.
+LOGO_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "..", "utils", "noc_logo_square.svg"
+)
+
+
+def pelagos_version() -> str:
     try:
-        package_version = version("pelagos_py")
+        return version("pelagos_py")
     except PackageNotFoundError:
-        package_version = "unknown"
+        return "unknown"
+
+
+def long_date(when: datetime) -> str:
+    #   Format a datetime as e.g. "23rd June 2026, 22:49 UTC".
+    day = when.day
+    if 10 <= day % 100 <= 20:
+        suffix = "th"
+    else:
+        suffix = {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
+    return f"{day}{suffix} {when.strftime('%B %Y, %H:%M')} UTC"
+
+
+def current_info() -> dict:
+    #   Operator/environment info captured when the report is generated.
+    now = datetime.now(timezone.utc)
 
     info = {
         "timestamp_utc": now.isoformat(),
         "user": getpass.getuser(),
-        "version": package_version,  #   Normally done with __version__.
+        "version": pelagos_version(),  #   Normally done with __version__.
         "python_version": platform.python_version(),
         "system": f"{platform.system()}: {platform.release()}",
     }
@@ -67,174 +164,9 @@ def current_info() -> dict:
     return info
 
 
-def write_conf_py(
-    source_dir,
-    project="Pipeline Report",
-    author="Unknown",
-    master_doc="index",
-    subtitle=None,
-) -> None:
-    """
-    Write a minimal Sphinx conf.py suitable for PDF builds.
-
-    To be passed into Sphinx.
-
-    Parameters
-    ----------
-    source_dir : str or Path
-        Directory containing the .rst file(s), where this will be saved.
-    project : str
-        Project title.
-    author : str
-        Author name.
-    master_doc : str
-        Root rst file (without .rst).
-    """
-    #   TODO: Add mission
-
-    #   Save conf.py in same directory as the .rst files
-    source_dir = Path(source_dir)
-    source_dir.mkdir(parents=True, exist_ok=True)
-    conf_py = source_dir / "conf.py"
-    subtitle_line = subtitle or ""
-
-    # year = datetime.now(timezone.utc).year
-    # copyright = "{year}, {author}"
-
-    conf_text = f"""
-# -- Auto-generated Sphinx configuration --
-#   See https://www.sphinx-doc.org/en/master/usage/configuration.html
-
-project = {project!r}
-author = {author!r}
-
-copyright = "%Y, {author}"
-
-# version = 
-# release = 
-
-extensions = []
-
-templates_path = ["_templates"]
-exclude_patterns = []
-
-master_doc = {master_doc!r}
-
-# -- Options for LaTeX output --
-
-latex_elements = {{
-  'extraclassoptions': 'openany,oneside',
-  'papersize': 'a4paper',
-
-  'maketitle': r'''
-\\begin{{titlepage}}
-    \\centering
-    \\vspace*{{3cm}}
-
-    {{\\Huge \\bfseries {project} \\par}}
-    \\vspace{{0.5cm}}
-
-    {{\\Large {subtitle_line} \\par}}
-    \\vspace{{1.5cm}}
-
-    {{\\large {author} \\par}}
-    \\vfill
-
-    {{\\large \\today \\par}}
-\\end{{titlepage}}
-'''
-}}
-   # For cutting out blank pages (intended for single-sided printing)
-
-latex_documents = [
-    (
-        master_doc,
-        "{project.replace(" ", "_")}.tex",
-        project,
-        author,
-        "manual",
-    ),
-]
-"""
-
-    conf_py.write_text(conf_text.strip() + "\n")
-
-
-def run_sphinx(source_dir, build_dir=None) -> None:
-    """
-    Build a PDF from a Sphinx source directory using the latexpdf builder.
-
-    This step requires Sphinx binaries to be installed and usable on the current workstation.
-    Requires a conf.py to be located in the source directory.
-
-    Parameters
-    ----------
-    source_dir : str or Path
-        Directory containing the .rst and conf.py files.
-    build_dir : str or Path
-        Directory where Sphinx output can be placed. Defaults to source_dir/_build.
-    """
-    source_dir = Path(source_dir).resolve()  # For simlinks
-
-    conf_py = source_dir / "conf.py"
-    if not conf_py.exists():
-        # User needs to run write_conf_py first.
-        raise RuntimeError(f"conf.py not found in {source_dir}")
-
-    if build_dir is None:
-        build_dir = source_dir / "_build"
-    else:
-        build_dir = Path(build_dir).resolve()
-
-    subprocess.run(
-        [
-            "sphinx-build",
-            "-M",  # Make-mode, to use a builder
-            "latexpdf",  # target
-            str(source_dir),
-            str(build_dir),
-            "-q",  # quiet, comment this and next 4 lines for logger
-        ],
-        check=True,  # If errors, raise an exception
-        capture_output=True,  # Suppress terminal output of stdout and stderr
-        text=True,  # Get text output
-    )  # See sphinx docs at https://www.sphinx-doc.org/en/master/man/sphinx-build.html
-
-
 def build_qc_dict(data: xr.Dataset) -> dict:
-    """
-    Return a dictionary of all QC variable names and their corresponding QC attributes.
-
-    Can be expanded in the future if additional attributes related to testing are added.
-    Tests are ID'd using `_flag_cts` suffix in variable test parameters
-
-    Parameters
-    ----------
-    data : Xarray DataSet
-        The top level data containing all the relevant QC variables.
-
-    Returns
-    -------
-    qc_dict : dict
-        Nested dictionaries of QC variables with test names and results.
-
-        Structure::
-
-            {
-                "VAR_QC": {
-                    "qc_name": {
-                        "params": {...},
-                        "flag_counts": {...},
-                        "stats": {...},
-                    },
-                    "qc_name_2": {
-                        ...
-                    },
-                }
-            }
-
-    TODO: Move to utils? Does it belong here?
-    """
+    #   Map each QC variable to its tests and their params/flag_counts/stats.
+    #   Tests are identified by the "_flag_cts" suffix on their attributes.
     qc_dict = {}
     for var in data.data_vars:
         if not var.endswith("_QC"):
@@ -271,28 +203,7 @@ def build_qc_dict(data: xr.Dataset) -> dict:
 
 
 def flatten_qc_dict(qc_dict: dict) -> list:
-    """
-    Flatten QC dictionary into list of table rows.
-
-    Intended for use in report metrics (RstCloth).
-
-    Parameters
-    ----------
-    qc_dict : dict
-        Dictionary of QC results.
-
-    Returns
-    -------
-    rows: list of list
-        A list of rows suitable for tabular display. Each row is a list::
-
-            [qc_var, qc_name, flag, formatted_count]
-
-        - `qc_var` : str, the QC variable name
-        - `qc_name` : str, the name of the QC test
-        - `flag` : str, QC flag value
-        - `formatted_count` : str, count formatted with thousands separator
-    """
+    #   Flatten the QC dict into [qc_var, qc_name, flag, count] table rows.
     rows = []
 
     for qc_var, tests in qc_dict.items():
@@ -300,7 +211,6 @@ def flatten_qc_dict(qc_dict: dict) -> list:
             continue
 
         for qc_name, test_data in tests.items():
-            stats = test_data.get("stats", {})
             flag_counts = test_data.get("flag_counts", {})
 
             for flag, count in flag_counts.items():
@@ -319,498 +229,1378 @@ def flatten_qc_dict(qc_dict: dict) -> list:
     return rows
 
 
-### RST builders
+### PDF document
 
 
-def run_info_page(rs, params_dict: dict, glatters: dict) -> None:
-    """
-    Writes a page dedicated to pipeline run information.
+class _BooktabsBorders(TableBordersLayout):
+    #   Booktabs-style table: horizontal rules only (top, under headings, bottom),
+    #   no vertical lines or inter-row rules, so it reads like a typeset table.
 
-    Parameters
-    ----------
-    rs : RstCloth
-        Active RstCloth stream to which the page is written.
-    params_dict : dict
-        Dictionary of global pipeline parameters.
-    glatters : dict
-        Dictionary describing the glider and mission. OG1 includes "platform_vocabulary" for consistency.
-    """
-    rs.h2("Pipeline run information")
+    def cell_style_getter(
+        self,
+        row_idx,
+        col_idx,
+        col_pos,
+        num_heading_rows,
+        num_rows,
+        num_col_idx,
+        num_col_pos,
+    ) -> TableCellStyle:
+        top = row_idx == 0
+        bottom = (row_idx == num_heading_rows - 1) or (row_idx == num_rows - 1)
+        return TableCellStyle(left=False, right=False, top=top, bottom=bottom)
 
-    run_data = current_info()
 
-    rs.table(
-        data=[[key, str(value)] for key, value in run_data.items()],
-        header=["", "Run metadata"],
-    )
-    rs.table(
-        data=[[key, str(value)] for key, value in params_dict.items()],
-        header=["", "Pipeline parameter"],
-    )
-    if "platform_vocabulary" in glatters:  #   May not be in every dataset
-        rs.table_list(
-            data=[[key, str(value)] for key, value in glatters.items()],
-            headers=["", "Glider information"],
-            widths=[30, 70],
+#   Shared instance; the layout is stateless so one is enough.
+BOOKTABS = _BooktabsBorders()
+
+
+class _ColumnFlow:
+    #   Lay content out in newspaper-style columns on a ReportPDF: top-to-bottom
+    #   down one column, then the next, then a fresh page. place() returns the
+    #   (x, y) to draw at; auto page break is disabled until finish().
+
+    def __init__(self, pdf: "ReportPDF", ncols: int = 2, col_gap: float = 6):
+        self.pdf = pdf
+        self.ncols = ncols
+        self.col_gap = col_gap
+        self.col_w = (pdf.epw - col_gap * (ncols - 1)) / ncols
+        self.top = pdf.get_y()
+        self.col = 0
+        self.y = self.top
+        self.max_y = self.top
+        self._saved_apb = pdf.auto_page_break
+        pdf.set_auto_page_break(False)
+
+    def _advance(self) -> None:
+        #   Move to the next column, or a fresh page once columns are used up.
+        self.col += 1
+        if self.col >= self.ncols:
+            self.pdf.set_auto_page_break(self._saved_apb)
+            self.pdf.add_page()
+            self.pdf.set_auto_page_break(False)
+            self.top = self.pdf.get_y()
+            self.col = 0
+        self.y = self.top
+
+    def keep_together(self, height: float) -> None:
+        #   Advance to the next column/page if height won't fit here but would
+        #   fit whole elsewhere, so a small block isn't split across a boundary.
+        capacity = self.pdf.page_break_trigger - self.top
+        if (
+            self.y > self.top
+            and self.y + height > self.pdf.page_break_trigger
+            and height <= capacity
+        ):
+            self._advance()
+
+    def place(self, height: float) -> tuple:
+        #   Reserve height in the current column; return the (x, y) to draw at.
+        if self.y > self.top and self.y + height > self.pdf.page_break_trigger:
+            self._advance()
+        x = self.pdf.l_margin + self.col * (self.col_w + self.col_gap)
+        y = self.y
+        self.y += height
+        self.max_y = max(self.max_y, self.y)
+        return x, y
+
+    def finish(self) -> None:
+        #   Restore auto page break and move below the filled columns.
+        self.pdf.set_auto_page_break(self._saved_apb)
+        self.pdf.set_y(self.max_y)
+
+
+class ReportPDF(FPDF):
+    #   FPDF subclass with the report's title page and heading/body/table/image
+    #   helpers. Pages after the title page carry a running header and footer.
+
+    def __init__(
+        self,
+        title="Pipeline Report",
+        subtitle=None,
+        steps=None,
+        pipeline_name=None,
+        pipeline_description=None,
+        track_map_path=None,
+        logo_path=None,
+    ):
+        super().__init__(orientation="P", unit="mm", format="A4")
+        self.report_title = title
+        self.report_subtitle = subtitle
+        self.report_steps = steps or []
+        self.pipeline_name = pipeline_name
+        self.pipeline_description = pipeline_description
+        self.track_map_path = track_map_path
+        self.logo_path = logo_path or LOGO_PATH
+        #   A roomy bottom margin keeps body content clear of the page-number
+        #   footer (which sits ~15 mm from the foot).
+        self.set_auto_page_break(auto=True, margin=20)
+        self.set_title(sanitize(title))
+        #   One-shot: skip the next add_page() so a section can reuse an already
+        #   opened page (see run()'s contents placeholder).
+        self._skip_next_add_page = False
+
+    def add_page(self, *args, **kwargs) -> None:
+        if self._skip_next_add_page:
+            self._skip_next_add_page = False
+            return
+        super().add_page(*args, **kwargs)
+
+    def header(self) -> None:
+        #   Running header on every page except the title page.
+        if self.page_no() == 1:
+            return
+        self.set_font("Times", "I", 8)
+        self.set_text_color(120)
+        self.cell(0, 8, sanitize(self.report_title), align="R")
+        self.ln(10)
+        self.set_text_color(0)
+
+    def footer(self) -> None:
+        #   Page-number footer on every page except the title page.
+        if self.page_no() == 1:
+            return
+        self.set_y(-15)
+        self.set_font("Times", "I", 8)
+        self.set_text_color(120)
+        self.cell(0, 10, f"Page {self.page_no()}", align="C")
+        self.set_text_color(0)
+
+    def title_page(self) -> None:
+        #   Centred title page (title, subtitle, steps, date). The report uses the
+        #   Times core font throughout for a traditional, LaTeX-like look.
+        self.add_page()
+
+        #   NOC logo, centred near the top. Kept small to leave room for the
+        #   title-page track map below. Spacing here is trimmed as tight as looks
+        #   reasonable: a long step list (in _steps_abstract) can otherwise push
+        #   the title page over onto a second page, which orphans the ToC.
+        #   Guarded by height rather than width: a non-square logo can be as wide
+        #   as it likes (bounded by logo_max_w) without shifting the page layout.
+        self.ln(10)
+        logo_h = 20
+        logo_max_w = 60
+        if os.path.exists(self.logo_path):
+            try:
+                info = self.image(
+                    self.logo_path,
+                    x=(self.w - logo_max_w) / 2,
+                    w=logo_max_w,
+                    h=logo_h,
+                    keep_aspect_ratio=True,
+                )
+                self.ln(info["rendered_height"] + 2)
+            except Exception:  # noqa: BLE001 - logo is decorative, never fatal
+                self.ln(10)
+        else:
+            self.ln(10)
+
+        self.set_font("Times", "B", 28)
+        self.multi_cell(
+            0, 12, sanitize(self.report_title), align="C",
+            new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+        )
+        self.ln(4)
+        if self.report_subtitle:
+            self.set_font("Times", "", 16)
+            self.multi_cell(
+                0, 10, sanitize(self.report_subtitle), align="C",
+                new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+            )
+
+        #   Pipeline name and description, straight from the configuration.
+        if self.pipeline_name:
+            self.ln(5)
+            self.set_font("Times", "I", 14)
+            self.multi_cell(
+                0, 8, sanitize(self.pipeline_name), align="C",
+                new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+            )
+        if self.pipeline_description:
+            self.set_font("Times", "", 11)
+            self.multi_cell(
+                0, 6, sanitize(self.pipeline_description), align="C",
+                new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+            )
+
+        #   Glider track map, centred. Capped in height so the rest of the title
+        #   page still fits; omitted silently when no map could be built. The map
+        #   is square (1:1), so default to that aspect when it can't be read.
+        if self.track_map_path and os.path.exists(self.track_map_path):
+            self.ln(4)
+            aspect = _image_aspect(self.track_map_path, default=1.0)
+            map_w, max_h = 130, 72
+            if map_w * aspect > max_h:
+                map_w = max_h / aspect
+            self.image(self.track_map_path, x=(self.w - map_w) / 2, w=map_w)
+            self.ln(2)
+
+        self.ln(5)
+        self._steps_abstract()
+
+        #   Provenance: run date, pelagos-py version, runtime environment and a
+        #   project link, grouped together near the foot of the title page.
+        self.ln(6)
+        stamp = long_date(datetime.now(timezone.utc))
+        self.set_font("Times", "", 12)
+        self.multi_cell(
+            0, 8, stamp, align="C",
+            new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+        )
+        self.ln(2)
+        self.set_font("Times", "", 11)
+        self.multi_cell(
+            0, 6, f"Generated with pelagos-py v{pelagos_version()}", align="C",
+            new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+        )
+        self.multi_cell(
+            0, 6, f"Python {platform.python_version()} on "
+            f"{platform.system()} {platform.release()}", align="C",
+            new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+        )
+        self.set_font("Times", "U", 11)
+        self.set_text_color(*_LINK_TEAL)
+        self.multi_cell(
+            0, 6, GITHUB_URL, align="C", link=GITHUB_URL,
+            new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+        )
+        self.set_text_color(0)
+
+    def _steps_abstract(self) -> None:
+        #   Render the processing steps as a centred, abstract-like block.
+        if not self.report_steps:
+            return
+
+        #   Numbered, arrow-separated sentence reads like a paper abstract.
+        listing = "  ".join(
+            f"{i}. {name}" for i, name in enumerate(self.report_steps, start=1)
         )
 
+        #   Temporarily narrow the margins to indent the block like an abstract.
+        indent = 25
+        left, right = self.l_margin, self.r_margin
+        self.set_left_margin(left + indent)
+        self.set_right_margin(right + indent)
+        self.set_x(left + indent)
 
-def add_log(logfile, rs, ncols=4) -> None:
-    """
-    Add and format the logfile as a table.
+        self.set_font("Times", "BI", 11)
+        self.multi_cell(
+            0, 6, "Processing steps", align="C",
+            new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+        )
+        self.ln(1)
+        #   Kept small so a long step list still fits the title page.
+        self.set_font("Times", "", 9)
+        self.multi_cell(
+            0, 4.5, sanitize(listing), align="C",
+            new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+        )
 
-    Note: Requires a designated log_file be initialized in the global pipeline configuration parameters.
-    """
+        self.set_left_margin(left)
+        self.set_right_margin(right)
+        self.set_x(left)
 
-    rs.h2("Logfile of run")
-    rs.newline()
+    def h2(self, text: str) -> None:
+        self.ln(2)
+        self.set_font("Times", "B", 16)
+        self.multi_cell(0, 9, sanitize(text), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        self.ln(2)
 
-    rows = []
-    with open(logfile, "r") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
+    def section_heading(self, text: str) -> None:
+        #   Level-2 heading that also registers a document section (start_section)
+        #   so it lands on the contents page and PDF bookmarks. Once per section.
+        self.start_section(text, level=0)
+        self.h2(text)
 
-            parts = line.split(" - ", maxsplit=ncols - 1)
-            if len(parts) != ncols:
-                # malformed or unexpected line, skip or log
-                continue
+    def h3(self, text: str) -> None:
+        self.ln(1)
+        self.set_font("Times", "B", 12)
+        self.multi_cell(0, 7, sanitize(text), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        self.ln(1)
 
-            timestamp, level, location, message = parts
-            #   Remove date, toolbox for more space for comment
-            timestamp = timestamp.split(" ")[1]
-            location = location.removeprefix("pelagos_py.")
+    def body(self, text: str, align: str = "LEFT") -> None:
+        self.set_font("Times", "", 11)
+        self.multi_cell(
+            0, 6, sanitize(text), align=align, new_x=XPos.LMARGIN, new_y=YPos.NEXT
+        )
+        self.ln(2)
 
-            rows.append((timestamp, level, location, message))
-        f.close()
-    #   Apply enough padding to the rows so that the report registers as "long enough" to format correctly
-    minlen = 28  #   approx for A4 in testing
-    if len(rows) < minlen:
-        blank_row = tuple("" for _ in range(ncols))
-        rows.extend([blank_row] * (minlen - len(rows)))
+    def code_block(self, text: str) -> None:
+        self.set_font("Courier", "", 8)
+        self.multi_cell(0, 4, sanitize(text), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        self.ln(2)
 
-    rs.table_list(
-        headers=["Time", "Level", "Location", "Message"],
-        data=rows,
-        widths=[11, 10, 24, 55],
-        # width=100
+    def code_listing(
+        self, text: str, font_size: int = 8, ncols: int = 1, col_gap: float = 6
+    ) -> None:
+        #   Render verbatim text as a shaded, monospaced code listing (one PDF
+        #   line per source line). With ncols > 1 the lines flow newspaper-style
+        #   across columns, packing a long-but-narrow listing into fewer pages.
+        self.set_font("Courier", "", font_size)
+        line_h = font_size * 0.5
+        self.set_fill_color(244, 244, 244)
+        lines = text.splitlines() or [""]
+
+        if ncols <= 1:
+            #   Emit each line verbatim (no added characters) so a copy-paste
+            #   reproduces valid YAML. One PDF line per source line; the text is
+            #   wrapped narrower than the text width so no line wraps visually.
+            for line in lines:
+                self.multi_cell(
+                    0, line_h, sanitize(line),
+                    new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+                    fill=True, border=0,
+                )
+            self.set_fill_color(255, 255, 255)
+            self.ln(2)
+            return
+
+        #   Newspaper-style columns. Each source line is one fixed-width cell;
+        #   long, unbreakable tokens (e.g. a file path) are character-wrapped so
+        #   they stay inside the column rather than spilling past it.
+        cols = _ColumnFlow(self, ncols=ncols, col_gap=col_gap)
+        for line in lines:
+            text = sanitize(line) or " "
+            h = self.multi_cell(
+                cols.col_w, line_h, text,
+                border=0, wrapmode=WrapMode.CHAR,
+                dry_run=True, output=MethodReturnValue.HEIGHT,
+            )
+            x, y = cols.place(h)
+            self.set_xy(x, y)
+            self.multi_cell(
+                cols.col_w, line_h, text,
+                new_x=XPos.LMARGIN, new_y=YPos.TOP,
+                fill=True, border=0, wrapmode=WrapMode.CHAR,
+            )
+        cols.finish()
+        self.set_fill_color(255, 255, 255)
+        self.ln(2)
+
+    #   Terminal palette: dark background with light text; log levels are
+    #   tinted as they would be in a colourised console.
+    _TERMINAL_BG = (24, 24, 27)
+    _TERMINAL_FG = (220, 220, 220)
+    _TERMINAL_LEVEL_COLORS = {
+        "DEBUG": (130, 170, 255),
+        "INFO": (180, 220, 180),
+        "WARNING": (240, 200, 110),
+        "ERROR": (240, 130, 130),
+        "CRITICAL": (240, 130, 130),
+    }
+
+    def terminal_block(self, lines, font_size: float = 6.5) -> None:
+        #   Render (time, level, location, message) log lines in a dark, mono
+        #   panel tinted by log level, like colourised console output.
+        if not lines:
+            return
+        line_h = font_size * 0.62
+        self.set_font("Courier", "", font_size)
+        self.set_fill_color(*self._TERMINAL_BG)
+        self.set_draw_color(*self._TERMINAL_BG)
+
+        for time_s, level, location, message in lines:
+            text = f"{time_s}  {level:<7} {location}: {message}"
+            color = self._TERMINAL_LEVEL_COLORS.get(level.upper(), self._TERMINAL_FG)
+            self.set_text_color(*color)
+            #   multi_cell fills every wrapped line, so the dark panel stays
+            #   continuous even when a long message spills onto another line.
+            self.multi_cell(
+                0, line_h, sanitize(text),
+                new_x=XPos.LMARGIN, new_y=YPos.NEXT, fill=True, border=0,
+            )
+
+        self.set_text_color(0)
+        self.set_fill_color(255, 255, 255)
+        self.ln(2)
+
+    def add_table(
+        self, headers, rows, widths=None, font_size=8, align="LEFT", font="Times"
+    ) -> None:
+        #   Render a table with a bold header row. font is "Times" for prose
+        #   tables, "Courier" for verbatim content such as the logfile.
+        self.set_font(font, "", font_size)
+        with self.table(
+            col_widths=widths,
+            text_align=align,
+            #   Booktabs-style horizontal rules only (no grid), so the table
+            #   reads like a typeset scientific table. A little padding gives
+            #   the columns room to breathe without vertical separators.
+            borders_layout=BOOKTABS,
+            headings_style=FontFace(emphasis="BOLD"),
+            padding=(1, 2, 1, 2),
+            line_height=font_size * 0.55,
+        ) as table:
+            table.row([sanitize(h) for h in headers])
+            for r in rows:
+                table.row([sanitize(c) for c in r])
+        self.ln(2)
+
+    def cc_heading(self, label: str, url: str = None, score_text: str = None) -> None:
+        #   Compliance-checker heading. With url, the label becomes a link to the
+        #   format docs; score_text adds a secondary line (e.g. the score).
+        self.ln(2)
+        self.set_font("Times", "BU" if url else "B", 13)
+        if url:
+            self.set_text_color(*_LINK_TEAL)
+            self.multi_cell(
+                0, 8, sanitize(label), link=url,
+                new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+            )
+            self.set_text_color(0)
+        else:
+            self.multi_cell(
+                0, 8, sanitize(label), new_x=XPos.LMARGIN, new_y=YPos.NEXT
+            )
+        if score_text:
+            self.set_font("Times", "I", 10)
+            self.set_text_color(90)
+            self.multi_cell(
+                0, 6, sanitize(score_text), new_x=XPos.LMARGIN, new_y=YPos.NEXT
+            )
+            self.set_text_color(0)
+        self.ln(1)
+
+    def cc_checks(self, blocks, ncols: int = 1, col_gap: float = 6) -> None:
+        #   List compliance-checker findings as a heading-led list: each block is
+        #   (check_name, [messages]), flowed newspaper-style across ncols columns.
+        if not blocks:
+            return
+
+        #   Set small: the Format Checker can list many findings, so a compact
+        #   size keeps the section from sprawling across pages.
+        title_size, msg_size = 8, 7.5
+        title_h, msg_h = 4, 3.4
+        cols = _ColumnFlow(self, ncols=ncols, col_gap=col_gap)
+        w = cols.col_w
+        for name, msgs in blocks:
+            #   Measure first so a check stays with (at least) its first message
+            #   rather than its heading being orphaned at a column foot.
+            self.set_font("Times", "B", title_size)
+            h_title = self.multi_cell(
+                w, title_h, sanitize(name), border=0,
+                dry_run=True, output=MethodReturnValue.HEIGHT,
+            )
+            self.set_font("Times", "", msg_size)
+            msg_heights = [
+                self.multi_cell(
+                    w, msg_h, sanitize(f"- {m}"), border=0,
+                    dry_run=True, output=MethodReturnValue.HEIGHT,
+                )
+                for m in msgs
+            ]
+            cols.keep_together(h_title + (msg_heights[0] if msg_heights else 0))
+
+            x, y = cols.place(h_title)
+            self.set_xy(x, y)
+            self.set_font("Times", "B", title_size)
+            self.multi_cell(
+                w, title_h, sanitize(name), border=0,
+                new_x=XPos.LMARGIN, new_y=YPos.TOP,
+            )
+
+            self.set_font("Times", "", msg_size)
+            for m, hm in zip(msgs, msg_heights):
+                x, y = cols.place(hm)
+                self.set_xy(x, y)
+                self.multi_cell(
+                    w, msg_h, sanitize(f"- {m}"), border=0,
+                    new_x=XPos.LMARGIN, new_y=YPos.TOP,
+                )
+            cols.place(2)  #   small gap after each block
+        cols.finish()
+        self.ln(2)
+
+    def image_full(self, path: str, aspect: float) -> None:
+        #   Place an image spanning the full text width (aspect = h/w), breaking
+        #   the page first if it would not fit.
+        w = self.epw
+        h = w * aspect
+        if self.get_y() + h > self.page_break_trigger:
+            self.add_page()
+        self.image(path, w=w)
+        self.ln(4)
+
+    def image_fit(self, path: str, aspect: float, max_h: float) -> None:
+        #   Place an image at text width but capped (and centred) at max_h height,
+        #   so several plots can share a page. Breaks the page first if needed.
+        w = self.epw
+        h = w * aspect
+        if h > max_h:
+            h = max_h
+            w = h / aspect
+        if self.get_y() + h > self.page_break_trigger:
+            self.add_page()
+        #   Centre the (possibly narrowed) image within the text width.
+        x = (self.w - w) / 2
+        self.image(path, x=x, w=w)
+        self.ln(4)
+
+
+### Section builders
+
+
+def config_to_yaml(config: dict, width: int = 88) -> str:
+    #   Serialise the run config to compact, comment-free, paste-ready YAML.
+    #   width wraps long scalars so the listing fits a (possibly narrow) column.
+    return yaml.safe_dump(
+        config,
+        sort_keys=False,
+        default_flow_style=False,
+        width=width,
+    ).strip()
+
+
+def config_section(
+    pdf: ReportPDF, config: dict, ncols: int = 2, font_size: int = 8, col_gap: float = 6
+) -> None:
+    #   Write the run config as a multi-column YAML listing, flowed across ncols
+    #   columns (wrap width derived from the column width) to save pages.
+    pdf.add_page()
+    pdf.section_heading("Configuration")
+    if not config:
+        pdf.body("No configuration available.")
+        return
+    pdf.body(
+        "The pipeline was run with the following configuration "
+        "(comments and blank lines removed):"
     )
-    rs.newline()
+    #   Wrap the YAML to (roughly) the number of monospace characters that fit a
+    #   single column, so lines don't spill past their column. Courier (a core
+    #   font) is 0.6 em wide per character; epw is the usable text width in mm.
+    col_w_mm = (pdf.epw - col_gap * (ncols - 1)) / ncols
+    char_w_mm = 0.6 * font_size / 72 * 25.4
+    chars = max(20, int(col_w_mm / char_w_mm) - 1)
+    pdf.code_listing(
+        config_to_yaml(config, width=chars),
+        font_size=font_size,
+        ncols=ncols,
+        col_gap=col_gap,
+    )
 
-def add_cc(ccfile, rs) -> None:
-    """
-    Add the text of the compliance checker step from 'Format Checker'.
-    """
 
-    rs.h2("Compliance Checker results")
-    rs.newline()
-    
-    if ccfile.endswith(".json"):
-        with open(ccfile, mode="r") as f:
-            cc_data = json.load(f)
-            for cname, test_data in cc_data.items():
-                rows = []
-                scored = test_data.get("scored_points")
-                possible = test_data.get("possible_points")
-                rs.h3(f"{cname}: CC score of {scored}/{possible}")
+def _image_aspect(path: str, default: float = 0.6) -> float:
+    #   Image height/width ratio (read with matplotlib); default if unreadable.
+    try:
+        arr = plt.imread(path)
+        height, width = arr.shape[0], arr.shape[1]
+        return height / width
+    except Exception:  # noqa: BLE001 - sizing is best-effort, never fatal
+        return default
 
-                seen_names = set()
-                for entry in test_data.get("all_priorities", []):
-                    msgs = entry.get("msgs", [])
-                    if msgs:
-                        name = entry.get("name", "Unknown")
 
-                        for msg in msgs:
-                            for k, v in REPLACEMENTS.items():
-                                msg = msg.replace(k, v)
-                                name = name.replace(k, v)
-                            if name in seen_names:
-                                display_name = ""
-                            else:
-                                display_name = name
-                                seen_names.add(name)
+def diagnostics_section(pdf: ReportPDF, captured: list) -> None:
+    #   Embed the diagnostic plot(s) captured for each step. captured is a list
+    #   of {"step": name, "images": [path, ...]} records in run order.
+    if not captured:
+        return
 
-                            rows.append([display_name, msg])
+    #   Start on a fresh page so the heading isn't orphaned at the foot of the
+    #   previous section with its plots breaking onto the next page.
+    pdf.add_page()
+    pdf.section_heading("Step diagnostics")
+    pdf.body(
+        "Diagnostic plots generated for each step that produces one. These are "
+        "generated for the report regardless of each step's diagnostics setting."
+    )
+    #   Cap each plot's height so two (heading + plot) fit on a page rather than
+    #   each diagnostic taking a whole page.
+    max_h = 105
+    for entry in captured:
+        images = entry.get("images", [])
+        if not images:
+            continue
+        pdf.h3(entry.get("step", "Step"))
+        for img in images:
+            pdf.image_fit(img, aspect=_image_aspect(img), max_h=max_h)
 
-                if rows:
-                    rs.newline()
-                    rs.table_list(
-                        headers=["Name", f"{cname} message"],
-                        data=rows,
-                        widths = [30, 70],
-                    )
-    else:
-        with open(ccfile, "r") as f:
-            content = f.read()
-        
-        #   Use math substitution to make it clear that the symbol doesn't work in a codeblock
-        for k, v in REPLACEMENTS.items():
-            content = content.replace(k, v)
 
-        rs.codeblock(content)
-
-def qc_section(doc, data: xr.Dataset) -> None:
-    """
-    Wrapper for the QC section.
-
-    Parameters
-    ----------
-    doc : RstCloth object
-        The active RstCloth stream to be written to
-    data : xarray.core.dataset.Dataset
-        The entire dataset, including attributes
-    """
-    doc.h2("Quality Control Summary")
-    doc.newline()
-
-    #   Summary of flags from each test
-    headers = [
-        "QC Variable",
-        "Test",
-        "Flag",
-        "Count",
-    ]
+def qc_section(pdf: ReportPDF, data: xr.Dataset) -> None:
+    #   Write the Quality Control summary table.
+    pdf.add_page()
+    pdf.section_heading("Quality Control Summary")
 
     qc_dict = build_qc_dict(data)
     rows = flatten_qc_dict(qc_dict)
 
     if not rows:
-        doc.paragraph("No QC tests found.")
+        pdf.body("No QC tests found.")
         return
 
-    doc.table(headers, rows)
-    doc.newline()
-
-
-def img_rst(doc, fname: str, fields: list = None):
-    """
-    Inserts image information into the .rst using `directive`.
-
-    See rst directives for image information (https://docutils.sourceforge.io/docs/ref/rst/directives.html#images)
-    See RstCloth for info about `directive` (https://rstcloth.readthedocs.io/en/latest/rstcloth.html)
-
-    Parameters
-    ----------
-    doc : RstCloth object
-        The active RstCloth stream to be written to
-    fname : str
-        The path or filename
-    fields : list of tuple
-        Image parameters to be written below the directive
-
-    Example
-    -------
-    ::
-
-        img_rst(doc,
-                "../examples/data/OG1/testing/fig.png",
-                fields=[("height","100px"),("width","100px")])
-
-    would write out::
-
-        .. image:: fig.*
-           :height: 100px
-           :width: 100px
-    """
-    #   Sphinx is constrained to /outdir, lop path and the extension off
-    new_name = fname.split("/")[-1].split(".")[0] + ".*"
-    doc.directive(name="image", arg=new_name, fields=fields)
-    doc.newline()
-    doc.newline()
-
-
-def basic_geo(doc, data, g_extent, ext, outdir):
-    """
-    Creates a simple geographic plot using the glider LONGITUDE and LATITUDE.
-    """
-    import cartopy.crs as ccrs
-    import cartopy.feature as cfeature
-
-    ax0 = plt.axes(projection=ccrs.PlateCarree())
-    ax0.set_extent(g_extent, crs=ccrs.PlateCarree())
-    ax0.add_feature(cfeature.LAND.with_scale("110m"))
-    ax0.gridlines(draw_labels=True, dms=True, x_inline=False, y_inline=False)
-    ax0.coastlines(resolution="110m")
-    ax0.scatter(
-        data["LONGITUDE"],
-        data["LATITUDE"],
-        s=5,
-        color="red",
-        marker="+",
-        transform=ccrs.PlateCarree(),
-    )
-    plt.title("Glider Track")
-    fname = outdir + f"geographic{ext}"
-    plt.savefig(fname)
-    img_rst(doc, fname)
-
-
-def inset_geo(
-    doc,
-    data,
-    outdir: str = "./",
-    g_extent: list = [7, 25, 54, 65],
-    scale: str = "110m",
-    ext: str = ".png",
-):
-    """
-    Creates an inset geographic of two plots for additional positional awareness.
-
-    Unlike basic_geo(), this function will create an inset to make it clearer
-    where the glider is operating.
-
-    If the chart looks chunky, consider increasing the resolution in the `scale` arg.
-
-    Parameters
-    ----------
-    doc : RstCloth object
-        The active RstCloth stream to be written to
-    data : xarray.core.dataset.Dataset
-        The entire dataset, including attributes
-    outdir : str
-        The path to return figures to. Defaults to current directory.
-    g_extent : list
-        Geographic extent for cartopy geographic plot ([lon1, lon2, lat1, lat2]). Defaults to Baltic Sea.
-    scale: str
-        Resolution for cartopy to use when adding elements ("10m", "50m", "110m")
-    ext : str
-        Image filetype extension (.png, .svg, etc.)
-    """
-    import cartopy.crs as ccrs
-    import cartopy.feature as cfeature
-
-    fig = plt.figure(figsize=(8, 6))
-
-    lon = data["LONGITUDE"].values
-    lat = data["LATITUDE"].values
-    lon_min = np.nanmin(lon)
-    lon_max = np.nanmax(lon)
-    lat_min = np.nanmin(lat)
-    lat_max = np.nanmax(lat)
-
-    #   Get the middle of the glider track
-    lon_mid = 0.5 * (lon_min + lon_max)
-    lat_mid = 0.5 * (lat_min + lat_max)
-    pad = 0.1  #   Add some padding in degrees
-    lon_span = (
-        lon_max - lon_min
-    ) + 2 * pad  # Full lat/lon sizes spanning the mission range
-    lat_span = (lat_max - lat_min) + 2 * pad
-
-    #   Use the larger span to force glider image to be a square
-    span = max(lon_span, lat_span)
-    track_extent = [
-        lon_mid - span / 2,
-        lon_mid + span / 2,
-        lat_mid - span / 2,
-        lat_mid + span / 2,
-    ]  #   Glider data track extent
-
-    #   Glider track on main axes
-    ax_main = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
-    ax_main.set_extent(track_extent, crs=ccrs.PlateCarree())
-
-    ax_main.scatter(
-        lon,
-        lat,
-        s=5,
-        color="red",
-        marker="+",
-        transform=ccrs.PlateCarree(),
-    )
-    gl = ax_main.gridlines(
-        draw_labels=True,  # show tick labels
-        dms=True,  # degrees, minutes, seconds
-        x_inline=False,
-        y_inline=False,
-        linewidth=0.5,
-        color="gray",
-        alpha=0.7,
-        linestyle="--",
-    )
-    gl.top_labels = False
-    gl.right_labels = False
-    gl.bottom_labels = True
-    gl.left_labels = True
-
-    ax_main.coastlines(resolution=scale)
-    ax_main.set_title(f"Glider Track: {data.attrs['dataset_id']}")
-
-    # Inset figure on new axes
-    inset_ax = fig.add_axes(
-        [0.23, 0.05, 0.2, 0.3],  # HA low, VA low, HA hi, VA hi
-        projection=ccrs.PlateCarree(),
+    pdf.add_table(
+        ["QC Variable", "Test", "Flag", "Count"],
+        rows,
+        widths=(30, 30, 20, 20),
     )
 
-    inset_ax.set_extent(g_extent, crs=ccrs.PlateCarree())  #   Default Batlic sea
-    inset_ax.add_feature(cfeature.BORDERS.with_scale(scale), linewidth=0.5)
-    inset_ax.add_feature(cfeature.LAND.with_scale(scale))
-    inset_ax.add_feature(cfeature.LAKES.with_scale(scale))
-    inset_ax.coastlines(resolution=scale)
 
-    inset_ax.plot(
-        [
-            track_extent[0],
-            track_extent[1],
-            track_extent[1],
-            track_extent[0],
-            track_extent[0],
-        ],
-        [
-            track_extent[2],
-            track_extent[2],
-            track_extent[3],
-            track_extent[3],
-            track_extent[2],
-        ],
-        transform=ccrs.PlateCarree(),
-        color="red",
-        linewidth=1.2,
-    )  # Draw box on top of inset
+def add_log(logfile, pdf: ReportPDF, ncols: int = 4) -> None:
+    #   Add the logfile as a terminal-style block. Requires a log_file set in the
+    #   global pipeline parameters; ncols is the " - " fields per log line.
+    pdf.add_page()
+    pdf.section_heading("Logfile of run")
 
-    #   Save the figure and write to .rst
-    fname = outdir + f"geographic{ext}"
-    plt.savefig(fname)
+    rows = []
+    try:
+        with open(logfile, "r") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+
+                parts = line.split(" - ", maxsplit=ncols - 1)
+                if len(parts) != ncols:
+                    # malformed or unexpected line, skip
+                    continue
+
+                timestamp, level, location, message = parts
+                #   Remove date for more space for comment
+                timestamp = timestamp.split(" ")[1] if " " in timestamp else timestamp
+                location = location.removeprefix("pelagos_py.")
+
+                rows.append((timestamp, level, location, message))
+    except FileNotFoundError:
+        pdf.body("Logfile not found.")
+        return
+
+    if not rows:
+        pdf.body("No log entries found.")
+        return
+
+    pdf.terminal_block(rows)
+
+
+def _collapse_repeated_msgs(msgs) -> list:
+    #   Merge messages that differ only by variable name into one line: messages
+    #   shaped "variable <NAME> <rest>" are grouped by <rest> and list every
+    #   affected variable. Anything else is kept verbatim, first-seen order.
+    order = []  # group keys, in first-seen order
+    groups = {}
+    for m in msgs:
+        parts = m.split(maxsplit=2)
+        if len(parts) == 3 and parts[0].lower() == "variable":
+            #   Group by the text after the variable name (parts[2]).
+            key = ("var", parts[2])
+            if key not in groups:
+                groups[key] = {"rest": parts[2], "vars": []}
+                order.append(key)
+            groups[key]["vars"].append(parts[1])
+        else:
+            #   Not "variable <NAME> <rest>": keep verbatim, never merged.
+            key = ("single", len(order))
+            groups[key] = {"msg": m}
+            order.append(key)
+
+    out = []
+    for key in order:
+        group = groups[key]
+        if "msg" in group:
+            out.append(group["msg"])
+        elif len(group["vars"]) == 1:
+            out.append(f"variable {group['vars'][0]} {group['rest']}")
+        else:
+            out.append(f"variables {', '.join(group['vars'])} {group['rest']}")
+    return out
+
+
+def _render_cc_results(pdf: ReportPDF, cc_data: dict) -> None:
+    #   Render compliance-checker results: per-checker score heading then a
+    #   heading-led block of findings. cc_data maps checker name -> result dict.
+    for cname, test_data in cc_data.items():
+        scored = test_data.get("scored_points")
+        possible = test_data.get("possible_points")
+
+        #   Friendly label + docs link for known formats (e.g. OG1); otherwise
+        #   fall back to the raw checker name with no link.
+        label, url = CC_CHECKER_LABELS.get(str(cname).lower(), (cname, None))
+        score_text = None
+        if scored is not None and possible is not None:
+            score_text = f"Compliance score: {scored}/{possible}"
+        pdf.cc_heading(label, url, score_text)
+
+        #   Each failing check becomes a heading-led block (name + its messages)
+        #   rather than table rows with a mostly-empty name column.
+        blocks = [
+            (entry.get("name", "Unknown"), _collapse_repeated_msgs(entry["msgs"]))
+            for entry in test_data.get("all_priorities", [])
+            if entry.get("msgs")
+        ]
+
+        if blocks:
+            pdf.cc_checks(blocks)
+        else:
+            pdf.body("No issues reported.")
+
+
+def format_checker_section(
+    pdf: ReportPDF, cc_results: dict = None, ccfile=None
+) -> None:
+    #   Write the Format Checker results from cc_results (stashed by the step),
+    #   falling back to a saved ccfile (JSON parsed, else embedded verbatim).
+    pdf.add_page()
+    pdf.section_heading("Format Checker results")
+
+    if cc_results:
+        _render_cc_results(pdf, cc_results)
+    elif ccfile and str(ccfile).endswith(".json"):
+        with open(ccfile, mode="r") as f:
+            _render_cc_results(pdf, json.load(f))
+    elif ccfile:
+        with open(ccfile, "r") as f:
+            content = f.read()
+        pdf.code_block(content)
+    else:
+        pdf.body("Format Checker ran but produced no detailed results.")
+
+
+def qc_flag_glossary_rows(data: xr.Dataset) -> list:
+    #   Build [flag, name, meaning] glossary rows from the first QC variable
+    #   carrying flag_values/flag_meanings, else the default Argo table.
+    values, names = None, None
+    for var in data.data_vars:
+        attrs = data[var].attrs
+        if "flag_values" in attrs and "flag_meanings" in attrs:
+            values = list(attrs["flag_values"])
+            #   flag_meanings is a comma- and/or space-separated string of codes.
+            names = str(attrs["flag_meanings"]).replace(",", " ").split()
+            break
+
+    if not values or not names or len(values) != len(names):
+        values = [v for v, _ in _DEFAULT_QC_FLAGS]
+        names = [n for _, n in _DEFAULT_QC_FLAGS]
+
+    return [
+        [str(value), name, QC_FLAG_DESCRIPTIONS.get(name, name)]
+        for value, name in zip(values, names)
+    ]
+
+
+def variable_index_rows(data: xr.Dataset) -> list:
+    #   Build [variable, long name, units] rows for the variable index. long name
+    #   falls back to description then blank; units blanked when absent/"None".
+    rows = []
+    for var in data.data_vars:
+        attrs = data[var].attrs
+        long_name = attrs.get("long_name") or attrs.get("description") or ""
+        units = attrs.get("units")
+        units = "" if not units or str(units).lower() == "none" else str(units)
+        rows.append([var, long_name, units])
+    return rows
+
+
+def contents_page(pdf: ReportPDF, outline) -> None:
+    #   Fills the reserved contents page from fpdf's document outline (populated
+    #   by section_heading via start_section) once page numbers are known.
+    pdf.h2("Contents")
+    pdf.set_font("Times", "", 9)
+    page_w = 14  #   narrow right-hand column for the page number
+    for section in outline:
+        link = pdf.add_link(page=section.page_number)
+        pdf.set_text_color(*_LINK_TEAL)
+        pdf.cell(pdf.epw - page_w, 5, sanitize(section.name), link=link)
+        pdf.set_text_color(0)
+        pdf.cell(
+            page_w, 5, str(section.page_number), align="R", link=link,
+            new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+        )
+    pdf.ln(2)
+
+
+def index_section(pdf: ReportPDF, data: xr.Dataset) -> None:
+    #   Closing index page: pelagos-py credit, a linked contents list, then the
+    #   QC flag glossary, variable index and glider global attributes.
+    pdf.add_page()
+
+    #   Repeat the pelagos-py credit and project link at the very end.
+    pdf.set_font("Times", "", 11)
+    pdf.multi_cell(
+        0, 6, f"Generated with pelagos-py v{pelagos_version()}", align="C",
+        new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+    )
+    pdf.set_font("Times", "U", 11)
+    pdf.set_text_color(*_LINK_TEAL)
+    pdf.multi_cell(
+        0, 6, GITHUB_URL, align="C", link=GITHUB_URL,
+        new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+    )
+    pdf.set_text_color(0)
+    pdf.ln(8)
+
+    pdf.section_heading("Index")
+
+    #   QC flag glossary: translate the flag values used throughout the report.
+    pdf.h3("QC flag glossary")
+    pdf.body(
+        "Quality-control flags follow the Argo reference table. The table below "
+        "translates each flag value used in the QC summary and plots."
+    )
+    pdf.add_table(
+        ["Flag", "Name", "Meaning"],
+        qc_flag_glossary_rows(data),
+        widths=(15, 40, 65),
+        font_size=7,
+    )
+
+    #   Variable index: every dataset variable with its long name and units.
+    pdf.h3("Variables")
+    pdf.add_table(
+        ["Variable", "Long name", "Units"],
+        variable_index_rows(data),
+        widths=(30, 75, 15),
+        font_size=7,
+    )
+
+    #   Glider/mission information, from the dataset's global attributes.
+    glatters = data.attrs
+    if "platform_vocabulary" in glatters:  #   May not be in every dataset
+        pdf.h3("Glider information")
+        pdf.add_table(
+            ["Field", "Value"],
+            [[key, value] for key, value in glatters.items()],
+            widths=(35, 75),
+            font_size=7,
+        )
+
+
+### Plot builders (save a figure, return its path)
+
+
+#   Title-page map palette: muted navy ocean, slate land, gold track that
+#   brightens from the oldest fix to the newest.
+_MAP_OCEAN = "#2b3a57"
+_MAP_LAND = "#45526d"
+_MAP_COAST = "#7889ad"
+_MAP_GOLD_STOPS = ["#4a3c10", "#b8922a", "#ffd700", "#fff4bf"]
+
+
+#   Cross-section panels (PRES vs TIME, coloured by a variable). Each panel
+#   names the variable to colour by (first match wins, so OG1/lower-case and
+#   BBP700/BBP532 fallbacks can be listed in preference order) and pulls its
+#   colourmap stops from the shared ``palettes`` module. ``special`` flags BBP,
+#   drawn largest-on-top with smaller markers so its sharp spikes surface rather
+#   than hide behind ordinary points.
+_CROSS_SECTION_PANELS = (
+    {
+        "label": "Temperature",
+        "candidates": ("TEMP", "TEMPERATURE", "temp"),
+        "stops": palettes.SEQUENTIAL["temperature"],
+    },
+    {
+        "label": "Salinity",
+        "candidates": ("PRAC_SALINITY", "ABS_SALINITY", "PSAL", "SALINITY", "salinity"),
+        "stops": palettes.SEQUENTIAL["salinity"],
+    },
+    {
+        "label": "Density",
+        "candidates": ("DENSITY", "density", "SIGMA0", "SIGMA_THETA", "POTDENS"),
+        "stops": palettes.SEQUENTIAL["density"],
+    },
+    {
+        "label": "Oxygen",
+        "candidates": (
+            "MOLAR_DOXY_ADJUSTED",  #   renamed fully corrected output, if the config adds that step
+            "MOLAR_DOXY_PSAL_PRES",  #   fully corrected output of the oxygen processing chain
+            "MOLAR_DOXY_PSAL",
+            "MOLAR_DOXY",
+            "molar_doxy",
+            "DOXY",
+            "molar_deoxy",
+        ),
+        "stops": palettes.SEQUENTIAL["oxygen"],
+    },
+    {
+        "label": "Chlorophyll",
+        "candidates": ("CHLA_ADJUSTED", "CHLA", "chla_adjusted", "CHLOROPHYLL"),
+        "stops": palettes.SEQUENTIAL["chlorophyll"],
+    },
+    {
+        "label": "Backscatter",
+        "candidates": ("BBP700", "BBP532", "BBP", "bbp"),
+        "special": "bbp",
+        "stops": palettes.SEQUENTIAL["backscatter"],
+    },
+    {
+        "label": "Downwelling PAR",
+        "candidates": ("DOWNWELLING_PAR", "downwelling_par", "PAR"),
+        "stops": palettes.SEQUENTIAL["solar"],
+    },
+)
+
+#   Names tried (in order) for the cross-section's shared time and depth axes.
+_CS_TIME_CANDIDATES = ("TIME", "time")
+_CS_PRES_CANDIDATES = ("PRES", "PRESSURE", "pres", "DEPTH")
+
+#   Default scatter marker size; BBP uses half this so its surfaced high values
+#   sit cleanly over the rest rather than smearing.
+_CS_MARKER_SIZE = 8.0
+
+#   Only points whose QC flag is one of these are plotted in the cross-sections
+#   (good / probably-good / value-changed / interpolated). Points carrying any
+#   other flag (e.g. bad, not-used, missing) are masked out before plotting.
+_CS_ALLOWED_QC_FLAGS = (0, 1, 2, 5, 8)
+
+#   qc_hist's source-series panel is a single line on a half page; far fewer points still look dense.
+_QC_HIST_MAX_POINTS = 20_000
+
+
+def _first_present(data: xr.Dataset, names) -> str:
+    #   First of names that is a variable in data, else None.
+    for name in names:
+        if name in data.variables:
+            return name
+    return None
+
+
+def _cs_date_format(span_days: float) -> str:
+    #   Date format for the shared X axis, adapting to the visible span.
+    if span_days < 1.0 / 1440.0:      # sub-minute
+        return "%H:%M:%S"
+    if span_days < 1.0:               # minutes / hours
+        return "%H:%M"
+    if span_days < 60.0:              # days
+        return "%d %b %Y"
+    if span_days < 730.0:             # months
+        return "%b %Y"
+    return "%Y"                       # years
+
+
+def _var_label(data: xr.Dataset, var: str, label: str) -> str:
+    #   "label [units]" for a variable, dropping units when absent or "None".
+    units = data[var].attrs.get("units")
+    if units and str(units).lower() != "none":
+        return f"{label} [{units}]"
+    return label
+
+
+def _find_lonlat(data: xr.Dataset):
+    #   (lon, lat) arrays from the dataset (OG1 names then lower-case fallbacks),
+    #   else (None, None).
+    for lon_name, lat_name in (
+        ("LONGITUDE", "LATITUDE"),
+        ("longitude", "latitude"),
+        ("lon", "lat"),
+    ):
+        if lon_name in data.variables and lat_name in data.variables:
+            return data[lon_name].values, data[lat_name].values
+    return None, None
+
+
+def glider_track_map(data: xr.Dataset, outdir: str, ext: str = ".png") -> str:
+    # Dark, web-style map of the glider track for the title page. Returns the
+    # saved image path, or None when there is no track to draw.
+    from matplotlib.collections import LineCollection
+    from matplotlib.colors import LinearSegmentedColormap
+
+    lon, lat = _find_lonlat(data)
+    if lon is None:
+        return None
+    lon = np.asarray(lon, dtype=float).ravel()
+    lat = np.asarray(lat, dtype=float).ravel()
+    valid = np.isfinite(lon) & np.isfinite(lat)
+    lon, lat = lon[valid], lat[valid]
+    if lon.size < 2:
+        return None
+    #   Thin millions of fixes to a few thousand without changing the track's shape.
+    stride = max(1, int(np.ceil(lon.size / 3000)))
+    lon, lat = lon[::stride], lat[::stride]
+
+    fig, ax = plt.subplots(figsize=(6, 6))
+    fig.patch.set_facecolor(_MAP_OCEAN)
+    ax.set_facecolor(_MAP_OCEAN)
+    ax.set_axis_off()
+    try:
+        fig_spec.coastlines(
+            ax, fig_spec.map_extent(lon, lat), color=_MAP_COAST, linewidth=0.6, fill=_MAP_LAND
+        )
+    except Exception:  # noqa: BLE001 - a failed Natural Earth download never breaks the report
+        pass
+
+    #   Time-faded gold gradient (oldest faint -> newest bright) over a soft glow.
+    pts = np.column_stack([lon, lat]).reshape(-1, 1, 2)
+    segs = np.concatenate([pts[:-1], pts[1:]], axis=1)
+    cmap = LinearSegmentedColormap.from_list("glidergold", _MAP_GOLD_STOPS)
+    ax.add_collection(LineCollection(segs, colors="#ffd70022", linewidth=4.5, zorder=2))
+    track = LineCollection(segs, cmap=cmap, linewidth=1.8, zorder=3)
+    track.set_array(np.linspace(0, 1, len(segs)))
+    ax.add_collection(track)
+
+    fig.tight_layout(pad=0.3)
+    fname = outdir + "glider_track" + ext
+    save_figure(fig, fname, dpi=200, facecolor=fig.get_facecolor())
     plt.close(fig)
-
-    img_rst(doc, fname)
+    return fname
 
 
 def qc_hist(
-    doc,
     data: xr.Dataset,
     outdir: str,
     var: str,
+    dataset_label: str = None,
     xlims: list = [-0.6, 9.6],
     hislim=range(10),
-    bins=None,
     ext=".png",
-):
-    """
-    Create quick quality control histogram figure.
-
-    Left axis:  Quick plot of QC variable's parent
-    Right axis: Bins of each flag type, labeled with # of points
-
-    Parameters
-    ----------
-    doc : RstCloth object
-        The active RstCloth stream to be written to
-    data : xarray.core.dataset.Dataset
-        The entire dataset, including attributes
-    var : str
-        The QC variable as listed in `data`
-    ext : str
-        Image filetype extension (.png, .svg, etc.)
-    hislim : array-like
-        All potential flags of the selected schema (default Argo = 0 to 9, 10 total)
-    bins : array-like
-        The sequence of bin edges for collection, matching the dimension of hislim
-    xlims : list
-        Histogram axis bounds. Defaults to Argo (10 flags) with 0.1 padding on each side
-    """
-
+    source_all_nan: bool = None,
+    flag_all_nan: bool = None,
+) -> str:
+    #   QC histogram figure: left axis plots the QC variable's parent series,
+    #   right axis bins each flag type labelled with its point count. hislim is
+    #   the schema's flags (default Argo 0-9); returns the saved figure path.
+    #   source_all_nan/flag_all_nan let a caller that already scanned the arrays
+    #   (e.g. make_plots) pass the result in rather than scanning again here.
     var_source = var[:-3]  #   TEMP_QC --> TEMP
+    if source_all_nan is None:
+        source_all_nan = bool(np.all(np.isnan(data[var_source])))
+    if flag_all_nan is None:
+        flag_all_nan = bool(np.all(np.isnan(data[var])))
 
-    fig, axs = plt.subplots(ncols=2, figsize=(8, 4), layout="constrained")
+    #   Short and wide so three plots fit on a page (see make_plots).
+    fig, axs = plt.subplots(ncols=2, figsize=(8, 3.2), layout="constrained")
 
     #   Prepare the histogram
-    ylims = [1, len(data[var])]  #   Log axis cannot be 0
+    ylims = [1, data[var].size]  #   Log axis cannot be 0
     if any(y < 1 for y in ylims):
         raise ValueError
-    if bins == None:  #   If not specified, center the bins around each flag integer
-        bins = np.arange(len(hislim)) - 0.5
 
     #   Plot the source variable using xarray.plot for speed.
     #   If all NaN, clarify that on the plot.
-    if np.all(np.isnan(data[var_source])):
+    if source_all_nan:
         axs[0].text(
             0.2, 0.5, f"Data ({var_source}) are NaN", transform=axs[0].transAxes
         )
     else:
-        data[var_source].plot(ax=axs[0])
-    axs[0].set_title(f"{var_source}: n={len(data[var_source])}", ha="right")
+        source = data[var_source]
+        source = source.isel({source.dims[0]: fig_spec.thin_idx(source.size, _QC_HIST_MAX_POINTS)})
+        source.plot(ax=axs[0])
+    #   xarray labels the axis with the (often long) description; replace it with
+    #   a short name + units so the plot stays uncluttered. Skip the units when
+    #   absent or explicitly "None" (e.g. PHASE) so no "[None]" is shown.
+    units = data[var_source].attrs.get("units")
+    if units and str(units).lower() != "none":
+        axs[0].set_ylabel(f"{var_source} [{units}]")
+    else:
+        axs[0].set_ylabel(var_source)
+    axs[0].set_title("")
 
-    if np.all(np.isnan(data[var])):
+    if flag_all_nan:
         axs[1].text(0.2, 0.5, f"Flags ({var}) are NaN", transform=axs[1].transAxes)
     else:
-        data[var].plot.hist(
-            yscale="log", bins=bins, xticks=hislim, xlim=xlims, ylim=ylims, ax=axs[1]
-        )
-        bars = axs[1].containers[0]  #   Number of points in each bin
-        axs[1].bar_label(bars, fontsize=7, label_type="center")
+        #   Flags are small integers: np.histogram sorts 7M values per figure,
+        #   bincount doesn't. Labels are drawn by hand (bar_label's lambda makes
+        #   the figure unpicklable, forcing a slow foreground save).
+        flags = np.asarray(data[var].values).ravel()
+        flags = flags[np.isfinite(flags)].astype(np.int64)
+        counts = np.bincount(flags[flags >= 0], minlength=len(hislim))[: len(hislim)]
+        centres = np.arange(len(hislim))
+        axs[1].bar(centres, counts, width=1.0)
+        for x, c in zip(centres, counts):
+            if c > 0:  #   visual centre of the bar on a log axis starting at 1
+                axs[1].annotate(f"{c:g}", (x, np.sqrt(c)), ha="center", va="center",
+                                fontsize=7, rotation=90)
         axs[1].set_yscale("log")
-    axs[1].set_title(f"{var} flag histogram", ha="right")
-    fig.supylabel(data.attrs["dataset_id"])
+        axs[1].set_xticks(hislim)
+        axs[1].set_xlim(xlims)
+        axs[1].set_ylim(ylims)
+        axs[1].set_xlabel("Quality Flag")
+
+    #   A single title across the multiplot, just the variable name.
+    fig.suptitle(var_source)
+    #   Only label the side with the dataset ID when a real one is known.
+    if dataset_label:
+        fig.supylabel(dataset_label)
 
     fname = outdir + var + ext
-    plt.savefig(fname)  #   Save to the outdir
-    img_rst(doc, fname)  #   Pass along doc
+    save_figure(fig, fname)
+    plt.close(fig)
+    return fname
 
 
-def make_plots(
-    doc,
-    data: xr.Dataset,
-    outdir: str,
-    extent: list = [7, 25, 54, 65],
-) -> None:
-    """
-    Wrapper for plotting glider QC variables quickly.
+def qc_hist_figures(data: xr.Dataset, outdir: str, bar=None) -> list:
+    #   Render a QC histogram per numeric QC variable (in the background, see
+    #   save_figure); returns [(var, image path or None)] for make_plots. Only
+    #   QC flags of a numeric measurement series are plotted: many flag
+    #   metadata/coordinate fields whose parent is a string, datetime or scalar.
+    qc_vars = [
+        var
+        for var in data.data_vars
+        if var.endswith("_QC")
+        and data[var].ndim >= 1
+        and np.issubdtype(data[var].dtype, np.number)
+        and var[:-3] in data.data_vars
+        and np.issubdtype(data[var[:-3]].dtype, np.number)
+    ]
 
-    There are millions of points per variable, which xarray can plot very quickly
-    in specific ways. Here, geographic and QC histograms are explored.
+    #   Only label the plots with the dataset ID when a real one is present; the
+    #   placeholder set upstream for files without one should not be shown.
+    dataset_id = data.attrs.get("dataset_id")
+    dataset_label = dataset_id if dataset_id != UNKNOWN_DATASET_ID else None
 
-    Parameters
-    ----------
-    doc : RstCloth object
-        The active RstCloth stream to be written to
-    data : xarray.core.dataset.Dataset
-        The entire dataset, including attributes
-    outdir : str
-        The path to return figures to
-    ext : str
-        Image filetype extension (.png, .svg, etc.)
-    g_extent : list
-        Geographic extent for cartopy geographic plot. Defaults to Baltic Sea.
+    figures = []
+    emitted = 0
+    for i, var in enumerate(qc_vars, start=1):
+        var_source = var[:-3]  #   TEMP_QC --> TEMP
+        #   Scan each array's NaN-ness once and reuse it in qc_hist, rather than
+        #   scanning both again inside there. Nothing to plot when both are NaN.
+        source_all_nan = bool(np.all(np.isnan(data[var_source])))
+        flag_all_nan = bool(np.all(np.isnan(data[var])))
+        if source_all_nan and flag_all_nan:
+            figures.append((var, None))
+        else:
+            figures.append((var, qc_hist(
+                data, outdir, var, dataset_label=dataset_label,
+                source_all_nan=source_all_nan, flag_all_nan=flag_all_nan,
+            )))
+        if bar is not None:
+            target = round(80 * i / len(qc_vars))
+            bar.update(target - emitted)
+            emitted = target
+    return figures
 
-    TODO: Define long-term storage for this. Is `diagnostics` the right place?
-    """
-    doc.h2("Plots")
 
-    inset_geo(doc, data, outdir, extent, scale="50m")
+def make_plots(pdf: ReportPDF, figures: list) -> None:
+    #   Write the QC Plots section from qc_hist_figures() output.
+    pdf.add_page()
+    pdf.section_heading("QC Plots")
+    for var, hist_img in figures:
+        if hist_img is None:
+            pdf.body(f"{var[:-3]} and {var} are all NaN.", align="C")
+        else:
+            pdf.image_full(hist_img, aspect=3.2 / 8)
 
-    qc_vars = [var for var in data.data_vars if "_QC" in var]
-    for var in tqdm(
-        qc_vars,
-        colour="green",
-        desc=f"\033[97mProgress \033[0m",
-        unit="vars",
-    ):
-        # Any form of scatter takes ~30 sec, stick with xarray.plot for now (no colorbars, alternative color schemes)
-        qc_hist(doc, data, outdir, var)
+
+def cross_section_figure(data: xr.Dataset, outdir: str, ext: str = ".png") -> str:
+    #   A4-portrait stack of PRES-vs-TIME panels (see _CROSS_SECTION_PANELS), one
+    #   per variable, sharing the TIME axis, each with a profile strip and
+    #   colourbar. Robust percentile colour limits; returns the saved path or None.
+    import matplotlib.dates as mdates
+    from matplotlib.colors import LinearSegmentedColormap
+    from matplotlib.ticker import MaxNLocator
+
+    time_name = _first_present(data, _CS_TIME_CANDIDATES)
+    pres_name = _first_present(data, _CS_PRES_CANDIDATES)
+    if time_name is None or pres_name is None:
+        return None
+
+    time = np.asarray(data[time_name].values).ravel()
+    pres = np.asarray(data[pres_name].values, dtype=float).ravel()
+    n = min(time.size, pres.size)
+    if n < 2:
+        return None
+    time, pres = time[:n], pres[:n]
+
+    #   Thin consistently so every panel keeps the same points.
+    idx = fig_spec.thin_idx(n, fig_spec.CAPTURE_MAX_POINTS)
+    time, pres = time[idx], pres[idx]
+
+    #   matplotlib date numbers for the shared X axis (NaT -> NaN, ignored).
+    x = mdates.date2num(time)
+
+    #   Resolve which panels actually have usable data (variable present in the
+    #   dataset, and not entirely masked out by QC). Panels without any are
+    #   omitted from the figure entirely, rather than drawn as an empty "not
+    #   available" placeholder - e.g. no salinity derived, or no oxygen sensor.
+    resolved_panels = []
+    for panel in _CROSS_SECTION_PANELS:
+        cvar = _first_present(data, panel["candidates"])
+        if cvar is None:
+            continue
+
+        c = np.asarray(data[cvar].values, dtype=float).ravel()[:n][idx]
+
+        #   Keep only points whose QC flag is in the allowed set; mask the rest to
+        #   NaN so they're dropped from both the cross-section and the profile (and
+        #   ignored by the percentile colour limits below). Variables without a
+        #   ``_QC`` companion are plotted unfiltered.
+        qc_name = f"{cvar}_QC"
+        if qc_name in data.variables:
+            qc = np.asarray(data[qc_name].values, dtype=float).ravel()[:n][idx]
+            c = np.where(np.isin(qc, _CS_ALLOWED_QC_FLAGS), c, np.nan)
+
+        if not np.isfinite(c).any():
+            continue
+
+        resolved_panels.append((panel, cvar, c))
+
+    if not resolved_panels:
+        return None
+
+    #   A4-portrait proportions, trimmed a little in height so the "Cross Section
+    #   Plots" heading and the figure sit together on one page. constrained_layout
+    #   lines up every panel with its left profile strip and right colourbar.
+    fig = plt.figure(figsize=(8.27, 10.3), layout="constrained")
+    #   Per row: [narrow profile strip] [main cross-section] [thin colourbar].
+    gs = fig.add_gridspec(len(resolved_panels), 3, width_ratios=[0.22, 1.0, 0.045])
+
+    main_axes = []
+    for i, (panel, cvar, c) in enumerate(resolved_panels):
+        ax_prof = fig.add_subplot(gs[i, 0])
+        #   Main panels share the TIME X axis; profile shares the (inverted) PRES
+        #   Y axis with its own main panel.
+        ax_main = fig.add_subplot(
+            gs[i, 1], sharex=main_axes[0] if main_axes else None, sharey=ax_prof
+        )
+        cax = fig.add_subplot(gs[i, 2])
+        main_axes.append(ax_main)
+
+        cmap = LinearSegmentedColormap.from_list(
+            f"xsec_{panel['label'].lower()}", panel["stops"]
+        )
+
+        #   Robust colour limits: percentiles, not raw min/max, so sharp spikes
+        #   don't blow out the scale. Guard the all-NaN case.
+        if np.isfinite(c).any():
+            vmin = np.nanpercentile(c, 0.1)
+            vmax = np.nanpercentile(c, 99.9)
+        else:
+            vmin, vmax = 0.0, 1.0
+
+        if panel.get("special") == "bbp":
+            #   Largest-on-top: sort ascending so the highest BBP values draw last
+            #   (NaNs to the bottom), with a smaller marker so spikes surface.
+            order = np.argsort(np.where(np.isnan(c), -np.inf, c), kind="stable")
+            xo, po, co = x[order], pres[order], c[order]
+            size = _CS_MARKER_SIZE / 2
+        else:
+            xo, po, co = x, pres, c
+            size = _CS_MARKER_SIZE
+
+        #   Pixel markers (",") draw ~35% faster than round ones at this density.
+        sc = ax_main.scatter(
+            xo, po, c=co, cmap=cmap, vmin=vmin, vmax=vmax, s=size, marker=",", edgecolors="none"
+        )
+        #   Left strip: the vertical profile of the same variable (value vs depth).
+        ax_prof.scatter(
+            c, pres, c=c, cmap=cmap, vmin=vmin, vmax=vmax, s=2, marker=",", edgecolors="none"
+        )
+
+        cbar = fig.colorbar(sc, cax=cax)
+        cbar.set_label(_var_label(data, cvar, panel["label"]), fontsize=7)
+        cbar.ax.tick_params(labelsize=6)
+
+        #   PRES axis lives on the profile strip; the main panel reuses it.
+        ax_prof.set_ylabel(_var_label(data, pres_name, pres_name), fontsize=7)
+        ax_prof.set_xlabel(panel["label"], fontsize=6)
+        ax_prof.xaxis.set_major_locator(MaxNLocator(3))
+        ax_prof.tick_params(labelsize=6)
+        ax_main.tick_params(labelleft=False)
+
+    #   Invert PRES once per row (surface at the top, depth at the bottom). Each
+    #   main panel shares Y with its profile strip, so inverting that suffices.
+    for ax in main_axes:
+        if not ax.yaxis_inverted():
+            ax.invert_yaxis()
+
+    #   Shared X is dates: only the bottom panel carries tick labels; upper
+    #   panels keep clean axes. The formatter adapts to the visible span.
+    span_days = 0.0
+    if np.isfinite(x).any():
+        span_days = float(np.nanmax(x) - np.nanmin(x))
+    for ax in main_axes:
+        ax.xaxis_date()
+    for ax in main_axes[:-1]:
+        ax.tick_params(labelbottom=False)
+    bottom = main_axes[-1]
+    bottom.xaxis.set_major_locator(mdates.AutoDateLocator())
+    bottom.xaxis.set_major_formatter(mdates.DateFormatter(_cs_date_format(span_days)))
+    bottom.tick_params(axis="x", labelsize=7)
+    bottom.set_xlabel(time_name, fontsize=8)
+
+    fname = outdir + "cross_section" + ext
+    save_figure(fig, fname, dpi=200)
+    plt.close(fig)
+    return fname
+
+
+def cross_section_section(pdf: ReportPDF, img: str | None) -> None:
+    #   Write the Cross Section Plots section (the full-page A4 figure).
+    pdf.add_page()
+    pdf.section_heading("Cross Section Plots")
+    if img is None:
+        pdf.body("No suitable TIME/PRES/variable data available for cross-section plots.")
+        return
+    #   Cap the figure to the space left below the heading so the two stay on one
+    #   page (the figure is near-A4 height, so a full-width placement would
+    #   otherwise spill onto the next page and orphan the heading).
+    avail_h = pdf.page_break_trigger - pdf.get_y() - 2
+    pdf.image_fit(img, aspect=_image_aspect(img), max_h=avail_h)
 
 
 @register_step
 class WriteDataReport(BaseStep):
     """
-    Writes a report summarizing the generic plots and statistics of the data.
+    Writes a PDF report summarising the data, plots and QC at the end of a pipeline.
 
-    Base template:
-    * Title page (automatically handled by sphinx)
-    * Quality control summary
-    * Basic plots
-    * Run metadata and pipeline parameters
-    * Logfile
+    The report is built directly with `fpdf2 <https://py-pdf.github.io/fpdf2/>`_, so no
+    external toolchain (LaTeX, Sphinx) is required to produce the PDF. It opens with a
+    title page (run provenance, pipeline name/description and a glider track map) and
+    then writes a sequence of sections, each of which can be toggled off:
+
+    - **Cross-section plots** — the headline view: PRES vs TIME panels, each coloured by
+      a variable (temperature, salinity, density, oxygen, chlorophyll, backscatter).
+    - **Format Checker results** — compliance-checker findings (only when the Format
+      Checker step ran).
+    - **Configuration** — the run configuration as paste-ready YAML.
+    - **Step diagnostics** — the diagnostic plot(s) captured for each step.
+    - **Quality control summary** — a table of QC test flag counts.
+    - **QC plots** — a histogram per QC variable.
+    - **Logfile** — the run log, terminal-styled.
+    - **Index** — contents, QC flag glossary, variable index and glider information.
+
+    **All parameters are optional.** With no configuration a full report is written,
+    named after the input file (see the first example below).
 
     Parameters
     ----------
-    title: str
-        Name of the report (on title page and filename)
-    output_path: str
-        Directory to write the report to (must end with a "/")
-    build: bool
-        Whether to run Sphinx to build the PDF after writing the .rst and conf.py files
+    title : str, optional
+        Report title, shown on the title page and running header. Defaults to a title
+        derived from the input filename.
+    fname : str, optional
+        Output ``.pdf`` filename. Defaults to the input filename core; a ``.pdf``
+        extension is appended if missing.
+    delete_figures : bool, optional
+        When ``True`` (default) the plot images are written to a temporary folder and
+        removed once the PDF is built. When ``False`` they are kept in a uniquely named
+        folder beside the report so successive runs don't overwrite each other.
+    show_cross_section_plots : bool, optional
+        Include the cross-section plots section. Default ``True``.
+    show_format_check : bool, optional
+        Include the Format Checker results (when that step ran). Default ``True``.
+    show_configuration : bool, optional
+        Include the run configuration (YAML) section. Default ``True``.
+    show_diagnostic_plots : bool, optional
+        Include the per-step diagnostic plots section. Default ``True``.
+    show_qc_summary : bool, optional
+        Include the quality control summary table. Default ``True``.
+    show_qc_plots : bool, optional
+        Include the QC histogram plots section. Default ``True``.
+    show_logs : bool, optional
+        Include the logfile section. Default ``True``.
+    show_index : bool, optional
+        Include the closing index section. Default ``True``.
+    logo_path : str, optional
+        Path to a logo image for the title page. Defaults to the NOC logo.
+
+    Examples
+    --------
+    The defaults write a full report, so the simplest valid configuration sets no
+    parameters at all:
+
+    .. code-block:: yaml
+
+        steps:
+          - name: Write Data Report
+
+    Any subset of parameters may be supplied. The block below names the report, keeps
+    the generated figures beside it, and omits the logfile section:
+
+    .. code-block:: yaml
+
+        steps:
+          - name: Write Data Report
+            parameters:
+              title: "SG579 Mission Report"
+              fname: "sg579_report.pdf"
+              delete_figures: false
+              show_logs: false
     """
 
     step_name = "Write Data Report"
@@ -824,17 +1614,66 @@ class WriteDataReport(BaseStep):
         "fname": {
             "type": str,
             "default": None,
-            "description": "Output .rst filename; defaults to the filename core when blank.",
+            "description": "Output .pdf filename; defaults to the filename core when blank.",
         },
-        "build": {
+        "delete_figures": {
             "type": bool,
             "default": True,
-            "description": "Whether to run Sphinx to build the PDF after writing the .rst.",
+            "description": (
+                "Delete the generated plot images after the PDF is built. "
+                "When False, keep them in a uniquely named folder beside the report."
+            ),
         },
-        "extent": {
-            "type": list,
+        "show_format_check": {
+            "type": bool,
+            "default": True,
+            "description": "Include the Format Checker results section (when that step ran).",
+        },
+        "show_configuration": {
+            "type": bool,
+            "default": True,
+            "description": "Include the run configuration (YAML) section.",
+        },
+        "show_diagnostic_plots": {
+            "type": bool,
+            "default": True,
+            "description": "Include the per-step diagnostic plots section.",
+        },
+        "show_qc_summary": {
+            "type": bool,
+            "default": True,
+            "description": "Include the quality control summary table.",
+        },
+        "show_qc_plots": {
+            "type": bool,
+            "default": True,
+            "description": "Include the QC histogram plots section.",
+        },
+        "show_cross_section_plots": {
+            "type": bool,
+            "default": True,
+            "description": (
+                "Include the cross-section plots section (a full-page A4 figure of "
+                "PRES vs TIME panels, each coloured by a variable)."
+            ),
+        },
+        "show_logs": {
+            "type": bool,
+            "default": True,
+            "description": "Include the logfile section.",
+        },
+        "show_index": {
+            "type": bool,
+            "default": True,
+            "description": (
+                "Include the closing index: pelagos-py credit, QC flag glossary, "
+                "variable index and glider information."
+            ),
+        },
+        "logo_path": {
+            "type": str,
             "default": None,
-            "description": "Geographic [min_lon, max_lon, min_lat, max_lat] for the inset map.",
+            "description": "Path to a logo image for the title page. Defaults to the NOC logo.",
         },
     }
 
@@ -843,125 +1682,149 @@ class WriteDataReport(BaseStep):
         odir = self.context["global_parameters"]["out_directory"]
         data = self.context.get("data")
         fname_core = self.context["global_parameters"]["filename_core"]
-        
+
         #   Handle optional parameters
         fname = self.parameters.get("fname")
         if not fname:
-            fname = fname_core + ".rst"
+            fname = fname_core + ".pdf"
+        if not fname.endswith(".pdf"):
+            fname += ".pdf"
         fout = odir + fname
 
-        title = self.parameters["title"]
+        title = self.parameters.get("title")
         if not title:
-            title = f"Data report {fname_core.replace('_',' ')}"
+            title = f"Data report {fname_core.replace('_', ' ')}"
 
-        if "dataset_id" not in data.attrs:
+        #   Only show the dataset ID subtitle when one is actually present.
+        has_dataset_id = bool(data.attrs.get("dataset_id"))
+        if not has_dataset_id:
             self.log_warn(
-                "Dataset ID missing from OG1 file. Reporting with unk platform information."
+                "Dataset ID missing from OG1 file. Reporting with unknown platform information."
             )
-            data.attrs["dataset_id"] = "unknown dataset ID"
+            data.attrs["dataset_id"] = UNKNOWN_DATASET_ID
+        subtitle = f"Dataset ID: {data.attrs['dataset_id']}" if has_dataset_id else None
 
-        #   Write the RST source
-        with open(fout, "w") as output_file:
-            doc = RstCloth(output_file)
-            doc.h1(title)   #   Sphinx may glaze over this
-            doc.newline()
+        #   The pipeline exposes its full configuration (pipeline block + the
+        #   ordered list of steps) so we can reproduce it and list the steps.
+        run_config = self.context.get("pipeline_config", {})
+        step_names = [s["name"] for s in run_config.get("steps", [])]
 
-            qc_section(doc, data)
+        #   Figures are written to a working folder. By default that is a
+        #   temporary directory that is removed once the PDF is built; when
+        #   delete_figures is False they are kept beside the report in a
+        #   uniquely named folder so repeat runs don't overwrite each other.
+        delete_figures = self.parameters.get("delete_figures", True)
+        if delete_figures:
+            fig_dir = tempfile.mkdtemp(prefix="pelagos_report_figs_")
+        else:
+            stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+            fig_dir = os.path.join(odir, f"{fname_core}_report_figures_{stamp}")
+            os.makedirs(fig_dir, exist_ok=True)
+        fig_dir = fig_dir + os.sep  #   figure paths are built by string concatenation
 
-            self.log("Generating images.")
-            make_plots(doc, data, outdir=odir, extent=self.parameters.get("extent"))
+        #   Pipeline name and description (from the pipeline config block) are
+        #   shown on the title page.
+        glob_params = self.context["global_parameters"]
 
-            run_info_page(
-                doc, self.context["global_parameters"], self.context["data"].attrs
+        #   One bar for the whole step, opened before any work so it takes over
+        #   from the export's the moment that finishes: track map 5%, cross-section
+        #   +10, QC histograms +80, PDF assembly fills the rest.
+        report_bar = progress_bar(total=100, desc="", unit="%", step_name=self.name)
+
+        #   Title-page glider track map. Best-effort: any failure (no
+        #   coordinates, cartopy/Natural Earth unavailable) just omits the map.
+        try:
+            track_map_path = glider_track_map(data, fig_dir)
+        except Exception as exc:  # noqa: BLE001 - the map must never break the report
+            self.log_warn(f"Could not build the title-page track map: {exc}")
+            track_map_path = None
+        report_bar.update(5)
+
+        try:
+            #   All figures are drawn first and rasterised by background workers
+            #   (save_figure); the PDF is assembled once every PNG exists.
+            cross_section_img = None
+            if self.parameters.get("show_cross_section_plots", True):
+                cross_section_img = cross_section_figure(data, fig_dir)
+                report_bar.update(10)
+            qc_figures = []
+            if self.parameters.get("show_qc_plots", True):
+                qc_figures = qc_hist_figures(data, fig_dir, bar=report_bar)
+            wait_for_saves()
+
+            #   Build the PDF
+            pdf = ReportPDF(
+                title=title,
+                subtitle=subtitle,
+                steps=step_names,
+                pipeline_name=glob_params.get("name"),
+                pipeline_description=glob_params.get("description"),
+                track_map_path=track_map_path,
+                logo_path=self.parameters.get("logo_path"),
             )
+            pdf.title_page()
 
-            log_path = odir + self.context["global_parameters"]["log_file"]
-            add_log(log_path, doc)
+            #   Reserve a page for the contents, filled at output time
+            #   (contents_page) once section page numbers are known; sections
+            #   below start on page 3. allow_extra_pages lets a long list spill
+            #   over without erroring.
+            if self.parameters.get("show_index", True):
+                #   Fresh page first: insert_toc_placeholder starts the ToC at the
+                #   current position, else it lands on the tail of the title page.
+                pdf.add_page()
+                pdf.insert_toc_placeholder(
+                    contents_page, pages=1, allow_extra_pages=True
+                )
+                #   Let the first section reuse the fresh page the placeholder
+                #   leaves us on rather than adding a blank one.
+                pdf._skip_next_add_page = True
 
-            if "cc_file" in self.context.get("global_parameters", {}):
-                cc_path = self.context["global_parameters"]["cc_file"]
-                add_cc(cc_path, doc)
+            #   Each section is optional and defaults on. Lead with the
+            #   cross-section plots (the headline view of the mission), then the
+            #   Format Checker results (whenever that step ran), the configuration,
+            #   per-step diagnostics, QC summary, plots and logs. Close with a
+            #   pelagos-py credit and an index (QC flag glossary, variable index
+            #   and glider information).
+            if self.parameters.get("show_cross_section_plots", True):
+                cross_section_section(pdf, cross_section_img)
 
-        #   Run sphinx if user defined in step parameters
-        if self.parameters.get("build", True):
-            # Sphinx requires a conf.py file to build
-            self.log("Building PDF report with Sphinx.")
-            self.log_warn(
-                "Lines below this will not be captured in the run report. See logfile if other steps follow this one."
-            )
-            write_conf_py(
-                odir,
-                project=title,
-                author=current_info().get("user"),
-                master_doc=fname.replace(".rst", ""),#.replace("_","-"),
-                subtitle=f"Dataset ID: {data.attrs.get('dataset_id').replace('_', '-')}",
-            )
-            run_sphinx(
-                odir,
-                build_dir=odir + "_build",
-            )  # TODO: Make this more robust and less hardcoded
+            if (
+                self.parameters.get("show_format_check", True)
+                and "Format Checker" in step_names
+            ):
+                format_checker_section(
+                    pdf,
+                    self.context.get("cc_results"),
+                    glob_params.get("cc_file"),
+                )
+
+            if self.parameters.get("show_configuration", True):
+                config_section(pdf, run_config)
+
+            if self.parameters.get("show_diagnostic_plots", True):
+                diagnostics_section(pdf, self.context.get("captured_diagnostics"))
+
+            if self.parameters.get("show_qc_summary", True):
+                qc_section(pdf, data)
+
+            if self.parameters.get("show_qc_plots", True):
+                make_plots(pdf, qc_figures)
+
+            if self.parameters.get("show_logs", True):
+                log_path = odir + self.context["global_parameters"]["log_file"]
+                add_log(log_path, pdf)
+
+            if self.parameters.get("show_index", True):
+                index_section(pdf, data)
+
+            pdf.output(fout)
+            report_bar.update(report_bar.total - report_bar.n)
+            self.log(f"Report written to {fout}")
+        finally:
+            report_bar.close()
+            if delete_figures:
+                shutil.rmtree(fig_dir, ignore_errors=True)
+            else:
+                self.log(f"Report figures kept in {fig_dir}")
 
         return self.context
-
-
-### Legacy code below this line
-
-
-#   Retired for reasons of complexity. Wasn't practical to run Sphinx in two parts.
-# def run_sphinx(source_dir, build_dir=None):
-#     """
-#     Build a PDF from a Sphinx source directory.
-#     """
-#     source_dir = Path(source_dir).resolve()
-
-#     conf_py = source_dir / "conf.py"
-#     if not conf_py.exists():
-#         raise RuntimeError(f"conf.py not found in {source_dir}")
-
-#     if build_dir is None:
-#         build_dir = source_dir / "_build"
-#     else:
-#         build_dir = Path(build_dir).resolve()
-
-#     latex_dir = build_dir / "latex"
-
-#     subprocess.run(
-#         [
-#             "sphinx-build",
-#             "-q",   # Run sphinx in quiet mode
-#             "-c",
-#             str(source_dir),  # ← EXPLICIT conf.py location
-#             "-b",
-#             "latex",
-#             str(source_dir),
-#             str(latex_dir),
-#         ],
-#         check=True,
-#     )
-
-#     ### Temporary: Figuring out make latexpdf
-#     # makefile = latex_dir / "Makefile"
-#     # makefile.write_text(
-#     #     "SPHINXBUILD   = sphinx-build\n"
-#     #     "SOURCEDIR     = ../..\n"
-#     #     "BUILDDIR      = .\n"
-#     #     "CONFDIR       = ../..\n\n"
-#     #     ".PHONY: latexpdf\n\n"
-#     #     "latexpdf:\n"
-#     #     "\t$(SPHINXBUILD) -c $(CONFDIR) -b latexpdf $(SOURCEDIR) $(BUILDDIR)\n"
-#     # )
-
-#     tex_file = latex_dir / "Voto_Glider_Data_Pipeline_Report.tex"
-
-#     subprocess.run(
-#         [
-#             "pdflatex",
-#             "-q",
-#             "-interaction=nonstopmode",
-#             tex_file.name
-#         ],
-#         cwd=latex_dir,
-#         check=True,
-#     )
-
-#     return latex_dir

@@ -41,6 +41,13 @@ const ManualQC = {
   sel: null,     // box index selected in the list (click) — shows its editor
   dirty: false,  // boxes edited since the last re-run: the plot is a live preview
   continueAfter: false, // Apply & continue: continue once the re-run pauses
+  view: 'time',  // 'time': the test's plot; 'profile': one profile (or cycle) at a time
+  // Profile view: the time plot cut down to the `by` id at `pos`, coloured by flag or `colour`.
+  prof: { by: 'PROFILE_NUMBER', pos: 0, colour: null },
+  pchart: null,
+  cols: {},      // column name -> promise of {values, date, stops}, fetched once per pause
+  index: {},     // PROFILE_NUMBER / CYCLE -> {ids, at: Map id -> sample indices}
+  nearest: {},   // point box (JSON) -> its sample, for the profile view's flag replay
 
   isActive() { return Review.active && Review.test === ManualQC.TEST; },
   tab() { return document.querySelector('.tab[data-tab="manual"]'); },
@@ -57,11 +64,18 @@ const ManualQC = {
   yVar() { const v = ManualQC.values(); return (v && v.y_variable) || 'PRES'; },
   // The plot a box belongs to: its own y_variable, else the test's.
   boxY(b) { return b.y_variable || ManualQC.yVar(); },
-  // Boxes drawn on the plot being shown, with their index in the config list.
+  boxX(b) { return b.x_variable || ManualQC.xVar(); },
+  // Boxes from the profile view carry the profiles (or cycles) they are limited to.
+  timeBox(b) { return b && !b.profiles && !b.cycles; },
+  // Boxes drawn on the plot being shown, with their index in the config list. The profile
+  // view shows the time plot's boxes plus those limited to the profile on screen.
   shownBoxes() {
     const values = ManualQC.values();
-    const yv = ManualQC.yVar();
-    return (values ? values.boxes : []).map((b, i) => ({ b, i })).filter(({ b }) => b && ManualQC.boxY(b) === yv);
+    const key = ManualQC.prof.by === 'CYCLE' ? 'cycles' : 'profiles';
+    const inView = (b) => ManualQC.view === 'time' || ManualQC.timeBox(b)
+      || (b[key] || []).map(Number).includes(ManualQC.profileId());
+    return (values ? values.boxes : []).map((b, i) => ({ b, i }))
+      .filter(({ b }) => b && ManualQC.boxX(b) === ManualQC.xVar() && ManualQC.boxY(b) === ManualQC.yVar() && inView(b));
   },
   // Plots with boxes on them, the current one first.
   plots() {
@@ -101,6 +115,7 @@ const ManualQC = {
   // Called when the run pauses on the test: reveal the tab and jump to it.
   open() {
     ManualQC.tool.vars = null;
+    ManualQC.cols = {}; ManualQC.index = {}; ManualQC.nearest = {};
     ManualQC.hi = null; ManualQC.sel = null;
     ManualQC.dirty = false; ManualQC.continueAfter = false;
     ManualQC.tab().classList.remove('hidden');
@@ -109,8 +124,9 @@ const ManualQC = {
   },
 
   close() {
-    ManualQC.chart = null; ManualQC.spec = null; ManualQC.fig = null;
+    ManualQC.chart = null; ManualQC.spec = null; ManualQC.fig = null; ManualQC.pchart = null;
     ManualQC.dirty = false; ManualQC.continueAfter = false;
+    ManualQC.buttons();
     const tab = ManualQC.tab();
     tab.classList.add('hidden');
     if (tab.classList.contains('on')) Run.showTab('run');
@@ -136,13 +152,20 @@ const ManualQC = {
       host.appendChild(hint);
       return;
     }
+    if (!ManualQC.hasProfiles()) ManualQC.view = 'time';
     ManualQC.rail().appendChild(ManualQC.sidebar());
     ManualQC.renderList();
-    host.appendChild(ManualQC.plotBar());
+    host.appendChild(ManualQC.view === 'profile' ? ManualQC.profileBar() : ManualQC.plotBar());
     const stage = document.createElement('div');
-    stage.className = 'manual-stage';
+    stage.className = 'manual-stage' + (ManualQC.view === 'profile' ? ' hidden' : '');
     stage.innerHTML = '<div class="viewer-loading">Loading plot…</div>';
     host.appendChild(stage);
+    const pstage = document.createElement('div');
+    pstage.className = 'manual-stage manual-pstage' + (ManualQC.view === 'profile' ? '' : ' hidden');
+    host.appendChild(pstage);
+    if (ManualQC.pchart) ManualQC.pchart.destroy();
+    ManualQC.pchart = null;
+    if (ManualQC.view === 'profile') ManualQC.drawProfile();
 
     ManualQC.chart = null;
     Plot.fetchSpec(fig.spec)
@@ -322,6 +345,7 @@ const ManualQC = {
   plotBar() {
     const bar = document.createElement('div');
     bar.className = 'manual-plots';
+    bar.appendChild(ManualQC.viewSeg());
     const values = ManualQC.values();
     const cur = ManualQC.yVar();
     const seg = Forms.el('div', { class: 'seg' });
@@ -372,20 +396,354 @@ const ManualQC = {
     return bar;
   },
 
+  // ---- profile view ----
+  // One profile (or cycle) at a time, drawn here from raw columns the paused run
+  // hands over (API.runColumns): stepping and swapping variables never re-run the test.
+  hasProfiles() { return (Run.variables || []).includes('PROFILE_NUMBER'); },
+
+  viewSeg() {
+    const seg = Forms.seg([['time', 'Time'], ['profile', 'Profiles']], ManualQC.view, (v) => ManualQC.setView(v), 'sm');
+    if (!ManualQC.hasProfiles()) {
+      seg.lastChild.disabled = true;
+      seg.lastChild.title = 'Needs PROFILE_NUMBER: run Find Profiles before this QC step';
+    }
+    return seg;
+  },
+
+  setView(view) {
+    if (view === ManualQC.view) return;
+    ManualQC.view = view;
+    const values = ManualQC.values();
+    if (ManualQC.prof.colour === null) ManualQC.prof.colour = (values && values.colour_variable) || '';
+    ManualQC.sel = null; ManualQC.hi = null;
+    const host = ManualQC.host();
+    host.querySelector('.manual-plots').replaceWith(view === 'profile' ? ManualQC.profileBar() : ManualQC.plotBar());
+    const [stage, pstage] = host.querySelectorAll('.manual-stage');
+    stage.classList.toggle('hidden', view === 'profile');
+    pstage.classList.toggle('hidden', view !== 'profile');
+    ManualQC.rail().innerHTML = '';
+    ManualQC.rail().appendChild(ManualQC.sidebar());
+    ManualQC.renderList();
+    if (view === 'profile') ManualQC.drawProfile(); else { ManualQC.syncOverlays(); ManualQC.preview(); }
+  },
+
+  // Columns by name, each fetched from the run once per pause (missing ones in one request).
+  columns(names) {
+    const missing = [...new Set(names)].filter((n) => !(n in ManualQC.cols));
+    if (missing.length) {
+      const req = API.runColumns(missing).then((buf) => {
+        const hl = new DataView(buf).getUint32(0, true);
+        const { columns } = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 4, hl)));
+        const out = {};
+        let off = 4 + hl;
+        for (const c of columns) {
+          const Arr = c.dtype === 'f8' ? Float64Array : Float32Array;
+          const bytes = c.n * Arr.BYTES_PER_ELEMENT;
+          out[c.name] = { values: new Arr(buf.slice(off, off + bytes)), date: c.dtype === 'f8', stops: c.stops, categories: c.categories };
+          off += bytes;
+        }
+        return out;
+      });
+      for (const n of missing) {
+        ManualQC.cols[n] = req.then((out) => out[n] || null);
+        ManualQC.cols[n].catch(() => delete ManualQC.cols[n]);
+      }
+    }
+    return Promise.all(names.map((n) => ManualQC.cols[n])).then((list) => Object.fromEntries(names.map((n, i) => [n, list[i]])));
+  },
+
+  // Sample indices of every profile (or cycle) id, built once per pause.
+  profileIndex(by, col) {
+    if (!ManualQC.index[by]) {
+      const at = new Map();
+      col.values.forEach((v, i) => {
+        if (!isFinite(v)) return;
+        if (!at.has(v)) at.set(v, []);
+        at.get(v).push(i);
+      });
+      ManualQC.index[by] = { ids: [...at.keys()].sort((a, b) => a - b), at };
+    }
+    return ManualQC.index[by];
+  },
+
+  profileId() {
+    const index = ManualQC.index[ManualQC.prof.by];
+    return index ? index.ids[ManualQC.prof.pos] : null;
+  },
+
+  step(delta) {
+    const index = ManualQC.index[ManualQC.prof.by];
+    if (!index) return;
+    const pos = Math.max(0, Math.min(index.ids.length - 1, ManualQC.prof.pos + delta));
+    if (pos === ManualQC.prof.pos) return;
+    ManualQC.prof.pos = pos;
+    ManualQC.drawProfile();
+  },
+
+  // Profile <-> cycle keeps your place: the new id is the one holding the current profile's first sample.
+  setBy(by) {
+    const p = ManualQC.prof;
+    const old = ManualQC.index[p.by];
+    const first = old && old.at.get(old.ids[p.pos]);
+    p.by = by;
+    p.pos = 0;
+    ManualQC.columns([by]).then((cols) => {
+      const index = ManualQC.profileIndex(by, cols[by]);
+      if (first) p.pos = Math.max(0, index.ids.indexOf(cols[by].values[first[0]]));
+      ManualQC.drawProfile();
+    });
+  },
+
+  profileBar() {
+    const p = ManualQC.prof;
+    const bar = Forms.el('div', { class: 'manual-plots' });
+    bar.appendChild(ManualQC.viewSeg());
+    const by = Forms.seg([['PROFILE_NUMBER', 'Profile'], ['CYCLE', 'Cycle']], p.by, (v) => ManualQC.setBy(v), 'sm');
+    if (!ManualQC.variables().includes('CYCLE')) by.lastChild.disabled = true;
+    bar.appendChild(by);
+    const nav = Forms.el('div', { class: 'manual-nav' });
+    nav.appendChild(Forms.button('◀', { cls: 'sm', title: 'Previous (←)', onclick: () => ManualQC.step(-1) }));
+    const id = Forms.el('input', { type: 'number', class: 'sm manual-nav-id', title: 'Jump to an id' });
+    id.onchange = () => {
+      const index = ManualQC.index[p.by];
+      if (!index) return;
+      // Nearest id at or after the one typed: ids can have gaps.
+      const at = index.ids.findIndex((v) => v >= Number(id.value));
+      p.pos = at < 0 ? index.ids.length - 1 : at;
+      ManualQC.drawProfile();
+    };
+    nav.appendChild(id);
+    nav.appendChild(Forms.el('span', { class: 'hint manual-nav-of' }));
+    nav.appendChild(Forms.button('▶', { cls: 'sm', title: 'Next (→)', onclick: () => ManualQC.step(1) }));
+    bar.appendChild(nav);
+    bar.appendChild(Forms.el('span', { class: 'hint manual-plot-x', textContent: `${ManualQC.yVar()} vs ${ManualQC.xVar()}` }));
+    bar.appendChild(Forms.el('span', { class: 'hint manual-plot-cl', textContent: 'colour by' }));
+    const colours = ManualQC.variables().filter((v) => v !== 'TIME');
+    bar.appendChild(Forms.select(colours, p.colour, (v) => { p.colour = v; ManualQC.drawProfile(); },
+      { placeholder: 'flag', cls: 'sm manual-plot-colour' }));
+    return bar;
+  },
+
+  // Whether sample i is hit by box b (its mode applied), mirroring manual_qc._box_mask;
+  // null when a column it needs is missing.
+  boxHit(b, cols) {
+    const X = cols[ManualQC.boxX(b)], Y = cols[ManualQC.boxY(b)];
+    if (!X || !Y) return null;
+    const x = X.values, y = Y.values;
+    const scope = b.profiles ? cols.PROFILE_NUMBER : b.cycles ? cols.CYCLE : null;
+    const ids = (b.profiles || b.cycles || []).map(Number);
+    const valid = (i) => isFinite(x[i]) && isFinite(y[i]) && (!scope || ids.includes(scope.values[i]));
+    // Naive ISO times are UTC, as pandas reads them.
+    const bound = (v, col) => col.date ? Date.parse(/T/.test(v) && !/(Z|[+-]\d\d:?\d\d)$/i.test(v) ? v + 'Z' : v) : Number(v);
+    let inside;
+    if (b.x.length === 1) {
+      const key = JSON.stringify(b);
+      if (!(key in ManualQC.nearest)) {
+        const px = bound(b.x[0], X), py = bound(b.y[0], Y);
+        let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+        for (let i = 0; i < x.length; i++) {
+          if (!valid(i)) continue;
+          x0 = Math.min(x0, x[i]); x1 = Math.max(x1, x[i]); y0 = Math.min(y0, y[i]); y1 = Math.max(y1, y[i]);
+        }
+        const sx = (x1 - x0) || 1, sy = (y1 - y0) || 1;
+        let best = -1, bestD = Infinity;
+        for (let i = 0; i < x.length; i++) {
+          if (!valid(i)) continue;
+          const d = ((x[i] - px) / sx) ** 2 + ((y[i] - py) / sy) ** 2;
+          if (d < bestD) { bestD = d; best = i; }
+        }
+        ManualQC.nearest[key] = best;
+      }
+      const hit = ManualQC.nearest[key];
+      inside = (i) => i === hit;
+    } else {
+      const [x0, x1] = b.x.map((v) => bound(v, X)).sort((m, n) => m - n);
+      const [y0, y1] = b.y.map((v) => bound(v, Y)).sort((m, n) => m - n);
+      inside = (i) => valid(i) && x[i] >= x0 && x[i] <= x1 && y[i] >= y0 && y[i] <= y1;
+    }
+    return (b.mode || 'inside') === 'outside' ? (i) => valid(i) && !inside(i) : inside;
+  },
+
+  // Flags the test will give `v` at samples `idx`: its flags from before the test with
+  // every box replayed in order (mirrors manual_qc.return_qc), so unapplied boxes show too.
+  replayFlags(v, idx, cols) {
+    const values = ManualQC.values();
+    const start = cols[v + '_QC'].values;
+    const flags = idx.map((i) => start[i]);
+    for (const b of (values ? values.boxes : [])) {
+      if (!b || !(b.variables || [ManualQC.boxY(b)]).includes(v)) continue;
+      const hit = ManualQC.boxHit(b, cols);
+      if (!hit) continue;
+      idx.forEach((i, k) => {
+        if (flags[k] === 9 || !hit(i)) return;
+        flags[k] = b.override === false ? ManualQC.COMBINATRIX[flags[k]][b.flag] : b.flag;
+      });
+    }
+    if (!values || values.flag_remaining_good !== false) flags.forEach((f, k) => { if (f === 0) flags[k] = 1; });
+    return flags;
+  },
+
+  // 1st-99th percentile, so one spike doesn't wash out the colour scale; same for every profile.
+  colourRange(col) {
+    if (!col.range) {
+      const finite = col.values.filter((v) => isFinite(v)).sort();
+      col.range = finite.length ? [finite[Math.floor(finite.length * 0.01)], finite[Math.floor((finite.length - 1) * 0.99)]] : null;
+    }
+    return col.range;
+  },
+
+  async drawProfile() {
+    const p = ManualQC.prof;
+    const stage = ManualQC.host().querySelector('.manual-pstage');
+    if (!stage) return;
+    const token = ManualQC.drawToken = (ManualQC.drawToken || 0) + 1;
+    const values = ManualQC.values();
+    const xv = ManualQC.xVar(), yv = ManualQC.yVar();
+    const names = [p.by, xv, yv, yv + '_QC'];
+    if (p.colour) names.push(p.colour);
+    for (const b of (values ? values.boxes : [])) {
+      if (!b || !(b.variables || [ManualQC.boxY(b)]).includes(yv)) continue;
+      names.push(ManualQC.boxX(b), ManualQC.boxY(b));
+      if (b.profiles) names.push('PROFILE_NUMBER');
+      if (b.cycles) names.push('CYCLE');
+    }
+    if (!ManualQC.pchart) stage.innerHTML = '<div class="viewer-loading">Loading profiles…</div>';
+    let cols;
+    try {
+      cols = await ManualQC.columns(names);
+    } catch (err) {
+      if (token !== ManualQC.drawToken) return;
+      Plot.purge(stage); ManualQC.pchart = null;
+      stage.innerHTML = `<div class="hint review-empty">Could not load the data: ${escapeHtml(err.message)}</div>`;
+      return;
+    }
+    if (token !== ManualQC.drawToken) return; // a later step or change superseded this one
+    const index = ManualQC.profileIndex(p.by, cols[p.by]);
+    const bar = ManualQC.host().querySelector('.manual-plots');
+    const label = p.by === 'CYCLE' ? 'Cycle' : 'Profile';
+    if (!index.ids.length || !cols[xv] || !cols[yv]) {
+      Plot.purge(stage); ManualQC.pchart = null;
+      stage.innerHTML = `<div class="hint review-empty">No ${label.toLowerCase()}s to show.</div>`;
+      return;
+    }
+    p.pos = Math.min(p.pos, index.ids.length - 1);
+    const id = index.ids[p.pos];
+    const idInput = bar && bar.querySelector('.manual-nav-id');
+    if (idInput) { idInput.value = id; bar.querySelector('.manual-nav-of').textContent = `${p.pos + 1} of ${index.ids.length}`; }
+
+    const idx = index.at.get(id);
+    const xs = cols[xv].values, ys = cols[yv].values;
+    // Dates go over as seconds since the profile's first sample, as the chart expects.
+    const xdate = cols[xv].date;
+    const t0 = xdate ? xs[idx[0]] : 0;
+    const pick = (list, arr) => Float32Array.from(list, (i) => (arr === xs ? (arr[i] - t0) / (xdate ? 1000 : 1) : arr[i]));
+    const traces = [], data = {};
+    const add = (list, t, rgba) => {
+      data['0_' + traces.length] = { x: pick(list, xs), y: pick(list, ys), rgba: rgba || null };
+      traces.push({ mode: 'markers', size: 4, opacity: 1, ...t });
+    };
+    // Neighbouring profiles in grey behind, for context.
+    const around = [index.ids[p.pos - 1], index.ids[p.pos + 1]].filter((v) => v !== undefined).flatMap((v) => index.at.get(v));
+    if (around.length) add(around, { label: 'neighbours', color: '#d0d4d8', size: 3 });
+    const flags = ManualQC.replayFlags(yv, idx, cols);
+    const col = p.colour && cols[p.colour];
+    let cbar = null;
+    for (const f of [...new Set(flags)].sort()) {
+      const list = idx.filter((_, k) => flags[k] === f);
+      const meaning = (ManualQC.FLAGS.find(([n]) => n === f) || [f, ''])[1];
+      // Coloured by a variable: flags show as rings under the fill (good ones not at all).
+      if (col && f === 1) continue;
+      add(list, { label: `${f} (${meaning})`, color: ManualQC.COLOURS[f], size: col ? 7.6 : 4 });
+    }
+    if (col && col.categories) {
+      // A categorical variable (e.g. SCI_PHASE): a fixed colour per category, as its own step plots it.
+      const byValue = new Map(col.categories.map(([v, meaning, colour]) => [v, { label: `${v} ${meaning}`, colour }]));
+      const rgba = new Uint8Array(idx.length * 4);
+      const seen = new Set();
+      idx.forEach((i, k) => {
+        const cat = byValue.get(col.values[i]);
+        if (cat) seen.add(col.values[i]);
+        const h = cat ? cat.colour : '#d0d4d8';
+        rgba.set([1, 3, 5].map((j) => parseInt(h.slice(j, j + 2), 16)).concat(255), k * 4);
+      });
+      add(idx, { label: '_fill' }, rgba);
+      cbar = { label: p.colour, categories: [...byValue].filter(([v]) => seen.has(v)).map(([, c]) => [c.label, c.colour]),
+        missing: idx.some((i) => !byValue.has(col.values[i])) };
+    } else if (col) {
+      const range = ManualQC.colourRange(col);
+      const rgb = col.stops.map((h) => [1, 3, 5].map((k) => parseInt(h.slice(k, k + 2), 16)));
+      const rgba = new Uint8Array(idx.length * 4);
+      idx.forEach((i, k) => {
+        const v = col.values[i];
+        const c = !isFinite(v) || !range ? [208, 212, 216]
+          : rgb[Math.round(Math.max(0, Math.min(1, (v - range[0]) / ((range[1] - range[0]) || 1))) * (rgb.length - 1))];
+        rgba.set([c[0], c[1], c[2], 255], k * 4);
+      });
+      add(idx, { label: '_fill' }, rgba);
+      cbar = { label: p.colour, lo: range ? range[0] : null, hi: range ? range[1] : null, stops: col.stops,
+        missing: idx.some((i) => !isFinite(col.values[i])) };
+    }
+    // Axis limits from this profile alone; depth increases downwards.
+    const lim = (arr) => {
+      let lo = Infinity, hi = -Infinity;
+      for (const v of pick(idx, arr)) if (isFinite(v)) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+      if (!isFinite(lo)) return [0, 1];
+      const pad = (hi - lo || 1) * 0.05;
+      return [lo - pad, hi + pad];
+    };
+    const [y0, y1] = lim(ys);
+    const spec = {
+      suptitle: '', t0, points: idx.length,
+      panels: [{
+        title: `${label} ${id} · ${idx.length} samples`, xlabel: xdate ? 'Time' : xv, ylabel: yv, xdate, ydate: false,
+        xlim: lim(xs), ylim: ['PRES', 'DEPTH'].includes(yv) ? [y1, y0] : [y0, y1], xscale: 'linear', yscale: 'linear',
+        legend: true, legend_title: 'Flag', cell: null, share_x: 0, share_y: 0, traces, reflines: [], top_axis: null, cbar,
+      }],
+    };
+    // A redraw of the same profile (a box added, say) keeps the zoom.
+    const old = ManualQC.pchart;
+    const key = [p.by, id, xv, yv].join('|');
+    const keep = old && old.profileKey === key ? old.panels[0].view : null;
+    const hidden = old ? old.panels[0].traces.filter((t) => t.hidden).map((t) => t.spec.label) : [];
+    Plot.purge(stage);
+    const chart = new Chart(stage, spec, data, null, {
+      draw: () => ManualQC.tool.draw,
+      onSelect: (rect) => ManualQC.addBox(rect),
+      onPoint: (pt) => ManualQC.addBox({ x0: pt.x, y0: pt.y }),
+      onRemove: (o) => ManualQC.remove(o.index),
+    });
+    stage._chart = chart;
+    chart.profileKey = key;
+    for (const t of chart.panels[0].traces) t.hidden = hidden.includes(t.spec.label);
+    if (keep) { chart.panels[0].view = keep; chart.draw(); }
+    ManualQC.pchart = chart;
+    ManualQC.syncOverlays();
+    ManualQC.renderList();
+  },
+
+  onKey(e) {
+    if (ManualQC.view !== 'profile' || !ManualQC.isActive() || !ManualQC.tab().classList.contains('on')) return;
+    if (e.metaKey || e.ctrlKey || e.altKey || e.target.closest('input, select, textarea, .CodeMirror')) return;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      ManualQC.step(e.key === 'ArrowLeft' ? -1 : 1);
+    }
+  },
+
   // ---- config <-> chart coordinates ----
   // The chart works in seconds since the spec's t0 on a date axis and log10 on a
   // log axis; the config holds ISO timestamps / plain numbers.
   toChart(v, isDate, log) {
-    if (isDate) { const ms = Date.parse(v); return isNaN(ms) ? NaN : (ms - ManualQC.spec.t0) / 1000; }
+    if (isDate) { const ms = Date.parse(v); return isNaN(ms) ? NaN : (ms - ManualQC.current().spec.t0) / 1000; }
     const n = Number(v);
     return log ? Math.log10(n) : n;
   },
   fromChart(v, isDate, log) {
-    if (isDate) return new Date(ManualQC.spec.t0 + v * 1000).toISOString().replace(/\.000Z$/, 'Z');
+    if (isDate) return new Date(ManualQC.current().spec.t0 + v * 1000).toISOString().replace(/\.000Z$/, 'Z');
     return +(log ? Math.pow(10, v) : v).toPrecision(7);
   },
   panelAxes() {
-    const p = ManualQC.spec.panels[0];
+    const p = ManualQC.current().spec.panels[0];
     return { xd: p.xdate, yd: p.ydate, xl: p.xscale === 'log', yl: p.yscale === 'log' };
   },
 
@@ -405,9 +763,13 @@ const ManualQC = {
     return out;
   },
 
+  // The chart of the view being shown.
+  current() { return ManualQC.view === 'profile' ? ManualQC.pchart : ManualQC.chart; },
+
   syncOverlays() {
-    if (!ManualQC.chart || !ManualQC.spec) return;
-    ManualQC.chart.setOverlays(ManualQC.chartBoxes().map((c) => ({
+    const chart = ManualQC.current();
+    if (!chart) return;
+    chart.setOverlays(ManualQC.chartBoxes().map((c) => ({
       ...c,
       color: ManualQC.border(c.box.flag),
       label: `${c.box.flag}${(c.box.mode || 'inside') === 'outside' ? ' outside' : ''}${c.box.override === false ? ' merge' : ''}`,
@@ -444,10 +806,11 @@ const ManualQC = {
   // re-run. Mirrors manual_qc.return_qc for the plotted (y) variable.
   preview() {
     const chart = ManualQC.chart;
-    if (!chart || !ManualQC.spec) return;
+    if (!chart || !ManualQC.spec || ManualQC.view !== 'time') return;
     const values = ManualQC.values();
     const yv = ManualQC.yVar();
-    const boxes = ManualQC.chartBoxes().filter((c) => !c.box.variables || c.box.variables.includes(yv));
+    // Boxes limited to a profile show here but only preview in the profile view.
+    const boxes = ManualQC.chartBoxes().filter((c) => ManualQC.timeBox(c.box) && (!c.box.variables || c.box.variables.includes(yv)));
     const rem = !values || values.flag_remaining_good !== false;
     const p = chart.panels[0];
     const sx = (p.home.x1 - p.home.x0) || 1, sy = (p.home.y1 - p.home.y0) || 1;
@@ -502,7 +865,7 @@ const ManualQC = {
     const values = ManualQC.values();
     if (!values) return;
     const chosen = [...ManualQC.targets()];
-    if (!chosen.length) { alert('Tick at least one variable under "Apply flag to".'); ManualQC.chart.clearPending(); return; }
+    if (!chosen.length) { alert('Tick at least one variable under "Apply flag to".'); ManualQC.current().clearPending(); return; }
     const { xd, yd, xl, yl } = ManualQC.panelAxes();
     const point = rect.x1 === undefined;
     const box = {
@@ -514,8 +877,12 @@ const ManualQC = {
       mode: ManualQC.tool.mode,
       y_variable: ManualQC.yVar(),
     };
+    if (ManualQC.view === 'profile') {
+      const p = ManualQC.prof;
+      box[p.by === 'CYCLE' ? 'cycles' : 'profiles'] = [ManualQC.profileId()];
+    }
     if (!ManualQC.tool.override) box.override = false;
-    if (!(chosen.length === 1 && chosen[0] === ManualQC.yVar())) box.variables = chosen;
+    if (!(chosen.length === 1 && chosen[0] === box.y_variable)) box.variables = chosen;
     values.boxes.push(box);
     ManualQC.commit();
   },
@@ -535,6 +902,7 @@ const ManualQC = {
     STATE.onChange();
     renderPipeline();
     if (ManualQC.chart) { ManualQC.chart.clearPending(); ManualQC.syncOverlays(); ManualQC.preview(); }
+    if (ManualQC.view === 'profile') ManualQC.drawProfile();
     ManualQC.renderList();
     ManualQC.dirty = true;
     ManualQC.buttons();
@@ -563,14 +931,14 @@ const ManualQC = {
     ManualQC.rail().classList.toggle('busy', on);
   },
 
+  // The top bar's Re-run/Continue: unapplied boxes make Apply the main action.
   buttons() {
-    const rerun = document.getElementById('btn-manual-rerun');
-    const cont = document.getElementById('btn-manual-continue');
-    if (!rerun || !cont) return;
-    rerun.lastChild.textContent = ManualQC.dirty ? 'Apply & re-run' : 'Re-run test';
+    const rerun = document.getElementById('btn-rerun');
+    const cont = document.getElementById('btn-run');
+    rerun.lastChild.textContent = ManualQC.dirty ? 'Apply' : 'Re-run';
     rerun.classList.toggle('primary', ManualQC.dirty);
-    cont.lastChild.textContent = ManualQC.dirty ? 'Apply & continue' : 'Continue';
     cont.classList.toggle('primary', !ManualQC.dirty);
+    cont.title = ManualQC.dirty ? 'Applies your boxes first' : '';
   },
 
   // Compact box list: one line each, hover/click highlights it on the chart;
@@ -631,7 +999,8 @@ const ManualQC = {
       const point = b.x.length === 1;
       txt.textContent = (point ? 'point ' : (b.mode === 'outside' ? 'outside ' : '')) +
         (point ? `${short(b.x[0])}, ${short(b.y[0])}` : `${short(b.y[0])}–${short(b.y[1])}`) +
-        (b.variables ? ` · ${b.variables.join(', ')}` : '');
+        (b.variables ? ` · ${b.variables.join(', ')}` : '') +
+        (b.profiles ? ` · profile ${b.profiles.join(', ')}` : b.cycles ? ` · cycle ${b.cycles.join(', ')}` : '');
       head.appendChild(txt);
       head.appendChild(Forms.button('×', { cls: 'icon-btn reveal manual-row-rm', title: 'remove this box',
         onclick: (e) => { e.stopPropagation(); ManualQC.remove(i); } }));
@@ -653,7 +1022,7 @@ const ManualQC = {
         edit.appendChild(ov);
         const detail = document.createElement('div');
         detail.className = 'manual-row-detail';
-        detail.textContent = `${ManualQC.xVar()} ${b.x.map(short).join(' → ')}\n${ManualQC.yVar()} ${b.y.map(short).join(' → ')}`;
+        detail.textContent = `${ManualQC.boxX(b)} ${b.x.map(short).join(' → ')}\n${ManualQC.boxY(b)} ${b.y.map(short).join(' → ')}`;
         edit.appendChild(detail);
         row.appendChild(edit);
       }
@@ -661,3 +1030,5 @@ const ManualQC = {
     });
   },
 };
+
+document.addEventListener('keydown', ManualQC.onKey);

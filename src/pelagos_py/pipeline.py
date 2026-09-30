@@ -37,7 +37,7 @@ from pelagos_py.utils.log_levels import STOP, SEVERE
 from pelagos_py.utils.console import make_console_handler, progress_bar
 from pelagos_py.utils import config_builder, diagnostic_capture, file_probe
 
-REPORT_STEP_NAME = "Write Data Report (Python)"
+REPORT_STEP_NAME = "Write Data Report"
 """Name of the report step that triggers background diagnostic capture."""
 
 from pelagos_py.steps import create_step, STEP_CLASSES, resolve_step_name

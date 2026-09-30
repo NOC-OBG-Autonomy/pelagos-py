@@ -70,6 +70,25 @@ def flag_label(flag):
     return f"{flag} ({meaning})" if meaning else str(flag)
 
 
+def categories(da):
+    """``[(value, meaning, colour)]`` for a categorical variable (one with CF
+    ``flag_values``), else None; colours from ``palettes.CATEGORICAL`` or ``CATEGORY``."""
+    from pelagos_py.utils import palettes
+
+    values = da.attrs.get("flag_values")
+    if values is None:
+        return None
+    if isinstance(values, str):
+        values = values.replace(",", " ").split()
+    meanings = str(da.attrs.get("flag_meanings", "")).split()
+    fixed = palettes.CATEGORICAL.get(da.name, {})
+    out = []
+    for i, v in enumerate(values):
+        v = int(v)
+        out.append((v, meanings[i] if i < len(meanings) else str(v), fixed.get(v, CATEGORY[i % len(CATEGORY)])))
+    return out
+
+
 def thin_idx(n, cap=None):
     """Indices evenly thinning ``n`` points to ``cap`` (default MAX_POINTS); arange(n) if under the cap."""
     cap = cap or MAX_POINTS

@@ -167,6 +167,8 @@ class _PhaseBar(tqdm):
         return super().update(n)
 
     def close(self):
+        if not hasattr(self, "disable"):  # interrupted inside tqdm's __init__ (Stop during startup)
+            return
         super().close()
         if self._summarised:
             return

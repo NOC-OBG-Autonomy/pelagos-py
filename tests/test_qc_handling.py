@@ -78,3 +78,19 @@ def test_generate_qc_unchecked_parent_does_not_downgrade():
     step.data["C"] = ("N_MEASUREMENTS", np.zeros(4))
     step.generate_qc({"C_QC": ["A_QC", "B_QC"]})
     assert list(step.data["C_QC"].values) == [1, 2, 4, 1]
+
+
+def test_prefer_adjusted_uses_adjusted_when_present():
+    settings = {
+        "variable_ranges": {"DEPTH": {3: [-np.inf, 2, "inside"]}},
+        "flag_instead": {"DEPTH": ["CHLA", "CHLA_ADJUSTED"]},
+    }
+    resolved = qc_handling.prefer_adjusted(settings, {"DEPTH", "CHLA", "CHLA_ADJUSTED"})
+    assert resolved["flag_instead"] == {"DEPTH": ["CHLA_ADJUSTED"]}
+    assert resolved["variable_ranges"] == settings["variable_ranges"]
+
+
+def test_prefer_adjusted_falls_back_to_raw():
+    settings = {"variable_ranges": {"CHLA_ADJUSTED": {4: [0, 100, "outside"]}}}
+    resolved = qc_handling.prefer_adjusted(settings, {"CHLA"})
+    assert resolved == {"variable_ranges": {"CHLA": {4: [0, 100, "outside"]}}}

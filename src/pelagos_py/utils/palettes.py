@@ -71,6 +71,15 @@ VARIABLE_PALETTES = {
     "BBP700_ADJUSTED": "backscatter",
 }
 
+# Fixed colours for categorical variables (value -> hex), so every plot of one agrees.
+CATEGORICAL = {
+    # Find Profiles phases: unknown, ascent, descent, surfacing, parking, inflection, propelled, transition
+    "SCI_PHASE": {
+        0: "#9ca3af", 1: "#22c55e", 2: "#3b82f6", 3: "#f97316",
+        4: "#a855f7", 5: "#06b6d4", 6: "#ef4444", 7: "#eab308",
+    },
+}
+
 
 def get_cmap(name):
     """Build a matplotlib colormap from a named SEQUENTIAL palette (case-insensitive)."""

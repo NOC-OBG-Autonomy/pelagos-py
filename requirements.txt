@@ -21,7 +21,6 @@ glidertools
 ipykernel
 pyarrow
 pytest
-rstcloth
 fpdf2
 cartopy
 pyyaml
@@ -29,3 +28,5 @@ compliance-checker
 cc-plugin-ncei
 cc-plugin-og
 psutil>=5.9
+fastapi>=0.110
+uvicorn>=0.29
