@@ -12,10 +12,43 @@ import json
 import numpy as np
 from importlib.metadata import PackageNotFoundError
 
+import matplotlib
+matplotlib.use("Agg")
+
 
 @pytest.fixture
 def qc_dataset():
-    ds = xr.Dataset()
+    #   Build a big, fake dataset that also works for glidertest
+    n_profiles = 24
+    pts_per_profile = 10
+    n = n_profiles * pts_per_profile
+
+    profile_number = np.repeat(np.arange(1, n_profiles + 1), pts_per_profile)
+
+    depth = np.zeros(n) #   Init at surface. Build fake profiles
+    for i in range(n_profiles):
+        ramp = np.linspace(0, 100, pts_per_profile)
+        if i % 2 == 1:
+            ramp = ramp[::-1]
+        depth[i * pts_per_profile : (i + 1) * pts_per_profile] = ramp
+
+    #   Approx. 3 hours/profile
+    start = np.datetime64("2026-06-01T00:00:00")
+    time = start + (np.arange(n) * (3 * 3600 / pts_per_profile)).astype(
+        "timedelta64[s]"
+    )
+
+    rng = np.random.default_rng(0)
+    longitude = 10 + np.linspace(0, 0.2, n)  #   Near gburg
+    latitude = 57 + np.linspace(0, 0.2, n)
+
+    temp = 15 - 0.05 * depth + rng.normal(0, 0.05, n)
+    psal = 33 + 0.01 * depth + rng.normal(0, 0.02, n)
+    cndc = 3.3 + 0.001 * depth + rng.normal(0, 0.01, n)
+    doxy = 250 - 0.3 * depth + rng.normal(0, 1, n)
+    chla = np.clip(2 * np.exp(-depth / 20) + rng.normal(0, 0.05, n), 0, None)
+
+    ds = xr.Dataset(coords={"N_MEASUREMENTS": np.arange(n)})
 
     attrs = {
         "range_test_flag_cts": json.dumps({"1": 10, "4": 2}),
@@ -31,16 +64,45 @@ def qc_dataset():
         "units": "1",
     }
 
-    ds["TEMP_QC"] = xr.DataArray(np.zeros(5), attrs=attrs)
+    ds["TEMP_QC"] = xr.DataArray(
+        np.zeros(n), dims=["N_MEASUREMENTS"], attrs=attrs
+    )
 
     #   Non-QC variable for reference
     ds["TEMP"] = xr.DataArray(
-        np.zeros(5), attrs={"long_name": "Sea temperature", "units": "degC"}
+        temp,
+        dims=["N_MEASUREMENTS"],
+        attrs={"long_name": "Sea temperature", "units": "degC"},
     )
-    ds["LONGITUDE"] = xr.DataArray(np.linspace(10, 11, 5))  #   Near gburg
-    ds["LATITUDE"] = xr.DataArray(np.linspace(57, 58, 5))
+    ds["LONGITUDE"] = xr.DataArray(longitude, dims=["N_MEASUREMENTS"])
+    ds["LATITUDE"] = xr.DataArray(latitude, dims=["N_MEASUREMENTS"])
     ds.attrs["dataset_id"] = "glider_test_run"
 
+    #   For QC and glidertest
+    ds["PRAC_SALINITY"] = xr.DataArray(psal, dims=["N_MEASUREMENTS"])
+    ds["CNDC"] = xr.DataArray(
+        cndc,
+        dims=["N_MEASUREMENTS"],
+        attrs={"long_name": "Conductivity", "units": "S m-1"},
+    )
+    ds["DOXY"] = xr.DataArray(
+        doxy,
+        dims=["N_MEASUREMENTS"],
+        attrs={"long_name": "Dissolved oxygen", "units": "umol/kg"},
+    )
+    ds["CHLA"] = xr.DataArray(
+        chla,
+        dims=["N_MEASUREMENTS"],
+        attrs={"long_name": "Chlorophyll-a", "units": "mg/m3"},
+    )
+    ds["DEPTH"] = xr.DataArray(depth, dims=["N_MEASUREMENTS"])
+    ds["PROFILE_NUMBER"] = xr.DataArray(
+        profile_number.astype(float), dims=["N_MEASUREMENTS"]
+    )
+    ds["TIME"] = xr.DataArray(time, dims=["N_MEASUREMENTS"])
+    #   glidertest's process_optics_assess accesses `ds[var].DEPTH`, which
+    #   requires DEPTH to be a coordinate (attribute access only sees coords).
+    ds = ds.set_coords("DEPTH")
     return ds
 
 
@@ -204,7 +266,7 @@ def test_qc_section(qc_dataset):
 
 def test_qc_section_no_rows(qc_dataset):
     pdf = MagicMock()
-    with patch.object(wrp, "flatten_qc_dict", return_value=[]):
+    with patch.object(wrp, "build_qc_dict", return_value={}):
         wrp.qc_section(pdf, qc_dataset)
 
     pdf.body.assert_called_once_with("No QC tests found.")

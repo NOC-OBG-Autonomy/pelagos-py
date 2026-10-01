@@ -415,16 +415,23 @@ class Pipeline(ConfigMirrorMixin):
         # in the background (regardless of that step's own diagnostics setting)
         # so they can be embedded in the report. This exercises every step's
         # diagnostic code, which is why it can slow the run down.
-        report_present = any(s["name"] == REPORT_STEP_NAME for s in self.steps)
+        report_params = next(
+            (s["parameters"] for s in self.steps if s["name"] == REPORT_STEP_NAME),
+            None,
+        )
+        report_present = report_params is not None
+        capture_diagnostics = report_present and report_params.get("show_diagnostic_plots", True)
+
         self._step_index = 0
-        if report_present:
+        if capture_diagnostics:
             self._capture_diagnostics = True
             self._captured_figures = []
             self._capture_dir = tempfile.mkdtemp(prefix="pelagos_report_diag_")
             self.logger.warning(
                 "A report step is enabled: diagnostic plots will be generated in "
                 "the background for every step that produces one, so the pipeline "
-                "may run more slowly than usual."
+                "may run more slowly than usual. `pdb.trace()` may not work as "
+                "intended."
             )
 
         # When capturing for the report, force the headless Agg backend once for
@@ -455,8 +462,9 @@ class Pipeline(ConfigMirrorMixin):
         finally:
             if report_present:
                 #   Figures have been embedded by the report writer by now.
-                shutil.rmtree(self._capture_dir, ignore_errors=True)
-                self._capture_diagnostics = False
+                if capture_diagnostics:
+                    shutil.rmtree(self._capture_dir, ignore_errors=True)
+                    self._capture_diagnostics = False
 
     def generate_config(self):
         """
