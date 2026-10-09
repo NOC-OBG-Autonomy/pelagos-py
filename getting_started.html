@@ -292,9 +292,25 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 <section id="how-to-run">
 <h2>How to Run<a class="headerlink" href="#how-to-run" title="Link to this heading">#</a></h2>
 <p><strong>Initialisation</strong></p>
-<p>Import the <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code> class and create a pipeline using your config:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pipeline</span>
-<span class="n">pipeline</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">(</span><span class="n">config_path</span><span class="o">=</span><span class="s2">"my_pipeline.yaml"</span><span class="p">)</span>
+<p>Import the <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code> class and create a pipeline, either by letting pelagos-py build a config
+for your OG1 file or from a config you already have:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><a class="sphinx-codeautolink-a" href="api/pelagos_py/index.html#module-pelagos_py"><span class="nn">pelagos_py</span></a><span class="w"> </span><span class="kn">import</span> <span class="n">Pipeline</span>
+
+<span class="c1"># Build a config for the file from the default template, saved as glider.yaml next to it</span>
+<span class="n">pipeline</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="o">.</span><span class="n">make_config</span><span class="p">(</span><span class="s2">"glider.nc"</span><span class="p">)</span>
+
+<span class="c1"># Same, but ask about each choice (e.g. what to do about missing PAR) instead of using the defaults</span>
+<span class="n">pipeline</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="o">.</span><span class="n">make_config</span><span class="p">(</span><span class="s2">"glider.nc"</span><span class="p">,</span> <span class="n">ask</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># Or load a config you already have, e.g. glider.yaml after editing it</span>
+<span class="n">pipeline</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="o">.</span><span class="n">load_config</span><span class="p">(</span><span class="s2">"my_pipeline.yaml"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To try it without your own data, <code class="docutils literal notranslate"><span class="pre">get_demo_file</span></code> downloads a demo OG1 file into
+<code class="docutils literal notranslate"><span class="pre">examples/data/OG1</span></code> (only the first time) and returns its path; <code class="docutils literal notranslate"><span class="pre">get_demo_file()</span></code> lists the demos. <code class="docutils literal notranslate"><span class="pre">examples/python/run_demo.py</span></code> does this end to end:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><a class="sphinx-codeautolink-a" href="api/pelagos_py/index.html#module-pelagos_py"><span class="nn">pelagos_py</span></a><span class="w"> </span><span class="kn">import</span> <span class="n">Pipeline</span><span class="p">,</span> <span class="n">get_demo_file</span>
+
+<span class="n">pipeline</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="o">.</span><span class="n">make_config</span><span class="p">(</span><span class="n">get_demo_file</span><span class="p">(</span><span class="s2">"nelson_646_r"</span><span class="p">))</span>
 </pre></div>
 </div>
 <p><strong>Pipeline Execution</strong></p>
@@ -344,8 +360,8 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 </section>
 <section id="example-pipeline">
 <h2>Example Pipeline<a class="headerlink" href="#example-pipeline" title="Link to this heading">#</a></h2>
-<p>If you are new here, we recommend checking out the <code class="docutils literal notranslate"><span class="pre">example/notebooks/pipeline_demo.ipynb</span></code> Jupyter notebook. This provides an example use case for processing CTD measurements from glider data hosted by the British Oceanographic Data Centre (BODC).</p>
-<p>A fully commented configuration file is used for this process, which serves as an excellent template for your own projects.</p>
+<p>If you are new here, we recommend checking out the <code class="docutils literal notranslate"><span class="pre">examples/notebooks/pipeline_demo.ipynb</span></code> Jupyter notebook, or running <code class="docutils literal notranslate"><span class="pre">examples/python/run_demo.py</span></code>. This provides an example use case for processing CTD measurements from glider data hosted by the British Oceanographic Data Centre (BODC).</p>
+<p>Both build a fully commented configuration file for the demo data, which serves as an excellent template for your own projects.</p>
 </section>
 <section id="documentation-and-feedback">
 <h2>Documentation and Feedback<a class="headerlink" href="#documentation-and-feedback" title="Link to this heading">#</a></h2>

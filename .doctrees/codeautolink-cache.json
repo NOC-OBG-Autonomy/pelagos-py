@@ -1,7 +1,32 @@
 {
   "api/index": [],
   "api/pelagos_py/index": [],
-  "api/pelagos_py/pipeline/index": [],
+  "api/pelagos_py/pipeline/index": [
+    {
+      "source": "Pipeline.load_config(\"my_pipeline.yaml\").run()",
+      "names": [],
+      "example": {
+        "document": "api/pelagos_py/pipeline/index",
+        "ref_id": "module-pelagos_py.pipeline",
+        "headings": [
+          "pelagos_py.pipeline"
+        ]
+      },
+      "doc_lineno": 71
+    },
+    {
+      "source": "Pipeline.make_config(\"glider.nc\").run()\nPipeline.make_config(\"glider.nc\", ask=True)  # build and save only",
+      "names": [],
+      "example": {
+        "document": "api/pelagos_py/pipeline/index",
+        "ref_id": "module-pelagos_py.pipeline",
+        "headings": [
+          "pelagos_py.pipeline"
+        ]
+      },
+      "doc_lineno": 106
+    }
+  ],
   "api/pelagos_py/steps/base_qc/index": [],
   "api/pelagos_py/steps/base_step/index": [
     {
@@ -24,6 +49,7 @@
   "api/pelagos_py/steps/input_output/gen_data/index": [],
   "api/pelagos_py/steps/input_output/index": [],
   "api/pelagos_py/steps/input_output/load_data/index": [],
+  "api/pelagos_py/steps/input_output/prepare_og1/index": [],
   "api/pelagos_py/steps/input_output/write_report/index": [
     {
       "source": "{\n    \"VAR_QC\": {\n        \"qc_name\": {\n            \"params\": {...},\n            \"flag_counts\": {...},\n            \"stats\": {...},\n        },\n        \"qc_name_2\": {\n            ...\n        },\n    }\n}",
@@ -442,10 +468,37 @@
   "api/pelagos_py/steps/templates/blank_qc/index": [],
   "api/pelagos_py/steps/templates/blank_step/index": [],
   "api/pelagos_py/steps/templates/index": [],
+  "api/pelagos_py/utils/config_builder/index": [],
   "api/pelagos_py/utils/console/index": [],
+  "api/pelagos_py/utils/demo_data/index": [
+    {
+      "source": "from pelagos_py import Pipeline, get_demo_file\n\nPipeline.make_config(get_demo_file(\"nelson_646_r\")).run()",
+      "names": [
+        {
+          "import_components": [
+            "pelagos_py"
+          ],
+          "code_str": "pelagos_py",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_from",
+          "resolved_location": "pelagos_py"
+        }
+      ],
+      "example": {
+        "document": "api/pelagos_py/utils/demo_data/index",
+        "ref_id": "module-pelagos_py.utils.demo_data",
+        "headings": [
+          "pelagos_py.utils.demo_data"
+        ]
+      },
+      "doc_lineno": 14
+    }
+  ],
   "api/pelagos_py/utils/diagnostic_capture/index": [],
   "api/pelagos_py/utils/diagnostics/index": [],
   "api/pelagos_py/utils/fig_spec/index": [],
+  "api/pelagos_py/utils/file_probe/index": [],
   "api/pelagos_py/utils/index": [],
   "api/pelagos_py/utils/log_levels/index": [],
   "api/pelagos_py/utils/palettes/index": [],
@@ -470,8 +523,19 @@
   ],
   "getting_started": [
     {
-      "source": "from pelagos_py.pipeline import Pipeline\npipeline = Pipeline(config_path=\"my_pipeline.yaml\")",
-      "names": [],
+      "source": "from pelagos_py import Pipeline\n\n# Build a config for the file from the default template, saved as glider.yaml next to it\npipeline = Pipeline.make_config(\"glider.nc\")\n\n# Same, but ask about each choice (e.g. what to do about missing PAR) instead of using the defaults\npipeline = Pipeline.make_config(\"glider.nc\", ask=True)\n\n# Or load a config you already have, e.g. glider.yaml after editing it\npipeline = Pipeline.load_config(\"my_pipeline.yaml\")",
+      "names": [
+        {
+          "import_components": [
+            "pelagos_py"
+          ],
+          "code_str": "pelagos_py",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_from",
+          "resolved_location": "pelagos_py"
+        }
+      ],
       "example": {
         "document": "getting_started",
         "ref_id": "how-to-run",
@@ -480,7 +544,31 @@
           "How to Run"
         ]
       },
-      "doc_lineno": 69
+      "doc_lineno": 70
+    },
+    {
+      "source": "from pelagos_py import Pipeline, get_demo_file\n\npipeline = Pipeline.make_config(get_demo_file(\"nelson_646_r\"))",
+      "names": [
+        {
+          "import_components": [
+            "pelagos_py"
+          ],
+          "code_str": "pelagos_py",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_from",
+          "resolved_location": "pelagos_py"
+        }
+      ],
+      "example": {
+        "document": "getting_started",
+        "ref_id": "how-to-run",
+        "headings": [
+          "Getting Started",
+          "How to Run"
+        ]
+      },
+      "doc_lineno": 86
     },
     {
       "source": "results = pipeline.run()",
@@ -493,7 +581,7 @@
           "How to Run"
         ]
       },
-      "doc_lineno": 78
+      "doc_lineno": 96
     },
     {
       "source": "pipeline.export_config(\"exported_pipeline.yaml\")",
@@ -506,13 +594,24 @@
           "How to Run"
         ]
       },
-      "doc_lineno": 90
+      "doc_lineno": 108
     }
   ],
   "index": [
     {
-      "source": "# Create the pipeline using the specified config\nPipe = Pipeline(\n   config_path=r\"config.yaml\"\n)\nPipe.run()",
-      "names": [],
+      "source": "from pelagos_py import Pipeline\n\n# Create the pipeline using the specified config\nPipeline.load_config(\"config.yaml\").run()\n\n# Or build a config for an OG1 file from the default template, then run it\nPipeline.make_config(\"glider.nc\").run()",
+      "names": [
+        {
+          "import_components": [
+            "pelagos_py"
+          ],
+          "code_str": "pelagos_py",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_from",
+          "resolved_location": "pelagos_py"
+        }
+      ],
       "example": {
         "document": "index",
         "ref_id": "pelagos-py-documentation",
@@ -528,7 +627,72 @@
   "user_guide": [
     {
       "source": "from pelagos_py.steps.base_step import BaseStep, register_step\n\n@register_step\nclass MyNewStep(BaseStep):\n    ...",
-      "names": [],
+      "names": [
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_step"
+          ],
+          "code_str": "pelagos_py.steps.base_step",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_from",
+          "resolved_location": "pelagos_py.steps.base_step"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_step",
+            "BaseStep"
+          ],
+          "code_str": "BaseStep",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_target",
+          "resolved_location": "pelagos_py.steps.base_step.BaseStep"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_step",
+            "register_step"
+          ],
+          "code_str": "register_step",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_target",
+          "resolved_location": "pelagos_py.steps.base_step.register_step"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_step",
+            "register_step"
+          ],
+          "code_str": "register_step",
+          "lineno": 3,
+          "end_lineno": 3,
+          "context": "none",
+          "resolved_location": "pelagos_py.steps.base_step.register_step"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_step",
+            "BaseStep"
+          ],
+          "code_str": "BaseStep",
+          "lineno": 4,
+          "end_lineno": 4,
+          "context": "none",
+          "resolved_location": "pelagos_py.steps.base_step.BaseStep"
+        }
+      ],
       "example": {
         "document": "user_guide",
         "ref_id": "how-to-add-a-new-step",
@@ -542,7 +706,72 @@
     },
     {
       "source": "from pelagos_py.steps.base_step import BaseStep, register_step\n\n@register_step\nclass MyNewStep(BaseStep):\n\n    step_name = \"My New Step\"",
-      "names": [],
+      "names": [
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_step"
+          ],
+          "code_str": "pelagos_py.steps.base_step",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_from",
+          "resolved_location": "pelagos_py.steps.base_step"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_step",
+            "BaseStep"
+          ],
+          "code_str": "BaseStep",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_target",
+          "resolved_location": "pelagos_py.steps.base_step.BaseStep"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_step",
+            "register_step"
+          ],
+          "code_str": "register_step",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_target",
+          "resolved_location": "pelagos_py.steps.base_step.register_step"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_step",
+            "register_step"
+          ],
+          "code_str": "register_step",
+          "lineno": 3,
+          "end_lineno": 3,
+          "context": "none",
+          "resolved_location": "pelagos_py.steps.base_step.register_step"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_step",
+            "BaseStep"
+          ],
+          "code_str": "BaseStep",
+          "lineno": 4,
+          "end_lineno": 4,
+          "context": "none",
+          "resolved_location": "pelagos_py.steps.base_step.BaseStep"
+        }
+      ],
       "example": {
         "document": "user_guide",
         "ref_id": "how-to-add-a-new-step",
@@ -556,7 +785,72 @@
     },
     {
       "source": "from pelagos_py.steps.base_step import BaseStep, register_step\n\n@register_step\nclass MyNewStep(BaseStep):\n    step_name = \"My New Step\"\n\n    def run(self):\n        # Your processing logic here\n        return self.context",
-      "names": [],
+      "names": [
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_step"
+          ],
+          "code_str": "pelagos_py.steps.base_step",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_from",
+          "resolved_location": "pelagos_py.steps.base_step"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_step",
+            "BaseStep"
+          ],
+          "code_str": "BaseStep",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_target",
+          "resolved_location": "pelagos_py.steps.base_step.BaseStep"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_step",
+            "register_step"
+          ],
+          "code_str": "register_step",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_target",
+          "resolved_location": "pelagos_py.steps.base_step.register_step"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_step",
+            "register_step"
+          ],
+          "code_str": "register_step",
+          "lineno": 3,
+          "end_lineno": 3,
+          "context": "none",
+          "resolved_location": "pelagos_py.steps.base_step.register_step"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_step",
+            "BaseStep"
+          ],
+          "code_str": "BaseStep",
+          "lineno": 4,
+          "end_lineno": 4,
+          "context": "none",
+          "resolved_location": "pelagos_py.steps.base_step.BaseStep"
+        }
+      ],
       "example": {
         "document": "user_guide",
         "ref_id": "how-to-add-a-new-step",
@@ -570,7 +864,72 @@
     },
     {
       "source": "from pelagos_py.steps.base_step import BaseStep, register_step\n\n@register_step\nclass MyNewStep(BaseStep):\n    step_name = \"My New Step\"\n\n    def run(self):\n        # Your processing logic here\n        return self.context\n\n    def generate_diagnostics(self):\n        # Your diagnostics logic here\n        pass",
-      "names": [],
+      "names": [
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_step"
+          ],
+          "code_str": "pelagos_py.steps.base_step",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_from",
+          "resolved_location": "pelagos_py.steps.base_step"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_step",
+            "BaseStep"
+          ],
+          "code_str": "BaseStep",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_target",
+          "resolved_location": "pelagos_py.steps.base_step.BaseStep"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_step",
+            "register_step"
+          ],
+          "code_str": "register_step",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_target",
+          "resolved_location": "pelagos_py.steps.base_step.register_step"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_step",
+            "register_step"
+          ],
+          "code_str": "register_step",
+          "lineno": 3,
+          "end_lineno": 3,
+          "context": "none",
+          "resolved_location": "pelagos_py.steps.base_step.register_step"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_step",
+            "BaseStep"
+          ],
+          "code_str": "BaseStep",
+          "lineno": 4,
+          "end_lineno": 4,
+          "context": "none",
+          "resolved_location": "pelagos_py.steps.base_step.BaseStep"
+        }
+      ],
       "example": {
         "document": "user_guide",
         "ref_id": "how-to-add-a-new-step",
@@ -584,7 +943,84 @@
     },
     {
       "source": "from pelagos_py.steps.base_step import BaseStep, register_step\nfrom pelagos_py.utils.qc_handling import QCHandlingMixin\n\n@register_step\nclass MyNewStep(BaseStep, QCHandlingMixin):\n    step_name = \"My New Step\"\n\n    def run(self):\n        # Filter the specified QC out of this step's instance of self.data\n        # and store it separately.\n        self.filter_qc()\n\n        # Your processing logic here. Always use self.data to access your\n        # processing inputs, as this is what has been filtered.\n        # --------- EXAMPLE ---------\n        self.data[\"C\"] = self.data[\"A\"] * self.data[\"B\"]\n        # ---------------------------\n\n        # Add the filtered-out data back in, or retain its replacement\n        # depending on the user config.\n        self.reconstruct_data()\n        # Update the flags of the filtered data.\n        self.update_qc()\n\n        # If a new variable was added, give it its own QC column derived from\n        # its parents' QC. Not necessary if no new variables were added.\n        # --------- EXAMPLE ---------\n        self.generate_qc({\"C_QC\": [\"A_QC\", \"B_QC\"]})\n        # ---------------------------\n\n        self.context[\"data\"] = self.data\n        return self.context\n\n    def generate_diagnostics(self):\n        # Your diagnostics logic here\n        pass",
-      "names": [],
+      "names": [
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_step"
+          ],
+          "code_str": "pelagos_py.steps.base_step",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_from",
+          "resolved_location": "pelagos_py.steps.base_step"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_step",
+            "BaseStep"
+          ],
+          "code_str": "BaseStep",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_target",
+          "resolved_location": "pelagos_py.steps.base_step.BaseStep"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_step",
+            "register_step"
+          ],
+          "code_str": "register_step",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_target",
+          "resolved_location": "pelagos_py.steps.base_step.register_step"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "utils",
+            "qc_handling"
+          ],
+          "code_str": "pelagos_py.utils.qc_handling",
+          "lineno": 2,
+          "end_lineno": 2,
+          "context": "import_from",
+          "resolved_location": "pelagos_py.utils.qc_handling"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_step",
+            "register_step"
+          ],
+          "code_str": "register_step",
+          "lineno": 4,
+          "end_lineno": 4,
+          "context": "none",
+          "resolved_location": "pelagos_py.steps.base_step.register_step"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_step",
+            "BaseStep"
+          ],
+          "code_str": "BaseStep",
+          "lineno": 5,
+          "end_lineno": 5,
+          "context": "none",
+          "resolved_location": "pelagos_py.steps.base_step.BaseStep"
+        }
+      ],
       "example": {
         "document": "user_guide",
         "ref_id": "adding-qc-handling-to-a-step",
@@ -598,7 +1034,85 @@
     },
     {
       "source": "from pelagos_py.steps.base_qc import BaseQC, register_qc, flag_cols\n\n@register_qc\nclass MyNewCheck(BaseQC):\n    ...",
-      "names": [],
+      "names": [
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_qc"
+          ],
+          "code_str": "pelagos_py.steps.base_qc",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_from",
+          "resolved_location": "pelagos_py.steps.base_qc"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_qc",
+            "BaseQC"
+          ],
+          "code_str": "BaseQC",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_target",
+          "resolved_location": "pelagos_py.steps.base_qc.BaseQC"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_qc",
+            "register_qc"
+          ],
+          "code_str": "register_qc",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_target",
+          "resolved_location": "pelagos_py.steps.base_qc.register_qc"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_qc",
+            "flag_cols"
+          ],
+          "code_str": "flag_cols",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_target",
+          "resolved_location": "pelagos_py.steps.base_qc.flag_cols"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_qc",
+            "register_qc"
+          ],
+          "code_str": "register_qc",
+          "lineno": 3,
+          "end_lineno": 3,
+          "context": "none",
+          "resolved_location": "pelagos_py.steps.base_qc.register_qc"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_qc",
+            "BaseQC"
+          ],
+          "code_str": "BaseQC",
+          "lineno": 4,
+          "end_lineno": 4,
+          "context": "none",
+          "resolved_location": "pelagos_py.steps.base_qc.BaseQC"
+        }
+      ],
       "example": {
         "document": "user_guide",
         "ref_id": "how-to-add-a-new-qc-check",
@@ -612,7 +1126,85 @@
     },
     {
       "source": "from pelagos_py.steps.base_qc import BaseQC, register_qc, flag_cols\n\n@register_qc\nclass MyNewCheck(BaseQC):\n    qc_name = \"my new check\"  # How you refer to the check in config (see below)\n    expected_parameters = {'A_cutoff': 1}  # Parameters the user may supply; the value is the default\n    required_variables = ['A']  # Variables required for execution; cross-referenced against the data vars in context\n    provided_variables = []  # Variables this check itself provides, if any\n    qc_outputs = ['A_QC']  # QC outputs; references that help \"Apply QC\" update existing QC in the data",
-      "names": [],
+      "names": [
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_qc"
+          ],
+          "code_str": "pelagos_py.steps.base_qc",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_from",
+          "resolved_location": "pelagos_py.steps.base_qc"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_qc",
+            "BaseQC"
+          ],
+          "code_str": "BaseQC",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_target",
+          "resolved_location": "pelagos_py.steps.base_qc.BaseQC"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_qc",
+            "register_qc"
+          ],
+          "code_str": "register_qc",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_target",
+          "resolved_location": "pelagos_py.steps.base_qc.register_qc"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_qc",
+            "flag_cols"
+          ],
+          "code_str": "flag_cols",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_target",
+          "resolved_location": "pelagos_py.steps.base_qc.flag_cols"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_qc",
+            "register_qc"
+          ],
+          "code_str": "register_qc",
+          "lineno": 3,
+          "end_lineno": 3,
+          "context": "none",
+          "resolved_location": "pelagos_py.steps.base_qc.register_qc"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_qc",
+            "BaseQC"
+          ],
+          "code_str": "BaseQC",
+          "lineno": 4,
+          "end_lineno": 4,
+          "context": "none",
+          "resolved_location": "pelagos_py.steps.base_qc.BaseQC"
+        }
+      ],
       "example": {
         "document": "user_guide",
         "ref_id": "how-to-add-a-new-qc-check",
@@ -626,7 +1218,85 @@
     },
     {
       "source": "from pelagos_py.steps.base_qc import BaseQC, register_qc, flag_cols\n\n@register_qc\nclass MyNewCheck(BaseQC):\n    qc_name = \"my new check\"\n    expected_parameters = {'A_cutoff': 1}\n    required_variables = ['A']\n    provided_variables = []\n    qc_outputs = ['A_QC']\n\n    def return_qc(self):\n        # IMPORTANT: access the data with self.data.\n        # self.flags should be an xarray Dataset whose data_vars hold the\n        # \"{variable}_QC\" columns produced by the check.\n        return self.flags\n\n    def plot_diagnostics(self):\n        # Add your diagnostic plotting here\n        ...",
-      "names": [],
+      "names": [
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_qc"
+          ],
+          "code_str": "pelagos_py.steps.base_qc",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_from",
+          "resolved_location": "pelagos_py.steps.base_qc"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_qc",
+            "BaseQC"
+          ],
+          "code_str": "BaseQC",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_target",
+          "resolved_location": "pelagos_py.steps.base_qc.BaseQC"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_qc",
+            "register_qc"
+          ],
+          "code_str": "register_qc",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_target",
+          "resolved_location": "pelagos_py.steps.base_qc.register_qc"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_qc",
+            "flag_cols"
+          ],
+          "code_str": "flag_cols",
+          "lineno": 1,
+          "end_lineno": 1,
+          "context": "import_target",
+          "resolved_location": "pelagos_py.steps.base_qc.flag_cols"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_qc",
+            "register_qc"
+          ],
+          "code_str": "register_qc",
+          "lineno": 3,
+          "end_lineno": 3,
+          "context": "none",
+          "resolved_location": "pelagos_py.steps.base_qc.register_qc"
+        },
+        {
+          "import_components": [
+            "pelagos_py",
+            "steps",
+            "base_qc",
+            "BaseQC"
+          ],
+          "code_str": "BaseQC",
+          "lineno": 4,
+          "end_lineno": 4,
+          "context": "none",
+          "resolved_location": "pelagos_py.steps.base_qc.BaseQC"
+        }
+      ],
       "example": {
         "document": "user_guide",
         "ref_id": "how-to-add-a-new-qc-check",

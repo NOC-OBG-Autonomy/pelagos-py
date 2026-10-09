@@ -423,12 +423,13 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.config_mirror</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigMirrorMixin</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.valid_config_check</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_pipeline_variables</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.log_levels</span><span class="w"> </span><span class="kn">import</span> <span class="n">STOP</span><span class="p">,</span> <span class="n">SEVERE</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.console</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_console_handler</span><span class="p">,</span> <span class="n">progress_bar</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">diagnostic_capture</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">config_builder</span><span class="p">,</span> <span class="n">diagnostic_capture</span><span class="p">,</span> <span class="n">file_probe</span>
 
 <div class="viewcode-block" id="REPORT_STEP_NAME">
 <a class="viewcode-back" href="../../api/pelagos_py/pipeline/index.html#pelagos_py.pipeline.REPORT_STEP_NAME">[docs]</a>
@@ -571,9 +572,9 @@
 
         <span class="n">has_config</span> <span class="o">=</span> <span class="n">config_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">config_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">load_config_from_file</span><span class="p">(</span><span class="n">config_path</span><span class="p">,</span> <span class="n">mirror_keys</span><span class="o">=</span><span class="p">[</span><span class="s2">"pipeline"</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_load_config_file</span><span class="p">(</span><span class="n">config_path</span><span class="p">,</span> <span class="n">mirror_keys</span><span class="o">=</span><span class="p">[</span><span class="s2">"pipeline"</span><span class="p">])</span>
         <span class="k">elif</span> <span class="n">config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">load_config</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">mirror_keys</span><span class="o">=</span><span class="p">[</span><span class="s2">"pipeline"</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_load_config_dict</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">mirror_keys</span><span class="o">=</span><span class="p">[</span><span class="s2">"pipeline"</span><span class="p">])</span>
 
         <span class="k">if</span> <span class="n">has_config</span><span class="p">:</span>
             <span class="c1"># set convenience alias for user-facing access</span>
@@ -592,6 +593,61 @@
             <span class="c1"># build steps from loaded config</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">build_steps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"steps"</span><span class="p">,</span> <span class="p">[]))</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Pipeline initialised"</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Pipeline.load_config">
+<a class="viewcode-back" href="../../api/pelagos_py/pipeline/index.html#pelagos_py.pipeline.Pipeline.load_config">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config_path</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Create a pipeline from a YAML config file (same as ``Pipeline(config_path=...)``).</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            Pipeline.load_config("my_pipeline.yaml").run()</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">config_path</span><span class="o">=</span><span class="n">config_path</span><span class="p">)</span></div>
+
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Pipeline.make_config">
+<a class="viewcode-back" href="../../api/pelagos_py/pipeline/index.html#pelagos_py.pipeline.Pipeline.make_config">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">make_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">file_path</span><span class="p">,</span> <span class="n">ask</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">config_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Build a config for an OG1 file from the default template and create a pipeline from it.</span>
+
+<span class="sd">        The template's steps are adapted to what the file holds (e.g. the PAR steps are</span>
+<span class="sd">        dropped if it has no PAR) and the config is saved to ``config_path`` (default:</span>
+<span class="sd">        ``&lt;file name&gt;.yaml`` next to the file), so the run can be edited and repeated with</span>
+<span class="sd">        :meth:`load_config`. With ``ask=True`` each choice is asked in the terminal;</span>
+<span class="sd">        otherwise the defaults are used and logged.</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            Pipeline.make_config("glider.nc").run()</span>
+<span class="sd">            Pipeline.make_config("glider.nc", ask=True)  # build and save only</span>
+<span class="sd">        """</span>
+        <span class="n">probe</span> <span class="o">=</span> <span class="n">file_probe</span><span class="o">.</span><span class="n">probe_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">probe</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Could not read '</span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2">' to build a config for it."</span><span class="p">)</span>
+        <span class="n">config_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">config_path</span> <span class="ow">or</span> <span class="n">Path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span><span class="o">.</span><span class="n">with_suffix</span><span class="p">(</span><span class="s2">".yaml"</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">ask</span> <span class="ow">and</span> <span class="n">config_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">input</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">config_path</span><span class="si">}</span><span class="s2"> already exists. Overwrite it? [y/N] "</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">"y"</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">FileExistsError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">config_path</span><span class="si">}</span><span class="s2"> exists; pass config_path= to save elsewhere."</span><span class="p">)</span>
+
+        <span class="n">decisions</span> <span class="o">=</span> <span class="n">config_builder</span><span class="o">.</span><span class="n">decisions</span><span class="p">(</span><span class="n">probe</span><span class="p">)</span>
+        <span class="n">choices</span> <span class="o">=</span> <span class="n">config_builder</span><span class="o">.</span><span class="n">ask_choices</span><span class="p">(</span><span class="n">decisions</span><span class="p">)</span> <span class="k">if</span> <span class="n">ask</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="n">config_builder</span><span class="o">.</span><span class="n">DEFAULT_CONFIG</span><span class="o">.</span><span class="n">read_text</span><span class="p">()</span>
+        <span class="n">replaced</span> <span class="o">=</span> <span class="n">config_path</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
+        <span class="n">config_path</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">config_builder</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">),</span> <span class="n">probe</span><span class="p">,</span> <span class="n">choices</span><span class="p">))</span>
+
+        <span class="n">pipeline</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">config_path</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">config_path</span><span class="p">))</span>
+        <span class="n">pipeline</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'Replaced'</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">replaced</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">'Wrote'</span><span class="si">}</span><span class="s2"> config </span><span class="si">{</span><span class="n">config_path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ask</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">decisions</span><span class="p">:</span>
+                <span class="n">chosen</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">o</span><span class="p">[</span><span class="s2">"label"</span><span class="p">]</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">d</span><span class="p">[</span><span class="s2">"options"</span><span class="p">]</span> <span class="k">if</span> <span class="n">o</span><span class="p">[</span><span class="s2">"key"</span><span class="p">]</span> <span class="o">==</span> <span class="n">d</span><span class="p">[</span><span class="s2">"default"</span><span class="p">]),</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="n">pipeline</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">d</span><span class="p">[</span><span class="s1">'title'</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">chosen</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">d</span><span class="p">[</span><span class="s1">'detail'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pipeline</span></div>
+
 
 <div class="viewcode-block" id="Pipeline.build_steps">
 <a class="viewcode-back" href="../../api/pelagos_py/pipeline/index.html#pelagos_py.pipeline.Pipeline.build_steps">[docs]</a>

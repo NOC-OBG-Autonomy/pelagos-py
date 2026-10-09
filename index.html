@@ -225,14 +225,16 @@ of processing protocols. This allows academics to “standardise” their proces
 variables which continue to grow. We are always welcome to new suggestions and for those who want to get their hands dirty, we have attempted to make implementation of custom steps as
 simple as possible. See <a class="reference internal" href="development.html"><span class="doc">Development</span></a> for more details.</p>
 <p>Whilst the tool itself is written in python, interfacing with it requires little prior knowledge of the language. In most cases, processing is achieved through a few lines of code:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create the pipeline using the specified config</span>
-<span class="n">Pipe</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">(</span>
-   <span class="n">config_path</span><span class="o">=</span><span class="sa">r</span><span class="s2">"config.yaml"</span>
-<span class="p">)</span>
-<span class="n">Pipe</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><a class="sphinx-codeautolink-a" href="api/pelagos_py/index.html#module-pelagos_py"><span class="nn">pelagos_py</span></a><span class="w"> </span><span class="kn">import</span> <span class="n">Pipeline</span>
+
+<span class="c1"># Create the pipeline using the specified config</span>
+<span class="n">Pipeline</span><span class="o">.</span><span class="n">load_config</span><span class="p">(</span><span class="s2">"config.yaml"</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+<span class="c1"># Or build a config for an OG1 file from the default template, then run it</span>
+<span class="n">Pipeline</span><span class="o">.</span><span class="n">make_config</span><span class="p">(</span><span class="s2">"glider.nc"</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>The only involved part is defining your <code class="docutils literal notranslate"><span class="pre">config.yaml</span></code> which determines the details of how your raw data will be processed. YAML files are designed to be “human readable” so it should
+<p>The only involved part is defining your <code class="docutils literal notranslate"><span class="pre">config.yaml</span></code> (<code class="docutils literal notranslate"><span class="pre">make_config</span></code> builds one for your file to start from), which determines the details of how your raw data will be processed. YAML files are designed to be “human readable” so it should
 be fairly intuitive to set them up. We have provided extensive details in <code class="docutils literal notranslate"><span class="pre">examples/configs/all_step_configs.yaml</span></code> which should help you - but if you see anything that doesn’t
 make sense, let us know so we can improve it.</p>
 <hr class="docutils"/>

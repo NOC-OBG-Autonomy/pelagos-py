@@ -364,6 +364,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../steps/input_output/format_check/index.html">pelagos_py.steps.input_output.format_check</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../steps/input_output/gen_data/index.html">pelagos_py.steps.input_output.gen_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../steps/input_output/load_data/index.html">pelagos_py.steps.input_output.load_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../steps/input_output/prepare_og1/index.html">pelagos_py.steps.input_output.prepare_og1</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../steps/input_output/write_report/index.html">pelagos_py.steps.input_output.write_report</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../steps/input_output/write_report_python/index.html">pelagos_py.steps.input_output.write_report_python</a></li>
 </ul>
@@ -403,10 +404,13 @@
 </ul>
 </details></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../utils/index.html">pelagos_py.utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../utils/config_builder/index.html">pelagos_py.utils.config_builder</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../utils/console/index.html">pelagos_py.utils.console</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/demo_data/index.html">pelagos_py.utils.demo_data</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../utils/diagnostic_capture/index.html">pelagos_py.utils.diagnostic_capture</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../utils/diagnostics/index.html">pelagos_py.utils.diagnostics</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../utils/fig_spec/index.html">pelagos_py.utils.fig_spec</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utils/file_probe/index.html">pelagos_py.utils.file_probe</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../utils/log_levels/index.html">pelagos_py.utils.log_levels</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../utils/palettes/index.html">pelagos_py.utils.palettes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../utils/parameter_spec/index.html">pelagos_py.utils.parameter_spec</a></li>
@@ -500,6 +504,30 @@
 <dd class="field-odd"><p><strong>ConfigMirrorMixin</strong> (<em>Class</em>) – Class to handle configuration</p>
 </dd>
 </dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="pelagos_py.pipeline.Pipeline.load_config">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/pelagos_py/pipeline.html#Pipeline.load_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.pipeline.Pipeline.load_config" title="Link to this definition">#</a></dt>
+<dd><p>Create a pipeline from a YAML config file (same as <code class="docutils literal notranslate"><span class="pre">Pipeline(config_path=...)</span></code>).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Pipeline</span><span class="o">.</span><span class="n">load_config</span><span class="p">(</span><span class="s2">"my_pipeline.yaml"</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pelagos_py.pipeline.Pipeline.make_config">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">make_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/pelagos_py/pipeline.html#Pipeline.make_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.pipeline.Pipeline.make_config" title="Link to this definition">#</a></dt>
+<dd><p>Build a config for an OG1 file from the default template and create a pipeline from it.</p>
+<p>The template’s steps are adapted to what the file holds (e.g. the PAR steps are
+dropped if it has no PAR) and the config is saved to <code class="docutils literal notranslate"><span class="pre">config_path</span></code> (default:
+<code class="docutils literal notranslate"><span class="pre">&lt;file</span> <span class="pre">name&gt;.yaml</span></code> next to the file), so the run can be edited and repeated with
+<a class="reference internal" href="#pelagos_py.pipeline.Pipeline.load_config" title="pelagos_py.pipeline.Pipeline.load_config"><code class="xref py py-meth docutils literal notranslate"><span class="pre">load_config()</span></code></a>. With <code class="docutils literal notranslate"><span class="pre">ask=True</span></code> each choice is asked in the terminal;
+otherwise the defaults are used and logged.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Pipeline</span><span class="o">.</span><span class="n">make_config</span><span class="p">(</span><span class="s2">"glider.nc"</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<span class="n">Pipeline</span><span class="o">.</span><span class="n">make_config</span><span class="p">(</span><span class="s2">"glider.nc"</span><span class="p">,</span> <span class="n">ask</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># build and save only</span>
+</pre></div>
+</div>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.pipeline.Pipeline.build_steps">
 <span class="sig-name descname"><span class="pre">build_steps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">steps_config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/pelagos_py/pipeline.html#Pipeline.build_steps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.pipeline.Pipeline.build_steps" title="Link to this definition">#</a></dt>
@@ -634,6 +662,8 @@
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.pipeline.REPORT_STEP_NAME"><code class="docutils literal notranslate"><span class="pre">REPORT_STEP_NAME</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.pipeline.Pipeline"><code class="docutils literal notranslate"><span class="pre">Pipeline</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.pipeline.Pipeline.load_config"><code class="docutils literal notranslate"><span class="pre">Pipeline.load_config()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.pipeline.Pipeline.make_config"><code class="docutils literal notranslate"><span class="pre">Pipeline.make_config()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.pipeline.Pipeline.build_steps"><code class="docutils literal notranslate"><span class="pre">Pipeline.build_steps()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.pipeline.Pipeline.add_step"><code class="docutils literal notranslate"><span class="pre">Pipeline.add_step()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.pipeline.Pipeline.execute_step"><code class="docutils literal notranslate"><span class="pre">Pipeline.execute_step()</span></code></a></li>
