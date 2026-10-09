@@ -390,3 +390,12 @@ def test_shallow_dives_skip_deep_correction_by_default():
         cb.build(TEMPLATE, "/g.nc", dives(*[290] * 20))
     )
     assert "deep" not in ids(cb.decisions(BASE))
+
+
+def test_manual_qc_dropped_on_request():
+    probe = {**BASE, "BPHASE_DOXY": var(), "DOWNWELLING_PAR": var()}
+    template = cb.DEFAULT_CONFIG.read_text()
+    assert "manual qc" in cb.build(template, "/data/g.nc", probe)
+    text = cb.build(template, "/data/g.nc", probe, manual_qc=False)
+    assert "manual qc" not in text
+    assert "Data Export" in steps_of(text)

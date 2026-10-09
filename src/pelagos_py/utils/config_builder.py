@@ -515,9 +515,11 @@ def build(
     choices=None,
     description=None,
     output_path=None,
+    manual_qc=True,
 ):
     """The template adapted to ``file_path``: paths patched in and each
-    decision's choice applied (defaults where ``choices`` doesn't say)."""
+    decision's choice applied (defaults where ``choices`` doesn't say).
+    ``manual_qc=False`` drops the Manual QC step, which pauses the run for the dashboard."""
     probe = probe if probe is not None else file_probe.probe_file(file_path)
     decs = decisions(probe)
     choices = {**default_choices(decs), **(choices or {})}
@@ -612,5 +614,8 @@ def build(
         for b in blocks:
             if b.name == "Deep Correction":
                 b.sub(r"(?m)^(\s*depth_threshold:)\s*[^\s#]+", rf"\g<1> {deep}")
+
+    if not manual_qc:
+        drop(lambda b: b.section == "MANUAL QC")
 
     return _render(head, blocks, tail)
