@@ -1,6 +1,7 @@
 """Tests the file-specific config builder (src/pelagos_py/utils/config_builder.py)."""
 
 import logging
+from pathlib import Path
 
 import pytest
 import yaml
@@ -91,6 +92,12 @@ steps:
 # ===========================================================
 #                 CHLOROPHYLL CORRECTIONS
 # ===========================================================
+  - name: Deep Correction
+    parameters:
+      apply_to: CHLA
+      depth_threshold: 950     # Only use data below this depth
+    diagnostics: false
+
   - name: CHLA Quenching
     parameters:
       method: thomalla2018
@@ -184,6 +191,15 @@ def test_oxygen_shipped_keeps_only_rename():
     assert "MOLAR_DOXY_ADJUSTED" in text
 
 
+def test_oxygen_shipped_keeps_range_checks_from_real_template():
+    template = (Path(cb.__file__).parents[1] / "default_config.yaml").read_text()
+    probe = {**BASE, "BETA_BACKSCATTERING700": var(), "DOWNWELLING_PAR": var(), "MOLAR_DOXY": var()}
+    text = cb.build(template, "/data/g.nc", probe)
+    assert "            MOLAR_DOXY:\n              4: [0, 1000, outside]" in text
+    assert "            MOLAR_DOXY_ADJUSTED:\n              4: [0, 1000, outside]" in text
+    assert "UNCAL_PHASE_DOXY_PCORR" not in text
+
+
 def test_oxygen_none_and_no_par_drop_sections():
     probe = {**BASE, "BETA_BACKSCATTERING700": var(), "FREQUENCY_DOXY": var()}
     d = ids(cb.decisions(probe))
@@ -192,7 +208,7 @@ def test_oxygen_none_and_no_par_drop_sections():
     text = cb.build(TEMPLATE, "/data/g.nc", probe)
     assert "OXYGEN" not in text and "PAR QC" not in text
     assert steps_of(text) == ["Load OG1", "Prepare OG1", "Apply QC", "Apply QC", "BBP from Beta",
-                              "CHLA Quenching", "Data Export"]
+                              "Deep Correction", "CHLA Quenching", "Data Export"]
 
 
 def test_missing_par_can_be_renamed_from_another_variable():
@@ -274,3 +290,31 @@ def test_paths_with_backslashes_and_hashes_survive():
     config = yaml.safe_load(cb.build(TEMPLATE, path, BASE))
     load = next(s for s in config["steps"] if s["name"] == "Load OG1")
     assert load["parameters"]["file_path"] == path
+
+
+def dives(*depths):
+    return {**BASE, "PRES": {**var(), "dive_depths": list(depths)}}
+
+
+def test_deep_threshold_follows_how_deep_enough_dives_go():
+    assert ids(cb.decisions(dives(*[1000] * 20)))["deep"]["default"] == "950"
+    assert ids(cb.decisions(dives(*[795] * 20)))["deep"]["default"] == "750"
+    # One dive in 30 to 1000 m isn't enough; the depth a tenth of them reach sets it.
+    assert ids(cb.decisions(dives(1000, *[400] * 29)))["deep"]["default"] == "350"
+    assert ids(cb.decisions(dives(*[306] * 20)))["deep"]["default"] == "300"
+
+
+def test_deep_threshold_applied_or_overridden():
+    probe = dives(*[800] * 20)
+    assert "depth_threshold: 750     # Only use data below this depth" in cb.build(TEMPLATE, "/g.nc", probe)
+    text = cb.build(TEMPLATE, "/g.nc", probe, {"deep": "500"})
+    assert "depth_threshold: 500" in text
+    assert "Deep Correction" not in steps_of(cb.build(TEMPLATE, "/g.nc", probe, {"deep": "skip"}))
+
+
+def test_shallow_dives_skip_deep_correction_by_default():
+    d = ids(cb.decisions(dives(*[290] * 20)))["deep"]
+    assert d["default"] == "skip"
+    assert option_keys(d) == ["skip", "250", "200", "150", "100"]
+    assert "Deep Correction" not in steps_of(cb.build(TEMPLATE, "/g.nc", dives(*[290] * 20)))
+    assert "deep" not in ids(cb.decisions(BASE))

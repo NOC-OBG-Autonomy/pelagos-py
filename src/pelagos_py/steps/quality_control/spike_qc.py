@@ -176,7 +176,7 @@ class spike_qc(BaseQC):
     def plot_diagnostics(self):
         matplotlib.use("tkagg")
 
-        plot_vars = self.plot or list(self.variables)  # default to every tested variable
+        plot_vars = self.plot or list(self.variables)
 
         # Plot the QC output
         fig, axes = fig_spec.new_fig(nrows=len(plot_vars), sharex=True)

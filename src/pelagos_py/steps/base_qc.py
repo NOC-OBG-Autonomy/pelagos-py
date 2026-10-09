@@ -17,8 +17,6 @@
 
 import logging
 
-import numpy as np
-
 from pelagos_py.utils import parameter_spec
 
 REGISTERED_QC = {}
@@ -71,7 +69,7 @@ class BaseQC:
     parameter_schema = {}
     required_variables = []
     qc_outputs = []
-    overwrite_flags = False  # True: return_qc merges against existing_flags itself (Apply QC sets it)
+    overwrite_flags = False  # set by Apply QC: return_qc then merges with existing_flags
     existing_flags = None
 
     def __init__(self, data, **kwargs):

@@ -1,12 +1,5 @@
-// WebGL viewer for captured diagnostic figures.
-//
-// The runner writes a JSON spec (layout, labels, limits, trace styling) and a
-// float32 binary of every trace's full x/y beside each diagnostic PNG (see
-// dashboard/fig_spec.py). This draws all of it -- millions of points -- in one
-// WebGL context, with axes, ticks, legend, box-zoom and a click tooltip drawn
-// on plain 2D canvases above and below it. Panels the step drew with
-// sharex/sharey keep their ranges linked. Dates arrive as seconds since the
-// spec's t0 (epoch ms) and are formatted from that here.
+// WebGL viewer for diagnostic figures captured by dashboard/fig_spec.py (JSON spec + float32 binary).
+// Dates arrive as seconds since the spec's t0 (epoch ms).
 
 const Plot = {
   _cache: {},
@@ -17,8 +10,7 @@ const Plot = {
       + '?panel=' + panel + '&trace=' + trace + '&index=' + index;
   },
 
-  // Specs are cached by filename: names are unique within a run and run.js
-  // clears this when the next run starts.
+  // run.js clears this cache when the next run starts.
   fetchSpec(name) {
     if (Plot._cache[name]) return Plot._cache[name];
     Plot._cache[name] = fetch(Plot.specUrl(name)).then((r) => {
@@ -28,8 +20,7 @@ const Plot = {
     return Plot._cache[name];
   },
 
-  // Stream the binary so the caller can show progress; the header is padded to
-  // a 4-byte boundary so every array is a zero-copy view on the one buffer.
+  // Header is padded to 4 bytes so every array is a zero-copy view on the one buffer.
   async fetchBin(name, onProgress, signal) {
     const r = await fetch(Plot.binUrl(name), { signal });
     if (!r.ok) throw new Error('data ' + r.status);
@@ -61,8 +52,7 @@ const Plot = {
     return traces;
   },
 
-  // `manual` ({onSelect, onPoint, onRemove, draw}) turns on the Manual QC selection mode: see
-  // Chart._bind and manual.js.
+  // `manual` turns on the Manual QC selection mode (see Chart._bind and manual.js).
   async render(host, spec, { name, onProgress, signal, manual } = {}) {
     const data = await Plot.fetchBin(name, onProgress, signal);
     if (signal && signal.aborted) throw new DOMException('aborted', 'AbortError');
@@ -77,7 +67,6 @@ const Plot = {
   },
 };
 
-// ---------------------------------------------------------------- ticks ----
 const Ticks = {
   niceStep(span, target) {
     const raw = Math.abs(span) / Math.max(1, target);
@@ -114,8 +103,7 @@ const Ticks = {
   dmy(d) { return d.getUTCDate() + ' ' + Ticks.MONTHS[d.getUTCMonth()] + ' ' + d.getUTCFullYear(); },
   dm(d) { return d.getUTCDate() + ' ' + Ticks.MONTHS[d.getUTCMonth()]; },
 
-  // Ticks on a date axis: values are seconds since t0 (epoch ms). Each has a
-  // main label and, where the day/year changes, a second context line.
+  // Values are seconds since t0; a second label line shows where the day/year changes.
   date(lo, hi, target, t0) {
     const [a, b] = lo < hi ? [lo, hi] : [hi, lo];
     const span = b - a;
@@ -154,7 +142,6 @@ const Ticks = {
   },
 };
 
-// ---------------------------------------------------------------- chart ----
 const VS = `#version 300 es
 in float ax; in float ay; in vec4 ac;
 uniform float uOx, uSx, uOy, uSy, uSize, uOpacity;
@@ -173,7 +160,7 @@ void main() {
   o = vec4(vc.rgb * vc.a, vc.a);  // premultiplied, matching the canvas compositor
 }`;
 
-const CBAR_W = 70; // right gutter reserved for a value-coloured panel's colourbar
+const CBAR_W = 70; // colourbar gutter
 const FG = '#222', MUTED = '#666', GRID = '#e8eaee', FRAME = '#8a8f98', ACCENT = '#0b6bcb';
 const FONT = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 const FONT_B = '600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
@@ -181,8 +168,7 @@ const FONT_B = '600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
 class Chart {
   constructor(host, spec, data, name, manual) {
     this.host = host; this.spec = spec; this.name = name;
-    // Manual QC: boxes already in the config (drawn with an × to remove them) and
-    // the one being drawn now, awaiting a flag. Both in chart coordinates.
+    // Manual QC boxes, in chart coordinates.
     this.manual = manual || null; this.overlays = []; this.pending = null; this.overlayHits = [];
     this.dpr = window.devicePixelRatio || 1;
     this.stage = document.createElement('div');
@@ -197,7 +183,7 @@ class Chart {
 
     this.panels = spec.panels.map((p, i) => this._panel(p, i, data));
     this.box = null; this.pick = null;
-    this.busy = false; // Manual QC re-running: selection is off until the new plot lands
+    this.busy = false; // Manual QC re-running
     this._initGL();
     this._bind();
     this.resize();
@@ -225,7 +211,6 @@ class Chart {
     return { spec: p, traces, home: { x0, x1, y0, y1 }, view: { x0, x1, y0, y1 }, xlog, ylog, rect: null, legendHits: [] };
   }
 
-  // ---- GL setup -----------------------------------------------------------
   _initGL() {
     const gl = this.gl.getContext('webgl2', { antialias: false, alpha: true, premultipliedAlpha: true });
     if (!gl) throw new Error('WebGL2 unavailable');
@@ -253,7 +238,7 @@ class Chart {
       t.bx = buf(t.x); t.by = buf(t.y);
       t.bc = t.rgba ? buf(t.rgba) : null; t.bc0 = t.bc;
       if (t.spec.mode.includes('lines')) {
-        // Segment index list skipping NaN gaps, as matplotlib breaks the line there.
+        // Skip NaN gaps, as matplotlib breaks the line there.
         const idx = new Uint32Array((t.n - 1) * 2);
         let k = 0;
         for (let i = 0; i < t.n - 1; i++) {
@@ -318,7 +303,6 @@ class Chart {
     }
   }
 
-  // ---- layout ---------------------------------------------------------------
   resize() {
     const w = this.host.clientWidth, h = this.host.clientHeight;
     if (!w || !h) return;
@@ -338,8 +322,7 @@ class Chart {
     ctx.font = FONT;
     this.panels.forEach((p, i) => {
       const c = p.spec.cell;
-      // A panel with a sharex sibling below it borrows that one's x axis (matplotlib
-      // hides the upper tick labels too), so skip its labels and the room for them.
+      // matplotlib hides tick labels on the upper panel of a sharex pair, so skip them and their room.
       p.xHidden = this.panels.some((q, j) => q !== p && q.spec.share_x === p.spec.share_x && (
         c && q.spec.cell ? q.spec.cell[1] > c[1] && q.spec.cell[0] < c[0] + c[2] && c[0] < q.spec.cell[0] + q.spec.cell[2] : j > i));
       const outer = c
@@ -352,8 +335,11 @@ class Chart {
       const mb = p.xHidden ? 8 : (p.spec.xdate ? 34 : 22) + (p.spec.xlabel ? 16 : 0);
       p.outer = outer;
       const cb = p.spec.cbar;
-      // A categorical key is as wide as its longest label (dot + gap before it).
-      const keyW = cb && cb.categories ? Math.max(ctx.measureText(cb.label).width, ...cb.categories.map(([l]) => ctx.measureText(l).width + 16)) + 10 : CBAR_W;
+      let keyW = CBAR_W;
+      if (cb && cb.categories) {
+        const labelWidths = cb.categories.map(([label]) => ctx.measureText(label).width + 16);
+        keyW = Math.max(ctx.measureText(cb.label).width, ...labelWidths) + 10;
+      }
       const mr = cb ? 16 + keyW : 16;
       p.rect = { x: outer.x + ml, y: outer.y + mt, w: Math.max(20, outer.w - ml - mr), h: Math.max(20, outer.h - mt - mb) };
     });
@@ -365,13 +351,11 @@ class Chart {
       : Ticks.numeric(v.y0, v.y1, target, p.ylog);
   }
 
-  // Data <-> CSS pixel maps for one panel.
   px(p, x) { return p.rect.x + (x - p.view.x0) / (p.view.x1 - p.view.x0) * p.rect.w; }
   py(p, y) { return p.rect.y + p.rect.h - (y - p.view.y0) / (p.view.y1 - p.view.y0) * p.rect.h; }
   dx(p, px) { return p.view.x0 + (px - p.rect.x) / p.rect.w * (p.view.x1 - p.view.x0); }
   dy(p, py) { return p.view.y0 + (p.rect.y + p.rect.h - py) / p.rect.h * (p.view.y1 - p.view.y0); }
 
-  // ---- 2D drawing -------------------------------------------------------------
   draw() {
     if (!this.w) return;
     this.layout();
@@ -435,9 +419,7 @@ class Chart {
     this._drawColourbar(p, fg);
   }
 
-  // Colour scale for a value-coloured scatter (panel spec.cbar): a tall thin bar
-  // in the gutter right of the panel, a grey "missing" swatch beneath it; for a
-  // categorical variable (cbar.categories: [[label, colour]]) a list of swatches.
+  // Colourbar in the right gutter, or a list of swatches for a categorical variable.
   _drawColourbar(p, fg) {
     const cb = p.spec.cbar;
     if (!cb) return;
@@ -474,7 +456,6 @@ class Chart {
       fg.fillStyle = '#d0d4d8'; fg.beginPath(); fg.arc(x + bw / 2, my, 3.5, 0, Math.PI * 2); fg.fill();
       fg.fillStyle = FG; fg.fillText('missing', x + bw + 5, my);
     }
-    // Label along the bar, rotated like a y-axis label.
     fg.save(); fg.translate(x + CBAR_W - 6, r.y + bh / 2); fg.rotate(-Math.PI / 2);
     fg.textAlign = 'center'; fg.fillStyle = MUTED; fg.fillText(cb.label, 0, 0); fg.restore();
   }
@@ -533,24 +514,7 @@ class Chart {
 
   _rgbaCss(rgba, i) { return 'rgba(' + rgba[i * 4] + ',' + rgba[i * 4 + 1] + ',' + rgba[i * 4 + 2] + ',' + (rgba[i * 4 + 3] / 255) + ')'; }
 
-  // Manual QC live preview: fn(trace, rgba) fills a per-point colour buffer for
-  // each single-colour marker trace; null restores the trace colours.
-  recolour(fn) {
-    const gl = this.ctx;
-    for (const p of this.panels) for (const t of p.traces) {
-      if (!t.spec.mode.includes('markers') || t.rgba) continue;
-      if (!fn) { t.bc = t.bc0; continue; }
-      const arr = new Uint8Array(t.n * 4);
-      fn(t, arr);
-      if (!t.bcDyn) t.bcDyn = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, t.bcDyn); gl.bufferData(gl.ARRAY_BUFFER, arr, gl.DYNAMIC_DRAW);
-      t.bc = t.bcDyn;
-    }
-    this.draw();
-  }
-
-  // Manual QC boxes, in chart coordinates: [{x0, x1, y0, y1, color, label, hi}];
-  // a point is {point: true, x0, y0, ...}.
+  // [{x0, x1, y0, y1, color, label, hi}]; a point is {point: true, x0, y0, ...}.
   setOverlays(list) { this.overlays = list || []; this._drawFG(); }
   clearPending() { this.pending = null; this._drawFG(); }
 
@@ -563,7 +527,6 @@ class Chart {
     for (const o of this.overlays) {
       let x, y, w, h;
       if (o.point) {
-        // A single sample: a ring, label pinned to its top-right.
         const cx = this.px(p, o.x0), cy = this.py(p, o.y0);
         fg.strokeStyle = o.color; fg.lineWidth = o.hi ? 3 : 2; fg.beginPath(); fg.arc(cx, cy, 7, 0, Math.PI * 2); fg.stroke();
         x = cx + 8; y = cy - 8; w = 0; h = 0;
@@ -575,7 +538,7 @@ class Chart {
         fg.strokeRect(x + 0.5, y + 0.5, w, h);
         fg.setLineDash([]);
       }
-      // Label + × at the top-right corner; the × is the remove hit area.
+      // The × is the remove hit area.
       const label = o.label || '';
       fg.font = FONT_B; const tw = label ? fg.measureText(label).width + 8 : 0;
       const bx = o.point ? x + tw : Math.min(x + w, r.x + r.w) - 18, by = Math.max(y, r.y);
@@ -616,7 +579,6 @@ class Chart {
     }
   }
 
-  // ---- interaction ------------------------------------------------------------
   _panelAt(x, y) {
     return this.panels.find((p) => x >= p.rect.x && x <= p.rect.x + p.rect.w && y >= p.rect.y && y <= p.rect.y + p.rect.h) || null;
   }
@@ -638,13 +600,11 @@ class Chart {
         const ohit = this.overlayHits.find((h) => x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h);
         if (ohit) { this.manual.onRemove(ohit.box); return; }
       }
-      // Manual QC: a drag selects a region instead of zooming — plain drag in
-      // draw mode, ⌘/Ctrl-drag otherwise (the modifier flips the mode).
-      const mod = ev.metaKey || ev.ctrlKey;
-      const draw = !!(this.manual && this.manual.draw && this.manual.draw());
-      // Boxes are only drawn on the main (first) panel; a side panel just zooms.
+      // A plain drag selects a region; Cmd/Ctrl- or Shift-drag zooms.
+      const zoom = ev.metaKey || ev.ctrlKey || ev.shiftKey;
+      // Boxes are only drawn on the main panel.
       const main = p === this.panels[0];
-      this.box = { panel: p, x0: x, y0: y, x1: x, y1: y, select: !!(this.manual && main && (draw ? !mod : mod)) };
+      this.box = { panel: p, x0: x, y0: y, x1: x, y1: y, select: !!(this.manual && main && !zoom) };
       el.setPointerCapture(ev.pointerId);
     };
     const move = (ev) => {
@@ -660,7 +620,6 @@ class Chart {
       const b = this.box; this.box = null;
       const big = Math.abs(b.x1 - b.x0) > 4 && Math.abs(b.y1 - b.y0) > 4;
       if (b.select) {
-        // A ⌘/Ctrl-click (no drag) picks the single nearest sample.
         if (!big) {
           const near = this._nearest(b.panel, b.x0, b.y0);
           this._drawFG();
@@ -683,14 +642,17 @@ class Chart {
     el.addEventListener('pointermove', move);
     el.addEventListener('pointerup', up);
     el.addEventListener('pointercancel', () => { this.box = null; this._drawFG(); });
-    el.addEventListener('dblclick', (ev) => { ev.preventDefault(); this.reset(); });
+    el.addEventListener('dblclick', (ev) => {
+      ev.preventDefault();
+      if (this.manual && this.manual.onDoubleClick) this.manual.onDoubleClick();
+      this.reset();
+    });
     this._onKey = (ev) => { if (ev.key === 'Escape' && this.pick) { this.pick = null; this.tip.classList.add('hidden'); this._drawFG(); ev.stopPropagation(); } };
     document.addEventListener('keydown', this._onKey, true);
   }
 
-  // Redraw just the top 2D layer (axes, legend, box drag, pick marker).
   _drawFG() {
-    if (!this.w) return; // not laid out yet (host hidden or unsized); draw() will
+    if (!this.w) return; // not laid out yet
     const fg = this.fg.getContext('2d');
     fg.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); fg.clearRect(0, 0, this.w, this.h); fg.font = FONT;
     if (this.spec.suptitle) { fg.fillStyle = FG; fg.font = FONT_B; fg.textAlign = 'center'; fg.textBaseline = 'middle'; fg.fillText(this.spec.suptitle, this.w / 2, 13); }
@@ -698,9 +660,7 @@ class Chart {
     this._drawOverlay(fg);
   }
 
-  // Box-zoom: x follows the panel's sharex group, y its sharey group. Ranges
-  // are given as [lo, hi] in data units and re-oriented to each panel's own
-  // direction so an inverted depth axis stays inverted.
+  // Ranges are re-oriented to each panel's direction so an inverted depth axis stays inverted.
   zoomTo(panel, xr, yr) {
     xr = [Math.min(...xr), Math.max(...xr)]; yr = [Math.min(...yr), Math.max(...yr)];
     for (const p of this.panels) {
@@ -722,25 +682,7 @@ class Chart {
     this.draw();
   }
 
-  // Manual QC profile panel: grey the points whose `keep[i]` is false (a
-  // per-point rgba trace only); null restores the trace's own colours.
-  dim(t, keep) {
-    const gl = this.ctx;
-    if (!t.rgba) return;
-    if (!keep) { t.bc = t.bc0; return; }
-    const arr = new Uint8Array(t.rgba);
-    for (let i = 0; i < t.n; i++) {
-      if (keep[i]) continue;
-      // Premultiplied grey at ~35% alpha.
-      arr[i * 4] = 55; arr[i * 4 + 1] = 57; arr[i * 4 + 2] = 61; arr[i * 4 + 3] = 90;
-    }
-    if (!t.bcDyn) t.bcDyn = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, t.bcDyn); gl.bufferData(gl.ARRAY_BUFFER, arr, gl.DYNAMIC_DRAW);
-    t.bc = t.bcDyn;
-  }
-
-  // Nearest visible point within 12px of a canvas point, or null; brute force
-  // over every point is ~tens of ms even at millions, and only runs on click.
+  // Brute force is ~tens of ms even at millions of points, and only runs on click.
   _nearest(p, cx, cy) {
     const R2 = 12 * 12;
     const kx = p.rect.w / (p.view.x1 - p.view.x0), ky = p.rect.h / (p.view.y1 - p.view.y0);
@@ -765,7 +707,7 @@ class Chart {
     const pick = { panel: p, trace: t, index: best.index, x: t.x[best.index], y: t.y[best.index], exact: null };
     this.pick = pick;
     this._drawFG();
-    if (!this.name) return; // built in the browser (Manual QC profile view): no float64 copy to fetch
+    if (!this.name) return; // built in the browser: no float64 copy to fetch
     fetch(Plot.pointUrl(this.name, this.panels.indexOf(p), best.traceIndex, best.index))
       .then((r) => (r.ok ? r.json() : null))
       .then((ex) => { if (this.pick === pick && ex) { pick.exact = ex; this._drawFG(); } })
@@ -797,7 +739,7 @@ class Chart {
     this.tip.style.left = left + 'px'; this.tip.style.top = top + 'px';
   }
 
-  // PNG of the current view: the GL layer is redrawn so its buffer is fresh.
+  // Redraw the GL layer first so its buffer is fresh.
   toPNG() {
     const out = document.createElement('canvas');
     out.width = this.gl.width; out.height = this.gl.height;

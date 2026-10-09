@@ -81,7 +81,7 @@ for your OG1 file or from a config you already have:
    pipeline = Pipeline.load_config("my_pipeline.yaml")
 
 To try it without your own data, ``get_demo_file`` downloads a demo OG1 file into
-``examples/data/OG1`` (only the first time) and returns its path; ``get_demo_file()`` lists the demos. ``examples/python/run_demo.py`` does this end to end:
+``~/Documents/pelagos-py/demo_data`` (only the first time) and returns its path; ``get_demo_file()`` lists the demos. ``examples/python/run_demo.py`` does this end to end:
 
 .. code-block:: python
 

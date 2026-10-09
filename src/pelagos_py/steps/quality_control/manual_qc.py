@@ -26,35 +26,32 @@ import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
 import xarray as xr
-from pelagos_py.utils import fig_spec, palettes
+from pelagos_py.utils import fig_spec
 
 
 @register_qc
 class manual_qc(BaseQC):
     """
-    Flag samples by hand-drawn boxes: each box is a 2D range test on an
-    ``x_variable``/``y_variable`` plot, and every sample inside (or outside) it
-    gets the box's flag on the listed variables. The dashboard builds the boxes
-    for you — pause on this test, cmd/ctrl-drag a box on the plot, pick a flag —
-    but the config it writes is plain YAML, so the run is repeatable anywhere.
+    Flag samples inside (or outside) boxes drawn on an ``x_variable`` vs
+    ``y_variable`` plot. The dashboard lets you draw the boxes, but the result
+    is plain YAML, so the run can be repeated anywhere.
 
-    Unlike other tests this one starts from the existing flags and *replaces*
-    them: a box overrides whatever flag a sample had (bad -> good included),
-    later boxes winning on overlap. Set ``override: false`` on a box to merge
-    it by the Argo combinatrix instead (can raise but never lower a flag).
-    Missing samples stay 9. A box whose ``x`` and ``y`` are single values is a
-    point: it flags just the one sample nearest to it (cmd/ctrl-click in the
-    dashboard). A box may name its own ``x_variable``/``y_variable`` (the plot
-    it was drawn on; the dashboard's plot switcher does this), else it uses the
-    test's. A box with ``profiles`` (or ``cycles``) only touches samples whose
-    ``PROFILE_NUMBER`` (or ``CYCLE``) is listed; the dashboard's profile view
-    writes these, and needs Find Profiles to have run. ``y_variable`` is always flagged, so its existing ``_QC`` is loaded
-    and shown on the plot. Samples no box touches get flag 1 when
-    ``flag_remaining_good`` is on (the default), else keep what they had.
+    ``variables`` lists the variables to QC: a name, or a list of names flagged
+    together. Each box flags its own ``variables`` (default: its ``y_variable``).
+
+    - A box replaces existing flags, bad -> good included, and later boxes win
+      where they overlap. With ``override: false`` it merges by the Argo
+      combinatrix instead, so a flag can only get worse.
+    - A box with single ``x`` and ``y`` values is a point: it flags the nearest sample.
+    - A box can name its own ``x_variable``/``y_variable``, else it uses the test's.
+    - ``profiles`` (or ``cycles``) limits a box to those ``PROFILE_NUMBER``
+      (or ``CYCLE``) values, so Find Profiles must have run.
+    - Missing samples stay 9. Samples no box touches get 1 when
+      ``flag_remaining_good`` is on (the default), else keep their flag.
 
     Target Variable: Any
     Flag Number: Any (user-defined, 0-9)
-    Variables Flagged: Any (each box's ``variables``; defaults to ``y_variable``)
+    Variables Flagged: ``variables``, plus each box's own
 
     EXAMPLE
     -------
@@ -64,23 +61,23 @@ class manual_qc(BaseQC):
           parameters:
             qc_settings:
               manual qc:
-                x_variable: TIME              # default
-                y_variable: PRES              # default; the dashboard dropdown changes it
-                boxes:                        # one line per box; block style works too
-                  # inside the box; variables optional, defaults to [y_variable]
-                  - {x: ["2024-05-02T10:00:00", "2024-05-02T14:30:00"], y: [0, 15], flag: 4, mode: inside, variables: [PRES, TEMP]}
-                  # everything outside; override false merges by combinatrix, never lowers a flag
+                variables: [CHLA, [TEMP, PSAL]]   # CHLA alone, TEMP and PSAL together
+                x_variable: TIME              # axes for boxes that don't name their own
+                y_variable: PRES
+                boxes:
+                  - {x: ["2024-05-02T10:00:00", "2024-05-02T14:30:00"], y: [0, 15], flag: 4, mode: inside, variables: [TEMP, PSAL]}
+                  # everything outside, merged so no flag gets better
                   - {x: ["2024-05-01", "2024-05-20"], y: [0, 1000], flag: 3, mode: outside, override: false}
                   # a point: the nearest sample only
                   - {x: ["2024-05-03T08:12:30"], y: [42.5], flag: 4}
                   - x: ["2024-05-04", "2024-05-05"]
                     y: [10, 12]
                     flag: 3
-                    y_variable: TEMP          # drawn on the TEMP plot, flags TEMP
-                  # drawn in the dashboard's profile view: only profile 42
+                    y_variable: TEMP          # drawn on TEMP vs TIME, flags TEMP
+                  # only within profile 42
                   - {x: [0.8, 3], y: [0, 20], flag: 4, x_variable: CHLA, y_variable: PRES, variables: [CHLA], profiles: [42]}
                 flag_remaining_good: true     # untouched samples become 1 (good)
-          diagnostics: true                   # the plot the dashboard pauses on
+          diagnostics: true
     """
 
     qc_name = "manual qc"
@@ -88,16 +85,22 @@ class manual_qc(BaseQC):
     overwrite_flags = True  # Apply QC replaces the columns this returns instead of merging them
 
     parameter_schema = {
+        "variables": {
+            "type": list,
+            "default": [],
+            "description": "Variables to QC, one entry per dashboard plot: a name or a list of names "
+                           "flagged together, e.g. [CHLA, [TEMP, PSAL]].",
+        },
         "x_variable": {
             "type": str,
             "default": "TIME",
-            "description": "Variable on the plot's x axis; box x bounds are in its units "
-                           "(ISO timestamps for TIME).",
+            "description": "x axis for boxes that don't name their own; box x bounds are in its "
+                           "units (ISO timestamps for TIME).",
         },
         "y_variable": {
             "type": str,
             "default": "PRES",
-            "description": "Variable on the plot's y axis; box y bounds are in its units.",
+            "description": "y axis for boxes that don't name their own; box y bounds are in its units.",
         },
         "boxes": {
             "type": list,
@@ -105,19 +108,6 @@ class manual_qc(BaseQC):
             "description": "List of {x: [lo, hi], y: [lo, hi], flag: 0-9, mode: inside|outside, "
                            "variables: [...], override: true, profiles|cycles: [...]} boxes; single-value x/y "
                            "is a point (nearest sample). Drawn in the dashboard, or written by hand.",
-        },
-        "colour_variable": {
-            "type": str,
-            "default": None,
-            "description": "Colour the plot's points by this variable instead of by flag; flags "
-                           "then show as a ring around non-good points.",
-        },
-        "profile_plot": {
-            "type": bool,
-            "default": False,
-            "description": "With colour_variable: add a side panel of colour_variable vs y_variable "
-                           "(a profile view), thinned to 100k points. The dashboard greys the "
-                           "points outside the main plot's zoom.",
         },
         "flag_remaining_good": {
             "type": bool,
@@ -130,7 +120,8 @@ class manual_qc(BaseQC):
         super().__init__(data, **kwargs)
         self.boxes = [self._check_box(b) for b in self.boxes]
 
-        targets = [self.y_variable]
+        self.groups = [[v] if isinstance(v, str) else list(v) for v in self.variables]
+        targets = list(dict.fromkeys(v for group in self.groups for v in group))
         axes = [self.x_variable, self.y_variable]
         for box in self.boxes:
             axes += [box["x_variable"], box["y_variable"]]
@@ -140,8 +131,6 @@ class manual_qc(BaseQC):
                 if var not in targets:
                     targets.append(var)
         self.target_variables = targets
-        if self.colour_variable:
-            axes.append(self.colour_variable)
         self.required_variables = list(dict.fromkeys(axes + targets))
         self.qc_outputs = [f"{var}_QC" for var in targets]
 
@@ -181,12 +170,15 @@ class manual_qc(BaseQC):
     def _axis_values(self, var):
         vals = self.data[var].values
         if np.issubdtype(vals.dtype, np.datetime64):
-            return vals.astype("datetime64[ns]").astype("int64").astype(float), True
+            # NaT would cast to a finite int64, so mask it to NaN like a missing number
+            nanos = vals.astype("datetime64[ns]").astype("int64").astype(float)
+            nanos[np.isnat(vals)] = np.nan
+            return nanos, True
         return vals.astype(float), False
 
     @staticmethod
     def _bound(value, is_time):
-        # Box bounds arrive as YAML scalars: ISO strings (or datetimes) on a time axis.
+        # on a time axis, bounds are ISO strings or datetimes
         if is_time:
             return float(pd.Timestamp(value).to_datetime64().astype("datetime64[ns]").astype("int64"))
         return float(value)
@@ -228,6 +220,8 @@ class manual_qc(BaseQC):
                     axes[var] = self._axis_values(var)
 
         qc_arrays = {var: self._start_flags(var) for var in self.target_variables}
+        # Kept for the plot: Apply QC writes the result into existing_flags straight after
+        self.start_flags = {var: qc.copy() for var, qc in qc_arrays.items()}
         for box in self.boxes:
             hit = self._box_mask(box, *axes[box["x_variable"]], *axes[box["y_variable"]])
             for var in box["variables"]:
@@ -249,105 +243,45 @@ class manual_qc(BaseQC):
         x = self.data[xv].values
         y = self.data[yv].values
         x_time = np.issubdtype(x.dtype, np.datetime64)
-
-        # Colour by the result (this test's flags include the existing ones), but
-        # draw one series per (existing, result) pair with the existing flag in the
-        # gid: the dashboard's live preview restarts from it. One legend entry per result.
-        before = self._start_flags(yv)
-        shown = self.flags[f"{yv}_QC"].values
-
-        cv = self.colour_variable
-        profile = bool(cv and self.profile_plot)
-        fig, axes = fig_spec.new_fig(1, 2, sharey=True, width_ratios=(3, 1)) if profile else fig_spec.new_fig()
-        ax = axes[0][0]
-        if cv:
-            c = self.data[cv].values.astype(float)
-            cmap = palettes.cmap_for_variable(cv, default=plt.get_cmap("viridis"))
-            fill = c
-            cats = fig_spec.categories(self.data[cv])
-            if cats:
-                # A categorical variable (e.g. SCI_PHASE): one fixed colour per category, not a scale.
-                cmap = None
-                fill = np.tile(matplotlib.colors.to_rgba("#d0d4d8"), (len(c), 1))
-                for value, _, colour in cats:
-                    fill[c == value] = matplotlib.colors.to_rgba(colour)
-            # Samples with no colour value: grey, drawn under everything (zorder and,
-            # in the dashboard, as a line before the collections).
-            nocol = ~np.isfinite(c)
-            if nocol.any():
-                ax.plot(x[nocol], y[nocol], ls="", marker="o", markersize=fig_spec.MARKER,
-                        markeredgewidth=0, color="#d0d4d8", zorder=0.5, label=f"no {cv}")
-        labelled = set()
-        for code in np.unique(shown * 10 + before):
-            f, b = divmod(int(code), 10)
-            m = (shown == f) & (before == b)
-            label = fig_spec.flag_label(f) if f not in labelled else "_"
-            labelled.add(f)
-            if cv:
-                # Flag as a ring under the coloured fill (drawn after, below); good
-                # points get an invisible ring so the live preview can recolour it.
-                ax.plot(x[m], y[m], ls="", marker="o", markersize=fig_spec.MARKER * 1.9,
-                        markeredgewidth=0, color=fig_spec.FLAG_COLOURS[f],
-                        alpha=0.0 if f == 1 else 1.0, label=label)
-                ax.lines[-1].set_gid(f"ring:{b}")
+        # One panel per QC'd group, coloured by the flags of its first variable where it has data.
+        groups = self.groups or [[v] for v in self.target_variables] or [[yv]]
+        fig, axes = fig_spec.new_fig(len(groups), 1, sharex=True)
+        for ax, group in zip((row[0] for row in axes), groups):
+            var = group[0]
+            has = np.isfinite(self.data[var].values.astype(float))
+            if f"{var}_QC" in self.flags:
+                fig_spec.flag_points(ax, x[has], y[has], self.flags[f"{var}_QC"].values[has])
             else:
-                fig_spec.points(ax, x[m], y[m], color=fig_spec.FLAG_COLOURS[f], label=label)
-                ax.lines[-1].set_gid(f"flag:{b}")
-        if cv:
-            # No colorbar (it would drop the dashboard view to PNG); the range is in the title.
-            ax.scatter(x, y, c=fill, cmap=cmap, s=fig_spec.MARKER ** 2, linewidths=0, label="_fill")
-            # None (JSON null) when the variable has no finite values at all.
-            lo, hi = (float(np.nanmin(c)), float(np.nanmax(c))) if (~nocol).any() else (None, None)
-            # A real colorbar would drop the dashboard view to PNG: the viewer draws this one.
-            ax._pelagos_cbar = {"label": fig_spec.axis_label(cv, self.data[cv].attrs.get("units")),
-                                "missing": bool(nocol.any())}
-            if cats:
-                ax._pelagos_cbar["categories"] = [[f"{v} {m}", col] for v, m, col in cats if (c == v).any()]
-            else:
-                ax._pelagos_cbar.update(lo=lo, hi=hi, stops=[matplotlib.colors.to_hex(cmap(t)) for t in np.linspace(0, 1, 32)])
-        if profile:
-            # Profile view: colour variable on x, same y. Every step-th sample (budget
-            # 100k); the gid tells the dashboard the stride back into the main fill.
-            step = max(1, int(np.ceil(len(y) / 100_000)))
-            pax = axes[0][1]
-            pax.scatter(c[::step], y[::step], c=fill[::step], cmap=cmap, s=fig_spec.MARKER ** 2,
-                        linewidths=0, label="_profile")
-            pax.collections[-1].set_gid(f"profile:{step}")
-            fig_spec.style_axes(pax, xlabel=fig_spec.axis_label(cv, self.data[cv].attrs.get("units")))
-            pax.tick_params(labelleft=False)
-
-        # Box outlines (points as rings), coloured by flag; underscore labels keep them out of the legend.
-        for box in self.boxes:
-            if (box["x_variable"], box["y_variable"]) != (xv, yv):
-                continue
-            try:
-                bx = sorted(pd.Timestamp(v).to_datetime64() if x_time else float(v) for v in box["x"])
-                by = sorted(float(v) for v in box["y"])
-            except (TypeError, ValueError):
-                continue
-            colour = fig_spec.FLAG_COLOURS.get(box["flag"], "k")
-            if len(bx) == 1:
-                ax.plot(bx, by, "o", mfc="none", mec=colour, ms=9, mew=1.5, label="_point")
-                continue
-            (x0, x1), (y0, y1) = bx, by
-            ax.plot(
-                [x0, x1, x1, x0, x0], [y0, y0, y1, y1, y0], "--", lw=1.2, color=colour, label="_box",
+                fig_spec.points(ax, x[has], y[has], color="#9aa5ad")
+            for box in self.boxes:
+                if (box["x_variable"], box["y_variable"]) != (xv, yv) or box["variables"] != group:
+                    continue
+                self._draw_box(ax, box, x_time)
+            fig_spec.style_axes(
+                ax,
+                title=" + ".join(group),
+                xlabel=fig_spec.axis_label(xv, self.data[xv].attrs.get("units")) if not x_time else "Time",
+                ylabel=fig_spec.axis_label(yv, self.data[yv].attrs.get("units")),
             )
-
-        fig_spec.style_axes(
-            ax,
-            xlabel=fig_spec.axis_label(xv, self.data[xv].attrs.get("units")) if not x_time else "Time",
-            ylabel=fig_spec.axis_label(yv, self.data[yv].attrs.get("units")),
-        )
-        if x_time:
-            fig_spec.date_axis(ax, which="x", index=x)
-        if yv in ("PRES", "DEPTH"):
-            ax.invert_yaxis()
-        fig_spec.legend(ax, title="Flag")
-        title = f"Manual QC — {yv} vs {xv}"
-        if cv:
-            title += f" · coloured by {cv}"
-            if not cats:
-                title += f" ({lo:.3g} – {hi:.3g})" if lo is not None else " (no values)"
-        fig_spec.finish(fig, suptitle=title)
+            if x_time:
+                fig_spec.date_axis(ax, which="x", index=x)
+            if yv in ("PRES", "DEPTH"):
+                ax.invert_yaxis()
+            fig_spec.legend(ax, title="Flag")
+        fig_spec.finish(fig, suptitle=f"Manual QC — {yv} vs {xv}")
         plt.show(block=True)
+
+    @staticmethod
+    def _draw_box(ax, box, x_time):
+        # a point is drawn as a ring; '_' labels keep boxes out of the legend
+        try:
+            bx = sorted(pd.Timestamp(v).to_datetime64() if x_time else float(v) for v in box["x"])
+            by = sorted(float(v) for v in box["y"])
+        except (TypeError, ValueError):
+            return
+        colour = fig_spec.FLAG_COLOURS.get(box["flag"], "k")
+        if len(bx) == 1:
+            ax.plot(bx, by, "o", mfc="none", mec=colour, ms=9, mew=1.5, label="_point")
+            return
+        (x0, x1), (y0, y1) = bx, by
+        ax.plot([x0, x1, x1, x0, x0], [y0, y0, y1, y1, y0], "--", lw=1.2, color=colour, label="_box")

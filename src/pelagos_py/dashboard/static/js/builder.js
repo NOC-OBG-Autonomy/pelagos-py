@@ -1,11 +1,6 @@
-// The pipeline builder: step palette, the ordered list of steps, and the
-// schema-driven forms inside each. Everything here is derived from the live
-// registry, so new steps need no builder changes.
+// The pipeline builder. Built from the live registry, so new steps need no changes here.
 
-// `nodes` is the ordered pipeline: each entry is either a step item or a
-// section (a named, contiguous run of steps). `items` is the flattened step
-// list, kept in sync by syncItems() — everything outside the builder (YAML
-// generation, validation indices, YAML⇄builder highlighting) reads that.
+// `nodes` holds steps and sections; `items` is the flat step list (syncItems) the rest of the app reads.
 const STATE = {
   registry: null,
   stepsByName: {},
@@ -30,7 +25,6 @@ function syncItems() {
   STATE.pipeline.items = out;
 }
 
-// Where does a step live? -> {list, index, section} (section null when loose).
 function locateStep(id) {
   const nodes = STATE.pipeline.nodes;
   for (let i = 0; i < nodes.length; i++) {
@@ -50,9 +44,7 @@ function sectionOfStep(id) {
   return loc ? loc.section : null;
 }
 
-// A step is treated as a QC container if it declares a `qc_settings` dict param
-// (i.e. the Apply QC step). Detected by shape, not by name, so a future
-// QC-applying step gets the same smart editor for free.
+// Detected by shape (a `qc_settings` param), not by name, so a new QC-applying step also works.
 function isQcContainer(def) {
   return (def.parameters || []).some(
     (p) => p.name === 'qc_settings' && (p.type === 'dict' || (Array.isArray(p.type) && p.type.includes('dict')))
@@ -66,8 +58,7 @@ function initValues(def) {
 }
 
 // ------------------------------------------------------- all-diagnostics
-// Every diagnostics switch that gates a plot: per QC test (its effective value)
-// for an Apply QC step with tests, else the step's own switch.
+// Per QC test for an Apply QC step with tests, else the step's own switch.
 function diagnosticsLeaves() {
   const leaves = [];
   for (const item of STATE.pipeline.items) {
@@ -93,9 +84,7 @@ function allDiagnosticsState() {
   return 'custom';
 }
 
-// Flip every diagnostics switch in the pipeline to `v`, the same way a single
-// step's own switch does (and, for Apply QC, clearing per-test overrides so
-// every test unambiguously follows the master).
+// Also clears Apply QC per-test overrides so every test follows the master.
 function setAllDiagnostics(v) {
   for (const item of STATE.pipeline.items) {
     item.diagnostics = v;
@@ -110,8 +99,6 @@ function setAllDiagnostics(v) {
 }
 
 // ---------------------------------------------------------------- step picker
-// A searchable popover of every registered step (and QC test), opened from an
-// "Add step" button; a click inserts at that button's position.
 let picker = null;
 
 function closeStepPicker() {
@@ -175,7 +162,6 @@ function renderPaletteInto(host, filter, on) {
   const all = STATE.registry.steps;
   for (const [cat, title] of cats) {
     const match = (x) => !f || x.name.toLowerCase().includes(f) || (x.description || '').toLowerCase().includes(f);
-    // A QC container stays listed while any of its tests matches the search.
     const items = all.filter(
       (s) => s.category === cat && (match(s) || (isQcContainer(s) && STATE.registry.qc.some(match)))
     );
@@ -187,9 +173,7 @@ function renderPaletteInto(host, filter, on) {
     group.appendChild(h);
     for (const s of items) {
       group.appendChild(paletteItem(s.name, s.description, { kind: 'new', name: s.name }, () => on.step(s.name)));
-      // The QC tests sit under their container step so one can be dragged in
-      // directly: onto an existing Apply QC card to join it, or anywhere else
-      // to make a new Apply QC step holding just that test.
+      // QC tests are listed under their container so one can be dragged straight in.
       if (isQcContainer(s)) {
         for (const qc of STATE.registry.qc) {
           if (!match(s) && !match(qc)) continue;
@@ -208,8 +192,8 @@ function paletteItem(name, description, drag, onClick) {
   const el = document.createElement('div');
   el.className = 'palette-item';
   el.draggable = true;
-  el.innerHTML = `<div class="pi-name">${name}</div>` +
-    (description ? `<div class="pi-desc">${description}</div>` : '');
+  el.innerHTML = `<div class="pi-name">${escapeHtml(name)}</div>` +
+    (description ? `<div class="pi-desc">${escapeHtml(description)}</div>` : '');
   el.onclick = onClick;
   el.addEventListener('dragstart', (e) => {
     el.classList.add('dragging');
@@ -223,9 +207,7 @@ function paletteItem(name, description, drag, onClick) {
   return el;
 }
 
-// The arrow between two slots of a list (or after its last one, `tail`); hovering
-// it offers the "+" that inserts a step there. While running, arrows into steps
-// already reached are lit.
+// While running, arrows into steps already reached are lit.
 function flowLink(list, index, tail = false) {
   const el = document.createElement('div');
   el.className = 'flow-link' + (tail ? ' tail' : '');
@@ -233,7 +215,7 @@ function flowLink(list, index, tail = false) {
   const into = STATE.pipeline.items.indexOf(isSection(next) ? next.steps[0] : next);
   const cur = RunLock.running ? (RunLock.runningIndex ?? RunLock.index) : null;
   if (cur != null && into >= 0 && into <= cur) el.classList.add('done');
-  const empty = tail && list === STATE.pipeline.nodes && !list.length; // nothing to hover yet, so a labelled button
+  const empty = tail && list === STATE.pipeline.nodes && !list.length;
   if (empty) el.classList.add('empty');
   el.appendChild(Forms.button(empty ? 'Add step' : '', { icon: 'plus', iconSize: 12, cls: 'add-step sm',
     title: tail && list !== STATE.pipeline.nodes ? 'Add a step at the end of this container' : 'Insert a step here',
@@ -241,7 +223,6 @@ function flowLink(list, index, tail = false) {
   return el;
 }
 
-// Step type → the colour of its marker (manual QC is the human-in-the-loop kind).
 // The marker doubles as the drag handle: on hover the dot turns into a grip.
 function stepKind(item) {
   if (isQcContainer(item.def)) return 'manual qc' in (item.values.qc_settings || {}) ? 'manual' : 'qc';
@@ -263,7 +244,6 @@ function testVars(tv) {
   const v = tv && (tv.variable_ranges || tv.variables);
   return !v ? [] : Array.isArray(v) ? v : Object.keys(v);
 }
-// Icon, name and (optionally) a grey summary line.
 function stepText(name, sub, nameCls = 'step-name') {
   const text = document.createElement('span');
   text.className = 'step-text';
@@ -311,12 +291,11 @@ function makeItem(name) {
     diagnostics: false,
     collapsed: false,
   };
-  if (isQcContainer(def)) item.values.qc_settings = {}; // ordered map of qc tests
+  if (isQcContainer(def)) item.values.qc_settings = {};
   return item;
 }
 
-// Mirror what the demo loader does server-side: export next to the input as
-// <stem>_Processed.nc. Leaves a hand-set output path alone.
+// Mirrors the demo loader: export next to the input as <stem>_Processed.nc.
 function syncOutputPath(filePath) {
   const m = String(filePath || '').match(/^(.*?)([^/\\]+?)(\.[^./\\]*)?$/);
   if (!m || !m[2]) return;
@@ -330,7 +309,6 @@ function syncOutputPath(filePath) {
   if (changed) renderPipeline();
 }
 
-// Insert a new step (dragged from the palette) into `list` at `index`.
 function insertStepAt(name, list, index) {
   const item = makeItem(name);
   if (!item) return;
@@ -347,8 +325,6 @@ function removeStep(id) {
   STATE.onChange();
 }
 
-// Move an existing step to a drop position in `list` (index counts the dragged
-// item itself when it is already in that list).
 function moveStepTo(id, list, index) {
   const loc = locateStep(id);
   if (!loc) return;
@@ -367,7 +343,6 @@ function addSection(index) {
   STATE.onChange();
 }
 
-// Deleting a section removes it and every step inside it.
 function removeSection(id) {
   const nodes = STATE.pipeline.nodes;
   const at = nodes.findIndex((n) => isSection(n) && n.id === id);
@@ -377,7 +352,6 @@ function removeSection(id) {
   STATE.onChange();
 }
 
-// Move a whole section (with its steps) to a root position.
 function moveSectionTo(id, index) {
   const nodes = STATE.pipeline.nodes;
   const from = nodes.findIndex((n) => isSection(n) && n.id === id);
@@ -393,13 +367,10 @@ function moveSectionTo(id, index) {
 }
 
 // ------------------------------------------------------------- drag & drop
-// Set on dragstart: {kind:'new', name} from the palette, {kind:'move', id} for
-// reordering an existing step, or {kind:'section', id} for a whole section.
-// Read by the pipeline drop target.
+// {kind: 'new', name}, {kind: 'move', id} or {kind: 'section', id}, set on dragstart.
 let dragState = null;
 let dropIndicator = null;
 
-// The Apply QC card a dragged QC test is over, if any.
 function qcCardAt(target) {
   if (!dragState || dragState.kind !== 'qc') return null;
   const card = target && target.closest ? target.closest('.step-card') : null;
@@ -408,7 +379,6 @@ function qcCardAt(target) {
   return item && item.name === dragState.container ? { card, item } : null;
 }
 
-// The drop host under the pointer: a section body, or the root (loose steps).
 // Sections never nest, so a section drag always resolves to the root.
 function dropHostAt(target) {
   const root = document.getElementById('pipeline-steps');
@@ -417,7 +387,6 @@ function dropHostAt(target) {
   return body || root;
 }
 
-// The list a host writes into: a section's steps, or the root node list.
 function listForHost(host) {
   if (!host.classList.contains('section-body')) return STATE.pipeline.nodes;
   const sec = STATE.pipeline.nodes.find(
@@ -426,7 +395,6 @@ function listForHost(host) {
   return sec ? sec.steps : STATE.pipeline.nodes;
 }
 
-// Direct children that occupy a drop slot (the root also holds section cards).
 function dropSlots(host) {
   const kids = host.children;
   return [...kids].filter((el) =>
@@ -442,8 +410,7 @@ function computeDropIndex(host, y) {
   return slots.length;
 }
 
-// The arrow leading into drop slot `index`, lit instead of drawing a line. The
-// root's first slot and an empty pipeline have no arrow, so those get the line.
+// The root's first slot and an empty pipeline have no arrow, so those get a line.
 function dropLinkFor(host, index) {
   const slots = dropSlots(host);
   if (index === slots.length) return host.querySelector(':scope > .flow-link.tail:not(.empty)');
@@ -474,9 +441,7 @@ function clearDropIndicator() {
   document.querySelectorAll('.drop-target').forEach((el) => el.classList.remove('drop-target'));
 }
 
-// Wire the pipeline area as a drop target. Delegated from the root, so section
-// bodies added by later renders are picked up without re-wiring. Called once at
-// boot.
+// Delegated from the root, so section bodies added by later renders need no re-wiring.
 function initBuilderDnD() {
   const root = document.getElementById('pipeline-steps');
   root.addEventListener('dragover', (e) => {
@@ -529,7 +494,6 @@ function renderSettings() {
   };
   body.addEventListener('mousedown', highlightSetting);
   body.addEventListener('focusin', highlightSetting);
-  // One row per setting; the help text moves into the row's tooltip to keep it compact.
   for (const spec of STATE.registry.pipeline_fields) {
     if (!(spec.name in settings)) settings[spec.name] = Forms.defaultValue(spec);
     const field = Forms.render(spec, settings, STATE.onChange);
@@ -540,7 +504,6 @@ function renderSettings() {
   const diagRow = makeAllDiagnosticsRow();
   diagRow.title = 'On / Off flips the diagnostics switch of every step and QC test at once '
     + '(a step\'s "more diagnostics" is switched off too). Mixed means the switches differ.';
-  // The last setting (a short select) shares its row with the diagnostics switch.
   body.appendChild(Forms.el('div', { class: 'settings-pair' }, body.lastElementChild, diagRow));
   card.appendChild(body);
   host.appendChild(card);
@@ -548,8 +511,7 @@ function renderSettings() {
   renderAllDiagnosticsRow();
 }
 
-// UI-only on/off/custom summary of every diagnostics switch, with buttons to flip
-// them all; nothing of its own is written to the YAML.
+// UI-only: writes nothing of its own to the YAML.
 function makeAllDiagnosticsRow() {
   const row = document.createElement('div');
   row.id = 'all-diag-row';
@@ -564,9 +526,7 @@ function makeAllDiagnosticsRow() {
   return row;
 }
 
-// Refresh just the all-diagnostics row's text/button state in place, without
-// rebuilding the rest of the settings card (which would drop focus from
-// whatever pipeline-settings field the user is mid-edit on).
+// In place, since rebuilding the settings card would drop focus from the field being edited.
 function renderAllDiagnosticsRow() {
   const row = document.getElementById('all-diag-row');
   if (!row) return;
@@ -576,59 +536,46 @@ function renderAllDiagnosticsRow() {
 }
 
 // ---------------------------------------------------------------- run lock
-//
-// While a pipeline is running the config is frozen: the run is executing the
-// YAML as it was submitted, so an edit anywhere else would leave the screen
-// disagreeing with what is actually running. When the run pauses on a step, that
-// step alone is unlocked — for a QC step split test by test, only the paused
-// test — because that is exactly what Re-run will act on.
+// Frozen while running; only the paused step (or QC test) unlocks, since that's what Re-run acts on.
 const RunLock = {
   running: false,
-  index: null,   // step left editable while paused, or null for "all locked"
-  test: null,    // QC test within it, when the step was split
-  runningIndex: null, // step currently executing (not paused), for the highlight
-  runningTest: null,  // QC test within it, when the run split the step by test
+  index: null,   // null: all locked
+  test: null,
+  runningIndex: null,
+  runningTest: null,
 
   begin() { RunLock.set(true, null, null); },
   end() { RunLock.runningIndex = null; RunLock.runningTest = null; RunLock.set(false, null, null); },
 
-  // Unlock the paused step and bring it into view, expanded. Passing a null
-  // index re-locks everything (still running, no longer paused).
+  // A null index re-locks everything (still running, no longer paused).
   pauseAt(index, test) {
-    RunLock.runningIndex = null; // it's paused now, not mid-execution
+    RunLock.runningIndex = null;
     RunLock.runningTest = null;
     if (index === null || index === undefined) {
       RunLock.set(true, null, null);
       return;
     }
-    // Collapse everything else, so the one open card is the editable one.
     STATE.pipeline.items.forEach((s, i) => { s.collapsed = i !== index; });
-    // Open the paused test *before* rendering, or an already-expanded card
-    // would keep its old sections open.
+    // Before rendering, or an already-expanded card keeps its old sections open.
     const item = STATE.pipeline.items[index];
     if (item && test) item.qcOpen = { [test]: true };
     RunLock.set(true, index, test || null);
     focusStepInBuilder(index);
   },
 
-  // Called as each step (or split QC test) starts executing. Collapses every
-  // card — so the previous step's editor doesn't just sit there open while
-  // it's greyed out and no longer relevant — and calls out the running one
-  // with a highlight, scrolled into view.
   stepStarted(index, test = null) {
     if (index === RunLock.runningIndex && test === RunLock.runningTest) return; // duplicate marker, e.g. a re-run
     const sameStep = index === RunLock.runningIndex;
     RunLock.runningIndex = index;
     RunLock.runningTest = test;
-    // The next test of the same QC step: move the row highlight, no re-render.
+    // Next test of the same QC step: no re-render.
     if (sameStep) {
       const card = stepElement(index);
       if (card) markRunningTest(card);
       return;
     }
     STATE.pipeline.items.forEach((s) => { s.collapsed = true; s.qcOpen = null; });
-    // The card stays collapsed, but its section must be open or it wouldn't
-    // be in view to scroll to at all.
+    // Its section must be open for the card to scroll into view.
     const item = STATE.pipeline.items[index];
     const sec = item && sectionOfStep(item.id);
     if (sec) sec.collapsed = false;
@@ -642,19 +589,16 @@ const RunLock = {
     RunLock.index = index;
     RunLock.test = test;
     document.body.classList.toggle('run-locked', running);
-    // The YAML pane is the other way into the config, so it locks with it.
     if (editor) editor.setOption('readOnly', running ? 'nocursor' : false);
     renderSettings();
     renderPipeline();
   },
 
-  // True for the one step card the user may edit right now.
   editable(index) {
     return !RunLock.running || RunLock.index === index;
   },
 };
 
-// In a collapsed QC card, highlight the test being run and dim the ones still to come.
 function markRunningTest(card) {
   const rows = [...card.querySelectorAll('.qc-row')];
   const at = rows.findIndex((row) => row.dataset.test === RunLock.runningTest);
@@ -664,7 +608,6 @@ function markRunningTest(card) {
   });
 }
 
-// Disable every control under `root`, optionally sparing the subtree `keep`.
 function freezeControls(root, keep) {
   for (const el of root.querySelectorAll('input, select, textarea, button')) {
     if (keep && keep.contains(el)) continue;
@@ -672,12 +615,11 @@ function freezeControls(root, keep) {
   }
 }
 
-// Apply the run lock to what has just been rendered. Called at the end of
-// renderPipeline/renderSettings so every path through the builder is covered.
+// Called at the end of renderPipeline/renderSettings so every path is covered.
 function applyRunLock() {
   const running = RunLock.running;
   // Loading another config would replace the steps out from under the run.
-  Config.updateControls(); // Delete follows the picker lock
+  Config.updateControls();
   const picker = document.querySelector('#config-select .cfg-trigger');
   if (picker) {
     picker.disabled = running;
@@ -707,12 +649,10 @@ function lockCard(card, index) {
     return;
   }
   card.classList.add('unlocked');
-  // Structural controls stay frozen even on the unlocked card: reordering or
-  // removing it mid-run would break the step indices the runner is using.
+  // Reordering or removing a step mid-run would break the runner's step indices.
   for (const b of card.querySelectorAll('.step-head button')) {
     if (b.title !== 'collapse' && b.title !== 'close') b.disabled = true;
   }
-  // A split QC step exposes only the paused test's fields.
   const test = RunLock.test && card.querySelector(
     `.qc-test[data-test="${CSS.escape(RunLock.test)}"] .qc-test-body`);
   if (RunLock.test) freezeControls(card.querySelector('.step-body'), test || undefined);
@@ -723,12 +663,13 @@ function stepElement(index) {
 }
 
 // ---------------------------------------------------------------- steps
-// How the pipeline differs from default.yaml, recomputed on every render
-// (see Defaults.compute).
-let defaultsView = { byId: new Map(), first: [], after: new Map(), sectionFirst: new Map(), sectionsAfter: new Map(), sectionsFirst: [] };
+// How the pipeline differs from default.yaml (see Defaults.compute).
+let defaultsView = {
+  byId: new Map(), first: [], after: new Map(),
+  sectionFirst: new Map(), sectionsAfter: new Map(), sectionsFirst: [],
+};
 
-// A field edit re-marks what differs from the default in place (a full render
-// would drop focus from the field being typed in), after a short debounce.
+// Field edits re-mark in place; a full render would drop focus from the field.
 let marksTimer = null;
 function onFieldEdit() {
   STATE.onChange();
@@ -745,8 +686,7 @@ function refreshDefaultMarks() {
   applyRunLock();
 }
 
-// Badges, restore notes and changed-field bars for one card, replacing any
-// already there. Ghost rows for removed steps/tests only change on a render.
+// Ghost rows for removed steps/tests only change on a render.
 function applyDefaultMarks(card, item) {
   const info = defaultsView.byId.get(item.id);
   const diff = info && !info.extra ? info.diff : null;
@@ -762,7 +702,6 @@ function applyDefaultMarks(card, item) {
   };
   const changesNote = (n, what, onRestore) =>
     Defaults.note(`${n} ${n === 1 ? 'change' : 'changes'} from the ${what} —`, 'Restore defaults', onRestore);
-  // Returns how many of `diffs` got a field of their own to show them.
   const markFields = (host, diffs, values) => {
     let shown = 0;
     for (const f of host.querySelectorAll(':scope > .field[data-param]')) {
@@ -779,14 +718,16 @@ function applyDefaultMarks(card, item) {
 
   const body = card.querySelector(':scope > .step-body');
   card.classList.toggle('extra', !!(info && info.extra));
-  const name = card.querySelector('.step-head .step-name'); // absent on a collapsed Apply QC (its tests show instead)
+  const name = card.querySelector('.step-head .step-name'); // absent on a collapsed Apply QC
   if (name) setBadge(name, info && info.extra ? 'extra' : diff && diff.count ? 'edited' : null);
 
-  // A change is noted once, at the most detailed place that can show it: its
-  // field, else its QC test, else the step. `shown` counts what went deeper.
+  // A change is noted once, at the most detailed place that can show it.
   let shown = markFields(body, diff && diff.params, item.values);
   const qcd = diff && diff.qc;
-  if (qcd) shown += (diff.params || []).filter((p) => p.name === 'qc_settings').length + qcd.removed.length; // removed tests have ghost rows
+  if (qcd) {
+    shown += (diff.params || []).filter((p) => p.name === 'qc_settings').length;
+    shown += qcd.removed.length; // removed tests have ghost rows
+  }
   const baseQc = qcd ? ((info.base.parameters || {}).qc_settings || {}) : {};
   for (const el of card.querySelectorAll('.qc-test[data-test]')) {
     const t = el.dataset.test;
@@ -805,12 +746,11 @@ function applyDefaultMarks(card, item) {
   setNote(body, unshown > 0 ? changesNote(unshown, 'default pipeline', () => Defaults.restoreStep(item, info.base)) : null);
 }
 
-// Badges sit after the name + summary block, so they line up on the right of the card.
 function badgeSlot(name) {
   return name.closest('.step-text') || name;
 }
 
-// Validation issues by step id -> [{param, text}], marked on fields like the default diffs above.
+// step id -> [{param, text}]
 let issueMarks = new Map();
 function setIssueMarks(marks) {
   issueMarks = marks;
@@ -835,14 +775,12 @@ function applyIssueMarks() {
   }
 }
 
-// A step card followed by placeholders for the default steps missing after it.
 function appendStepCard(host, item) {
   host.appendChild(renderStepCard(item));
   for (const g of defaultsView.after.get(item.id) || []) host.appendChild(Defaults.ghostStep(g, item.id));
 }
 
 // ---------------------------------------------------------------- view
-// One line of "what it acts on" for a chip, read off the step's parameters.
 const SUMMARY_KEYS = ['to_derive', 'target_variable', 'apply_to', 'shift_vars', 'par_var', 'variables', 'variable', 'method', 'export_format', 'standards'];
 function stepSummary(item) {
   const v = item.values || {};
@@ -888,12 +826,11 @@ function renderPipeline() {
   applyRunLock();
   applyIssueMarks();
   applyYamlFocus();
-  renderAllDiagnosticsRow(); // step list just changed shape: on/off/custom may have too
+  renderAllDiagnosticsRow();
   scroller.scrollTop = top;
 }
 
-// A section's colour token (--sec-* in style.css), keyed on its title then its
-// steps; unmatched sections alternate blue-grey / grey by position.
+// --sec-* tokens in style.css; unmatched sections alternate by position.
 const SECTION_COLOURS = [
   [/chla|chlorophyll|quench/, 'chla'], [/profile/, 'profiles'], [/import|load|export|write/, 'io'],
   [/\blat|\blon|coord|position/, 'coords'], [/cross.?cal/, 'crosscal'], [/interpol/, 'interp'],
@@ -909,8 +846,6 @@ function sectionColour(sec, index) {
   return 'alt-' + (index % 2);
 }
 
-// One section: a titled, collapsible container holding a contiguous run of
-// steps. The body is its own drop target (see dropHostAt).
 function renderSection(sec, index = 0) {
   const card = document.createElement('div');
   card.className = 'section-card' + (sec.collapsed ? ' collapsed' : '');
@@ -928,7 +863,6 @@ function renderSection(sec, index = 0) {
   title.onclick = (e) => e.stopPropagation(); // clicking the name shouldn't collapse
   head.appendChild(title);
 
-  // Collapsed, the container lists what it holds (QC tests by name) on one line.
   const names = sec.steps.flatMap((s) => isQcContainer(s.def) && Object.keys(s.values.qc_settings || {}).length
     ? Object.keys(s.values.qc_settings).map(testLabel) : [s.name]);
   head.appendChild(Forms.el('span', { class: sec.collapsed ? 'sec-seq' : 'sec-count',
@@ -950,7 +884,7 @@ function renderSection(sec, index = 0) {
     renderPipeline();
   });
 
-  // Same handle-gated drag as step cards, so the title stays editable.
+  // Handle-gated drag, so the title stays editable.
   const handle = head.querySelector('.drag');
   handle.addEventListener('mousedown', () => { card.draggable = true; });
   handle.addEventListener('mouseup', () => { card.draggable = false; });
@@ -1005,8 +939,6 @@ function renderStepCard(item) {
   const info = defaultsView.byId.get(item.id);
   const tests = isQcContainer(item.def) && item.collapsed ? Object.keys(item.values.qc_settings || {}) : [];
   if (tests.length) {
-    // A collapsed Apply QC shows its tests as steps in their own right, one row
-    // each; clicking one opens the editor on that test.
     head.classList.add('qc-stack');
     tests.forEach((t, i) => {
       if (i) title.appendChild(Forms.el('span', { class: 'qc-link' }));
@@ -1021,10 +953,13 @@ function renderStepCard(item) {
   } else {
     title.appendChild(stepIcon(stepKind(item)));
     title.appendChild(stepText(item.name, item.collapsed ? stepSummary(item) : ''));
+    if (item.def.beta) {
+      title.appendChild(Forms.el('span', { class: 'tag beta', textContent: 'beta',
+        title: 'Beta: works, but the method is still being refined.' }));
+    }
   }
   head.appendChild(title);
 
-  // Remove only shows on hover.
   const tools = document.createElement('span');
   tools.className = 'step-tools';
   const del = document.createElement('button');
@@ -1035,15 +970,13 @@ function renderStepCard(item) {
 
   card.appendChild(head);
 
-  // Click anywhere on the header (except a button or the drag handle) toggles.
   head.addEventListener('click', (e) => {
     if (e.target.closest('button') || e.target.closest('.drag')) return;
     item.collapsed = !item.collapsed;
     renderPipeline();
   });
 
-  // Reorder by dragging the marker: the card is only draggable while it is
-  // held, so text selection in the body still works normally.
+  // Draggable only while the handle is held, so text selection in the body still works.
   for (const handle of head.querySelectorAll('.drag')) {
     handle.addEventListener('mousedown', () => { card.draggable = true; });
     handle.addEventListener('mouseup', () => { card.draggable = false; });
@@ -1061,24 +994,19 @@ function renderStepCard(item) {
     dragState = null;
   });
 
-  // Interacting with a step highlights its lines in the YAML pane, and the box's own lines within them.
   card.addEventListener('mousedown', (e) => highlightYamlForStep(item.id, boxPath(e.target)));
   card.addEventListener('focusin', (e) => highlightYamlForStep(item.id, boxPath(e.target)));
 
-  // body
   const body = document.createElement('div');
   body.className = 'step-body' + (item.collapsed ? ' collapsed' : '');
 
-  // diagnostics toggle (every step supports it). For the QC container the
-  // diagnostics controls live inside the QC editor (a master + per-test), so
-  // don't render a second one here.
+  // Apply QC has its own master and per-test switches in the QC editor.
   if (!isQcContainer(item.def)) {
     const diagTop = document.createElement('div');
     diagTop.className = 'diag-top';
     const diag = document.createElement('div');
     diag.className = 'diag-row';
-    // `diagnostics` is true/false, or 'all' for steps that offer more plots
-    // (item.def.more_diagnostics); a YAML list of names shows as plain on.
+    // true/false, or 'all' for more plots; a YAML list of names shows as plain on.
     const more = item.def.more_diagnostics ? Forms.switchEl(item.diagnostics === 'all', (v) => {
       item.diagnostics = v ? 'all' : true;
       sw.input.checked = true;
@@ -1132,7 +1060,6 @@ function renderStepCard(item) {
   return card;
 }
 
-// Key path of the builder box an event hit, e.g. ['parameters', 'qc_settings', 'range qc', 'variable_ranges'].
 function boxPath(target) {
   const test = target.closest('.qc-test[data-test]');
   const field = target.closest('.field[data-param]');
@@ -1143,11 +1070,9 @@ function boxPath(target) {
   return field ? ['parameters', field.dataset.param] : null;
 }
 
-// The box the YAML cursor is in (kept so a re-render can re-mark it).
+// kept so a re-render can re-mark it
 let yamlFocus = null;
 
-// Mark the builder box matching a YAML key path: a step parameter, a QC test or
-// one of its parameters, or a Pipeline Settings field (index null).
 function focusFieldInBuilder(index, path) {
   yamlFocus = { index, path };
   const box = applyYamlFocus(true);
@@ -1179,9 +1104,7 @@ function yamlFocusBox(index, path, open) {
   return (path[3] && param(testBody, path[3])) || test;
 }
 
-// Expand and scroll to a step card by index (driven by the YAML cursor). Only
-// re-renders when it has to un-collapse the target, to stay cheap on every
-// cursor move.
+// Only re-renders to un-collapse the target, since this runs on every cursor move.
 function focusStepInBuilder(index) {
   const items = STATE.pipeline.items;
   if (index < 0 || index >= items.length) return;
@@ -1217,9 +1140,7 @@ function renderQcEditor(item, spec, info) {
   const editor = document.createElement('div');
   editor.className = 'qc-editor';
 
-  // master diagnostics toggle: turns diagnostic plots on/off for ALL tests.
-  // Bound to the step-level `item.diagnostics` (the inherited default); flipping
-  // it clears every per-test override so "all on / all off" is unambiguous.
+  // Flipping the master clears per-test overrides so all on / all off is unambiguous.
   const master = document.createElement('div');
   master.className = 'qc-master';
   const msw = Forms.switchEl(item.diagnostics, (v) => {
@@ -1238,7 +1159,6 @@ function renderQcEditor(item, spec, info) {
   master.appendChild(msw.el); master.appendChild(mlbl);
   editor.appendChild(master);
 
-  // add-test row
   const addRow = document.createElement('div');
   addRow.className = 'qc-add';
   const sel = Forms.select(STATE.registry.qc.map((q) => q.name), null, null, { placeholder: '— add a QC test —' });
@@ -1254,7 +1174,7 @@ function renderQcEditor(item, spec, info) {
   addRow.appendChild(sel); addRow.appendChild(addBtn);
   editor.appendChild(addRow);
 
-  // configured tests (insertion order = application order)
+  // insertion order = application order
   for (const qcName of Object.keys(item.values.qc_settings)) {
     const qcDef = STATE.qcByName[qcName];
     const testValues = item.values.qc_settings[qcName];
@@ -1264,15 +1184,13 @@ function renderQcEditor(item, spec, info) {
 
     const th = document.createElement('div');
     th.className = 'qc-test-head';
-    // Which tests are expanded is remembered on the item (UI state, never
-    // serialised), so a re-render — or a pause unlocking one test — can open
-    // the right one.
+    // Kept on the item (never serialised) so a re-render or pause opens the right test.
     const openNow = !!(item.qcOpen && item.qcOpen[qcName]);
     const chev = document.createElement('span');
     chev.className = 'qc-chevron';
     chev.innerHTML = Icon.svg(openNow ? 'down' : 'right', 14);
     th.appendChild(chev);
-    th.insertAdjacentHTML('beforeend', `<span class="qc-test-name">${qcName}</span>`);
+    th.insertAdjacentHTML('beforeend', `<span class="qc-test-name">${escapeHtml(qcName)}</span>`);
     const rm = document.createElement('button');
     rm.className = 'icon-btn'; rm.innerHTML = Icon.svg('close'); rm.title = 'remove test';
     rm.onclick = (e) => {
@@ -1292,8 +1210,6 @@ function renderQcEditor(item, spec, info) {
       item.qcOpen = Object.assign({}, item.qcOpen, { [qcName]: open });
     };
 
-    // metadata: what the test does, needs, and produces (self-documenting even
-    // when the test has no tunable parameters).
     if (qcDef && qcDef.description) {
       const d = document.createElement('div');
       d.className = 'hint qc-meta'; d.textContent = qcDef.description;
@@ -1312,8 +1228,7 @@ function renderQcEditor(item, spec, info) {
       tb.appendChild(o);
     }
 
-    // per-test diagnostics override. Absent => inherit the master; toggling
-    // writes an explicit true/false for this test only.
+    // Absent inherits the master.
     const diagDefault = 'diagnostics' in testValues ? testValues.diagnostics : item.diagnostics;
     const drow = document.createElement('div');
     drow.className = 'diag-row';

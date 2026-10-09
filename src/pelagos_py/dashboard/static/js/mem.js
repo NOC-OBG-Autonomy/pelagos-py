@@ -1,16 +1,11 @@
-// Live RAM meter for a run. Each __PELAGOS_MEM__ marker (one per executed step)
-// adds a point; the sparkline plots RSS across steps so transient per-step
-// spikes — and their release — are visible at a glance. Per-step detail lives
-// in each dot's hover tooltip.
+// Live RAM meter for a run: one point per __PELAGOS_MEM__ marker, with per-step detail in each dot's tooltip.
 
 const Mem = {
   points: [],  // {rss, stepPeak, added, data, label, t} per step, in run order
   samples: [], // {t, rss} every 0.5 s of processing time (__PELAGOS_SAMPLE__)
-  peak: 0,     // running max RSS this run — shown in #mem-peak and scales the plot's y-axis
+  peak: 0,     // running max RSS this run, also the plot's y-axis top
 
-  // Shown immediately when a run starts (not hidden) so the meter feels live
-  // the instant Run is pressed, rather than popping in once the first step's
-  // __PELAGOS_MEM__ marker arrives.
+  // Shown as soon as Run is pressed, not when the first marker arrives.
   reset() {
     Mem.points = [];
     Mem.samples = [];
@@ -36,7 +31,6 @@ const Mem = {
     const stepStart = parseFloat(parts[6]);
     const t = parseFloat(parts[7]); // processing seconds at step end
     Mem.peak = parseFloat(parts[1]);
-    // added = the step's own growth on top of what it inherited
     Mem.points.push({ rss, stepPeak, added: Math.max(0, stepPeak - stepStart),
       data: isFinite(data) ? data : null, label, t });
     document.getElementById('mem-meter').classList.remove('hidden');
@@ -46,8 +40,7 @@ const Mem = {
     Mem.render();
   },
 
-  // "<active s>\t<rss>": one RSS reading between step markers, so the trace
-  // shows what happens *within* a step, not just where it ended up.
+  // "<active s>\t<rss>": readings between step markers, to show what happens within a step.
   sample(payload) {
     const parts = payload.split('\t');
     const t = parseFloat(parts[0]), rss = parseFloat(parts[1]);
@@ -59,7 +52,6 @@ const Mem = {
     Mem.render();
   },
 
-  // MB -> "1.9 GB" / "512 MB". null -> "–".
   fmt(mb) {
     if (mb == null || !isFinite(mb)) return '–';
     return mb >= 1024 ? (mb / 1024).toFixed(1) + ' GB' : Math.round(mb) + ' MB';
@@ -70,9 +62,7 @@ const Mem = {
     if (el) el.textContent = Mem.fmt(mb);
   },
 
-  // Redraw the sparkline (RSS over processing time, y from 0 to run peak). Hover is a
-  // custom tooltip picking the nearest dot by x, since ~2px dots are too small to hit;
-  // the viewBox matches the rendered pixel size so preserveAspectRatio="none" can't squash circles.
+  // The viewBox matches the rendered pixel size so preserveAspectRatio="none" can't squash circles.
   render() {
     const svg = document.getElementById('mem-spark');
     if (!svg) return;
@@ -93,7 +83,6 @@ const Mem = {
     const svgns = 'http://www.w3.org/2000/svg';
     Mem._layout = { xs: dotXY.map((d) => d.x) };
 
-    // Peak guide line, so the ceiling of the run is always marked.
     const guide = document.createElementNS(svgns, 'line');
     guide.setAttribute('x1', 0); guide.setAttribute('x2', W);
     guide.setAttribute('y1', y(top)); guide.setAttribute('y2', y(top));
@@ -114,8 +103,7 @@ const Mem = {
       svg.appendChild(line);
     }
 
-    // On the time axis the step dots bunch up wherever quick steps run back to
-    // back, so they stay invisible until hovered (see showTooltip).
+    // Step dots bunch up where quick steps run back to back, so they stay hidden until hovered.
     Mem.points.forEach((p, i) => {
       const d = dotXY[i];
       const isPeak = p.stepPeak >= Mem.peak;
@@ -129,7 +117,6 @@ const Mem = {
     });
   },
 
-  // Nearest point to a mouse event's x position, in SVG user units.
   nearestPoint(svg, clientX) {
     const xs = Mem._layout && Mem._layout.xs;
     if (!xs || !xs.length) return -1;
@@ -154,7 +141,7 @@ const Mem = {
     svg.querySelectorAll('.mem-spark-dot.active').forEach((d) => d.classList.remove('active'));
     const dot = svg.querySelector(`.mem-spark-dot[data-i="${i}"]`);
     if (dot) dot.classList.add('active');
-    tip.innerHTML = `<b>${p.label || 'step ' + (i + 1)}</b>` +
+    tip.innerHTML = `<b>${escapeHtml(p.label || 'step ' + (i + 1))}</b>` +
       `<br>peak ${Mem.fmt(p.stepPeak)} &nbsp;+${Mem.fmt(p.added)} this step` +
       `<br>settled ${Mem.fmt(p.rss)}` +
       (p.data != null ? `<br>data ${Mem.fmt(p.data)}` : '');
@@ -171,11 +158,8 @@ const Mem = {
   },
 };
 
-// Processing-time readout beside the RAM meter. The runner owns the clock
-// (__PELAGOS_TIME__: its accumulated active seconds, whether it is paused, and
-// its wall clock at that moment); while running the browser ticks on from the
-// marker's epoch, so a replayed backlog after a reconnect still lands on the
-// right figure. Paused (review / manual QC) time is not counted.
+// Processing-time readout. The runner owns the clock (__PELAGOS_TIME__) and the browser ticks on from
+// the marker's epoch, so a replayed backlog after a reconnect still lands on the right figure.
 const RunClock = {
   active: 0, paused: true, epoch: null, timer: null,
 
@@ -198,7 +182,6 @@ const RunClock = {
     if (RunClock.paused) RunClock.stop();
   },
 
-  // The process has exited: the final marker's figure stands.
   stop() {
     clearInterval(RunClock.timer);
     RunClock.timer = null;
@@ -225,14 +208,12 @@ const RunClock = {
   },
 };
 
-// The spark's viewBox tracks its own pixel width (see render()), so a window
-// resize needs a redraw to stay unstretched.
+// The viewBox tracks the spark's pixel width, so a resize needs a redraw.
 window.addEventListener('resize', () => {
   if (Mem.points.length) Mem.render();
 });
 
-// Hover anywhere over the spark: pick the nearest step by x rather than
-// requiring a precise hit on a ~2px dot.
+// Pick the nearest step by x; a ~2px dot is too small to hit.
 (function () {
   const svg = document.getElementById('mem-spark');
   if (!svg) return;

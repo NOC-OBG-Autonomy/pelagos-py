@@ -34,8 +34,7 @@ def test_gps_jitter_within_min_interval_is_ignored():
 
 
 def test_single_bad_fix_does_not_flag_the_next():
-    # A 1-degree jump out and back: only the outlier is bad, the return is
-    # judged against the last good fix.
+    # Only the outlier is bad; the return is judged against the last good fix.
     data = create_mock_dataset(lats=[60.0, 61.0, 60.02, 60.04], lons=[0.0] * 4, times=_hourly(4))
     flags = impossible_speed_qc(data).return_qc()
     assert list(flags["LATITUDE_QC"].values) == [1, 4, 1, 1]

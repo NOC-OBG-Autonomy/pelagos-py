@@ -1,18 +1,16 @@
-// The paused-step review at the top of the Plots tab: the paused step's (or QC
-// test's) figures and earlier attempts. Its parameters are edited in the builder.
+// Review of the paused step (or QC test) at the top of the Plots tab: its figures and earlier attempts.
 
 const Review = {
   active: false,
   index: null,     // step index in the running pipeline
   name: null,      // step name, used to match figures and guard the re-run
   test: null,      // QC test, when the runner split this step test by test
-  key: null,       // Run.unitKey(index, test) — what figures are grouped under
+  key: null,       // Run.unitKey(index, test), what figures are grouped under
   busy: false,     // true between "Re-run" and the next pause
   selected: null,  // attempt shown in the main view; null = the latest one
 
   host() { return document.getElementById('step-review'); },
 
-  // ---- lifecycle ----
   show(index, name, test) {
     Review.active = true;
     Review.index = index;
@@ -38,9 +36,7 @@ const Review = {
     Run.renderGallery();
   },
 
-  // The builder step this pause refers to. Indices line up with the running
-  // config; if the user has since reordered/added steps, fall back to the first
-  // step of the right name so the form still shows something sensible.
+  // If steps were reordered since the run, fall back to the first step of the same name.
   item() {
     const items = STATE.pipeline.items;
     const byIndex = items[Review.index];
@@ -48,9 +44,7 @@ const Review = {
     return items.find((i) => i.name === Review.name) || byIndex || null;
   },
 
-  // ---- attempt selection ----
-  // Which attempt the main view is showing. Purely a viewing choice — it has no
-  // bearing on what Continue does. Defaults to the newest.
+  // Only a viewing choice; it doesn't change what Continue does.
   selectedGroup() {
     const attempts = Run.groupsFor(Review.key);
     if (!attempts.length) return null;
@@ -63,14 +57,13 @@ const Review = {
     Review.renderPlots();
   },
 
-  // A QC unit's parameters are `{qc_settings: {<test>: …}}`; everywhere the
-  // panel talks about "the parameters" it means that test's settings.
+  // A QC unit's parameters are `{qc_settings: {<test>: …}}`.
   unwrap(params) {
     if (!Review.test || !params) return params;
     return (params.qc_settings || {})[Review.test] || null;
   },
 
-  // The QC test's values object, on the same reference the builder card edits.
+  // Same reference the builder card edits.
   testValues() {
     const item = Review.item();
     if (!item || !Review.test) return null;
@@ -78,8 +71,7 @@ const Review = {
     return settings ? settings[Review.test] || null : null;
   },
 
-  // Put an attempt's parameters back into the config (builder + YAML + form),
-  // so what you are looking at is what the pipeline would run.
+  // Builder, YAML and form all get the attempt's parameters.
   applyParams(rawParams) {
     const item = Review.item();
     const params = Review.unwrap(rawParams);
@@ -102,22 +94,22 @@ const Review = {
     renderPipeline();
   },
 
-  // ---- rendering ----
-  // Built once per pause; the plots and the title refresh on their own so
-  // re-running never re-renders the rest.
+  // Built once per pause; plots and title refresh on their own.
   build() {
     const host = Review.host();
     host.innerHTML = '';
     const title = document.createElement('h4');
     title.className = 'plot-step-title review-title'; title.id = 'review-title';
+    const hint = document.createElement('div');
+    hint.className = 'review-hint hidden'; hint.id = 'review-hint';
     const plots = document.createElement('div');
     plots.id = 'review-plots';
     host.appendChild(title);
+    host.appendChild(hint);
     host.appendChild(plots);
     Review.renderTitle();
   },
 
-  // A split QC step pauses per test, so the test is the headline.
   renderTitle() {
     const title = document.getElementById('review-title');
     if (!title) return;
@@ -126,16 +118,27 @@ const Review = {
     title.classList.toggle('failed', Run.pauseFailed);
   },
 
-  // Latest attempt large, earlier attempts as a comparison strip underneath.
+  renderHint(text) {
+    const hint = document.getElementById('review-hint');
+    if (!hint) return;
+    hint.textContent = text;
+    hint.classList.toggle('hidden', !text);
+  },
+
+  syncUseButtons() {
+    const form = Run.paramsAt(Review.index, Review.test);
+    for (const btn of document.querySelectorAll('#review-plots .review-use')) {
+      btn.classList.toggle('hidden', Forms.equal(btn.attemptParams, form));
+    }
+  },
+
   renderPlots() {
     const host = document.getElementById('review-plots');
     if (!host) return;
     host.innerHTML = '';
     const attempts = Run.groupsFor(Review.key);
     const current = Review.selectedGroup();
-    // No open group for this step means the last re-run drew nothing, so what
-    // is on screen is the previous attempt's figure — say so rather than
-    // presenting a stale plot as the new result.
+    // No open group means the last re-run drew nothing, so the figure shown is stale.
     const isLatest = current && current === attempts[attempts.length - 1];
     const stale = !Review.busy && isLatest && attempts.length > 0 &&
       (!Run.activeGroup || Run.activeGroup.key !== Review.key);
@@ -150,7 +153,7 @@ const Review = {
     } else {
       const no = Run.attemptNo(current);
       const main = document.createElement('div');
-      main.className = 'review-main';
+      main.className = 'review-main' + (current.figs.some((f) => f.isError) ? ' failed' : '');
       const label = document.createElement('div');
       label.className = 'review-attempt-label';
       label.textContent = stale
@@ -159,8 +162,6 @@ const Review = {
           ? `Attempt ${no}${isLatest ? ' (latest — this is what Continue carries forward)' : ''}`
           : 'Result');
       main.appendChild(label);
-      // The parameters this attempt actually ran with. Spelled out rather than
-      // implied, so accepting one is never a guess about what it contained.
       main.appendChild(Review.paramSummary(current.params));
       const cards = document.createElement('div');
       cards.className = 'review-main-cards';
@@ -169,8 +170,7 @@ const Review = {
       main.appendChild(cards);
       host.appendChild(main);
     }
-    // Manual QC: the plot is the editor, in its own tab (in place of Plots),
-    // and the latest attempt is what it edits.
+    // Manual QC edits the latest attempt in its own tab.
     if (ManualQC.isActive()) {
       const latest = attempts[attempts.length - 1];
       ManualQC.render(latest && latest.figs.length && latest.figs[0].spec ? latest.figs[0] : null);
@@ -185,11 +185,11 @@ const Review = {
       strip.appendChild(title);
       const row = document.createElement('div');
       row.className = 'review-strip-row';
-      // Newest first: the most recent comparison is the one you usually want.
       for (let k = attempts.length - 1; k >= 0; k--) {
         const g = attempts[k];
+        const failed = g.figs.some((f) => f.isError);
         const cell = document.createElement('div');
-        cell.className = 'review-thumb' + (g === current ? ' selected' : '');
+        cell.className = 'review-thumb' + (failed ? ' failed' : '') + (g === current ? ' selected' : '');
         if (g.figs.length && g.figs[0].isLog) {
           const pre = document.createElement('pre');
           pre.className = 'log-card-text log-card-text-compact' +
@@ -206,16 +206,26 @@ const Review = {
         const cap = document.createElement('div');
         cap.className = 'review-thumb-cap';
         cap.textContent = `Attempt ${Run.attemptNo(g)}` + (g === current ? ' ·  shown' : '');
+        if (failed) {
+          const mark = document.createElement('span');
+          mark.className = 'review-thumb-failed';
+          mark.textContent = ' · failed';
+          cap.appendChild(mark);
+        }
         cell.appendChild(cap);
         cell.appendChild(Review.paramSummary(g.params, { compact: true }));
-        // Loading an old attempt's values only fills the form in — running with
-        // them is still an explicit Re-run, so nothing happens behind your back.
-        if (g.params && g !== attempts[attempts.length - 1]) {
+        // Only fills the form in; running is still an explicit Re-run.
+        if (g.params) {
           const use = document.createElement('button');
           use.className = 'sm review-use';
           use.textContent = 'Use these';
+          use.attemptParams = g.params;
           use.title = 'Load these parameters into the form (does not re-run)';
-          use.onclick = (e) => { e.stopPropagation(); Review.applyParams(g.params); };
+          use.onclick = (e) => {
+            e.stopPropagation();
+            Review.applyParams(g.params);
+            Review.select(g);
+          };
           cell.appendChild(use);
         }
         cell.onclick = () => Review.select(g);
@@ -224,11 +234,11 @@ const Review = {
       }
       strip.appendChild(row);
       host.appendChild(strip);
+      Review.syncUseButtons();
     }
   },
 
-  // An attempt's parameters as chips. Only those that differ from the step's
-  // schema defaults, so the summary stays readable on steps with many knobs.
+  // Only values that differ from the schema defaults.
   paramSummary(rawParams, { compact = false } = {}) {
     const params = Review.unwrap(rawParams);
     const wrap = document.createElement('div');

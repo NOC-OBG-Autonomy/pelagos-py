@@ -1,4 +1,3 @@
-// Thin wrappers around the backend API.
 async function _fail(r, msg) {
   throw new Error((await r.json().catch(() => ({}))).detail || msg);
 }
@@ -15,6 +14,7 @@ const API = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ yaml_content: yamlContent }),
     });
+    if (!r.ok) await _fail(r, 'validation failed');
     return r.json();
   },
   // -> {configs, protected, demo, missions, labels, reference, downloaded: [name]}
@@ -52,6 +52,11 @@ const API = {
     if (!r.ok) await _fail(r, 'columns failed');
     return r.arrayBuffer();
   },
+  async sigma0(smin, smax, tmin, tmax) {
+    const r = await fetch(`/api/sigma0?smin=${smin}&smax=${smax}&tmin=${tmin}&tmax=${tmax}`);
+    if (!r.ok) await _fail(r, 'sigma0 failed');
+    return r.json();
+  },
   async saveConfig(name, yamlContent) {
     const r = await fetch('/api/configs', {
       method: 'POST',
@@ -65,8 +70,7 @@ const API = {
     const r = await fetch('/api/configs/' + encodeURIComponent(name), { method: 'DELETE' });
     if (!r.ok) await _fail(r, 'delete failed');
   },
-  // Open the configs folder in the OS file browser (server-side, so this only
-  // does anything when the dashboard is viewed on the machine running it).
+  // Server-side, so this only works when viewing the dashboard on the machine running it.
   async revealConfigs() {
     const r = await fetch('/api/configs/reveal', { method: 'POST' });
     if (!r.ok) await _fail(r, 'could not open folder');
@@ -91,10 +95,10 @@ const API = {
     return r.json();
   },
   // -> {dirs, files: [{path, name, dir, kind, size, mtime}]}
-  async listOutputs(dirs, inputs) {
+  async listOutputs(dirs, exports) {
     const r = await fetch('/api/outputs', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ dirs, inputs }),
+      body: JSON.stringify({ dirs, exports }),
     });
     if (!r.ok) await _fail(r, 'listing failed');
     return r.json();
@@ -106,10 +110,10 @@ const API = {
     const r = await fetch(API.outputUrl(path), { method: 'DELETE' });
     if (!r.ok) await _fail(r, 'delete failed');
   },
-  async cleanOutputs(dirs, inputs) {
+  async cleanOutputs(dirs, exports) {
     const r = await fetch('/api/outputs/clean', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ dirs, inputs }),
+      body: JSON.stringify({ dirs, exports }),
     });
     if (!r.ok) await _fail(r, 'delete failed');
     return r.json();
@@ -129,7 +133,7 @@ const API = {
     if (!r.ok) await _fail(r, 'could not stat files');
     return r.json();
   },
-  // Native picker for .nc files and/or folders; resolves to the .nc paths.
+  // Resolves to the .nc paths.
   async pickFiles(start) {
     const r = await fetch('/api/files/pick', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ start: start || '' }),
@@ -144,7 +148,7 @@ const API = {
     if (!r.ok) await _fail(r, 'could not open folder');
     return r.json();
   },
-  // Opens a native file dialog on the server; resolves to the path or null.
+  // Native dialog on the server; resolves to the path or null.
   async browseFile(start) {
     const r = await fetch('/api/browse', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -163,19 +167,28 @@ const API = {
     return r.json();
   },
   async stopRun() {
-    await fetch('/api/run/stop', { method: 'POST' });
+    const r = await fetch('/api/run/stop', { method: 'POST' });
+    if (!r.ok) await _fail(r, 'stop failed');
   },
   async continueRun() {
-    await fetch('/api/run/continue', { method: 'POST' });
+    const r = await fetch('/api/run/continue', { method: 'POST' });
+    if (!r.ok) await _fail(r, 'continue failed');
   },
-  async rerunStep(parameters) {
-    await fetch('/api/run/rerun', {
+  async skipStep() {
+    const r = await fetch('/api/run/skip', { method: 'POST' });
+    if (!r.ok) await _fail(r, 'skip failed');
+  },
+  async rerunStep(parameters, yamlContent) {
+    const r = await fetch('/api/run/rerun', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ parameters }),
+      body: JSON.stringify({ parameters, yaml_content: yamlContent }),
     });
+    if (!r.ok) await _fail(r, 're-run failed');
   },
   async runStatus() {
-    return (await fetch('/api/run/status')).json();
+    const r = await fetch('/api/run/status');
+    if (!r.ok) await _fail(r, 'status failed');
+    return r.json();
   },
 };

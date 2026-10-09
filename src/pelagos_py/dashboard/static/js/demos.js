@@ -1,5 +1,4 @@
-// Demos tab: the demo deployments from Config (missions/labels/downloaded), as
-// cards grouped by mission. Clicking one calls Config.load, which downloads first if needed.
+// Demos tab: demo deployments as cards grouped by mission. Config.load downloads first if needed.
 const Demos = {
   render() {
     const root = document.getElementById('demos-list');
@@ -20,7 +19,7 @@ const Demos = {
     Demos.renderHead();
   },
 
-  // Collapsible section; the on-disk summary shows in the header only while collapsed.
+  // The on-disk summary shows in the header only while collapsed.
   initSection() {
     const sec = document.getElementById('demos-section');
     const set = (c) => {
@@ -34,7 +33,6 @@ const Demos = {
     document.getElementById('demos-toggle').addEventListener('click', () => set(!sec.classList.contains('collapsed')));
   },
 
-  // "N downloaded · 1.2 GB" and the Delete-all button, hidden when nothing is on disk.
   renderHead() {
     const n = Config.downloaded.length;
     const bytes = Config.downloaded.reduce((t, name) => t + (Config.sizes[name] || 0), 0);
@@ -74,12 +72,10 @@ const Demos = {
     return el;
   },
 
-  // Demos downloading right now; one poll loop fills all their cards.
   downloading: new Set(),
   resumed: new Set(), // picked up after a page reload, so no request of ours ends them
   _polling: false,
 
-  // After a page reload: show any downloads the server is still running.
   async resume() {
     let all = {};
     try { all = await API.demoProgress(); } catch (e) { return; }
@@ -89,8 +85,7 @@ const Demos = {
     }
   },
 
-  // Download without loading, so several can run at once; picking a demo that's
-  // already downloading waits on the same request.
+  // Picking a demo that's already downloading waits on the same request.
   requests: new Map(),
   download(name) {
     if (!Demos.downloading.has(name)) Demos.requests.set(name, Demos.fetchFile(name));
@@ -161,8 +156,7 @@ const Demos = {
   },
 };
 
-// The user's own input files: paths remembered in the browser (nothing is
-// uploaded — the dashboard runs locally and reads the file where it is).
+// The user's own input files: paths remembered in the browser (the dashboard runs locally, nothing is uploaded).
 const Files = {
   KEY: 'pelagos.files',
   info: {},
@@ -172,7 +166,6 @@ const Files = {
   init() {
     const input = document.getElementById('files-path');
     const addBtn = document.getElementById('btn-files-add');
-    // Add is live only once every pasted path is an existing .nc file.
     let timer = null;
     input.addEventListener('input', () => {
       addBtn.disabled = true;
@@ -192,8 +185,11 @@ const Files = {
       catch (e) { Config.notice(e.message, { sticky: true, err: true }); }
     });
     Files.render();
-    // Files get moved or deleted outside the dashboard: drop them quietly.
-    setInterval(() => { if (!document.querySelector('.tab-panel[data-panel="files"]').classList.contains('hidden')) Files.render(); }, 5000);
+    // Files get moved or deleted outside the dashboard.
+    const panel = document.querySelector('.tab-panel[data-panel="files"]');
+    setInterval(() => {
+      if (!panel.classList.contains('hidden')) Files.render();
+    }, 5000);
   },
 
   // Pasted text: one path per line, or several space-separated absolute paths.

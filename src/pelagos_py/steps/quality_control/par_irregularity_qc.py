@@ -195,7 +195,7 @@ def qc_par_flagging(pres, par, sun_elev, nei_par=3e-2):
     # 3. Shapiro–Wilk test on successive tails
     # ───────────────────────────────────────────────
     from scipy.stats import shapiro
-    _shapiro = getattr(shapiro, "__wrapped__", shapiro)  # skip scipy's axis/nan_policy wrapper (~5x the test itself)
+    _shapiro = getattr(shapiro, "__wrapped__", shapiro)  # scipy's nan_policy wrapper costs ~5x the test
     # Scan bottom-up and stop once pa (deepest p <= 1e-4) and, for night, any p <= 0 are known.
     pvals = np.full_like(pres_i, np.nan, dtype=float)
     finite_par = np.isfinite(par_i)
@@ -313,8 +313,7 @@ class par_irregularity_qc(BaseQC):
         # Make an unchecked (0) QC container for PAR QC
         par_qc = np.full(len(self.data["DOWNWELLING_PAR"]), 0)
 
-        # Apply the checks across individual profiles. Solar elevation comes from
-        # each profile's first sample, in one vectorised call for all profiles.
+        # Solar elevation from each profile's first sample, all profiles in one call
         groups = profile_indices(self.data["PROFILE_NUMBER"].values)
         first = np.array([idx[0] for idx in groups.values()], dtype=int)
         solar_elevations = calculate_solar_elevation(
@@ -352,7 +351,7 @@ class par_irregularity_qc(BaseQC):
         mpl.use("tkagg")
 
         if len(self.plot_profiles) == 0:
-            # Default: whole record vs time; plot_profiles gives the per-profile grid
+            # no plot_profiles: whole record vs time
             x = fig_spec.x_time(self.data)
             fig, axes = fig_spec.new_fig()
             ax = axes[0][0]

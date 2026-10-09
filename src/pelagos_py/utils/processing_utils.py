@@ -26,7 +26,7 @@ def cndc_scale_factor(units):
 
 # ----------------------------- NaN Handling ------------------------------
 def profile_indices(profile_number):
-    """{profile number: sorted sample indices} for every finite profile number, in one pass."""
+    """Map each finite profile number to its sorted sample indices."""
     pn = np.asarray(profile_number, dtype=float)
     order = np.flatnonzero(np.isfinite(pn))
     order = order[np.argsort(pn[order], kind="stable")]
@@ -104,8 +104,8 @@ def interpolate_nans(data, coords):
 
 
 def small_netcdf_chunk_cache():
-    """Shrink netCDF-C's 64 MB-per-variable chunk cache below one chunk: whole-variable
-    reads/writes don't benefit, and it stays allocated (GBs) until the file closes."""
+    """Shrink netCDF-C's 64 MB-per-variable chunk cache, which whole-variable reads don't
+    use but which stays allocated until the file closes."""
     import netCDF4
     netCDF4.set_chunk_cache(1_000_000, *netCDF4.get_chunk_cache()[1:])
 

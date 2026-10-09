@@ -1,22 +1,17 @@
 """The ``pelagos-py`` terminal command: ``dashboard``, ``build``, ``run`` and ``demo``."""
 
 import argparse
-import subprocess
 import sys
 from pathlib import Path
 
-from pelagos_py import Pipeline, get_demo_file
-
-# The dashboard isn't packaged yet, so it only runs from a git clone.
-REPO_ROOT = Path(__file__).resolve().parents[2]
-DASHBOARD_APP = REPO_ROOT / "dashboard" / "app.py"
+from pelagos_py import Pipeline, dashboard as dashboard_app, get_demo_file
 
 
 def dashboard(args):
-    if not DASHBOARD_APP.exists():
-        sys.exit("The dashboard only runs from a git clone of pelagos-py for now.")
     try:
-        subprocess.run([sys.executable, str(DASHBOARD_APP)], cwd=REPO_ROOT)
+        dashboard_app.run()
+    except ImportError as exc:
+        sys.exit(str(exc))
     except KeyboardInterrupt:
         pass
 

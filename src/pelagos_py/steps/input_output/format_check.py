@@ -39,7 +39,13 @@ def standard_label(name):
 
 
 def join_labels(labels):
-    return " and ".join(labels) if len(labels) <= 2 else ", ".join(labels[:-1]) + f" and {labels[-1]}"
+    if len(labels) <= 2:
+        return " and ".join(labels)
+    return ", ".join(labels[:-1]) + f" and {labels[-1]}"
+
+
+def _short_check_name(name):
+    return name.rstrip(".").removeprefix("Check for ").removeprefix("Check that ")
 
 
 def console_summary(checker_name, result, passed, top=3):
@@ -49,11 +55,10 @@ def console_summary(checker_name, result, passed, top=3):
     label = standard_label(checker_name)
     if passed:
         return f"{label}: passed ({scored}/{possible})"
-    failing = [
-        (len(entry.get("msgs", [])), entry.get("name", "").rstrip(".").removeprefix("Check for ").removeprefix("Check that "))
-        for entry in result.get("all_priorities", [])
-        if entry.get("msgs")
-    ]
+    failing = []
+    for entry in result.get("all_priorities", []):
+        if entry.get("msgs"):
+            failing.append((len(entry["msgs"]), _short_check_name(entry.get("name", ""))))
     failing.sort(key=lambda item: -item[0])
     n_issues = sum(count for count, _ in failing)
     worst = ", ".join(f"{name} ({count})" for count, name in failing[:top])
@@ -172,8 +177,7 @@ class FormatCheck(BaseStep):
             summary_lines.append(console_summary(checker_name, result, passed))
             cc_results[checker_name] = result
 
-        #   Structured results let the data report render a Format Checker section
-        #   regardless of whether a report file was saved.
+        # lets the data report show a Format Checker section even without a saved file
         self.context["cc_results"] = cc_results
 
         saved = self._write_reports(check_suite, score_dict, out_dir, fname, save_formats)
@@ -200,8 +204,7 @@ class FormatCheck(BaseStep):
         return self.context
 
     def generate_diagnostics(self):
-        # Full checker report (the same text as the RST file) to stdout, so the
-        # console shows it and the dashboard captures it as the step's review text.
+        # full report (same text as the RST file) to stdout, where the dashboard captures it
         self.log_generating_diagnostics()
         ComplianceChecker.stdout_output(self._check_suite, self._score_dict, 1, _LENIENT_LIMIT)
 

@@ -35,6 +35,7 @@ from pelagos_py.utils.processing_utils import cndc_scale_factor
 from pelagos_py.steps.input_output.prepare_og1 import (
     BBP_NAME, BETA_NAME, CNDC_MSCM_ABOVE, RENAMES, PrepareOG1,
 )
+from pelagos_py.steps.processing.deep_correction import MIN_DEEP_THRESHOLD
 
 DEFAULT_CONFIG = Path(__file__).parents[1] / "default_config.yaml"
 PHASE_CANDIDATES = ("BPHASE_DOXY", "DPHASE_DOXY", "TPHASE_DOXY")
@@ -44,6 +45,7 @@ _STEP = re.compile(r"^  - name:")
 _FIELD = {f: re.compile(rf"(?m)^(\s*{f}:).*$")
           for f in ("file_path", "output_path", "description", "out_directory")}
 
+DEEP_STEP = 50  # dbar between the offered deep correction thresholds
 RENAME_TARGETS = {"coord_latitude": "LATITUDE", "coord_longitude": "LONGITUDE",
                   "bbp": BETA_NAME, "oxygen": "MOLAR_DOXY", "par": "DOWNWELLING_PAR"}
 
@@ -248,6 +250,12 @@ def _bbp_decision(real):
     )
 
 
+def _oxygen_range_check(block):
+    # The 0-1000 range tests on MOLAR_DOXY(_ADJUSTED), which apply to shipped oxygen too.
+    ranges = block.params.get("qc_settings", {}).get("range qc", {}).get("variable_ranges", {})
+    return bool(ranges) and set(ranges) <= {"MOLAR_DOXY", "MOLAR_DOXY_ADJUSTED"}
+
+
 def _oxygen_decision(probe, real):
     phase, molar = _oxygen_phase(probe), _oxygen_molar(probe)
     opts, notes = [], []
@@ -293,6 +301,32 @@ def _par_decision(probe, real):
     )
 
 
+def _deep_decision(probe):
+    dives = ((probe or {}).get("PRES") or {}).get("dive_depths")
+    if not dives:
+        return None
+    # Depth a tenth of the dives reach: enough profiles for Deep Correction without one-off deep dives.
+    reach = sorted(dives, reverse=True)[len(dives) // 10]
+    # Never suggest shallower than MIN_DEEP_THRESHOLD, but use it while some dives get past it.
+    suggested = max(round(reach / DEEP_STEP) * DEEP_STEP - DEEP_STEP, MIN_DEEP_THRESHOLD)
+    deepest_option = int(reach // DEEP_STEP) * DEEP_STEP
+    depths = range(deepest_option, DEEP_STEP, -DEEP_STEP)
+    options = [("skip", "Skip deep correction")] + [(str(d), f"Use data below {d} dbar") for d in depths]
+    if reach > MIN_DEEP_THRESHOLD:
+        return _decision(
+            "deep", f"Deep correction below {suggested} dbar",
+            f"Enough dives reach {reach:.0f} dbar, so the CHLA dark value is estimated "
+            f"from data below {suggested} dbar.",
+            options, str(suggested),
+        )
+    return _decision(
+        "deep", "Dives too shallow for deep correction",
+        f"Enough dives only reach {reach:.0f} dbar, too shallow (under {MIN_DEEP_THRESHOLD} dbar) "
+        "to trust a CHLA dark value, so Deep Correction is removed.",
+        options if len(options) > 1 else (), "skip",
+    )
+
+
 def decisions(probe):
     """What the template must change for this file, as a list of
     ``{id, title, detail, options, default}``; ``options`` is empty for an
@@ -303,6 +337,7 @@ def decisions(probe):
         _bbp_decision(real),
         _oxygen_decision(probe, real),
         _par_decision(probe, real),
+        _deep_decision(probe),
     ]
     return [d for d in decs if d is not None]
 
@@ -448,7 +483,7 @@ def build(template_text, file_path, probe=None, choices=None, description=None, 
             if b.name == "Derive Uncalibrated Phase":
                 b.sub(r'(?m)^(\s*blue_phase_name:).*$', rf'\1 "{phase}"')
     elif oxygen == "shipped":
-        drop(lambda b: b.section == "OXYGEN" and b.name != "Correct Values")
+        drop(lambda b: b.section == "OXYGEN" and b.name != "Correct Values" and not _oxygen_range_check(b))
         for b in blocks:
             if b.section == "OXYGEN":
                 b.sub(r"(?m)^(\s*target_variable:).*$", r"\1 MOLAR_DOXY")
@@ -458,5 +493,13 @@ def build(template_text, file_path, probe=None, choices=None, description=None, 
 
     if choices.get("par") == "remove":
         drop(lambda b: b.section == "PAR QC")
+
+    deep = choices.get("deep") if "deep" in ids else None
+    if deep == "skip":
+        drop(lambda b: b.name == "Deep Correction")
+    elif deep:
+        for b in blocks:
+            if b.name == "Deep Correction":
+                b.sub(r"(?m)^(\s*depth_threshold:)\s*[^\s#]+", rf"\g<1> {deep}")
 
     return _render(head, blocks, tail)

@@ -58,6 +58,9 @@ class BaseStep(ConfigMirrorMixin):
     #: (e.g. ``qc_handling_settings`` handled by :class:`QCHandlingMixin`).
     framework_parameters = {"qc_handling_settings"}
 
+    # Shown as "beta" in the dashboard: works, but the method is still being refined.
+    beta = False
+
     def __init__(self, name, parameters=None, diagnostics=False, context=None):
         # === Core behaviour (same as before) ===
         self.name = name
@@ -140,14 +143,11 @@ class BaseStep(ConfigMirrorMixin):
         raise NotImplementedError(f"Step '{self.name}' must implement a run() method.")
         return self.context
 
-    #: Named diagnostic figures: ``{name: (title, level)}`` with level ``True``
-    #: (drawn by ``diagnostics: true``), ``False`` (extra, drawn by ``"all"``) or
-    #: ``None`` (only when listed by name, e.g. a panel of a composite figure).
-    #: A step that fills this in draws them via :meth:`draw_figure`.
+    # {name: (title, level)}; level True = default, False = extra ("all"), None = by name only
     diagnostic_figures = {}
 
     def draw_figure(self, name):
-        """Build and return the matplotlib figure registered under ``name`` (or ``None`` to skip)."""
+        # return the figure registered under name, or None to skip it
         raise NotImplementedError(f"Step '{self.name}' has no figure '{name}'.")
 
     def selected_figures(self):
@@ -172,8 +172,7 @@ class BaseStep(ConfigMirrorMixin):
         """
         Optional hook for emitting step diagnostics.
 
-        Draws every figure in :meth:`selected_figures` and shows them; steps
-        without a figure registry override this (or leave it as a no-op).
+        Draws the figures from :meth:`selected_figures`; steps without a registry override this.
 
         :meta private:
         """
@@ -195,7 +194,7 @@ class BaseStep(ConfigMirrorMixin):
             plt.show(block=True)
 
     def plot_failure(self):
-        # Optional: draw what the step had when it raised (see Pipeline.execute_step)
+        # optional: plot what the step had when it failed
         pass
 
     def _wrap_diagnostics_timing(self):

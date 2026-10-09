@@ -50,8 +50,7 @@ ON_STEP_FAIL = ("skip", "pause", "stop")
 
 
 def resolve_on_step_fail(value):
-    """The pipeline's ``on_step_fail`` setting: "skip", "pause" (dashboard only;
-    behaves as "skip" elsewhere) or "stop". Defaults to "pause"."""
+    """Return the ``on_step_fail`` setting: "skip", "pause" or "stop" (default "pause")."""
     v = str(value or "pause").strip().lower()
     if v not in ON_STEP_FAIL:
         raise ValueError(f"on_step_fail must be one of {ON_STEP_FAIL}, got {value!r}")
@@ -174,8 +173,8 @@ class Pipeline(ConfigMirrorMixin):
         self.steps = []  # hierarchical step configs
         self.global_parameters = {}  # mirrors _parameters["pipeline"]
         self._context = None
-        self._diagnose_failures = False  # dashboard: draw a step's failure plot on every fail
-        self.headless = False  # True: never open plot windows, even for diagnostics: true steps
+        self._diagnose_failures = False  # dashboard: plot every step failure
+        self.headless = False  # never open plot windows
 
         # initialise config mirror system
         self._init_config_mirror()
@@ -389,8 +388,7 @@ class Pipeline(ConfigMirrorMixin):
         # performance logging. Capture mode additionally force-enables the
         # diagnostic code path so its figures can be saved for the report,
         # without otherwise changing how the step reports performance.
-        # A QC step counts as user-requested when any of its tests overrides
-        # diagnostics on, even if the step-level flag is off.
+        # a QC test with diagnostics on counts even when the step's own flag is off
         qc_tests = (step.parameters or {}).get("qc_settings") or {}
         user_diagnostics = step.diagnostics or any(
             isinstance(t, dict) and bool(t.get("diagnostics")) for t in qc_tests.values()
@@ -508,8 +506,7 @@ class Pipeline(ConfigMirrorMixin):
 
     @contextlib.contextmanager
     def run_context(self):
-        """Pre-flight validation and report-capture/gc setup around a run (shared with the
-        dashboard runner, which drives execute_step itself). Yields whether a report step is present."""
+        """Validate and set up report capture around a run; yields whether a report step is present."""
         try:
             check_pipeline_variables(self.steps, self.logger)
         except ValueError:
@@ -539,7 +536,8 @@ class Pipeline(ConfigMirrorMixin):
         finally:
             gc.unfreeze()
             if report_present:
-                #   Figures have been embedded by the report writer by now.
+                #   Figures have been embedded by the report writer by now, unless it failed.
+                diagnostic_capture.wait_for_saves()
                 shutil.rmtree(self._capture_dir, ignore_errors=True)
                 self._capture_diagnostics = False
 

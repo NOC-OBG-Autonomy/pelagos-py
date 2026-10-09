@@ -40,8 +40,7 @@ from matplotlib.lines import Line2D
 from pelagos_py.utils import fig_spec
 
 def _decimate(fig):
-    """Thin dense Line2D/scatter artists in ``fig`` to a point cap; returns what to restore."""
-    # Only the saved copy is thinned; the step's own interactive display keeps every point.
+    # thins dense lines/scatters in place; returns the original data to restore
     cap = fig_spec.CAPTURE_MAX_POINTS
     restore = []
     for ax in fig.axes:
@@ -113,11 +112,7 @@ def force_headless_backend():
             pass
 
 
-#   Rasterising a figure (layout, ticks, Agg draw, PNG encode) is single-threaded
-#   Python and often costs more than the step that drew it. Headless saves are
-#   handed to a few worker subprocesses instead: the figure is pickled to
-#   ``path + ".fig"`` and the worker (fig_save_worker.py) writes the PNG while
-#   the pipeline carries on. wait_for_saves() blocks until every PNG exists.
+# Rasterising a PNG often costs more than the step that drew it, so headless saves go to worker subprocesses.
 _SAVE_WORKERS = min(4, os.cpu_count() or 1)
 _workers = []  # [proc, [pending paths]]
 _next_worker = 0
@@ -144,7 +139,7 @@ def save_figure(fig, path, **kwargs):
         entry[0].stdin.flush()
         entry[1].append(path)
         _next_worker += 1
-    except Exception:  # noqa: BLE001 - unpicklable artists, dead worker: save here instead
+    except Exception:  # noqa: BLE001 - unpicklable figure or dead worker
         if os.path.exists(path + ".fig"):
             os.remove(path + ".fig")
         fig.savefig(path, **kwargs)
@@ -157,7 +152,6 @@ def wait_for_saves():
             path = pending.pop(0)
             reply = proc.stdout.readline() if proc.poll() is None else ""
             if not reply.startswith("ok") and os.path.exists(path + ".fig"):
-                #   Worker failed on this one (or died): rasterise it here.
                 with open(path + ".fig", "rb") as fh:
                     fig, kwargs = pickle.load(fh)
                 os.remove(path + ".fig")

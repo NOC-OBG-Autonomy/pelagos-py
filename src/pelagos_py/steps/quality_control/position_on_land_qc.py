@@ -63,8 +63,7 @@ class position_on_land_qc(BaseQC):
         lon, lat = self.data["LONGITUDE"].values, self.data["LATITUDE"].values
         flags = self.flags["LATITUDE_QC"].values
         bad = flags == 4
-        # Left: the track in its regional context. Right: tight on the flagged
-        # positions when there are any, else on the track itself.
+        # left: regional context; right: zoomed on flagged positions, else on the track
         views = [("Region", fig_spec.map_extent(lon, lat, pad=2.0))]
         if bad.any():
             views.append(("Flagged positions", fig_spec.map_extent(lon[bad], lat[bad], pad=0.3)))

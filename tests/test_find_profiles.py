@@ -127,8 +127,7 @@ def test_gap_ending_before_surface_stays_ascent():
 
 
 def test_excluded_rows_labelled_from_neighbours():
-    # Rows with no usable depth (e.g. a science sensor on its own timebase, or
-    # flagged/interpolated PRES) sit between classified rows and inherit their labels.
+    # Rows with no usable depth (e.g. on another sensor's timebase) inherit neighbours' labels.
     df = make_dive_dataframe(n_cycles=1)
     extra = df.iloc[10:-10].copy()
     extra["TIME"] += pd.Timedelta(seconds=5)

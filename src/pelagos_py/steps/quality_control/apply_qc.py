@@ -29,10 +29,12 @@ import json
 
 
 def _flag_summary(flags):
-    """Per-flag counts (0-9) and pandas-describe-equivalent stats, from one bincount."""
+    # flag counts 0-9 and the same stats as pandas describe(), from one bincount
     counts = np.bincount(flags.astype(np.int64), minlength=10)
     n = int(counts.sum())
-    values = np.arange(counts.size, dtype=float)
+    if n == 0:
+        return {i: 0 for i in range(10)}, {"count": 0.0}
+    values =np.arange(counts.size, dtype=float)
     cum = np.cumsum(counts)
     mean = float((values * counts).sum() / n)
     std = float(np.sqrt(((values - mean) ** 2 * counts).sum() / (n - 1))) if n > 1 else float("nan")
@@ -51,7 +53,7 @@ def _flag_summary(flags):
 
 
 def _split_test_settings(settings):
-    # ``diagnostics`` is a per-test override, not a QC parameter: keep it away from validation
+    # `diagnostics` is a per-test override, not a QC parameter
     return {k: v for k, v in settings.items() if k != "diagnostics"}, settings.get("diagnostics")
 
 
@@ -188,7 +190,7 @@ class ApplyQC(BaseStep):
         # build masks for outputs that don't exist yet, see mia_qc/base below).
         subset_names = set(all_required_variables) | set(test_qc_outputs_cols)
         subset_names.update(var[:-3] for var in test_qc_outputs_cols)
-        subset_names.add("TIME")  # diagnostics plot against time; one column is cheap
+        subset_names.add("TIME")  # diagnostics plot against time
         subset_vars = [name for name in subset_names if name in full_data.variables]
         data = full_data[subset_vars].copy(deep=True)
         # Fetch existing flags from the data and create a place to store them
@@ -293,8 +295,7 @@ class ApplyQC(BaseStep):
             # this matters when the report writer force-enables diagnostics to
             # capture plots for every test.
             if test_diagnostics:
-                # Plot the merged flags, i.e. the state after this test, not the
-                # test's own output alone.
+                # plot the merged flags after this test, not just this test's output
                 for col in returned_flags.data_vars:
                     for holder in (qc_test_instance.data, getattr(qc_test_instance, "flags", None)):
                         if holder is not None and col in holder:

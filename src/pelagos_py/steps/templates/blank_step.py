@@ -68,8 +68,7 @@ class BlankStep(BaseStep, QCHandlingMixin):
         self.context["data"] = self.data
         return self.context
 
-    # Named figures: config `diagnostics: true` draws the defaults, `all` or a
-    # list of names selects; report capture and the docs pick them up by name.
+    # `diagnostics: true` draws the defaults; `all` or a list of names picks others
     diagnostic_figures = {}  # EXAMPLE: {"overview": ("Raw vs processed", True)}
 
     def draw_figure(self, name):

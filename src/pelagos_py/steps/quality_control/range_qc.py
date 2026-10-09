@@ -66,7 +66,7 @@ class range_qc(BaseQC):
                     4: [-5, -.inf, inside]
                     9: 0.0                  # single scalar -> flag the exact fill value 0.0
                   TEMP:
-                    3: [-1, 30, outside]     # good band: flag data OUTSIDE it
+                    3: [-1, 30, outside]    # good band: flag data OUTSIDE it
                     4: [-2.5, 40, outside]
                   CNDC:
                     # one flag, two bands: flag bad both inside [2, 3] and outside [0.1, 10]

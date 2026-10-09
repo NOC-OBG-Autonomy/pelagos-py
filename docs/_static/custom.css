@@ -91,7 +91,7 @@ html[data-theme="dark"] .sd-card-body .card-title {
   color: #7bafd4;
 }
 
-/* === Navbar logo (docs/_templates/components/navbar-logo.html) === */
+/* === Navbar logo (docs/_templates/navbar-logo.html) === */
 .pelagos-logo { height: 100%; width: auto; }
 .pelagos-logo .pl-frame { fill: var(--pst-color-text-base); }
 .pelagos-logo .pl-title { font-family: 'Bebas Neue', 'Oswald', Impact, sans-serif; font-size: 80px; fill: #00b4ff; }

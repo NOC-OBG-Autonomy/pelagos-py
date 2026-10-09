@@ -39,7 +39,6 @@ from fpdf.enums import (
 )
 from fpdf.fonts import FontFace
 from datetime import datetime, timezone
-import getpass
 import os
 import platform
 import json
@@ -147,21 +146,6 @@ def long_date(when: datetime) -> str:
     else:
         suffix = {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
     return f"{day}{suffix} {when.strftime('%B %Y, %H:%M')} UTC"
-
-
-def current_info() -> dict:
-    #   Operator/environment info captured when the report is generated.
-    now = datetime.now(timezone.utc)
-
-    info = {
-        "timestamp_utc": now.isoformat(),
-        "user": getpass.getuser(),
-        "version": pelagos_version(),  #   Normally done with __version__.
-        "python_version": platform.python_version(),
-        "system": f"{platform.system()}: {platform.release()}",
-    }
-
-    return info
 
 
 def build_qc_dict(data: xr.Dataset) -> dict:
@@ -1065,8 +1049,7 @@ def index_section(pdf: ReportPDF, data: xr.Dataset) -> None:
 ### Plot builders (save a figure, return its path)
 
 
-#   Title-page map palette: muted navy ocean, slate land, gold track that
-#   brightens from the oldest fix to the newest.
+# Title-page map palette: navy ocean, slate land, gold track.
 _MAP_OCEAN = "#2b3a57"
 _MAP_LAND = "#45526d"
 _MAP_COAST = "#7889ad"
@@ -1139,7 +1122,7 @@ _CS_MARKER_SIZE = 8.0
 #   other flag (e.g. bad, not-used, missing) are masked out before plotting.
 _CS_ALLOWED_QC_FLAGS = (0, 1, 2, 5, 8)
 
-#   qc_hist's source-series panel is a single line on a half page; far fewer points still look dense.
+# qc_hist's source panel is one line on half a page, so it needs far fewer points.
 _QC_HIST_MAX_POINTS = 20_000
 
 
@@ -1186,8 +1169,7 @@ def _find_lonlat(data: xr.Dataset):
 
 
 def glider_track_map(data: xr.Dataset, outdir: str, ext: str = ".png") -> str:
-    # Dark, web-style map of the glider track for the title page. Returns the
-    # saved image path, or None when there is no track to draw.
+    # Title-page track map; None when there is no track.
     from matplotlib.collections import LineCollection
     from matplotlib.colors import LinearSegmentedColormap
 
@@ -1200,7 +1182,7 @@ def glider_track_map(data: xr.Dataset, outdir: str, ext: str = ".png") -> str:
     lon, lat = lon[valid], lat[valid]
     if lon.size < 2:
         return None
-    #   Thin millions of fixes to a few thousand without changing the track's shape.
+    # A few thousand fixes keep the track's shape.
     stride = max(1, int(np.ceil(lon.size / 3000)))
     lon, lat = lon[::stride], lat[::stride]
 
@@ -1208,14 +1190,15 @@ def glider_track_map(data: xr.Dataset, outdir: str, ext: str = ".png") -> str:
     fig.patch.set_facecolor(_MAP_OCEAN)
     ax.set_facecolor(_MAP_OCEAN)
     ax.set_axis_off()
+    extent = fig_spec.map_extent(lon, lat)
     try:
-        fig_spec.coastlines(
-            ax, fig_spec.map_extent(lon, lat), color=_MAP_COAST, linewidth=0.6, fill=_MAP_LAND
-        )
+        fig_spec.coastlines(ax, extent, color=_MAP_COAST, linewidth=0.6, fill=_MAP_LAND)
     except Exception:  # noqa: BLE001 - a failed Natural Earth download never breaks the report
-        pass
+        # coastlines sets the limits; without it add_collection leaves them at 0..1
+        ax.set_xlim(extent[0], extent[1])
+        ax.set_ylim(extent[2], extent[3])
 
-    #   Time-faded gold gradient (oldest faint -> newest bright) over a soft glow.
+    # Gold fades from oldest (faint) to newest (bright), over a soft glow.
     pts = np.column_stack([lon, lat]).reshape(-1, 1, 2)
     segs = np.concatenate([pts[:-1], pts[1:]], axis=1)
     cmap = LinearSegmentedColormap.from_list("glidergold", _MAP_GOLD_STOPS)
@@ -1284,16 +1267,14 @@ def qc_hist(
     if flag_all_nan:
         axs[1].text(0.2, 0.5, f"Flags ({var}) are NaN", transform=axs[1].transAxes)
     else:
-        #   Flags are small integers: np.histogram sorts 7M values per figure,
-        #   bincount doesn't. Labels are drawn by hand (bar_label's lambda makes
-        #   the figure unpicklable, forcing a slow foreground save).
+        # bincount is much faster than np.histogram; bar_label would make the figure unpicklable.
         flags = np.asarray(data[var].values).ravel()
         flags = flags[np.isfinite(flags)].astype(np.int64)
         counts = np.bincount(flags[flags >= 0], minlength=len(hislim))[: len(hislim)]
         centres = np.arange(len(hislim))
         axs[1].bar(centres, counts, width=1.0)
         for x, c in zip(centres, counts):
-            if c > 0:  #   visual centre of the bar on a log axis starting at 1
+            if c > 0:  # sqrt(c) is the bar's visual centre on a log axis from 1
                 axs[1].annotate(f"{c:g}", (x, np.sqrt(c)), ha="center", va="center",
                                 fontsize=7, rotation=90)
         axs[1].set_yscale("log")
@@ -1315,10 +1296,7 @@ def qc_hist(
 
 
 def qc_hist_figures(data: xr.Dataset, outdir: str, bar=None) -> list:
-    #   Render a QC histogram per numeric QC variable (in the background, see
-    #   save_figure); returns [(var, image path or None)] for make_plots. Only
-    #   QC flags of a numeric measurement series are plotted: many flag
-    #   metadata/coordinate fields whose parent is a string, datetime or scalar.
+    # Returns [(var, image path or None)]; skips flags on string, datetime or scalar fields.
     qc_vars = [
         var
         for var in data.data_vars
@@ -1339,7 +1317,7 @@ def qc_hist_figures(data: xr.Dataset, outdir: str, bar=None) -> list:
     for i, var in enumerate(qc_vars, start=1):
         var_source = var[:-3]  #   TEMP_QC --> TEMP
         #   Scan each array's NaN-ness once and reuse it in qc_hist, rather than
-        #   scanning both again inside there. Nothing to plot when both are NaN.
+        #   scanning both again inside there.
         source_all_nan = bool(np.all(np.isnan(data[var_source])))
         flag_all_nan = bool(np.all(np.isnan(data[var])))
         if source_all_nan and flag_all_nan:
@@ -1357,7 +1335,6 @@ def qc_hist_figures(data: xr.Dataset, outdir: str, bar=None) -> list:
 
 
 def make_plots(pdf: ReportPDF, figures: list) -> None:
-    #   Write the QC Plots section from qc_hist_figures() output.
     pdf.add_page()
     pdf.section_heading("QC Plots")
     for var, hist_img in figures:
@@ -1387,7 +1364,7 @@ def cross_section_figure(data: xr.Dataset, outdir: str, ext: str = ".png") -> st
         return None
     time, pres = time[:n], pres[:n]
 
-    #   Thin consistently so every panel keeps the same points.
+    # Same points in every panel.
     idx = fig_spec.thin_idx(n, fig_spec.CAPTURE_MAX_POINTS)
     time, pres = time[idx], pres[idx]
 
@@ -1463,7 +1440,7 @@ def cross_section_figure(data: xr.Dataset, outdir: str, ext: str = ".png") -> st
             xo, po, co = x, pres, c
             size = _CS_MARKER_SIZE
 
-        #   Pixel markers (",") draw ~35% faster than round ones at this density.
+        # Pixel markers draw ~35% faster than round ones at this density.
         sc = ax_main.scatter(
             xo, po, c=co, cmap=cmap, vmin=vmin, vmax=vmax, s=size, marker=",", edgecolors="none"
         )
@@ -1726,9 +1703,7 @@ class WriteDataReport(BaseStep):
         #   shown on the title page.
         glob_params = self.context["global_parameters"]
 
-        #   One bar for the whole step, opened before any work so it takes over
-        #   from the export's the moment that finishes: track map 5%, cross-section
-        #   +10, QC histograms +80, PDF assembly fills the rest.
+        # Track map 5%, cross-section 10%, QC plots 80%, PDF the rest.
         report_bar = progress_bar(total=100, desc="", unit="%", step_name=self.name)
 
         #   Title-page glider track map. Best-effort: any failure (no
@@ -1741,8 +1716,7 @@ class WriteDataReport(BaseStep):
         report_bar.update(5)
 
         try:
-            #   All figures are drawn first and rasterised by background workers
-            #   (save_figure); the PDF is assembled once every PNG exists.
+            # Figures save in the background; build the PDF once they all exist.
             cross_section_img = None
             if self.parameters.get("show_cross_section_plots", True):
                 cross_section_img = cross_section_figure(data, fig_dir)

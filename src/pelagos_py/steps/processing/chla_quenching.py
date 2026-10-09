@@ -30,7 +30,6 @@ import numpy as np
 from functools import cached_property
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 
 CALC_SUFFIX = "__FOR_CALC"  # suffix of the QC-masked calculation-only copies; see run().
 
@@ -59,7 +58,7 @@ TIMESERIES_DEPTH_MIN = 50.0  # min depth (m) the dynamic section window shrinks 
 SECTION_MARKER_SIZE = 1.5  # scatter marker size for the section plots.
 SECTION_MAX_POINTS = 100_000  # cap on points drawn in the bottom section panel.
 
-# Colours of the annotated 'profile' figure (original / corrected / reconstruction / ratio).
+# colours of the 'profile' figures
 _C_ORIG, _C_CORR, _C_RECON, _C_RATIO = (fig_spec.CATEGORY[i] for i in (1, 2, 3, 4))
 
 # Colour/label per category in the bottom section panel, in draw order
@@ -118,6 +117,7 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
     """
 
     step_name = "CHLA Quenching"
+    beta = True
     # MLD, backscatter and PAR are only needed by some methods, so they are
     # checked at run time against the selected method rather than required here.
     required_variables = ["PROFILE_NUMBER", "TIME", "DEPTH", "LATITUDE", "LONGITUDE"]
@@ -339,8 +339,7 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
             for values in arrays.values():
                 complete &= ~pd.isnull(values)
 
-            # median over the 50 shallowest complete samples of each profile
-            # (picked in numpy: a full-dataset DataFrame is GBs on big missions)
+            # median of each profile's 50 shallowest complete samples (numpy: a DataFrame is GBs)
             depth = arrays["DEPTH"]
             picked = []
             for indices in self._profile_index.values():
@@ -443,14 +442,23 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         profile_numbers = np.unique(
             data_subset["PROFILE_NUMBER"].dropna(dim="N_MEASUREMENTS")
         )
+        no_sun = []
         for profile_number in self.log_progress(profile_numbers, desc="", unit="prof"):
+            if method_key in self.methods_requiring_sun and int(profile_number) not in self._sun_cache:
+                no_sun.append(int(profile_number))
+                continue
             idx = self._profile_index[profile_number]
             profile = data_subset.isel(N_MEASUREMENTS=idx)
             corrected_chla = method_function(profile)
             self.data[self.output_as][idx] = corrected_chla
+        if no_sun:
+            self.log_warn(
+                f"{len(no_sun)} profile(s) have no sample with time, depth and position, "
+                f"so no sun angle; left uncorrected: {no_sun}"
+            )
 
         if method_key == "thomalla2018":
-            counts = getattr(self, "_thomalla_debug", {})
+            counts = getattr(self, "_thomalla_counts", {})
             total = counts.get("total", 0)
             no_qd = counts.get("no_qd", 0)
             if no_qd:
@@ -534,12 +542,12 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
                 missing += 1
         return missing
 
-    def _thomalla_debug_count(self, key):
+    def _count_thomalla(self, key):
         # Per-profile counters behind the thomalla2018 QD-failure warning
         # (run()): how many daytime profiles corrected vs. why the rest didn't.
-        counts = getattr(self, "_thomalla_debug", None)
+        counts = getattr(self, "_thomalla_counts", None)
         if counts is None:
-            counts = self._thomalla_debug = {}
+            counts = self._thomalla_counts = {}
         counts[key] = counts.get(key, 0) + 1
 
     def _resolve_bbp_var(self):
@@ -584,8 +592,7 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         return self._sun_elevation_for(int(profile["PROFILE_NUMBER"][0]))
 
     def _fill_sun_caches(self):
-        # Per-profile solar elevation (deg) and hours from solar noon ([0, 12], via the
-        # equation of time + longitude), in one vectorised pvlib call (~1 ms per call).
+        # solar elevation (deg) and hours from solar noon for every profile in one pvlib call
         import pvlib  # slow import, deferred to first use
 
         pns = [int(p) for p in self.sun_args.index]
@@ -677,13 +684,8 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
             nights_members.append(current)
 
         night_refs = []
-        raw_shallow, ref_shallow = [], []  # debug: sampled vs. post-QC shallowest depth
         for members in nights_members:
             mask = np.isin(pnum, members)
-            z_raw = z_all[mask]
-            z_raw_finite = z_raw[np.isfinite(z_raw)]
-            if z_raw_finite.size:
-                raw_shallow.append(float(np.min(z_raw_finite)))
             ref = self._bin_night(z_all[mask], fl_all[mask], bbp_all[mask])
             if ref is None:
                 continue
@@ -692,15 +694,6 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
             ref["first"] = self._bin_night(*(a[pnum == first] for a in (z_all, fl_all, bbp_all)))
             ref["last"] = self._bin_night(*(a[pnum == last] for a in (z_all, fl_all, bbp_all)))
             night_refs.append(ref)
-            ref_shallow.append(float(np.min(ref["z"])))
-        if not quiet and raw_shallow:
-            self.log(
-                f"Thomalla 2018 debug: nightly shallowest sampled DEPTH "
-                f"median={np.median(raw_shallow):.1f}m (min={min(raw_shallow):.1f}m); "
-                f"shallowest usable (post-QC, binned) fl/bbp DEPTH "
-                f"median={np.median(ref_shallow) if ref_shallow else np.nan:.1f}m "
-                f"(min={min(ref_shallow) if ref_shallow else np.nan:.1f}m)."
-            )
 
         day_night = {}
         if night_refs:
@@ -776,7 +769,7 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         # Shared max fl:bbp-ratio correction (Sackmann window='mld' / Swart
         # window='zeu'): reset F to bbp x R_max from the surface to the depth of the
         # max ratio. Returns (corrected, info); chlf unchanged if it can't correct;
-        # never lowers F. info feeds the 'profile' figure (see _fig_profile).
+        # never lowers F.
         chlf = np.asarray(profile[self.apply_to].values, dtype=float)
         depth = np.asarray(profile["DEPTH"].values, dtype=float)
         bbp = np.asarray(profile[self.bbp_var].values, dtype=float)
@@ -982,8 +975,8 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         night's mean fl:bbp ratio profile, or (``night_reference`` ``'mz'`` /
         ``'flz'``, Mitchell et al. 2024) against that reference interpolated in
         time between the bracketing nights. Above the quenching depth QD,
-        fluorescence is reset to ``(Fl_NT/bbp_NT) * bbp_DT``. QD comes from the night-minus-day fluorescence difference
-        within the photic layer (shallower than ``max_photic_depth``, following
+        fluorescence is reset to ``(Fl_NT/bbp_NT) * bbp_DT``. QD comes from the
+        night-minus-day fluorescence difference within the photic layer (shallower than ``max_photic_depth``, following
         glidertools; needs backscatter, no PAR).
         """
         return self._thomalla2018(profile)[0]
@@ -1008,20 +1001,19 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
             return chlf, {}
 
         ref = self._night_refs[ref_idx]
-        self._thomalla_debug_count("total")
+        self._count_thomalla("total")
         if float(np.min(ref["z"])) > 5.0:
-            self._thomalla_debug_count("ref_no_surface")
+            self._count_thomalla("ref_no_surface")
 
         # Night fl:bbp ratio and mean fluorescence interpolated onto day depths;
         # NaN outside the night's sampled depth range rather than clamping to the
         # nearest endpoint, so unsampled depths can't manufacture a night-day diff.
-        # The ratio alone is extended up to the surface from the shallowest night
-        # bin, so QC-excluded surface samples (e.g. the top 2 m) still get corrected.
+        # only the ratio is extended to the surface, so QC-excluded surface samples still get corrected
         def at(night, key, **kw):
             return np.interp(depth, night["z"], night[key], **kw)
 
         pair = self._bracketing_nights(profile_number)
-        if pair:  # Mitchell 2024: reference interpolated in time between the nights
+        if pair:  # Mitchell et al. 2024
             r0, r1, alpha = pair
             ratio_at_z = (1 - alpha) * at(r0, "ratio", right=np.nan) + alpha * at(r1, "ratio", right=np.nan)
             fl_night_at_z = ((1 - alpha) * at(r0, "fl", left=np.nan, right=np.nan)
@@ -1038,10 +1030,10 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         info = {"night_ref": ref, "night_pair": pair, "qd_detail": qd_detail,
                 "recon": [("night ratio × day bbp", ratio_at_z * bbp, "line")]}
         if not np.isfinite(qd):
-            self._thomalla_debug_count("no_qd")
-            self._thomalla_debug_count(f"no_qd:{reason}")
+            self._count_thomalla("no_qd")
+            self._count_thomalla(f"no_qd:{reason}")
             return chlf, info
-        self._thomalla_debug_count("corrected")
+        self._count_thomalla("corrected")
         info["lines"] = [("quenching depth", qd, _C_RATIO, "--")]
 
         corrected = ratio_at_z * bbp
@@ -1058,10 +1050,10 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         self._warn_if_correction_blows_up(chlf, chl_corr)
         return chl_corr, info
 
-    def _bracketing_nights(self, profile_number):
-        # (preceding night, following night, alpha) for night_reference 'mz'/'flz',
-        # or None (fall back to the preceding night) when not bracketed.
-        if self.night_reference == "preceding":
+    def _bracketing_nights(self, profile_number, mode=None):
+        # (preceding night, following night, alpha), or None to fall back to the preceding night
+        mode = mode or self.night_reference
+        if mode == "preceding":
             return None
         t = pd.Timestamp(self.sun_args.loc[profile_number, "TIME"]).value
         before = [r for r in self._night_refs if r["time"] <= t]
@@ -1070,7 +1062,7 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
             return None
         r0, r1 = max(before, key=lambda r: r["time"]), min(after, key=lambda r: r["time"])
         alpha = (t - r0["time"]) / (r1["time"] - r0["time"])
-        if self.night_reference == "flz":
+        if mode == "flz":
             r0, r1 = r0["last"], r1["first"]
             if r0 is None or r1 is None:
                 return None
@@ -1078,15 +1070,7 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
 
     @staticmethod
     def _quenching_depth(z, fl_day, fl_night, max_photic_depth):
-        # Quenching depth QD (positive-down m), Thomalla 2018: within the photic
-        # layer (0 to max_photic_depth), restricted to night > day (fl_diff > 0,
-        # the quenching signal), the difference D(z) is anchored at its near-surface
-        # max (top 5 m); QD is the deeper point of steepest gradient down to one of
-        # the five smallest |D| or a zero crossing. Returns (qd, reason); qd is NaN
-        # if unresolvable, including when there is no near-surface observation to
-        # anchor on. reason is surfaced to the caller for the per-run QD-failure
-        # warning (run()); detail (the difference profile, anchor and candidates)
-        # feeds the 'quenching_depth' figure.
+        # Thomalla 2018 quenching depth from night-minus-day fl; returns (qd or NaN, reason, detail).
         z = np.asarray(z, dtype=float)
         D = np.asarray(fl_night, dtype=float) - np.asarray(fl_day, dtype=float)
         mask_all = np.isfinite(z) & np.isfinite(D) & (z >= 0) & (z <= max_photic_depth)
@@ -1315,8 +1299,7 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         False: "\nhybrid off: every profile uses the Xing 2018 layer above.",
     }
 
-    # overview is the default; its three panels are only drawn on their own when
-    # named (the docs do), so 'all' never duplicates them.
+    # the overview's panels are drawn alone only when named, so 'all' doesn't duplicate them
     diagnostic_figures = {
         "overview": ("Method comparison, corrected sections and an example profile in one figure", True),
         "method_comparison": ("Day vs night CHLA, every method scored", None),
@@ -1418,8 +1401,7 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         return fig
 
     def _fig_profile(self):
-        # Original vs corrected on each selected profile, with the method's own
-        # reference depths and reconstruction; a ratio panel where the method has one.
+        # original vs corrected per profile, with the method's reference depths and reconstruction
         impl = self._method_impl()
         pns = self._figure_profiles()
         subsets = self._profile_subsets(pns)
@@ -1556,11 +1538,7 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         pn = self._figure_profiles()[0]
         p = self._profile_subsets([pn])[pn]
         pn_int = int(p["PROFILE_NUMBER"][0])
-        mode = self.night_reference
-        panels = []
-        for self.night_reference in ("mz", "flz"):
-            panels.append(self._bracketing_nights(pn_int))
-        self.night_reference = mode
+        panels = [self._bracketing_nights(pn_int, mode) for mode in ("mz", "flz")]
         if not any(panels):
             self.log(f"Profile {pn} has no bracketing nights.")
             return None
@@ -1856,8 +1834,7 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         if not np.any(mask):
             return {}
         keys = np.floor(depth[mask] / COMPARE_BIN_METRES).astype(int)
-        # sort by (bin, value) once; the median is the middle element (or the
-        # mean of the middle two), exactly as np.median computes it
+        # per-bin median from a single sort; same result as np.median
         order = np.lexsort((values[mask], keys))
         k, v = keys[order], values[mask][order]
         starts = np.flatnonzero(np.r_[True, k[1:] != k[:-1]])
@@ -2193,7 +2170,7 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
             keep = np.linspace(0, idx.size - 1, max_points).astype(int)
             idx = idx[keep]
             self.log(
-                f"Section debug panel: subsampled {int(plot_mask.sum())} points "
+                f"Section panel: subsampled {int(plot_mask.sum())} points "
                 f"to {max_points} for plotting."
             )
         return time[idx], depth[idx], cat[idx]

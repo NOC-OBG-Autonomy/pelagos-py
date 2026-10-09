@@ -443,7 +443,6 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
 
         for prof in self.log_progress(profile_numbers, desc="Thermal Lag", unit="prof"):
 
-            # This profile's rows with a TEMP value
             prof_indices = self._profile_index[prof]
             indices = prof_indices[~np.isnan(temp_arr[prof_indices])]
 

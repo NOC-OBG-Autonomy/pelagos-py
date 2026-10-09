@@ -1,9 +1,5 @@
-// Full-window viewer (lightbox) for diagnostic figures. Arrow keys / buttons
-// walk a set of figures; Esc closes. Figures the runner could serialise (see
-// fig_spec.py) open as an interactive WebGL chart of the full data -- box-zoom,
-// double-click to reset, click a point for its exact values, legend toggling --
-// with a progress bar while the data streams in. The toolbar switches back to
-// the PNG; figures with no spec only ever show the PNG.
+// Full-window viewer for diagnostic figures: an interactive WebGL chart when the runner
+// serialised a spec (see fig_spec.py), else the PNG.
 
 const Viewer = {
   el: null,
@@ -62,8 +58,7 @@ const Viewer = {
 
   url(fname) { return '/api/run/figure/' + encodeURIComponent(fname); },
 
-  // Filenames restart at fig_001.png every run, so a bare URL could be served
-  // from cache as a previous run's image. Minted once, when the figure is captured.
+  // Filenames restart at fig_001.png every run, so bust the cache.
   _seq: 0,
   freshUrl(fname) { return Viewer.url(fname) + '?v=' + (++Viewer._seq); },
   src(fig) { return fig.url || Viewer.url(fig.fname); },
@@ -98,7 +93,6 @@ const Viewer = {
     Viewer.note('');
     Viewer.progress(null);
 
-    // Abandon any fetch still in flight for the previous figure and free its GPU buffers.
     if (Viewer._abort) Viewer._abort.abort();
     Plot.purge(Viewer.plotEl);
     if (live) Viewer.showPlot(it);
@@ -112,7 +106,7 @@ const Viewer = {
     Viewer.imgEl.alt = it.caption || it.fname;
   },
 
-  // Anything that goes wrong -- spec missing, no WebGL2 -- falls back to the image.
+  // Falls back to the image if anything fails (no spec, no WebGL2).
   showPlot(it) {
     const token = ++Viewer._token;
     const abort = new AbortController();
@@ -146,7 +140,7 @@ const Viewer = {
     return (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(0) + 'k' : String(n)) + ' points';
   },
 
-  // fraction 0..1 fills the bar; null hides it; undefined total shows bytes so far.
+  // fraction null hides the bar; undefined total shows bytes so far.
   progress(fraction, loaded) {
     const bar = Viewer.progressEl;
     if (!bar) return;
@@ -188,15 +182,12 @@ const Viewer = {
     Plot.purge(Viewer.plotEl);
   },
 
-  // A clickable thumbnail/card for one figure that opens the viewer on `items`.
-  // Shared by the Plots tab gallery and the paused-step review panel.
   card(items, index, { caption = true, cls = '' } = {}) {
     const it = items[index];
     const fig = document.createElement('figure');
     fig.className = 'plot-card' + (cls ? ' ' + cls : '');
     if (it.isLog) {
-      // A log-only step (e.g. Load Data, Export) draws no figure -- show the
-      // diagnostics text it printed instead. An error card is the same shape.
+      // A log-only step (e.g. Load Data) draws no figure, so show the text it printed.
       fig.classList.add('log-card');
       if (it.isError) fig.classList.add('error-card');
       const pre = document.createElement('pre');
@@ -218,7 +209,6 @@ const Viewer = {
       cap.textContent = it.caption;
       fig.appendChild(cap);
     }
-    // Log/error cards have no image: leave them out of the lightbox sequence.
     const figs = items.filter((f) => !f.isLog);
     fig.onclick = () => Viewer.open(figs, figs.indexOf(it));
     if (it.spec) fig.classList.add('has-plot');

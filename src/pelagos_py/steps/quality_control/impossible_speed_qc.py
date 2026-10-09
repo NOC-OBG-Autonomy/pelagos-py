@@ -35,10 +35,9 @@ class impossible_speed_qc(BaseQC):
     Variables Flagged: TIME, LATITUDE, LONGITUDE
     Checks that the horizontal speed between GPS fixes stays below ``threshold`` (m/s).
 
-    Only real fixes (finite LATITUDE and LONGITUDE) are used. Each fix is compared
-    against the last *good* fix at least ``min_interval`` seconds earlier, so GPS
-    jitter between fixes a few seconds apart (10 m in 1 s reads as 10 m/s) does
-    not trip the test, and a single bad fix does not drag the next one down with it.
+    Each fix is compared with the last good fix at least ``min_interval`` seconds
+    earlier, so GPS jitter between close fixes does not trip the test and one bad
+    fix does not get the next one flagged too.
 
     Example::
 
@@ -71,7 +70,7 @@ class impossible_speed_qc(BaseQC):
         speed = np.full(lat.shape, np.nan)
         bad = np.zeros(lat.shape, dtype=bool)
 
-        ref = None  # index of the last good fix used as the reference
+        ref = None  # last good fix
         for i in fix:
             if ref is not None and time[i] - time[ref] >= self.min_interval:
                 dlat = lat[i] - lat[ref]
@@ -109,7 +108,7 @@ class impossible_speed_qc(BaseQC):
         ax.axhline(self.threshold, ls="--", c="k")
         fig_spec.style_axes(ax, xlabel="Time", ylabel="Speed since last good fix (m/s)")
 
-        # Map of the fixes so a flagged jump can be seen against the track.
+        # track map, to see flagged jumps in place
         ax = axes[0][1]
         fix = np.isfinite(lat) & np.isfinite(lon)
         if fix.sum():

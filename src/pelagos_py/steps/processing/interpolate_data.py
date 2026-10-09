@@ -24,7 +24,6 @@ import pelagos_py.utils.diagnostics as diag
 #### Custom imports ####
 from pelagos_py.utils.processing_utils import interpolate_by_time
 import numpy as np
-import xarray as xr
 import matplotlib
 import matplotlib.pyplot as plt
 from pelagos_py.utils import fig_spec
@@ -104,8 +103,7 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
         parameters = dict(parameters or {})
         if "qc_handling_settings" in parameters:
             raise ValueError(f"[{name}] 'qc_handling_settings' is not used here: put the flags under 'variables'.")
-        # `variables` is exactly the mixin's flag_filter_settings; hand it over so
-        # its subsetting/snapshot/filter machinery works unchanged.
+        # `variables` is the mixin's flag_filter_settings under a simpler name
         parameters["qc_handling_settings"] = {"flag_filter_settings": dict(parameters.get("variables") or {})}
         super().__init__(name, parameters, diagnostics, context)
 
@@ -117,7 +115,7 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
 
         max_interp_seconds = self._max_interp_seconds()
 
-        self.filled = {}  # per variable, which samples were filled (for the diagnostics plot)
+        self.filled = {}  # for the diagnostics plot
         time = self.data["TIME"].values
         for var in variables:
             was_nan = np.isnan(self.data[var].values)
@@ -176,7 +174,7 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
         interpolated[too_far] = np.nan
 
     def generate_diagnostics(self):
-        # First variable in `variables`, original samples vs interpolated fills.
+        # first variable only
         matplotlib.use("tkagg")
         fig, axes = fig_spec.new_fig()
         ax = axes[0][0]

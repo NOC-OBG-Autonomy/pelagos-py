@@ -69,9 +69,18 @@ def test_override_lowers_existing_flag_but_combinatrix_box_does_not():
 
 
 def test_apply_qc_store_is_the_starting_point():
-    qc = manual_qc(make_data(), flag_remaining_good=False, boxes=[])
+    qc = manual_qc(make_data(), flag_remaining_good=False, variables=["PRES"], boxes=[])
     qc.existing_flags = xr.Dataset({"PRES_QC": ("N_MEASUREMENTS", np.array([3, 3, 0, 0, 9, 0]))})
     assert list(qc.return_qc()["PRES_QC"].values) == [3, 3, 0, 0, 9, 0]
+
+
+def test_start_flags_survive_store_overwrite():
+    qc = manual_qc(make_data(), boxes=[
+        {"x": ["2024-05-01T00:30", "2024-05-01T03:30"], "y": [0, 12], "flag": 4},
+    ])
+    qc.existing_flags = xr.Dataset({"PRES_QC": ("N_MEASUREMENTS", np.array([0, 0, 0, 0, 9, 0]))})
+    qc.existing_flags["PRES_QC"][:] = qc.return_qc()["PRES_QC"]  # as Apply QC's organise_flags does
+    assert list(qc.start_flags["PRES"]) == [0, 0, 0, 0, 9, 0]
 
 
 def test_numeric_x_axis():
@@ -81,9 +90,17 @@ def test_numeric_x_axis():
     assert list(qc.return_qc()["PRES_QC"].values) == [1, 4, 4, 1, 9, 1]
 
 
-def test_no_boxes_still_targets_y_variable():
-    qc = manual_qc(None, boxes=[])
-    assert qc.qc_outputs == ["PRES_QC"]
+def test_only_listed_variables_are_targets():
+    assert manual_qc(None, boxes=[]).qc_outputs == []
+    qc = manual_qc(None, variables=["CHLA", ["TEMP", "PSAL"]], boxes=[])
+    assert qc.qc_outputs == ["CHLA_QC", "TEMP_QC", "PSAL_QC"]
+
+
+def test_listed_variables_untouched_become_good():
+    qc = manual_qc(make_data(), variables=[["PRES", "TEMP"]], boxes=[])
+    flags = qc.return_qc()
+    assert list(flags["PRES_QC"].values) == [1, 1, 1, 1, 9, 1]
+    assert list(flags["TEMP_QC"].values) == [1, 1, 1, 1, 1, 1]
 
 
 @pytest.mark.parametrize("box", [
@@ -105,7 +122,7 @@ def test_box_on_its_own_axes():
     assert qc.required_variables == ["TIME", "PRES", "TEMP"]
     flags = qc.return_qc()
     assert list(flags["TEMP_QC"].values) == [0, 0, 0, 4, 0, 0]
-    assert list(flags["PRES_QC"].values) == [0, 0, 0, 0, 9, 0]
+    assert "PRES_QC" not in flags
 
 
 def test_box_limited_to_profiles():

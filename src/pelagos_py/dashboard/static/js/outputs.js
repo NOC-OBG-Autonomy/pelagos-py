@@ -1,31 +1,28 @@
-// Output tab, lower half: every file runs have left in the output folders
-// (reports, exports, logs, kept report figures), with open/delete. The folders
-// come from the loaded config (out_directory + each output_path) plus the
-// demo data folder, so nothing depends on knowing where pip put the package.
+// Output tab, lower half: files runs left in the config's output folders and the demo data folder.
 const Outputs = {
   files: [],
   dirs: [],
   KINDS: { report: 'Reports', data: 'Exported data', log: 'Logs', figures: 'Report figures' },
 
-  // Folders and input files named by the YAML pane.
   fromConfig() {
     let cfg = {};
     try { cfg = jsyaml.load(editor.getValue()) || {}; } catch (e) { /* mid-edit */ }
-    const dirs = [], inputs = [];
+    const dirs = [], exports = [];
     const out = (cfg.pipeline || {}).out_directory;
     if (out) dirs.push(String(out));
     for (const step of cfg.steps || []) {
       const p = step && step.parameters ? step.parameters : {};
-      if (p.output_path) dirs.push(String(p.output_path).replace(/[^/\\]*$/, '') || '.');
-      if (p.file_path) inputs.push(String(p.file_path));
+      if (!p.output_path) continue;
+      dirs.push(String(p.output_path).replace(/[^/\\]*$/, '') || '.');
+      exports.push(String(p.output_path));
     }
-    return { dirs, inputs };
+    return { dirs, exports };
   },
 
   async refresh() {
-    const { dirs, inputs } = Outputs.fromConfig();
+    const { dirs, exports } = Outputs.fromConfig();
     try {
-      const res = await API.listOutputs(dirs, inputs);
+      const res = await API.listOutputs(dirs, exports);
       Outputs.files = res.files || [];
       Outputs.dirs = res.dirs || [];
     } catch (e) {
@@ -69,8 +66,7 @@ const Outputs = {
     meta.className = 'output-size';
     meta.textContent = fmtBytes(f.size) + ' · ' + Outputs.when(f.mtime);
     el.appendChild(meta);
-    // PDFs/logs open in the browser; data files and figure folders are already
-    // on disk, so they get "Show in Finder" instead of a pointless download.
+    // Data files are already on disk, so they get "Show in Finder" rather than a download.
     if (f.kind === 'report' || f.kind === 'log') {
       const open = document.createElement('a');
       open.className = 'icon-btn';
@@ -127,8 +123,8 @@ const Outputs = {
     if (RunLock.running) return;
     const n = Outputs.files.length;
     if (!n || !confirm(`Delete all ${n} output file${n === 1 ? '' : 's'}? Input data files are kept.`)) return;
-    const { dirs, inputs } = Outputs.fromConfig();
-    try { await API.cleanOutputs(dirs, inputs); }
+    const { dirs, exports } = Outputs.fromConfig();
+    try { await API.cleanOutputs(dirs, exports); }
     catch (e) { alert('Could not delete: ' + e.message); }
     Run.clearReport();
     await Outputs.refresh();

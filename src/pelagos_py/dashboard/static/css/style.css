@@ -1,6 +1,4 @@
-/* ---------- Tokens ----------
-   Every colour, radius, control size and shadow lives here; the rules below
-   only reference them. Flat white surfaces, near-black ink, colour as accent. */
+/* ---------- Tokens ---------- */
 :root {
   --bg: #ffffff; --panel: #ffffff; --panel-2: #f2f2f4;
   --ink: #111113; --muted: #55555c; --border: #d4d4d9;
@@ -13,19 +11,16 @@
   --cat-io: #e2955c;   --cat-io-soft: #fbeee2;   --cat-io-ink: #b26a2f;
   --cat-proc: #3d9bd6; --cat-proc-soft: #e4f1fa; --cat-proc-ink: #2b7099;
   --cat-qc: #b08ad4;   --cat-qc-soft: #f3ecfa;   --cat-qc-ink: #7c56a9;
-  /* Section trays, matched on the container title in builder.js (40% over white). */
+  /* Section trays, matched on the container title in builder.js. */
   --sec-alt-0: #6683a0; --sec-alt-1: #8a8a93; --sec-chla: #2c7d4f; --sec-profiles: #e2863c;
   --sec-io: #5b6b8c; --sec-coords: #2a9d8f; --sec-ctd: #3f7fc1; --sec-crosscal: #8e5bbf;
   --sec-interp: #7a9bb5; --sec-salinity: #1fa3c9; --sec-bbp: #a3684a; --sec-oxygen: #d95f6c;
   --sec-par: #d8b33a; --sec-mld: #6c8f4d;
-  /* Container trays and the arrows between steps. */
   --tray: #e6eff9; --rail: #9fb1c6;
-  /* Dark run console. */
   --console: #26313e; --console-2: #33414f; --console-3: #3a4a5c;
   --console-ink: #e4ebf1; --console-muted: #9fb3c8;
   --ansi-black: #5c6b7a; --ansi-red: #f0908f; --ansi-green: #9ed99a; --ansi-yellow: #e6bd6f;
   --ansi-amber: #e2732e; --ansi-blue: #86c8ec; --ansi-magenta: #d3a5e8; --ansi-cyan: #7fd2d2; --ansi-white: #e4ebf1;
-  /* Shape, size, elevation. */
   --r-lg: 12px; --r: 9px; --r-sm: 6px; --pill: 999px;
   --ctl-h: 32px; --ctl-h-sm: 26px;
   --shadow-pill: 0 1px 3px rgba(0, 0, 0, .14);
@@ -52,9 +47,7 @@ svg.ico { display: inline-block; vertical-align: -0.15em; flex: 0 0 auto; }
 ::-webkit-scrollbar-thumb { background: transparent; border-radius: var(--pill); border: 2px solid transparent; background-clip: content-box; }
 :hover > ::-webkit-scrollbar-thumb, ::-webkit-scrollbar-thumb:hover { background: var(--border); background-clip: content-box; }
 
-/* ---------- Controls ----------
-   One look for every button: a soft grey pill (white + lift only inside a
-   `.seg` track). Modifiers tint it; `.on` marks a toggled state; `.sm` shrinks it. */
+/* ---------- Controls ---------- */
 button, .btn, .icon-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   height: var(--ctl-h); padding: 0 12px; border: 0; border-radius: var(--r);
@@ -72,15 +65,12 @@ button.warn { background: var(--warn-soft); color: var(--warn); }
 button.warn:hover { background: color-mix(in srgb, var(--warn) 26%, #fff); }
 .sm { height: var(--ctl-h-sm); padding: 0 9px; font-size: 11px; }
 button:disabled { opacity: .45; cursor: not-allowed; }
-/* Quiet square icon button: no fill until hovered. */
 .icon-btn { width: 26px; height: 26px; padding: 0; background: transparent; box-shadow: none; color: var(--muted); border-radius: var(--r-sm); }
 .icon-btn:hover { color: var(--ink); background: var(--border); }
 .icon-btn.danger:hover { color: var(--danger); background: var(--danger-soft); }
-/* Hover-revealed controls (remove buttons, drag grips). */
 .reveal { opacity: 0; transition: opacity .12s; }
 :hover > .reveal, .reveal:focus { opacity: 1; }
 
-/* Segmented control: pills in a track; the chosen one lifts to white. */
 .seg { display: inline-flex; align-items: center; gap: 3px; padding: 4px; background: var(--panel-2); border-radius: var(--r-lg); }
 /* Inner radius = track radius − track padding, so the corners stay concentric. */
 .seg > button, .seg > select { border-radius: calc(var(--r-lg) - 4px); }
@@ -92,7 +82,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .seg.fill { display: flex; }
 .seg.fill > button { flex: 1; }
 
-/* Text inputs and selects. `.selectish` is a button that reads as a select. */
+/* `.selectish` is a button that reads as a select. */
 input:where(:not([type=checkbox]):not([type=radio])), select, textarea, .selectish {
   height: var(--ctl-h); min-width: 0; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--r-sm);
   background: #fff; color: var(--ink); font: inherit; font-size: 12px; box-shadow: none;
@@ -110,7 +100,7 @@ select.sm { padding-right: 24px; background-position: right 6px center; }
 :is(input, select, textarea, .selectish):focus, .cfg-select.open .selectish { outline: none; border-color: var(--accent); box-shadow: var(--ring); }
 :is(input, select, textarea):disabled { opacity: .6; cursor: default; }
 
-/* Small labels: `.tag` is a capitalised badge, `.chip` a mono value. */
+/* `.tag` is a capitalised badge, `.chip` a mono value. */
 .tag {
   display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
   padding: 2px 8px; border-radius: var(--pill); background: var(--panel-2); color: var(--muted); white-space: nowrap;
@@ -121,6 +111,7 @@ select.sm { padding-right: 24px; background-position: right 6px center; }
 .tag.accent { background: var(--accent-soft); color: var(--accent); }
 .tag.qc { background: var(--cat-qc-soft); color: var(--cat-qc-ink); text-transform: none; letter-spacing: 0; font-weight: 600; }
 .tag.solid { background: var(--danger); color: #fff; }
+.tag.beta { background: none; border: 1px solid var(--border); padding: 1px 6px; font-size: 9px; }
 .chip {
   font-family: var(--mono); font-size: 10.5px; font-weight: 600; padding: 1px 6px; border-radius: 5px;
   background: var(--panel-2); color: var(--muted);
@@ -130,7 +121,6 @@ select.sm { padding-right: 24px; background-position: right 6px center; }
 .empty-hint { color: var(--muted); font-size: 12px; padding: 28px 20px; text-align: center; line-height: 1.5; }
 .note { color: var(--muted); font-size: 11px; margin-top: 8px; line-height: 1.5; }
 
-/* Apple-style slide toggle. */
 .switch { position: relative; display: inline-block; flex: 0 0 auto; width: 34px; height: 20px; }
 .switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
 .switch .slider { position: absolute; inset: 0; border-radius: var(--pill); background: var(--border); transition: background .2s ease; pointer-events: none; }
@@ -146,6 +136,8 @@ select.sm { padding-right: 24px; background-position: right 6px center; }
 
 /* ---------- Layout ---------- */
 .shell { flex: 1; display: flex; min-height: 0; }
+.server-down { padding: 6px 16px; background: var(--warn-soft); color: var(--warn-ink); border-bottom: 1px solid var(--warn); font-weight: 600; text-align: center; }
+.server-down code { font-family: var(--mono); }
 .main-col { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .layout { flex: 1; display: grid; grid-template-columns: minmax(360px, 1fr) minmax(390px, 1fr); min-height: 0; }
 .palette, .builder, .output { overflow-y: auto; padding: 18px; min-height: 0; }
@@ -156,13 +148,13 @@ select.sm { padding-right: 24px; background-position: right 6px center; }
 .builder > .fc-legend { margin: 0 18px; padding: 10px 0 12px; }
 .output { display: flex; flex-direction: column; }
 
-/* Top bar: one row, brand + docs then the tabs, run controls pinned right so a pause adds buttons into free space. */
+/* Run controls pinned right so a pause adds buttons into free space. */
 .tabs {
   display: flex; align-items: center; gap: 24px; padding: 0 20px;
   background: var(--panel); border-bottom: 1px solid var(--border); flex: 0 0 auto;
 }
 .tab-left { display: flex; align-items: center; gap: 18px; padding: 8px 0; }
-/* Logo scales from --logo-h alone; logo.js fits the two lines to the icon (see fitLogo). */
+/* logo.js fits the two lines to the icon. */
 .brand { --logo-h: 40px; display: flex; align-items: center; gap: 0.17em; margin-right: 4px; font-size: var(--logo-h); }
 .logo { height: 1em; width: 1em; display: block; }
 .brand-text { display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; height: 1em; padding: 0.067em 0 0.033em; white-space: nowrap; }
@@ -178,9 +170,9 @@ select.sm { padding-right: 24px; background-position: right 6px center; }
 .tab-files { margin-left: auto; }
 .tab-right { display: flex; align-items: center; gap: 14px; }
 .tab-actions { display: flex; align-items: center; gap: 6px; }
-/* Same height and corners as the tab strip beside them; fixed width so Run/Stop/Continue don't jump. */
+/* Fixed width so Run/Stop/Continue don't jump. */
 .tab-actions > button { height: 44px; min-width: 120px; padding: 0 16px; border-radius: var(--r-lg); font-size: 14px; font-weight: 700; }
-/* Sizes follow the window width only, never the run state, and leave room for a paused run's Stop + Re-run + Continue. */
+/* Sized by window width only, with room for a paused run's Clear + Stop + Re-run + Continue. */
 @media (max-width: 1360px) {
   .tab-main svg.ico { display: none; }
   .tab-main .seg.lg > button { padding: 0 9px; }
@@ -205,7 +197,7 @@ select.sm { padding-right: 24px; background-position: right 6px center; }
 .config-note button { all: unset; cursor: pointer; font-weight: 600; text-decoration: underline; margin-left: 4px; }
 .config-note.err { color: var(--danger); background: var(--danger-soft); border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
 
-/* Config picker: a custom dropdown so reference configs can be colour-coded. */
+/* A custom dropdown so reference configs can be colour-coded. */
 .cfg-select { position: relative; flex: 1; min-width: 0; }
 .cfg-select input { width: 100%; padding-right: 32px; }
 .cfg-trigger { position: absolute; right: 3px; top: 50%; translate: 0 -50%; }
@@ -227,8 +219,7 @@ select.sm { padding-right: 24px; background-position: right 6px center; }
 .cfg-group:not(:first-child) { margin-top: 4px; border-top: 1px solid var(--border); }
 
 /* ---------- Builder bar + step picker ---------- */
-/* Settings and validator share one slot: a pill on the settings header, or, on an
-   error, a box covering the settings at their size (scrolling if it has more). */
+/* Settings and validator share one slot: a pill on the header, or an error box covering the settings. */
 .top-slot { position: relative; margin-bottom: 14px; }
 .top-slot .settings-box { margin-bottom: 0; }
 .top-slot > .validation-status { position: absolute; top: 9px; right: 12px; }
@@ -240,7 +231,7 @@ select.sm { padding-right: 24px; background-position: right 6px center; }
 .top-slot.has-error > .validation-status .v-icon { width: 22px; height: 22px; }
 .top-slot.has-error > .validation-status .v-text span { display: block; }
 .top-slot.has-error > #pipeline-settings { visibility: hidden; }
-/* One issue: centred and larger, using the whole slot. ("safe" falls back to top-aligned when it overflows.) */
+/* "safe" falls back to top-aligned when it overflows. */
 .top-slot.has-error .v-status.v-single { flex-direction: column; flex-wrap: nowrap; align-items: center; justify-content: safe center; text-align: center; gap: 6px; }
 .top-slot.has-error .v-single .v-icon { width: 36px; height: 36px; }
 .top-slot.has-error .v-single .v-icon svg.ico { width: 20px; height: 20px; }
@@ -275,9 +266,7 @@ select.sm { padding-right: 24px; background-position: right 6px center; }
 .drop-indicator { height: 0; border-top: 3px solid var(--accent); border-radius: 3px; margin: 4px 0; box-shadow: 0 0 0 1px var(--accent-soft); }
 .drag { color: var(--muted); display: inline-flex; align-items: center; cursor: grab; }
 
-/* ---------- Step cards ----------
-   The pipeline reads as one flow list: white step cards (type tile, name, grey
-   summary) on soft blue containers, joined by arrows down the middle. */
+/* ---------- Step cards ---------- */
 .step-card {
   position: relative; border-radius: 12px; background: #fff; overflow: hidden;
   box-shadow: 0 0 0 .5px rgba(0, 0, 0, .08), 0 1px 2px rgba(0, 0, 0, .06), 0 2px 8px rgba(0, 0, 0, .04); transition: box-shadow .15s;
@@ -290,7 +279,7 @@ select.sm { padding-right: 24px; background-position: right 6px center; }
 .step-text { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .step-head .step-name, .qc-row-name { font-size: 13px; font-weight: 600; color: #1d1d1f; letter-spacing: -.005em; }
 .step-sub { font-size: 11.5px; color: #86868b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-/* Flat category marker, centred in a 26px slot so the rail still runs under it; on hover it becomes the drag grip. */
+/* Centred in a 26px slot so the rail still runs under it; on hover it becomes the drag grip. */
 .step-ico { flex: 0 0 10px; width: 10px; height: 10px; margin: 0 8px; border-radius: 50%; background: var(--k); }
 .step-mark { flex: 0 0 26px; height: 18px; display: grid; place-items: center; color: var(--k, var(--sec)); border-radius: var(--r-sm); }
 .step-mark > * { grid-area: 1 / 1; margin: 0; transition: opacity .15s, scale .15s; }
@@ -306,7 +295,6 @@ body:not(.run-locked) :is(.step-head:not(.qc-stack):hover > .step-title, .qc-row
 .step-tools .icon-btn { width: 24px; height: 24px; }
 .step-head .step-expand { width: 22px; color: #aeaeb2; transition: transform .15s, background .12s, color .12s; }
 .step-head .step-expand.collapsed { transform: rotate(-90deg); }
-/* A collapsed Apply QC: its tests stacked as rows, joined on the same rail. */
 .step-head.qc-stack { align-items: flex-start; }
 .qc-stack .step-title { flex-direction: column; align-items: stretch; gap: 0; }
 .qc-row { display: flex; align-items: center; gap: 10px; margin: -3px -4px; padding: 3px 4px; border-radius: 8px; transition: background .1s; }
@@ -335,10 +323,10 @@ body:not(.run-locked) :is(.step-head:not(.qc-stack):hover > .step-title, .qc-row
 .section-head .icon-btn:hover { color: var(--danger); background: var(--danger-soft); }
 .section-body { min-height: 20px; }
 
-/* ---------- Arrows between steps; hover one for the "+" that inserts there ---------- */
+/* ---------- Arrows between steps ---------- */
 .flow-link { --x: 50%; position: relative; height: 30px; }
 #pipeline-steps > .step-card { margin: 0 8px; }
-/* Longer arrows with a bigger head between top-level nodes, so each container reads as its own stage. */
+/* Longer arrows between top-level nodes, so each container reads as its own stage. */
 #pipeline-steps > .flow-link:not(.tail) { height: 55px; }
 #pipeline-steps > .flow-link:not(.tail)::before { top: 0; bottom: 6px; }
 #pipeline-steps > .flow-link:not(.tail)::after {
@@ -356,14 +344,12 @@ body:not(.run-locked) :is(.step-head:not(.qc-stack):hover > .step-title, .qc-row
   background: #fff; color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 2px 6px rgba(0, 0, 0, .12); opacity: 0; transition: opacity .12s;
 }
 .flow-link:hover .add-step, .flow-link.open .add-step { opacity: 1; }
-/* The "+" takes the arrow's place rather than sitting on top of it. */
 .flow-link::before, .flow-link::after { transition: opacity .12s; }
 body:not(.run-locked) .flow-link:is(:hover, .open)::before, body:not(.run-locked) .flow-link:is(:hover, .open)::after { opacity: 0; }
 .flow-link .add-step:hover { background: var(--accent); color: #fff; }
-/* Inside a container steps are joined by plain lines; arrows only run between containers. */
 .section-body > .flow-link::before { top: 0; bottom: 0; }
 .section-body > .flow-link::after { display: none; }
-/* Ends: a container's line runs on to its edge; the pipeline's stops halfway at a dot. */
+/* A container's line runs on to its edge; the pipeline's stops halfway at a dot. */
 .flow-link.tail { height: 24px; }
 .section-body > .flow-link.tail { height: 32px; }
 .section-body > .flow-link.tail::before { bottom: -8px; }
@@ -378,14 +364,13 @@ body:not(.run-locked) .flow-link:is(:hover, .open)::before, body:not(.run-locked
 }
 .flow-link.tail.empty .add-step:hover { color: var(--accent); background: var(--accent-soft); }
 body.run-locked .flow-link .add-step { display: none; }
-/* Where a dragged step will land. */
 .flow-link.drop-target { --rail: var(--accent); }
 .flow-link.drop-target::before { width: 3px; left: calc(var(--x) - 1.5px); }
 .flow-link.drop-target::after { scale: 1.3; }
 .step-legend .step-ico { margin: 0; }
 
 /* ---------- Form fields ---------- */
-/* Built-in padding (cancelled by the margin) so a highlight ring never moves the field or overlaps its neighbours. */
+/* Padding cancelled by the margin, so a highlight ring never moves the field. */
 .field { padding: 6px 8px; margin: 0 -8px 1px; border-radius: var(--r-sm); }
 .field label { display: block; font-weight: 600; font-size: 12px; margin-bottom: 4px; }
 .field .req { color: var(--danger); margin-left: 3px; }
@@ -476,7 +461,7 @@ body.run-locked .flow-link .add-step { display: none; }
 .v-status .v-text strong, .v-status .v-text span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .v-status .v-text strong { font-size: 12.5px; }
 .v-status .v-text span { font-size: 11px; opacity: 0.85; }
-/* Issue lines sit inside the box, indented past the icon (22px + 10px gap). */
+/* Indented past the icon (22px + 10px gap). */
 .v-body { flex-basis: 100%; display: flex; flex-direction: column; gap: 3px; margin-left: 32px; padding: 4px 6px; border-radius: var(--r-sm); }
 .v-clickable { cursor: pointer; }
 .v-body.v-clickable:hover, .v-status.v-clickable:hover .v-body { background: color-mix(in srgb, var(--c) 10%, transparent); }
@@ -494,7 +479,7 @@ body.run-locked .flow-link .add-step { display: none; }
 /* ---------- YAML tab ---------- */
 #yaml-editor { flex: 1; }
 .CodeMirror { border: 1px solid var(--border); border-radius: var(--r-sm); height: auto; min-height: 320px; flex: 1; font-size: 12px; }
-/* Editor themes: each sets vars the shared rules consume (keys -> atom, bools -> keyword, tags -> meta). */
+/* Each theme sets vars the shared rules consume. */
 .cm-s-vscode-dark  { --e-bg:#1f1f1f; --e-fg:#cccccc; --e-border:#2b2b2b; --e-ln:#6e7681; --e-cursor:#aeafad; --e-sel:#264f78; --e-active:#2a2a2a; --e-comment:#6a9955; --e-key:#9cdcfe; --e-meta:#4ec9b0; --e-keyword:#569cd6; --e-number:#b5cea8; --e-string:#ce9178; }
 .cm-s-one-dark     { --e-bg:#282c34; --e-fg:#abb2bf; --e-border:#21252b; --e-ln:#495162; --e-cursor:#528bff; --e-sel:#3e4451; --e-active:#2c313c; --e-comment:#5c6370; --e-key:#e06c75; --e-meta:#56b6c2; --e-keyword:#c678dd; --e-number:#d19a66; --e-string:#98c379; }
 .cm-s-dracula      { --e-bg:#282a36; --e-fg:#f8f8f2; --e-border:#191a21; --e-ln:#6272a4; --e-cursor:#f8f8f0; --e-sel:#44475a; --e-active:#313342; --e-comment:#6272a4; --e-key:#8be9fd; --e-meta:#ffb86c; --e-keyword:#ff79c6; --e-number:#bd93f9; --e-string:#f1fa8c; }
@@ -511,12 +496,11 @@ body.run-locked .flow-link .add-step { display: none; }
 .CodeMirror[class*="cm-s-"] .cm-keyword { color: var(--e-keyword); }
 .CodeMirror[class*="cm-s-"] .cm-number { color: var(--e-number); }
 .CodeMirror[class*="cm-s-"] .cm-string { color: var(--e-string); }
-/* Cross-highlights (theme-independent): red = parse error line, blue = step focused in the builder. */
+/* Red = parse error line, blue = step focused in the builder. */
 .CodeMirror .cm-error-line { background: rgba(244, 71, 71, 0.18); }
 .CodeMirror .CodeMirror-gutter-elt.cm-error-line, .CodeMirror .cm-error-line .CodeMirror-linenumber { color: #f87171; }
 .CodeMirror .cm-step-highlight { background: rgba(88, 166, 255, 0.14); }
 .CodeMirror .cm-field-highlight { background: rgba(88, 166, 255, 0.32); }
-/* Builder box the YAML cursor is in. */
 .yaml-focus, .field.yaml-focus { box-shadow: inset 0 0 0 2px var(--accent); border-radius: var(--r-sm); }
 
 /* ---------- Run tab: console ---------- */
@@ -560,7 +544,6 @@ body.run-locked .flow-link .add-step { display: none; }
 .log-console .note-ok .note-tag { background: var(--ok); color: #fff; }
 .log-console .note-err { color: var(--ansi-red); }
 .log-console .note-err .note-tag { background: var(--danger); color: #fff; }
-/* Milestone banners: start, stop, finish. */
 .log-console .lvl-banner { display: flex; align-items: center; gap: 9px; margin: 3px 0; padding: 6px 10px; border-radius: var(--r-sm); background: var(--console-2); animation: banner-in .25s ease-out; }
 .log-console .lvl-banner strong { font-weight: 700; }
 .log-console .banner-sub { color: var(--console-muted); }
@@ -574,7 +557,6 @@ body.run-locked .flow-link .add-step { display: none; }
 @keyframes banner-in { from { opacity: 0; transform: translateY(4px); } }
 @keyframes banner-dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
 
-/* Run status pill (top bar): a pulsing dot while live. */
 .run-status { display: inline-flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 600; padding: 5px 10px; border-radius: var(--pill); background: var(--panel-2); color: var(--muted); }
 .run-status:empty { display: none; }
 .run-status::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
@@ -584,7 +566,6 @@ body.run-locked .flow-link .add-step { display: none; }
 .run-status.err { color: var(--danger); background: var(--danger-soft); }
 @keyframes status-pulse { 50% { opacity: .25; transform: scale(.7); } }
 
-/* Live RAM meter above the console. */
 .mem-meter { display: flex; align-items: center; gap: 14px; padding: 6px 10px; margin-bottom: 8px; background: var(--panel); border: 1px solid var(--border); border-radius: var(--r-sm); }
 .mem-head { display: flex; align-items: center; gap: 14px; flex: 0 0 auto; }
 .mem-stat { font-size: 11px; color: var(--muted); font-family: var(--mono); flex: 0 0 auto; }
@@ -619,7 +600,6 @@ body.run-locked .flow-link .add-step { display: none; }
 .plot-card img { display: block; max-width: 100%; height: auto; border-radius: 5px; }
 .plot-card figcaption { margin-top: 5px; font-size: 11px; color: var(--muted); word-break: break-word; }
 .plot-card.big { max-width: 100%; width: 100%; }
-/* A log-only step's text, where a thumbnail would go. */
 .plot-card.log-card { cursor: default; max-width: 480px; }
 .plot-card.log-card:hover { border-color: var(--border); }
 .plot-card.log-card.big .log-card-text { max-height: none; }
@@ -677,25 +657,29 @@ body.run-locked :is(#btn-outputs-clean, #btn-demos-clean, .output-row .icon-btn.
 .inspect-plot img { display: block; width: 100%; }
 .inspect-plot-note { margin-top: 4px; }
 
-/* ---------- Paused-step review (replaces the console while paused) ---------- */
+/* ---------- Paused-step review ---------- */
 .step-review { padding: 4px; margin-bottom: 22px; }
 .review-title { font-size: 14px; }
 .review-title.failed { color: var(--danger); }
 .review-empty { padding: 24px 8px; text-align: center; }
 .review-attempt-label, .review-strip-title { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 8px; }
 .review-main-cards { display: flex; flex-direction: column; gap: 10px; }
+.review-main.failed .plot-card:not(.log-card) { border-color: var(--warn); box-shadow: 0 0 0 1px var(--warn); }
 .review-diff-main { margin: -4px 0 10px; }
 .review-strip { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); }
 .review-strip-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
-.review-thumb { flex: 0 0 140px; border: 1px solid var(--border); border-radius: var(--r-sm); padding: 5px; background: #fff; cursor: zoom-in; }
+.review-thumb { display: flex; flex-direction: column; gap: 4px; flex: 0 0 140px; border: 1px solid var(--border); border-radius: var(--r-sm); padding: 5px; background: #fff; cursor: zoom-in; }
 .review-thumb:hover { border-color: var(--accent); }
+.review-thumb.failed { border-color: var(--warn); }
 .review-thumb.selected { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 2px var(--accent-soft); }
 .review-thumb img { display: block; width: 100%; height: auto; border-radius: 4px; }
-.review-thumb-cap { margin-top: 4px; font-size: 11px; font-weight: 600; }
+.review-thumb-cap { font-size: 11px; font-weight: 600; }
+.review-thumb-failed { color: var(--warn); }
 .review-diff { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
-.review-use { margin-top: 6px; width: 100%; }
+.review-use { margin-top: auto; width: 100%; }
+.review-hint { margin: -2px 0 8px; font-size: 12px; color: var(--warn-ink); }
 
-/* ---------- Run lock: a running pipeline freezes the config bar the paused step ---------- */
+/* ---------- Run lock ---------- */
 body.run-locked :is(.palette-item, .demo-card) { pointer-events: none; opacity: .45; }
 body.run-locked .drag { pointer-events: none; }
 .step-card.locked { opacity: .5; }
@@ -741,7 +725,6 @@ body.run-locked .drag { pointer-events: none; }
 .demos-head input { flex: 1; }
 .demos-toggle { cursor: pointer; user-select: none; }
 #demos-section.collapsed .demos-toggle { margin-bottom: 0; }
-/* Pipeline settings: the same box, one compact row per setting (label | control). */
 .settings-body .field { display: grid; grid-template-columns: 110px 1fr; align-items: center; column-gap: 10px; padding-top: 3px; padding-bottom: 3px; }
 .settings-body .field > label { margin: 0; }
 .settings-body .field > :not(label) { grid-column: 2; }
@@ -763,13 +746,12 @@ body.run-locked .drag { pointer-events: none; }
 .demos-foot a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .demos-foot a:hover { color: var(--accent); }
 .demos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; }
-/* Fixed columns (icon, name, mode tag, size, delete slot) so cards line up in the grid. */
+/* Fixed columns so cards line up in the grid. */
 .demo-card { display: grid; grid-template-columns: 1fr auto 48px 24px; align-items: center; gap: 6px; cursor: pointer; padding: 6px 6px 6px 10px; font-weight: 500; font-size: 12px; border-radius: var(--r-sm); background: #fff; box-shadow: inset 0 0 0 1px var(--border); transition: background .12s; }
 .demo-card:hover { background: var(--accent-soft); }
 .demo-card.active { color: var(--accent); font-weight: 600; background: var(--accent-soft); }
 .demo-card.needs-download { background: var(--panel-2); box-shadow: none; color: var(--muted); }
-/* Downloading: fills left-to-right with the accent tint (--p from Demos.setProgress). */
-/* Downloading: a thin progress line along the card's bottom edge (a sliding segment when the size is unknown). */
+/* A sliding segment when the size is unknown. */
 .demo-card.downloading { --p: 0%; position: relative; overflow: hidden; color: var(--ink); }
 .demo-card.downloading .demo-card-hint { color: var(--accent); font-weight: 600; }
 .demo-card.downloading::after { content: ''; position: absolute; left: 0; bottom: 0; height: 2px; width: var(--p); background: var(--accent); transition: width .4s linear; }
@@ -780,7 +762,6 @@ body.run-locked .drag { pointer-events: none; }
 .demo-card-del:hover { color: var(--danger); background: var(--danger-soft); }
 .demo-card-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .demo-card-hint { font-size: 10.5px; color: var(--muted); text-align: right; justify-self: end; }
-/* Own-file card: icon | name over its folder | size | reveal | forget. */
 .file-card { grid-template-columns: 1fr 48px 24px 24px; }
 .file-card .demo-card-text { display: flex; flex-direction: column; gap: 1px; }
 .file-card .demo-card-path { font-size: 10px; color: var(--muted); font-family: var(--mono); overflow: hidden; text-overflow: ellipsis; }
@@ -788,7 +769,7 @@ body.run-locked .drag { pointer-events: none; }
 .file-card:hover .icon-btn { opacity: 1; }
 button.demo-card-hint { color: var(--ink); font-size: 11px; background: #fff; grid-column: 3 / 5; justify-self: stretch; }
 
-/* ---------- Manual QC tab (see manual.js) ---------- */
+/* ---------- Manual QC tab ---------- */
 body.manual-full .builder { display: none; }
 body.manual-full .palette, body.manual-full #manual-rail { display: flex; }
 body.manual-full .layout { grid-template-columns: 304px 1fr; }
@@ -796,26 +777,46 @@ body.manual-full .layout { grid-template-columns: 304px 1fr; }
 body:has(.tab-manual:not(.hidden)) .tab[data-tab="plots"] { display: none; }
 .manual-rail { display: none; flex: 1; flex-direction: column; min-height: 0; margin: 0 -18px; padding: 0 18px 14px; }
 .manual-ws { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-.manual-plots { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.manual-plots { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.manual-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.manual-param { max-width: 180px; }
 .manual-plot i { font-style: normal; font-size: 10px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: var(--pill); background: var(--panel-2); color: var(--muted); display: inline-flex; align-items: center; justify-content: center; }
 .manual-plot.on i { background: var(--accent); color: #fff; }
-.manual-plot-x { margin-left: auto; }
-.manual-plot-colour { max-width: 160px; }
+.manual-main { flex: 1; display: flex; gap: 14px; min-height: 0; }
+.manual-right { flex: 0 0 236px; display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+.manual-legend { display: flex; flex-direction: column; gap: 1px; }
+.manual-leg { justify-content: flex-start; gap: 8px; height: 24px; padding: 0 6px; font-size: 11.5px; font-weight: 500; background: none; border: 0; box-shadow: none; }
+.manual-leg:hover { background: var(--panel-2); color: var(--ink); }
+.manual-leg i { flex: 0 0 10px; height: 10px; border-radius: 50%; background: var(--fc); }
+.manual-leg b { margin-left: auto; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+.manual-leg.off { color: var(--muted); }
+.manual-leg.off i { background: none; box-shadow: inset 0 0 0 1.5px var(--fc); }
+.manual-leg.off span { text-decoration: line-through; }
+.manual-boxes .manual-sec-title { display: flex; align-items: center; gap: 2px; }
+.manual-boxes .manual-sec-title .icon-btn { width: 22px; height: 22px; }
+.manual-boxes .manual-sec-title .icon-btn:first-of-type { margin-left: auto; }
+.manual-boxes .manual-sec-title .icon-btn:disabled { opacity: .35; }
+.manual-leg-eye { display: inline-flex; color: var(--muted); }
+.manual-leg:hover .manual-leg-eye { color: var(--ink); }
 .manual-nav { display: inline-flex; align-items: center; gap: 4px; }
 .manual-nav-id { width: 64px; text-align: center; }
 .manual-nav-of { min-width: 64px; }
 .manual-stage { flex: 1; position: relative; min-width: 0; min-height: 420px; overflow: hidden; background: #fff; border: 1px solid var(--border); border-radius: var(--r-sm); }
-.manual-ws.busy .manual-plots, .manual-rail.busy .manual-side { pointer-events: none; opacity: .4; }
+.manual-ws.busy .manual-plots, .manual-ws.busy .manual-right, .manual-rail.busy .manual-side { pointer-events: none; opacity: .4; }
 .manual-ws.busy .manual-stage { pointer-events: none; }
-.manual-ws.busy .manual-stage::after { content: 'Plotting…'; position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, .65); color: var(--muted); font-size: 14px; font-weight: 600; }
-/* Rail: tools on top, the box list below, each scrolling on its own. */
+.manual-zoom-hint { position: absolute; right: 8px; bottom: 6px; z-index: 4; height: auto; padding: 2px 8px; font-size: 11px; font-weight: 500; color: var(--muted); background: rgba(255, 255, 255, .85); border: 1px solid var(--border); border-radius: 999px; box-shadow: none; pointer-events: none; }
+.manual-zoom-hint.on { color: var(--accent); pointer-events: auto; cursor: pointer; }
+.manual-ws.busy .manual-stage::after, .manual-stage.loading::after { content: 'Plotting…'; position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, .65); color: var(--muted); font-size: 14px; font-weight: 600; }
+.manual-stage.loading::after { content: attr(data-loading); padding-top: 52px; animation: stage-in .15s .12s both; }
+.manual-stage.loading::before { content: ''; position: absolute; left: 50%; top: 50%; z-index: 6; width: 22px; height: 22px; margin: -24px 0 0 -11px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite, stage-in .15s .12s both; }
+@keyframes stage-in { from { opacity: 0; } }
+/* Tools on top, box list below, each scrolling on its own. */
 .manual-side { flex: 1; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
 .manual-tools { flex: 0 1 auto; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; min-height: 120px; padding-right: 4px; }
 .manual-sec { display: flex; flex-direction: column; gap: 6px; }
 .manual-sec-title { font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
 .manual-side select { max-width: 100%; }
 .manual-toggle { display: flex; align-items: center; gap: 9px; font-size: 12px; cursor: pointer; }
-/* Flag tiles: coloured number block on the left, the chosen one filled. */
 .manual-flags { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
 .manual-flag { justify-content: flex-start; gap: 7px; padding: 0 8px 0 0; font-size: 11.5px; font-weight: 500; background: var(--panel-2); border: 1px solid transparent; border-radius: var(--r-sm); box-shadow: none; overflow: hidden; white-space: nowrap; }
 .manual-flag b { flex: 0 0 26px; height: 100%; display: inline-flex; align-items: center; justify-content: center; background: var(--fc); color: #fff; font-size: 12px; }
@@ -825,22 +826,25 @@ body:has(.tab-manual:not(.hidden)) .tab[data-tab="plots"] { display: none; }
 .manual-flag.on b { background: rgba(0, 0, 0, .18); }
 .manual-modes { display: flex; gap: 14px; margin-top: 4px; font-size: 12px; }
 .manual-modes label { display: inline-flex; align-items: center; gap: 2px; cursor: pointer; }
-/* Variable multi-select: summary button + searchable checkbox menu. */
 .manual-pick { position: relative; }
 .manual-pick-btn { width: 100%; }
+.manual-pick-btn span { overflow: hidden; text-overflow: ellipsis; }
 .manual-pick-btn.empty { color: var(--muted); }
-.manual-pick-menu { position: absolute; z-index: 6; left: 0; right: 0; top: calc(100% + 4px); padding: 6px; background: #fff; border: 1px solid var(--border); border-radius: var(--r-sm); box-shadow: var(--shadow-pop); }
-.manual-pick-menu input { width: 100%; margin-bottom: 4px; }
+/* Not a popover: the sidebar scrolls, so an overlay would be clipped. */
+.manual-pick-menu { margin-top: 4px; padding: 6px; background: #fff; border: 1px solid var(--border); border-radius: var(--r-sm); box-shadow: var(--shadow-pop); }
+.manual-pick-menu input[type=search] { width: 100%; margin-bottom: 4px; }
 .manual-pick-opts { max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; }
 .manual-pick-opts label { display: flex; align-items: center; gap: 7px; padding: 4px 6px; font-size: 12px; border-radius: 5px; cursor: pointer; }
 .manual-pick-opts label:hover { background: var(--panel-2); }
-/* Box list: one compact line each; click opens the editor for that box. */
+.manual-pick-opts .manual-pick-all { font-weight: 600; border-bottom: 1px solid var(--border); border-radius: 0; margin-bottom: 2px; }
 .manual-boxes { flex: 1 1 0; min-height: 90px; border-top: 1px solid var(--border); padding-top: 10px; }
 .manual-boxes .manual-list { flex: 1; overflow-y: auto; min-height: 0; padding-right: 4px; display: flex; flex-direction: column; gap: 1px; }
 .manual-row { padding: 2px 4px 2px 6px; border: 1px solid transparent; border-radius: 5px; cursor: grab; }
 .manual-row:hover, .manual-row.hi { background: var(--panel-2); }
 .manual-row.sel { border-color: var(--fc); background: color-mix(in srgb, var(--fc) 10%, #fff); }
 .manual-row.dragging { opacity: .4; }
+.manual-row.elsewhere { opacity: .55; cursor: pointer; }
+.manual-row-view { flex: none; font-size: 10px; color: var(--muted); }
 .manual-row.over { box-shadow: inset 0 2px 0 var(--accent); }
 .manual-row-head { display: flex; align-items: center; gap: 6px; height: 20px; }
 .manual-row .sw { flex: 0 0 15px; height: 15px; border-radius: 3px; background: var(--fc); color: #fff; font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }

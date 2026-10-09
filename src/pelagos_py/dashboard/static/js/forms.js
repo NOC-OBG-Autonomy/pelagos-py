@@ -1,17 +1,12 @@
-// Schema-driven form rendering. Turns a single parameter spec (as produced by
-// pelagos_py.utils.parameter_spec.describe) into a form field, and reads/writes
-// its value from a plain JS values object. This is the generic engine that lets
-// the dashboard render ANY step without step-specific code.
+// Schema-driven form fields from pelagos_py.utils.parameter_spec.describe, so any step renders without step-specific code.
 
 const Forms = {
-  // Normalise a spec's "type" (string | [strings] | null) to an array.
   types(spec) {
     const t = spec.type;
     if (t == null) return [];
     return Array.isArray(t) ? t : [t];
   },
 
-  // How should this spec be rendered?
   kind(spec) {
     const ts = Forms.types(spec);
     if (spec.options) return ts.includes('list') ? 'multiselect' : 'select';
@@ -19,11 +14,10 @@ const Forms = {
     if (ts.some((t) => ['dict', 'list', 'tuple'].includes(t))) return 'yaml';
     if (ts.length === 1 && (ts[0] === 'int' || ts[0] === 'float')) return 'number';
     if (ts.length === 1 && ts[0] === 'str') return 'text';
-    // unions / unknown -> safest is a YAML mini-editor
+    // unions / unknown -> YAML mini-editor
     return 'yaml';
   },
 
-  // A reasonable initial value for a spec (its default, else type-appropriate).
   defaultValue(spec) {
     if ('default' in spec) return Forms.clone(spec.default);
     switch (Forms.kind(spec)) {
@@ -40,7 +34,6 @@ const Forms = {
 
   _uid: 0,
 
-  // ---- DOM helpers ----
   el(tag, props = {}, ...children) {
     const e = document.createElement(tag);
     for (const [k, v] of Object.entries(props)) {
@@ -59,7 +52,7 @@ const Forms = {
     return b;
   },
 
-  // `options`: values or [value, label] pairs; a placeholder is an empty-valued first option.
+  // A placeholder is an empty-valued first option.
   select(options, value, onChange, { placeholder, cls = '' } = {}) {
     const sel = Forms.el('select', { class: cls });
     if (placeholder) sel.appendChild(Forms.el('option', { value: '', textContent: placeholder }));
@@ -71,7 +64,6 @@ const Forms = {
     return sel;
   },
 
-  // Segmented control of [value, label] pairs; `seg.set(v)` moves the highlight.
   seg(options, value, onChange, cls = '') {
     const seg = Forms.el('div', { class: 'seg ' + cls });
     const btns = options.map(([v, label]) => Forms.button(label, { onclick: () => { seg.set(v); onChange(v); } }));
@@ -81,9 +73,7 @@ const Forms = {
     return seg;
   },
 
-  // Build an Apple-style slide toggle. Returns { el, input } where `el` is the
-  // <span class="switch"> to place in the DOM and `input` is the checkbox.
-  // onChange (optional) is called with the new boolean on toggle.
+  // Returns { el, input }: the <span class="switch"> and its checkbox.
   switchEl(checked, onChange) {
     const el = document.createElement('span');
     el.className = 'switch';
@@ -104,7 +94,7 @@ const Forms = {
     return spec.unit ? `${base} · ${spec.unit}` : base;
   },
 
-  // Build a .field element. onChange() is called (no args) after any edit.
+  // onChange() is called (no args) after any edit.
   render(spec, values, onChange) {
     const kind = Forms.kind(spec);
     const wrap = document.createElement('div');
@@ -192,8 +182,7 @@ const Forms = {
       wrap.appendChild(boolSwitch);
       wrap.appendChild(label);
     } else if (spec.name === 'file_path' && input.type === 'text') {
-      // Native file picker (server-side dialog) next to the path field: the
-      // dashboard is local-only, so the path it returns is usable as-is.
+      // The dashboard is local-only, so the path the server-side dialog returns is usable as-is.
       const row = document.createElement('div');
       row.className = 'file-row';
       input.placeholder = 'Path to your input NetCDF file';
@@ -215,7 +204,7 @@ const Forms = {
       wrap.appendChild(label);
       wrap.appendChild(row);
     } else if (kind === 'yaml' && Array.isArray(cur) && cur.length > 3) {
-      // Long lists (manual QC boxes) fold behind a count so the card stays short.
+      // Long lists (manual QC boxes) fold behind a count.
       const details = document.createElement('details');
       details.className = 'yaml-fold';
       const summary = document.createElement('summary');
@@ -238,23 +227,16 @@ const Forms = {
     return wrap;
   },
 
-  // Deep-ish equality for "did this differ from its default?" checks.
   equal(a, b) {
     return JSON.stringify(a) === JSON.stringify(b);
   },
 
-  // ---- YAML serialisation ----
-  // js-yaml's block style renders every list as `- 20 / - 45`, which reads
-  // wrong for the short numeric/flag lists these configs use. This emitter
-  // keeps sequences of scalars inline (`[20, 45]`, `[-2.4, -5, inside]`) while
-  // leaving maps and lists-of-maps as block, matching the hand-written config
-  // style. Output is plain YAML that js-yaml can load straight back.
+  // js-yaml would render `[20, 45]` as a block list; keep scalar lists inline like the hand-written configs.
   _isScalar(x) { return x === null || typeof x !== 'object'; },
 
   _scalarText(x) { return jsyaml.dump(x, { flowLevel: 0, lineWidth: -1 }).trimEnd(); },
 
-  // Keys whose list-of-maps items go one per line (`- {x: [..], y: [..], flag: 4}`):
-  // a manual QC config with many boxes would otherwise be mostly boxes.
+  // One item per line, so a config with many manual QC boxes stays readable.
   _FLOW_KEYS: new Set(['boxes']),
 
   _flowMap(m) {
@@ -268,8 +250,7 @@ const Forms = {
       if (v.every(Forms._isScalar)) return '[' + v.map(Forms._scalarText).join(', ') + ']';
       const parts = v.map((item) => {
         const c = Forms._emit(item, indent + '  ');
-        // A block child (map/list) starts with a newline; graft its first line
-        // onto the `- ` marker so continuation lines stay aligned.
+        // Graft a block child's first line onto the `- ` marker so continuation lines stay aligned.
         if (c[0] === '\n') return indent + '- ' + c.slice(1 + indent.length + 2);
         return indent + '- ' + c;
       });
@@ -284,8 +265,7 @@ const Forms = {
             Object.values(m).every((x) => Forms._isScalar(x) || (Array.isArray(x) && x.every(Forms._isScalar))));
         const c = flow ? '\n' + v[k].map((m) => indent + '  - ' + Forms._flowMap(m)).join('\n')
           : Forms._emit(v[k], indent + '  ');
-        // Integer mapping keys (Argo QC flags, flag_mapping, …) stay unquoted
-        // so the pipeline reads them as ints, not strings.
+        // Integer keys (QC flags) stay unquoted so the pipeline reads them as ints.
         const key = /^-?\d+$/.test(k) ? k : Forms._scalarText(k);
         return c[0] === '\n' ? indent + key + ':' + c : indent + key + ': ' + c;
       });

@@ -36,15 +36,21 @@ METHOD_INPUTS = {"density": ["ABS_SALINITY", "CONS_TEMP"], "temp": ["TEMP"]}
 # Name each method's values go by in logs and on plots.
 METHOD_LABELS = {"density": "SIGMA0", "temp": "TEMP"}
 
+# Samples within this distance (m) of reference_depth give the reference value.
+REFERENCE_HALF_WINDOW = 2.5
+
 
 @register_step
 class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
     """
     Calculate the mixed layer depth (MLD) of each profile.
 
-    The MLD is found per profile by a threshold method: from a near-surface
-    reference point, the first depth at which the chosen variable departs from its
-    reference value by more than a threshold marks the base of the mixed layer.
+    The MLD is found per profile by the threshold method of de Boyer Montégut et
+    al. (2004) [1]_: the first depth below ``reference_depth`` at which the chosen
+    variable departs from its reference value by the threshold marks the base of
+    the mixed layer. The reference value is the median of samples within
+    2.5 m of ``reference_depth``, so a single noisy sample cannot shift it. Density
+    must increase by the threshold; temperature may change either way.
     ``PROFILE_NUMBER`` and ``DEPTH`` must already be derived.
 
     Two derived variables are written on the ``N_MEASUREMENTS`` dimension: ``MLD``,
@@ -84,6 +90,13 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
               density_threshold: 0.03
               temp_threshold: 0.2
             diagnostics: true
+
+    References
+    ----------
+    .. [1] de Boyer Montégut, C., Madec, G., Fischer, A. S., Lazar, A., & Iudicone, D.
+       (2004). Mixed layer depth over the global ocean: An examination of profile
+       data and a profile-based climatology. *Journal of Geophysical Research:
+       Oceans*, 109(C12), C12003. https://doi.org/10.1029/2004JC002378
     """
 
     step_name = "Mixed Layer Depth"
@@ -238,33 +251,31 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
         for pn in profile_numbers:
             indices = groups[pn]
             profile_mld = self._profile_mld(
-                search_depth[indices], search_values[indices], threshold
+                search_depth[indices], search_values[indices], threshold,
+                two_sided=(method == "temp"),
             )
             if np.isfinite(profile_mld):
                 mld[indices] = profile_mld
         return mld
 
-    def _profile_mld(self, depth, values, threshold):
-        # Restrict to valid points at or below the reference depth.
-        below_reference = depth >= self.reference_depth
-        valid = below_reference & ~np.isnan(depth) & ~np.isnan(values)
+    def _profile_mld(self, depth, values, threshold, two_sided):
+        valid = ~np.isnan(depth) & ~np.isnan(values)
         depth = depth[valid]
         values = values[valid]
-        if depth.size == 0:
-            return np.nan
 
-        # Reference point: shallowest remaining measurement; if deeper than twice the
-        # reference depth there is nothing near the surface to anchor to.
-        reference_index = np.argmin(depth)
-        if depth[reference_index] > 2 * self.reference_depth:
+        near_reference = np.abs(depth - self.reference_depth) <= REFERENCE_HALF_WINDOW
+        if not near_reference.any():
             return np.nan
-        reference_value = values[reference_index]
+        reference_value = np.median(values[near_reference])
 
-        # Scan from the surface downward for the first threshold crossing.
-        order = np.argsort(depth)
-        depth = depth[order]
-        values = values[order]
-        exceeded = np.where(np.abs(values - reference_value) >= np.abs(threshold))[0]
+        # Scan from the reference depth downward for the first threshold crossing.
+        below_reference = depth >= self.reference_depth
+        order = np.argsort(depth[below_reference])
+        depth = depth[below_reference][order]
+        departure = values[below_reference][order] - reference_value
+        if two_sided:
+            departure = np.abs(departure)
+        exceeded = np.where(departure >= np.abs(threshold))[0]
         if exceeded.size == 0:
             return np.nan
         return float(depth[exceeded[0]])
@@ -348,8 +359,7 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
             colourbar = fig.colorbar(scatter, ax=ax)
             colourbar.set_label(panel_label)
 
-            # Draw each MLD as a line spanning every profile's span (one NaN-separated
-            # line per MLD: thousands of plot() calls are slow to build and draw).
+            # One NaN-separated line per MLD; one plot() per profile was slow
             gap = np.datetime64("NaT") if np.issubdtype(x.dtype, np.datetime64) else np.nan
             for label, colour, mld in mlds:
                 xs, ys = [], []

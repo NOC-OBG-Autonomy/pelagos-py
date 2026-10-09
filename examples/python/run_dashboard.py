@@ -1,8 +1,5 @@
-"""Launch the pelagos_py config dashboard (same as ``python dashboard/app.py``, from anywhere)."""
+"""Launch the pelagos_py config dashboard (same as ``pelagos-py dashboard`` in a terminal)."""
 
-import runpy
-import os
-from pathlib import Path
+from pelagos_py import dashboard
 
-os.chdir(Path(__file__).resolve().parents[2])  # repo root: app.py resolves paths from there
-runpy.run_path("dashboard/app.py", run_name="__main__")
+dashboard.run()

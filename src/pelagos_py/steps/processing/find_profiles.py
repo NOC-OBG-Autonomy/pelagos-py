@@ -244,10 +244,7 @@ def _assign_profile_and_cycle(phase, chunk_id):
 
 
 def _fill_from_neighbours(out, classified_index):
-    # Rows left out of the classification (flagged/interpolated/missing depth)
-    # take the labels of the nearest classified rows either side in time where
-    # those agree; GRADIENT is interpolated between them. Returns a per-row QC:
-    # 2 classified, 8 filled from neighbours, 9 neither.
+    # Unclassified rows take the labels of their time neighbours where those agree. Returns QC 2/8/9.
     n = len(out)
     order = np.argsort(out["TIME"].to_numpy(), kind="stable")
     time = out["TIME"].to_numpy().astype("datetime64[ns]").astype("int64")[order]
@@ -522,8 +519,7 @@ class FindProfilesStep(BaseStep, QCHandlingMixin):
         cols_to_extract = ["TIME", depth_col]
         df_raw = self.data[cols_to_extract].to_dataframe().reset_index()
 
-        # Flagged samples must not shape the depth smoothing/velocity; they are
-        # labelled afterwards from their neighbours in time (see _fill_from_neighbours).
+        # Flagged samples must not shape the depth smoothing/velocity; _fill_from_neighbours labels them after.
         # Interpolated (flag 8) depth is excluded too, on top of the default
         # calculation_mask (3/4/9): a linearly-interpolated ramp across a real gap
         # (e.g. surface comms) would otherwise be read as genuine depth movement.

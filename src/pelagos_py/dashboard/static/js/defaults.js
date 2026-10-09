@@ -1,10 +1,9 @@
-// What differs from the shipped default pipeline (default.yaml), step by step
-// and QC test by QC test, so the builder can flag edits, extra steps and
-// removed steps, and offer to put the default back. Diagnostics switches, the
-// manual QC test and the per-file paths never count as edits.
+// Diff against default.yaml so the builder can flag edited, extra and removed steps and restore them.
+// Diagnostics switches, the manual QC test and per-file paths never count as edits.
 const Defaults = {
-  steps: null, // default.yaml's steps, or null when it isn't available
-  sectionOf: [], // per default step, the banner title it sits under (or null)
+  template: null, // default.yaml's text
+  steps: null, // default.yaml's steps as built for filePath, or null
+  sectionOf: [], // per default step, the section title it sits under (or null)
   filePath: null, // input file the decisions below were fetched for
   decisions: {},  // build decisions with a choice, keyed by the section they can drop
   IGNORE: new Set(['file_path', 'output_path']),
@@ -12,21 +11,24 @@ const Defaults = {
 
   async load() {
     try {
-      const { yaml_content } = await API.loadConfig('default.yaml');
-      const steps = (jsyaml.load(yaml_content) || {}).steps || [];
-      const banners = Config.sectionsFromYAML(yaml_content);
-      Defaults.steps = []; Defaults.sectionOf = [];
-      steps.forEach((s, i) => {
-        if (!s || !s.name) return;
-        const b = banners.filter((x) => x.index <= i).pop();
-        Defaults.steps.push(s);
-        Defaults.sectionOf.push(b ? b.title : null);
-      });
+      Defaults.template = (await API.loadConfig('default.yaml')).yaml_content;
+      Defaults.setBase(Defaults.template);
     } catch (e) { Defaults.steps = null; }
   },
 
-  // Every described parameter (spec default when unset) plus undescribed
-  // extras. A cleared field ('') counts as unset, as it does in the YAML.
+  setBase(yamlText) {
+    const steps = (jsyaml.load(yamlText) || {}).steps || [];
+    const banners = Config.sectionsFromYAML(yamlText);
+    Defaults.steps = []; Defaults.sectionOf = [];
+    steps.forEach((s, i) => {
+      if (!s || !s.name) return;
+      const b = banners.filter((x) => x.index <= i).pop();
+      Defaults.steps.push(s);
+      Defaults.sectionOf.push(b ? b.title : null);
+    });
+  },
+
+  // A cleared field ('') counts as unset, as it does in the YAML.
   canonical(specs, params, ignore) {
     const out = {};
     const described = new Set();
@@ -79,12 +81,8 @@ const Defaults = {
     return { params, qc, count };
   },
 
-  // Align the pipeline with default.yaml (longest common subsequence on step
-  // names, preferring the least-edited pairing when a name repeats), then
-  // classify every step: edited / extra / unchanged, and place each missing
-  // default step: inside its section when the pipeline still has that section
-  // (`sectionFirst`/`after`), else grouped into a missing section
-  // (`sectionsFirst`/`sectionsAfter`, keyed by the root node it follows).
+  // Align steps with default.yaml by longest common subsequence on names, preferring the
+  // least-edited pairing when a name repeats.
   compute() {
     const byId = new Map(), after = new Map(), first = [];
     const sectionFirst = new Map(), sectionsAfter = new Map(), sectionsFirst = [];
@@ -122,7 +120,6 @@ const Defaults = {
     const norm = (t) => String(t || '').trim().toLowerCase();
     const sections = STATE.pipeline.nodes.filter(isSection);
     const push = (map, key, v) => { if (!map.has(key)) map.set(key, []); map.get(key).push(v); };
-    // The root node (loose step or section) holding a matched item.
     const rootOf = (id) => { const loc = locateStep(id); return loc.section ? loc.section.id : id; };
     let anchor = null, ghostSec = null;
     for (let j = 0; j < m; j++) {
@@ -144,15 +141,20 @@ const Defaults = {
     return view;
   },
 
-  // Re-fetch the build decisions for the Load step's file when it changes, so a
-  // missing section can offer the choice that would bring it back.
+  // The template is built per file (e.g. the optode phase variable), so re-fetch it and its decisions.
   syncDecisions(items) {
     const load = items.find((i) => (i.def.parameters || []).some((p) => p.name === 'file_path'));
     const path = (load && load.values.file_path) || null;
     if (path === Defaults.filePath) return;
     Defaults.filePath = path;
     Defaults.decisions = {};
+    if (Defaults.template) Defaults.setBase(Defaults.template);
     if (!path) return;
+    API.build(path).then(({ yaml_content }) => {
+      if (path !== Defaults.filePath) return;
+      Defaults.setBase(yaml_content);
+      renderPipeline();
+    }).catch(() => {});
     API.buildDecisions(path).then(({ decisions }) => {
       if (path !== Defaults.filePath) return;
       for (const d of decisions) if (d.section && d.options.length) Defaults.decisions[d.section] = d;
@@ -160,9 +162,7 @@ const Defaults = {
     }).catch(() => {});
   },
 
-  // Rebuild the template for the current file with one decision changed and
-  // bring back the steps of `ghost`'s section from it (plus what Prepare OG1
-  // must rename for them). Other sections are left as they are.
+  // Rebuild the template with one decision changed and bring back that section's steps.
   async applyChoice(ghost, d, key) {
     const { yaml_content } = await API.build(Defaults.filePath, { [d.id]: key });
     const cfg = jsyaml.load(yaml_content) || {};
@@ -187,8 +187,6 @@ const Defaults = {
     return s.length > 48 ? s.slice(0, 47) + '…' : s;
   },
 
-  // "Changed from the default (x) — Restore default" under a field, or any
-  // other one-line warning with a link-styled action.
   note(text, action, onAction, cls = '') {
     const el = document.createElement('div');
     el.className = 'default-note ' + cls;
@@ -209,7 +207,6 @@ const Defaults = {
     return Forms.el('span', { class: `tag ${cls === 'extra' ? 'accent' : 'warn'} default-badge`, textContent: text });
   },
 
-  // ---- restore actions (each re-renders and syncs the YAML) ----
   commit() { renderPipeline(); STATE.onChange(); },
 
   restoreParam(values, name, base) {
@@ -234,8 +231,7 @@ const Defaults = {
     Defaults.commit();
   },
 
-  // The default's tests in its order, keeping each test's current diagnostics
-  // override and any manual QC the user has set up.
+  // Keeps each test's current diagnostics override and any manual QC set up.
   restoredQc(cur, base) {
     const out = {};
     for (const t of Object.keys(base)) {
@@ -268,8 +264,7 @@ const Defaults = {
     Defaults.commit();
   },
 
-  // Put a missing default step back: after the step it followed, at the start
-  // of its section (`sectionId`), or at the very top.
+  // After the step it followed, at the start of its section, or at the very top.
   addStepBack(base, anchorId, sectionId) {
     const item = Config.itemFromStep(base);
     if (!item) return;
@@ -281,7 +276,6 @@ const Defaults = {
     Defaults.commit();
   },
 
-  // Put a whole missing default section back after the root node it followed.
   addSectionBack(ghost) {
     const sec = makeSection(ghost.title);
     sec.steps = ghost.steps.map(Config.itemFromStep).filter(Boolean);
@@ -291,8 +285,7 @@ const Defaults = {
     Defaults.commit();
   },
 
-  // Dashed placeholder row: something in default.yaml that this pipeline lacks.
-  // `control` is the way back: an Add back button or a decision select.
+  // Placeholder row for something in default.yaml that this pipeline lacks.
   ghostRow(cls, name, why, detail, control) {
     const row = document.createElement('div');
     row.className = 'ghost-step ' + cls;
@@ -319,8 +312,7 @@ const Defaults = {
       Defaults.addButton('Add back', () => Defaults.addStepBack(base, anchorId, sectionId)));
   },
 
-  // A section the builder skipped for this file offers the build decision's
-  // choices; any other missing section just comes back as in default.yaml.
+  // A section the builder skipped for this file offers the build decision's choices.
   ghostSection(ghost) {
     const d = Defaults.decisions[ghost.title];
     const names = ghost.steps.map((s) => s.name).join(', ');

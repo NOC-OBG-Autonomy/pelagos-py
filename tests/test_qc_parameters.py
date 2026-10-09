@@ -83,8 +83,7 @@ def test_validator_passes_valid_qc_config():
 
 
 def test_validator_flags_missing_load_step():
-    # No "Load OG1"/"Generate Data" step at all: TIME etc. are not just assumed
-    # to be present, since nothing in the pipeline actually provides them.
+    # No loader step, so nothing provides TIME etc.
     steps = [
         {
             "name": "Apply QC",
@@ -127,10 +126,7 @@ def test_validator_passes_qc_var_in_correct_order():
 
 
 def test_validator_flags_derived_only_qc_requirement_with_no_producing_step():
-    # PROFILE_NUMBER is only ever produced by "Find Profiles" -- with no such
-    # step anywhere in the pipeline (not just out of order), it can't be assumed
-    # to come from the input file, so this must be flagged up front rather than
-    # silently passing and failing at run time.
+    # No "Find Profiles" anywhere, so PROFILE_NUMBER must be flagged up front.
     steps = [
         {
             "name": "Apply QC",
@@ -142,9 +138,7 @@ def test_validator_flags_derived_only_qc_requirement_with_no_producing_step():
 
 
 def test_validator_flags_missing_load_step_points_at_loader():
-    # Same missing-TIME scenario as test_validator_flags_missing_load_step, but
-    # the message should point specifically at adding a loader step, not the
-    # generic "add the step that derives it" QC wording.
+    # Missing TIME should point at adding a loader step, not the generic wording.
     steps = [
         {
             "name": "Apply QC",
@@ -174,11 +168,7 @@ def test_validator_flags_blank_file_path():
 
 
 def test_validator_flags_out_of_order_variable_parameter():
-    # Deep Correction's `apply_to` (a variable_parameters entry, not in its
-    # static required_variables) is pointed at DEPTH, which "Derive CTD"
-    # produces -- but here it runs *after* Deep Correction, so this is an
-    # ordering mistake. Confirms variable_parameters values are resolved and
-    # checked the same way required_variables are.
+    # apply_to needs DEPTH, but "Derive CTD" runs after Deep Correction.
     steps = [
         {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
         {"name": "Deep Correction", "parameters": {"apply_to": "DEPTH", "depth_var": "PRES"}},
@@ -189,16 +179,13 @@ def test_validator_flags_out_of_order_variable_parameter():
 
 
 def test_validator_ignores_self_produced_variable_parameter():
-    # "BBP from Beta" defaults both apply_to and output_as to "BBP700" (reads
-    # and overwrites the same variable) -- its own output_as must not make
-    # its apply_to requirement look like an ordering mistake against itself.
+    # apply_to and output_as are both BBP700; that is not an ordering mistake.
     steps = [
         {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
         {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH", "PRAC_SALINITY"]}},
         {"name": "BBP from Beta", "parameters": {}},
     ]
-    # BBP700 isn't produced by any step and isn't known-derived, so with no
-    # file to check it against, it's left for the run-time check.
+    # No file to check BBP700 against, so it is left for the run-time check.
     assert check_pipeline_variables(steps, LOGGER) is True
 
 
@@ -219,9 +206,7 @@ def test_validator_flags_loader_variable_missing_from_file(tmp_path):
 
 
 def test_validator_allows_loader_variable_renamed_by_later_step(tmp_path):
-    # ALR-style raw files store latitude/longitude under different names --
-    # a "Correct Values" step further down renames them to LATITUDE/LONGITUDE.
-    # That must not be flagged just because the raw file lacks those names.
+    # Raw ALR names are renamed to LATITUDE/LONGITUDE by a later "Correct Values" step.
     file_path = tmp_path / "data.nc"
     _write_og1_file(
         file_path,
@@ -256,10 +241,7 @@ def test_validator_flags_variable_parameter_missing_from_file(tmp_path):
 
 
 def test_validator_attributes_error_to_correct_step_with_duplicate_qc_names(tmp_path):
-    # Two "Apply QC" steps each run a "range qc" test -- the first is fine
-    # (PRES exists), the second isn't (BBP700 doesn't). Name-matching alone
-    # can't tell these apart (both qc_settings have a "range qc" key), so the
-    # raised error must carry the actual failing step's index directly.
+    # Both steps have a "range qc" key, so the error must carry the failing step index.
     file_path = tmp_path / "data.nc"
     _write_og1_file(file_path, ["TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC"])
     steps = [
@@ -313,8 +295,7 @@ def _optional_rename_steps(qc_var):
 
 
 def test_validator_flags_output_of_skipped_optional_step(monkeypatch):
-    # Neither BBP700 nor BETA_BACKSCATTERING700 is in the file, so the optional
-    # rename skips at run time and its output must not satisfy the QC.
+    # Neither name is in the file, so the optional rename skips and can't satisfy the QC.
     monkeypatch.setattr(
         "pelagos_py.utils.valid_config_check._read_file_variables",
         lambda *a, **k: ({"TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC"}, set()),

@@ -46,7 +46,7 @@ MARKER = 4            # markersize for plot() point series
 ALPHA = 0.7
 RASTER_ABOVE = 5000   # rasterize dense point layers above this many points
 CAPTURE_MAX_POINTS = 100_000  # point cap for figures saved to disk (report capture)
-MAX_POINTS = None  # set by report capture so dense series are thinned when drawn, not only when saved
+MAX_POINTS = None  # set by report capture to thin dense series as they are drawn
 
 # Colours (hex, one mapping used everywhere).
 FLAG_COLOURS = {
@@ -71,8 +71,7 @@ def flag_label(flag):
 
 
 def categories(da):
-    """``[(value, meaning, colour)]`` for a categorical variable (one with CF
-    ``flag_values``), else None; colours from ``palettes.CATEGORICAL`` or ``CATEGORY``."""
+    """``[(value, meaning, colour)]`` for a variable with CF ``flag_values``, else None."""
     from pelagos_py.utils import palettes
 
     values = da.attrs.get("flag_values")
@@ -103,11 +102,14 @@ def new_fig(nrows=1, ncols=1, sharex=False, sharey=False, height_ratios=None, wi
     """
     import matplotlib.pyplot as plt
     height = FIG_H if nrows == 1 else ROW_H * nrows
-    gridspec_kw = {k: v for k, v in {"height_ratios": height_ratios, "width_ratios": width_ratios}.items()
-                   if v is not None} or None
+    gridspec_kw = {}
+    if height_ratios is not None:
+        gridspec_kw["height_ratios"] = height_ratios
+    if width_ratios is not None:
+        gridspec_kw["width_ratios"] = width_ratios
     return plt.subplots(nrows, ncols, figsize=(FIG_W, height), dpi=DPI,
                         sharex=sharex, sharey=sharey, squeeze=False,
-                        gridspec_kw=gridspec_kw)
+                        gridspec_kw=gridspec_kw or None)
 
 
 def style_axes(ax, *, title=None, xlabel=None, ylabel=None):
@@ -131,9 +133,7 @@ def axis_label(var, units=None):
 def date_axis(ax, which="x", index=None):
     """Consistent date formatting on the chosen axis (x or y).
 
-    ``index`` is the full TIME array whose position is N_MEASUREMENTS: with it, a
-    time-series x axis also gets N_MEASUREMENTS along the top (of the top-most
-    panel when the axes share x), so readers see both.
+    ``index`` (the full TIME array) also adds an N_MEASUREMENTS axis along the top.
     """
     axis = ax.xaxis if which == "x" else ax.yaxis
     loc = mdates.AutoDateLocator()
@@ -223,7 +223,7 @@ def land_polygons(resolution="110m"):
 
 
 def map_extent(lon, lat, pad=0.3, min_span=0.05):
-    """[lon0, lon1, lat0, lat1] around the finite positions; longitude widened by 1/cos(lat) so land keeps its shape."""
+    """[lon0, lon1, lat0, lat1] around the finite positions, widened in longitude so land keeps its shape."""
     lon, lat = np.asarray(lon, float), np.asarray(lat, float)
     ok = np.isfinite(lon) & np.isfinite(lat)
     lon, lat = lon[ok], lat[ok]
@@ -234,7 +234,7 @@ def map_extent(lon, lat, pad=0.3, min_span=0.05):
 
 
 def coastlines(ax, extent, *, color="0.35", linewidth=0.8, fill=None):
-    """Coastlines clipped to extent as a single plot() call (WebGL-safe); fill=<colour> adds land fill (PNG-only)."""
+    """Coastlines clipped to ``extent`` as one plot() call (WebGL-safe); ``fill`` adds land fill (PNG-only)."""
     import shapely
 
     span = max(extent[1] - extent[0], extent[3] - extent[2])

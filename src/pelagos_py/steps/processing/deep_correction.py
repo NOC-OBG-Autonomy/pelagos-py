@@ -26,6 +26,7 @@ from pelagos_py.steps.base_step import BaseStep, register_step
 from pelagos_py.utils.qc_handling import QCHandlingMixin
 
 #### Custom imports ####
+from collections import Counter
 import xarray as xr
 import numpy as np
 import matplotlib.pyplot as plt
@@ -184,7 +185,7 @@ class deep_correction(BaseStep, QCHandlingMixin):
     def compute_dark_value(self):
         # Per-profile diagnostics for plotting; empty when dark_value is given.
         self._profile_diagnostics = {}
-        # Every candidate examined, with why it was rejected, for plot_failure.
+        # Candidates examined and why each was rejected, for plot_failure.
         self._candidates = []
         self._deep_reach = None
 
@@ -324,23 +325,24 @@ class deep_correction(BaseStep, QCHandlingMixin):
         self.data[self.output_as].attrs["dark_value"] = self.dark_value
 
     def plot_failure(self):
-        # Why no dark value: the deep-reaching profiles examined, coloured by
-        # why each was rejected (left), and how deep every profile gets (right).
+        # Why no dark value: rejected deep profiles (left), depth reached per profile (right).
         if getattr(self, "_deep_reach", None) is None:
             return
         reasons = {"too few points": fig_spec.CATEGORY[2], "no valid deep values": fig_spec.CATEGORY[3],
                    "used": fig_spec.CATEGORY[0]}
         n_cand = int((self._deep_reach > self.depth_threshold).sum())
-        # No candidates (nothing reached the threshold): only the depth panel.
+        # only the depth panel when no profile reached the threshold
         fig, axes = fig_spec.new_fig(1, 2 if self._candidates else 1, sharey=True)
-        ax_reach = axes[0][-1]
+        ax_prof, ax_reach = axes[0][0], axes[0][-1]
+        reason_counts = Counter(c["reason"] for c in self._candidates)
         seen = set()
         for cand in self._candidates:
-            ax_prof = axes[0][0]
             colour = reasons[cand["reason"]]
-            label = None if cand["reason"] in seen else f"{cand['reason']} ({sum(c['reason'] == cand['reason'] for c in self._candidates)})"
+            label = None
+            if cand["reason"] not in seen:
+                label = f"{cand['reason']} ({reason_counts[cand['reason']]})"
             seen.add(cand["reason"])
-            # Markers as well as lines: a sparse profile is isolated points.
+            # markers so sparse profiles still show up
             ax_prof.plot(cand["raw"], cand["depth"], c=colour, alpha=0.3, lw=0.8, marker="o", ms=2)
             ax_prof.plot(cand.get("smoothed", cand["raw"]), cand["depth"], c=colour, lw=1.2, label=label)
         if self._candidates:
@@ -352,8 +354,7 @@ class deep_correction(BaseStep, QCHandlingMixin):
                       f"(need >= {self.min_valid_points} valid deep points)")
             fig_spec.legend(ax_prof)
 
-        # Every sample, thinned by fig_spec, so the profile shapes are visible;
-        # samples with a finite value of the variable are drawn on top.
+        # samples with a value are drawn on top of those without
         pnum = np.asarray(self.data["PROFILE_NUMBER"].values, dtype=float)
         depth = np.asarray(self.data[self.depth_var].values, dtype=float)
         has_val = np.isfinite(np.asarray(self.data[self.apply_to].values, dtype=float))
@@ -362,7 +363,7 @@ class deep_correction(BaseStep, QCHandlingMixin):
                         color="#b2bec3", label=f"no {self.apply_to}")
         fig_spec.points(ax_reach, pnum[ok & has_val], depth[ok & has_val],
                         color=fig_spec.CATEGORY[1], label=f"{self.apply_to} present")
-        ax_reach.axhline(self.depth_threshold, ls="--", c="grey", lw=1)
+        ax_reach.axhline(self.depth_threshold, ls="--", c="grey", lw=1, label=f"depth_threshold ({self.depth_threshold:g})")
         ax_reach.invert_yaxis()
         fig_spec.style_axes(
             ax_reach, xlabel="PROFILE_NUMBER", ylabel=None if self._candidates else self.depth_var,

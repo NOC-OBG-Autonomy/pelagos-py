@@ -53,7 +53,7 @@ See [Getting Started](https://noc-obg-autonomy.github.io/pelagos-py/getting_star
 
 Installing pelagos-py adds a `pelagos-py` command:
 ```bash
-pelagos-py dashboard              # opens the dashboard (works from your git clone)
+pelagos-py dashboard              # opens the dashboard (pip install "pelagos_py[dashboard]")
 pelagos-py build glider.nc        # writes glider.yaml   (--ask to choose options, -o to save elsewhere)
 pelagos-py run glider.nc          # builds a config, then runs it
 pelagos-py run my_pipeline.yaml   # runs an existing config
@@ -80,7 +80,7 @@ pipeline = Pipeline.make_config("glider.nc", ask=True)
 pipeline = Pipeline.load_config("my_pipeline.yaml")
 ```
 
-To try it without your own data, `get_demo_file` downloads a demo OG1 file into `examples/data/OG1` (only the first time) and returns its path; `get_demo_file()` lists the demos. `examples/python/run_demo.py` does this end to end.
+To try it without your own data, `get_demo_file` downloads a demo OG1 file into `~/Documents/pelagos-py/demo_data` (only the first time) and returns its path; `get_demo_file()` lists the demos. `examples/python/run_demo.py` does this end to end.
 ```python
 from pelagos_py import Pipeline, get_demo_file
 

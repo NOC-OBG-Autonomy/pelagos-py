@@ -1,7 +1,5 @@
-// Build panel: shown in place of the step list when a data file is picked (a
-// demo card or Browse…). Lists what the full template must change for that
-// file — each with a default the user can override — and generates the whole
-// config on Confirm. See pelagos_py.utils.config_builder.
+// Build panel: shown in place of the step list when a data file is picked. Lists the
+// decisions for that file and generates the config on Confirm (see utils.config_builder).
 const Build = {
   async start({ name, filePath, description, onCancel }) {
     const root = document.getElementById('build-panel');
@@ -11,7 +9,7 @@ const Build = {
     root.hidden = false;
     Build.name = name; // the demo config the open panel is for, if any
     document.querySelector('.builder').classList.add('building');
-    // The old config is still what Run would execute: not what's on screen.
+    // Run would still execute the old config, not what's on screen.
     Build.lockRun(true);
     const file = filePath.split('/').pop();
 

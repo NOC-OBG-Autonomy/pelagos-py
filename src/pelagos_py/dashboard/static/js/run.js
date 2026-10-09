@@ -2,30 +2,23 @@
 
 const Run = {
   source: null,
-  progressEl: null, // the single <span> a progress bar redraws in place
-  stopping: false,  // set once the user hits Stop, so the end event reads as "stopped"
-  stopBtnMode: 'idle', // 'idle' | 'stop' | 'clear' — what btn-stop currently does
-  runBtnMode: 'idle', // 'idle' | 'running' | 'paused' | 'busy' — see setRunButton
-  // The step currently executing, from the __PELAGOS_STEP__ marker:
-  // {index, name, test, key}. Figures are attributed by *index* (so a config
-  // that repeats a step name still gets one group per occurrence) and, for a QC
-  // step the runner split test by test, by the test name as well.
+  progressEl: null,
+  stopping: false,  // so the end event reads as "stopped"
+  runBtnMode: 'idle', // see setRunButton
+  // {index, name, test, key}; figures group by index so a repeated step name still gets its own group.
   currentStep: null,
   plotCount: 0,
 
-  // Captured figures, grouped into attempts: one group per (unit, re-run), in
-  // the order they were produced. Both the Plots tab gallery and the paused
-  // step review panel render from this — nothing reads the DOM back.
-  //   {index, key, step, test, figs: [{fname, caption, spec}], params}
+  // One group per (unit, re-run): {index, key, step, test, figs: [{fname, caption, spec}], params}
   groups: [],
-  activeGroup: null,  // group new figures land in; nulled by a re-run
-  pendingParams: null, // parameters sent with the re-run that is in flight
+  activeGroup: null,
+  pendingParams: null,
 
-  pausedStep: null, // index of the step the run is paused after, or null
-  pausedName: null, // its step name, used to guard a re-run against edits
-  pausedTest: null, // the QC test within it, when the step was split
-  reportName: null, // the PDF this run wrote, once its marker arrives
-  pendingStart: false, // Run was just pressed: connect() plants the starting banner
+  pausedStep: null,
+  pausedName: null, // guards a re-run against edits
+  pausedTest: null,
+  reportName: null,
+  pendingStart: false,
 
   // Marker prefixes run_bootstrap.py prints on stdout; formats in its module docstring.
   FIG_MARKER: '__PELAGOS_FIG__ ',
@@ -39,17 +32,19 @@ const Run = {
   VARS_MARKER: '__PELAGOS_VARS__ ',
   TIME_MARKER: '__PELAGOS_TIME__ ',
   SAMPLE_MARKER: '__PELAGOS_SAMPLE__ ',
-  variables: [], // dataset variables at the current pause (for Manual QC's axis pickers)
+  variables: [], // for Manual QC's axis pickers
+  emptyVariables: [], // those all NaN or 0
 
-  // Whether the unit currently paused on failed its most recent attempt
-  // (rather than pausing for review after a successful diagnostics step).
-  // Reset on every __PELAGOS_STEP__ and set by __PELAGOS_FAIL__, so it always
-  // reflects the outcome of the most recent execution attempt for that unit.
+  // Reset on every __PELAGOS_STEP__, set by __PELAGOS_FAIL__.
   pauseFailed: false,
 
-  // ---- ANSI colour ----
-  // The server forwards the pipeline's SGR colour codes (everything else is
-  // stripped there), so the console shows the same colours as the terminal.
+  // The paused unit's attempts and the result the runner holds, so Continue can follow the form.
+  outcomes: [],
+  heldParams: null,
+  sentParams: null,
+  continueAfter: false,  // carry on once the re-run passes
+
+  // The server forwards only SGR colour codes; it strips other escapes.
   ANSI_SGR: /\x1b\[([0-9;]*)m/g,
   ANSI_COLORS: {
     30: 'ansi-black', 31: 'ansi-red', 32: 'ansi-green', 33: 'ansi-yellow',
@@ -63,8 +58,7 @@ const Run = {
     return text.replace(Run.ANSI_SGR, '');
   },
 
-  // Turn SGR codes into styled spans. Text is HTML-escaped first, so log
-  // output can never inject markup.
+  // Text is escaped first, so log output can't inject markup.
   ansiToHtml(text) {
     let out = '', fg = null, bold = false, dim = false, open = false, last = 0;
     const close = () => { if (open) { out += '</span>'; open = false; } };
@@ -84,8 +78,7 @@ const Run = {
         else if (n === 2) dim = true;
         else if (n === 22) { bold = false; dim = false; }
         else if (n === 39) fg = null;
-        // 256-colour foreground (ESC[38;5;<n>m): only the SEVERE amber (202)
-        // the pipeline emits is mapped, everything else is skipped.
+        // 256-colour: only the SEVERE amber (202) the pipeline emits is mapped.
         else if (n === 38 && parts[i + 1] === '5') {
           if (Number(parts[i + 2]) === 202) fg = 'ansi-amber';
           i += 2;
@@ -107,22 +100,18 @@ const Run = {
     return '';
   },
 
-  // A tqdm-style progress bar line, e.g. "Progress:  45%|████  | 713/1602 ...".
   looksLikeProgress(line) {
     return /\d+%\|/.test(line);
   },
 
-  // Auto-scroll only while "stuck" to the tail. The user scrolling up detaches
-  // it (so the log holds still to read); the jump-to-latest button re-attaches.
+  // Scrolling up detaches from the tail; the jump-to-latest button re-attaches.
   stick: true,
 
   atBottom(c) {
-    // A few px of slack so sub-pixel rounding still counts as "at the bottom".
+    // slack for sub-pixel rounding
     return c.scrollHeight - c.scrollTop - c.clientHeight < 8;
   },
 
-  // Follow the tail if stuck; otherwise leave the view put and surface the
-  // jump-to-latest button so the user can catch back up.
   autoScroll() {
     const c = document.getElementById('log-console');
     if (Run.stick) c.scrollTop = c.scrollHeight;
@@ -136,7 +125,6 @@ const Run = {
     document.getElementById('log-to-bottom').classList.add('hidden');
   },
 
-  // Wire the console's scroll + the jump-to-latest button once, at page load.
   initScroll() {
     const c = document.getElementById('log-console');
     c.addEventListener('scroll', () => {
@@ -151,8 +139,7 @@ const Run = {
     Run.settleStart();
     const c = document.getElementById('log-console');
     const span = document.createElement('span');
-    // Fallback colouring for lines the pipeline sent uncoloured; any real ANSI
-    // colour inside wins, being set on a descendant span.
+    // Fallback colour; real ANSI colour still wins, being set on a descendant span.
     const cls = Run.levelClass(Run.stripAnsi(line));
     if (cls) span.className = cls;
     span.innerHTML = Run.ansiToHtml(line) + '\n';
@@ -160,8 +147,6 @@ const Run = {
     Run.autoScroll();
   },
 
-  // A dashboard-side line (a captured plot, a report, a re-run): a small tag
-  // in place of a timestamp, so it reads apart from the pipeline's own log.
   note(tag, text, cls = '') {
     const c = document.getElementById('log-console');
     const span = document.createElement('span');
@@ -171,8 +156,6 @@ const Run = {
     Run.autoScroll();
   },
 
-  // A highlighted console line for the run's milestones: 'starting' (dots
-  // animate until the first real line lands, no icon), then 'ok' / 'err' at the end.
   banner(kind, title, sub = '') {
     const c = document.getElementById('log-console');
     const span = document.createElement('span');
@@ -186,11 +169,9 @@ const Run = {
     return span;
   },
 
-  // The pending banner ("Starting…" / "Stopping…") settles in place once the
-  // pipeline has answered: the dots stop and the wording turns past tense.
   settle(kind, title, sub = '') {
     const els = document.querySelectorAll('#log-console .banner-starting');
-    const el = els[els.length - 1]; // the newest pending banner, not an older one
+    const el = els[els.length - 1];
     if (!el) return;
     el.className = 'lvl-banner banner-' + kind;
     el.querySelector('strong').textContent = title;
@@ -217,17 +198,12 @@ const Run = {
     ];
   },
 
-  // Identifies one pausable unit: a step, or one QC test within a split step.
-  // Figure attribution, attempt numbering and the review panel all key off it.
+  // One pausable unit: a step, or one QC test within a split step.
   unitKey(index, test) {
     return test ? index + ' ' + test : String(index);
   },
 
-  // The earliest marker in a line, or null. A marker does not always start its
-  // line: a tqdm bar that closes with leave=False erases itself with a bare
-  // "\r" and no newline, so the next print lands on the same line and arrives
-  // as "…bar…__PELAGOS_STEP__ 3\tApply QC". Searching rather than testing the
-  // prefix keeps such a marker from being swallowed as progress output.
+  // A leave=False tqdm bar ends with a bare "\r", so a marker can land mid-line.
   markerAt(plain) {
     let best = null;
     for (const marker of [Run.FIG_MARKER, Run.LOG_MARKER, Run.FAIL_MARKER, Run.STEP_MARKER,
@@ -239,14 +215,11 @@ const Run = {
     return best;
   },
 
-  // A committed (newline-terminated) line from the server.
   handleLine(line) {
-    // Marker/step detection reads the uncoloured text, so a leading colour code
-    // can't hide a marker; only the console rendering keeps the escapes.
+    // Uncoloured, so a leading colour code can't hide a marker.
     const plain = Run.stripAnsi(line);
     const hit = Run.markerAt(plain);
     if (hit) {
-      // Anything before the marker is real console output that got glued on.
       if (hit.at > 0) Run.renderLine(plain.slice(0, hit.at));
       // RAM samples arrive mid-step, so they must not freeze a live bar.
       if (hit.marker !== Run.SAMPLE_MARKER) Run.finalizeProgress();
@@ -258,8 +231,7 @@ const Run = {
 
   handleMarker(marker, plain) {
     if (marker === Run.MEM_MARKER) {
-      // Payload is "<rss>\t<peak>\t<data>\t<label>" — the RAM meter's, not a
-      // step marker. Kept out of the console: it's a visual, not a log line.
+      // "<rss>\t<peak>\t<data>\t<label>" for the RAM meter, not the console.
       Mem.add(plain.slice(marker.length));
       return;
     }
@@ -272,11 +244,14 @@ const Run = {
       return;
     }
     if (marker === Run.VARS_MARKER) {
-      try { Run.variables = JSON.parse(plain.slice(marker.length)); } catch (e) { /* malformed */ }
+      try {
+        const vars = JSON.parse(plain.slice(marker.length));
+        Run.variables = vars.names; Run.emptyVariables = vars.empty;
+      } catch (e) { /* malformed */ }
       return;
     }
     if (marker === Run.REPORT_MARKER) {
-      // Payload is "<abspath>\t<filename>" — not a step marker.
+      // "<abspath>\t<filename>"
       const parts = plain.slice(marker.length).split('\t');
       const path = (parts[0] || '').trim();
       const name = (parts[1] || '').trim() || path;
@@ -288,10 +263,7 @@ const Run = {
       return;
     }
     if (marker === Run.LOG_MARKER || marker === Run.FAIL_MARKER) {
-      // Payload is "<index>\t<step>\t<qc test>\t<base64 text>" for both: a
-      // log-only step's diagnostics text, or a step's error text when it
-      // raised and on_step_fail is "pause". Base64 so newlines/tabs in
-      // the captured text can't break the marker line.
+      // "<index>\t<step>\t<qc test>\t<base64 text>"; base64 so newlines can't break the line.
       const parts = plain.slice(marker.length).split('\t');
       const idx = parseInt(parts[0], 10);
       const name = (parts[1] || '').trim();
@@ -312,9 +284,7 @@ const Run = {
     }
     const [idx, rest, test] = Run.splitMarker(plain, marker);
     if (marker === Run.FIG_MARKER) {
-      // FIG's payload is "<filename>\t<caption>\t<spec>\t<reason>", not
-      // "<index>\t<name>". <spec> names the interactive plot spec; when it is
-      // empty the figure stays PNG-only and <reason> says what stopped it.
+      // "<filename>\t<caption>\t<spec>\t<reason>"; an empty spec means PNG-only, <reason> says why.
       const parts = plain.slice(marker.length).split('\t');
       const fname = (parts[0] || '').trim();
       const caption = (parts[1] || '').trim();
@@ -324,12 +294,11 @@ const Run = {
       Run.note('plot', (caption || fname) +
         (spec ? ' (interactive)' : reason ? ` (image only — ${reason})` : ''));
     } else if (marker === Run.STEP_MARKER) {
-      // Which step is executing, so its figures group under it. A garbled index
-      // would make every figure its own group (NaN !== NaN), so ignore it.
+      // A garbled index would make every figure its own group (NaN !== NaN).
       if (!Number.isInteger(idx)) return;
       Run.currentStep = { index: idx, name: rest, test, key: Run.unitKey(idx, test) };
-      Run.activeGroup = null; // each execution of a step opens a fresh attempt
-      Run.pauseFailed = false; // reflects the outcome of this attempt, not the last
+      Run.activeGroup = null; // each execution opens a fresh attempt
+      Run.pauseFailed = false;
       RunLock.stepStarted(idx, test);
     } else if (marker === Run.PAUSE_MARKER) {
       if (!Number.isInteger(idx)) return;
@@ -339,10 +308,8 @@ const Run = {
     }
   },
 
-  // Draw one non-marker line in the console.
   renderLine(line) {
-    // The final bar frame arrives newline-terminated: finalise it in place
-    // rather than appending a duplicate below the live progress line.
+    // The final bar frame arrives newline-terminated: finalise it rather than duplicate it.
     if (Run.progressEl && Run.looksLikeProgress(Run.stripAnsi(line))
         && Run.barDesc(line) === Run.barDesc(Run.progressEl.textContent || '')) {
       Run.progressEl.innerHTML = Run.ansiToHtml(line) + '\n';
@@ -350,7 +317,7 @@ const Run = {
       Run.autoScroll();
       return;
     }
-    Run.finalizeProgress(); // any active bar is now permanent as last drawn
+    Run.finalizeProgress();
     Run.append(line);
   },
 
@@ -360,9 +327,7 @@ const Run = {
     return m ? m[1] : Run.stripAnsi(plain);
   },
 
-  // A closed tqdm bar (leave=False) erases itself rather than printing a final
-  // 100% frame, so the last redraw we saw can freeze mid-percentage once the
-  // step moves on. Force it to a completed frame before anything else prints.
+  // A leave=False bar erases itself without a 100% frame, so it could freeze mid-way.
   finalizeProgress() {
     if (!Run.progressEl) return;
     const plain = Run.stripAnsi(Run.progressEl.textContent || '').replace(/\n+$/, '');
@@ -376,14 +341,12 @@ const Run = {
     Run.progressEl = null;
   },
 
-  // A transient in-place redraw: update the one live progress span.
   handleProgress(line) {
     Run.settleStart();
     const c = document.getElementById('log-console');
     const plain = Run.stripAnsi(line);
     if (!plain.trim()) return; // a closing bar's blank erase frame
-    // A different bar (new description) while one is live: a step running
-    // several loops back to back. Keep the finished one, start another line.
+    // A new description means a new loop: keep the finished bar, start another line.
     if (Run.progressEl && Run.looksLikeProgress(plain)
         && Run.barDesc(plain) !== Run.barDesc(Run.progressEl.textContent || '')) {
       Run.finalizeProgress();
@@ -397,7 +360,6 @@ const Run = {
     Run.autoScroll();
   },
 
-  // The attempt group figures for `cur` land in, opening a new one if needed.
   _groupFor(cur) {
     if (!Run.activeGroup || Run.activeGroup.key !== cur.key) {
       Run.activeGroup = {
@@ -410,7 +372,6 @@ const Run = {
     return Run.activeGroup;
   },
 
-  // Record a captured figure against the current step/attempt.
   addPlot(fname, caption, spec) {
     if (!fname) return;
     const cur = Run.currentStep ||
@@ -424,11 +385,7 @@ const Run = {
     if (Review.active && Review.key === cur.key) Review.renderPlots();
   },
 
-  // Record a log-only step's diagnostics text (or a failed step's error text)
-  // against the current step/attempt. Stored as a pseudo-figure (`isLog:
-  // true`) in the same `figs` array as real plots, so the gallery/review
-  // rendering, attempt bookkeeping and re-run handling all work unchanged —
-  // only Viewer.card() needs to know the difference (see viewer.js).
+  // Stored as a pseudo-figure (isLog) so attempts and re-runs work unchanged; only Viewer.card() differs.
   addLog(idx, name, test, text, { isError = false } = {}) {
     if (!text) return;
     const cur = Run.currentStep && Run.currentStep.index === idx
@@ -443,14 +400,11 @@ const Run = {
     return Run.groups.filter((g) => g.key === key);
   },
 
-  // Attempt numbers are derived from position, never stored: a stored counter
-  // drifts whenever groups are dropped (a duplicate re-run) or re-keyed, which
-  // is how the gallery ended up showing a row of "attempt 1"s.
+  // Derived from position: a stored counter drifts when groups are dropped or re-keyed.
   attemptNo(group) {
     return Run.groupsFor(group.key).indexOf(group) + 1;
   },
 
-  // Forget a figure group (a superseded attempt), keeping the counts honest.
   dropGroup(group) {
     const at = Run.groups.indexOf(group);
     if (at < 0) return;
@@ -461,17 +415,14 @@ const Run = {
     Run.updatePlotTab();
   },
 
-  // Continuing accepts one attempt: keep its figure in the run archive and drop
-  // the discarded experiments, so the Plots tab stays a record of the run
-  // rather than of every knob you turned.
+  // The Plots tab keeps only the accepted attempt, not every experiment.
   keepOnlyAttempt(key, group) {
     for (const g of Run.groupsFor(key)) {
       if (g !== group) Run.dropGroup(g);
     }
   },
 
-  // Re-key figure groups that were captured before any step marker was seen
-  // (index -1) onto a known unit.
+  // Groups captured before any step marker have index -1.
   adoptOrphans(index, name, test) {
     const orphans = Run.groups.filter((g) => g.index === -1);
     if (!orphans.length) return;
@@ -482,9 +433,7 @@ const Run = {
     Run.renderGallery();
   },
 
-  // The Plots tab: the whole run's figures, in order, grouped by step and (for
-  // a step re-run more than once) by attempt. The paused step's are shown big
-  // above, by Review, so they are left out here.
+  // The paused step's figures are shown by Review, so they're left out here.
   renderGallery() {
     const gallery = document.getElementById('plots-gallery');
     gallery.innerHTML = '';
@@ -518,16 +467,13 @@ const Run = {
     Run.pendingParams = null;
     Run.plotCount = 0;
     Run.currentStep = null;
-    // Spec filenames restart at fig_001.json each run, so a cached spec would
-    // be the previous run's data under this run's name.
+    // Spec filenames restart at fig_001.json each run, so a cached spec would be stale.
     Plot._cache = {};
     Run.renderGallery();
     Run.updatePlotTab();
     Run.clearReport();
   },
 
-  // Show the PDF report a report step just wrote: a preview iframe plus an
-  // "Open" link, and a dot on the Output tab so it's noticed on another tab.
   showReport(path, name) {
     const url = '/api/run/report?path=' + encodeURIComponent(path);
     const view = document.getElementById('report-view');
@@ -572,30 +518,28 @@ const Run = {
     Run.pausedName = name;
     Run.pausedTest = test || null;
     const key = Run.unitKey(idx, test);
-    // Attempt 1's parameters aren't known until the step has run: fill them in
-    // from the config now, so the comparison strip can diff against them.
-    // Safety net: figures captured while no step marker had been seen belong to
-    // the step we have just paused after, since only it can have drawn them.
+    // Orphan figures can only be this step's; attempt 1's params come from the config.
     Run.adoptOrphans(idx, name, test);
     const group = Run.groupsFor(key).slice(-1)[0];
     if (group && !group.params) group.params = Run.paramsAt(idx, test);
-    // A re-run that drew nothing leaves these set; don't carry them into the
-    // next step's first figure.
+    // A re-run that drew nothing leaves this set.
     Run.pendingParams = null;
+    const ran = Run.sentParams || Run.paramsAt(idx, test);
+    Run.sentParams = null;
+    Run.outcomes.push({ params: ran, failed: Run.pauseFailed });
+    if (!Run.pauseFailed) Run.heldParams = ran;
     Run.setStatus(Run.pauseFailed ? 'step failed' : 'paused', Run.pauseFailed ? 'err' : 'running');
     Run.setRunButton('paused');
-    // Unlock this step (or QC test) in the builder and scroll it into view —
-    // that is where its parameters are edited.
     RunLock.pauseAt(idx, test);
     if (Review.active && Review.key === key) {
-      Review.setBusy(false);   // a re-run finished: same panel, new plots
-      Review.select(null);     // the new attempt becomes the selected one
+      Review.setBusy(false);   // a re-run finished
+      Review.select(null);
       Review.renderTitle();
     } else {
       Review.show(idx, name, test);
     }
-    if (ManualQC.continueAfter) {
-      ManualQC.continueAfter = false;
+    if (Run.continueAfter) {
+      Run.continueAfter = false;
       if (!Run.pauseFailed) Run.continueRun();
     }
   },
@@ -604,15 +548,15 @@ const Run = {
     Run.pausedStep = null;
     Run.pausedName = null;
     Run.pausedTest = null;
-    // Still running, just no longer paused: the whole config locks again.
+    Run.outcomes = [];
+    Run.heldParams = null;
+    Run.continueAfter = false;
     if (RunLock.running) RunLock.pauseAt(null, null);
     Run.setRunButton(RunLock.running ? 'running' : 'idle');
     Review.hide();
   },
 
-  // The parameters of step `idx` as they currently stand in the YAML pane (the
-  // source of truth: it reflects both builder edits and hand edits). For a
-  // split QC step, only the paused test's settings — that is all the unit runs.
+  // Read from the YAML pane, which holds both builder and hand edits.
   paramsAt(idx, test) {
     let steps;
     try {
@@ -628,23 +572,42 @@ const Run = {
     return settings === undefined ? null : { qc_settings: { [test]: settings } };
   },
 
-  // Carry on from the pause. Whatever ran last is what the pipeline is holding,
-  // so Continue simply accepts it — no re-running behind your back. To move on
-  // with different values, edit them and Re-run first.
-  async continueRun() {
-    if (Run.pausedStep === null) return;
-    const key = Run.unitKey(Run.pausedStep, Run.pausedTest);
-    // Keep the accepted result in the run archive, drop the experiments.
-    Run.keepOnlyAttempt(key, Run.groupsFor(key).slice(-1)[0]);
-    Run.hidePause();
-    Run.setStatus('running…', 'running');
-    await API.continueRun();
+  // 'continue', 'skip' (form failed), 'rerun' (passed in an older attempt) or 'untested'.
+  continueAction() {
+    const form = Run.paramsAt(Run.pausedStep, Run.pausedTest);
+    if (!form) return Run.heldParams ? 'continue' : 'skip';
+    if (Run.heldParams && Forms.equal(form, Run.heldParams)) return 'continue';
+    const known = Run.outcomes.filter((o) => Forms.equal(o.params, form)).pop();
+    if (!known) return 'untested';
+    return known.failed ? 'skip' : 'rerun';
   },
 
-  // Re-run the paused unit with its current parameters. The step index must
-  // still line up with the running pipeline, so refuse if the config was edited
-  // in a way that moved this step somewhere else.
-  async rerunStep() {
+  async continueRun() {
+    if (Run.pausedStep === null) return;
+    const action = Run.continueAction();
+    if (action === 'rerun' || action === 'untested') {
+      await Run.rerunStep({ thenContinue: true });
+      return;
+    }
+    const key = Run.unitKey(Run.pausedStep, Run.pausedTest);
+    const form = Run.paramsAt(Run.pausedStep, Run.pausedTest);
+    try {
+      await (action === 'skip' ? API.skipStep() : API.continueRun());
+    } catch (e) {
+      Run.note('error', e.message, 'err');
+      return;
+    }
+    const attempts = Run.groupsFor(key);
+    const kept = attempts.filter((g) => g.params && Forms.equal(g.params, form)).pop();
+    Run.keepOnlyAttempt(key, kept || attempts[attempts.length - 1]);
+    // The next pause may already have arrived while the request was in flight.
+    if (Run.unitKey(Run.pausedStep, Run.pausedTest) !== key) return;
+    Run.hidePause();
+    Run.setStatus('running…', 'running');
+  },
+
+  // Refuse if an edit moved this step, since the index must match the running pipeline.
+  async rerunStep({ thenContinue = false } = {}) {
     if (Run.pausedStep === null) return;
     const idx = Run.pausedStep;
     const test = Run.pausedTest;
@@ -665,7 +628,6 @@ const Run = {
         'Undo the reordering, or Continue and start a fresh run.');
       return;
     }
-    // A split QC unit runs one test, so it is re-run with that test alone.
     const params = Run.paramsAt(idx, test);
     if (!params) {
       alert(test
@@ -673,25 +635,32 @@ const Run = {
         : `Could not read the parameters of step ${idx + 1}.`);
       return;
     }
-    // Re-running unchanged parameters gives a figure identical to the one on
-    // screen, so replace that attempt instead of stacking a duplicate next to it.
+    // Unchanged params give an identical figure, so replace that attempt instead of stacking one.
     const latest = Run.groupsFor(Run.unitKey(idx, test)).slice(-1)[0];
     if (latest && latest.params && Forms.equal(latest.params, params)) {
       Run.note('re-run', 'unchanged parameters — replacing attempt ' + Run.attemptNo(latest));
       Run.dropGroup(latest);
     }
-    // Record exactly what leaves the browser: the log is then a full account of
-    // what each attempt ran with, rather than something to be inferred.
     Run.note('re-run', 'step ' + (idx + 1) + (test ? ` (${test})` : '') +
       ' with ' + JSON.stringify(params));
-    // Handed to the group the re-run's figures will land in, so the comparison
-    // strip can say what changed between attempts.
     Run.pendingParams = params;
-    Run.activeGroup = null; // next figure starts a new attempt
+    Run.sentParams = params;
+    Run.continueAfter = thenContinue;
+    Run.activeGroup = null;
     Review.setBusy(true);
     Run.setStatus('re-running…', 'running');
     Run.setRunButton('busy');
-    await API.rerunStep(params);
+    try {
+      await API.rerunStep(params, editor.getValue());
+    } catch (e) {
+      Run.note('error', e.message, 'err');
+      Run.pendingParams = null;
+      Run.sentParams = null;
+      Run.continueAfter = false;
+      Review.setBusy(false);
+      Run.setStatus('paused', 'running');
+      Run.setRunButton('paused');
+    }
   },
 
   setStatus(text, cls) {
@@ -701,16 +670,22 @@ const Run = {
     if (text) document.getElementById('mem-meter').classList.remove('hidden');
   },
 
-  // btn-run doubles as Continue while paused, so its label/action follow the
-  // run state: 'idle' (nothing running), 'running', 'paused' (Continue,
-  // enabled) or 'busy' (paused but a re-run is in flight — Continue disabled).
-  // Paused on a failed attempt it reads Skip, since that is what moving on does.
+  // Doubles as Continue while paused ('busy': a re-run is in flight); reads Skip if the form is known to fail.
   setRunButton(mode) {
     const btn = document.getElementById('btn-run');
     Run.runBtnMode = mode;
-    if (mode === 'paused' || mode === 'busy') {
+    const paused = mode === 'paused' || mode === 'busy';
+    const action = paused ? Run.continueAction() : null;
+    btn.classList.toggle('primary', action !== 'skip');
+    btn.classList.toggle('warn', action === 'skip');
+    btn.title = action === 'untested' ? 'These values have not been run yet: Continue re-runs the step first'
+      : action === 'rerun' ? 'Continue re-runs the step with these values first' : '';
+    Review.renderHint(action === 'untested'
+      ? "These values haven't been run yet. Re-run first? Continue will re-run the step, then carry on if it passes."
+      : '');
+    if (paused) {
       btn.disabled = mode === 'busy';
-      btn.innerHTML = Icon.svg('play') + (Run.pauseFailed ? 'Skip step' : 'Continue');
+      btn.innerHTML = Icon.svg('play') + (action === 'skip' ? 'Skip step' : 'Continue');
     } else {
       btn.disabled = mode === 'running';
       btn.innerHTML = Icon.svg('play') + 'Run';
@@ -718,49 +693,35 @@ const Run = {
     Run.syncRunButtons();
   },
 
-  // One control at a time: Run, then Stop while running, then Clear once over.
-  // Only a paused run shows more (Stop + Re-run + Continue).
+  syncToForm() {
+    if (Run.pausedStep === null || ManualQC.isActive()) return;
+    Run.setRunButton(Run.runBtnMode);
+    Review.syncUseButtons();
+  },
+
+  // Clear/Stop/Run always show so the bar doesn't shift; only a paused run adds Re-run.
   syncRunButtons() {
-    const running = Run.runBtnMode === 'running';
-    const over = Run.stopBtnMode === 'clear';
     const paused = Run.runBtnMode === 'paused' || Run.runBtnMode === 'busy';
-    document.getElementById('btn-run').classList.toggle('hidden', running || over);
-    document.getElementById('btn-stop').classList.toggle('hidden', Run.stopBtnMode === 'idle');
     const rerun = document.getElementById('btn-rerun');
     rerun.classList.toggle('hidden', !paused);
     rerun.disabled = Run.runBtnMode === 'busy';
   },
 
-  // btn-stop does double duty: "Stop" while a run is live, "Clear" once it has
-  // finished/failed/been stopped (so the log/plots don't just sit there stale),
-  // disabled with the "Stop" label before anything has run yet.
-  setStopButton(mode) {
-    const btn = document.getElementById('btn-stop');
-    Run.stopBtnMode = mode;
-    btn.classList.toggle('warn', mode === 'clear');
-    btn.classList.toggle('danger', mode !== 'clear');
-    if (mode === 'clear') {
-      btn.disabled = false;
-      btn.innerHTML = Icon.svg('trash2') + 'Clear';
-    } else {
-      btn.disabled = mode === 'idle';
-      btn.innerHTML = Icon.svg('stop') + 'Stop';
-    }
-    Run.syncRunButtons();
+  setStopClear(mode) {
+    document.getElementById('btn-stop').disabled = mode !== 'stop';
+    document.getElementById('btn-clear').disabled = mode !== 'clear';
   },
 
   async start(yamlContent) {
     Run.showTab();
     Run.setRunButton('running');
-    Run.setStopButton('stop');
+    Run.setStopClear('stop');
     Run.setStatus('starting…', 'running');
-    Run.pendingStart = true; // connect() clears the console, then plants the banner
+    Run.pendingStart = true;
     try {
       await API.run(yamlContent);
     } catch (e) {
-      // The UI thought nothing was running but the server disagrees — the usual
-      // cause is a dropped stream (sleep/suspend) that left the buttons stale.
-      // Attach to the run that is actually there instead of stranding the user.
+      // Usually a dropped stream (laptop sleep) left the buttons stale: attach to the real run.
       if (/already running/i.test(e.message)) {
         Run.setStatus('re-attaching to the running pipeline…', 'running');
         Run.connect(true);
@@ -770,19 +731,17 @@ const Run = {
       Run.pendingStart = false;
       Run.banner('err', 'Could not start', e.message);
       Run.setRunButton('idle');
-      Run.setStopButton('idle');
+      Run.setStopClear('idle');
       return;
     }
     Run.connect(true);
   },
 
-  // Attach to the run's SSE stream. Shared by a fresh start and by reconnecting
-  // to an already-running pipeline after a page refresh. The stream replays the
-  // captured backlog first, so a reconnect repaints the whole log.
+  // The stream replays the backlog first, so a reconnect repaints the whole log.
   connect(clearConsole) {
     if (clearConsole) {
       document.getElementById('log-console').textContent = '';
-      Run.scrollToBottom(); // fresh log starts stuck to the tail
+      Run.scrollToBottom();
       Run.clearPlots();
       Run.reportName = null;
       Mem.reset();
@@ -791,9 +750,9 @@ const Run = {
     }
     Run.pendingStart = false;
     Run.hidePause();
-    RunLock.begin(); // freeze the config for as long as the run owns it
+    RunLock.begin();
     Run.setRunButton('running');
-    Run.setStopButton('stop');
+    Run.setStopClear('stop');
     Run.setStatus('running…', 'running');
     Run.progressEl = null;
     Run.stopping = false;
@@ -828,8 +787,7 @@ const Run = {
     Run.source.onerror = () => Run.handleDrop();
   },
 
-  // A dropped SSE stream (laptop sleep etc.) is not "run over": the pipeline carries
-  // on, so re-attach and let the replayed backlog rebuild the log, figures and pause panel.
+  // A dropped stream (laptop sleep) doesn't end the run: re-attach and let the backlog replay.
   handleDrop() {
     if (Run.source) { Run.source.close(); Run.source = null; }
     clearTimeout(Run._retry);
@@ -843,13 +801,11 @@ const Run = {
         Run.cleanup();
       }
     }).catch(() => {
-      // Server unreachable (still asleep?): keep trying rather than give up.
       Run._retry = setTimeout(() => Run.handleDrop(), 3000);
     });
   },
 
-  // Re-attach if we have no stream but the server still has a run. Called when
-  // the tab is shown again, which is the moment a suspended laptop comes back.
+  // Called when the tab is shown again, e.g. after laptop sleep.
   async ensureConnected() {
     if (Run.source || Run.stopping) return;
     try {
@@ -858,8 +814,6 @@ const Run = {
     } catch (e) { /* server not reachable yet; the next event will retry */ }
   },
 
-  // On page load, reattach to a pipeline that's still running (e.g. after a
-  // refresh) so the UI reflects it instead of offering a Run that 409s.
   async resumeIfRunning() {
     try {
       const s = await API.runStatus();
@@ -870,7 +824,6 @@ const Run = {
     } catch (e) { /* server not ready; ignore */ }
   },
 
-  // Switch to a tab (used when starting or auto-resuming a run, and on pause).
   showTab(name = 'run') {
     document.querySelectorAll('.tab').forEach((t) =>
       t.classList.toggle('on', t.dataset.tab === name));
@@ -880,14 +833,12 @@ const Run = {
     Run.onTabChange();
   },
 
-  // The Manual QC tab hides the builder and takes the whole window.
   onTabChange() {
     const which = document.querySelector('.tab.on')?.dataset.tab;
     document.body.classList.toggle('manual-full', which === 'manual');
   },
 
-  // The run is genuinely over (finished, stopped, or gone). Only called on a
-  // terminal state — never on a transient stream drop, see handleDrop.
+  // Only on a finished/stopped run, never a transient stream drop (see handleDrop).
   cleanup() {
     Run.progressEl = null;
     clearTimeout(Run._retry);
@@ -895,26 +846,28 @@ const Run = {
     RunLock.end();
     if (Run.source) { Run.source.close(); Run.source = null; }
     Run.setRunButton('idle');
-    Run.setStopButton('clear');
+    Run.setStopClear('clear');
   },
 
   async stop() {
-    Run.settleStart(); // a still-pending "Starting" banner must not outlive the run
+    Run.settleStart();
     Run.stopping = true;
     Run.setStatus('stopping…', 'running');
     Run.banner('starting', 'Stopping pipeline');
-    await API.stopRun();
-    // Stopping discards the run, so its figures go with it — the next run
-    // starts from a clean gallery either way.
+    try {
+      await API.stopRun();
+    } catch (e) {
+      Run.stopping = false;
+      Run.setStatus('stop failed: ' + e.message, 'err');
+      return;
+    }
     Run.clearPlots();
   },
 
-  // Reset a finished/stopped run's log and status back to idle, ready for the
-  // next Run. Only reachable once btn-stop is in its "Clear" state.
   clearRun() {
     document.getElementById('log-console').textContent = '';
     Run.clearPlots();
     Run.setStatus('', '');
-    Run.setStopButton('idle');
+    Run.setStopClear('idle');
   },
 };

@@ -1,45 +1,8 @@
-"""Subprocess entry point the dashboard uses to run a pipeline.
+"""Subprocess the dashboard runs a pipeline in: ``python run_bootstrap.py <config> <figure_dir>``.
 
-Run as::
-
-    python run_bootstrap.py <config_path> <figure_dir>
-
-The dashboard runs the pipeline in a headless subprocess, so a step's
-``plt.show()`` diagnostic popup is a silent no-op and the user never sees the
-plot. This launcher redirects ``plt.show`` to *save* every open figure into
-``figure_dir`` and print a marker line the dashboard picks off the log stream::
-
-    __PELAGOS_FIG__ <filename>\t<caption>\t<spec filename or "">
-
-so the browser can display the plot inline (see run.js). Alongside the PNG it
-also tries to write a JSON plot spec (see fig_spec.py) holding the figure's
-underlying x/y data, which the browser redraws with WebGL so the plot can be
-zoomed and panned. Figures that cannot be serialised faithfully just get an
-empty spec field and stay PNG-only. It also forces the Agg
-backend and neutralises backend switches, so no step can grab a GUI backend
-(e.g. ``matplotlib.use("tkagg")``) that would crash in this displayless process.
-
-This is deliberately dashboard-only glue: it changes nothing in pelagos_py, it
-just wraps how the plots are surfaced. Only steps that actually call
-``plt.show`` (i.e. ``diagnostics: true``) produce plots here.
-
-A step whose diagnostics are log-only (e.g. Load Data, Export — they print a
-summary instead of plotting) draws no figure, so it gets a ``__PELAGOS_LOG__``
-marker instead::
-
-    __PELAGOS_LOG__ <step index>\t<step name>\t<QC test or "">\t<base64 text>
-
-so the dashboard can show that text where a plot would otherwise go. See
-``_patch_diagnostics_capture``.
-
-A step that raises, with ``on_step_fail: pause`` (the default), pauses the same
-way a diagnostics step does rather than being skipped or halting the run, so
-the user can fix its parameters and re-run it, or Skip it (its failure plot, if
-it draws one, is captured like any other figure)::
-
-    __PELAGOS_FAIL__ <step index>\t<step name>\t<QC test or "">\t<base64 text>
-
-See ``_emit_fail`` and ``pelagos_py.pipeline.resolve_on_step_fail``.
+Forces the Agg backend, saves each ``plt.show()`` figure (plus a plot spec) to
+``figure_dir``, pauses after diagnostics steps for review, and reports progress
+to the dashboard as ``__PELAGOS_*__`` lines on stdout (see the README).
 """
 
 import base64
@@ -53,8 +16,7 @@ import threading
 import time
 from pathlib import Path
 
-# The imports below take seconds: start the dashboard's clock now, and let Stop
-# during them exit quietly rather than dump the import traceback.
+# The imports below take seconds; let Stop during them exit without a traceback.
 _START = time.time()
 print(f"__PELAGOS_TIME__ 0.000\t0\t{_START:.3f}", flush=True)
 signal.signal(signal.SIGINT, lambda *args: sys.exit(130))
@@ -70,7 +32,7 @@ matplotlib.use = lambda *args, **kwargs: None
 plt.switch_backend = lambda *args, **kwargs: None
 
 import numpy as np  # noqa: E402
-import fig_spec  # noqa: E402  (dashboard-local; this script's directory is on sys.path)
+from pelagos_py.dashboard import fig_spec  # noqa: E402
 from pelagos_py.pipeline import REPORT_STEP_NAME, SEVERE, STOP, Pipeline, resolve_on_step_fail  # noqa: E402
 
 signal.signal(signal.SIGINT, signal.default_int_handler)  # imports done: Stop is a KeyboardInterrupt again
@@ -79,43 +41,30 @@ FIG_DIR = sys.argv[2]
 _saved = {"n": 0}
 _orig_show = plt.show
 
-# Live memory readout for the dashboard's RAM meter. RSS is this process's
-# resident set (the runner and every step share this one process). The transient
-# spike a step makes usually happens *inside* run() and is freed before the step
-# returns, so sampling only at step boundaries would miss it and mis-attribute
-# the peak. A background thread polls RSS a few times a second, tracks the max
-# *during* each step, and remembers which step the run's overall peak fell in --
-# so the meter can point at the step that actually blew RAM up. ``data`` is the
-# xarray dataset's own byte size, separating genuine dataset growth from
-# transient per-step overhead.
+# RAM meter: a step's memory spike is usually freed before it returns, so a thread polls RSS during it.
 _mem = {
-    "label": "startup",   # step the sampler currently attributes RSS to
-    "step_start": 0.0,    # RSS (MB) entering the current step
-    "step_peak": 0.0,     # max RSS (MB) seen during the current step
-    "run_peak": 0.0,      # max RSS (MB) over the whole run
-    "run_peak_label": "", # the step run_peak occurred during
+    "label": "startup",
+    "step_start": 0.0,
+    "step_peak": 0.0,
+    "run_peak": 0.0,
+    "run_peak_label": "",
 }
 _mem_lock = threading.Lock()
 
-# Processing clock for the dashboard's runtime readout. Stops while the run
-# sits paused on stdin (review / manual QC), so it reads as time actually
-# spent processing. ``__PELAGOS_TIME__ <active s>\t<paused 0/1>\t<epoch s>``:
-# the epoch lets the browser tick on from the marker even after a reconnect.
+# Processing time, stopped while paused on stdin
 _clock = {"active": 0.0, "since": _START}
 
 
 def _rss_mb():
-    """This process's resident set in MB, or None if psutil is unavailable."""
     try:
         import psutil
 
         return psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2
-    except Exception:  # noqa: BLE001 - the meter is a bonus, never fatal
+    except Exception:  # noqa: BLE001
         return None
 
 
 def _mem_sampler():
-    """Poll RSS ~2.5x/sec, recording the per-step and whole-run peaks."""
     while True:
         rss = _rss_mb()
         if rss is not None:
@@ -129,7 +78,6 @@ def _mem_sampler():
 
 
 def _mem_begin(label):
-    """Attribute subsequent samples to ``label``; record the entry RSS."""
     rss = _rss_mb() or 0.0
     with _mem_lock:
         _mem["label"] = label
@@ -138,8 +86,6 @@ def _mem_begin(label):
 
 
 def _emit_mem(context):
-    # __PELAGOS_MEM__ fields: settle RSS, run peak, dataset MB, step label, in-step peak,
-    # peak step, step-start RSS, active seconds. No psutil -> no marker, never fatal.
     rss_mb = _rss_mb()
     if rss_mb is None:
         return
@@ -158,7 +104,7 @@ def _emit_mem(context):
         nbytes = getattr(data, "nbytes", None)
         if nbytes is not None:
             data_mb = f"{nbytes / 1024 ** 2:.1f}"
-    except Exception:  # noqa: BLE001 - dataset size is optional detail
+    except Exception:  # noqa: BLE001
         data_mb = ""
     active = _clock["active"] + (time.time() - _clock["since"] if _clock["since"] else 0)
     print(
@@ -173,7 +119,7 @@ if _rss_mb() is not None:
 
 
 def _caption(fig) -> str:
-    """Best-effort human label for a figure: its suptitle, else first axes title."""
+    # suptitle, else the first axes title
     try:
         text = ""
         if fig._suptitle and fig._suptitle.get_text():
@@ -183,18 +129,14 @@ def _caption(fig) -> str:
                 if ax.get_title():
                     text = ax.get_title()
                     break
-        # The __PELAGOS_FIG__ record is one tab-separated line; a multi-line
-        # title (e.g. a correction formula on its own line) would otherwise
-        # split the record and hide the spec field, forcing PNG-only.
+        # the marker is one line, so a multi-line title must be flattened
         return " ".join(text.split())
-    except Exception:  # noqa: BLE001 - a caption is cosmetic, never fatal
+    except Exception:  # noqa: BLE001
         return ""
 
 
 def _capture_spec(fig, stem: str):
-    """Write the figure's interactive spec, float32 blob and float64 sidecar:
-    ``(spec filename, reason)``. Best-effort: anything fig_spec cannot represent
-    (or anything unexpected) leaves the dashboard with the PNG it already has."""
+    # Returns (spec filename, reason); on any failure the figure stays PNG-only
     try:
         spec, reason, blob, full = fig_spec.serialise(fig)
         if spec is None:
@@ -206,12 +148,11 @@ def _capture_spec(fig, stem: str):
             handle.write(blob)
         np.savez(os.path.join(FIG_DIR, stem + "_full.npz"), **full)
         return name, ""
-    except Exception as exc:  # noqa: BLE001 - a bonus feature, never fatal
+    except Exception as exc:  # noqa: BLE001
         return "", f"{type(exc).__name__}"
 
 
 def _capture_show(*args, **kwargs):
-    """Save every open figure to FIG_DIR and announce it, instead of displaying."""
     for num in plt.get_fignums():
         fig = plt.figure(num)
         _saved["n"] += 1
@@ -220,11 +161,9 @@ def _capture_show(*args, **kwargs):
         try:
             fig.savefig(os.path.join(FIG_DIR, fname), dpi=130, bbox_inches="tight")
             spec, reason = _capture_spec(fig, stem)
-            # Tab-separated so the dashboard can split the fields apart; a
-            # caption may contain spaces but not tabs/newlines.
             print(f"__PELAGOS_FIG__ {fname}\t{_caption(fig)}\t{spec}\t{reason}",
                   flush=True)
-        except Exception:  # noqa: BLE001 - a capture failure must never be fatal
+        except Exception:  # noqa: BLE001
             pass
         finally:
             plt.close(fig)
@@ -234,8 +173,6 @@ plt.show = _capture_show
 
 
 class _Tee:
-    """A writable stream that mirrors everything to two underlying streams."""
-
     def __init__(self, primary, secondary):
         self._primary = primary
         self._secondary = secondary
@@ -252,23 +189,12 @@ class _Tee:
         return getattr(self._primary, name)
 
 
-# Text captured from a step's diagnostics call when it drew no figure, so it
-# can be shown as a "log" in the dashboard instead of a plot. ``None`` means
-# "not capturing" (the fast path, for every non-pausable step); a list means
-# the current step is pausable and its diagnostics text is being collected.
+# Printed diagnostics of a pausable step that drew no figure; None when not capturing
 _diag_capture = {"chunks": None}
 
 
 def _patch_diagnostics_capture():
-    """Make every step's diagnostics call capture its printed text.
-
-    Piggybacks on ``BaseStep._wrap_diagnostics_timing``, which already wraps
-    ``generate_diagnostics``/``plot_diagnostics`` per-instance for every step.
-    When the wrapped call draws no new figure (a load/export-style step that
-    only prints a summary), its stdout is stashed in ``_diag_capture`` so
-    ``_emit_diag_log`` can announce it as a ``__PELAGOS_LOG__`` marker once the
-    step finishes — the dashboard then shows that text in place of a plot.
-    """
+    # Hooks BaseStep's per-instance diagnostics wrapper so a step that only prints shows as a log
     from pelagos_py.steps.base_step import BaseStep
 
     orig_wrap = BaseStep._wrap_diagnostics_timing
@@ -301,14 +227,12 @@ def _begin_diag_capture(pausable):
 
 
 def _emit_fail(idx, name, test, exc):
-    # __PELAGOS_FAIL__: same fields as __PELAGOS_LOG__, shown by the dashboard as an error
     text = getattr(exc, "halt_message", None) or f"{type(exc).__name__}: {exc}"
     payload = base64.b64encode(text.encode()).decode()
     print(f"__PELAGOS_FAIL__ {idx}\t{name}\t{test or ''}\t{payload}", flush=True)
 
 
 def _emit_diag_log(idx, name, test):
-    # __PELAGOS_LOG__ (idx, name, test, base64 text) for a step that printed but drew no figure
     chunks = _diag_capture["chunks"]
     _diag_capture["chunks"] = None
     if not chunks:
@@ -321,13 +245,7 @@ def _emit_diag_log(idx, name, test):
 
 
 def _emit_report(context, since):
-    """Announce a PDF report a step just wrote, for the dashboard's Report tab.
-
-    Prints ``__PELAGOS_REPORT__ <abspath>\t<filename>``. Best-effort: looks under
-    the run's ``out_directory`` for the newest ``.pdf`` touched since the report
-    step began, so it works for both the Python and Sphinx report steps without
-    hardcoding their filename logic. Nothing found -> no marker.
-    """
+    # Newest PDF under out_directory since the step began, so any report step works
     try:
         gp = (context or {}).get("global_parameters") or {}
         base = Path(gp.get("out_directory") or "./")
@@ -343,12 +261,12 @@ def _emit_report(context, since):
                 newest, newest_mtime = pdf, mtime
         if newest is not None:
             print(f"__PELAGOS_REPORT__ {newest.resolve()}\t{newest.name}", flush=True)
-    except Exception:  # noqa: BLE001 - surfacing the report is a bonus, never fatal
+    except Exception:  # noqa: BLE001
         pass
 
 
 def _snapshot(context):
-    # Pre-step state for a re-run: steps mutate the dataset in place, so it is deep-copied
+    # steps mutate the dataset in place, so a re-run needs a deep copy
     if context is None:
         return None
     snap = dict(context)
@@ -363,7 +281,6 @@ def _qc_tests(step_config):
 
 
 def _pausable(step_config, test):
-    # Whether the run pauses after this unit for the user to look at it
     step_diag = bool(step_config.get("diagnostics"))
     if test is None:  # an unsplit QC step only exists when no test is pausable (see _expand)
         return step_diag
@@ -371,8 +288,7 @@ def _pausable(step_config, test):
 
 
 def _expand(step_config):
-    # Split a pausable QC step into one Apply QC unit per test, so each can be inspected
-    # and re-run on its own; a single test is still split so the pause is keyed by test name
+    # One unit per test of a pausable QC step, so each test pauses and re-runs on its own
     tests = _qc_tests(step_config)
     if not tests:
         return [(step_config, None)]
@@ -386,8 +302,16 @@ def _expand(step_config):
     return units
 
 
+def _has_data(values):
+    # all-NaN/NaT or all-zero columns go last in Manual QC's colour picker
+    if np.issubdtype(values.dtype, np.datetime64):
+        return bool((~np.isnat(values)).any())
+    if not np.issubdtype(values.dtype, np.number):
+        return True
+    return bool((np.isfinite(values) & (values != 0)).any())
+
+
 def _emit_vars(context):
-    # __PELAGOS_VARS__: plottable variables (1-D over N_MEASUREMENTS, not _QC) for the Manual QC axes
     try:
         data = (context or {}).get("data")
         if data is None:
@@ -397,15 +321,14 @@ def _emit_vars(context):
             if data[name].dims == ("N_MEASUREMENTS",) and not name.endswith("_QC")
             and name != "N_MEASUREMENTS"
         ]
-        print(f"__PELAGOS_VARS__ {json.dumps(names)}", flush=True)
-    except Exception:  # noqa: BLE001 - the axis list is a bonus, never fatal
+        empty = [name for name in names if not _has_data(data[name].values)]
+        print(f"__PELAGOS_VARS__ {json.dumps({'names': names, 'empty': empty})}", flush=True)
+    except Exception:  # noqa: BLE001
         pass
 
 
 def _emit_columns(context, snapshot, request):
-    # __PELAGOS_DATA__ <id>: the requested columns (float32; dates float64 epoch ms) packed
-    # into cols_<id>.bin for the Manual QC profile view. _QC columns are the flags from before
-    # this step, the same starting point manual qc uses, so the browser can replay the boxes.
+    # _QC columns are the flags from before this step, so the browser can replay the boxes
     request_id = int(request.get("id", 0))
     try:
         from pelagos_py.utils import palettes
@@ -438,13 +361,12 @@ def _emit_columns(context, snapshot, request):
             arrays.append(values)
         with open(os.path.join(FIG_DIR, f"cols_{request_id}.bin"), "wb") as handle:
             handle.write(fig_spec._pack({"columns": header}, arrays))
-    except Exception as exc:  # noqa: BLE001 - the dashboard gets an empty answer, never a crash
+    except Exception as exc:  # noqa: BLE001
         print(f"Could not send columns to the dashboard: {exc}", flush=True)
     print(f"__PELAGOS_DATA__ {request_id}", flush=True)
 
 
 def _drop_captures(pipeline, mark):
-    """Discard report figures captured since ``mark`` (the previous attempt's)."""
     figs = getattr(pipeline, "_captured_figures", None)
     if not figs:
         return
@@ -466,17 +388,18 @@ def _emit_time(paused):
 
 
 def _read_command():
-    # One line on stdin: "continue", "rerun <json params>" or "data <json request>"; EOF counts as continue so a
-    # dropped channel never hangs the run (Stop is a SIGINT, see app.py)
+    # "continue", "skip", "rerun <json>" or "data <json>"; EOF continues so the run never hangs
     line = sys.stdin.readline()
     if not line:
         return ("continue", None)
     line = line.rstrip("\n")
+    if line == "skip":
+        return ("skip", None)
     for action in ("rerun", "data"):
         if line.startswith(action + " "):
             try:
                 return (action, json.loads(line[len(action) + 1:]))
-            except Exception:  # noqa: BLE001 - a malformed command just continues
+            except Exception:  # noqa: BLE001
                 return ("continue", None)
     return ("continue", None)
 
@@ -487,25 +410,20 @@ def main():
         _patch_diagnostics_capture()
         _emit_time(paused=False)
         pipeline = Pipeline(config_path=config_path)
-        pipeline._diagnose_failures = True  # a failed step's plot goes to the review panel
+        pipeline._diagnose_failures = True
         _run(pipeline)
     except KeyboardInterrupt:
-        # The Stop button sends SIGINT (works while paused on stdin too); exit
-        # cleanly instead of dumping a traceback from wherever it landed. The
-        # dashboard writes its own "stopped" line.
+        # Stop sends SIGINT; the dashboard logs its own "stopped" line
         sys.exit(130)
     finally:
-        _emit_time(paused=True)  # final processing time
+        _emit_time(paused=True)
 
 
 def _run(pipeline):
-    # Drive execute_step ourselves (run_context does the rest of run()'s setup) so the
-    # run can pause after a diagnostics step for the user to inspect, tweak and re-run it.
+    # Drives execute_step itself so the run can pause after a step for review and re-run
     with pipeline.run_context():
         context = pipeline._context
-        # A QC step becomes several units, one per test; everything else is a
-        # single unit. `idx` stays the step's index in the config either way, so
-        # figures and the re-run form still line up with the builder card.
+        # idx stays the config index for split QC units, to match the builder card
         units = [
             (idx, sub, test)
             for idx, step_config in enumerate(pipeline.steps)
@@ -514,59 +432,38 @@ def _run(pipeline):
         for idx, step_config, test in units:
             name = step_config.get("name", "")
             pausable = _pausable(step_config, test)
-            # Snapshot the pre-step state only when we might re-run this step.
-            # For a split QC step that is the state before *this test*, so a
-            # re-run replays one test rather than the whole batch. When there is
-            # no snapshot (a non-pausable step that goes on to fail), a re-run
-            # falls back to `pre_context` below -- the pre-step reference, not a
-            # copy, so a failure that never got to mutate the data still retries
-            # cleanly; one that did is a known, accepted gap (see CLAUDE.md).
             snapshot = _snapshot(context) if pausable else None
             pre_context = context
-            # Report captures taken so far: a re-run replaces this unit's, so the
-            # report shows only the attempt that was carried forward.
+            # a re-run replaces this unit's report figures
             captured_mark = len(getattr(pipeline, "_captured_figures", None) or [])
             label = name + (f"\t{test}" if test else "")
-            # Announce the step *before* it runs so the dashboard can attribute
-            # the figures it emits. The pipeline's own "Executing:" log line is
-            # file-only (extra={"console": False}), so it never reaches here.
+            # the pipeline's own "Executing:" line is file-only, so announce the step here
             print(f"__PELAGOS_STEP__ {idx}\t{label}", flush=True)
             mem_label = name + (f" · {test}" if test else "")
             _mem_begin(mem_label)
             report_since = time.time()
             _begin_diag_capture(pausable)
             failed = False
-            # Whether this unit has ever produced a usable context, across the
-            # initial attempt and any re-runs -- so Continue only logs "failed
-            # and skipped" when nothing usable exists, not when a later re-run
-            # happens to fail after an earlier attempt already succeeded (in
-            # that case `context` still holds that earlier good result).
+            # True once any attempt succeeded, so a later failed re-run still keeps that result
             has_result = False
             try:
                 context = pipeline.execute_step(step_config, context)
                 has_result = True
             except (RuntimeError, SystemExit) as exc:
                 _diag_capture["chunks"] = None
-                # Mirror Pipeline.run()'s on_step_fail handling, which this
-                # loop otherwise bypasses by driving execute_step() itself.
+                # same on_step_fail handling as Pipeline.run()
                 fail_mode = resolve_on_step_fail(pipeline.global_parameters.get("on_step_fail"))
                 if fail_mode == "stop":
                     pipeline.logger.log(STOP, "Pipeline stopped at step '%s'.", label)
                     sys.exit(1)
                 if fail_mode == "skip":
-                    # The fatal-error log from execute_step() already carries the
-                    # detail; this just marks the step skipped.
                     pipeline.logger.log(SEVERE, "Step '%s' failed and was skipped.", label)
                     continue
-                # "pause": so the user can fix the step's parameters and re-run
-                # it, or accept the skip.
                 failed = True
                 _emit_fail(idx, name, test, exc)
             if not failed:
                 _emit_diag_log(idx, name, test)
                 _emit_mem(context)
-                # A report step drops a PDF under out_directory; surface it so the
-                # dashboard can offer to open it once the run reaches it.
                 if name == REPORT_STEP_NAME:
                     _emit_report(context, report_since - 2)
             if not pausable and not failed:
@@ -576,10 +473,14 @@ def _run(pipeline):
                 print(f"__PELAGOS_PAUSE__ {idx}\t{label}", flush=True)
                 _emit_time(paused=True)
                 action, params = _read_command()
-                while action == "data":  # served while paused, without leaving the pause
+                while action == "data":
                     _emit_columns(context, snapshot, params)
                     action, params = _read_command()
                 _emit_time(paused=False)
+                if action == "skip":
+                    context = snapshot if snapshot is not None else pre_context
+                    pipeline.logger.log(SEVERE, "Step '%s' was skipped.", label)
+                    break
                 if action == "continue":
                     if failed and not has_result:
                         pipeline.logger.log(
@@ -590,9 +491,10 @@ def _run(pipeline):
                     print(f"__PELAGOS_RERUN__ {idx}", flush=True)
                     print(f"__PELAGOS_STEP__ {idx}\t{label}", flush=True)
                     rerun_config = dict(step_config)
+                    # a failed step can pause with diagnostics off; plot its re-run anyway
+                    rerun_config["diagnostics"] = step_config.get("diagnostics") or True
                     if params is not None:
-                        # A split QC unit only ever re-runs its own test, even if
-                        # the browser sent the whole step's settings.
+                        # a split QC unit only re-runs its own test
                         if test is not None and isinstance(params.get("qc_settings"), dict):
                             params = dict(
                                 params,
@@ -603,16 +505,16 @@ def _run(pipeline):
                                 },
                             )
                         rerun_config["parameters"] = params
-                    # The other half of the round trip: what the pipeline was
-                    # actually handed, next to what the browser said it sent.
                     print(
                         f"Re-running with parameters: {rerun_config.get('parameters')}",
                         flush=True,
                     )
-                    # Fresh copy each re-run so repeated re-runs all start clean.
                     _mem_begin(mem_label)
                     _begin_diag_capture(True)
                     _drop_captures(pipeline, captured_mark)
+                    if snapshot is None:
+                        # keep pre_context clean so Skip still means "before this step"
+                        snapshot = _snapshot(pre_context)
                     retry_context = _snapshot(snapshot) if snapshot is not None else pre_context
                     try:
                         context = pipeline.execute_step(rerun_config, retry_context)

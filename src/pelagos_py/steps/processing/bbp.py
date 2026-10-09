@@ -25,8 +25,6 @@ import pelagos_py.utils.diagnostics as diag
 #### Custom imports ####
 import re
 import xarray as xr
-import matplotlib.pyplot as plt
-import matplotlib as mpl
 import numpy as np
 import glidertools as gt
 import pandas as pd
@@ -104,8 +102,7 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
         # Gaps in TEMP/PRAC_SALINITY are left as NaN: BBP is not derived there and is
         # flagged missing (9) below. Add an Interpolate Data step first for gap-free BBP.
 
-        # Particulate only (BGC-Argo, Schmechtig et al.): 2*pi*chi*(beta - beta_sw).
-        # glidertools' flo_bback_total adds the seawater backscatter (~3e-4 m-1) back in.
+        # Particulate only, as BGC-Argo (Schmechtig et al.); gt's flo_bback_total adds seawater back in.
         beta_sw, _ = gt.flo_functions.flo_zhang_scatter_coeffs(
             self.data_subset["TEMP"], self.data_subset["PRAC_SALINITY"], self.theta, 700
         )
@@ -135,7 +132,7 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
         return self.context
 
     def _resolve_beta_var(self):
-        # apply_to, else the BETA_BACKSCATTERING<wl> closest to 700 nm, else a BBP<wl> one
+        # apply_to, else the BETA_BACKSCATTERING<wl> closest to 700 nm
         full_vars = self.context["data"].data_vars
         if self.apply_to in full_vars:
             return self._pull_into_subset(self.apply_to)
@@ -152,9 +149,7 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
         )
 
     def _pull_into_subset(self, name):
-        # variable_parameters subsetting (QCHandlingMixin.__init__) only knows the
-        # configured apply_to, so a fallback name resolved here may not be in
-        # self.data yet.
+        # QCHandlingMixin only subsets the configured apply_to, so a fallback may be missing
         if name not in self.data:
             self.data[name] = self.context["data"][name]
             if f"{name}_QC" in self.context["data"]:
@@ -191,8 +186,7 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
 
 
 def _rolling(arr, n, name):
-    # glidertools.cleaning.rolling_window semantics: full windows over the interior,
-    # expanding windows at the head and (from the end, in that order) the tail.
+    # same as glidertools.cleaning.rolling_window, which uses expanding windows at both ends
     i0 = n // 2
     interior = getattr(pd.Series(arr).rolling(n), name)().to_numpy()[n - 1 : arr.size - 1]
     head = getattr(pd.Series(arr[:i0]).expanding(), name)().to_numpy()
@@ -201,10 +195,9 @@ def _rolling(arr, n, name):
 
 
 def despike(var, window_size, spike_method="median"):
-    """Briggs et al. (2011) despike as in glidertools.cleaning.despike: (baseline, spikes).
+    """Briggs et al. (2011) despike, as glidertools.cleaning.despike. Returns (baseline, spikes).
 
-    Same results, but streams the rolling window instead of materialising a
-    (window x N) matrix, which cost ~1.6 GB on a 2M-sample record.
+    Gives the same result without building a (window x N) matrix (~1.6 GB on 2M samples).
     """
     arr = np.asarray(var, dtype=float)
     mask = ~np.isnan(arr)

@@ -39,3 +39,14 @@ def test_median_covers_every_chunk(tmp_path, monkeypatch):
     xr.Dataset({"CNDC": ("N", cndc, {"units": "S/m"})}).to_netcdf(path)
     assert file_probe._summarise_file(str(path), ["CNDC"])["CNDC"]["median"] == 36.0
 
+
+
+def test_dive_depths_finds_each_bottom_including_yos(tmp_path):
+    path = tmp_path / "g.nc"
+    # Surface -> 1000, yo up to 600 and back to 990, surface -> 790; 2 dbar wiggles are noise.
+    pres = np.concatenate([
+        np.linspace(0, 1000, 50), np.linspace(1000, 600, 20), np.linspace(600, 990, 20),
+        np.linspace(990, 0, 50), [2, 0, 2, 0], np.linspace(0, 790, 40), np.linspace(790, 0, 40),
+    ])
+    xr.Dataset({"PRES": ("N", pres)}).to_netcdf(path)
+    assert file_probe._summarise_file(str(path), [])["PRES"]["dive_depths"] == [1000.0, 990.0, 790.0]

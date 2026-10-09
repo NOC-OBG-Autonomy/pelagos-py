@@ -78,9 +78,9 @@ class CorrectValues(BaseStep):
         ``"Renamed from LATITUDE_GPS"``). ``append_description`` adds to any existing
         comment; ``overwrite_description`` replaces it. Set at most one.
     optional : bool, optional
-        If ``True``, skip silently (instead of raising) when ``target_variable`` is
-        absent -- e.g. a rename step that only applies under one of several file
-        naming conventions. Default ``False``.
+        If ``True``, skip without an error when ``target_variable`` is absent,
+        e.g. a rename that only applies to some file naming conventions.
+        Default ``False``.
 
     Examples
     --------
@@ -283,8 +283,7 @@ class CorrectValues(BaseStep):
         return self.context
 
     def plot_diagnostics(self):
-        # Layout follows what the step did: value + difference panels for a real
-        # correction, a single QC-coloured panel for a rename/identity/skip.
+        # value + difference panels for a real correction, one panel otherwise
         var, outs = self.target_variable, self._outs
         raw = self._raw_data
         corrected = self.slope * raw + self.intercept if self.applied else raw

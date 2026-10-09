@@ -1,11 +1,8 @@
-"""Render the user-guide figures from a pipeline run (see figures.yaml).
+"""Render the user-guide figures listed in figures.yaml from a pipeline run.
 
     python docs/scripts/render_figures.py [docs/scripts/figures.yaml] [--data FILE] [--out docs/_static]
 
-Every figure is one a step draws itself (BaseStep.diagnostic_figures), captured
-exactly as the report captures it, then copied to the path the markdown pages
-reference. --data overrides the Load OG1 file_path; PROFILE in figures.yaml is
-replaced by --profile (default: the day profile the xing2012 correction changed most).
+--data overrides the Load OG1 file_path; --profile replaces PROFILE in figures.yaml.
 """
 import argparse
 import os

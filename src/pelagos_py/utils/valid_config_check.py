@@ -18,19 +18,12 @@ from pelagos_py.steps import STEP_CLASSES, QC_CLASSES
 from pelagos_py.utils import file_probe, parameter_spec
 from pelagos_py.utils.qc_handling import prefer_adjusted
 
-#: Steps that supply the pipeline's base data -- the only steps allowed to
-#: provide TIME/LATITUDE/etc from nothing. Referenced by name rather than by
-#: introspecting provided_variables, since that's also true of some QC-output
-#: sets; these two are singled out because a pipeline needs exactly one.
+# A pipeline needs exactly one of these to supply its base data.
 LOADER_STEP_NAMES = ("Load OG1", "Generate Data")
 
-#: Variables only a loader step (see LOADER_STEP_NAMES) can produce -- used to
-#: tell "you're missing a loader step" apart from "you're missing some other
-#: step" when reporting a missing-variable error.
+# Variables only a loader step can produce.
 LOADER_PROVIDED_VARIABLES = {"TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC"}
 
-#: Shown whenever a missing variable can only come from a loader step, so the
-#: fix is spelled out rather than left as a bare variable name.
 _NO_LOADER_HINT = (
     "No data-loading step ('Load OG1' or 'Generate Data') provides it -- add "
     "one, normally as the first step in the pipeline."
@@ -38,24 +31,12 @@ _NO_LOADER_HINT = (
 
 
 def _loader_hint(missing):
-    """``_NO_LOADER_HINT`` if any of `missing` can only come from a loader step."""
     return _NO_LOADER_HINT if any(v in LOADER_PROVIDED_VARIABLES for v in missing) else None
 
 
 def _variable_parameter_names(step_class, parameters):
-    """Resolve a step's config-driven variable-name parameters to values.
-
-    Some steps take the *name* of the variable to work on as a parameter
-    (e.g. ``apply_to: "BBP700"``) rather than a fixed name in
-    ``required_variables`` -- ``variable_parameters`` (also used by
-    ``QCHandlingMixin`` for data-subsetting) lists which parameters those are.
-    Resolved the same way (parameter value, defaulting from the schema) so
-    they're checked for availability like any other required variable.
-    ``output_as`` names an output, not an input, so is always excluded; a step
-    lists any other parameter that's only conditionally required (e.g. one
-    tied to a particular ``method``, checked by the step itself at run time)
-    in ``variable_parameters_optional`` to exclude it here too.
-    """
+    # input variables named by parameters (e.g. apply_to: "BBP700"); output_as and
+    # variable_parameters_optional are skipped as they aren't always required
     schema = getattr(step_class, "parameter_schema", None) or {}
     optional = getattr(step_class, "variable_parameters_optional", ())
     names = []
@@ -71,11 +52,7 @@ def _variable_parameter_names(step_class, parameters):
 
 
 def _resolve_output_as(step_class, parameters):
-    """A step's effective ``output_as`` value: the configured value, or the
-    schema default if the config leaves it unset (e.g. "BBP from Beta" run
-    with no parameters relies on ``output_as`` defaulting to "BBP700").
-    Returns a list of names (possibly empty).
-    """
+    # configured output_as, else its schema default (e.g. "BBP700" for "BBP from Beta")
     schema = getattr(step_class, "parameter_schema", None) or {}
     out = parameters.get("output_as", (schema.get("output_as") or {}).get("default"))
     if not out:
@@ -84,15 +61,12 @@ def _resolve_output_as(step_class, parameters):
 
 
 def _shift_oxygen_output(parameters):
-    # "Shift Oxygen To CTD" writes ``{var}_SHIFTED`` for every ``shift_vars`` entry.
+    # "Shift Oxygen To CTD" writes {var}_SHIFTED for each shift_vars entry
     return [f"{v}_SHIFTED" for v in (parameters.get("shift_vars") or [])]
 
 
 def _deep_correction_output(step_class, parameters):
-    """"Deep Correction" always writes ``{apply_to}_ADJUSTED`` (see
-    ``resolve_variables`` in deep_correction.py) -- there is no ``output_as``
-    parameter to read, so mirror that naming here.
-    """
+    # "Deep Correction" has no output_as; it always writes {apply_to}_ADJUSTED
     schema = getattr(step_class, "parameter_schema", None) or {}
     apply_to = parameters.get("apply_to", (schema.get("apply_to") or {}).get("default"))
     if not apply_to:
@@ -101,9 +75,7 @@ def _deep_correction_output(step_class, parameters):
 
 
 def _read_file_variables(file_path, logger):
-    """``(names, all_nan)`` of the variables in ``file_path`` (see
-    :func:`file_probe.probe_file`), or ``(None, None)`` if it can't be read --
-    callers then fall back to assuming file-native variables exist."""
+    # (None, None) if the file can't be read; callers then assume file variables exist
     probe = file_probe.probe_file(file_path, logger)
     if probe is None:
         return None, None
@@ -111,7 +83,7 @@ def _read_file_variables(file_path, logger):
 
 
 def _prepare_outputs(steps_list, file_vars):
-    # Variables a "Prepare OG1" step in the pipeline will rename into existence.
+    # variables a "Prepare OG1" step will rename into existence
     prep = next((s for s in steps_list if isinstance(s, dict) and s.get("name") == "Prepare OG1"), None)
     if prep is None or file_vars is None:
         return set()
@@ -122,22 +94,8 @@ def _prepare_outputs(steps_list, file_vars):
 def _raise_missing_variables(
     logger, kind, label, missing, pipeline_provided, known_derived, file_vars, file_all_nan=None
 ):
-    """Categorize ``missing`` variables required by ``label`` (a step or QC
-    test, per ``kind``) and raise the most specific error that applies:
-
-    1. produced by some step, but later in the pipeline -- reorder.
-    2. produced by no step here, but some registered step is known to derive
-       it -- add that step.
-    3. produced by no step and not derivable, but the actual input file
-       (opened for ``file_vars``, once ``Load OG1`` has a real path) doesn't
-       contain it either.
-    4. as (3), but the variable is present in the file with only
-       placeholder/all-NaN data (``file_all_nan``).
-
-    Does nothing if none of these apply: the variable is then assumed to be
-    file-native and left for the run-time check, same as when ``file_vars``
-    is ``None`` (no file to check against yet).
-    """
+    # Raise the most specific error: produced later, produced by no step, or not
+    # (or only as all-NaN) in the input file. Otherwise left for the run-time check.
     out_of_order = [v for v in missing if v in pipeline_provided]
     if out_of_order:
         missing_str = ", ".join(out_of_order)
@@ -291,15 +249,7 @@ def _pipeline_provided_variables(steps_list):
 
 
 def _non_loader_provided_variables(steps_list):
-    """Like :func:`_pipeline_provided_variables`, but ignores loader steps'
-    own static ``provided_variables`` (TIME/LATITUDE/etc, claimed
-    unconditionally regardless of the real file's contents).
-
-    Used to check whether a base variable missing from the raw file is fixed
-    by some *other* step -- e.g. a "Correct Values" step renaming
-    ``LATITUDE_GPS`` to ``LATITUDE`` -- rather than just trusting the
-    loader's own claim to provide it.
-    """
+    # loaders claim TIME/LATITUDE/etc whatever the file holds, so leave them out
     others = [
         s for s in steps_list
         if not (isinstance(s, dict) and s.get("name") in LOADER_STEP_NAMES)
@@ -308,15 +258,7 @@ def _non_loader_provided_variables(steps_list):
 
 
 def _known_derived_variables():
-    """Every variable name any registered step/QC test can produce.
-
-    Unlike :func:`_pipeline_provided_variables` this is not limited to steps
-    actually in the config — it is the full registry, so it distinguishes a
-    variable that is *always* derived by some step (e.g. PROFILE_NUMBER, only
-    ever produced by "Find Profiles") from one that could legitimately come
-    straight from the input file (e.g. DOWNWELLING_PAR). Only the former is
-    worth flagging when no step in *this* pipeline produces it.
-    """
+    # every variable any registered step can produce, in this pipeline or not
     known = set()
     for step_class in STEP_CLASSES.values():
         known.update(getattr(step_class, "provided_variables", []))
@@ -331,11 +273,7 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
     file_all_nan = None
     if available_vars is None:
         logger.info("Checking pipeline variable requirements...")
-        # No variable is available before some step actually loads/generates
-        # data -- "Load OG1" and "Generate Data" both declare TIME, LATITUDE,
-        # LONGITUDE, PRES, TEMP and CNDC as their own provided_variables (added
-        # to available_vars below once the loop reaches them), so a pipeline
-        # missing both is correctly flagged rather than assumed to have data.
+        # nothing exists until a loader step runs, so a pipeline without one is flagged
         available_vars = set()
 
         loader_steps = [
@@ -371,17 +309,10 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
                 exc.step_index = idx
                 raise exc
             else:
-                # A secondary layer of validation, on top of the registry-driven
-                # checks below: once there's a real path, open it and check
-                # against what it actually contains (including whether required
-                # variables hold only placeholder/all-NaN data), rather than
-                # only what the pipeline's steps declare.
+                # with a real path, also check against what the file actually holds
                 file_vars, file_all_nan = _read_file_variables(file_path, logger)
                 if file_vars is not None:
-                    # A later step (e.g. "Prepare OG1" renaming LATITUDE_GPS ->
-                    # LATITUDE) can legitimately supply a base variable the raw
-                    # file stores under a different name, so only flag it if no
-                    # *other* step provides it either.
+                    # a later step can supply it under the right name (e.g. LATITUDE_GPS -> LATITUDE)
                     real_vars = file_vars - (file_all_nan or set())
                     other_provided = _non_loader_provided_variables(steps_list)
                     other_provided |= _prepare_outputs(steps_list, real_vars)
@@ -486,8 +417,7 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
             # also_flag propagation are resolved.)
             if step_name == "Apply QC":
                 for qc_name, qc_params in (parameters.get("qc_settings") or {}).items():
-                    # `diagnostics` is a reserved per-test flag handled by Apply QC,
-                    # not a QC test parameter — exclude it before validating.
+                    # `diagnostics` is a per-test flag, not a QC parameter
                     qc_params = {
                         k: v for k, v in (qc_params or {}).items() if k != "diagnostics"
                     }
@@ -550,12 +480,7 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
                                 f"Invalid parameter value(s) for QC test '{qc_name}': {bad_str}."
                             )
 
-                    # Resolve this test's variable requirements the same way Apply QC
-                    # does at run time, then categorize any that are missing now (see
-                    # _raise_missing_variables): produced later (reorder), produced by
-                    # no step at all (add the step), or -- once Load OG1's file has
-                    # been opened -- genuinely absent from the input file too.
-                    # Otherwise assumed file-native and left for the run-time check.
+                    # resolve the variables the same way Apply QC does at run time
                     qc_params = prefer_adjusted(qc_params, available_vars)
                     qc_required, qc_outputs = _qc_test_io(qc_class, qc_params)
                     qc_missing = [v for v in qc_required if v not in available_vars]
@@ -573,9 +498,6 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
                     available_vars.update(qc_outputs)
 
             req_vars = list(getattr(step_class, "required_variables", []))
-            # Config-driven variable-name parameters (e.g. `apply_to: "BBP700"`)
-            # count as required too -- resolved the same way QCHandlingMixin reads
-            # them at run time (see _variable_parameter_names).
             req_vars.extend(_variable_parameter_names(step_class, parameters))
 
             own_provided = set(getattr(step_class, "provided_variables", []))
@@ -590,8 +512,7 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
             if step_name == "Prepare OG1" and file_vars is not None:
                 own_provided.update(_prepare_outputs([step_config], file_vars - (file_all_nan or set())))
 
-            # An `optional: true` step skips at run time when its target_variable
-            # is absent, so its outputs must not count as provided either.
+            # an `optional: true` step skips when its target_variable is absent
             if parameters.get("optional") and file_vars is not None:
                 target = parameters.get("target_variable")
                 if target and target not in available_vars and target not in file_vars:
@@ -601,10 +522,7 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
             missing_vars = [req for req in req_vars if req not in available_vars]
 
             if missing_vars:
-                # Exclude this step's own outputs from pipeline_provided: several
-                # steps read and overwrite the same variable (apply_to == output_as,
-                # e.g. BBP700 by default in "BBP from Beta"), which would otherwise
-                # look like the variable is "produced later" by this very step.
+                # a step that overwrites its input (e.g. BBP700 in "BBP from Beta") isn't "later"
                 _raise_missing_variables(
                     logger, "step", step_name, missing_vars,
                     pipeline_provided - own_provided - skipped_outputs, known_derived,
@@ -612,10 +530,7 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
                 )
 
             available_vars.update(own_provided)
-            # Everything the input file actually holds is available from the loader
-            # on (a file variable a later step overwrites, e.g. BBP700 + "BBP from
-            # Beta", must not read as "produced later"); all-NaN placeholders stay
-            # missing so _raise_missing_variables can point at them.
+            # all-NaN placeholders stay missing so the error can point at them
             if step_name == "Load OG1" and file_vars is not None:
                 available_vars.update(file_vars - (file_all_nan or set()))
 

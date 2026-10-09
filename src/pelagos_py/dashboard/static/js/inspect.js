@@ -1,12 +1,9 @@
-// Inspect tab: reads the 'Load OG1' step's file_path out of the current YAML
-// and shows the file's variables, sensors and global attributes. Re-fetches
-// whenever the YAML changes and the resolved file_path is different.
+// Inspect tab: variables, sensors and global attributes of the 'Load OG1' step's file.
 
 const Inspect = {
   lastPath: null,
 
-  // First 'Load OG1' step's file_path, straight out of the YAML text (not
-  // the builder state) so this works while the builder is mid-resync too.
+  // Read from the YAML text, not the builder state, so it works mid-resync.
   extractFilePath(yamlText) {
     let cfg;
     try { cfg = jsyaml.load(yamlText); } catch (e) { return null; }
@@ -23,7 +20,7 @@ const Inspect = {
       renderInspectEmpty();
       return;
     }
-    if (filePath === Inspect.lastPath) return; // same file, nothing to refetch
+    if (filePath === Inspect.lastPath) return;
     Inspect.lastPath = filePath;
     renderInspectLoading();
     fetch('/api/inspect?file_path=' + encodeURIComponent(filePath))
@@ -45,7 +42,7 @@ const Inspect = {
   },
 };
 
-// Built on first call: debounce() lives in app.js, which loads after this file.
+// debounce() lives in app.js, which loads after this file.
 Inspect.schedule = () =>
   (Inspect._schedule ||= debounce(() => Inspect.refresh(editor.getValue()), 400))();
 
@@ -83,8 +80,7 @@ function inspectRow(name, tag, desc, plottable) {
   return row;
 }
 
-// Click a variable to show it against TIME (coloured by its _QC if the file has
-// one); click again to hide. Rendered server-side, fetched once per row.
+// Plot against TIME, coloured by its _QC if present; rendered server-side, fetched once per row.
 function toggleInspectPlot(row, name) {
   let host = row.querySelector('.inspect-plot');
   if (host) { host.classList.toggle('hidden'); return; }
@@ -128,7 +124,6 @@ function renderInspect(data) {
   document.getElementById('inspect-body').classList.remove('hidden');
   document.getElementById('inspect-path').textContent = data.path;
 
-  // List each X_QC directly under its X rather than wherever the file orders it.
   const vars = data.variables || [];
   const names = new Set(vars.map((v) => v.name));
   const rows = [];

@@ -110,40 +110,36 @@ class ExportStep(BaseStep):
                 raise ValueError(
                     f"Unsupported compression level: {compression}. Please specify compression from 0-9."
                 )
-            # Chunks inherited from the input file can be tiny (512 samples), which
-            # makes zlib slow and the file bigger; write large chunks instead.
-            encoding = {
-                var: {
-                    "zlib": True,
-                    "complevel": compression,
-                    "chunksizes": tuple(max(1, min(n, 1_000_000)) for n in data[var].shape),
-                }
-                for var in data.data_vars
-            }
+            # Input chunks can be tiny (slow, bigger file); 1-D only, N-D could pass HDF5's 4 GB chunk limit.
+            encoding = {}
+            for var in data.data_vars:
+                encoding[var] = {"zlib": True, "complevel": compression}
+                if data[var].ndim == 1:
+                    encoding[var]["chunksizes"] = (max(1, min(data[var].size, 1_000_000)),)
         else:
             encoding = None
 
-        # Export data based on the specified format
-        if export_format == "csv":
-            write = lambda: data.to_dataframe().to_csv(output_path, index=False)
-        elif export_format == "netcdf":
+        if export_format == "netcdf":
             small_netcdf_chunk_cache()
-            write = lambda: data.to_netcdf(output_path, engine="netcdf4", encoding=encoding)
-        elif export_format == "hdf5":
-            write = lambda: data.to_netcdf(output_path, engine="h5netcdf", encoding=encoding)
-        elif export_format == "parquet":
-            write = lambda: data.to_dataframe().to_parquet(output_path, index=False)
-        else:
-            raise ValueError(f"Unsupported export format: {export_format}")
+
+        def write():
+            if export_format == "csv":
+                data.to_dataframe().to_csv(output_path, index=False)
+            elif export_format == "netcdf":
+                data.to_netcdf(output_path, engine="netcdf4", encoding=encoding)
+            elif export_format == "hdf5":
+                data.to_netcdf(output_path, engine="h5netcdf", encoding=encoding)
+            elif export_format == "parquet":
+                data.to_dataframe().to_parquet(output_path, index=False)
+
         started = time.time()
         self._write_with_progress(write, output_path, data.nbytes)
         size_mb = os.path.getsize(output_path) / 1024**2
-        self.log(f"Exported {size_mb:.0f} MB to {output_path} in {time.time() - started:.1f}s")
+        self.log(f"Exported {size_mb:.1f} MB to {output_path} in {time.time() - started:.1f}s")
         return self.context
 
     def _write_with_progress(self, write, output_path, nbytes):
-        # The writers give no progress, so a thread watches the file grow; the
-        # total is the in-memory size, so compressed output finishes early.
+        # writers report no progress, so watch the file grow against the in-memory size
         total_mb = max(1, int(nbytes / 1024**2))
         bar = self.log_progress(total=total_mb, desc="Writing", unit="MB")
         done = threading.Event()

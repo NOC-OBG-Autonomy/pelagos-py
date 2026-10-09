@@ -1,12 +1,12 @@
-// Inline line-icons (lucide-style, 24×24, stroke = currentColor). Kept local so
-// the dashboard stays offline/CSP-friendly — no icon-font or CDN. Use
-// Icon.svg(name) for a markup string, Icon.el(name) for a DOM node, and
-// Icon.hydrate(root) to fill any <... data-icon="name"> placeholders in static
-// HTML. Sizing/colour come from CSS (svg.ico inherits the text colour).
+// Inline lucide-style line icons, kept local so the dashboard works offline.
 
 const ICON_PATHS = {
   play: '<polygon points="6 4 20 12 6 20 6 4"/>',
   stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>',
+  undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  redo: '<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>',
+  eye: '<path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0"/><circle cx="12" cy="12" r="3"/>',
+  eyeOff: '<path d="M10.73 5.08a10.74 10.74 0 0 1 11.2 6.57 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-1.44 2.49"/><path d="M14.08 14.16a3 3 0 0 1-4.24-4.24"/><path d="M17.48 17.5a10.75 10.75 0 0 1-15.42-5.15 1 1 0 0 1 0-.7 10.75 10.75 0 0 1 4.45-5.14"/><path d="m2 2 20 20"/>',
   rerun: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/>',
   up: '<path d="m18 15-6-6-6 6"/>',
   down: '<path d="m6 9 6 6 6-6"/>',
@@ -46,7 +46,6 @@ const Icon = {
     t.innerHTML = Icon.svg(name, size);
     return t.content.firstChild;
   },
-  // Replace every [data-icon="name"] placeholder with its SVG (for static HTML).
   hydrate(root = document) {
     root.querySelectorAll('[data-icon]').forEach((el) => {
       const size = el.dataset.iconSize ? Number(el.dataset.iconSize) : 16;

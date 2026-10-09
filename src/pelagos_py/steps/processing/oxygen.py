@@ -141,6 +141,7 @@ def _plot_diff(data, raw_var, corrected_var, pressure_var, step_name):
 class DeriveUncalibratedPhase(BaseStep, QCHandlingMixin):
 
     step_name = "Derive Uncalibrated Phase"
+    beta = True
     provided_variables = ["UNCAL_PHASE_DOXY"]
     optional_variables = ["TIME", "PRES"]
     variable_parameters = ["blue_phase_name", "red_phase_name"]
@@ -223,6 +224,7 @@ class DeriveUncalibratedPhase(BaseStep, QCHandlingMixin):
 class DeriveOptodeTemperature(BaseStep, QCHandlingMixin):
 
     step_name = "Derive Optode Temperature"
+    beta = True
     provided_variables = ["TEMP_DOXY"]
     optional_variables = ["TIME", "PRES"]
     variable_parameters = ["temp_voltage_name"]
@@ -304,6 +306,7 @@ class DeriveOptodeTemperature(BaseStep, QCHandlingMixin):
 class PhasePressureCorrection(BaseStep, QCHandlingMixin):
 
     step_name = "Phase Pressure Correction"
+    beta = True
     required_variables = ["UNCAL_PHASE_DOXY"]
     provided_variables = ["UNCAL_PHASE_DOXY_PCORR"]
     optional_variables = ["TIME"]
@@ -427,6 +430,7 @@ def _plot_shift_diff(data, raw_var, shifted_var, pressure_var, step_name, lag_la
 class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
 
     step_name = "Shift Oxygen To CTD"
+    beta = True
     required_variables = ["PROFILE_NUMBER"]
     optional_variables = ["TIME", "PROFILE_GRADIENT", "PRES"]
     variable_parameters = ["shift_vars", "pitch_name", "cast_id_var"]
@@ -626,6 +630,7 @@ class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
 class DeriveCalibratedPhase(BaseStep, QCHandlingMixin):
 
     step_name = "Derive Calibrated Phase"
+    beta = True
     provided_variables = ["CAL_PHASE_DOXY"]
     optional_variables = ["TIME", "PRES"]
     variable_parameters = ["uncalibrated_phase_name"]
@@ -709,6 +714,7 @@ class DeriveCalibratedPhase(BaseStep, QCHandlingMixin):
 class DeriveOxygenConcentration(BaseStep, QCHandlingMixin):
 
     step_name = "Derive Oxygen Concentration"
+    beta = True
     required_variables = ["CAL_PHASE_DOXY"]
     provided_variables = ["MOLAR_DOXY"]
     optional_variables = ["TIME", "PRES"]
@@ -855,6 +861,7 @@ class DeriveOxygenConcentration(BaseStep, QCHandlingMixin):
 class MolarDOXYSalinityCorrection(BaseStep, QCHandlingMixin):
 
     step_name = "Molar DOXY Salinity Correction"
+    beta = True
     required_variables = ["MOLAR_DOXY"]
     provided_variables = ["MOLAR_DOXY_PSAL"]
     optional_variables = ["TIME", "PRES"]
@@ -1000,6 +1007,7 @@ class MolarDOXYSalinityCorrection(BaseStep, QCHandlingMixin):
 class MolarDOXYPressureCorrection(BaseStep, QCHandlingMixin):
 
     step_name = "Molar DOXY Pressure Correction"
+    beta = True
     provided_variables = ["MOLAR_DOXY_PSAL_PRES"]
     optional_variables = ["TIME"]
     variable_parameters = ["pressure_name", "temperature_name", "molar_doxy_name"]

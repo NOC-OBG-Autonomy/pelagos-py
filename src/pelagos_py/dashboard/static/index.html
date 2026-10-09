@@ -5,10 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>pelagos-py</title>
   <link rel="icon" type="image/svg+xml" href="/img/NOC_logo.svg" />
-  <!-- Third-party libs. CDN for now; vendor these into static/vendor/ for a
-       fully-offline local app later (see README). -->
+  <!-- CDN for now; vendor into static/vendor/ for a fully offline app later. -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css" />
-  <!-- YAML editor theme (VS Code Dark+ look) is defined locally in style.css. -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/yaml/yaml.min.js"></script>
@@ -16,9 +14,9 @@
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
+  <div id="server-down" class="server-down hidden">Dashboard server stopped. Restart it with <code>pelagos-py dashboard</code>.</div>
   <div class="shell">
     <div class="main-col">
-      <!-- One row: brand + docs, the tabs, then the run controls pinned right. -->
       <div class="tabs">
         <div class="tab-left">
           <!-- Name is filled from document.title; sizes are fitted by logo.js. -->
@@ -38,18 +36,18 @@
             <button class="tab" data-tab="yaml"><span data-icon="code" data-icon-size="17"></span>YAML</button>
             <button class="tab on" data-tab="run"><span data-icon="file" data-icon-size="17"></span>Log</button>
             <button class="tab" data-tab="plots"><span data-icon="image" data-icon-size="17"></span>Plots</button>
-            <!-- Only while a run is paused on the `manual qc` test, in place of
-                 Plots; takes the whole window (palette + builder hide), see manual.js. -->
+            <!-- Only while a run is paused on the `manual qc` test, in place of Plots. -->
             <button class="tab tab-manual hidden" data-tab="manual"><span data-icon="image" data-icon-size="17"></span>Manual QC</button>
             <button class="tab" data-tab="report"><span data-icon="file" data-icon-size="17"></span>Output</button>
             <button class="tab" data-tab="inspect"><span data-icon="search" data-icon-size="17"></span>Inspect</button>
             <button class="tab tab-files" data-tab="files"><span data-icon="folder" data-icon-size="17"></span>Files</button>
           </div>
           <div class="tab-right">
-            <!-- Run controls stay up on every tab; Run switches to the Log tab.
-                 While paused, Run reads Continue and Re-run shows beside it. -->
+            <!-- While paused, Run reads Continue and Re-run shows beside it. -->
             <div class="tab-actions tab-actions-run">
-              <button id="btn-stop" class="danger hidden" disabled><span data-icon="stop"></span>Stop</button>
+              <button id="btn-clear" class="warn" disabled title="Clear the last run's log and plots (the pipeline is kept)">
+                <span data-icon="trash2"></span>Clear</button>
+              <button id="btn-stop" class="danger" disabled><span data-icon="stop"></span>Stop</button>
               <button id="btn-rerun" class="hidden" title="Re-run the paused step (or QC test) with the parameters in the builder">
                 <span data-icon="rerun"></span>Re-run</button>
               <button id="btn-run" class="primary"><span data-icon="play"></span>Run</button>
@@ -59,8 +57,7 @@
       </div>
 
       <main class="layout">
-        <!-- Left rail: only shown on the Manual QC tab, where it holds the
-             editor's controls (see manual.js); the top bar stays as it is. -->
+        <!-- Left rail: only shown on the Manual QC tab. -->
         <aside class="palette">
           <div id="manual-rail" class="manual-rail"></div>
         </aside>
@@ -68,12 +65,10 @@
         <section class="builder">
           <div class="builder-scroll">
           <div id="build-panel" class="build-panel" hidden></div>
-          <!-- Settings with a small validator/notice pill; an error covers the
-               settings at the same size, so the steps below never shift. -->
+          <!-- An error covers the settings at the same size, so the steps below never shift. -->
           <div id="top-slot" class="top-slot">
             <div id="pipeline-settings"></div>
             <div id="validation-status" class="validation-status"></div>
-            <!-- Notices take the validator pill's place while they show. -->
             <div id="config-note" class="config-note hidden"></div>
           </div>
           <div id="pipeline-steps"></div>
@@ -93,13 +88,10 @@
         <!-- Right: YAML + validation + run -->
         <section class="output">
           <div class="tab-panel hidden" data-panel="yaml">
-            <!-- The open pipeline: pick, save, and how it relates to what's on disk. -->
             <section class="files-section pipeline-file">
               <div class="demos-head">
                 <strong>Pipeline</strong>
-                <!-- One box for both: type the name to save under, or ▾ to open a saved
-                     pipeline. A custom menu (not a <select>) so reference pipelines can be
-                     colour-coded. -->
+                <!-- Type a name to save under, or ▾ to open a saved pipeline. -->
                 <div id="config-select" class="cfg-select">
                   <input id="config-name" placeholder="pipeline name"
                          title="Saves under this name — a new name creates a new pipeline, the current name overwrites it" />
@@ -128,9 +120,6 @@
           </div>
 
           <div class="tab-panel" data-panel="run">
-            <!-- Live RAM meter: RSS per step, so transient per-step spikes (and
-                 their release) are visible. Hidden until the first
-                 __PELAGOS_MEM__ marker arrives. Run-tab only. -->
             <div id="mem-meter" class="mem-meter hidden">
               <div class="mem-head">
                 <span id="run-status" class="run-status"></span>
@@ -158,7 +147,6 @@
           </div>
 
           <div class="tab-panel hidden" data-panel="plots">
-            <!-- While paused: the paused step's plots, big, above the rest of the run's. -->
             <div id="step-review" class="step-review hidden"></div>
             <div id="plots-gallery" class="plots-gallery"></div>
             <p class="empty-hint" id="plots-empty">
@@ -173,7 +161,6 @@
               If the pipeline writes a PDF report (a <strong>Write Data Report</strong>
               step), it appears here when the run reaches it — ready to open.
             </p>
-            <!-- Everything runs have left in the output folders (see outputs.js). -->
             <section id="outputs" class="outputs">
               <div class="outputs-head">
                 <div class="outputs-title">
@@ -213,9 +200,7 @@
             </p>
           </div>
 
-          <!-- Files: the user's own input files (paths kept in the browser, the
-               file stays where it is) above the demo deployments. Picking one
-               sets up a pipeline for it (demos download first if needed). -->
+          <!-- The user's own input files (paths kept in the browser) above the demo deployments. -->
           <div class="tab-panel hidden" data-panel="files">
             <div class="files-scroll">
               <section class="files-section">
@@ -262,7 +247,6 @@
   <script src="/js/config.js"></script>
   <script src="/js/defaults.js"></script>
   <script src="/js/build.js"></script>
-  <!-- plot.js is the WebGL figure viewer; no plotting library is vendored. -->
   <script src="/js/plot.js"></script>
   <script src="/js/viewer.js"></script>
   <script src="/js/manual.js"></script>

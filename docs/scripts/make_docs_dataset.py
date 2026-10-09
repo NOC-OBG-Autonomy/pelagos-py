@@ -2,9 +2,7 @@
 
     python docs/scripts/make_docs_dataset.py SOURCE.nc [--start ... --end ...] [--out ...]
 
-Keeps every non-measurement variable and only the measurement variables the
-docs pipeline reads, over a short window, so the file is small enough to host
-for CI (see docs/scripts/figures.yaml).
+Keeps only the measurement variables the docs pipeline reads, over a short window.
 """
 import argparse
 

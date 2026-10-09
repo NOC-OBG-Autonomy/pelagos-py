@@ -13,21 +13,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""FastAPI backend for the pelagos_py config dashboard.
+"""FastAPI backend for the config dashboard: build, validate and run pipeline configs.
 
-The dashboard is a *standalone* helper for authoring, validating and running
-pipeline YAML configs. It never modifies the pipeline: it only introspects the
-live step/QC registries (so newly-added steps appear automatically) and reuses
-the pipeline's own ``parameter_spec`` validation, so what the dashboard accepts
-is exactly what the pipeline accepts.
-
-Run with::
-
-    python dashboard/app.py            # then open http://localhost:8791
+Start it with ``pelagos-py dashboard``.
 """
 
 from __future__ import annotations
 
+import atexit
 import codecs
 import json
 import logging
@@ -37,6 +30,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from pathlib import Path
@@ -49,45 +43,37 @@ import yaml
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 from pydantic import BaseModel
 
-# HDF5's C library prints its own error stack to stderr on a failed open (e.g. a
-# truncated live NRT file); that's already raised as an exception, so silence it.
+# Importing the package runs discover_steps(), which populates the registries.
+from pelagos_py.steps import STEP_CLASSES, QC_CLASSES, resolve_step_name
+from pelagos_py.utils import parameter_spec
+from pelagos_py.utils.qc_handling import QC_COMBINATRIX
+from pelagos_py.utils.demo_data import DEMOS as DEMO_FILES, DEMO_DATA_DIR, MISSIONS, WORKSPACE_DIR, get_demo_file
+from pelagos_py.utils.valid_config_check import check_pipeline_variables
+from pelagos_py.utils import config_builder, file_probe
+
+# HDF5 prints its own error stack on a failed open, which is already raised as an exception
 h5py._errors.silence_errors()
 
 _ANSI_RE = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
 
 
 def _clean_ansi(text: str) -> str:
-    # Keep SGR colour codes (the console renders them); drop cursor/clear-line ones.
+    # keep colour codes, drop cursor/clear-line ones
     return _ANSI_RE.sub(lambda m: m.group(0) if m.group(0).endswith("m") else "", text)
 
 
-# --- Locate the repo and make pelagos_py importable -------------------------
 DASHBOARD_DIR = Path(__file__).resolve().parent
-REPO_ROOT = DASHBOARD_DIR.parent
-SRC_DIR = REPO_ROOT / "src"
 STATIC_DIR = DASHBOARD_DIR / "static"
 RUN_BOOTSTRAP = DASHBOARD_DIR / "run_bootstrap.py"
-# Figures captured from the current run (see run_bootstrap.py); cleared per run.
-FIG_DIR = DASHBOARD_DIR / "_run_figures"
-FIG_DIR.mkdir(exist_ok=True)
-# Float64 traces for exact click-lookups (run_figpoint), lazily loaded per run.
+# one folder per dashboard process, so two dashboards can't delete each other's figures
+FIG_DIR = Path(tempfile.mkdtemp(prefix="pelagos-py-figures-"))
+atexit.register(shutil.rmtree, FIG_DIR, ignore_errors=True)
 _FIGDATA_CACHE: dict[str, dict] = {}
-# Configs authored in the dashboard live here by default.
-CONFIG_DIR = DASHBOARD_DIR / "configs"
-CONFIG_DIR.mkdir(exist_ok=True)
-
-if str(SRC_DIR) not in sys.path:
-    sys.path.insert(0, str(SRC_DIR))
-
-# Importing the package runs discover_steps(), which populates the registries.
-from pelagos_py.steps import STEP_CLASSES, QC_CLASSES, resolve_step_name  # noqa: E402
-from pelagos_py.utils import parameter_spec  # noqa: E402
-from pelagos_py.utils.qc_handling import QC_COMBINATRIX  # noqa: E402
-from pelagos_py.utils.demo_data import DEMOS as DEMO_FILES, DEMO_DATA_DIR, MISSIONS, get_demo_file  # noqa: E402
-from pelagos_py.utils.valid_config_check import check_pipeline_variables  # noqa: E402
-from pelagos_py.utils import config_builder, file_probe  # noqa: E402
+CONFIG_DIR = WORKSPACE_DIR / "configs"
+CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # The top ``pipeline:`` block has no step schema, so its keys are described here.
@@ -110,7 +96,6 @@ PIPELINE_FIELDS = [
 
 
 def _category(cls) -> str:
-    # processing / qc / io, from the module path
     module = getattr(cls, "__module__", "")
     if ".quality_control" in module:
         return "quality_control"
@@ -125,7 +110,6 @@ def _short_doc(cls) -> str:
     doc = (cls.__doc__ or "").strip()
     if not doc:
         return ""
-    # take up to the first blank line
     para = doc.split("\n\n", 1)[0]
     return " ".join(para.split())
 
@@ -137,10 +121,9 @@ def _describe_step(name: str, cls) -> dict:
         "category": _category(cls),
         "module": getattr(cls, "__module__", ""),
         "description": _short_doc(cls),
-        # ``parameter_schema is None`` => not yet migrated to strict validation.
+        "beta": cls.beta,
         "schema_declared": getattr(cls, "parameter_schema", None) is not None,
         "parameters": cls.describe_parameters(),
-        # whether the step has extra figures beyond 'diagnostics: true' (drawn by 'all')
         "more_diagnostics": any(
             level is False for _, level in (getattr(cls, "diagnostic_figures", None) or {}).values()
         ),
@@ -162,11 +145,12 @@ def _describe_qc(name: str, cls) -> dict:
 
 
 app = FastAPI(title="pelagos_py dashboard")
+# blocks DNS-rebinding pages from driving the local API
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1"])
 
 
 @app.middleware("http")
 async def _no_cache(request, call_next):
-    # Development convenience: never let the browser cache the UI or API.
     response = await call_next(request)
     path = request.url.path
     if path.endswith((".js", ".css", ".html")) or path == "/" or path.startswith("/api/"):
@@ -178,7 +162,6 @@ async def _no_cache(request, call_next):
 @app.get("/api/registry")
 def registry():
     """Everything the frontend needs to render the step palette and forms."""
-    # The blank template scaffolds are registered but aren't real pipeline steps.
     def _is_template(cls):
         return ".templates" in getattr(cls, "__module__", "")
 
@@ -194,7 +177,7 @@ def registry():
         "steps": steps,
         "qc": qc,
         "pipeline_fields": PIPELINE_FIELDS,
-        "combinatrix": QC_COMBINATRIX.tolist(),  # Manual QC merges boxes with the same table
+        "combinatrix": QC_COMBINATRIX.tolist(),
     }
 
 
@@ -203,16 +186,14 @@ class ValidatePayload(BaseModel):
     yaml_content: str
 
 
-# check_pipeline_variables() logs its own "Validation Failed" line; validate fires
-# on every keystroke and the UI shows the message anyway, so swallow it here.
+# validate runs on every keystroke and the UI shows the error, so mute the checker's log line
 _VALIDATE_LOGGER = logging.getLogger("pelagos_py.dashboard.validate")
 _VALIDATE_LOGGER.addHandler(logging.NullHandler())
 _VALIDATE_LOGGER.propagate = False
 
 
 def _locate_variable_issue(steps, message):
-    # (index, name) of the step (or Apply QC step) a check_pipeline_variables
-    # message names; (None, None) renders as a pipeline-level issue.
+    # (None, None) shows as a pipeline-level issue
     for index, step in enumerate(steps):
         name = step.get("name") if isinstance(step, dict) else None
         if name and f"'{name}'" in message:
@@ -227,7 +208,6 @@ def _locate_variable_issue(steps, message):
     return None, None
 
 
-# A blank path is left to the pipeline's own check ("No file set").
 def _data_file_error(file_path):
     if not file_path or not str(file_path).strip():
         return None
@@ -241,8 +221,7 @@ def _data_file_error(file_path):
 
 @app.post("/api/validate")
 def validate(payload: ValidatePayload):
-    """Validate a whole config with the pipeline's own ``parameter_spec``, returning
-    per-step issues so the UI can point at the offending step."""
+    """Validate a config with the pipeline's own checks and return per-step issues."""
     try:
         config = yaml.safe_load(payload.yaml_content)
     except yaml.YAMLError as exc:
@@ -272,7 +251,7 @@ def validate(payload: ValidatePayload):
 
         schema = getattr(cls, "parameter_schema", None)
         if schema is None:
-            continue  # step opted out of strict validation
+            continue
         params = step.get("parameters") or {}
         try:
             parameter_spec.resolve(
@@ -286,14 +265,12 @@ def validate(payload: ValidatePayload):
             if file_error:
                 issues.append({"index": index, "name": name, "error": file_error})
 
-    # Cross-step variable check (same as the pipeline's pre-run one); skipped when
-    # a schema issue exists, since it would instantiate steps with bad parameters.
+    # the variable check instantiates steps, so only run it once the parameters are valid
     if not issues:
         try:
             check_pipeline_variables(steps, _VALIDATE_LOGGER)
         except ValueError as exc:
-            # Prefer the checker's own step_index: name-matching picks the first
-            # step with that name, wrong when a QC test appears in several Apply QC steps.
+            # name-matching is wrong when a QC test appears in several Apply QC steps
             index = getattr(exc, "step_index", None)
             if index is not None:
                 name = steps[index].get("name") if isinstance(steps[index], dict) else None
@@ -310,19 +287,16 @@ class SavePayload(BaseModel):
     yaml_content: str
 
 
-# Virtual, one per demo glider: no file on disk, YAML built per file by /api/build.
+# virtual: no file on disk, the YAML is built per file by /api/build
 DEMO_CONFIGS = {f"demo_{key}.yaml" for key in DEMO_FILES}
 
-# The package's default template, shown as a (virtual) config.
 DEFAULT_CONFIG_NAME = "default.yaml"
 
-# Read-only: the UI forks edits to custom_run_N.yaml and the API refuses to
-# save/delete these, so a stale tab or hand-crafted request can't destroy them.
+# the UI forks edits to these into custom_run_N.yaml
 PROTECTED_CONFIGS = {DEFAULT_CONFIG_NAME} | DEMO_CONFIGS
 
 
 def _safe_config_path(name: str) -> Path:
-    # Rejects path traversal out of CONFIG_DIR.
     candidate = (CONFIG_DIR / name).resolve()
     if candidate.parent != CONFIG_DIR.resolve():
         raise HTTPException(status_code=400, detail="Invalid config name.")
@@ -348,21 +322,19 @@ def list_configs():
         p.name for p in CONFIG_DIR.iterdir()
         if p.is_file() and p.suffix in (".yaml", ".yml")
     )
-    demo = sorted(DEMO_CONFIGS)  # virtual, so not filtered by `files`
+    demo = sorted(DEMO_CONFIGS)
     return {
         "configs": sorted(set(files) | DEMO_CONFIGS | {DEFAULT_CONFIG_NAME}),
         "protected": sorted(PROTECTED_CONFIGS),
         "demo": demo,
-        # Grouped by deployment mission, in picker display order.
         "missions": {
             mission: [f"demo_{key}.yaml" for key in keys]
             for mission, keys in MISSIONS.items()
         },
-        # Glider names aren't unique across missions (nor NRT vs Full), hence labels.
+        # glider names repeat across missions and NRT/full, hence labels
         "labels": {f"demo_{key}.yaml": entry.display_label for key, entry in DEMO_FILES.items()},
         "gliders": {f"demo_{key}.yaml": entry.label for key, entry in DEMO_FILES.items()},
         "modes": {f"demo_{key}.yaml": entry.mode for key, entry in DEMO_FILES.items()},
-        # Non-demo protected configs, shown as their own "Template" group.
         "reference": sorted((PROTECTED_CONFIGS - DEMO_CONFIGS) & (set(files) | {DEFAULT_CONFIG_NAME})),
         "downloaded": sorted(name for name in demo if _demo_dest(name).exists()),
         "sizes": {name: _demo_dest(name).stat().st_size
@@ -371,7 +343,6 @@ def list_configs():
 
 
 def _reveal(folder: Path) -> dict:
-    # Open a folder in the OS file browser (on the server machine).
     if sys.platform == "darwin":
         cmd = ["open", str(folder)]
     elif os.name == "nt":
@@ -417,7 +388,6 @@ def delete_demo(name: str):
     return {"status": "deleted" if _delete_demo(name) else "absent", "name": name}
 
 
-# Download only (no config load), so several demos can download side by side.
 @app.post("/api/demos/{name}/download")
 def download_demo(name: str):
     if name not in DEMO_CONFIGS:
@@ -437,19 +407,16 @@ def clean_demos():
 
 
 # ================================= Outputs =================================
-# Everything a run leaves behind (reports, exports, logs, kept report figures),
-# so a pip-installed user can find and clear them without knowing the folder.
 _OUTPUT_KINDS = {
     ".pdf": "report", ".log": "log", ".nc": "data", ".csv": "data",
     ".parquet": "data", ".h5": "data", ".hdf5": "data", ".rst": "report",
 }
-_DEMO_INPUTS = {entry.filename for entry in DEMO_FILES.values()}
-_listed_outputs: set[Path] = set()  # only these may be served or deleted
+_listed_outputs: set[Path] = set()  # only listed files may be served or deleted
 
 
 class OutputsPayload(BaseModel):
     dirs: list[str] = []
-    inputs: list[str] = []  # data files the config reads: never shown as outputs
+    exports: list[str] = []
 
 
 def _output_dirs(dirs: list[str]) -> list[Path]:
@@ -457,7 +424,7 @@ def _output_dirs(dirs: list[str]) -> list[Path]:
     for d in [DEMO_DATA_DIR, *dirs]:
         path = Path(d)
         if not path.is_absolute():
-            path = REPO_ROOT / path
+            path = WORKSPACE_DIR / path
         path = path.resolve()
         if path in seen or not path.is_dir():
             continue
@@ -471,7 +438,7 @@ def _dir_size(path: Path) -> int:
 
 
 def _list_outputs(payload: OutputsPayload) -> dict:
-    inputs = _DEMO_INPUTS | {Path(f).name for f in payload.inputs if f}
+    exports = {Path(f).name for f in payload.exports if f}
     dirs = _output_dirs(payload.dirs)
     files = []
     _listed_outputs.clear()
@@ -485,7 +452,7 @@ def _list_outputs(payload: OutputsPayload) -> dict:
                 kind, size = "figures", _dir_size(entry)
             else:
                 kind = _OUTPUT_KINDS.get(entry.suffix.lower())
-                if kind is None or entry.name in inputs:
+                if kind is None or (kind == "data" and entry.name not in exports):
                     continue
                 size = entry.stat().st_size
             _listed_outputs.add(entry)
@@ -565,7 +532,6 @@ class PathsPayload(BaseModel):
 
 @app.post("/api/files/info")
 def files_info(payload: PathsPayload):
-    # Existence + size of the user's own files (kept client-side, never uploaded).
     out = {}
     for p in payload.paths:
         f = Path(p).expanduser()
@@ -587,18 +553,19 @@ class BrowsePayload(BaseModel):
 
 @app.post("/api/files/pick")
 def pick_files(payload: BrowsePayload):
-    # Native picker for NetCDF files and/or folders (a folder adds its *.nc, recursively).
+    # a picked folder adds all its .nc files
     start = Path(payload.start).expanduser() if payload.start else None
     start_dir = start.parent if start and start.parent.is_dir() else Path.cwd()
     if sys.platform == "darwin":
-        # `of type public.folder` lets the file dialog select folders too.
         script = (
+            'on run argv\n'
             'set fs to choose file of type {"public.folder", "public.data"} with prompt '
-            f'"Choose OG1 NetCDF files or a folder" with multiple selections allowed default location POSIX file "{start_dir}"\n'
+            '"Choose OG1 NetCDF files or a folder" with multiple selections allowed default location POSIX file (item 1 of argv)\n'
             'if class of fs is not list then set fs to {fs}\n'
-            'set out to ""\nrepeat with f in fs\nset out to out & POSIX path of f & linefeed\nend repeat\nreturn out'
+            'set out to ""\nrepeat with f in fs\nset out to out & POSIX path of f & linefeed\nend repeat\nreturn out\n'
+            'end run'
         )
-        proc = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
+        proc = subprocess.run(["osascript", "-e", script, str(start_dir)], capture_output=True, text=True)
         chosen = proc.stdout.splitlines() if proc.returncode == 0 else []
     else:
         try:
@@ -622,17 +589,18 @@ def pick_files(payload: BrowsePayload):
 
 @app.post("/api/browse")
 def browse_file(payload: BrowsePayload):
-    """Open the OS file picker on the server and return the chosen path
-    (browsers never expose a picked file's real path)."""
+    """Open the OS file picker; browsers never expose a picked file's real path."""
     start = Path(payload.start).expanduser() if payload.start else None
     start_dir = start.parent if start and start.parent.is_dir() else Path.cwd()
     if sys.platform == "darwin":
         script = (
+            'on run argv\n'
             'POSIX path of (choose file with prompt "Choose an input NetCDF file" '
-            f'default location POSIX file "{start_dir}")'
+            'default location POSIX file (item 1 of argv))\n'
+            'end run'
         )
-        proc = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
-        if proc.returncode != 0:  # user cancelled
+        proc = subprocess.run(["osascript", "-e", script, str(start_dir)], capture_output=True, text=True)
+        if proc.returncode != 0:
             return {"path": None}
         return {"path": proc.stdout.strip()}
     try:
@@ -663,7 +631,7 @@ def _ensure_demo_file(config_name: str) -> None:
         _DOWNLOADS.pop(config_name, None)
 
 
-# Demo downloads in flight: config name -> (bytes done, total or 0 if unknown).
+# config name -> (bytes done, total or 0 if unknown)
 _DOWNLOADS: dict[str, tuple[int, int]] = {}
 
 
@@ -699,10 +667,10 @@ def build_config(payload: BuildPayload):
     probe = file_probe.probe_file(path)
     if probe is None:
         raise HTTPException(status_code=400, detail=f"Could not read '{path.name}'.")
-    # Keep demo paths repo-relative so the config reads the same on any checkout.
+    # keep demo paths workspace-relative so the config works on any machine
     file_path = payload.file_path
     if not Path(file_path).is_absolute():
-        file_path = str(path.relative_to(REPO_ROOT))
+        file_path = str(path.relative_to(WORKSPACE_DIR))
     return {"yaml_content": config_builder.build(
         _template_text(), file_path, probe, payload.choices, payload.description,
     )}
@@ -718,13 +686,12 @@ def load_config(name: str):
             raise HTTPException(
                 status_code=502, detail=f"Could not download demo data: {exc}"
             ) from exc
-        # Demo configs are built per file (see /api/build) once the user confirms
-        # the builder's decisions, so this only says which file to build for.
+        # built by /api/build once the user confirms the decisions; this only names the file
         entry = DEMO_FILES[_demo_key(demo_name)]
         return {
             "name": demo_name,
             "build": {
-                "file_path": str((DEMO_DATA_DIR / entry.filename).relative_to(REPO_ROOT)),
+                "file_path": str((DEMO_DATA_DIR / entry.filename).relative_to(WORKSPACE_DIR)),
                 "description": f"A demo pipeline using {entry.display_label} data.",
             },
         }
@@ -764,54 +731,35 @@ def delete_config(name: str):
 
 # ============================== Pipeline runner =============================
 class _Run:
-    """Holds the single active pipeline subprocess and its captured log lines.
-
-    Only one run at a time -- the dashboard is a single-user local tool. Output
-    is pumped off the subprocess's merged stdout/stderr by a background thread.
-
-    Progress bars (tqdm) redraw one line with a carriage return (``\\r``) rather
-    than emitting a new line each tick. Reading in binary preserves those ``\\r``
-    boundaries so a whole bar collapses to a single, in-place-updating line in
-    the console instead of thousands of spam lines.
-
-    State is an append-only list of committed ``lines`` plus the latest transient
-    progress redraw (``live``). The SSE endpoint reads these by index rather than
-    draining a queue, so any number of clients -- including one reconnecting after
-    a page refresh mid-run -- each replay the full log independently, with no
-    duplicated or stolen events.
-    """
+    # The one pipeline subprocess. Lines are append-only so a reconnecting client can replay them.
 
     def __init__(self):
         self.proc: subprocess.Popen | None = None
-        self.lines: list[str] = []  # committed lines, append-only (replayable)
-        self.live: str | None = None  # latest transient progress redraw, if any
-        self.live_after = 0  # index in `lines` the current `live` follows
+        self.lines: list[str] = []
+        self.live: str | None = None  # latest progress-bar redraw
+        self.live_after = 0
         self.finished = False
         self.returncode: int | None = None
+        self.reports: set[str] = set()  # only announced PDFs are served
         self._lock = threading.Lock()
-        # Processing clock mirrored from the runner's __PELAGOS_TIME__ markers
-        # (see _commit): the RAM sampler stamps each sample with active seconds
-        # and stays quiet while the run is paused, so the meter's x-axis is the
-        # same clock the dashboard's runtime readout shows.
+        # processing clock from __PELAGOS_TIME__, so RAM samples share the runtime readout's x-axis
         self._active = 0.0
         self._since: float | None = None
-        # Column requests to the paused runner (see columns): ids answered so far.
         self._columns = threading.Condition()
         self._columns_done: set[int] = set()
         self._columns_id = 0
 
     def _sample_mem(self, proc):
-        # Poll the child's RSS from here rather than inside the run: costs the
-        # pipeline nothing and can't interleave with its own console output.
+        # polled from here so it can't interleave with the run's console output
         try:
             import psutil
             child = psutil.Process(proc.pid)
-        except Exception:  # noqa: BLE001 - the meter is a bonus, never fatal
+        except Exception:  # noqa: BLE001
             return
         while proc.poll() is None:
             try:
                 rss = child.memory_info().rss / 1024 ** 2
-            except Exception:  # noqa: BLE001 - child just exited
+            except Exception:  # noqa: BLE001
                 return
             with self._lock:
                 if self._since is not None:
@@ -825,41 +773,24 @@ class _Run:
     def start(self, config_path: Path):
         env = dict(os.environ)
         env["PYTHONUNBUFFERED"] = "1"
-        # Output goes to a pipe, not a terminal, so the pipeline would otherwise
-        # drop its colour and disable its tqdm bars (see utils/log_levels.py
-        # _supports_color, which FORCE_COLOR overrides). The browser console
-        # renders both, so ask for them. COLUMNS gives the bars a sane width,
-        # since there is no terminal to measure.
+        # a pipe isn't a terminal, so force colour and tqdm bars (the browser console renders both)
         env["FORCE_COLOR"] = "1"
         env.pop("NO_COLOR", None)
         env["COLUMNS"] = "110"
-        # HDF5 file locking can transiently fail (Errno -101) when a file was
-        # just opened and closed by another process (e.g. the variable-check
-        # subprocess in valid_config_check.py) -- disable it for the run.
+        # locking can fail (Errno -101) right after another process (the variable check) closed the file
         env["HDF5_USE_FILE_LOCKING"] = "FALSE"
-        # Ensure the subprocess can import pelagos_py from src/.
-        env["PYTHONPATH"] = os.pathsep.join(
-            [str(SRC_DIR), env.get("PYTHONPATH", "")]
-        ).strip(os.pathsep)
-        # Fresh figure dir per run so the Plots tab only shows this run's plots.
-        # .json/.f32 are the interactive plot spec and its float32 data,
-        # _full.npz the float64 copy for exact point lookups, beside each .png.
         for pattern in ("*.png", "*.json", "*.f32", "*_full.npz", "cols_*.bin"):
             for old in FIG_DIR.glob(pattern):
                 old.unlink(missing_ok=True)
         _FIGDATA_CACHE.clear()
-        # run_bootstrap.py redirects plt.show to save diagnostic figures into
-        # FIG_DIR (and catches the Stop-button SIGINT) -- see that file.
         self.proc = subprocess.Popen(
             [sys.executable, str(RUN_BOOTSTRAP), str(config_path), str(FIG_DIR)],
-            cwd=str(REPO_ROOT),  # relative paths in configs resolve from repo root
-            stdin=subprocess.PIPE,  # control channel for pause/continue/rerun
+            cwd=str(WORKSPACE_DIR),
+            stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             env=env,
-            bufsize=-1,  # buffered binary: gives a BufferedReader (has read1);
-            # \r is preserved either way, and read1 returns as soon as any
-            # bytes arrive so progress-bar ticks still stream promptly.
+            bufsize=-1,  # binary BufferedReader: keeps \r and has read1, so bar ticks stream promptly
         )
         self.lines = []
         self.live = None
@@ -871,12 +802,13 @@ class _Run:
         threading.Thread(target=self._sample_mem, args=(self.proc,), daemon=True).start()
 
     def _commit(self, text: str):
-        """A finished (newline-terminated) line: append it and clear live progress."""
         if text.startswith("__PELAGOS_DATA__ "):  # a reply to columns(), not a log line
             with self._columns:
                 self._columns_done.add(int(text.split(" ", 1)[1]))
                 self._columns.notify_all()
             return
+        if text.startswith("__PELAGOS_REPORT__ "):
+            self.reports.add(text.split(" ", 1)[1].split("\t")[0].strip())
         with self._lock:
             self.lines.append(text)
             self.live = None
@@ -890,7 +822,6 @@ class _Run:
                     pass
 
     def _progress(self, text: str):
-        """A transient in-place redraw (bar tick): update live, don't accumulate."""
         with self._lock:
             self.live = text
             self.live_after = len(self.lines)
@@ -898,24 +829,22 @@ class _Run:
     def _pump(self):
         assert self.proc is not None
         decoder = codecs.getincrementaldecoder("utf-8")("replace")
-        stream = self.proc.stdout  # binary BufferedReader
-        seg = ""  # chars seen since the last \r or \n
-        pending_cr = False  # saw a \r; a \n next means it was a \r\n line ending
+        stream = self.proc.stdout
+        seg = ""  # chars since the last \r or \n
+        pending_cr = False
         while True:
             chunk = stream.read1(4096)  # type: ignore[union-attr]
             if not chunk:
                 break
             for ch in decoder.decode(chunk):
                 if ch == "\n":
-                    # A \r right before this \n is a Windows (\r\n) line ending,
-                    # not a redraw -- treat the whole pair as one newline.
+                    # \r\n is a line ending, not a redraw
                     pending_cr = False
                     self._commit(_clean_ansi(seg))
                     seg = ""
                     continue
                 if pending_cr:
-                    # The earlier \r had no \n after it: a real in-place redraw
-                    # (tqdm bar tick). Emit what was drawn, then start fresh.
+                    # a lone \r is a progress-bar redraw
                     cleaned = _clean_ansi(seg)
                     if cleaned:
                         self._progress(cleaned)
@@ -925,7 +854,7 @@ class _Run:
                     pending_cr = True
                 else:
                     seg += ch
-        if seg:  # trailing text with no final newline
+        if seg:
             if pending_cr:
                 cleaned = _clean_ansi(seg)
                 if cleaned:
@@ -933,14 +862,14 @@ class _Run:
             else:
                 self._commit(_clean_ansi(seg))
         self.returncode = self.proc.wait()
+        self.proc.stdin.close()
         self.finished = True
 
     def stop(self):
-        if self.is_running():
-            # SIGINT (not SIGTERM) so the child raises KeyboardInterrupt and runs
-            # its Python cleanup -- atexit/finally, multiprocessing pool shutdown --
-            # releasing pool semaphores instead of leaking them on abrupt exit.
-            # Escalate to SIGTERM then SIGKILL if it doesn't stop promptly.
+        if self.is_running() and sys.platform == "win32":
+            self.proc.terminate()  # Windows Popen can't send SIGINT (raises ValueError)
+        elif self.is_running():
+            # SIGINT first so the child runs its cleanup and doesn't leak pool semaphores
             self.proc.send_signal(signal.SIGINT)
             try:
                 self.proc.wait(timeout=1.5)
@@ -952,12 +881,7 @@ class _Run:
                     self.proc.kill()
 
     def send(self, command: str):
-        """Write a control line to the paused run's stdin.
-
-        Drives the interactive pause protocol in run_bootstrap.py:
-        ``continue`` / ``rerun <json>`` / ``stop``. No-op (swallowed) if the
-        process has already exited or its stdin is gone.
-        """
+        # a control line for run_bootstrap.py's pause loop; ignored once the run has exited
         if self.proc is not None and self.proc.stdin is not None and self.is_running():
             try:
                 self.proc.stdin.write((command + "\n").encode())
@@ -967,7 +891,7 @@ class _Run:
 
 
     def columns(self, names: list[str], timeout: float = 60.0) -> bytes | None:
-        """Ask the paused runner for raw columns; the packed bytes, or None if it didn't answer."""
+        # packed columns from the paused runner, or None if it didn't answer
         with self._columns:
             self._columns_id += 1
             request_id = self._columns_id
@@ -986,6 +910,7 @@ class _Run:
 
 
 _run = _Run()
+atexit.register(_run.stop)
 
 
 class RunPayload(BaseModel):
@@ -996,7 +921,6 @@ class RunPayload(BaseModel):
 def run_pipeline(payload: RunPayload):
     if _run.is_running():
         raise HTTPException(status_code=409, detail="A pipeline is already running.")
-    # Persist the exact YAML being run so the subprocess (and the user) can see it.
     run_path = CONFIG_DIR / "_last_run.yaml"
     run_path.write_text(payload.yaml_content)
     _run.start(run_path)
@@ -1011,29 +935,57 @@ def stop_pipeline():
 
 class RerunPayload(BaseModel):
     parameters: dict = {}
+    yaml_content: str = ""
 
 
 @app.post("/api/run/continue")
 def continue_run():
-    """Resume a run paused at a diagnostics step (interactive stepping)."""
+    """Resume a paused run."""
     _run.send("continue")
     return {"status": "continued"}
+
+
+@app.post("/api/run/skip")
+def skip_step():
+    """Resume a paused run without the paused step's result."""
+    _run.send("skip")
+    return {"status": "skipped"}
 
 
 @app.post("/api/run/rerun")
 def rerun_step(payload: RerunPayload):
     """Re-run the currently paused step with edited parameters, then re-pause."""
+    if payload.yaml_content:
+        # a page reload reopens this file, so keep it in step with the edits
+        (CONFIG_DIR / "_last_run.yaml").write_text(payload.yaml_content)
     _run.send("rerun " + json.dumps(payload.parameters))
     return {"status": "rerunning"}
 
 
 @app.get("/api/run/columns")
 def run_columns(names: str):
-    """Raw columns (comma-separated names) from the paused run, for the Manual QC profile view."""
+    """Raw columns from the paused run, for the Manual QC views."""
     blob = _run.columns([n for n in names.split(",") if n])
     if blob is None:
         raise HTTPException(status_code=409, detail="The run is not paused, or did not answer.")
     return Response(blob, media_type="application/octet-stream")
+
+
+@app.get("/api/sigma0")
+def sigma0_lines(smin: float, smax: float, tmin: float, tmax: float):
+    """Sigma0 contours over a T-S window, for the Manual QC T-S view."""
+    # practical salinity and in-situ temperature stand in for SA and CT; close enough to draw
+    import contourpy
+    import gsw
+
+    s = np.linspace(smin, smax, 120)
+    t = np.linspace(tmin, tmax, 120)
+    sigma = gsw.sigma0(*np.meshgrid(s, t))
+    lo, hi = float(np.nanmin(sigma)), float(np.nanmax(sigma))
+    step = next((st for st in (0.1, 0.2, 0.5, 1.0, 2.0, 5.0) if (hi - lo) / st <= 12), 10.0)
+    lines = contourpy.contour_generator(s, t, sigma)
+    levels = np.arange(np.ceil(lo / step) * step, hi, step)
+    return [{"level": round(float(level), 2), "lines": [seg.tolist() for seg in lines.lines(level)]} for level in levels]
 
 
 @app.get("/api/run/status")
@@ -1048,22 +1000,14 @@ def run_status():
 
 @app.get("/api/run/stream")
 def stream_logs():
-    """Server-Sent Events stream of the current run's log lines.
-
-    Reads the run's append-only state by index, so it replays everything already
-    captured (a client connecting late -- e.g. after a mid-run page refresh --
-    sees the whole run) and then tails new output until the process exits. Each
-    connection keeps its own cursors, so reconnecting never steals or duplicates
-    events.
-    """
+    """Server-Sent Events stream of the run's log, replayed from the start for each client."""
     def frame(kind: str, text: str) -> str:
-        # 'line' -> default SSE event (message); 'progress' -> named event.
         prefix = "" if kind == "line" else f"event: {kind}\n"
         return f"{prefix}data: {text}\n\n"
 
     def event_gen():
-        cursor = 0  # next committed-line index to emit
-        last_live = None  # last progress text emitted, to avoid repeats
+        cursor = 0
+        last_live = None
         idle = 0.0
         while True:
             with _run._lock:
@@ -1073,7 +1017,7 @@ def stream_logs():
                 finished = _run.finished
                 returncode = _run.returncode
             for line in new_lines:
-                last_live = None  # a committed line supersedes any live redraw
+                last_live = None
                 yield frame("line", line)
             if live is not None and live != last_live:
                 last_live = live
@@ -1083,7 +1027,7 @@ def stream_logs():
                 return
             if not new_lines:
                 idle += 0.1
-                if idle >= 15.0:  # periodic comment frame keeps the connection open
+                if idle >= 15.0:  # keep-alive
                     idle = 0.0
                     yield ": keep-alive\n\n"
             else:
@@ -1093,7 +1037,6 @@ def stream_logs():
     return StreamingResponse(event_gen(), media_type="text/event-stream")
 
 
-# Files run_bootstrap.py writes per captured figure: PNG, plot spec, float32 traces.
 _FIG_FILES = {
     ".png": ("image/png", "Figure"),
     ".json": ("application/json", "Plot spec"),
@@ -1103,7 +1046,7 @@ _FIG_FILES = {
 
 def _fig_file(name: str, suffix: str) -> FileResponse:
     media_type, label = _FIG_FILES[suffix]
-    path = FIG_DIR / Path(name).name  # .name strips directories so a crafted name can't escape
+    path = FIG_DIR / Path(name).name  # no path traversal
     if path.suffix != suffix or not path.is_file():
         raise HTTPException(status_code=404, detail=f"{label} not found.")
     return FileResponse(path, media_type=media_type)
@@ -1121,14 +1064,13 @@ def run_figspec(name: str):
 
 @app.get("/api/run/figbin/{name}")
 def run_figbin(name: str):
-    # A plain file gives the browser a Content-Length for its progress bar.
+    # a plain file gives the browser a Content-Length for its progress bar
     return _fig_file(name, ".f32")
 
 
 @app.get("/api/run/figpoint/{name}")
 def run_figpoint(name: str, panel: int, trace: int, index: int):
-    """Exact float64 ``x``/``y`` of one plotted point (dates as ISO strings),
-    for the viewer's click tooltip; the drawn data is float32."""
+    """Exact x/y of one plotted point, for the viewer's click tooltip."""
     stem = Path(Path(name).name).stem
     if stem not in _FIGDATA_CACHE:
         path = FIG_DIR / (stem + "_full.npz")
@@ -1155,10 +1097,9 @@ def run_figpoint(name: str, panel: int, trace: int, index: int):
 
 @app.get("/api/run/report")
 def run_report(path: str):
-    """Serve a PDF report produced by the current run (path from its
-    ``__PELAGOS_REPORT__`` marker), inline so the browser previews it."""
+    """A PDF report the current run wrote, inline so the browser previews it."""
     p = Path(path)
-    if p.suffix.lower() != ".pdf" or not p.is_file():
+    if path not in _run.reports or not p.is_file():
         raise HTTPException(status_code=404, detail="Report not found.")
     return FileResponse(
         p, media_type="application/pdf",
@@ -1168,12 +1109,11 @@ def run_report(path: str):
 
 # ================================== Inspect ==================================
 def _resolve_inspect_path(file_path):
-    # Relative paths resolve against the repo root, as in the pipeline itself.
     if not file_path:
         raise HTTPException(status_code=400, detail="No file_path given.")
     path = Path(file_path)
     if not path.is_absolute():
-        path = REPO_ROOT / path
+        path = WORKSPACE_DIR / path
     if not path.is_file():
         raise HTTPException(status_code=404, detail=f"File not found: {path}")
     return path
@@ -1198,7 +1138,7 @@ def inspect_file(file_path: str):
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"Could not open '{path.name}': {exc}")
 
-    # 'instrument' global attribute may be "a, b, c" or a Python-list-style string.
+    # 'instrument' may be "a, b, c" or a Python-list-style string
     instr_key = next((k for k in global_attrs if k.lower() == "instrument"), None)
     raw = global_attrs.get(instr_key, "") if instr_key else ""
     sensors = [
@@ -1221,9 +1161,7 @@ _inspect_plot_lock = threading.Lock()  # pyplot is not thread-safe
 
 @app.get("/api/inspect/plot")
 def inspect_plot(file_path: str, var: str):
-    """PNG of ``var`` against TIME (coloured by ``{var}_QC`` if present) plus
-    point counts, for a clicked variable in the Inspect tab. Evenly subsampled
-    to at most _INSPECT_PLOT_MAX non-NaN points so it renders in well under a second."""
+    """PNG of a variable against TIME (coloured by its QC flags), subsampled for speed."""
     import base64
     import io
 
@@ -1278,7 +1216,7 @@ def inspect_plot(file_path: str, var: str):
             fig_spec.date_axis(ax, index=x)
         if var.startswith(("PRES", "DEPTH")):
             ax.invert_yaxis()
-        # Page-element look: transparent, no grid or box, fixed margins so every plot is the same size.
+        # fixed margins so every plot is the same size
         ax.grid(False)
         for side in ("top", "right"):
             ax.spines[side].set_visible(False)
@@ -1305,12 +1243,14 @@ def index():
 app.mount("/", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
-if __name__ == "__main__":
+def serve(port=8791):
     import webbrowser
 
     import uvicorn
 
-    # Bind to the loopback IP but show the friendlier hostname in the URL.
-    print("pelagos_py dashboard -> http://localhost:8791")
-    threading.Timer(1.0, lambda: webbrowser.open("http://localhost:8791")).start()
-    uvicorn.run(app, host="127.0.0.1", port=8791, log_level="warning")
+    os.chdir(WORKSPACE_DIR)  # relative config paths resolve here, as in the pipeline run
+    url = f"http://localhost:{port}"
+    print(f"pelagos_py dashboard -> {url}")
+    threading.Timer(1.0, lambda: webbrowser.open(url)).start()
+    # one Ctrl+C stops the server, even with open streams
+    uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning", timeout_graceful_shutdown=2)

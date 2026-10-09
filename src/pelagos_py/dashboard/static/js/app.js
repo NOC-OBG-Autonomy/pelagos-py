@@ -1,24 +1,21 @@
 // Bootstrap: load the registry, build the UI, wire controls together.
 
-let editor = null;         // CodeMirror instance for the YAML pane
+let editor = null;         // CodeMirror YAML pane
 let syncingFromBuilder = false;
-let errorLineHandle = null; // CodeMirror line handle currently marked red, if any
-let activeStepId = null;    // builder step whose YAML lines are highlighted
-let stepHighlightLines = null; // {start, end} of the current YAML highlight
-let activeFieldPath = null;  // key path of the builder box whose lines are highlighted
-let fieldHighlightLines = null; // {start, end} of that box's lines
-let lastFocusedStep = null; // step index last expanded from the YAML cursor
-let lastFocusedKey = null;  // step + key path last marked from the YAML cursor
+let errorLineHandle = null;
+let activeStepId = null;
+let stepHighlightLines = null;
+let activeFieldPath = null;
+let fieldHighlightLines = null;
+let lastFocusedStep = null;
+let lastFocusedKey = null;
 
 function debounce(fn, ms) {
   let t;
   return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
 }
 
-// ---- YAML ⇄ builder cross-highlighting ----
-// Line spans (0-based, inclusive) of each step under `steps:`, in order. Steps
-// are the list items marked `- ` at the `steps:` child indentation; the array
-// index lines up with STATE.pipeline.items.
+// Line spans (0-based, inclusive) of each step under `steps:`, indexed like STATE.pipeline.items.
 function stepLineRanges() {
   const lines = editor.getValue().split('\n');
   let inSteps = false, stepsIndent = null;
@@ -44,14 +41,12 @@ function stepIndexAtLine(line) {
   return null;
 }
 
-// Indent of a YAML line, counting a list dash as one more level so `- DEPTH`
-// under `to_derive:` nests inside it even at the same column.
+// Counts a list dash as one more level, so `- DEPTH` nests under `to_derive:` at the same column.
 function yamlIndent(line) {
   const m = line.match(/^(\s*)(-\s)?/);
   return m[1].length + (m[2] ? 1 : 0);
 }
 
-// The mapping key a YAML line opens (quotes stripped), or null.
 function yamlKey(line) {
   const m = line.match(/^\s*(?:-\s+)?(['"]?)(.+?)\1\s*:(?:\s|$)/);
   return m ? m[2] : null;
@@ -59,8 +54,7 @@ function yamlKey(line) {
 
 const yamlBlank = (line) => !line.trim() || line.trim().startsWith('#');
 
-// Keys from a step's (or the document's) top down to `line`, e.g.
-// ['parameters', 'qc_settings', 'range qc', 'variable_ranges'].
+// e.g. ['parameters', 'qc_settings', 'range qc', 'variable_ranges'].
 function yamlPathAtLine(line) {
   const lines = editor.getValue().split('\n');
   if (line >= lines.length || yamlBlank(lines[line])) return [];
@@ -78,12 +72,11 @@ function yamlPathAtLine(line) {
   return path;
 }
 
-// Line span of `path` inside [from, to], narrowing one key at a time and only
-// matching keys at the block's own depth (not a same-named key deeper down).
+// Only matches keys at the block's own depth, not a same-named key deeper down.
 function yamlBlockForPath(from, to, path) {
   const lines = editor.getValue().split('\n');
   let block = { start: from, end: Math.min(to, lines.length - 1) };
-  let inner = from; // first line of the block's children (a matched key's own line is skipped)
+  let inner = from;
   for (const key of path) {
     const depth = Math.min(...lines.slice(inner, block.end + 1).filter((l) => !yamlBlank(l)).map(yamlIndent));
     let found = null;
@@ -120,10 +113,7 @@ function clearStepHighlight() {
   fieldHighlightLines = null;
 }
 
-// Highlight (and scroll to) the YAML lines for a builder step, and within it
-// the box being edited (`path`, e.g. ['parameters', 'to_derive']). A null id
-// with a ['pipeline', key] path is a Pipeline Settings box. Re-applied after
-// every YAML regeneration since setValue drops line classes.
+// A null id with a ['pipeline', key] path is a Pipeline Settings box.
 function highlightYamlForStep(id, path = null) {
   activeStepId = id;
   activeFieldPath = path;
@@ -145,7 +135,6 @@ function applyStepHighlight() {
   } else if (!activeFieldPath) {
     return;
   }
-  // A step's own `- name:` line sits one level above its keys, so start below it.
   const from = activeStepId != null ? r.start + 1 : r.start;
   const f = activeFieldPath && yamlBlockForPath(from, r.end, activeFieldPath);
   if (f) {
@@ -158,7 +147,7 @@ function applyStepHighlight() {
 
 function refreshYAML() {
   if (!editor) return;
-  Config.noteEdit(); // a builder change may fork a locked config
+  Config.noteEdit();
   syncingFromBuilder = true;
   editor.setValue(Config.toYAML());
   syncingFromBuilder = false;
@@ -168,21 +157,31 @@ function refreshYAML() {
   Config.updateStatus();
   scheduleValidate();
   Inspect.schedule();
+  Run.syncToForm();
 }
 
-// Run schema validation against the server and show the result. Debounced so it
-// runs while the user types rather than on a button press.
+let validateToken = 0;
 async function runValidate() {
   if (!editor) return;
+  const token = ++validateToken;
   showValidating();
-  const result = await API.validate(editor.getValue());
+  let result;
+  try {
+    result = await API.validate(editor.getValue());
+  } catch (e) {
+    result = { ok: false, error: e.message };
+  }
+  if (token !== validateToken) return; // a newer edit has been sent since
+  if (result.error) {
+    const statusHost = document.getElementById('validation-status');
+    statusHost.replaceChildren(statusBar('err', 'Could not validate', result.error));
+    return;
+  }
   renderValidation(result);
 }
 const scheduleValidate = debounce(runValidate, 400);
 
-// Parse the YAML pane and push it into the builder. On a syntax error, mark the
-// offending line red instead of overwriting the builder from stale state. The
-// editor text is left untouched here so hand-typed formatting is preserved.
+// Leaves the editor text alone so hand-typed formatting is kept.
 function syncYamlToBuilder() {
   if (!editor) return;
   clearYamlError();
@@ -196,9 +195,7 @@ function syncYamlToBuilder() {
   try {
     Config.fromObject(cfg || {}, Config.sectionsFromYAML(editor.getValue()));
     Config.checkDataFile();
-    // fromObject builds fresh item objects, so a paused step's card is now a
-    // different object: re-apply the lock so it is still the unlocked, expanded
-    // one rather than a locked card like any other.
+    // fromObject makes new item objects, so re-apply the lock to the paused step.
     if (RunLock.running && RunLock.index !== null) {
       RunLock.pauseAt(RunLock.index, RunLock.test);
     }
@@ -222,8 +219,7 @@ function markYamlError(e) {
   editor.addLineClass(errorLineHandle, 'gutter', 'cm-error-line');
 }
 
-// Placeholder so the status row is never empty. A no-op once a result is showing
-// (no flicker while typing) unless force:true, e.g. right after loading another config.
+// No-op once a result is showing (no flicker while typing) unless force is set.
 function showValidating(force = false) {
   const statusHost = document.getElementById('validation-status');
   if (!statusHost || (statusHost.firstChild && !force)) return;
@@ -253,12 +249,10 @@ function renderValidation(result) {
     return;
   }
 
-  // No data to work with is the most fundamental thing that can be wrong with
-  // a config, so surface it above any other issue rather than in list order.
+  // Missing data is the most fundamental problem, so show it first.
   const ranked = [...result.issues].sort((a, b) =>
     (parseIssue(b.error).critical ? 1 : 0) - (parseIssue(a.error).critical ? 1 : 0));
 
-  // A single issue is the box itself; several get one row each inside it.
   if (ranked.length === 1) {
     const issue = ranked[0];
     const parsed = parseIssue(issue.error);
@@ -281,7 +275,6 @@ function renderValidation(result) {
   statusHost.appendChild(bar);
 }
 
-// Step id -> the fields each issue names, for the builder to mark.
 function issueMarksFor(issues) {
   const marks = new Map();
   for (const issue of issues) {
@@ -294,7 +287,6 @@ function issueMarksFor(issues) {
   return marks;
 }
 
-// The green/red validation box at the top of the builder.
 function statusBar(kind, title, sub) {
   const bar = document.createElement('div');
   bar.className = `v-status v-${kind}`;
@@ -317,7 +309,6 @@ function issueWhere(issue) {
   return `Step ${issue.index + 1}${issue.name ? ' · ' + escapeHtml(issue.name) : ''}`;
 }
 
-// Clicking an issue locates its step in the YAML pane and the builder.
 function linkToStep(el, issue) {
   const item = issue.index == null ? null : STATE.pipeline.items[issue.index];
   if (!item) return;
@@ -334,14 +325,10 @@ function linkToStep(el, issue) {
   };
 }
 
-// Turn a parameter_spec ValueError string into a {kind, tag, html} object. The
-// message shapes come from utils/parameter_spec.py resolve(); the "[label] "
-// prefix is dropped since the step name is already shown as the location.
+// Message shapes come from utils/parameter_spec.py resolve().
 function parseIssue(raw) {
   const msg = String(raw).replace(/^\[[^\]]*\]\s*/, '');
 
-  // Loading the base data is foundational -- these three get their own,
-  // more prominent card rather than the generic "Error" fallback below.
   let m = msg.match(/^Multiple data-loading steps found:\s*(.+?)\.\s*(.*)$/s);
   if (m) {
     return { kind: 'load', tag: 'Multiple data sources', critical: true,
@@ -401,7 +388,6 @@ function parseIssue(raw) {
       html: `<div class="v-detail">${chips(splitNames(m[1]), 'bad')} not recognised.</div>` +
         `<div class="v-detail v-muted">Valid: ${chips(splitNames(m[2]))}</div>` };
   }
-  // Fallback: show the message verbatim (minus the [label] prefix).
   return { kind: 'other', tag: 'Error', html: `<div class="v-msg">${escapeHtml(msg)}</div>` };
 }
 
@@ -430,7 +416,6 @@ function formatTypeSegment(seg) {
     `got <span class="v-got">${escapeHtml(m[3])}</span></div>`;
 }
 
-// Render a list of values as inline chips ("bad" = red styling).
 function chips(items, cls = '') {
   if (!items.length) return '<span class="v-muted">(none)</span>';
   return `<span class="v-chips">` +
@@ -438,29 +423,24 @@ function chips(items, cls = '') {
     `</span>`;
 }
 
-// Split a comma-separated name list ("a, b, c") into trimmed names.
 function splitNames(s) {
   return s.split(',').map((x) => x.trim()).filter(Boolean);
 }
 
-// Pull the values out of a Python-style literal like "['A', 'B']" or "'x'".
-// Prefers quoted tokens; falls back to a bare scalar with brackets stripped.
+// "['A', 'B']" or "'x'" -> values.
 function pyTokens(s) {
   const quoted = [...s.matchAll(/'([^']*)'|"([^"]*)"/g)].map((m) => m[1] ?? m[2]);
   if (quoted.length) return quoted;
   return [s.replace(/^[\[\(]|[\]\)]$/g, '').trim()];
 }
 
-// Turn PyYAML's multi-block error dump into {message, location, snippet}.
-// PyYAML emits a "problem" (expected X, but found Y), a "line N, column M"
-// mark, and a caret-pointed context snippet — we surface a friendly version.
+// PyYAML's error dump -> {message, location, snippet}.
 function formatYamlError(raw) {
   const text = String(raw);
   const marks = [...text.matchAll(/line (\d+), column (\d+)/g)];
   const last = marks.length ? marks[marks.length - 1] : null;
   const location = last ? `Line ${last[1]}, column ${last[2]}` : '';
 
-  // Grab the code line sitting just above the last caret ("^") line.
   const lines = text.split('\n');
   let snippet = '';
   for (let i = lines.length - 1; i > 0; i--) {
@@ -481,7 +461,6 @@ function caretCol(caretLine, codeLine) {
   return Math.max(1, col - lead + 1);
 }
 
-// Map common PyYAML problems to a plain-English explanation + fix hint.
 function friendlyYaml(text, problem) {
   if (/expected <block end>, but found/.test(text))
     return 'Unexpected extra content — a value continues where a list or block should have ended. Look for a stray character, or a missing comma or closing bracket.';
@@ -500,21 +479,19 @@ function friendlyYaml(text, problem) {
 }
 
 function escapeHtml(s) {
-  return String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 async function boot() {
-  Icon.hydrate(); // fill [data-icon] placeholders in the static HTML
+  Icon.hydrate();
   STATE.registry = await API.registry();
   for (const s of STATE.registry.steps) STATE.stepsByName[s.name] = s;
   for (const q of STATE.registry.qc) STATE.qcByName[q.name] = q;
   STATE.onChange = refreshYAML;
 
-  // CodeMirror YAML editor. Theme is remembered per browser; all themes are
-  // defined locally in style.css (no CDN theme files).
+  // Themes are defined in style.css, not loaded from a CDN.
   let savedTheme = 'vscode-dark';
   try { savedTheme = localStorage.getItem('yamlTheme') || savedTheme; } catch (e) { /* private mode */ }
-  if (savedTheme === 'vscode-darkplus') savedTheme = 'vscode-dark'; // removed theme
   editor = CodeMirror.fromTextArea(document.getElementById('yaml-editor'), {
     mode: 'yaml',
     theme: savedTheme,
@@ -529,20 +506,17 @@ async function boot() {
     try { localStorage.setItem('yamlTheme', themeSel.value); } catch (e) { /* ignore */ }
   });
 
-  // Live sync + auto-validate: typing in the YAML pane pushes into the builder
-  // and re-validates on a debounce, so neither has to be triggered by a button.
   editor.on('change', () => {
     if (syncingFromBuilder) return;
-    Config.noteEdit(); // hand-edited YAML forks a locked config too
+    Config.noteEdit();
     Config.updateStatus();
+    Run.syncToForm();
     scheduleYamlToBuilder();
     scheduleValidate();
     Inspect.schedule();
   });
 
-  // YAML → builder focus: as the cursor moves through the YAML, expand and
-  // scroll to the matching step card in the builder. Working in the YAML pane
-  // means the builder is a read-out, so drop any builder→YAML highlight.
+  // While editing the YAML, the builder follows the cursor rather than the other way round.
   editor.on('focus', () => { activeStepId = null; activeFieldPath = null; clearStepHighlight(); });
   editor.on('cursorActivity', () => {
     if (syncingFromBuilder) return;
@@ -568,11 +542,7 @@ async function boot() {
   Demos.resume();
   await Defaults.load();
 
-  // Auto-load default.yaml on startup if present, so the dashboard opens on a
-  // ready-made config rather than an empty pipeline. If a run is already in
-  // flight (a page refresh mid-run), load what that run is executing instead —
-  // otherwise the builder would show a different config from the one the
-  // pause markers are indexing into.
+  // After a refresh mid-run, open the running config so pause markers index into the right steps.
   try {
     let opening = Config.known.includes('default.yaml') ? 'default.yaml' : null;
     const running = await API.runStatus().then((s) => s.running).catch(() => false);
@@ -580,8 +550,6 @@ async function boot() {
     if (opening) await Config.load(opening);
   } catch (e) { /* no default; start empty */ }
 
-
-  // tabs
   document.querySelectorAll('.tab').forEach((tab) => {
     tab.addEventListener('click', () => {
       Run.showTab(tab.dataset.tab);
@@ -589,13 +557,10 @@ async function boot() {
     });
   });
 
-  // builder controls
-
   document.getElementById('btn-copy').addEventListener('click', () => {
     navigator.clipboard.writeText(editor.getValue());
   });
 
-  // config picker: selecting a config loads it (Config.load does the work).
   const picker = document.getElementById('config-select');
   picker.querySelector('.cfg-trigger').addEventListener('click', () => {
     if (picker.classList.contains('open')) Config.closePicker();
@@ -608,7 +573,6 @@ async function boot() {
     if (e.key === 'Escape') Config.closePicker();
   });
 
-  // config persistence
   document.getElementById('btn-reveal').addEventListener('click', async () => {
     try {
       const { path } = await API.revealConfigs();
@@ -653,7 +617,6 @@ async function boot() {
     await Config.refreshList();
   });
 
-  // run controls
   Run.initScroll();
   Outputs.init();
   // Doubles as Continue while paused — see Run.setRunButton().
@@ -663,24 +626,36 @@ async function boot() {
     else if (ManualQC.isActive()) ManualQC.applyAndContinue();
     else Run.continueRun();
   });
-  document.getElementById('btn-stop').addEventListener('click', () =>
-    Run.stopBtnMode === 'clear' ? Run.clearRun() : Run.stop());
+  document.getElementById('btn-stop').addEventListener('click', () => Run.stop());
+  document.getElementById('btn-clear').addEventListener('click', () => Run.clearRun());
   document.getElementById('btn-rerun').addEventListener('click', () =>
     ManualQC.isActive() ? ManualQC.apply() : Run.rerunStep());
 
-  // If a pipeline is already running (e.g. the page was refreshed mid-run),
-  // reattach to its log stream instead of showing a Run button that would 409.
+  // Reattach after a refresh mid-run instead of offering a Run that would 409.
   Run.resumeIfRunning();
 
-  // Suspending the laptop or backgrounding the tab kills the SSE stream while
-  // the pipeline keeps going, so re-check whenever the page comes back.
+  // Sleep or a background tab kills the SSE stream while the run continues.
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) Run.ensureConnected();
+    if (document.hidden) return;
+    Run.ensureConnected();
+    checkServer();
   });
   window.addEventListener('online', () => Run.ensureConnected());
+  setInterval(checkServer, 5000);
+}
+
+// The page keeps working once the server is gone, so say so rather than failing silently.
+async function checkServer() {
+  let up = true;
+  try {
+    await fetch('/api/run/status');
+  } catch (e) {
+    up = false;
+  }
+  document.getElementById('server-down').classList.toggle('hidden', up);
 }
 
 boot().catch((e) => {
   document.body.innerHTML =
-    `<pre style="padding:20px;color:#dc2626">Failed to start dashboard:\n${e.stack || e}</pre>`;
+    `<pre style="padding:20px;color:#dc2626">Failed to start dashboard:\n${escapeHtml(e.stack || e)}</pre>`;
 });

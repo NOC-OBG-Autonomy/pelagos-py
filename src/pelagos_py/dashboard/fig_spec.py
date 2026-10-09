@@ -1,16 +1,8 @@
 """Serialise a matplotlib figure for the dashboard's WebGL viewer.
 
-Emits a JSON spec (layout, labels, limits, per-trace styling) plus a binary
-blob holding every trace's full x/y as float32 -- and per-point RGBA where a
-scatter is coloured by value -- so the browser draws the real data rather
-than a thinned copy. A float64 copy is kept in an ``.npz`` so a clicked point
-can report exact values. Any artist this does not understand (images,
-pcolormesh, patches, non-rectilinear axes) makes the whole figure ``None`` and
-the dashboard keeps the PNG: a plot is either faithful or it is the image.
-
-Dates travel as float32 seconds relative to the figure's earliest timestamp
-``t0`` (epoch ms, in the spec and blob header); the browser formats ticks from
-that. Dashboard-only: nothing in pelagos_py imports this.
+Writes a JSON spec plus every trace's full x/y as float32 (dates as seconds since
+the figure's first timestamp). A figure with any unsupported artist gets no spec
+and stays a PNG.
 """
 
 import json
@@ -27,7 +19,7 @@ DASH = {"--": "dash", "-.": "dashdot", ":": "dot"}
 def _hex(color, default="#1f77b4"):
     try:
         return to_hex(color)
-    except Exception:  # noqa: BLE001 - a colour is cosmetic, never fatal
+    except Exception:  # noqa: BLE001
         return default
 
 
@@ -47,11 +39,7 @@ def _is_datetime_axis(axis):
 
 
 def _coord(raw):
-    """A coordinate as float64 matplotlib day numbers for dates (and whether it was one).
-
-    Steps hand ``plot`` either matplotlib date numbers (floats ~19000) or raw
-    datetime64/datetime objects; both end up on the same scale here.
-    """
+    # steps plot dates as datetime64/datetime or as matplotlib day numbers; unify to day numbers
     arr = np.asarray(raw)
     is_date = False
     if np.issubdtype(arr.dtype, np.datetime64):
@@ -69,8 +57,7 @@ def _epoch_ms(ordinal):
 
 
 def _ref_line(line, ax):
-    # axhline/axvline mix axes-space [0, 1] with one data coordinate; matplotlib
-    # marks them by their blended transform. Emitted as a spanning line.
+    # axhline/axvline are recognised by their blended axes/data transform
     try:
         is_h = line.get_transform() == ax.get_yaxis_transform()
         is_v = line.get_transform() == ax.get_xaxis_transform()
@@ -157,7 +144,6 @@ def _unsupported(ax):
 
 
 def _share_groups(axes, which):
-    """``{axes index: group id}`` for axes sharing an x (or y) axis."""
     groups, out = [], {}
     for i, ax in enumerate(axes):
         try:
@@ -177,7 +163,7 @@ def _share_groups(axes, which):
 
 
 def _grid_cell(ax):
-    """Normalised ``[left, top, width, height]`` of the axes' gridspec cell, or None."""
+    # normalised [left, top, width, height] of the gridspec cell
     try:
         ss = ax.get_subplotspec()
         gs = ss.get_gridspec()
@@ -213,7 +199,6 @@ def _collect(ax):
 
 
 def _top_axis(ax, x_date, t0):
-    """Time -> N_MEASUREMENTS table (<=1000 rows) for the top axis, or None."""
     table = getattr(ax, "_pelagos_index", None)
     if table is None:
         return None
@@ -226,7 +211,6 @@ def _top_axis(ax, x_date, t0):
 
 
 def _rel(values, is_date, t0):
-    """Float64 -> wire units: seconds since t0 for dates, else unchanged."""
     v = np.asarray(values, dtype=np.float64)
     return (v - t0) / 1000.0 if is_date else v
 
@@ -238,11 +222,9 @@ def _pack(header, arrays):
 
 
 def serialise(fig):
-    """``(spec, reason, blob, full)``: the JSON spec, why not (if None), the
-    float32 binary the browser draws, and ``{"<panel>_<trace>_x": float64,...}``
-    for exact click-lookups. Dates are epoch ms in ``full``."""
-    # Secondary axes (the top N_MEASUREMENTS axis fig_spec.date_axis adds) hold
-    # no data; their mapping is shipped as the parent panel's top_axis instead.
+    """Return ``(spec, reason, blob, full)``: spec is None (with a reason) if unsupported,
+    blob is the float32 data and full the float64 copy for exact click values."""
+    # the N_MEASUREMENTS secondary axis holds no data; it ships as the panel's top_axis
     axes = [ax for ax in fig.axes if ax.get_visible() and not isinstance(ax, SecondaryAxis)]
     if not axes:
         return None, "no axes", None, None
@@ -265,8 +247,7 @@ def serialise(fig):
                 t["y"] = _epoch_ms(t["y"])
         collected.append((ax, traces, reflines, x_date, y_date))
 
-    # Dates are shipped relative to the figure's earliest timestamp so float32 keeps
-    # sub-second resolution across a deployment; find it before converting anything.
+    # relative to the earliest timestamp so float32 keeps sub-second resolution
     t0 = None
     for _ax, traces, _r, x_date, y_date in collected:
         for t in traces:

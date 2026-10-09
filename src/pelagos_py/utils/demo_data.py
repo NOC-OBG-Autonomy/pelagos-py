@@ -108,12 +108,14 @@ def _key(entry):
 DEMOS = {_key(e): e for entries in _MISSION_ENTRIES.values() for e in entries}
 MISSIONS = {mission: [_key(e) for e in entries] for mission, entries in _MISSION_ENTRIES.items()}
 
-DEMO_DATA_DIR = Path(__file__).resolve().parents[3] / "examples" / "data" / "OG1"
+# Where the dashboard keeps configs and demo data; relative paths in its configs resolve from here.
+WORKSPACE_DIR = Path.home() / "Documents" / "pelagos-py"
+DEMO_DATA_DIR = WORKSPACE_DIR / "demo_data"
 
 
 def get_demo_file(name=None, on_progress=None):
     """
-    Download a demo OG1 file into ``examples/data/OG1`` (only the first time) and return its path.
+    Download a demo OG1 file into ``~/Documents/pelagos-py/demo_data`` (only the first time) and return its path.
 
     Long deployments are cut down to a shorter time window after downloading. Call it with
     no name to list the demos.
@@ -142,8 +144,8 @@ def get_demo_file(name=None, on_progress=None):
 
 
 def _download(url, dest, on_progress=None):
-    # Files are 100s of MB: bound only the connect phase, not the transfer.
-    response = requests.get(url, stream=True, timeout=(15, None))
+    # the read timeout is per chunk, so a dropped connection fails after 30 s instead of hanging
+    response = requests.get(url, stream=True, timeout=(15, 30))
     response.raise_for_status()
     total = int(response.headers.get("Content-Length") or 0)
     tmp = dest.with_name(dest.name + ".part")
