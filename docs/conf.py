@@ -1,4 +1,7 @@
-import sys, os
+import sys
+import os
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _get_version
 
 sys.path.insert(0, os.path.abspath("../src"))
 
@@ -18,8 +21,6 @@ author = "National Oceanography Centre"
 # ``release`` is the full version (e.g. "2.4.1.dev3+gabc1234"); ``version`` is
 # the short X.Y form shown in the docs. Both feed the |release| / |version|
 # substitutions used on the index page.
-from importlib.metadata import PackageNotFoundError
-from importlib.metadata import version as _get_version
 
 try:
     release = _get_version("pelagos_py")

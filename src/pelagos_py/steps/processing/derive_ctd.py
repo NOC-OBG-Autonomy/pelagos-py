@@ -19,10 +19,8 @@
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
 from pelagos_py.utils.qc_handling import QCHandlingMixin
-import pelagos_py.utils.diagnostics as diag
 
 #### Custom imports ####
-import numpy as np
 import gsw
 import matplotlib
 import matplotlib.pyplot as plt
@@ -95,7 +93,7 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
     }
 
     def run(self):
-        self.log(f"Processing CTD...")
+        self.log("Processing CTD...")
 
         self.filter_qc()
 

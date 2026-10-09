@@ -19,7 +19,6 @@ import pandas as pd
 import numpy as np
 import warnings
 import os
-import datetime as _dt
 
 from scipy.stats import pearsonr
 from geopy.distance import geodesic

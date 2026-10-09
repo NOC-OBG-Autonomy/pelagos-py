@@ -22,9 +22,8 @@ import matplotlib.pyplot as plt
 import xarray as xr
 import pandas as pd
 import numpy as np
-import matplotlib.dates as mdates
 from pelagos_py.utils.time import safe_median_datetime, add_datetime_secondary_xaxis
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 
 def plot_time_series(
@@ -460,7 +459,7 @@ def plot_heatmap_glider_df(
 
     H_cum = H.cumsum(axis=0).cumsum(axis=1)
     X, Y = np.meshgrid(yedges, xedges)
-    im = ax.pcolormesh(X, Y, H_cum, cmap="PuBu", shading="auto")
+    ax.pcolormesh(X, Y, H_cum, cmap="PuBu", shading="auto")
     # add additional axis if top row or right column
     if i == 0:
         secax = ax.secondary_xaxis("top")

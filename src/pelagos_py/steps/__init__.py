@@ -25,7 +25,6 @@ import os
 import importlib
 import pathlib
 import time
-import yaml
 from pelagos_py.utils.yaml_loading import safe_load as yaml_safe_load
 import logging
 from pelagos_py.steps.base_step import REGISTERED_STEPS

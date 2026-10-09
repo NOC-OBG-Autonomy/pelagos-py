@@ -24,7 +24,6 @@ so no external toolchain (LaTeX, Sphinx) is required to produce the PDF.
 
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
-import pelagos_py.utils.diagnostics as di
 import pelagos_py.utils.palettes as palettes
 
 #### Custom imports ####

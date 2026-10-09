@@ -21,7 +21,7 @@ _START = time.time()
 print(f"__PELAGOS_TIME__ 0.000\t0\t{_START:.3f}", flush=True)
 signal.signal(signal.SIGINT, lambda *args: sys.exit(130))
 
-import matplotlib
+import matplotlib  # noqa: E402
 
 matplotlib.use("Agg", force=True)
 import matplotlib.pyplot as plt  # noqa: E402  (must follow backend setup)
@@ -33,7 +33,7 @@ plt.switch_backend = lambda *args, **kwargs: None
 
 import numpy as np  # noqa: E402
 from pelagos_py.dashboard import fig_spec  # noqa: E402
-from pelagos_py.pipeline import (
+from pelagos_py.pipeline import (  # noqa: E402
     REPORT_STEP_NAME,
     SEVERE,
     STOP,

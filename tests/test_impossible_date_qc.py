@@ -1,8 +1,5 @@
 import pytest
-import xarray as xr
-import numpy as np
 import pandas as pd
-from datetime import datetime
 
 from utils.test_utils import create_mock_dataset
 from pelagos_py.steps.quality_control.impossible_date_qc import impossible_date_qc

@@ -176,4 +176,4 @@ class ExportStep(BaseStep):
         """
         self.log(f"Generating diagnostics for {self.step_name}")
         diag.generate_diagnostics(self.context, self.step_name)
-        self.log(f"Diagnostics generated successfully.")
+        self.log("Diagnostics generated successfully.")

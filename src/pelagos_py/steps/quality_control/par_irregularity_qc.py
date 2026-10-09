@@ -29,9 +29,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from pelagos_py.utils import fig_spec
 import numpy as np
-from datetime import datetime
 import warnings
-import xarray as xr
 import pandas as pd
 
 

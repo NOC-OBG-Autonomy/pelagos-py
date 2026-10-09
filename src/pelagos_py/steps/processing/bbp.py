@@ -19,12 +19,10 @@
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
 from pelagos_py.utils.qc_handling import QCHandlingMixin
-from pelagos_py.utils.processing_utils import *
-import pelagos_py.utils.diagnostics as diag
+from pelagos_py.utils.processing_utils import remove_outliers
 
 #### Custom imports ####
 import re
-import xarray as xr
 import numpy as np
 import glidertools as gt
 import pandas as pd

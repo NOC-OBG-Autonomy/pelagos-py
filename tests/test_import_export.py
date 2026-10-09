@@ -1,7 +1,7 @@
 import pytest
 import json
 from pelagos_py.steps.input_output.export import ExportStep
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 import xarray as xr
 import numpy as np
 import pandas as pd

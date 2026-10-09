@@ -215,7 +215,7 @@ class FormatCheck(BaseStep):
             self._check_suite, self._score_dict = check_suite, score_dict
             self.generate_diagnostics()
 
-        if not overall_pass and self.parameters.get("proceed_on_fail") == False:
+        if not overall_pass and self.parameters.get("proceed_on_fail") is False:
             self.halt(
                 f"'{fname}' failed the format compliance checks and 'proceed_on_fail' is False."
             )

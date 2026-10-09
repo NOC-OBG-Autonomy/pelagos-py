@@ -20,12 +20,10 @@
 from pelagos_py.steps.base_step import BaseStep, register_step
 from pelagos_py.utils.qc_handling import QCHandlingMixin
 from pelagos_py.utils.processing_utils import profile_indices
-import pelagos_py.utils.diagnostics as diag
 import pelagos_py.utils.palettes as palettes
 from pelagos_py.utils import fig_spec
 
 #### Custom imports ####
-import xarray as xr
 import numpy as np
 from functools import cached_property
 import pandas as pd
@@ -1761,7 +1759,10 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
                 ax.axis("off")
                 continue
             r0, r1, alpha = pair
-            on = lambda r: np.interp(z, r["z"], r["ratio"], left=np.nan, right=np.nan)
+
+            def on(r):
+                return np.interp(z, r["z"], r["ratio"], left=np.nan, right=np.nan)
+
             _line(
                 ax,
                 on(r0),

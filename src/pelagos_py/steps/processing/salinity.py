@@ -19,7 +19,6 @@
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
 from pelagos_py.utils.qc_handling import QCHandlingMixin
-import pelagos_py.utils.diagnostics as diag
 from pelagos_py.utils.processing_utils import cndc_scale_factor, profile_indices
 
 #### Custom imports ####
@@ -232,7 +231,7 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
     }
 
     def run(self):
-        self.log(f"Running adjustment...")
+        self.log("Running adjustment...")
         # TODO: TIME_CTD checking
 
         # Required for plotting later
@@ -484,7 +483,6 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
             if len(TIME_1Hz_sampling) < 2:
                 continue
             TEMP_1Hz_sampling = TEMP_from_TIME(TIME_1Hz_sampling)
-            n_resamples = len(TEMP_1Hz_sampling)
 
             # Set up the recursive filter defined in "CTD dynamic performance and corrections through gradients"
             # Tau and alpha are the fixed coefficients of Morison94 for unpumped cell.

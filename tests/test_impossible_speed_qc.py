@@ -1,5 +1,4 @@
 import numpy as np
-import xarray as xr
 from unittest.mock import patch
 
 from pelagos_py.steps.quality_control.impossible_speed_qc import impossible_speed_qc

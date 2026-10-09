@@ -18,7 +18,6 @@
 
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
-import pelagos_py.utils.diagnostics as diag
 from pelagos_py.steps import QC_CLASSES
 from pelagos_py.utils.qc_handling import QC_COMBINATRIX, prefer_adjusted
 

@@ -19,7 +19,6 @@
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
 from pelagos_py.utils.qc_handling import QCHandlingMixin
-import pelagos_py.utils.diagnostics as diag
 
 #### Custom imports ####
 from pelagos_py.utils.processing_utils import interpolate_by_time
@@ -112,7 +111,7 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
         super().__init__(name, parameters, diagnostics, context)
 
     def run(self):
-        self.log(f"Interpolating variables...")
+        self.log("Interpolating variables...")
 
         self.filter_qc()
         variables = list(self.filter_settings)

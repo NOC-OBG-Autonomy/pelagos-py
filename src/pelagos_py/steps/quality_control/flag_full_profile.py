@@ -17,7 +17,6 @@
 """QC test to flag entire glider profiles based on number of bad flags."""
 
 #### Mandatory imports ####
-import numpy as np
 from pelagos_py.steps.base_qc import BaseQC, register_qc
 
 #### Custom imports ####
@@ -111,7 +110,7 @@ class flag_full_profile(BaseQC):
                 "PROFILE_NUMBER"
             ]
             self.data[f"{var}_QC"] = xr.where(
-                self.data[f"PROFILE_NUMBER"].isin(bad_profiles),
+                self.data["PROFILE_NUMBER"].isin(bad_profiles),
                 4,
                 self.data[f"{var}_QC"],
             )
