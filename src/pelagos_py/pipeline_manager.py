@@ -69,7 +69,7 @@ class PipelineManager(ConfigMirrorMixin):
             config = yaml_safe_load(f) or {}
 
         # 1) Store full mission config in private _parameters
-        self.load_config(config, mirror_keys=mirror_keys or ["settings"])
+        self._load_config_dict(config, mirror_keys=mirror_keys or ["settings"])
 
         # 2) Build pipelines (also load each pipeline's config file into its own private store)
         for entry in self._parameters.get("pipelines", []) or []:

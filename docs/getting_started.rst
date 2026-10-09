@@ -64,12 +64,30 @@ How to Run
 
 **Initialisation**
 
-Import the ``Pipeline`` class and create a pipeline using your config:
+Import the ``Pipeline`` class and create a pipeline, either by letting pelagos-py build a config
+for your OG1 file or from a config you already have:
 
 .. code-block:: python
 
-   from pelagos_py.pipeline import Pipeline
-   pipeline = Pipeline(config_path="my_pipeline.yaml")
+   from pelagos_py import Pipeline
+
+   # Build a config for the file from the default template, saved as glider.yaml next to it
+   pipeline = Pipeline.make_config("glider.nc")
+
+   # Same, but ask about each choice (e.g. what to do about missing PAR) instead of using the defaults
+   pipeline = Pipeline.make_config("glider.nc", ask=True)
+
+   # Or load a config you already have, e.g. glider.yaml after editing it
+   pipeline = Pipeline.load_config("my_pipeline.yaml")
+
+To try it without your own data, ``get_demo_file`` downloads a demo OG1 file into
+``examples/data/OG1`` (only the first time) and returns its path; ``get_demo_file()`` lists the demos. ``examples/python/run_demo.py`` does this end to end:
+
+.. code-block:: python
+
+   from pelagos_py import Pipeline, get_demo_file
+
+   pipeline = Pipeline.make_config(get_demo_file("nelson_646_r"))
 
 **Pipeline Execution**
 
@@ -128,9 +146,9 @@ A minimal YAML configuration for a simple pipeline. See ``examples/notebooks/pip
 Example Pipeline
 ----------------
 
-If you are new here, we recommend checking out the ``example/notebooks/pipeline_demo.ipynb`` Jupyter notebook. This provides an example use case for processing CTD measurements from glider data hosted by the British Oceanographic Data Centre (BODC).
+If you are new here, we recommend checking out the ``examples/notebooks/pipeline_demo.ipynb`` Jupyter notebook, or running ``examples/python/run_demo.py``. This provides an example use case for processing CTD measurements from glider data hosted by the British Oceanographic Data Centre (BODC).
 
-A fully commented configuration file is used for this process, which serves as an excellent template for your own projects.
+Both build a fully commented configuration file for the demo data, which serves as an excellent template for your own projects.
 
 Documentation and Feedback
 --------------------------

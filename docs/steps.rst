@@ -25,6 +25,7 @@ These steps are general utility tools used for data management, preparation, and
 * :doc:`Generate Data <api/pelagos_py/steps/input_output/gen_data/index>`: Creates synthetic data for testing and validation purposes.
 * :doc:`Interpolate Data <api/pelagos_py/steps/processing/interpolate_data/index>`: Fills gaps in variables using mathematical interpolation.
 * :doc:`Load Data <api/pelagos_py/steps/input_output/load_data/index>`: The entry point for importing data into the pelagos_py.
+* :doc:`Prepare OG1 <api/pelagos_py/steps/input_output/prepare_og1/index>`: Normalises a loaded file's variable names and units onto what the other steps expect.
 * :doc:`Find Profile Direction <api/pelagos_py/steps/processing/profile_direction/index>`: Identifies whether data was collected during an ascent or descent.
 
 Variable Specific Steps
