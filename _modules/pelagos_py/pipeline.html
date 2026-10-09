@@ -828,16 +828,23 @@
         <span class="c1"># in the background (regardless of that step's own diagnostics setting)</span>
         <span class="c1"># so they can be embedded in the report. This exercises every step's</span>
         <span class="c1"># diagnostic code, which is why it can slow the run down.</span>
-        <span class="n">report_present</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span> <span class="o">==</span> <span class="n">REPORT_STEP_NAME</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">)</span>
+        <span class="n">report_params</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s2">"parameters"</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps</span> <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span> <span class="o">==</span> <span class="n">REPORT_STEP_NAME</span><span class="p">),</span>
+            <span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">report_present</span> <span class="o">=</span> <span class="n">report_params</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="n">capture_diagnostics</span> <span class="o">=</span> <span class="n">report_present</span> <span class="ow">and</span> <span class="n">report_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"show_diagnostic_plots"</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">_step_index</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">if</span> <span class="n">report_present</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">capture_diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_capture_diagnostics</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_captured_figures</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_capture_dir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">"pelagos_report_diag_"</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                 <span class="s2">"A report step is enabled: diagnostic plots will be generated in "</span>
                 <span class="s2">"the background for every step that produces one, so the pipeline "</span>
-                <span class="s2">"may run more slowly than usual."</span>
+                <span class="s2">"may run more slowly than usual. `pdb.trace()` may not work as "</span>
+                <span class="s2">"intended."</span>
             <span class="p">)</span>
 
         <span class="c1"># When capturing for the report, force the headless Agg backend once for</span>
@@ -868,8 +875,9 @@
         <span class="k">finally</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">report_present</span><span class="p">:</span>
                 <span class="c1">#   Figures have been embedded by the report writer by now.</span>
-                <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_capture_dir</span><span class="p">,</span> <span class="n">ignore_errors</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_capture_diagnostics</span> <span class="o">=</span> <span class="kc">False</span></div>
+                <span class="k">if</span> <span class="n">capture_diagnostics</span><span class="p">:</span>
+                    <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_capture_dir</span><span class="p">,</span> <span class="n">ignore_errors</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_capture_diagnostics</span> <span class="o">=</span> <span class="kc">False</span></div>
 
 
 <div class="viewcode-block" id="Pipeline.generate_config">

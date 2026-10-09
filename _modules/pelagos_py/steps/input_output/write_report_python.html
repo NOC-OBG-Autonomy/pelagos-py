@@ -437,6 +437,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">fpdf.fonts</span><span class="w"> </span><span class="kn">import</span> <span class="n">FontFace</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">getpass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">glidertest</span><span class="w"> </span><span class="kn">import</span> <span class="n">plots</span> <span class="k">as</span> <span class="n">gtplots</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">platform</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
@@ -520,6 +521,28 @@
     <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="s2">"VALUE_CHANGED"</span><span class="p">),</span> <span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="s2">"NOT_USED"</span><span class="p">),</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="s2">"NOT_USED"</span><span class="p">),</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="s2">"ESTIMATED"</span><span class="p">),</span>
     <span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="s2">"MISSING"</span><span class="p">),</span>
 <span class="p">]</span>
+
+<span class="c1">#   Stoplight colours for the QC summary table, keyed by the status returned by</span>
+<span class="c1">#   qc_status(). Kept dark enough that a small dot still reads on white paper.</span>
+<span class="n">QC_STATUS_COLORS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"green"</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">138</span><span class="p">,</span> <span class="mi">79</span><span class="p">),</span>
+    <span class="s2">"yellow"</span><span class="p">:</span> <span class="p">(</span><span class="mi">206</span><span class="p">,</span> <span class="mi">166</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+    <span class="s2">"orange"</span><span class="p">:</span> <span class="p">(</span><span class="mi">216</span><span class="p">,</span> <span class="mi">118</span><span class="p">,</span> <span class="mi">24</span><span class="p">),</span>
+    <span class="s2">"red"</span><span class="p">:</span> <span class="p">(</span><span class="mi">198</span><span class="p">,</span> <span class="mi">38</span><span class="p">,</span> <span class="mi">38</span><span class="p">),</span>
+    <span class="s2">"black"</span><span class="p">:</span> <span class="p">(</span><span class="mi">25</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">25</span><span class="p">),</span>
+    <span class="s2">"grey"</span><span class="p">:</span> <span class="p">(</span><span class="mi">150</span><span class="p">,</span> <span class="mi">150</span><span class="p">,</span> <span class="mi">150</span><span class="p">),</span>
+<span class="p">}</span>
+
+<span class="c1">#   What each stoplight colour means, in the order the legend lists them.</span>
+<span class="n">QC_STATUS_LABELS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"green"</span><span class="p">:</span> <span class="s2">"all points passed"</span><span class="p">,</span>
+    <span class="s2">"yellow"</span><span class="p">:</span> <span class="s2">"up to 50 bad points"</span><span class="p">,</span>
+    <span class="s2">"orange"</span><span class="p">:</span> <span class="s2">"under 2% bad"</span><span class="p">,</span>
+    <span class="s2">"red"</span><span class="p">:</span> <span class="s2">"2</span><span class="si">% o</span><span class="s2">r more bad"</span><span class="p">,</span>
+    <span class="s2">"black"</span><span class="p">:</span> <span class="s2">"every point failed"</span><span class="p">,</span>
+    <span class="s2">"grey"</span><span class="p">:</span> <span class="s2">"no usable result"</span><span class="p">,</span>
+<span class="p">}</span>
+
 <span class="c1">#   The NOC logo lives in utils/ (alongside the other shared, non-step assets)</span>
 <span class="c1">#   rather than in a dedicated assets folder.</span>
 <span class="n">LOGO_PATH</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
@@ -1031,6 +1054,92 @@
                 <span class="n">table</span><span class="o">.</span><span class="n">row</span><span class="p">([</span><span class="n">sanitize</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">r</span><span class="p">])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ln</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
 
+    <span class="c1">#   Stoplight dots are drawn with ZapfDingbats, a core PDF font: "l" is a</span>
+    <span class="c1">#   filled circle and "m" a hollow one. The core text fonts are latin-1</span>
+    <span class="c1">#   only, so a unicode bullet (or an emoji) cannot be used here.</span>
+    <span class="n">_DOT_FONT</span> <span class="o">=</span> <span class="s2">"ZapfDingbats"</span>
+    <span class="n">_DOT_FILLED</span> <span class="o">=</span> <span class="s2">"l"</span>
+    <span class="n">_DOT_HOLLOW</span> <span class="o">=</span> <span class="s2">"m"</span>
+    <span class="n">_DOT_ABSENT</span> <span class="o">=</span> <span class="p">(</span><span class="mi">170</span><span class="p">,</span> <span class="mi">170</span><span class="p">,</span> <span class="mi">170</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">stoplight_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">headers</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">font_size</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1">#   Render a variable x test matrix as coloured stoplight dots. Each row</span>
+        <span class="c1">#   is [name, *cells], where a cell is (status, has_flag_8) or None when</span>
+        <span class="c1">#   that test was never run on the variable.</span>
+        <span class="n">n_dots</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">headers</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_font</span><span class="p">(</span><span class="s2">"Times"</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="n">font_size</span><span class="p">)</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">(</span>
+            <span class="c1">#   Only the first column carries text; the rest hold one dot each,</span>
+            <span class="c1">#   so give the names the room and split the remainder evenly.</span>
+            <span class="n">col_widths</span><span class="o">=</span><span class="p">(</span><span class="mf">2.4</span><span class="p">,</span> <span class="o">*</span><span class="p">([</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_dots</span><span class="p">)),</span>
+            <span class="n">text_align</span><span class="o">=</span><span class="p">(</span><span class="s2">"LEFT"</span><span class="p">,</span> <span class="o">*</span><span class="p">([</span><span class="s2">"CENTER"</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_dots</span><span class="p">)),</span>
+            <span class="n">borders_layout</span><span class="o">=</span><span class="n">BOOKTABS</span><span class="p">,</span>
+            <span class="c1">#   Test names are long next to a dot, so the headings run a size</span>
+            <span class="c1">#   smaller to wrap over fewer lines.</span>
+            <span class="n">headings_style</span><span class="o">=</span><span class="n">FontFace</span><span class="p">(</span><span class="n">emphasis</span><span class="o">=</span><span class="s2">"BOLD"</span><span class="p">,</span> <span class="n">size_pt</span><span class="o">=</span><span class="n">font_size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span>
+            <span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+            <span class="n">line_height</span><span class="o">=</span><span class="n">font_size</span> <span class="o">*</span> <span class="mf">0.55</span><span class="p">,</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">table</span><span class="p">:</span>
+            <span class="n">table</span><span class="o">.</span><span class="n">row</span><span class="p">([</span><span class="n">sanitize</span><span class="p">(</span><span class="n">h</span><span class="p">)</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">headers</span><span class="p">])</span>
+
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="o">*</span><span class="n">cells</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+                <span class="n">row</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">row</span><span class="p">()</span>
+                <span class="n">row</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">sanitize</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+
+                <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">cells</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">cell</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="c1">#   Test not run: a quiet dash, since any dot here would</span>
+                        <span class="c1">#   imply the test produced a result.</span>
+                        <span class="n">row</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="s2">"-"</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="n">FontFace</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_DOT_ABSENT</span><span class="p">))</span>
+                        <span class="k">continue</span>
+
+                    <span class="n">status</span><span class="p">,</span> <span class="n">has_flag_8</span> <span class="o">=</span> <span class="n">cell</span>
+                    <span class="n">row</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_DOT_HOLLOW</span> <span class="k">if</span> <span class="n">has_flag_8</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_DOT_FILLED</span><span class="p">,</span>
+                        <span class="n">style</span><span class="o">=</span><span class="n">FontFace</span><span class="p">(</span>
+                            <span class="n">family</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_DOT_FONT</span><span class="p">,</span>
+                            <span class="n">size_pt</span><span class="o">=</span><span class="n">font_size</span><span class="p">,</span>
+                            <span class="n">color</span><span class="o">=</span><span class="n">QC_STATUS_COLORS</span><span class="p">[</span><span class="n">status</span><span class="p">],</span>
+                        <span class="p">),</span>
+                    <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ln</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">stoplight_legend</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">font_size</span><span class="o">=</span><span class="mf">7.5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1">#   Key for the dots above in pdf.stoplight_table: a sample of each dot with its meaning, run</span>
+        <span class="c1">#   inline across the text width and wrapped when a line fills up.</span>
+        <span class="n">entries</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_DOT_FONT</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_DOT_FILLED</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">QC_STATUS_LABELS</span><span class="p">[</span><span class="n">status</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">status</span><span class="p">,</span> <span class="n">color</span> <span class="ow">in</span> <span class="n">QC_STATUS_COLORS</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">]</span>
+        <span class="n">entries</span> <span class="o">+=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_DOT_FONT</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_DOT_HOLLOW</span><span class="p">,</span> <span class="p">(</span><span class="mi">60</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">60</span><span class="p">),</span>
+             <span class="s2">"test also flagged estimated values"</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">"Times"</span><span class="p">,</span> <span class="s2">"-"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_DOT_ABSENT</span><span class="p">,</span> <span class="s2">"test not run"</span><span class="p">),</span>
+        <span class="p">]</span>
+
+        <span class="n">line_h</span> <span class="o">=</span> <span class="n">font_size</span> <span class="o">*</span> <span class="mf">0.75</span>
+        <span class="n">gap</span> <span class="o">=</span> <span class="mi">5</span>
+        <span class="k">for</span> <span class="n">font</span><span class="p">,</span> <span class="n">glyph</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">entries</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_font</span><span class="p">(</span><span class="n">font</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="n">font_size</span><span class="p">)</span>
+            <span class="n">w_dot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_string_width</span><span class="p">(</span><span class="n">glyph</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_font</span><span class="p">(</span><span class="s2">"Times"</span><span class="p">,</span> <span class="s2">"I"</span><span class="p">,</span> <span class="n">font_size</span><span class="p">)</span>
+            <span class="n">w_label</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_string_width</span><span class="p">(</span><span class="sa">f</span><span class="s2">" </span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="o">+</span> <span class="n">gap</span>
+
+            <span class="c1">#   Wrap before an entry that would overrun the right margin, so a</span>
+            <span class="c1">#   dot never ends up parted from the words it explains.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_x</span><span class="p">()</span> <span class="o">+</span> <span class="n">w_dot</span> <span class="o">+</span> <span class="n">w_label</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">w</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">r_margin</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ln</span><span class="p">(</span><span class="n">line_h</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_text_color</span><span class="p">(</span><span class="o">*</span><span class="n">color</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_font</span><span class="p">(</span><span class="n">font</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="n">font_size</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">w_dot</span><span class="p">,</span> <span class="n">line_h</span><span class="p">,</span> <span class="n">glyph</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_text_color</span><span class="p">(</span><span class="mi">90</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_font</span><span class="p">(</span><span class="s2">"Times"</span><span class="p">,</span> <span class="s2">"I"</span><span class="p">,</span> <span class="n">font_size</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">w_label</span><span class="p">,</span> <span class="n">line_h</span><span class="p">,</span> <span class="n">sanitize</span><span class="p">(</span><span class="sa">f</span><span class="s2">" </span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">"</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_text_color</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ln</span><span class="p">(</span><span class="n">line_h</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">cc_heading</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">score_text</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="c1">#   Compliance-checker heading. With url, the label becomes a link to the</span>
         <span class="c1">#   format docs; score_text adds a secondary line (e.g. the score).</span>
@@ -1209,24 +1318,147 @@
         <span class="k">for</span> <span class="n">img</span> <span class="ow">in</span> <span class="n">images</span><span class="p">:</span>
             <span class="n">pdf</span><span class="o">.</span><span class="n">image_fit</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="n">_image_aspect</span><span class="p">(</span><span class="n">img</span><span class="p">),</span> <span class="n">max_h</span><span class="o">=</span><span class="n">max_h</span><span class="p">)</span>
 
+<div class="viewcode-block" id="qc_status">
+<a class="viewcode-back" href="../../../../api/pelagos_py/steps/input_output/write_report_python/index.html#pelagos_py.steps.input_output.write_report_python.qc_status">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">qc_status</span><span class="p">(</span><span class="n">flag_counts</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Return the stoplight status and whether flag 8 occurred.</span>
+<span class="sd">    </span>
+<span class="sd">    Any variable can include a flag 8 - it's handy to denote this differently than by color.</span>
 
+<span class="sd">    Argo flags 0, 8, and 9 can't be considered as "good" or "bad" and therefore should be excluded from the % good spectrum.</span>
+
+<span class="sd">    This spectrum is (arbitrarily) assigned as follows:</span>
+<span class="sd">    * Grey - no evaluated points remain after excluding flags 0, 8, and 9.</span>
+<span class="sd">    * Green - all evaluated points are good or probably good (flags 1, 2).</span>
+<span class="sd">    * Yellow - up to `yellow_pts` evaluated points are bad or have another non-good flag, with fewer than `orange_per` bad.</span>
+<span class="sd">    * Orange - more than `yellow_pts` evaluated points are bad or have another non-good flag, with fewer than `orange_per` bad.</span>
+<span class="sd">    * Red - at least `orange_per` of evaluated points are bad, but not all are bad.</span>
+<span class="sd">    * Black - all evaluated points are bad (flags 3, 4).</span>
+<span class="sd">    </span>
+<span class="sd">    In the future, these flag tolerances could be an optional kwarg that the user could specify in their configuration yaml.</span>
+<span class="sd">    """</span>
+    <span class="n">yellow_pts</span> <span class="o">=</span> <span class="mi">50</span>     <span class="c1">#   Number of *points* distinguishing yellow to orange</span>
+    <span class="n">orange_per</span> <span class="o">=</span> <span class="mf">0.02</span>   <span class="c1">#   Fraction of evaluated data points that distinguishes orange from red</span>
+    
+    <span class="n">counts</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="nb">int</span><span class="p">(</span><span class="n">flag</span><span class="p">):</span> <span class="nb">int</span><span class="p">(</span><span class="n">count</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">flag</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">flag_counts</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+    <span class="p">}</span>
+    <span class="n">has_flag_8</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>   <span class="c1">#   If any 8 flags are found, return this bool to denote special formatting</span>
+
+    <span class="c1">#   Trim down to flags that actually occurred.</span>
+    <span class="n">active_flags</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">flag</span>
+        <span class="k">for</span> <span class="n">flag</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">counts</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">count</span> <span class="o">&gt;</span> <span class="mi">0</span>
+    <span class="p">}</span>
+    <span class="n">evaluated_flags</span> <span class="o">=</span> <span class="n">active_flags</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+    <span class="c1">#   Otherwise it's all 0, 8, and 9</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">evaluated_flags</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"grey"</span><span class="p">,</span> <span class="n">has_flag_8</span>
+
+    <span class="c1">#   Working with valid flag values - can be a subset of N_MEASUREMENTS.size</span>
+    <span class="n">n_evaluated</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">counts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">flag</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="k">for</span> <span class="n">flag</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+    <span class="n">n_bad</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="n">counts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">evaluated_flags</span> <span class="o">&lt;=</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">}:</span>
+        <span class="k">return</span> <span class="s2">"green"</span><span class="p">,</span> <span class="n">has_flag_8</span>
+
+    <span class="c1">#   Working with any amount of questionable points</span>
+    <span class="n">bad_fraction</span> <span class="o">=</span> <span class="n">n_bad</span> <span class="o">/</span> <span class="n">n_evaluated</span>
+    <span class="k">if</span> <span class="n">n_bad</span> <span class="o">&lt;=</span> <span class="n">yellow_pts</span> <span class="ow">and</span> <span class="n">bad_fraction</span> <span class="o">&lt;</span> <span class="n">orange_per</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"yellow"</span><span class="p">,</span> <span class="n">has_flag_8</span>
+    <span class="k">if</span> <span class="n">bad_fraction</span> <span class="o">&lt;</span> <span class="n">orange_per</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"orange"</span><span class="p">,</span> <span class="n">has_flag_8</span>
+    <span class="k">if</span> <span class="n">n_bad</span> <span class="o">&lt;</span> <span class="n">n_evaluated</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"red"</span><span class="p">,</span> <span class="n">has_flag_8</span>
+    <span class="k">return</span> <span class="s2">"black"</span><span class="p">,</span> <span class="n">has_flag_8</span></div>
+
+
+
+<div class="viewcode-block" id="build_qc_stoplight_summary">
+<a class="viewcode-back" href="../../../../api/pelagos_py/steps/input_output/write_report_python/index.html#pelagos_py.steps.input_output.write_report_python.build_qc_stoplight_summary">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_qc_stoplight_summary</span><span class="p">(</span><span class="n">qc_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">n_points</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Build a flaxible matrix of QC methods and variables</span>
+<span class="sd">    </span>
+<span class="sd">    For each method picked out of the qc_dict, add that to the columns in `tests`.</span>
+<span class="sd">    For each variable, add that to the rows. Then assess the contents of QC dict for each</span>
+<span class="sd">    column in the row with qc_status to assign the stoplight for the cell.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">n_points</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s2">"Number of points passed into QC stoplight summary is not able to be evaluated."</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="c1"># fromkeys - preserves list order</span>
+    <span class="n">tests</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span>
+        <span class="n">test_name</span>
+        <span class="k">for</span> <span class="n">variable_tests</span> <span class="ow">in</span> <span class="n">qc_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">test_name</span> <span class="ow">in</span> <span class="n">variable_tests</span>
+    <span class="p">))</span>
+
+    <span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">variable</span><span class="p">,</span> <span class="n">variable_tests</span> <span class="ow">in</span> <span class="n">qc_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="p">[</span><span class="n">variable</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">test</span> <span class="ow">in</span> <span class="n">tests</span><span class="p">:</span>
+            <span class="c1">#   This test was not run on this variable.</span>
+            <span class="k">if</span> <span class="n">test</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">variable_tests</span><span class="p">:</span>
+                <span class="n">row</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="n">flag_counts</span> <span class="o">=</span> <span class="n">variable_tests</span><span class="p">[</span><span class="n">test</span><span class="p">][</span><span class="s2">"flag_counts"</span><span class="p">]</span>
+
+            <span class="n">status</span><span class="p">,</span> <span class="n">has_flag_8</span> <span class="o">=</span> <span class="n">qc_status</span><span class="p">(</span><span class="n">flag_counts</span><span class="p">)</span>
+
+            <span class="n">row</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">status</span><span class="p">,</span> <span class="n">has_flag_8</span><span class="p">))</span>
+
+        <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">tests</span><span class="p">,</span> <span class="n">rows</span></div>
+
+
+
+<div class="viewcode-block" id="qc_section">
+<a class="viewcode-back" href="../../../../api/pelagos_py/steps/input_output/write_report_python/index.html#pelagos_py.steps.input_output.write_report_python.qc_section">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">qc_section</span><span class="p">(</span><span class="n">pdf</span><span class="p">:</span> <span class="n">ReportPDF</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="c1">#   Write the Quality Control summary table.</span>
+<span class="w">    </span><span class="sd">"""Write the Quality Control tables.</span>
+<span class="sd">    </span>
+<span class="sd">    This consists of two tables:</span>
+<span class="sd">    * A stoplight summary table, highlighting which tests were ran on which QC variables and how many were successful.</span>
+<span class="sd">    * A row-by-row variable summary, listing the number of each flag that were determined from the individual tests.</span>
+<span class="sd">    """</span>
+
     <span class="n">pdf</span><span class="o">.</span><span class="n">add_page</span><span class="p">()</span>
     <span class="n">pdf</span><span class="o">.</span><span class="n">section_heading</span><span class="p">(</span><span class="s2">"Quality Control Summary"</span><span class="p">)</span>
 
     <span class="n">qc_dict</span> <span class="o">=</span> <span class="n">build_qc_dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-    <span class="n">rows</span> <span class="o">=</span> <span class="n">flatten_qc_dict</span><span class="p">(</span><span class="n">qc_dict</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">rows</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">qc_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
         <span class="n">pdf</span><span class="o">.</span><span class="n">body</span><span class="p">(</span><span class="s2">"No QC tests found."</span><span class="p">)</span>
         <span class="k">return</span>
 
-    <span class="n">pdf</span><span class="o">.</span><span class="n">add_table</span><span class="p">(</span>
-        <span class="p">[</span><span class="s2">"QC Variable"</span><span class="p">,</span> <span class="s2">"Test"</span><span class="p">,</span> <span class="s2">"Flag"</span><span class="p">,</span> <span class="s2">"Count"</span><span class="p">],</span>
-        <span class="n">rows</span><span class="p">,</span>
-        <span class="n">widths</span><span class="o">=</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span>
+    <span class="c1"># ID the unique tests (column names) and the distinct variables, with their appropriate</span>
+    <span class="c1"># tests that were run. All of this should be visisble in the individual variable's attributes</span>
+    <span class="c1"># that were assigned when `Apply QC` was run.</span>
+    <span class="n">tests</span><span class="p">,</span> <span class="n">qc_rows</span> <span class="o">=</span> <span class="n">build_qc_stoplight_summary</span><span class="p">(</span>
+        <span class="n">qc_dict</span><span class="p">,</span>
+        <span class="n">n_points</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">N_MEASUREMENTS</span><span class="o">.</span><span class="n">size</span><span class="p">,</span>
     <span class="p">)</span>
+    <span class="n">pdf</span><span class="o">.</span><span class="n">stoplight_table</span><span class="p">(</span>
+        <span class="p">[</span><span class="s2">"QC Variable"</span><span class="p">,</span> <span class="o">*</span><span class="p">(</span><span class="n">test</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"_"</span><span class="p">,</span> <span class="s2">" "</span><span class="p">)</span> <span class="k">for</span> <span class="n">test</span> <span class="ow">in</span> <span class="n">tests</span><span class="p">)],</span>
+        <span class="n">qc_rows</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">pdf</span><span class="o">.</span><span class="n">stoplight_legend</span><span class="p">()</span>
+
+    <span class="c1"># Detailed flag-count table.</span>
+    <span class="n">flag_rows</span> <span class="o">=</span> <span class="n">flatten_qc_dict</span><span class="p">(</span><span class="n">qc_dict</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">flag_rows</span><span class="p">:</span>
+        <span class="n">pdf</span><span class="o">.</span><span class="n">add_table</span><span class="p">(</span>
+            <span class="p">[</span><span class="s2">"QC Variable"</span><span class="p">,</span> <span class="s2">"Test"</span><span class="p">,</span> <span class="s2">"Flag"</span><span class="p">,</span> <span class="s2">"Count"</span><span class="p">],</span>
+            <span class="n">flag_rows</span><span class="p">,</span>
+            <span class="n">widths</span><span class="o">=</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span>
+        <span class="p">)</span></div>
+
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">add_log</span><span class="p">(</span><span class="n">logfile</span><span class="p">,</span> <span class="n">pdf</span><span class="p">:</span> <span class="n">ReportPDF</span><span class="p">,</span> <span class="n">ncols</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -1688,7 +1920,15 @@
     <span class="c1">#   The track's brightening gold already shows direction of travel (oldest</span>
     <span class="c1">#   faint -&gt; newest bright), so no start/end/position marker is drawn.</span>
 
-    <span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">(</span><span class="n">pad</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+    <span class="c1">#   Margins are set by hand rather than with fig.tight_layout(). Cartopy's</span>
+    <span class="c1">#   gridline labels are drawn lazily at render time, so a GeoAxes carrying</span>
+    <span class="c1">#   them reports a non-finite tight bounding box; tight_layout divides by it</span>
+    <span class="c1">#   and silently parks the axes at a NaN position, after which the gridliner</span>
+    <span class="c1">#   builds the map boundary from NaN vertices and shapely raises</span>
+    <span class="c1">#   "Points of LinearRing do not form a closed linestring" inside savefig.</span>
+    <span class="c1">#   For the same reason, never save this figure with bbox_inches="tight".</span>
+    <span class="c1">#   left leaves room for the latitude labels, bottom for the longitude ones.</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">left</span><span class="o">=</span><span class="mf">0.10</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="mf">0.97</span><span class="p">,</span> <span class="n">bottom</span><span class="o">=</span><span class="mf">0.04</span><span class="p">,</span> <span class="n">top</span><span class="o">=</span><span class="mf">0.98</span><span class="p">)</span>
     <span class="n">fname</span> <span class="o">=</span> <span class="n">outdir</span> <span class="o">+</span> <span class="s2">"glider_track"</span> <span class="o">+</span> <span class="n">ext</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="n">fig</span><span class="o">.</span><span class="n">get_facecolor</span><span class="p">())</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
@@ -1829,6 +2069,291 @@
             <span class="n">target</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="mi">80</span> <span class="o">*</span> <span class="n">i</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">qc_vars</span><span class="p">))</span>
             <span class="n">bar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">target</span> <span class="o">-</span> <span class="n">emitted</span><span class="p">)</span>
             <span class="n">emitted</span> <span class="o">=</span> <span class="n">target</span>
+
+<div class="viewcode-block" id="glidertest_section">
+<a class="viewcode-back" href="../../../../api/pelagos_py/steps/input_output/write_report_python/index.html#pelagos_py.steps.input_output.write_report_python.glidertest_section">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">glidertest_section</span><span class="p">(</span><span class="n">pdf</span><span class="p">:</span> <span class="n">ReportPDF</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">outdir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="nb">print</span><span class="p">,</span> <span class="n">log_warn</span><span class="o">=</span><span class="nb">print</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Runs plotting routines from `glidertest` and inserts them into the document.</span>
+<span class="sd">    """</span>
+
+    <span class="c1">#   Glidertest requires certain names for salinity, DO variables</span>
+    <span class="c1">#   Units should be handled appropriately in var attributes</span>
+    <span class="n">required_vars</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"PSAL"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"PRAC_SALINITY"</span><span class="p">,</span> <span class="s2">"CTDSAL"</span><span class="p">,</span> <span class="s2">"SALINITY"</span><span class="p">],</span>
+        <span class="s2">"CNDC"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"CONDUCTIVITY"</span><span class="p">,</span> <span class="s2">"CTDCOND"</span><span class="p">],</span>
+        <span class="s2">"DOXY"</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">"OXYGEN_CONCENTRATION"</span><span class="p">,</span>
+            <span class="s2">"MOLAR_DOXY_ADJUSTED"</span><span class="p">,</span>
+            <span class="s2">"MOLAR_DOXY_PSAL_PRES"</span><span class="p">,</span>
+            <span class="s2">"MOLAR_DOXY_PSAL"</span><span class="p">,</span>
+            <span class="s2">"MOLAR_DOXY"</span><span class="p">,</span> <span class="s2">"molar_doxy"</span><span class="p">,</span>
+            <span class="s2">"molar_deoxy"</span><span class="p">,</span>
+            <span class="p">],</span>
+        <span class="s2">"DPAR"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"downwelling_PAR"</span><span class="p">,</span> <span class="s2">"DOWNWELLING_PAR"</span><span class="p">,</span> <span class="s2">"downwelling_par"</span><span class="p">],</span>
+    <span class="p">}</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">set_coords</span><span class="p">([</span><span class="s2">"TIME"</span><span class="p">,</span> <span class="s2">"DEPTH"</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">target</span><span class="p">,</span> <span class="n">other_names</span> <span class="ow">in</span> <span class="n">required_vars</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">target</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">other_names</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+                    <span class="n">data</span><span class="p">[</span><span class="n">target</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+                    <span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2"> now in data - using </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+                    <span class="k">break</span>      
+            <span class="k">if</span> <span class="n">target</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+                <span class="n">log_warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Could not find </span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2"> equivalent in data."</span><span class="p">)</span>
+
+    <span class="c1">#   Glider track - comparable to `glider_track_map` above</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">__</span> <span class="o">=</span> <span class="n">gtplots</span><span class="o">.</span><span class="n">plot_glider_track</span><span class="p">(</span><span class="n">ds</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">fig_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">outdir</span><span class="si">}</span><span class="s2">glider_track_glidertest.png"</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fig_name</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+
+        <span class="n">pdf</span><span class="o">.</span><span class="n">add_page</span><span class="p">()</span>
+        <span class="n">pdf</span><span class="o">.</span><span class="n">section_heading</span><span class="p">(</span><span class="s2">"Glidertest Plots: Glider Mission Track"</span><span class="p">)</span>
+        <span class="n">pdf</span><span class="o">.</span><span class="n">image_fit</span><span class="p">(</span>
+            <span class="n">fig_name</span><span class="p">,</span>
+            <span class="n">aspect</span><span class="o">=</span><span class="n">_image_aspect</span><span class="p">(</span><span class="n">fig_name</span><span class="p">),</span>
+            <span class="n">max_h</span><span class="o">=</span><span class="mi">100</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="n">log_warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Glidertest failed on Glider Track plotting: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="c1">#   Basic variables: T, S, DO, CHLA</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">__</span> <span class="o">=</span> <span class="n">gtplots</span><span class="o">.</span><span class="n">plot_basic_vars</span><span class="p">(</span><span class="n">ds</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">fig_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">outdir</span><span class="si">}</span><span class="s2">basic_vars.png"</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fig_name</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+
+        <span class="n">pdf</span><span class="o">.</span><span class="n">add_page</span><span class="p">()</span>
+        <span class="n">pdf</span><span class="o">.</span><span class="n">section_heading</span><span class="p">(</span><span class="s2">"Glidertest Plots: Basic Variables"</span><span class="p">)</span>
+        <span class="n">pdf</span><span class="o">.</span><span class="n">image_fit</span><span class="p">(</span>
+            <span class="n">fig_name</span><span class="p">,</span>
+            <span class="n">aspect</span><span class="o">=</span><span class="n">_image_aspect</span><span class="p">(</span><span class="n">fig_name</span><span class="p">),</span>
+            <span class="n">max_h</span><span class="o">=</span><span class="mi">100</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="n">log_warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Glidertest failed on Basic Variable plotting: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    
+    <span class="c1">#   Up/down bias</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1">#   This is the only routine that will print the page even when failing due to the loop</span>
+        <span class="n">pdf</span><span class="o">.</span><span class="n">add_page</span><span class="p">()</span>
+        <span class="n">pdf</span><span class="o">.</span><span class="n">section_heading</span><span class="p">(</span><span class="s2">"Glidertest Plots: Up/Down Bias"</span><span class="p">)</span>
+
+        <span class="c1">#   TODO: Pull these out as a config option.</span>
+        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"TEMP"</span><span class="p">,</span> <span class="s2">"CNDC"</span><span class="p">,</span> <span class="s2">"DOXY"</span><span class="p">]:</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">__</span> <span class="o">=</span> <span class="n">gtplots</span><span class="o">.</span><span class="n">plot_updown_bias</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">var</span><span class="o">=</span><span class="n">var</span><span class="p">)</span>
+            <span class="n">fig_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">outdir</span><span class="si">}{</span><span class="n">var</span><span class="si">}</span><span class="s2">_updown.png"</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fig_name</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+            <span class="n">pdf</span><span class="o">.</span><span class="n">image_fit</span><span class="p">(</span>
+                <span class="n">fig_name</span><span class="p">,</span>
+                <span class="n">aspect</span><span class="o">=</span><span class="n">_image_aspect</span><span class="p">(</span><span class="n">fig_name</span><span class="p">),</span>
+                <span class="n">max_h</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+            <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="n">log_warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Glidertest failed on Up/Down Bias plotting: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="c1">#   Assessing optics</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1">#   This step has an output - capture it (eventually) and type it in underneat the figures.</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">__</span> <span class="o">=</span> <span class="n">gtplots</span><span class="o">.</span><span class="n">process_optics_assess</span><span class="p">(</span><span class="n">ds</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">fig_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">outdir</span><span class="si">}</span><span class="s2">optics_assess.png"</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fig_name</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+
+        <span class="n">pdf</span><span class="o">.</span><span class="n">add_page</span><span class="p">()</span>
+        <span class="n">pdf</span><span class="o">.</span><span class="n">section_heading</span><span class="p">(</span><span class="s2">"Glidertest Plots: Optics Assessment"</span><span class="p">)</span>
+        <span class="n">pdf</span><span class="o">.</span><span class="n">image_fit</span><span class="p">(</span>
+            <span class="n">fig_name</span><span class="p">,</span>
+            <span class="n">aspect</span><span class="o">=</span><span class="n">_image_aspect</span><span class="p">(</span><span class="n">fig_name</span><span class="p">),</span>
+            <span class="n">max_h</span><span class="o">=</span><span class="mi">100</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="n">log_warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Glidertest failed on Optics Assessment plotting: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="c1">#   Day/Night for influenced variables</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">pdf</span><span class="o">.</span><span class="n">add_page</span><span class="p">()</span>
+        <span class="n">pdf</span><span class="o">.</span><span class="n">section_heading</span><span class="p">(</span><span class="s2">"Glidertest Plots: Day/Night"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"CHLA"</span><span class="p">,</span> <span class="s2">"CDOM"</span><span class="p">,</span> <span class="s2">"DPAR"</span><span class="p">,</span> <span class="s2">"DOXY"</span><span class="p">]:</span>    <span class="c1">#   TODO: Pull these out into yaml</span>
+            <span class="k">if</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+                <span class="n">fig</span><span class="p">,</span> <span class="n">__</span> <span class="o">=</span> <span class="n">gtplots</span><span class="o">.</span><span class="n">plot_daynight_avg</span><span class="p">(</span><span class="n">ds</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">var</span><span class="o">=</span><span class="n">var</span><span class="p">)</span>
+                <span class="n">fig_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">outdir</span><span class="si">}</span><span class="s2">daynight_avg_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">.png"</span>
+                <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fig_name</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+
+                <span class="n">pdf</span><span class="o">.</span><span class="n">image_fit</span><span class="p">(</span>
+                    <span class="n">fig_name</span><span class="p">,</span>
+                    <span class="n">aspect</span><span class="o">=</span><span class="n">_image_aspect</span><span class="p">(</span><span class="n">fig_name</span><span class="p">),</span>
+                    <span class="n">max_h</span><span class="o">=</span><span class="mi">100</span>
+                <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="n">log_warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Glidertest failed on Day/Night plotting: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="c1">#   Chlorophyll quenching</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s2">"CHLA"</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">__</span> <span class="o">=</span> <span class="n">gtplots</span><span class="o">.</span><span class="n">plot_quench_assess</span><span class="p">(</span><span class="n">ds</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">sel_var</span><span class="o">=</span><span class="s2">"CHLA"</span><span class="p">)</span>
+            <span class="n">fig_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">outdir</span><span class="si">}</span><span class="s2">chla_quench_assess.png"</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fig_name</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+
+            <span class="n">pdf</span><span class="o">.</span><span class="n">add_page</span><span class="p">()</span>
+            <span class="n">pdf</span><span class="o">.</span><span class="n">section_heading</span><span class="p">(</span><span class="s2">"Glidertest Plots: Chlorophyll Quench Assessment"</span><span class="p">)</span>
+
+            <span class="n">pdf</span><span class="o">.</span><span class="n">image_fit</span><span class="p">(</span>
+                <span class="n">fig_name</span><span class="p">,</span>
+                <span class="n">aspect</span><span class="o">=</span><span class="n">_image_aspect</span><span class="p">(</span><span class="n">fig_name</span><span class="p">),</span>
+                <span class="n">max_h</span><span class="o">=</span><span class="mi">100</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">log_warn</span><span class="p">(</span><span class="s2">"CHLA not in data variables. Check alternatives or sensors for this glider."</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="n">log_warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Glidertest failed on Chloropphyll Quench Assessment plotting: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="c1">#   Sensor temporal drift</span>
+    <span class="c1">#   Note: Time intensive</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">pdf</span><span class="o">.</span><span class="n">add_page</span><span class="p">()</span>
+        <span class="n">pdf</span><span class="o">.</span><span class="n">section_heading</span><span class="p">(</span><span class="s2">"Glidertest Plots: Temporal Drift by Variable"</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"CNDC"</span><span class="p">,</span> <span class="s2">"PSAL"</span><span class="p">,</span> <span class="s2">"DOXY"</span><span class="p">]:</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">__</span> <span class="o">=</span> <span class="n">gtplots</span><span class="o">.</span><span class="n">check_temporal_drift</span><span class="p">(</span><span class="n">ds</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">var</span><span class="o">=</span><span class="n">var</span><span class="p">)</span>
+            <span class="n">fig_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">outdir</span><span class="si">}{</span><span class="n">var</span><span class="si">}</span><span class="s2">_temporal_drift_check.png"</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fig_name</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+            
+            <span class="n">pdf</span><span class="o">.</span><span class="n">image_fit</span><span class="p">(</span>
+                <span class="n">fig_name</span><span class="p">,</span>
+                <span class="n">aspect</span><span class="o">=</span><span class="n">_image_aspect</span><span class="p">(</span><span class="n">fig_name</span><span class="p">),</span>
+                <span class="n">max_h</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+            <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="n">log_warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Glidertest failed on Sensor Temporal Drift plotting: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="c1">#   Grid spacing</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">__</span> <span class="o">=</span> <span class="n">gtplots</span><span class="o">.</span><span class="n">plot_grid_spacing</span><span class="p">(</span><span class="n">ds</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">fig_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">outdir</span><span class="si">}</span><span class="s2">grid_spacing.png"</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fig_name</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+
+        <span class="n">pdf</span><span class="o">.</span><span class="n">add_page</span><span class="p">()</span>
+        <span class="n">pdf</span><span class="o">.</span><span class="n">section_heading</span><span class="p">(</span><span class="s2">"Glidertest Plots: Grid Spacing"</span><span class="p">)</span>
+        
+        <span class="n">pdf</span><span class="o">.</span><span class="n">image_fit</span><span class="p">(</span>
+            <span class="n">fig_name</span><span class="p">,</span>
+            <span class="n">aspect</span><span class="o">=</span><span class="n">_image_aspect</span><span class="p">(</span><span class="n">fig_name</span><span class="p">),</span>
+            <span class="n">max_h</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="n">log_warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Glidertest failed on Grid Spacing plotting: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="c1">#   Sampling period</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">__</span> <span class="o">=</span> <span class="n">gtplots</span><span class="o">.</span><span class="n">plot_sampling_period_all</span><span class="p">(</span><span class="n">ds</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">fig_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">outdir</span><span class="si">}</span><span class="s2">default_sample_period.png"</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fig_name</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+
+        <span class="n">pdf</span><span class="o">.</span><span class="n">add_page</span><span class="p">()</span>
+        <span class="n">pdf</span><span class="o">.</span><span class="n">section_heading</span><span class="p">(</span><span class="s2">"Glidertest Plots: Sample Periods"</span><span class="p">)</span>
+        
+        <span class="n">pdf</span><span class="o">.</span><span class="n">image_fit</span><span class="p">(</span>
+            <span class="n">fig_name</span><span class="p">,</span>
+            <span class="n">aspect</span><span class="o">=</span><span class="n">_image_aspect</span><span class="p">(</span><span class="n">fig_name</span><span class="p">),</span>
+            <span class="n">max_h</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="n">log_warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Glidertest failed on Sample Period plotting: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="c1">#   TS plot with 2D density</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">__</span> <span class="o">=</span> <span class="n">gtplots</span><span class="o">.</span><span class="n">plot_ts</span><span class="p">(</span><span class="n">ds</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">fig_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">outdir</span><span class="si">}</span><span class="s2">ts.png"</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fig_name</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+
+        <span class="n">pdf</span><span class="o">.</span><span class="n">add_page</span><span class="p">()</span>
+        <span class="n">pdf</span><span class="o">.</span><span class="n">section_heading</span><span class="p">(</span><span class="s2">"Glidertest Plots: Temperature-Salinity (TS)"</span><span class="p">)</span>
+        
+        <span class="n">pdf</span><span class="o">.</span><span class="n">image_fit</span><span class="p">(</span>
+            <span class="n">fig_name</span><span class="p">,</span>
+            <span class="n">aspect</span><span class="o">=</span><span class="n">_image_aspect</span><span class="p">(</span><span class="n">fig_name</span><span class="p">),</span>
+            <span class="n">max_h</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="n">log_warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Glidertest failed on TS plotting: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="c1">#   Hysteresis for known sensors</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">pdf</span><span class="o">.</span><span class="n">add_page</span><span class="p">()</span>
+        <span class="n">pdf</span><span class="o">.</span><span class="n">section_heading</span><span class="p">(</span><span class="s2">"Glidertest Plots: Hysteresis"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"TEMP"</span><span class="p">,</span> <span class="s2">"CNDC"</span><span class="p">,</span> <span class="s2">"DOXY"</span><span class="p">,]:</span>    <span class="c1">#   TODO: Pull these out into yaml</span>
+            <span class="k">if</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+                <span class="n">fig</span><span class="p">,</span> <span class="n">__</span> <span class="o">=</span> <span class="n">gtplots</span><span class="o">.</span><span class="n">plot_hysteresis</span><span class="p">(</span><span class="n">ds</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">var</span><span class="o">=</span><span class="n">var</span><span class="p">)</span>
+                <span class="n">fig_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">outdir</span><span class="si">}</span><span class="s2">hysteresis_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">.png"</span>
+                <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fig_name</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+
+                <span class="n">pdf</span><span class="o">.</span><span class="n">image_fit</span><span class="p">(</span>
+                    <span class="n">fig_name</span><span class="p">,</span>
+                    <span class="n">aspect</span><span class="o">=</span><span class="n">_image_aspect</span><span class="p">(</span><span class="n">fig_name</span><span class="p">),</span>
+                    <span class="n">max_h</span><span class="o">=</span><span class="mi">100</span>
+                <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="n">log_warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Glidertest failed on Hysteresis plotting: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="c1">#   Global range figures</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">pdf</span><span class="o">.</span><span class="n">add_page</span><span class="p">()</span>
+        <span class="n">pdf</span><span class="o">.</span><span class="n">section_heading</span><span class="p">(</span><span class="s2">"Glidertest Plots: Global Range"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"TEMP"</span><span class="p">,</span> <span class="s2">"CNDC"</span><span class="p">,</span> <span class="s2">"DOXY"</span><span class="p">,]:</span>    <span class="c1">#   TODO: Pull these out into yaml</span>
+            <span class="k">if</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+                <span class="c1">#   Just using the "bad" bounds, extracted from config stashed in QC variable</span>
+                <span class="n">params</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="o">+</span><span class="s2">"_QC"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"range_qc_params"</span><span class="p">])[</span><span class="s1">'variable_ranges'</span><span class="p">][</span><span class="n">var</span><span class="p">][</span><span class="s1">'4'</span><span class="p">]</span>
+                <span class="n">min_val</span><span class="p">,</span> <span class="n">max_val</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span>
+                <span class="n">fig</span><span class="p">,</span> <span class="n">__</span> <span class="o">=</span> <span class="n">gtplots</span><span class="o">.</span><span class="n">plot_global_range</span><span class="p">(</span><span class="n">ds</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">var</span><span class="o">=</span><span class="n">var</span><span class="p">,</span> <span class="n">min_val</span><span class="o">=</span><span class="n">min_val</span><span class="p">,</span> <span class="n">max_val</span><span class="o">=</span><span class="n">max_val</span><span class="p">)</span>
+                <span class="n">fig_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">outdir</span><span class="si">}</span><span class="s2">global_range_</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">.png"</span>
+                <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fig_name</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+
+                <span class="n">pdf</span><span class="o">.</span><span class="n">image_fit</span><span class="p">(</span>
+                    <span class="n">fig_name</span><span class="p">,</span>
+                    <span class="n">aspect</span><span class="o">=</span><span class="n">_image_aspect</span><span class="p">(</span><span class="n">fig_name</span><span class="p">),</span>
+                    <span class="n">max_h</span><span class="o">=</span><span class="mi">100</span>
+                <span class="p">)</span>
+                <span class="n">pdf</span><span class="o">.</span><span class="n">body</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2"> ranges: </span><span class="si">{</span><span class="n">min_val</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">max_val</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'units'</span><span class="p">]</span><span class="si">}</span><span class="s2">)."</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="n">log_warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Glidertest failed on Global Range plotting: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="c1">#   Max depth for individual profiles</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">__</span> <span class="o">=</span> <span class="n">gtplots</span><span class="o">.</span><span class="n">plot_max_depth_per_profile</span><span class="p">(</span>
+            <span class="n">ds</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">bins</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>    <span class="c1">#   For shallow profiles - could use bins = max(data["DEPTH"])</span>
+        <span class="p">)</span>
+        <span class="n">fig_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">outdir</span><span class="si">}</span><span class="s2">profile_depths.png"</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">fig_name</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
+
+        <span class="n">pdf</span><span class="o">.</span><span class="n">add_page</span><span class="p">()</span>
+        <span class="n">pdf</span><span class="o">.</span><span class="n">section_heading</span><span class="p">(</span><span class="s2">"Glidertest Plots: Profile Depths"</span><span class="p">)</span>
+        
+        <span class="n">pdf</span><span class="o">.</span><span class="n">image_fit</span><span class="p">(</span>
+            <span class="n">fig_name</span><span class="p">,</span>
+            <span class="n">aspect</span><span class="o">=</span><span class="n">_image_aspect</span><span class="p">(</span><span class="n">fig_name</span><span class="p">),</span>
+            <span class="n">max_h</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="n">log_warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Glidertest failed on Profile Depth plotting: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="n">log</span><span class="p">(</span><span class="s2">"Glidertest section written out."</span><span class="p">)</span></div>
+
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">cross_section_figure</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">outdir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ext</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">".png"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -2145,6 +2670,13 @@
             <span class="s2">"default"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
             <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Path to a logo image for the title page. Defaults to the NOC logo."</span><span class="p">,</span>
         <span class="p">},</span>
+        <span class="s2">"show_glidertest"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="p">(</span>
+                <span class="s2">"Generate additional figures as done in glidertest's summary sheet."</span>
+            <span class="p">)</span>
+        <span class="p">}</span>
     <span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
@@ -2271,6 +2803,10 @@
                 <span class="n">make_plots</span><span class="p">(</span><span class="n">pdf</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">outdir</span><span class="o">=</span><span class="n">fig_dir</span><span class="p">,</span> <span class="n">bar</span><span class="o">=</span><span class="n">report_bar</span><span class="p">)</span>
             <span class="n">report_bar</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"show_glidertest"</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">"Generating figures from glidertest."</span><span class="p">)</span>
+                <span class="n">glidertest_section</span><span class="p">(</span><span class="n">pdf</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">fig_dir</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">,</span> <span class="n">log_warn</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">)</span>
+                
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"show_logs"</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span>
                 <span class="n">log_path</span> <span class="o">=</span> <span class="n">odir</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"global_parameters"</span><span class="p">][</span><span class="s2">"log_file"</span><span class="p">]</span>
                 <span class="n">add_log</span><span class="p">(</span><span class="n">log_path</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>

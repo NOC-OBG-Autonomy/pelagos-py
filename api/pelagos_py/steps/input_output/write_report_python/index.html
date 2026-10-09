@@ -482,6 +482,46 @@
                   
   <section id="module-pelagos_py.steps.input_output.write_report_python">
 <span id="pelagos-py-steps-input-output-write-report-python"></span><h1>pelagos_py.steps.input_output.write_report_python<a class="headerlink" href="#module-pelagos_py.steps.input_output.write_report_python" title="Link to this heading">#</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="pelagos_py.steps.input_output.write_report_python.qc_status">
+<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.input_output.write_report_python.</span></span><span class="sig-name descname"><span class="pre">qc_status</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flag_counts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/write_report_python.html#qc_status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.write_report_python.qc_status" title="Link to this definition">#</a></dt>
+<dd><p>Return the stoplight status and whether flag 8 occurred.</p>
+<p>Any variable can include a flag 8 - it’s handy to denote this differently than by color.</p>
+<p>Argo flags 0, 8, and 9 can’t be considered as “good” or “bad” and therefore should be excluded from the % good spectrum.</p>
+<p>This spectrum is (arbitrarily) assigned as follows:
+* Grey - no evaluated points remain after excluding flags 0, 8, and 9.
+* Green - all evaluated points are good or probably good (flags 1, 2).
+* Yellow - up to <cite>yellow_pts</cite> evaluated points are bad or have another non-good flag, with fewer than <cite>orange_per</cite> bad.
+* Orange - more than <cite>yellow_pts</cite> evaluated points are bad or have another non-good flag, with fewer than <cite>orange_per</cite> bad.
+* Red - at least <cite>orange_per</cite> of evaluated points are bad, but not all are bad.
+* Black - all evaluated points are bad (flags 3, 4).</p>
+<p>In the future, these flag tolerances could be an optional kwarg that the user could specify in their configuration yaml.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pelagos_py.steps.input_output.write_report_python.build_qc_stoplight_summary">
+<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.input_output.write_report_python.</span></span><span class="sig-name descname"><span class="pre">build_qc_stoplight_summary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">qc_dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_points</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/write_report_python.html#build_qc_stoplight_summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.write_report_python.build_qc_stoplight_summary" title="Link to this definition">#</a></dt>
+<dd><p>Build a flaxible matrix of QC methods and variables</p>
+<p>For each method picked out of the qc_dict, add that to the columns in <cite>tests</cite>.
+For each variable, add that to the rows. Then assess the contents of QC dict for each
+column in the row with qc_status to assign the stoplight for the cell.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pelagos_py.steps.input_output.write_report_python.qc_section">
+<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.input_output.write_report_python.</span></span><span class="sig-name descname"><span class="pre">qc_section</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pdf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ReportPDF</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/write_report_python.html#qc_section"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.write_report_python.qc_section" title="Link to this definition">#</a></dt>
+<dd><p>Write the Quality Control tables.</p>
+<p>This consists of two tables:
+* A stoplight summary table, highlighting which tests were ran on which QC variables and how many were successful.
+* A row-by-row variable summary, listing the number of each flag that were determined from the individual tests.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pelagos_py.steps.input_output.write_report_python.glidertest_section">
+<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.input_output.write_report_python.</span></span><span class="sig-name descname"><span class="pre">glidertest_section</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pdf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ReportPDF</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">log</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">print</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_warn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">print</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/write_report_python.html#glidertest_section"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.write_report_python.glidertest_section" title="Link to this definition">#</a></dt>
+<dd><p>Runs plotting routines from <cite>glidertest</cite> and inserts them into the document.</p>
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="pelagos_py.steps.input_output.write_report_python.WriteDataReportPython">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.input_output.write_report_python.</span></span><span class="sig-name descname"><span class="pre">WriteDataReportPython</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/write_report_python.html#WriteDataReportPython"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.write_report_python.WriteDataReportPython" title="Link to this definition">#</a></dt>
@@ -574,6 +614,10 @@ the generated figures beside it, and omits the logfile section:</p>
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.write_report_python.qc_status"><code class="docutils literal notranslate"><span class="pre">qc_status()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.write_report_python.build_qc_stoplight_summary"><code class="docutils literal notranslate"><span class="pre">build_qc_stoplight_summary()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.write_report_python.qc_section"><code class="docutils literal notranslate"><span class="pre">qc_section()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.write_report_python.glidertest_section"><code class="docutils literal notranslate"><span class="pre">glidertest_section()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.write_report_python.WriteDataReportPython"><code class="docutils literal notranslate"><span class="pre">WriteDataReportPython</span></code></a></li>
 </ul>
   </nav></div>
