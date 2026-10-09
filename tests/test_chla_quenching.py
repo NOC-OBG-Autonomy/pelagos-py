@@ -6,7 +6,7 @@ import numpy as np
 import xarray as xr
 import pytest
 
-Quenching = chla_quenching.chla_quenching_correction
+Quenching = chla_quenching.ChlaQuenchingCorrection
 
 
 def make_profile(

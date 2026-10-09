@@ -36,8 +36,9 @@ class spike_qc(BaseQC):
     Target Variable: Any
     Flag Number: 4 (bad)
     Variables Flagged: Any
-    Checks for spiking in the data using rolling median values compared against the
-    median average deviation (MAD).
+    Checks for spikes by comparing each value to a rolling median: values whose
+    residual exceeds the standard deviation of the residuals times the variable's
+    sensitivity are flagged.
 
     EXAMPLE
     -------
@@ -45,14 +46,12 @@ class spike_qc(BaseQC):
 
         - name: "Apply QC"
           parameters:
-            qc_settings: {
-                "spike test": {
-                  "variables": {"PRES": 2, "LATITUDE": 1},
-                  "also_flag": {"PRES": ["CNDC", "TEMP"], "LATITUDE": ["LONGITUDE"]},
-                  "plot": ["PRES", "LATITUDE"]
-                  "window_size": 10,
-                }
-            }
+            qc_settings:
+              spike qc:
+                variables: {PRES: 2, LATITUDE: 1}
+                also_flag: {PRES: [CNDC, TEMP], LATITUDE: [LONGITUDE]}
+                plot: [PRES, LATITUDE]
+                window_size: 10
           diagnostics: true
     """
 

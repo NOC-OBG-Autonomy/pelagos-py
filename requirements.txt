@@ -5,15 +5,11 @@ xarray
 netcdf4
 h5py
 h5netcdf
-zarr
-numcodecs
 gsw
 geopy
 scikit-learn
 matplotlib==3.11.0
-seaborn
 requests
-graphviz
 shapely
 pvlib
 tqdm

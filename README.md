@@ -38,7 +38,7 @@ pip install pelagos-py
 Alternatively, you can install directly from the source using git:
 
 ```bash
-git clone [https://github.com/NOC-OBG-Autonomy/pelagos-py.git](https://github.com/NOC-OBG-Autonomy/pelagos-py.git)
+git clone https://github.com/NOC-OBG-Autonomy/pelagos-py.git
 cd pelagos-py
 # create/activate a virtual environment
 pip install -e . 
@@ -153,7 +153,7 @@ An example YAML configuration for a simple pipeline. See examples/notebooks/pipe
 
 ## Extending the Pipeline
 
-A full breakdown can be found here: [Developer Guide](https://noc-obg-autonomy.github.io/pelagos-py/developer_guide.html).
+A full breakdown can be found here: [Developer Guide](https://noc-obg-autonomy.github.io/pelagos-py/development.html).
 
 # License
 

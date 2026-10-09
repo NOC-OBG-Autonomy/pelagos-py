@@ -435,7 +435,7 @@ steps:
 # Note that the variables added to the dataset by these steps will appear as <input>_ADJUSTED unless
 # <input> already has the _ADJUSTED suffix, in which case, the input will be modified inplace.
 
-# Deep Correction (src/pelagos_py/steps/processing/deep_correction.py -> deep_correction):
+# Deep Correction (src/pelagos_py/steps/processing/deep_correction.py -> DeepCorrection):
 # Subtracts a constant dark offset so that deep, signal-free values are zeroed.
   - name: "Deep Correction"
     parameters:
@@ -467,7 +467,7 @@ steps:
     #   Plot the deep profiles used and the deep values before/after correction.
     diagnostics: false
 
-# CHLA Quenching (src/pelagos_py/steps/processing/chla_quenching.py -> chla_quenching_correction):
+# CHLA Quenching (src/pelagos_py/steps/processing/chla_quenching.py -> ChlaQuenchingCorrection):
 # Offers a selection of Non-photochemical quenching correction techniques for removing Chla signal
 # supression caused by phytoplankton quenching.
   - name: "CHLA Quenching"

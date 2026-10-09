@@ -97,7 +97,7 @@ def check_chl_variables(self, allowed_requests):
 
 
 @register_step
-class chla_quenching_correction(BaseStep, QCHandlingMixin):
+class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
     """Correct non-photochemical quenching of chlorophyll fluorescence.
 
     Samples whose flags fall in ``calculation_flag_filter`` (by default probably-bad

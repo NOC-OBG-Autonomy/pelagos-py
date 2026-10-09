@@ -42,7 +42,7 @@ MAX_DIAGNOSTIC_POINTS = 10_000
 
 
 @register_step
-class deep_correction(BaseStep, QCHandlingMixin):
+class DeepCorrection(BaseStep, QCHandlingMixin):
     """
     Subtract a deep dark offset from a profile variable.
 

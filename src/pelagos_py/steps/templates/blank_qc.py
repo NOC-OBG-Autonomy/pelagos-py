@@ -17,7 +17,7 @@
 """Example QC test template, using parts of impossible_date_test as a skeleton."""
 
 #### Mandatory imports ####
-from pelagos_py.steps.base_qc import BaseQC
+from pelagos_py.steps.base_qc import BaseQC, register_qc
 
 #### Custom imports ####
 # any additional imports required for the test go here

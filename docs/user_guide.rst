@@ -306,7 +306,7 @@ A template for a static check is provided in
       @register_qc
       class MyNewCheck(BaseQC):
           qc_name = "my new check"  # How you refer to the check in config (see below)
-          expected_parameters = {'A_cutoff': 1}  # Parameters the user may supply; the value is the default
+          parameter_schema = {'A_cutoff': {'type': float, 'default': 1}}  # Parameters the user may supply, with type and default
           required_variables = ['A']  # Variables required for execution; cross-referenced against the data vars in context
           provided_variables = []  # Variables this check itself provides, if any
           qc_outputs = ['A_QC']  # QC outputs; references that help "Apply QC" update existing QC in the data
@@ -322,7 +322,7 @@ A template for a static check is provided in
       @register_qc
       class MyNewCheck(BaseQC):
           qc_name = "my new check"
-          expected_parameters = {'A_cutoff': 1}
+          parameter_schema = {'A_cutoff': {'type': float, 'default': 1}}
           required_variables = ['A']
           provided_variables = []
           qc_outputs = ['A_QC']

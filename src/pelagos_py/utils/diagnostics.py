@@ -26,87 +26,6 @@ from pelagos_py.utils.time import safe_median_datetime, add_datetime_secondary_x
 from typing import Dict, Optional
 
 
-def plot_time_series(
-    data, x_var, y_var, title="Time Series Plot", xlabel=None, ylabel=None, **kwargs
-):
-    """Generates a time series plot for xarray data."""
-    if isinstance(data, xr.Dataset):
-        # Ensure that the variables exist in the xarray dataset
-        if x_var not in data.coords or y_var not in data:
-            raise ValueError(
-                f"Variables {x_var} and {y_var} must exist in the dataset."
-            )
-        x_data = data[x_var].values  # Extract x_data (usually time dimension)
-        y_data = data[y_var].values  # Extract the y_data (variable to plot)
-    else:
-        # Assuming custom format such as lists or arrays
-        x_data, y_data = data[0], data[1]
-
-    plt.figure(figsize=(10, 6))
-    plt.plot(x_data, y_data, **kwargs)
-    plt.xlabel(xlabel or x_var)
-    plt.ylabel(ylabel or y_var)
-    plt.title(title)
-    plt.show()
-
-
-def plot_histogram(data, var, bins=30, title="Histogram", xlabel=None, **kwargs):
-    """Generates a histogram for a given variable in xarray data."""
-    if isinstance(data, xr.Dataset):
-        # Ensure that the variable exists in the xarray dataset
-        if var not in data:
-            raise ValueError(f"Variable {var} must exist in the dataset.")
-        data_to_plot = data[var].values
-    else:
-        # Handle custom data types like lists or arrays
-        data_to_plot = data
-
-    plt.figure(figsize=(10, 6))
-    plt.hist(data_to_plot, bins=bins, alpha=0.7, **kwargs)
-    plt.xlabel(xlabel or var)
-    plt.ylabel("Frequency")
-    plt.title(title)
-    plt.show()
-
-
-def plot_boxplot(data, var, title="Box Plot", xlabel=None, **kwargs):
-    """Generates a box plot for a given variable in xarray data."""
-    if isinstance(data, xr.Dataset):
-        # Ensure that the variable exists in the xarray dataset
-        if var not in data:
-            raise ValueError(f"Variable {var} must exist in the dataset.")
-        data_to_plot = data[var].values
-    else:
-        # Handle custom data types like lists or arrays
-        data_to_plot = data
-
-    import seaborn as sns
-
-    plt.figure(figsize=(10, 6))
-    sns.boxplot(data=data_to_plot, **kwargs)
-    plt.title(title)
-    plt.xlabel(xlabel or var)
-    plt.show()
-
-
-def plot_correlation_matrix(data, variables=None, title="Correlation Matrix", **kwargs):
-    """Generates a heatmap of the correlation matrix for xarray data."""
-    if isinstance(data, xr.Dataset):
-        if variables is None:
-            variables = list(data.data_vars)  # Use all variables by default
-        # Extract the variables to calculate the correlation matrix
-        corr = data[variables].to_array().T.corr(dim="dim_0")
-    else:
-        raise TypeError("Data must be a Xarray Dataset to generate correlation matrix.")
-
-    import seaborn as sns
-
-    plt.figure(figsize=(10, 6))
-    sns.heatmap(corr, annot=True, cmap="coolwarm", fmt=".2f", linewidths=0.5, **kwargs)
-    plt.title(title)
-    plt.show()
-
-
 def generate_info(data):
     """Print one line per variable: name, dtype, units, and whether a QC companion exists."""
     if not isinstance(data, xr.Dataset):
@@ -121,15 +40,6 @@ def generate_info(data):
         units = str(data[v].attrs.get("units", ""))
         qc = "QC" if f"{v}_QC" in data.variables else ""
         print(f"  {str(v):<{width}} {str(data[v].dtype):<14} {units:<12} {qc}".rstrip())
-
-
-def check_missing_values(data):
-    """Check for missing values in the dataset."""
-    if isinstance(data, xr.Dataset):
-        missing = data.isnull().sum()
-        print("Missing Values in Xarray Dataset:\n", missing)
-    else:
-        print("Missing value check only supported for xarray Dataset ")
 
 
 #### General Diagnostics Functions ####

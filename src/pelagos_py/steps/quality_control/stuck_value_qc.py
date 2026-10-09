@@ -42,13 +42,11 @@ class stuck_value_qc(BaseQC):
 
         - name: "Apply QC"
           parameters:
-            qc_settings: {
-                "stuck value test": {
-                  "variables": {"PRES": 4, "LATITUDE": 100},
-                  "also_flag": {"PRES": ["CNDC", "TEMP"], "LATITUDE": ["LONGITUDE"]},
-                  "plot": ["PRES", "LATITUDE"]
-                }
-            }
+            qc_settings:
+              stuck value qc:
+                variables: {PRES: 4, LATITUDE: 100}
+                also_flag: {PRES: [CNDC, TEMP], LATITUDE: [LONGITUDE]}
+                plot: [PRES, LATITUDE]
           diagnostics: true
     """
 

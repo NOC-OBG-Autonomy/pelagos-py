@@ -7,7 +7,7 @@ import numpy as np
 import xarray as xr
 import pytest
 
-DeepCorrection = deep_correction.deep_correction
+DeepCorrection = deep_correction.DeepCorrection
 MIN_DEEP_THRESHOLD = deep_correction.MIN_DEEP_THRESHOLD
 
 

@@ -34,9 +34,6 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
     step_name = "BBP from Beta"
     required_variables = ["TIME", "DEPTH", "TEMP", "PRAC_SALINITY"]
     provided_variables = []
-    # PROFILE_NUMBER is read in run() (data_subset) but not declared required above
-    # (pre-existing; left as-is to avoid changing pipeline-validation behaviour).
-    optional_variables = ["PROFILE_NUMBER"]
     variable_parameters = ["apply_to", "output_as"]
     # apply_to is resolved at run time with fallbacks (see _resolve_beta_var)
     variable_parameters_optional = ("apply_to",)
@@ -93,7 +90,7 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
 
         # Get the required variables
         self.data_subset = self.data[
-            ["TIME", "PROFILE_NUMBER", "DEPTH", "TEMP", "PRAC_SALINITY", self.beta_var]
+            ["TIME", "DEPTH", "TEMP", "PRAC_SALINITY", self.beta_var]
         ]
 
         # Gaps in TEMP/PRAC_SALINITY are left as NaN: BBP is not derived there and is

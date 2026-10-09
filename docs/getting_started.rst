@@ -95,7 +95,8 @@ Running the pipeline executes each step defined by the config in order:
 
 .. code-block:: python
 
-   results = pipeline.run()
+   pipeline.run()
+   data = pipeline.get_data()
 
 **Diagnostics & Visualisation**
 

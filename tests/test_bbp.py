@@ -67,6 +67,15 @@ def test_gaps_in_inputs_are_left_alone_and_bbp_is_not_derived_there():
     assert np.isfinite(out["BBP700_OUT"].values[[0, 1, 3, 4, 5, 6, 7]]).all()
 
 
+def test_runs_without_profile_number():
+    ctx = make_beta_context()
+    ctx["data"] = ctx["data"].drop_vars("PROFILE_NUMBER")
+
+    out = make_beta_step(ctx).run()["data"]
+
+    assert np.isfinite(out["BBP700_OUT"].values).all()
+
+
 def test_depth_is_never_modified():
     depth = [1, 2, np.nan, 4, 5, 6, 7, 8]
     ctx = make_beta_context(depth=depth)
