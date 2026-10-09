@@ -39,6 +39,7 @@ from matplotlib.collections import PathCollection
 from matplotlib.lines import Line2D
 from pelagos_py.utils import fig_spec
 
+
 def _decimate(fig):
     # thins dense lines/scatters in place; returns the original data to restore
     cap = fig_spec.CAPTURE_MAX_POINTS
@@ -121,8 +122,13 @@ _next_worker = 0
 def _worker(i):
     if i == len(_workers):
         proc = subprocess.Popen(
-            [sys.executable, os.path.join(os.path.dirname(__file__), "fig_save_worker.py")],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True,
+            [
+                sys.executable,
+                os.path.join(os.path.dirname(__file__), "fig_save_worker.py"),
+            ],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            text=True,
         )
         _workers.append([proc, []])
     return _workers[i]
@@ -252,7 +258,9 @@ def capture_figures(
     max_points = fig_spec.MAX_POINTS
 
     if interactive:
-        fig_spec.MAX_POINTS = None  # the user sees every point; only the saved copy is thinned
+        fig_spec.MAX_POINTS = (
+            None  # the user sees every point; only the saved copy is thinned
+        )
         #   Switch this step to the interactive Tk backend so its figure can be
         #   displayed. ``matplotlib.use`` is neutralised for the run, so switch
         #   via pyplot directly.

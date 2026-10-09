@@ -55,47 +55,98 @@ def _deployment(folder, label, nrt=None, delayed=None, window=None):
     if nrt:
         entries.append(DemoEntry(f"{_OG1_NRT}/{folder}/{nrt}", nrt, None, label, "nrt"))
     if delayed:
-        entries.append(DemoEntry(f"{_OG1_DELAYED}/{folder}/{delayed}", delayed, window, label, "delayed"))
+        entries.append(
+            DemoEntry(
+                f"{_OG1_DELAYED}/{folder}/{delayed}", delayed, window, label, "delayed"
+            )
+        )
     return entries
 
 
 # Picker groups, in order.
 _MISSION_ENTRIES = {
     "Bio-Carbon": [
-        *_deployment("Nelson_20240528", "Nelson", nrt="Nelson_646_R.nc", delayed="Nelson_646.nc"),
-        *_deployment("Doombar_20240528", "Doombar", nrt="Doombar_648_R.nc", delayed="Doombar_648.nc"),
-        *_deployment("Churchill_20240528", "Churchill", nrt="Churchill_647_R.nc",
-                     delayed="Churchill_647.nc", window=("2024-08-01", "2024-09-01")),
-        *_deployment("ALR_4_20240609", "ALR 4", nrt="ALR_4_649_R.nc", delayed="ALR_4_649.nc"),
-        *_deployment("ALR_6_20240611", "ALR 6", nrt="ALR_6_650_R.nc", delayed="ALR_6_650.nc"),
-        *_deployment("Cabot_20240528", "Cabot", nrt="Cabot_645_R.nc", delayed="Cabot_645.nc"),
+        *_deployment(
+            "Nelson_20240528", "Nelson", nrt="Nelson_646_R.nc", delayed="Nelson_646.nc"
+        ),
+        *_deployment(
+            "Doombar_20240528",
+            "Doombar",
+            nrt="Doombar_648_R.nc",
+            delayed="Doombar_648.nc",
+        ),
+        *_deployment(
+            "Churchill_20240528",
+            "Churchill",
+            nrt="Churchill_647_R.nc",
+            delayed="Churchill_647.nc",
+            window=("2024-08-01", "2024-09-01"),
+        ),
+        *_deployment(
+            "ALR_4_20240609", "ALR 4", nrt="ALR_4_649_R.nc", delayed="ALR_4_649.nc"
+        ),
+        *_deployment(
+            "ALR_6_20240611", "ALR 6", nrt="ALR_6_650_R.nc", delayed="ALR_6_650.nc"
+        ),
+        *_deployment(
+            "Cabot_20240528", "Cabot", nrt="Cabot_645_R.nc", delayed="Cabot_645.nc"
+        ),
     ],
     "Custard 1": [
-        *_deployment("Churchill_20181204", "Churchill", nrt="Churchill_501_R.nc", delayed="Churchill_501.nc"),
+        *_deployment(
+            "Churchill_20181204",
+            "Churchill",
+            nrt="Churchill_501_R.nc",
+            delayed="Churchill_501.nc",
+        ),
         *_deployment("Pancake_20181209", "Pancake", nrt="Pancake_502_R.nc"),
         # Only hosted on the raw glider-data store, not the OG1 one.
-        DemoEntry(f"{_GLIDER_DATA}/Doombar_20181204/Doombar_503_R.nc", "Doombar_503_R.nc",
-                  None, "Doombar", "nrt"),
+        DemoEntry(
+            f"{_GLIDER_DATA}/Doombar_20181204/Doombar_503_R.nc",
+            "Doombar_503_R.nc",
+            None,
+            "Doombar",
+            "nrt",
+        ),
     ],
     "Custard 2": [
-        *_deployment("Bellamite_20191206", "Bellamite", nrt="Bellamite_538_R.nc", delayed="Bellamite_538.nc"),
+        *_deployment(
+            "Bellamite_20191206",
+            "Bellamite",
+            nrt="Bellamite_538_R.nc",
+            delayed="Bellamite_538.nc",
+        ),
         *_deployment("Zephyr_20191206", "Zephyr", delayed="Zephyr_539.nc"),
     ],
     "ReBELS": [
-        *_deployment("Zephyr_20250323", "Zephyr", nrt="Zephyr_675_R.nc", delayed="Zephyr_675.nc"),
+        *_deployment(
+            "Zephyr_20250323", "Zephyr", nrt="Zephyr_675_R.nc", delayed="Zephyr_675.nc"
+        ),
         *_deployment("OMG-1_20250324", "OMG-1", nrt="OMG-1_676_R.nc"),
         *_deployment("9JA_20250812", "9JA", nrt="9JA_699_R.nc", delayed="9JA_699.nc"),
-        *_deployment("Growler_20250323", "Growler", nrt="Growler_677_R.nc", delayed="Growler_677.nc"),
-        *_deployment("Stella_20250323", "Stella", nrt="Stella_678_R.nc", delayed="Stella_678.nc"),
+        *_deployment(
+            "Growler_20250323",
+            "Growler",
+            nrt="Growler_677_R.nc",
+            delayed="Growler_677.nc",
+        ),
+        *_deployment(
+            "Stella_20250323", "Stella", nrt="Stella_678_R.nc", delayed="Stella_678.nc"
+        ),
     ],
     "ReBELS 2": [
         *_deployment("Stella_20260403", "Stella", nrt="Stella_713_R.nc"),
     ],
     "VOTO": [
         # Hosted on VOTO's own erddap, not BODC.
-        DemoEntry("https://erddap.observations.voiceoftheocean.org/erddap/files/"
-                  "OG_complete_SEA063_M75/SEA063_20240724T0737_delayed.nc",
-                  "SEA063_20240724T0737_delayed.nc", ("2024-07-25", "2024-08-03"), "SEA063", "delayed"),
+        DemoEntry(
+            "https://erddap.observations.voiceoftheocean.org/erddap/files/"
+            "OG_complete_SEA063_M75/SEA063_20240724T0737_delayed.nc",
+            "SEA063_20240724T0737_delayed.nc",
+            ("2024-07-25", "2024-08-03"),
+            "SEA063",
+            "delayed",
+        ),
     ],
 }
 
@@ -106,7 +157,9 @@ def _key(entry):
 
 
 DEMOS = {_key(e): e for entries in _MISSION_ENTRIES.values() for e in entries}
-MISSIONS = {mission: [_key(e) for e in entries] for mission, entries in _MISSION_ENTRIES.items()}
+MISSIONS = {
+    mission: [_key(e) for e in entries] for mission, entries in _MISSION_ENTRIES.items()
+}
 
 # Where the dashboard keeps configs and demo data; relative paths in its configs resolve from here.
 WORKSPACE_DIR = Path.home() / "Documents" / "pelagos-py"
@@ -151,9 +204,12 @@ def _download(url, dest, on_progress=None):
     tmp = dest.with_name(dest.name + ".part")
     done = 0
     try:
-        with open(tmp, "wb") as f, tqdm(
-            total=total, unit="B", unit_scale=True, desc=f"Downloading {dest.name}"
-        ) as bar:
+        with (
+            open(tmp, "wb") as f,
+            tqdm(
+                total=total, unit="B", unit_scale=True, desc=f"Downloading {dest.name}"
+            ) as bar,
+        ):
             for chunk in response.iter_content(chunk_size=1 << 20):
                 f.write(chunk)
                 bar.update(len(chunk))
@@ -174,7 +230,9 @@ def _cut_to_window(path, start, end):
         idx = np.flatnonzero((t >= np.datetime64(start)) & (t < np.datetime64(end)))
         if idx.size:
             tt = t[idx]
-            increasing = np.concatenate(([True], tt[1:] > np.maximum.accumulate(tt)[:-1]))
+            increasing = np.concatenate(
+                ([True], tt[1:] > np.maximum.accumulate(tt)[:-1])
+            )
             idx = idx[increasing]
         n_total = ds.sizes["N_MEASUREMENTS"]
         if idx.size == 0:
@@ -185,7 +243,9 @@ def _cut_to_window(path, start, end):
         # in memory: a fancy-index isel straight off the compressed file stalls for
         # millions of points.
         lo, hi = int(idx[0]), int(idx[-1]) + 1
-        subset = ds.isel(N_MEASUREMENTS=slice(lo, hi)).load().isel(N_MEASUREMENTS=idx - lo)
+        subset = (
+            ds.isel(N_MEASUREMENTS=slice(lo, hi)).load().isel(N_MEASUREMENTS=idx - lo)
+        )
     # Drop the source's chunk encoding (its chunksizes were sized for the full
     # dimension and stall the subset write); re-apply zlib to keep the file small.
     encoding = {}

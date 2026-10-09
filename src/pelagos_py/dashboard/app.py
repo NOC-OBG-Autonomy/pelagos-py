@@ -50,7 +50,13 @@ from pydantic import BaseModel
 from pelagos_py.steps import STEP_CLASSES, QC_CLASSES, resolve_step_name
 from pelagos_py.utils import parameter_spec
 from pelagos_py.utils.qc_handling import QC_COMBINATRIX
-from pelagos_py.utils.demo_data import DEMOS as DEMO_FILES, DEMO_DATA_DIR, MISSIONS, WORKSPACE_DIR, get_demo_file
+from pelagos_py.utils.demo_data import (
+    DEMOS as DEMO_FILES,
+    DEMO_DATA_DIR,
+    MISSIONS,
+    WORKSPACE_DIR,
+    get_demo_file,
+)
 from pelagos_py.utils.valid_config_check import check_pipeline_variables
 from pelagos_py.utils import config_builder, file_probe
 
@@ -78,20 +84,45 @@ CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 
 # The top ``pipeline:`` block has no step schema, so its keys are described here.
 PIPELINE_FIELDS = [
-    {"name": "name", "type": "str", "required": False, "default": "",
-     "description": "A short name for the pipeline."},
-    {"name": "description", "type": "str", "required": False, "default": "",
-     "description": "Longer description of the pipeline's purpose."},
-    {"name": "out_directory", "type": "str", "required": False, "default": "./",
-     "description": "Output directory for generated files (logs, reports, figures)."},
-    {"name": "log_file", "type": "str", "required": False, "default": None,
-     "description": "Log file name. Leave blank/null for console-only logging."},
-    {"name": "on_step_fail", "type": "str", "options": ["pause", "skip", "stop"],
-     "required": False, "default": "pause",
-     "description": "What happens when a step fails. 'pause' shows its failure plot "
-                     "so you can fix its parameters and re-run it, or skip it (outside "
-                     "the dashboard this behaves like 'skip'). 'skip' moves straight "
-                     "on to the next step. 'stop' ends the run."},
+    {
+        "name": "name",
+        "type": "str",
+        "required": False,
+        "default": "",
+        "description": "A short name for the pipeline.",
+    },
+    {
+        "name": "description",
+        "type": "str",
+        "required": False,
+        "default": "",
+        "description": "Longer description of the pipeline's purpose.",
+    },
+    {
+        "name": "out_directory",
+        "type": "str",
+        "required": False,
+        "default": "./",
+        "description": "Output directory for generated files (logs, reports, figures).",
+    },
+    {
+        "name": "log_file",
+        "type": "str",
+        "required": False,
+        "default": None,
+        "description": "Log file name. Leave blank/null for console-only logging.",
+    },
+    {
+        "name": "on_step_fail",
+        "type": "str",
+        "options": ["pause", "skip", "stop"],
+        "required": False,
+        "default": "pause",
+        "description": "What happens when a step fails. 'pause' shows its failure plot "
+        "so you can fix its parameters and re-run it, or skip it (outside "
+        "the dashboard this behaves like 'skip'). 'skip' moves straight "
+        "on to the next step. 'stop' ends the run.",
+    },
 ]
 
 
@@ -125,7 +156,8 @@ def _describe_step(name: str, cls) -> dict:
         "schema_declared": getattr(cls, "parameter_schema", None) is not None,
         "parameters": cls.describe_parameters(),
         "more_diagnostics": any(
-            level is False for _, level in (getattr(cls, "diagnostic_figures", None) or {}).values()
+            level is False
+            for _, level in (getattr(cls, "diagnostic_figures", None) or {}).values()
         ),
     }
 
@@ -153,7 +185,11 @@ app.add_middleware(TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1
 async def _no_cache(request, call_next):
     response = await call_next(request)
     path = request.url.path
-    if path.endswith((".js", ".css", ".html")) or path == "/" or path.startswith("/api/"):
+    if (
+        path.endswith((".js", ".css", ".html"))
+        or path == "/"
+        or path.startswith("/api/")
+    ):
         response.headers["Cache-Control"] = "no-store"
     return response
 
@@ -162,16 +198,17 @@ async def _no_cache(request, call_next):
 @app.get("/api/registry")
 def registry():
     """Everything the frontend needs to render the step palette and forms."""
+
     def _is_template(cls):
         return ".templates" in getattr(cls, "__module__", "")
 
     steps = [
-        _describe_step(n, c) for n, c in sorted(STEP_CLASSES.items())
+        _describe_step(n, c)
+        for n, c in sorted(STEP_CLASSES.items())
         if not _is_template(c)
     ]
     qc = [
-        _describe_qc(n, c) for n, c in sorted(QC_CLASSES.items())
-        if not _is_template(c)
+        _describe_qc(n, c) for n, c in sorted(QC_CLASSES.items()) if not _is_template(c)
     ]
     return {
         "steps": steps,
@@ -228,8 +265,11 @@ def validate(payload: ValidatePayload):
         return {"ok": False, "yaml_error": str(exc), "issues": []}
 
     if not isinstance(config, dict):
-        return {"ok": False, "yaml_error": "Top-level config must be a mapping.",
-                "issues": []}
+        return {
+            "ok": False,
+            "yaml_error": "Top-level config must be a mapping.",
+            "issues": [],
+        }
 
     issues = []
     steps = config.get("steps") or []
@@ -238,14 +278,16 @@ def validate(payload: ValidatePayload):
 
     for index, step in enumerate(steps):
         if not isinstance(step, dict) or "name" not in step:
-            issues.append({"index": index, "name": None,
-                           "error": "Each step needs a 'name'."})
+            issues.append(
+                {"index": index, "name": None, "error": "Each step needs a 'name'."}
+            )
             continue
         name = step["name"]
         canonical = resolve_step_name(name)
         if canonical is None:
-            issues.append({"index": index, "name": name,
-                           "error": f"Unknown step '{name}'."})
+            issues.append(
+                {"index": index, "name": name, "error": f"Unknown step '{name}'."}
+            )
             continue
         cls = STEP_CLASSES[canonical]
 
@@ -255,7 +297,9 @@ def validate(payload: ValidatePayload):
         params = step.get("parameters") or {}
         try:
             parameter_spec.resolve(
-                schema, params, label=name,
+                schema,
+                params,
+                label=name,
                 allowed_extra=getattr(cls, "framework_parameters", ()),
             )
         except ValueError as exc:
@@ -273,7 +317,9 @@ def validate(payload: ValidatePayload):
             # name-matching is wrong when a QC test appears in several Apply QC steps
             index = getattr(exc, "step_index", None)
             if index is not None:
-                name = steps[index].get("name") if isinstance(steps[index], dict) else None
+                name = (
+                    steps[index].get("name") if isinstance(steps[index], dict) else None
+                )
             else:
                 index, name = _locate_variable_issue(steps, str(exc))
             issues.append({"index": index, "name": name, "error": str(exc)})
@@ -306,7 +352,7 @@ def _safe_config_path(name: str) -> Path:
 
 
 def _demo_key(config_name: str) -> str:
-    return config_name[len("demo_"):-len(".yaml")]
+    return config_name[len("demo_") : -len(".yaml")]
 
 
 def _demo_dest(config_name: str) -> Path | None:
@@ -319,7 +365,8 @@ def _demo_dest(config_name: str) -> Path | None:
 @app.get("/api/configs")
 def list_configs():
     files = sorted(
-        p.name for p in CONFIG_DIR.iterdir()
+        p.name
+        for p in CONFIG_DIR.iterdir()
         if p.is_file() and p.suffix in (".yaml", ".yml")
     )
     demo = sorted(DEMO_CONFIGS)
@@ -332,13 +379,22 @@ def list_configs():
             for mission, keys in MISSIONS.items()
         },
         # glider names repeat across missions and NRT/full, hence labels
-        "labels": {f"demo_{key}.yaml": entry.display_label for key, entry in DEMO_FILES.items()},
-        "gliders": {f"demo_{key}.yaml": entry.label for key, entry in DEMO_FILES.items()},
+        "labels": {
+            f"demo_{key}.yaml": entry.display_label for key, entry in DEMO_FILES.items()
+        },
+        "gliders": {
+            f"demo_{key}.yaml": entry.label for key, entry in DEMO_FILES.items()
+        },
         "modes": {f"demo_{key}.yaml": entry.mode for key, entry in DEMO_FILES.items()},
-        "reference": sorted((PROTECTED_CONFIGS - DEMO_CONFIGS) & (set(files) | {DEFAULT_CONFIG_NAME})),
+        "reference": sorted(
+            (PROTECTED_CONFIGS - DEMO_CONFIGS) & (set(files) | {DEFAULT_CONFIG_NAME})
+        ),
         "downloaded": sorted(name for name in demo if _demo_dest(name).exists()),
-        "sizes": {name: _demo_dest(name).stat().st_size
-                  for name in demo if _demo_dest(name).exists()},
+        "sizes": {
+            name: _demo_dest(name).stat().st_size
+            for name in demo
+            if _demo_dest(name).exists()
+        },
     }
 
 
@@ -395,7 +451,9 @@ def download_demo(name: str):
     try:
         _ensure_demo_file(name)
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Could not download demo data: {exc}") from exc
+        raise HTTPException(
+            status_code=502, detail=f"Could not download demo data: {exc}"
+        ) from exc
     return {"status": "downloaded", "name": name}
 
 
@@ -408,8 +466,14 @@ def clean_demos():
 
 # ================================= Outputs =================================
 _OUTPUT_KINDS = {
-    ".pdf": "report", ".log": "log", ".nc": "data", ".csv": "data",
-    ".parquet": "data", ".h5": "data", ".hdf5": "data", ".rst": "report",
+    ".pdf": "report",
+    ".log": "log",
+    ".nc": "data",
+    ".csv": "data",
+    ".parquet": "data",
+    ".h5": "data",
+    ".hdf5": "data",
+    ".rst": "report",
 }
 _listed_outputs: set[Path] = set()  # only listed files may be served or deleted
 
@@ -456,10 +520,16 @@ def _list_outputs(payload: OutputsPayload) -> dict:
                     continue
                 size = entry.stat().st_size
             _listed_outputs.add(entry)
-            files.append({
-                "path": str(entry), "name": entry.name, "dir": str(d),
-                "kind": kind, "size": size, "mtime": entry.stat().st_mtime,
-            })
+            files.append(
+                {
+                    "path": str(entry),
+                    "name": entry.name,
+                    "dir": str(d),
+                    "kind": kind,
+                    "size": size,
+                    "mtime": entry.stat().st_mtime,
+                }
+            )
     files.sort(key=lambda f: -f["mtime"])
     return {"dirs": [str(d) for d in dirs], "files": files}
 
@@ -483,8 +553,11 @@ def output_file(path: str):
         raise HTTPException(status_code=400, detail="Not a file.")
     inline = p.suffix.lower() in (".pdf", ".log", ".rst")
     return FileResponse(
-        p, media_type="application/pdf" if p.suffix.lower() == ".pdf" else None,
-        headers={"Content-Disposition": f'{"inline" if inline else "attachment"}; filename="{p.name}"'},
+        p,
+        media_type="application/pdf" if p.suffix.lower() == ".pdf" else None,
+        headers={
+            "Content-Disposition": f'{"inline" if inline else "attachment"}; filename="{p.name}"'
+        },
     )
 
 
@@ -558,32 +631,42 @@ def pick_files(payload: BrowsePayload):
     start_dir = start.parent if start and start.parent.is_dir() else Path.cwd()
     if sys.platform == "darwin":
         script = (
-            'on run argv\n'
+            "on run argv\n"
             'set fs to choose file of type {"public.folder", "public.data"} with prompt '
             '"Choose OG1 NetCDF files or a folder" with multiple selections allowed default location POSIX file (item 1 of argv)\n'
-            'if class of fs is not list then set fs to {fs}\n'
+            "if class of fs is not list then set fs to {fs}\n"
             'set out to ""\nrepeat with f in fs\nset out to out & POSIX path of f & linefeed\nend repeat\nreturn out\n'
-            'end run'
+            "end run"
         )
-        proc = subprocess.run(["osascript", "-e", script, str(start_dir)], capture_output=True, text=True)
+        proc = subprocess.run(
+            ["osascript", "-e", script, str(start_dir)], capture_output=True, text=True
+        )
         chosen = proc.stdout.splitlines() if proc.returncode == 0 else []
     else:
         try:
             import tkinter
             from tkinter import filedialog
         except ImportError as exc:
-            raise HTTPException(status_code=500, detail=f"No file dialog available: {exc}")
+            raise HTTPException(
+                status_code=500, detail=f"No file dialog available: {exc}"
+            )
         root = tkinter.Tk()
         root.withdraw()
         root.attributes("-topmost", True)
-        chosen = list(filedialog.askopenfilenames(initialdir=str(start_dir), filetypes=[("NetCDF", "*.nc")]))
+        chosen = list(
+            filedialog.askopenfilenames(
+                initialdir=str(start_dir), filetypes=[("NetCDF", "*.nc")]
+            )
+        )
         root.destroy()
     paths = []
     for c in chosen:
         if not c:
             continue
         p = Path(c)
-        paths.extend(sorted(str(f) for f in p.rglob("*.nc")) if p.is_dir() else [str(p)])
+        paths.extend(
+            sorted(str(f) for f in p.rglob("*.nc")) if p.is_dir() else [str(p)]
+        )
     return {"paths": [p for p in paths if p.endswith(".nc")]}
 
 
@@ -594,12 +677,14 @@ def browse_file(payload: BrowsePayload):
     start_dir = start.parent if start and start.parent.is_dir() else Path.cwd()
     if sys.platform == "darwin":
         script = (
-            'on run argv\n'
+            "on run argv\n"
             'POSIX path of (choose file with prompt "Choose an input NetCDF file" '
-            'default location POSIX file (item 1 of argv))\n'
-            'end run'
+            "default location POSIX file (item 1 of argv))\n"
+            "end run"
         )
-        proc = subprocess.run(["osascript", "-e", script, str(start_dir)], capture_output=True, text=True)
+        proc = subprocess.run(
+            ["osascript", "-e", script, str(start_dir)], capture_output=True, text=True
+        )
         if proc.returncode != 0:
             return {"path": None}
         return {"path": proc.stdout.strip()}
@@ -611,7 +696,9 @@ def browse_file(payload: BrowsePayload):
     root = tkinter.Tk()
     root.withdraw()
     root.attributes("-topmost", True)
-    chosen = filedialog.askopenfilename(initialdir=str(start_dir), title="Choose an input NetCDF file")
+    chosen = filedialog.askopenfilename(
+        initialdir=str(start_dir), title="Choose an input NetCDF file"
+    )
     root.destroy()
     return {"path": chosen or None}
 
@@ -671,9 +758,15 @@ def build_config(payload: BuildPayload):
     file_path = payload.file_path
     if not Path(file_path).is_absolute():
         file_path = str(path.relative_to(WORKSPACE_DIR))
-    return {"yaml_content": config_builder.build(
-        _template_text(), file_path, probe, payload.choices, payload.description,
-    )}
+    return {
+        "yaml_content": config_builder.build(
+            _template_text(),
+            file_path,
+            probe,
+            payload.choices,
+            payload.description,
+        )
+    }
 
 
 @app.get("/api/configs/{name}")
@@ -691,7 +784,9 @@ def load_config(name: str):
         return {
             "name": demo_name,
             "build": {
-                "file_path": str((DEMO_DATA_DIR / entry.filename).relative_to(WORKSPACE_DIR)),
+                "file_path": str(
+                    (DEMO_DATA_DIR / entry.filename).relative_to(WORKSPACE_DIR)
+                ),
                 "description": f"A demo pipeline using {entry.display_label} data.",
             },
         }
@@ -710,7 +805,7 @@ def save_config(payload: SavePayload):
         raise HTTPException(
             status_code=403,
             detail=f"'{path.name}' is a locked reference config. "
-                   "Save your changes under a different name.",
+            "Save your changes under a different name.",
         )
     path.write_text(payload.yaml_content)
     return {"status": "saved", "name": path.name}
@@ -753,12 +848,13 @@ class _Run:
         # polled from here so it can't interleave with the run's console output
         try:
             import psutil
+
             child = psutil.Process(proc.pid)
         except Exception:  # noqa: BLE001
             return
         while proc.poll() is None:
             try:
-                rss = child.memory_info().rss / 1024 ** 2
+                rss = child.memory_info().rss / 1024**2
             except Exception:  # noqa: BLE001
                 return
             with self._lock:
@@ -799,7 +895,9 @@ class _Run:
         self.returncode = None
         self._active, self._since = 0.0, None
         threading.Thread(target=self._pump, daemon=True).start()
-        threading.Thread(target=self._sample_mem, args=(self.proc,), daemon=True).start()
+        threading.Thread(
+            target=self._sample_mem, args=(self.proc,), daemon=True
+        ).start()
 
     def _commit(self, text: str):
         if text.startswith("__PELAGOS_DATA__ "):  # a reply to columns(), not a log line
@@ -889,7 +987,6 @@ class _Run:
             except (BrokenPipeError, ValueError, OSError):
                 pass
 
-
     def columns(self, names: list[str], timeout: float = 60.0) -> bytes | None:
         # packed columns from the paused runner, or None if it didn't answer
         with self._columns:
@@ -898,7 +995,8 @@ class _Run:
         self.send("data " + json.dumps({"id": request_id, "names": names}))
         with self._columns:
             answered = self._columns.wait_for(
-                lambda: request_id in self._columns_done or not self.is_running(), timeout
+                lambda: request_id in self._columns_done or not self.is_running(),
+                timeout,
             )
             self._columns_done.discard(request_id)
         path = FIG_DIR / f"cols_{request_id}.bin"
@@ -967,7 +1065,9 @@ def run_columns(names: str):
     """Raw columns from the paused run, for the Manual QC views."""
     blob = _run.columns([n for n in names.split(",") if n])
     if blob is None:
-        raise HTTPException(status_code=409, detail="The run is not paused, or did not answer.")
+        raise HTTPException(
+            status_code=409, detail="The run is not paused, or did not answer."
+        )
     return Response(blob, media_type="application/octet-stream")
 
 
@@ -982,10 +1082,18 @@ def sigma0_lines(smin: float, smax: float, tmin: float, tmax: float):
     t = np.linspace(tmin, tmax, 120)
     sigma = gsw.sigma0(*np.meshgrid(s, t))
     lo, hi = float(np.nanmin(sigma)), float(np.nanmax(sigma))
-    step = next((st for st in (0.1, 0.2, 0.5, 1.0, 2.0, 5.0) if (hi - lo) / st <= 12), 10.0)
+    step = next(
+        (st for st in (0.1, 0.2, 0.5, 1.0, 2.0, 5.0) if (hi - lo) / st <= 12), 10.0
+    )
     lines = contourpy.contour_generator(s, t, sigma)
     levels = np.arange(np.ceil(lo / step) * step, hi, step)
-    return [{"level": round(float(level), 2), "lines": [seg.tolist() for seg in lines.lines(level)]} for level in levels]
+    return [
+        {
+            "level": round(float(level), 2),
+            "lines": [seg.tolist() for seg in lines.lines(level)],
+        }
+        for level in levels
+    ]
 
 
 @app.get("/api/run/status")
@@ -1001,6 +1109,7 @@ def run_status():
 @app.get("/api/run/stream")
 def stream_logs():
     """Server-Sent Events stream of the run's log, replayed from the start for each client."""
+
     def frame(kind: str, text: str) -> str:
         prefix = "" if kind == "line" else f"event: {kind}\n"
         return f"{prefix}data: {text}\n\n"
@@ -1075,7 +1184,9 @@ def run_figpoint(name: str, panel: int, trace: int, index: int):
     if stem not in _FIGDATA_CACHE:
         path = FIG_DIR / (stem + "_full.npz")
         if not path.is_file():
-            raise HTTPException(status_code=404, detail="No point data for this figure.")
+            raise HTTPException(
+                status_code=404, detail="No point data for this figure."
+            )
         with np.load(path) as npz:
             _FIGDATA_CACHE[stem] = {k: npz[k] for k in npz.files}
     data = _FIGDATA_CACHE[stem]
@@ -1091,8 +1202,10 @@ def run_figpoint(name: str, panel: int, trace: int, index: int):
             return pd.Timestamp(v, unit="ms").isoformat(timespec="milliseconds")
         return float(v)
 
-    return {"x": fmt(data[f"{key}_x"][index], spec["xdate"]),
-            "y": fmt(data[f"{key}_y"][index], spec["ydate"])}
+    return {
+        "x": fmt(data[f"{key}_x"][index], spec["xdate"]),
+        "y": fmt(data[f"{key}_y"][index], spec["ydate"]),
+    }
 
 
 @app.get("/api/run/report")
@@ -1102,7 +1215,8 @@ def run_report(path: str):
     if path not in _run.reports or not p.is_file():
         raise HTTPException(status_code=404, detail="Report not found.")
     return FileResponse(
-        p, media_type="application/pdf",
+        p,
+        media_type="application/pdf",
         headers={"Content-Disposition": f'inline; filename="{p.name}"'},
     )
 
@@ -1129,14 +1243,18 @@ def inspect_file(file_path: str):
                 {
                     "name": name,
                     "units": var.attrs.get("units", ""),
-                    "description": var.attrs.get("long_name") or var.attrs.get("comment") or "",
+                    "description": var.attrs.get("long_name")
+                    or var.attrs.get("comment")
+                    or "",
                     "dtype": str(var.dtype),
                 }
                 for name, var in ds.variables.items()
             ]
             global_attrs = {k: str(v) for k, v in ds.attrs.items()}
     except Exception as exc:
-        raise HTTPException(status_code=400, detail=f"Could not open '{path.name}': {exc}")
+        raise HTTPException(
+            status_code=400, detail=f"Could not open '{path.name}': {exc}"
+        )
 
     # 'instrument' may be "a, b, c" or a Python-list-style string
     instr_key = next((k for k in global_attrs if k.lower() == "instrument"), None)
@@ -1166,6 +1284,7 @@ def inspect_plot(file_path: str, var: str):
     import io
 
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     from pelagos_py.utils import fig_spec
@@ -1176,20 +1295,30 @@ def inspect_plot(file_path: str, var: str):
             if var not in ds.variables:
                 raise HTTPException(status_code=404, detail=f"'{var}' not in file.")
             da = ds[var]
-            numeric = np.issubdtype(da.dtype, np.number) or np.issubdtype(da.dtype, np.datetime64)
+            numeric = np.issubdtype(da.dtype, np.number) or np.issubdtype(
+                da.dtype, np.datetime64
+            )
             if da.ndim == 0:
                 return {"value": str(da.values)}
             if da.ndim == 1 and not numeric and da.size <= 200:
                 return {"value": ", ".join(str(v) for v in da.values)}
             if da.ndim != 1 or not numeric:
                 shape = " x ".join(f"{d}={n}" for d, n in zip(da.dims, da.shape))
-                raise HTTPException(status_code=400, detail=f"{da.dtype} ({shape}), not plotted.")
+                raise HTTPException(
+                    status_code=400, detail=f"{da.dtype} ({shape}), not plotted."
+                )
             y = da.values
             units = da.attrs.get("units", "")
-            x_is_time = var != "TIME" and "TIME" in ds.variables and ds["TIME"].dims == da.dims
+            x_is_time = (
+                var != "TIME" and "TIME" in ds.variables and ds["TIME"].dims == da.dims
+            )
             x = ds["TIME"].values if x_is_time else np.arange(y.size)
             qc_name = f"{var}_QC"
-            flags = ds[qc_name].values if qc_name in ds.variables and ds[qc_name].dims == da.dims else None
+            flags = (
+                ds[qc_name].values
+                if qc_name in ds.variables and ds[qc_name].dims == da.dims
+                else None
+            )
     except HTTPException:
         raise
     except Exception as exc:
@@ -1206,11 +1335,15 @@ def inspect_plot(file_path: str, var: str):
         ax = axes[0][0]
         if flags is not None:
             fig_spec.flag_points(ax, x[idx], y[idx], flags[idx])
-            ax.legend(fontsize=fig_spec.FS_LEGEND, loc="best", frameon=False, markerscale=2)
+            ax.legend(
+                fontsize=fig_spec.FS_LEGEND, loc="best", frameon=False, markerscale=2
+            )
         else:
             fig_spec.points(ax, x[idx], y[idx], color=fig_spec.CATEGORY[1])
         fig_spec.style_axes(
-            ax, xlabel="TIME" if x_is_time else "index", ylabel=fig_spec.axis_label(var, units)
+            ax,
+            xlabel="TIME" if x_is_time else "index",
+            ylabel=fig_spec.axis_label(var, units),
         )
         if x_is_time:
             fig_spec.date_axis(ax, index=x)
@@ -1226,7 +1359,8 @@ def inspect_plot(file_path: str, var: str):
         plt.close(fig)
 
     return {
-        "png": "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("ascii"),
+        "png": "data:image/png;base64,"
+        + base64.b64encode(buf.getvalue()).decode("ascii"),
         "n_total": n_total,
         "n_valid": n_valid,
         "n_shown": int(idx.size),
@@ -1248,9 +1382,17 @@ def serve(port=8791):
 
     import uvicorn
 
-    os.chdir(WORKSPACE_DIR)  # relative config paths resolve here, as in the pipeline run
+    os.chdir(
+        WORKSPACE_DIR
+    )  # relative config paths resolve here, as in the pipeline run
     url = f"http://localhost:{port}"
     print(f"pelagos_py dashboard -> {url}")
     threading.Timer(1.0, lambda: webbrowser.open(url)).start()
     # one Ctrl+C stops the server, even with open streams
-    uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning", timeout_graceful_shutdown=2)
+    uvicorn.run(
+        app,
+        host="127.0.0.1",
+        port=port,
+        log_level="warning",
+        timeout_graceful_shutdown=2,
+    )

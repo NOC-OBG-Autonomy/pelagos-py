@@ -65,7 +65,9 @@ def synthetic_nc(tmp_path_factory):
     try:
         Pipeline(config_path=str(config_file)).run()
     except Exception as e:
-        pytest.fail(f"Synthetic data pipeline (Generate Data + Data Export) failed: {e}")
+        pytest.fail(
+            f"Synthetic data pipeline (Generate Data + Data Export) failed: {e}"
+        )
 
     assert output_nc.exists(), (
         "Synthetic data pipeline ran without error but did not produce an output file."
@@ -91,7 +93,9 @@ def test_generate_and_export(synthetic_nc):
 
 
 @pytest.mark.filterwarnings("ignore:.*monotonically increasing.*")
-@pytest.mark.filterwarnings("ignore:.*Removed.*records containing invalid or pre-deployment timestamps.*")
+@pytest.mark.filterwarnings(
+    "ignore:.*Removed.*records containing invalid or pre-deployment timestamps.*"
+)
 @pytest.mark.filterwarnings("ignore:.*Sanitised invalid flags to 0 in.*")
 def test_full_pipeline_execution(tmp_path, synthetic_nc):
 
@@ -117,7 +121,9 @@ def test_full_pipeline_execution(tmp_path, synthetic_nc):
         p = Pipeline(config_path=str(config_file))
         p.run()
 
-        assert output_nc.exists(), "The pipeline completed, but the output file was not created."
+        assert output_nc.exists(), (
+            "The pipeline completed, but the output file was not created."
+        )
 
     except Exception as e:
         pytest.fail(f"Pipeline stopped unexpectedly: {e}")
@@ -194,7 +200,9 @@ def test_on_step_fail_skip_skips_failing_step(tmp_path, synthetic_nc):
 
 
 @pytest.mark.filterwarnings("ignore:.*monotonically increasing.*")
-def test_on_step_fail_defaults_to_pause_which_skips_outside_dashboard(tmp_path, synthetic_nc):
+def test_on_step_fail_defaults_to_pause_which_skips_outside_dashboard(
+    tmp_path, synthetic_nc
+):
     p, output_nc = _build_failing_step_pipeline(tmp_path, synthetic_nc)
     p.run()
     assert output_nc.exists(), (
@@ -212,5 +220,7 @@ def test_make_config_saves_yaml_next_to_file(tmp_path, synthetic_nc):
     config = yaml.safe_load(saved.read_text())
     assert config["steps"][0]["parameters"]["file_path"] == str(nc)
     assert config["pipeline"]["out_directory"] == f"{tmp_path}/"
-    assert "Interpolate PAR" not in [s["name"] for s in config["steps"]]  # no PAR in the file
+    assert "Interpolate PAR" not in [
+        s["name"] for s in config["steps"]
+    ]  # no PAR in the file
     assert Pipeline.load_config(saved).steps == pipeline.steps

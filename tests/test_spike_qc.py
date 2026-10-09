@@ -45,7 +45,9 @@ def test_also_flag_does_not_propagate_missing():
         },
         coords={"N_MEASUREMENTS": np.arange(n)},
     )
-    qc = spike_qc(data, variables={"PRES": 3}, also_flag={"PRES": ["CNDC"]}, window_size=5)
+    qc = spike_qc(
+        data, variables={"PRES": 3}, also_flag={"PRES": ["CNDC"]}, window_size=5
+    )
     flags = qc.return_qc()
     assert flags["PRES_QC"].values[5] == 9
     assert flags["CNDC_QC"].values[5] == 0

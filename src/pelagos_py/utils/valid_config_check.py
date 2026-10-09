@@ -31,7 +31,11 @@ _NO_LOADER_HINT = (
 
 
 def _loader_hint(missing):
-    return _NO_LOADER_HINT if any(v in LOADER_PROVIDED_VARIABLES for v in missing) else None
+    return (
+        _NO_LOADER_HINT
+        if any(v in LOADER_PROVIDED_VARIABLES for v in missing)
+        else None
+    )
 
 
 def _variable_parameter_names(step_class, parameters):
@@ -84,7 +88,14 @@ def _read_file_variables(file_path, logger):
 
 def _prepare_outputs(steps_list, file_vars):
     # variables a "Prepare OG1" step will rename into existence
-    prep = next((s for s in steps_list if isinstance(s, dict) and s.get("name") == "Prepare OG1"), None)
+    prep = next(
+        (
+            s
+            for s in steps_list
+            if isinstance(s, dict) and s.get("name") == "Prepare OG1"
+        ),
+        None,
+    )
     if prep is None or file_vars is None:
         return set()
     cls = STEP_CLASSES.get("Prepare OG1")
@@ -92,7 +103,14 @@ def _prepare_outputs(steps_list, file_vars):
 
 
 def _raise_missing_variables(
-    logger, kind, label, missing, pipeline_provided, known_derived, file_vars, file_all_nan=None
+    logger,
+    kind,
+    label,
+    missing,
+    pipeline_provided,
+    known_derived,
+    file_vars,
+    file_all_nan=None,
 ):
     # Raise the most specific error: produced later, produced by no step, or not
     # (or only as all-NaN) in the input file. Otherwise left for the run-time check.
@@ -102,7 +120,9 @@ def _raise_missing_variables(
         logger.error(
             "Validation Failed: %s '%s' requires %s, but it is produced by a "
             "later step. Reorder the pipeline so the producing step runs first.",
-            kind, label, missing_str,
+            kind,
+            label,
+            missing_str,
         )
         raise ValueError(
             f"Missing variables for {kind} '{label}': {missing_str}. These "
@@ -110,7 +130,9 @@ def _raise_missing_variables(
             f"run beforehand."
         )
 
-    not_produced = [v for v in missing if v not in pipeline_provided and v in known_derived]
+    not_produced = [
+        v for v in missing if v not in pipeline_provided and v in known_derived
+    ]
     if not_produced:
         missing_str = ", ".join(not_produced)
         hint = _loader_hint(not_produced) or (
@@ -120,7 +142,10 @@ def _raise_missing_variables(
         logger.error(
             "Validation Failed: %s '%s' requires %s, but no step in the "
             "pipeline produces it. %s",
-            kind, label, missing_str, hint,
+            kind,
+            label,
+            missing_str,
+            hint,
         )
         raise ValueError(
             f"Missing variables for {kind} '{label}': {missing_str}. No step "
@@ -128,14 +153,18 @@ def _raise_missing_variables(
         )
 
     if file_vars is not None:
-        unverified = [v for v in missing if v not in pipeline_provided and v not in known_derived]
+        unverified = [
+            v for v in missing if v not in pipeline_provided and v not in known_derived
+        ]
         missing_from_file = [v for v in unverified if v not in file_vars]
         if missing_from_file:
             missing_str = ", ".join(missing_from_file)
             logger.error(
                 "Validation Failed: %s '%s' requires %s, but the input file "
                 "does not contain it.",
-                kind, label, missing_str,
+                kind,
+                label,
+                missing_str,
             )
             raise ValueError(
                 f"Missing variables for {kind} '{label}': {missing_str}. The "
@@ -149,7 +178,9 @@ def _raise_missing_variables(
                 logger.error(
                     "Validation Failed: %s '%s' requires %s, but the input "
                     "file only contains placeholder (all-NaN) data for it.",
-                    kind, label, missing_str,
+                    kind,
+                    label,
+                    missing_str,
                 )
                 raise ValueError(
                     f"Variable(s) required for {kind} '{label}': {missing_str} "
@@ -185,9 +216,7 @@ def _unknown_params(schema, parameters, allowed_extra=()):
     if schema is None:
         return []
     return [
-        name
-        for name in parameters
-        if name not in schema and name not in allowed_extra
+        name for name in parameters if name not in schema and name not in allowed_extra
     ]
 
 
@@ -251,7 +280,8 @@ def _pipeline_provided_variables(steps_list):
 def _non_loader_provided_variables(steps_list):
     # loaders claim TIME/LATITUDE/etc whatever the file holds, so leave them out
     others = [
-        s for s in steps_list
+        s
+        for s in steps_list
         if not (isinstance(s, dict) and s.get("name") in LOADER_STEP_NAMES)
     ]
     return _pipeline_provided_variables(others)
@@ -277,7 +307,8 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
         available_vars = set()
 
         loader_steps = [
-            (i, s["name"]) for i, s in enumerate(steps_list)
+            (i, s["name"])
+            for i, s in enumerate(steps_list)
             if isinstance(s, dict) and s.get("name") in LOADER_STEP_NAMES
         ]
         if len(loader_steps) > 1:
@@ -317,7 +348,8 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
                     other_provided = _non_loader_provided_variables(steps_list)
                     other_provided |= _prepare_outputs(steps_list, real_vars)
                     missing_base = sorted(
-                        v for v in LOADER_PROVIDED_VARIABLES
+                        v
+                        for v in LOADER_PROVIDED_VARIABLES
                         if v not in file_vars and v not in other_provided
                     )
                     if missing_base:
@@ -438,7 +470,9 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
                             f"Missing config parameters for QC test '{qc_name}': {missing_str}."
                         )
 
-                    qc_unknown = _unknown_params(qc_schema, qc_params or {}, qc_allowed_extra)
+                    qc_unknown = _unknown_params(
+                        qc_schema, qc_params or {}, qc_allowed_extra
+                    )
                     if qc_unknown:
                         unknown_str = ", ".join(qc_unknown)
                         valid_str = ", ".join(sorted(qc_schema)) or "(none)"
@@ -455,7 +489,9 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
                         )
 
                     if qc_schema is not None:
-                        qc_bad_types = parameter_spec.type_errors(qc_schema, qc_params or {})
+                        qc_bad_types = parameter_spec.type_errors(
+                            qc_schema, qc_params or {}
+                        )
                         if qc_bad_types:
                             bad_str = "; ".join(qc_bad_types)
                             logger.error(
@@ -468,7 +504,9 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
                             )
 
                     if qc_schema is not None:
-                        qc_bad_options = parameter_spec.option_errors(qc_schema, qc_params or {})
+                        qc_bad_options = parameter_spec.option_errors(
+                            qc_schema, qc_params or {}
+                        )
                         if qc_bad_options:
                             bad_str = "; ".join(qc_bad_options)
                             logger.error(
@@ -486,9 +524,14 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
                     qc_missing = [v for v in qc_required if v not in available_vars]
                     if qc_missing:
                         _raise_missing_variables(
-                            logger, "QC test", qc_name, qc_missing,
-                            pipeline_provided - skipped_outputs, known_derived,
-                            file_vars, file_all_nan,
+                            logger,
+                            "QC test",
+                            qc_name,
+                            qc_missing,
+                            pipeline_provided - skipped_outputs,
+                            known_derived,
+                            file_vars,
+                            file_all_nan,
                         )
 
                     # Make this test's outputs available to later tests in the same
@@ -510,7 +553,9 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
             if step_name == "Shift Oxygen To CTD":
                 own_provided.update(_shift_oxygen_output(parameters))
             if step_name == "Prepare OG1" and file_vars is not None:
-                own_provided.update(_prepare_outputs([step_config], file_vars - (file_all_nan or set())))
+                own_provided.update(
+                    _prepare_outputs([step_config], file_vars - (file_all_nan or set()))
+                )
 
             # an `optional: true` step skips when its target_variable is absent
             if parameters.get("optional") and file_vars is not None:
@@ -524,9 +569,14 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
             if missing_vars:
                 # a step that overwrites its input (e.g. BBP700 in "BBP from Beta") isn't "later"
                 _raise_missing_variables(
-                    logger, "step", step_name, missing_vars,
-                    pipeline_provided - own_provided - skipped_outputs, known_derived,
-                    file_vars, file_all_nan,
+                    logger,
+                    "step",
+                    step_name,
+                    missing_vars,
+                    pipeline_provided - own_provided - skipped_outputs,
+                    known_derived,
+                    file_vars,
+                    file_all_nan,
                 )
 
             available_vars.update(own_provided)

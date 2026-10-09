@@ -107,11 +107,15 @@ class spike_qc(BaseQC):
         for var, sensitivity in self.variables.items():
             spike_qc = np.full(len(self.data[var]), 0)
             values = self.data[var].values
-            qc_flags = self.data[f"{var}_QC"].values if f"{var}_QC" in self.data else None
+            qc_flags = (
+                self.data[f"{var}_QC"].values if f"{var}_QC" in self.data else None
+            )
             untested = 0
 
             # Apply the checks across individual profiles
-            for indices in self.log_progress(groups.values(), desc=f"[{var}]", unit="prof", total=len(groups)):
+            for indices in self.log_progress(
+                groups.values(), desc=f"[{var}]", unit="prof", total=len(groups)
+            ):
                 profile = values[indices]
                 missing = np.isnan(profile)
 
@@ -161,9 +165,12 @@ class spike_qc(BaseQC):
             # Broadcast the QC found for var into variables specified by "also_flag"
             if extra_vars := self.also_flag.get(var):
                 for extra_var in extra_vars:
-                    base = self.data.get(f"{extra_var}_QC", xr.zeros_like(self.data[f"{var}_QC"]))
+                    base = self.data.get(
+                        f"{extra_var}_QC", xr.zeros_like(self.data[f"{var}_QC"])
+                    )
                     self.data[f"{extra_var}_QC"] = (
-                        ["N_MEASUREMENTS"], propagate_flags(base, self.data[f"{var}_QC"])
+                        ["N_MEASUREMENTS"],
+                        propagate_flags(base, self.data[f"{var}_QC"]),
                     )
 
         # Select just the flags
@@ -194,7 +201,9 @@ class spike_qc(BaseQC):
             untested, total = self._untested.get(var, (0, 0))
             title = f"{var} Spike Test"
             if untested:
-                title += f" — {untested} of {total} profiles untested (< window_size points)"
+                title += (
+                    f" — {untested} of {total} profiles untested (< window_size points)"
+                )
             fig_spec.style_axes(ax, title=title, ylabel=ylabel)
             if var in ("PRES", "DEPTH"):
                 ax.invert_yaxis()

@@ -32,13 +32,13 @@ MIN_YEAR_FILTER = "1990-01-01"
 @register_step
 class LoadOG1(BaseStep):
     """
-    Loads NetCDF files from ``file_path``. 
-    
+    Loads NetCDF files from ``file_path``.
+
     If ``filter_bad_times`` is set then measurements made
-    outside of the time range specified by ``data_start`` and ``data_end`` are removed before 
+    outside of the time range specified by ``data_start`` and ``data_end`` are removed before
     further processing.
 
-    Time values are expected to be stored under the "TIME" variable name in the NetCDF file 
+    Time values are expected to be stored under the "TIME" variable name in the NetCDF file
     (corresponding to OG1 format). If "TIME" is not monotonically increasing, or has missing values
     (NaT) then this will raise an error.
 
@@ -47,11 +47,11 @@ class LoadOG1(BaseStep):
     filter_bad_time : bool, optional
         If True (default), removes all timestamps outside the expected time window.
     data_start : str or np.datetime64, optional
-        The minimum valid timestamp for the data. If not provided, the filter defaults 
-        to the DEPLOYMENT_TIME found in the dataset, or 1990-01-01T00:00:00 if no 
+        The minimum valid timestamp for the data. If not provided, the filter defaults
+        to the DEPLOYMENT_TIME found in the dataset, or 1990-01-01T00:00:00 if no
         deployment time is found.
     data_end : str or np.datetime64, optional
-        The maximum valid timestamp for the data. If not provided, it defaults to 
+        The maximum valid timestamp for the data. If not provided, it defaults to
         the current system time when the pipeline is run.
 
     Examples
@@ -77,23 +77,23 @@ class LoadOG1(BaseStep):
         "file_path": {
             "type": str,
             "required": True,
-            "description": "Path to the OG1 data file."
+            "description": "Path to the OG1 data file.",
         },
         "filter_bad_time": {
             "type": bool,
             "default": True,
-            "description": "If True, removes all timestamps outside the expected time window."
+            "description": "If True, removes all timestamps outside the expected time window.",
         },
         "data_start": {
             "type": str,
             "default": None,
-            "description": "Minimum valid timestamp (e.g. '2023-05-01T00:00:00'). Defaults to deployment time or 1990."
+            "description": "Minimum valid timestamp (e.g. '2023-05-01T00:00:00'). Defaults to deployment time or 1990.",
         },
         "data_end": {
             "type": str,
             "default": None,
-            "description": "Maximum valid timestamp. Defaults to current system time."
-        }
+            "description": "Maximum valid timestamp. Defaults to current system time.",
+        },
     }
 
     def run(self):
@@ -181,7 +181,7 @@ class LoadOG1(BaseStep):
                 "'TIME' is not monotonically increasing. This may cause fatal issues in processing. "
                 "Please check the quality of your input data."
             )
-            
+
         # Make these available to other steps (e.g. Format Checker, which reads the
         # original file from disk; the report uses filename_core for naming).
         self.context["global_parameters"]["filename_core"] = Path(self.file_path).stem

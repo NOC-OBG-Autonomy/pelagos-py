@@ -587,9 +587,9 @@ class PipelineManager(ConfigMirrorMixin):
 
             # Cache fits for metadata
             if anc in self.processed_per_glider:
-                self.processed_per_glider[anc][
-                    f"last_fit_to_target_{target}"
-                ] = anc_fits
+                self.processed_per_glider[anc][f"last_fit_to_target_{target}"] = (
+                    anc_fits
+                )
 
         return {"paths": saved_paths, "fits": fits_summary}
 
@@ -805,9 +805,9 @@ class PipelineManager(ConfigMirrorMixin):
             self.processed_per_glider = {}
         if target not in self.processed_per_glider:
             self.processed_per_glider[target] = {}
-        self.processed_per_glider[target][
-            f"last_fit_to_device_{device_name}"
-        ] = fit_params
+        self.processed_per_glider[target][f"last_fit_to_device_{device_name}"] = (
+            fit_params
+        )
 
         return {"fits": fit_params, "device_name": device_name}
 

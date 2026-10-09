@@ -204,7 +204,9 @@ class InterpolatePAR(BaseStep, QCHandlingMixin):
 
         # Flagged PAR/depth samples must not inform a scalar, so NaN them out.
         usable = self.calculation_mask([par_var, depth_var])
-        par = np.where(usable, np.asarray(self.data[par_var].values, dtype=float), np.nan)
+        par = np.where(
+            usable, np.asarray(self.data[par_var].values, dtype=float), np.nan
+        )
         depth = np.asarray(self.data[depth_var].values, dtype=float)
         prof = self.data["PROFILE_NUMBER"].values
         tidx = pd.DatetimeIndex(self.data["TIME"].values)
@@ -229,12 +231,20 @@ class InterpolatePAR(BaseStep, QCHandlingMixin):
 
         if self.compute_zeu:
             self._emit_scalar(
-                "ZEU", zeu_calc, index, prof_tsec, self.interpolate_zeu,
+                "ZEU",
+                zeu_calc,
+                index,
+                prof_tsec,
+                self.interpolate_zeu,
                 long_name="Euphotic depth (1% light, positive down). NaN where undefined.",
             )
         if self.compute_ipar:
             self._emit_scalar(
-                "Z_IPAR", zipar_calc, index, prof_tsec, self.interpolate_ipar,
+                "Z_IPAR",
+                zipar_calc,
+                index,
+                prof_tsec,
+                self.interpolate_ipar,
                 long_name=(
                     f"Depth where downwelling iPAR crosses {self.ipar_level:g} "
                     "umol/m2/s (positive down). NaN where undefined."
@@ -249,11 +259,23 @@ class InterpolatePAR(BaseStep, QCHandlingMixin):
         return self.context
 
     def _emit_scalar(
-        self, name, calc, index, prof_tsec, interpolate, *, long_name, extra_attrs=None,
+        self,
+        name,
+        calc,
+        index,
+        prof_tsec,
+        interpolate,
+        *,
+        long_name,
+        extra_attrs=None,
     ):
         # Interpolate (optionally), broadcast to N_MEASUREMENTS and write `name`.
         profiles = np.array(list(index))
-        final = self._interpolate_scalar(calc, profiles, prof_tsec) if interpolate else dict(calc)
+        final = (
+            self._interpolate_scalar(calc, profiles, prof_tsec)
+            if interpolate
+            else dict(calc)
+        )
 
         n_calc = sum(np.isfinite(v) for v in calc.values())
         n_final = sum(np.isfinite(v) for v in final.values())
@@ -263,7 +285,9 @@ class InterpolatePAR(BaseStep, QCHandlingMixin):
                 f"interpolated to {n_final}."
             )
         else:
-            self.log(f"{name}: computed on {n_calc}/{len(profiles)} profiles (no interpolation).")
+            self.log(
+                f"{name}: computed on {n_calc}/{len(profiles)} profiles (no interpolation)."
+            )
 
         broadcast = np.full(self.data.sizes["N_MEASUREMENTS"], np.nan)
         for pn, sel in index.items():
@@ -282,7 +306,10 @@ class InterpolatePAR(BaseStep, QCHandlingMixin):
     def _interpolate_scalar(calc, profiles, prof_tsec):
         # Fill NaN profiles by interpolating in time; outside the span bracketed
         # by computed profiles, hold the nearest endpoint value constant.
-        order = sorted(profiles, key=lambda p: (prof_tsec[p] if np.isfinite(prof_tsec[p]) else np.inf))
+        order = sorted(
+            profiles,
+            key=lambda p: prof_tsec[p] if np.isfinite(prof_tsec[p]) else np.inf,
+        )
         times = np.array([prof_tsec[p] for p in order], dtype=float)
         vals = np.array([calc.get(p, np.nan) for p in order], dtype=float)
 
@@ -317,15 +344,21 @@ class InterpolatePAR(BaseStep, QCHandlingMixin):
 
             ct, cy = series(lambda p: np.isfinite(calc.get(p, np.nan)))
             it, iy = series(
-                lambda p: not np.isfinite(calc.get(p, np.nan))
-                and np.isfinite(final.get(p, np.nan))
+                lambda p: (
+                    not np.isfinite(calc.get(p, np.nan))
+                    and np.isfinite(final.get(p, np.nan))
+                )
             )
             fig_spec.points(ax, ct, cy, color=fig_spec.CATEGORY[1], label="computed")
             if it.size:
-                fig_spec.points(ax, it, iy, color=fig_spec.CATEGORY[3], label="interpolated")
+                fig_spec.points(
+                    ax, it, iy, color=fig_spec.CATEGORY[3], label="interpolated"
+                )
 
             fig_spec.style_axes(ax, title=name, ylabel=fig_spec.axis_label(name, "m"))
-            fig_spec.date_axis(ax, index=self.data["TIME"].values if "TIME" in self.data else None)
+            fig_spec.date_axis(
+                ax, index=self.data["TIME"].values if "TIME" in self.data else None
+            )
             ax.invert_yaxis()  # positive-down depth: shallower at the top
             fig_spec.legend(ax)
 

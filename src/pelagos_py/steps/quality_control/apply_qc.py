@@ -34,27 +34,43 @@ def _flag_summary(flags):
     n = int(counts.sum())
     if n == 0:
         return {i: 0 for i in range(10)}, {"count": 0.0}
-    values =np.arange(counts.size, dtype=float)
+    values = np.arange(counts.size, dtype=float)
     cum = np.cumsum(counts)
     mean = float((values * counts).sum() / n)
-    std = float(np.sqrt(((values - mean) ** 2 * counts).sum() / (n - 1))) if n > 1 else float("nan")
+    std = (
+        float(np.sqrt(((values - mean) ** 2 * counts).sum() / (n - 1)))
+        if n > 1
+        else float("nan")
+    )
 
     def quantile(q):  # numpy 'linear' method, as pandas describe uses
         pos = q * (n - 1)
-        lo, hi = values[np.searchsorted(cum, [int(pos), int(np.ceil(pos))], side="right")]
+        lo, hi = values[
+            np.searchsorted(cum, [int(pos), int(np.ceil(pos))], side="right")
+        ]
         return float(lo + (hi - lo) * (pos - int(pos)))
 
     lowest, highest = values[np.flatnonzero(counts)[[0, -1]]]
     stats = {
-        "count": float(n), "mean": mean, "std": std, "min": float(lowest),
-        "25%": quantile(0.25), "50%": quantile(0.5), "75%": quantile(0.75), "max": float(highest),
+        "count": float(n),
+        "mean": mean,
+        "std": std,
+        "min": float(lowest),
+        "25%": quantile(0.25),
+        "50%": quantile(0.5),
+        "75%": quantile(0.75),
+        "max": float(highest),
     }
-    return {i: int(counts[i]) for i in range(10)}, {k: round(v, 5) for k, v in stats.items()}
+    return {i: int(counts[i]) for i in range(10)}, {
+        k: round(v, 5) for k, v in stats.items()
+    }
 
 
 def _split_test_settings(settings):
     # `diagnostics` is a per-test override, not a QC parameter
-    return {k: v for k, v in settings.items() if k != "diagnostics"}, settings.get("diagnostics")
+    return {k: v for k, v in settings.items() if k != "diagnostics"}, settings.get(
+        "diagnostics"
+    )
 
 
 @register_step
@@ -153,7 +169,10 @@ class ApplyQC(BaseStep):
 
         resolved_settings = prefer_adjusted(self.qc_settings, set(full_data.variables))
         if resolved_settings != self.qc_settings:
-            self.log(f"Resolved variable names (preferring _ADJUSTED):{json.dumps(resolved_settings)}", console=False)
+            self.log(
+                f"Resolved variable names (preferring _ADJUSTED):{json.dumps(resolved_settings)}",
+                console=False,
+            )
         self.qc_settings = resolved_settings
 
         # Try and fetch the qc history from context and update it
@@ -297,7 +316,10 @@ class ApplyQC(BaseStep):
             if test_diagnostics:
                 # plot the merged flags after this test, not just this test's output
                 for col in returned_flags.data_vars:
-                    for holder in (qc_test_instance.data, getattr(qc_test_instance, "flags", None)):
+                    for holder in (
+                        qc_test_instance.data,
+                        getattr(qc_test_instance, "flags", None),
+                    ):
                         if holder is not None and col in holder:
                             holder[col] = self.flag_store[col]
                 try:

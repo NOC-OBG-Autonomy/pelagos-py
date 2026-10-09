@@ -171,7 +171,10 @@ def test_validator_flags_out_of_order_variable_parameter():
     # apply_to needs DEPTH, but "Derive CTD" runs after Deep Correction.
     steps = [
         {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
-        {"name": "Deep Correction", "parameters": {"apply_to": "DEPTH", "depth_var": "PRES"}},
+        {
+            "name": "Deep Correction",
+            "parameters": {"apply_to": "DEPTH", "depth_var": "PRES"},
+        },
         {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH", "PRAC_SALINITY"]}},
     ]
     with pytest.raises(ValueError, match="DEPTH"):
@@ -199,7 +202,9 @@ def _write_og1_file(path, variables):
 
 def test_validator_flags_loader_variable_missing_from_file(tmp_path):
     file_path = tmp_path / "data.nc"
-    _write_og1_file(file_path, ["TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP"])  # no CNDC
+    _write_og1_file(
+        file_path, ["TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP"]
+    )  # no CNDC
     steps = [{"name": "Load OG1", "parameters": {"file_path": str(file_path)}}]
     with pytest.raises(ValueError, match="CNDC"):
         check_pipeline_variables(steps, LOGGER)
@@ -220,7 +225,10 @@ def test_validator_allows_loader_variable_renamed_by_later_step(tmp_path):
         },
         {
             "name": "Correct Values",
-            "parameters": {"target_variable": "LONGITUDE_GPS", "output_as": "LONGITUDE"},
+            "parameters": {
+                "target_variable": "LONGITUDE_GPS",
+                "output_as": "LONGITUDE",
+            },
         },
     ]
     assert check_pipeline_variables(steps, LOGGER) is True
@@ -243,16 +251,24 @@ def test_validator_flags_variable_parameter_missing_from_file(tmp_path):
 def test_validator_attributes_error_to_correct_step_with_duplicate_qc_names(tmp_path):
     # Both steps have a "range qc" key, so the error must carry the failing step index.
     file_path = tmp_path / "data.nc"
-    _write_og1_file(file_path, ["TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC"])
+    _write_og1_file(
+        file_path, ["TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC"]
+    )
     steps = [
         {"name": "Load OG1", "parameters": {"file_path": str(file_path)}},
         {
             "name": "Apply QC",
-            "parameters": {"qc_settings": {"range qc": {"variable_ranges": {"PRES": {4: [-5, 0]}}}}},
+            "parameters": {
+                "qc_settings": {"range qc": {"variable_ranges": {"PRES": {4: [-5, 0]}}}}
+            },
         },
         {
             "name": "Apply QC",
-            "parameters": {"qc_settings": {"range qc": {"variable_ranges": {"BBP700": {4: [0, 10]}}}}},
+            "parameters": {
+                "qc_settings": {
+                    "range qc": {"variable_ranges": {"BBP700": {4: [0, 10]}}}
+                }
+            },
         },
     ]
     with pytest.raises(ValueError, match="BBP700") as excinfo:
@@ -288,7 +304,9 @@ def _optional_rename_steps(qc_var):
         {
             "name": "Apply QC",
             "parameters": {
-                "qc_settings": {"range qc": {"variable_ranges": {qc_var: {4: [0, 1, "outside"]}}}}
+                "qc_settings": {
+                    "range qc": {"variable_ranges": {qc_var: {4: [0, 1, "outside"]}}}
+                }
             },
         },
     ]
@@ -298,28 +316,49 @@ def test_validator_flags_output_of_skipped_optional_step(monkeypatch):
     # Neither name is in the file, so the optional rename skips and can't satisfy the QC.
     monkeypatch.setattr(
         "pelagos_py.utils.valid_config_check._read_file_variables",
-        lambda *a, **k: ({"TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC"}, set()),
+        lambda *a, **k: (
+            {"TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC"},
+            set(),
+        ),
     )
-    with pytest.raises(ValueError, match="BETA_BACKSCATTERING700.*input file does not contain"):
-        check_pipeline_variables(_optional_rename_steps("BETA_BACKSCATTERING700"), LOGGER)
+    with pytest.raises(
+        ValueError, match="BETA_BACKSCATTERING700.*input file does not contain"
+    ):
+        check_pipeline_variables(
+            _optional_rename_steps("BETA_BACKSCATTERING700"), LOGGER
+        )
 
 
 def test_validator_passes_output_of_optional_step_with_input_present(monkeypatch):
     monkeypatch.setattr(
         "pelagos_py.utils.valid_config_check._read_file_variables",
-        lambda *a, **k: ({"TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC", "BBP700"}, set()),
+        lambda *a, **k: (
+            {"TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC", "BBP700"},
+            set(),
+        ),
     )
-    assert check_pipeline_variables(_optional_rename_steps("BETA_BACKSCATTERING700"), LOGGER) is True
+    assert (
+        check_pipeline_variables(
+            _optional_rename_steps("BETA_BACKSCATTERING700"), LOGGER
+        )
+        is True
+    )
 
 
 def test_validator_flags_oxygen_name_parameter_missing_from_file(monkeypatch):
     monkeypatch.setattr(
         "pelagos_py.utils.valid_config_check._read_file_variables",
-        lambda *a, **k: ({"TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC"}, set()),
+        lambda *a, **k: (
+            {"TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC"},
+            set(),
+        ),
     )
     steps = [
         {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
-        {"name": "Derive Uncalibrated Phase", "parameters": {"blue_phase_name": "BPHASE_DOXY"}},
+        {
+            "name": "Derive Uncalibrated Phase",
+            "parameters": {"blue_phase_name": "BPHASE_DOXY"},
+        },
     ]
     with pytest.raises(ValueError, match="BPHASE_DOXY.*input file does not contain"):
         check_pipeline_variables(steps, LOGGER)
@@ -329,20 +368,30 @@ def test_validator_tracks_shifted_oxygen_outputs(monkeypatch):
     monkeypatch.setattr(
         "pelagos_py.utils.valid_config_check._read_file_variables",
         lambda *a, **k: (
-            {"TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC", "BPHASE_DOXY"}, set()
+            {"TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC", "BPHASE_DOXY"},
+            set(),
         ),
     )
     steps = [
         {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
         {"name": "Find Profiles", "parameters": {}},
-        {"name": "Derive Uncalibrated Phase", "parameters": {"blue_phase_name": "BPHASE_DOXY"}},
+        {
+            "name": "Derive Uncalibrated Phase",
+            "parameters": {"blue_phase_name": "BPHASE_DOXY"},
+        },
         {
             "name": "Phase Pressure Correction",
-            "parameters": {"optode_pressure_name": "PRES", "correction_coefficient": 0.1},
+            "parameters": {
+                "optode_pressure_name": "PRES",
+                "correction_coefficient": 0.1,
+            },
         },
         {
             "name": "Shift Oxygen To CTD",
-            "parameters": {"shift_vars": ["UNCAL_PHASE_DOXY_PCORR"], "lag_seconds": 3.0},
+            "parameters": {
+                "shift_vars": ["UNCAL_PHASE_DOXY_PCORR"],
+                "lag_seconds": 3.0,
+            },
         },
         {
             "name": "Derive Calibrated Phase",

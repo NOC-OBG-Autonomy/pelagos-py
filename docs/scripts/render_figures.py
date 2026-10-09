@@ -4,6 +4,7 @@
 
 --data overrides the Load OG1 file_path; --profile replaces PROFILE in figures.yaml.
 """
+
 import argparse
 import os
 import shutil
@@ -43,7 +44,9 @@ def _fill_profile(obj, profile):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("spec", nargs="?", default=os.path.join(ROOT, "docs", "scripts", "figures.yaml"))
+    ap.add_argument(
+        "spec", nargs="?", default=os.path.join(ROOT, "docs", "scripts", "figures.yaml")
+    )
     ap.add_argument("--data", default=os.environ.get("PELAGOS_DOCS_DATA"))
     ap.add_argument("--out", default=os.path.join(ROOT, "docs", "_static"))
     ap.add_argument("--profile", type=int, default=None)
@@ -58,13 +61,19 @@ def main():
             if args.data:
                 step["parameters"]["file_path"] = args.data
             elif not os.path.isabs(step["parameters"]["file_path"]):
-                step["parameters"]["file_path"] = os.path.join(ROOT, step["parameters"]["file_path"])
+                step["parameters"]["file_path"] = os.path.join(
+                    ROOT, step["parameters"]["file_path"]
+                )
 
     captured = tempfile.mkdtemp(prefix="pelagos_docs_figs_")
     with diagnostic_capture.force_headless_backend():
         pipe = Pipeline(config=config)
         pipe.headless = True
-        pipe._capture_diagnostics, pipe._captured_figures, pipe._capture_dir = True, [], captured
+        pipe._capture_diagnostics, pipe._captured_figures, pipe._capture_dir = (
+            True,
+            [],
+            captured,
+        )
         pipe.run()
         ds = pipe.get_data()
 
@@ -73,13 +82,23 @@ def main():
             if profile is None:
                 profile = _example_profile(ds)
             variant = _fill_profile(variant, profile)
-            step_config = {"name": variant["step"], "parameters": variant.get("parameters", {}),
-                           "diagnostics": list(variant["figures"])}
-            with diagnostic_capture.capture_figures(captured, variant["step"], 100 + i, []):
-                create_step(step_config, {"data": ds.copy(), "global_parameters": {}}).run()
+            step_config = {
+                "name": variant["step"],
+                "parameters": variant.get("parameters", {}),
+                "diagnostics": list(variant["figures"]),
+            }
+            with diagnostic_capture.capture_figures(
+                captured, variant["step"], 100 + i, []
+            ):
+                create_step(
+                    step_config, {"data": ds.copy(), "global_parameters": {}}
+                ).run()
         diagnostic_capture.wait_for_saves()
 
-    outputs = {path: (v["step"], v["figure"], None) for path, v in spec.get("figures", {}).items()}
+    outputs = {
+        path: (v["step"], v["figure"], None)
+        for path, v in spec.get("figures", {}).items()
+    }
     for i, variant in enumerate(spec.get("variants", [])):
         for figure, path in variant["figures"].items():
             outputs[path] = (variant["step"], figure, 100 + i)
@@ -93,9 +112,14 @@ def main():
 
 def _example_profile(ds):
     # the day profile xing2012 changes most: the same profile every variant annotates
-    step = create_step({"name": "CHLA Quenching", "diagnostics": False,
-                        "parameters": {"method": "xing2012", "apply_to": "CHLA_ADJUSTED"}},
-                       {"data": ds.copy(), "global_parameters": {}})
+    step = create_step(
+        {
+            "name": "CHLA Quenching",
+            "diagnostics": False,
+            "parameters": {"method": "xing2012", "apply_to": "CHLA_ADJUSTED"},
+        },
+        {"data": ds.copy(), "global_parameters": {}},
+    )
     step.run()
     pn = step._example_profiles()[0]
     print("example profile", pn)

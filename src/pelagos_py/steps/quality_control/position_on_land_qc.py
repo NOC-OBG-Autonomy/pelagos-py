@@ -66,7 +66,9 @@ class position_on_land_qc(BaseQC):
         # left: regional context; right: zoomed on flagged positions, else on the track
         views = [("Region", fig_spec.map_extent(lon, lat, pad=2.0))]
         if bad.any():
-            views.append(("Flagged positions", fig_spec.map_extent(lon[bad], lat[bad], pad=0.3)))
+            views.append(
+                ("Flagged positions", fig_spec.map_extent(lon[bad], lat[bad], pad=0.3))
+            )
         else:
             views.append(("Track", fig_spec.map_extent(lon, lat, pad=0.05)))
 
@@ -74,9 +76,14 @@ class position_on_land_qc(BaseQC):
         for ax, (title, extent) in zip(axes[0], views):
             fig_spec.flag_points(ax, lon, lat, flags)
             fig_spec.style_axes(
-                ax, title=title,
-                xlabel=fig_spec.axis_label("LONGITUDE", self.data["LONGITUDE"].attrs.get("units")),
-                ylabel=fig_spec.axis_label("LATITUDE", self.data["LATITUDE"].attrs.get("units")),
+                ax,
+                title=title,
+                xlabel=fig_spec.axis_label(
+                    "LONGITUDE", self.data["LONGITUDE"].attrs.get("units")
+                ),
+                ylabel=fig_spec.axis_label(
+                    "LATITUDE", self.data["LATITUDE"].attrs.get("units")
+                ),
             )
             fig_spec.coastlines(ax, extent)
         fig_spec.legend(axes[0][1], title="Flags")

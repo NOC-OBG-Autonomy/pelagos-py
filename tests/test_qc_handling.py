@@ -38,14 +38,24 @@ def make_step(flags=None, calculation_flag_filter=None):
 def test_defaults_exclude_probably_bad_bad_and_missing():
     step = make_step({"CHLA": [0, 1, 2, 3, 4, 5, 8, 9]})
     assert step.calculation_mask(["CHLA"]).tolist() == [
-        True, True, True, False, False, True, True, False
+        True,
+        True,
+        True,
+        False,
+        False,
+        True,
+        True,
+        False,
     ]
 
 
 def test_a_sample_needs_every_listed_variable_to_be_usable():
     step = make_step({"CHLA": [1, 1, 4, 1], "DEPTH": [1, 4, 1, 1]})
     assert step.calculation_mask(["CHLA", "DEPTH"]).tolist() == [
-        True, False, False, True
+        True,
+        False,
+        False,
+        True,
     ]
     # Gating on one variable alone ignores the other's flags.
     assert step.calculation_mask(["CHLA"]).tolist() == [True, True, False, True]

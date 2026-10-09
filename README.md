@@ -93,8 +93,7 @@ pipeline = Pipeline.make_config(get_demo_file("nelson_646_r"))
 
 Running the pipeline executes each step defined by the config in order
 ```python
- results = pipeline.run()
-
+results = pipeline.run()
 ```
 
 
@@ -114,7 +113,6 @@ Steps can optionally include diagnostic plots or summaries by setting:
 The entire pipeline configuration can be exported to a YAML file for reproducibility:
 ```python
 pipeline.export_config("exported_pipeline.yaml")
-
 ```
 
 

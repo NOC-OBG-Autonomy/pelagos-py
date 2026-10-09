@@ -40,7 +40,9 @@ _YELLOW = "\033[33m"
 _NAME_WIDTH = 20
 
 # Uniform tqdm bar for every countable loop; ``{desc}`` carries the time/name prefix.
-BAR_FORMAT = "{desc} {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]"
+BAR_FORMAT = (
+    "{desc} {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]"
+)
 
 # Leading ``[Step Name] `` tag steps prepend via ``BaseStep.log``; lifted into its own column.
 _TAG = re.compile(r"^\[([^\]]*)\]\s*")
@@ -56,7 +58,7 @@ def _display_name(record):
     name = record.name
     for prefix in ("pelagos_py.pipeline.step.", "pelagos_py.pipeline.qc."):
         if name.startswith(prefix):
-            return name[len(prefix):].replace("_", " ")
+            return name[len(prefix) :].replace("_", " ")
     if name.startswith("pelagos_py.pipeline.discovery"):
         return "discovery"
     if name == "pelagos_py.pipeline":
@@ -92,7 +94,7 @@ class ConsoleFormatter(logging.Formatter):
         tag = _TAG.match(message)
         if tag:
             name = tag.group(1)
-            message = message[tag.end():]
+            message = message[tag.end() :]
         else:
             name = _display_name(record)
 
@@ -144,7 +146,13 @@ class _PhaseBar(tqdm):
     (only) on close so the file and report still record the phase."""
 
     def __init__(
-        self, *args, logger=None, step_name=None, summary_unit=None, summary_label=None, **kwargs
+        self,
+        *args,
+        logger=None,
+        step_name=None,
+        summary_unit=None,
+        summary_label=None,
+        **kwargs,
     ):
         self._logger = logger
         self._step_name = step_name
@@ -167,7 +175,9 @@ class _PhaseBar(tqdm):
         return super().update(n)
 
     def close(self):
-        if not hasattr(self, "disable"):  # interrupted inside tqdm's __init__ (Stop during startup)
+        if not hasattr(
+            self, "disable"
+        ):  # interrupted inside tqdm's __init__ (Stop during startup)
             return
         super().close()
         if self._summarised:

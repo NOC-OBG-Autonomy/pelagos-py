@@ -11,7 +11,10 @@ def make_dataset(profile_numbers, pres_qc):
         {
             "PRES": ("N_MEASUREMENTS", np.zeros(n)),
             "PRES_QC": ("N_MEASUREMENTS", np.array(pres_qc)),
-            "PROFILE_NUMBER": ("N_MEASUREMENTS", np.array(profile_numbers, dtype=float)),
+            "PROFILE_NUMBER": (
+                "N_MEASUREMENTS",
+                np.array(profile_numbers, dtype=float),
+            ),
         },
         coords={"N_MEASUREMENTS": range(n)},
     )
@@ -23,8 +26,9 @@ def test_profile_over_threshold_is_fully_flagged():
     profile_numbers = [1, 1, 1, 2, 2, 2]
     pres_qc = [4, 4, 1, 4, 1, 1]
 
-
-    qc = flag_full_profile(make_dataset(profile_numbers, pres_qc), check_vars={"PRES": 2})
+    qc = flag_full_profile(
+        make_dataset(profile_numbers, pres_qc), check_vars={"PRES": 2}
+    )
     flags = qc.return_qc()
 
     assert list(flags["PRES_QC"].values) == [4, 4, 4, 4, 1, 1]

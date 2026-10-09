@@ -66,9 +66,7 @@ def discover_steps():
     failed_modules = []
     # Pre-collect module files so the scan can show a determinate progress bar.
     module_files = [
-        py_file
-        for py_file in base_dir.rglob("*.py")
-        if py_file.name != "__init__.py"
+        py_file for py_file in base_dir.rglob("*.py") if py_file.name != "__init__.py"
     ]
     for py_file in progress_bar(module_files, desc="Discovering steps", unit="mod"):
         # Convert file path to module path

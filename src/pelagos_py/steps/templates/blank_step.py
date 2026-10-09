@@ -26,7 +26,6 @@ import pelagos_py.utils.diagnostics as diag
 
 # @register_step  # Uncomment when implementing
 class BlankStep(BaseStep, QCHandlingMixin):
-
     step_name = "Blank Step"
     required_variables = []
     provided_variables = []

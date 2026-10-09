@@ -188,6 +188,7 @@ def qc_par_flagging(pres, par, sun_elev, nei_par=3e-2):
 
     # now perform interpolation
     from scipy.interpolate import interp1d
+
     f = interp1d(pres_v, par_v, kind="linear", bounds_error=False, fill_value=np.nan)
     par_i = f(pres_i)
 
@@ -195,12 +196,17 @@ def qc_par_flagging(pres, par, sun_elev, nei_par=3e-2):
     # 3. Shapiro–Wilk test on successive tails
     # ───────────────────────────────────────────────
     from scipy.stats import shapiro
-    _shapiro = getattr(shapiro, "__wrapped__", shapiro)  # scipy's nan_policy wrapper costs ~5x the test
+
+    _shapiro = getattr(
+        shapiro, "__wrapped__", shapiro
+    )  # scipy's nan_policy wrapper costs ~5x the test
     # Scan bottom-up and stop once pa (deepest p <= 1e-4) and, for night, any p <= 0 are known.
     pvals = np.full_like(pres_i, np.nan, dtype=float)
     finite_par = np.isfinite(par_i)
     found_pa, all_positive = False, True
-    with warnings.catch_warnings():  # TODO: Dev. verbosity to disable warning ignoring. Also below...
+    with (
+        warnings.catch_warnings()
+    ):  # TODO: Dev. verbosity to disable warning ignoring. Also below...
         warnings.simplefilter("ignore")
         for i in range(pres_i.size - 1, -1, -1):
             seg = par_i[i:][finite_par[i:]]
@@ -270,7 +276,9 @@ def qc_par_flagging(pres, par, sun_elev, nei_par=3e-2):
         else (
             1
             if n_good / N >= 0.25
-            else 2 if np.sum(flags == 2) >= np.sum(flags == 3) else 3
+            else 2
+            if np.sum(flags == 2) >= np.sum(flags == 3)
+            else 3
         )
     )
 
@@ -322,7 +330,9 @@ class par_irregularity_qc(BaseQC):
             self.data["TIME"].values[first],
         )
         for (profile_number, idx), solar_elevation in zip(
-            self.log_progress(groups.items(), total=len(groups), desc="", unit="profile"),
+            self.log_progress(
+                groups.items(), total=len(groups), desc="", unit="profile"
+            ),
             solar_elevations,
         ):
             profile = self.data.isel(N_MEASUREMENTS=idx)
@@ -356,8 +366,12 @@ class par_irregularity_qc(BaseQC):
             fig, axes = fig_spec.new_fig()
             ax = axes[0][0]
             y = self.data["DOWNWELLING_PAR"]
-            fig_spec.flag_points(ax, x, y.values, self.flags["DOWNWELLING_PAR_QC"].values)
-            fig_spec.style_axes(ax, ylabel=fig_spec.axis_label("DOWNWELLING_PAR", y.attrs.get("units")))
+            fig_spec.flag_points(
+                ax, x, y.values, self.flags["DOWNWELLING_PAR_QC"].values
+            )
+            fig_spec.style_axes(
+                ax, ylabel=fig_spec.axis_label("DOWNWELLING_PAR", y.attrs.get("units"))
+            )
             fig_spec.x_axis(ax, x)
             fig_spec.legend(ax, title="Flags")
             fig_spec.finish(fig, suptitle="PAR irregularity test")

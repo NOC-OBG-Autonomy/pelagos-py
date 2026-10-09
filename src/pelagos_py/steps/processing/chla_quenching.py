@@ -31,7 +31,9 @@ from functools import cached_property
 import pandas as pd
 import matplotlib.pyplot as plt
 
-CALC_SUFFIX = "__FOR_CALC"  # suffix of the QC-masked calculation-only copies; see run().
+CALC_SUFFIX = (
+    "__FOR_CALC"  # suffix of the QC-masked calculation-only copies; see run().
+)
 
 # Backscatter variables tried, in order, when 'bbp_var' is absent (despiked
 # baseline preferred, raw BBP as fallbacks); the step halts if none are present.
@@ -39,7 +41,9 @@ BBP_VAR_FALLBACKS = ["BBP700_BASELINE", "BBP700", "BBP532_BASELINE", "BBP532"]
 
 # Night-reference tuning ('hemsley2015'/'thomalla2018').
 NIGHT_REF_BIN_METRES = 1.0  # depth bin (m) for averaging nighttime profiles.
-HEMSLEY_REGRESSION_DEPTH = 60.0  # top-of-water depth (m) the Hemsley regression is fit over.
+HEMSLEY_REGRESSION_DEPTH = (
+    60.0  # top-of-water depth (m) the Hemsley regression is fit over.
+)
 
 XB18_SIGMOID = (0.092, 261.0, 2.2)  # r, I_50, e of the Xing 2018 sigmoid
 
@@ -50,9 +54,13 @@ CORRECTION_WARN_FACTOR = 5.0
 # Diagnostics-only tuning for the method-comparison figure: plot appearance and
 # how day/night profiles are paired and scored. None of these affect the correction.
 COMPARE_BIN_METRES = 5.0  # depth bin (m) for pairing day/night median fluorescence.
-COMPARE_SURFACE_LIMIT_METRES = 50.0  # only bins this shallow are scored (where methods differ).
+COMPARE_SURFACE_LIMIT_METRES = (
+    50.0  # only bins this shallow are scored (where methods differ).
+)
 MAX_COMPARE_PROFILES = 200  # cap on day profiles run through every method.
-MIDDAY_MIDNIGHT_WINDOW_HOURS = 1.5  # solar-time half-window (h) around noon/midnight for the regression.
+MIDDAY_MIDNIGHT_WINDOW_HOURS = (
+    1.5  # solar-time half-window (h) around noon/midnight for the regression.
+)
 TIMESERIES_DEPTH_LIMIT = 300.0  # max depth (m) shown in the timeseries section.
 TIMESERIES_DEPTH_MIN = 50.0  # min depth (m) the dynamic section window shrinks to.
 SECTION_MARKER_SIZE = 1.5  # scatter marker size for the section plots.
@@ -128,9 +136,16 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
     # stay available even when diagnostics is force-enabled after __init__ (see
     # report capture). Likewise the four CHLA-family names cover check_chl_
     # variables()'s "_ADJUSTED variant already exists" branch.
-    optional_variables = ["MLD", "ZEU", "Z_IPAR"] + BBP_VAR_FALLBACKS + [
-        "CHLA", "CHLA_ADJUSTED", "CHLA_FLUORESCENCE", "CHLA_FLUORESCENCE_ADJUSTED",
-    ]
+    optional_variables = (
+        ["MLD", "ZEU", "Z_IPAR"]
+        + BBP_VAR_FALLBACKS
+        + [
+            "CHLA",
+            "CHLA_ADJUSTED",
+            "CHLA_FLUORESCENCE",
+            "CHLA_FLUORESCENCE_ADJUSTED",
+        ]
+    )
     variable_parameters = ["bbp_var", "par_var", "apply_to"]
     # only some methods need these (see required_variables), so the validator can't check them
     variable_parameters_optional = ("bbp_var", "par_var")
@@ -280,7 +295,12 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
 
         self.apply_to, self.output_as = check_chl_variables(
             self,
-            ["CHLA", "CHLA_ADJUSTED", "CHLA_FLUORESCENCE", "CHLA_FLUORESCENCE_ADJUSTED"],
+            [
+                "CHLA",
+                "CHLA_ADJUSTED",
+                "CHLA_FLUORESCENCE",
+                "CHLA_FLUORESCENCE_ADJUSTED",
+            ],
         )
         if self.apply_to != self.output_as:
             self.data[self.output_as] = self.data[self.apply_to]
@@ -309,15 +329,23 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         needs_zeu = method_key in ("biermann2015", "hemsley2015", "swart2015")
         needs_ipar = method_key in ("xing2018",)
         needs_bbp = method_key in (
-            "xing2018", "hemsley2015", "thomalla2018", "sackmann2008", "swart2015",
+            "xing2018",
+            "hemsley2015",
+            "thomalla2018",
+            "sackmann2008",
+            "swart2015",
         )
         missing = []
         if needs_mld and "MLD" not in self.data.data_vars:
             missing.append("MLD (add a Mixed Layer Depth step beforehand)")
         if needs_zeu and "ZEU" not in self.data.data_vars:
-            missing.append("ZEU (add a 'Interpolate PAR' step with compute_zeu beforehand)")
+            missing.append(
+                "ZEU (add a 'Interpolate PAR' step with compute_zeu beforehand)"
+            )
         if needs_ipar and "Z_IPAR" not in self.data.data_vars:
-            missing.append("Z_IPAR (add a 'Interpolate PAR' step with compute_ipar beforehand)")
+            missing.append(
+                "Z_IPAR (add a 'Interpolate PAR' step with compute_ipar beforehand)"
+            )
         if needs_bbp:
             resolved_bbp = self._resolve_bbp_var()
             if resolved_bbp is None:
@@ -444,7 +472,10 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         )
         no_sun = []
         for profile_number in self.log_progress(profile_numbers, desc="", unit="prof"):
-            if method_key in self.methods_requiring_sun and int(profile_number) not in self._sun_cache:
+            if (
+                method_key in self.methods_requiring_sun
+                and int(profile_number) not in self._sun_cache
+            ):
                 no_sun.append(int(profile_number))
                 continue
             idx = self._profile_index[profile_number]
@@ -463,10 +494,13 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
             no_qd = counts.get("no_qd", 0)
             if no_qd:
                 reasons = {
-                    k[len("no_qd:"):]: v for k, v in counts.items() if k.startswith("no_qd:")
+                    k[len("no_qd:") :]: v
+                    for k, v in counts.items()
+                    if k.startswith("no_qd:")
                 }
                 breakdown = ", ".join(
-                    f"{k}={v}" for k, v in sorted(reasons.items(), key=lambda kv: -kv[1])
+                    f"{k}={v}"
+                    for k, v in sorted(reasons.items(), key=lambda kv: -kv[1])
                 )
                 ref_no_surface = counts.get("ref_no_surface", 0)
                 extra = (
@@ -516,7 +550,8 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         # lacks name, pointing at the 'Interpolate PAR' toggle that would fill it.
         vals = np.asarray(self.data[name].values, dtype=float)
         missing = [
-            pn for pn in day_pns
+            pn
+            for pn in day_pns
             if not np.any(np.isfinite(vals[self._profile_index.get(pn, [])]))
         ]
         if missing:
@@ -553,7 +588,9 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
     def _resolve_bbp_var(self):
         # Configured bbp_var if present, else the first available fallback (logged);
         # None if none are present, so the caller can halt.
-        candidates = [self.bbp_var] + [b for b in BBP_VAR_FALLBACKS if b != self.bbp_var]
+        candidates = [self.bbp_var] + [
+            b for b in BBP_VAR_FALLBACKS if b != self.bbp_var
+        ]
         for name in candidates:
             if name in self.data.data_vars:
                 if name != self.bbp_var:
@@ -568,7 +605,9 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         # Warn once per run if a bbp-ratio method lifts CHLA implausibly far above
         # the input (a near-zero bbp inflating the ratio). Judged on the output, not
         # the ratio; suppressed during diagnostics so only the real correction warns.
-        if getattr(self, "_blowup_warned", False) or getattr(self, "_suppress_warn", False):
+        if getattr(self, "_blowup_warned", False) or getattr(
+            self, "_suppress_warn", False
+        ):
             return
         chlf = np.asarray(chlf, dtype=float)
         chl_corr = np.asarray(chl_corr, dtype=float)
@@ -604,7 +643,9 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         self._sun_cache = dict(zip(pns, solpos["elevation"].to_numpy(dtype=float)))
         utc_hours = time_utc.hour + time_utc.minute / 60 + time_utc.second / 3600
         eot = solpos["equation_of_time"].to_numpy(dtype=float)  # minutes
-        solar_hours = (np.asarray(utc_hours, dtype=float) + long / 15.0 + eot / 60.0) % 24.0
+        solar_hours = (
+            np.asarray(utc_hours, dtype=float) + long / 15.0 + eot / 60.0
+        ) % 24.0
         self._solar_noon_cache = dict(zip(pns, np.abs(solar_hours - 12.0)))
 
     def _sun_elevation_for(self, profile_number):
@@ -655,11 +696,12 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
                 )
                 return
             from scipy.stats import linregress
+
             fit = linregress(b[sel], f[sel])
             self._hemsley_regression = {
                 "slope": float(fit.slope),
                 "intercept": float(fit.intercept),
-                "r2": float(fit.rvalue ** 2),
+                "r2": float(fit.rvalue**2),
                 "n": int(np.sum(sel)),
                 # Raw fitted points, kept so the diagnostics can scatter them.
                 "bbp": b[sel],
@@ -668,7 +710,7 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
             if not quiet:
                 self.log(
                     f"Hemsley 2015: night regression Chl = {fit.slope:.4g}*bbp "
-                    f"+ {fit.intercept:.4g} (r2={fit.rvalue ** 2:.2f}, n={int(np.sum(sel))})."
+                    f"+ {fit.intercept:.4g} (r2={fit.rvalue**2:.2f}, n={int(np.sum(sel))})."
                 )
             return
 
@@ -691,8 +733,12 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
                 continue
             ref["time"] = float(np.median([times[pn] for pn in members]))
             first, last = min(members, key=times.get), max(members, key=times.get)
-            ref["first"] = self._bin_night(*(a[pnum == first] for a in (z_all, fl_all, bbp_all)))
-            ref["last"] = self._bin_night(*(a[pnum == last] for a in (z_all, fl_all, bbp_all)))
+            ref["first"] = self._bin_night(
+                *(a[pnum == first] for a in (z_all, fl_all, bbp_all))
+            )
+            ref["last"] = self._bin_night(
+                *(a[pnum == last] for a in (z_all, fl_all, bbp_all))
+            )
             night_refs.append(ref)
 
         day_night = {}
@@ -749,7 +795,6 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
             "ratio": np.asarray(ratio, dtype=float)[order],
         }
 
-
     # ==================================================================
     # Correction methods (public apply_*_quenching_correction), in order of
     # publication. Each takes a single-profile dataset and returns its corrected
@@ -800,7 +845,10 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         # R_max is a derived reference, so it is found from the calculation copies.
         within = (depth <= z_win) & np.isfinite(depth)
         fratio = np.divide(
-            chlf_calc, bbp_calc, out=np.full_like(chlf_calc, np.nan), where=(bbp_calc != 0)
+            chlf_calc,
+            bbp_calc,
+            out=np.full_like(chlf_calc, np.nan),
+            where=(bbp_calc != 0),
         )
         fratio_within = np.where(within, fratio, np.nan)
         if np.all(np.isnan(fratio_within)):
@@ -818,8 +866,10 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         result = np.fmax(chlf, chl_corr)
         self._warn_if_correction_blows_up(chlf, result)
         info = {
-            "lines": [("MLD" if window == "mld" else "$Z_{eu}$", z_win, "k", "--"),
-                      ("depth of $R_{max}$", rmax_depth, _C_RATIO, ":")],
+            "lines": [
+                ("MLD" if window == "mld" else "$Z_{eu}$", z_win, "k", "--"),
+                ("depth of $R_{max}$", rmax_depth, _C_RATIO, ":"),
+            ],
             "recon": [(r"$b_{bp} \times R_{max}$", bbp * r_max, "line")],
             "ratio": (fratio, r_max, rmax_depth),
         }
@@ -859,7 +909,9 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
             return chlf, {}
 
         # reference max is derived, so flagged samples cannot supply it
-        chlf_mld = np.where(within_mld, self._calc_values(profile, self.apply_to), np.nan)
+        chlf_mld = np.where(
+            within_mld, self._calc_values(profile, self.apply_to), np.nan
+        )
         if np.all(np.isnan(chlf_mld)):
             return chlf, {}
         idx_max, chlf_max = np.nanargmax(chlf_mld), np.nanmax(chlf_mld)
@@ -869,8 +921,12 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         chl_corr = np.copy(chlf)
         chl_corr[(depth <= chlf_max_depth) & (~np.isnan(chlf))] = chlf_max
 
-        info = {"lines": [("MLD", mld, "k", "--"),
-                          ("depth of max in-ML CHLA", chlf_max_depth, _C_RATIO, ":")]}
+        info = {
+            "lines": [
+                ("MLD", mld, "k", "--"),
+                ("depth of max in-ML CHLA", chlf_max_depth, _C_RATIO, ":"),
+            ]
+        }
         return chl_corr, info
 
     def apply_biermann2015_quenching_correction(self, profile):
@@ -914,8 +970,12 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         chl_corr = np.copy(chlf)
         chl_corr[(depth <= z_qd) & (~np.isnan(chlf))] = f_max
 
-        info = {"lines": [("$Z_{eu}$", zeu, "k", "--"),
-                          ("depth of max CHLA (0–Zeu)", float(z_qd), _C_RATIO, ":")]}
+        info = {
+            "lines": [
+                ("$Z_{eu}$", zeu, "k", "--"),
+                ("depth of max CHLA (0–Zeu)", float(z_qd), _C_RATIO, ":"),
+            ]
+        }
         return chl_corr, info
 
     def apply_hemsley2015_quenching_correction(self, profile):
@@ -954,9 +1014,16 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         fill = (depth >= 0) & (depth <= zeu) & np.isfinite(bbp) & (~np.isnan(chlf))
         chl_corr[fill] = m * bbp[fill] + c
 
-        info = {"lines": [("$Z_{eu}$", zeu, "k", "--")],
-                "recon": [("night regression × day bbp",
-                           np.where(depth <= zeu, m * bbp + c, np.nan), "line")]}
+        info = {
+            "lines": [("$Z_{eu}$", zeu, "k", "--")],
+            "recon": [
+                (
+                    "night regression × day bbp",
+                    np.where(depth <= zeu, m * bbp + c, np.nan),
+                    "line",
+                )
+            ],
+        }
         return chl_corr, info
 
     def apply_swart2015_quenching_correction(self, profile):
@@ -1015,20 +1082,29 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         pair = self._bracketing_nights(profile_number)
         if pair:  # Mitchell et al. 2024
             r0, r1, alpha = pair
-            ratio_at_z = (1 - alpha) * at(r0, "ratio", right=np.nan) + alpha * at(r1, "ratio", right=np.nan)
-            fl_night_at_z = ((1 - alpha) * at(r0, "fl", left=np.nan, right=np.nan)
-                             + alpha * at(r1, "fl", left=np.nan, right=np.nan))
+            ratio_at_z = (1 - alpha) * at(r0, "ratio", right=np.nan) + alpha * at(
+                r1, "ratio", right=np.nan
+            )
+            fl_night_at_z = (1 - alpha) * at(
+                r0, "fl", left=np.nan, right=np.nan
+            ) + alpha * at(r1, "fl", left=np.nan, right=np.nan)
         else:
             ratio_at_z = at(ref, "ratio", right=np.nan)
             fl_night_at_z = at(ref, "fl", left=np.nan, right=np.nan)
 
         # QD is derived, so the quenched top of the profile cannot set it if flagged.
         qd, reason, qd_detail = self._quenching_depth(
-            depth, self._calc_values(profile, self.apply_to), fl_night_at_z,
+            depth,
+            self._calc_values(profile, self.apply_to),
+            fl_night_at_z,
             self.max_photic_depth,
         )
-        info = {"night_ref": ref, "night_pair": pair, "qd_detail": qd_detail,
-                "recon": [("night ratio × day bbp", ratio_at_z * bbp, "line")]}
+        info = {
+            "night_ref": ref,
+            "night_pair": pair,
+            "qd_detail": qd_detail,
+            "recon": [("night ratio × day bbp", ratio_at_z * bbp, "line")],
+        }
         if not np.isfinite(qd):
             self._count_thomalla("no_qd")
             self._count_thomalla(f"no_qd:{reason}")
@@ -1060,7 +1136,10 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         after = [r for r in self._night_refs if r["time"] > t]
         if not before or not after:
             return None
-        r0, r1 = max(before, key=lambda r: r["time"]), min(after, key=lambda r: r["time"])
+        r0, r1 = (
+            max(before, key=lambda r: r["time"]),
+            min(after, key=lambda r: r["time"]),
+        )
         alpha = (t - r0["time"]) / (r1["time"] - r0["time"])
         if mode == "flz":
             r0, r1 = r0["last"], r1["first"]
@@ -1080,7 +1159,9 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
             # distinguish missing day/night coverage from a genuine lack of a
             # night > day (quenching) signal in the data that is there
             reason = (
-                "too_few_valid_points" if np.sum(mask_all) < 3 else "no_positive_diff_signal"
+                "too_few_valid_points"
+                if np.sum(mask_all) < 3
+                else "no_positive_diff_signal"
             )
             return np.nan, reason, detail
         zz, DD = z[mask], D[mask]
@@ -1179,7 +1260,10 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
             npq_layer = (depth <= z_ref) & np.isfinite(depth)
             # R_max is a derived reference, so it comes from the calculation copies.
             fratio = np.divide(
-                chlf_calc, bbp_calc, out=np.full_like(chlf_calc, np.nan), where=(bbp_calc != 0)
+                chlf_calc,
+                bbp_calc,
+                out=np.full_like(chlf_calc, np.nan),
+                where=(bbp_calc != 0),
             )
             fratio_layer = np.where(npq_layer, fratio, np.nan)
             if np.all(np.isnan(fratio_layer)):
@@ -1190,10 +1274,17 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
             chl_corr = np.copy(chlf)
             fill = npq_layer & np.isfinite(bbp) & (~np.isnan(chlf))
             chl_corr[fill] = bbp[fill] * r_max
-            info["lines"] += [(r"NPQ layer $z_{ref}$ = min(MLD, $Z_{IPAR}$)", z_ref, _C_CORR, "-"),
-                              ("depth of $R_{max}$", float(depth[idx_rmax]), _C_RATIO, ":")]
-            info["recon"] = [(r"$b_{bp} \times R_{max}$",
-                              np.where(npq_layer, bbp * r_max, np.nan), "line")]
+            info["lines"] += [
+                (r"NPQ layer $z_{ref}$ = min(MLD, $Z_{IPAR}$)", z_ref, _C_CORR, "-"),
+                ("depth of $R_{max}$", float(depth[idx_rmax]), _C_RATIO, ":"),
+            ]
+            info["recon"] = [
+                (
+                    r"$b_{bp} \times R_{max}$",
+                    np.where(npq_layer, bbp * r_max, np.nan),
+                    "line",
+                )
+            ]
             info["ratio"] = (fratio, r_max, float(depth[idx_rmax]))
 
         else:
@@ -1233,10 +1324,18 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
 
             above = (depth <= mld) & np.isfinite(bbp) & (~np.isnan(chlf))
             chl_corr[above] = bbp[above] * r_mld
-            info["recon"] = [("sigmoid de-quenched (below MLD)",
-                              np.where(below, chl_corr, np.nan), "points"),
-                             (r"$b_{bp} \times R_{MLD}$ (above MLD)",
-                              np.where(depth <= mld, bbp * r_mld, np.nan), "line")]
+            info["recon"] = [
+                (
+                    "sigmoid de-quenched (below MLD)",
+                    np.where(below, chl_corr, np.nan),
+                    "points",
+                ),
+                (
+                    r"$b_{bp} \times R_{MLD}$ (above MLD)",
+                    np.where(depth <= mld, bbp * r_mld, np.nan),
+                    "line",
+                ),
+            ]
 
         # never let the correction reduce fluorescence (fmax ignores NaNs)
         result = np.fmax(chlf, chl_corr)
@@ -1301,13 +1400,22 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
 
     # the overview's panels are drawn alone only when named, so 'all' doesn't duplicate them
     diagnostic_figures = {
-        "overview": ("Method comparison, corrected sections and an example profile in one figure", True),
+        "overview": (
+            "Method comparison, corrected sections and an example profile in one figure",
+            True,
+        ),
         "method_comparison": ("Day vs night CHLA, every method scored", None),
         "timeseries": ("Original vs corrected depth-time sections", None),
         "example_profile": ("Example day profile, before and after", None),
         "profile": ("Annotated correction on plot_profiles", False),
-        "reference": ("Method reference: night regression / night ratio / mixing regimes", False),
-        "quenching_depth": ("Thomalla 2018 quenching-depth search on plot_profiles", False),
+        "reference": (
+            "Method reference: night regression / night ratio / mixing regimes",
+            False,
+        ),
+        "quenching_depth": (
+            "Thomalla 2018 quenching-depth search on plot_profiles",
+            False,
+        ),
         "sigmoid": ("Xing 2018 irradiance sigmoid", False),
     }
 
@@ -1348,7 +1456,9 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
     def _figure_profiles(self):
         # plot_profiles if set (and present), else the most-corrected day profile
         if self.plot_profiles:
-            present = [int(p) for p in self.plot_profiles if int(p) in self._profile_index]
+            present = [
+                int(p) for p in self.plot_profiles if int(p) in self._profile_index
+            ]
             missing = sorted(set(int(p) for p in self.plot_profiles) - set(present))
             if missing:
                 self.log_warn(f"plot_profiles {missing} not in the data; skipped.")
@@ -1364,8 +1474,14 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         # left = method comparison, top right = sections, bottom right = example profile
         fig = plt.figure(figsize=(21, 12), dpi=120)
         outer = fig.add_gridspec(
-            1, 2, width_ratios=[1.4, 2.2], wspace=0.14,
-            left=0.045, right=0.965, top=0.93, bottom=0.055,
+            1,
+            2,
+            width_ratios=[1.4, 2.2],
+            wspace=0.14,
+            left=0.045,
+            right=0.965,
+            top=0.93,
+            bottom=0.055,
         )
         self._draw_method_comparison(fig, outer[0, 0])
         right = outer[0, 1].subgridspec(2, 1, height_ratios=[1.5, 1.0], hspace=0.3)
@@ -1374,7 +1490,8 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         fig.suptitle(
             f"CHLA Quenching diagnostics — method: {self.method}  "
             f"({self.apply_to} -> {self.output_as})",
-            fontsize=13, fontweight="bold",
+            fontsize=13,
+            fontweight="bold",
         )
         return fig
 
@@ -1382,16 +1499,22 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         fig = plt.figure(figsize=(fig_spec.FIG_W, 11), dpi=fig_spec.DPI)
         gs = fig.add_gridspec(1, 1, left=0.08, right=0.97, top=0.94, bottom=0.05)
         self._draw_method_comparison(fig, gs[0, 0])
-        fig.suptitle("Day vs night CHLA by method (surface depth-bin medians)",
-                     fontsize=fig_spec.FS_SUPTITLE, fontweight="bold")
+        fig.suptitle(
+            "Day vs night CHLA by method (surface depth-bin medians)",
+            fontsize=fig_spec.FS_SUPTITLE,
+            fontweight="bold",
+        )
         return fig
 
     def _fig_timeseries(self):
         fig = plt.figure(figsize=(fig_spec.FIG_W, 9), dpi=fig_spec.DPI)
         gs = fig.add_gridspec(1, 1, left=0.08, right=0.95, top=0.94, bottom=0.08)
         self._draw_timeseries(fig, gs[0, 0])
-        fig.suptitle(f"CHLA Quenching — method: {self.method} ({self.apply_to} -> {self.output_as})",
-                     fontsize=fig_spec.FS_SUPTITLE, fontweight="bold")
+        fig.suptitle(
+            f"CHLA Quenching — method: {self.method} ({self.apply_to} -> {self.output_as})",
+            fontsize=fig_spec.FS_SUPTITLE,
+            fontweight="bold",
+        )
         return fig
 
     def _fig_example_profile(self):
@@ -1413,38 +1536,66 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
             depth = np.asarray(p["DEPTH"].values, dtype=float)
             orig = np.asarray(p[self.apply_to].values, dtype=float)
             corr, info = impl(p)
-            fig_spec.points(ax, orig, depth, color=_C_ORIG, label=f"Original {self.apply_to}")
+            fig_spec.points(
+                ax, orig, depth, color=_C_ORIG, label=f"Original {self.apply_to}"
+            )
             for label, values, style in info.get("recon", []):
                 if style == "line":
                     _line(ax, values, depth, color=_C_RECON, label=label)
                 else:
                     fig_spec.points(ax, values, depth, color=_C_RATIO, label=label)
-            changed = np.isfinite(corr) & np.isfinite(orig) & (np.abs(corr - orig) > 1e-9)
-            fig_spec.points(ax, corr[changed], depth[changed], color=_C_CORR,
-                            label=f"Corrected ({int(changed.sum())} points changed)")
+            changed = (
+                np.isfinite(corr) & np.isfinite(orig) & (np.abs(corr - orig) > 1e-9)
+            )
+            fig_spec.points(
+                ax,
+                corr[changed],
+                depth[changed],
+                color=_C_CORR,
+                label=f"Corrected ({int(changed.sum())} points changed)",
+            )
             for label, z, colour, ls in info.get("lines", []):
                 _hline(ax, z, label, colour, ls)
             zmax = max(zmax, _zmax(*[z for _, z, _, _ in info.get("lines", [])]))
-            fig_spec.style_axes(ax, title=self._profile_stamp(pn) if len(pns) > 1 else None,
-                                xlabel=self._chl_label(), ylabel="DEPTH [m]" if col == 0 else None)
+            fig_spec.style_axes(
+                ax,
+                title=self._profile_stamp(pn) if len(pns) > 1 else None,
+                xlabel=self._chl_label(),
+                ylabel="DEPTH [m]" if col == 0 else None,
+            )
             fig_spec.legend(ax)
             if with_ratio and "ratio" in info:
                 axr = axes[0][1]
                 fratio, r_max, z_r = info["ratio"]
-                fig_spec.points(axr, fratio, depth, color=_C_RATIO, label=f"{self.apply_to} / bbp")
-                axr.plot([r_max], [z_r], marker="*", ms=12, ls="", color=_C_CORR,
-                         label=f"$R_{{max}}$ = {r_max:.3g}")
+                fig_spec.points(
+                    axr, fratio, depth, color=_C_RATIO, label=f"{self.apply_to} / bbp"
+                )
+                axr.plot(
+                    [r_max],
+                    [z_r],
+                    marker="*",
+                    ms=12,
+                    ls="",
+                    color=_C_CORR,
+                    label=f"$R_{{max}}$ = {r_max:.3g}",
+                )
                 fig_spec.style_axes(axr, xlabel=f"{self.apply_to} / {self.bbp_var}")
                 fig_spec.legend(axr)
             elif with_ratio:
                 axes[0][1].axis("off")
         axes[0][0].set_ylim(zmax, 0)
         label = self._METHOD_LABELS[self.method.lower()]
-        if self.method.lower() == "thomalla2018" and self.night_reference != "preceding":
+        if (
+            self.method.lower() == "thomalla2018"
+            and self.night_reference != "preceding"
+        ):
             label += f" + Mitchell 2024 night_reference={self.night_reference}"
         if self.method.lower() == "xing2018" and self.hybrid:
-            label += (" + Terrats 2020 hybrid" if self._effective_hybrid
-                      else " (Terrats hybrid disabled: daytime profiles lack full PAR)")
+            label += (
+                " + Terrats 2020 hybrid"
+                if self._effective_hybrid
+                else " (Terrats hybrid disabled: daytime profiles lack full PAR)"
+            )
         title = f"{label} — " + (
             self._profile_stamp(pns[0]) if len(pns) == 1 else f"{len(pns)} profiles"
         )
@@ -1470,14 +1621,28 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
             return None
         fig, axes = fig_spec.new_fig()
         ax = axes[0][0]
-        fig_spec.points(ax, reg["bbp"], reg["fl"], color=fig_spec.CATEGORY[0], size=3, alpha=0.35,
-                        label=f"night samples ≤ {HEMSLEY_REGRESSION_DEPTH:.0f} m (n={reg['n']})")
+        fig_spec.points(
+            ax,
+            reg["bbp"],
+            reg["fl"],
+            color=fig_spec.CATEGORY[0],
+            size=3,
+            alpha=0.35,
+            label=f"night samples ≤ {HEMSLEY_REGRESSION_DEPTH:.0f} m (n={reg['n']})",
+        )
         x = np.array([np.nanmin(reg["bbp"]), np.nanmax(reg["bbp"])])
-        ax.plot(x, reg["slope"] * x + reg["intercept"], color=_C_CORR, lw=2,
-                label=f"{self.apply_to} = {reg['slope']:.3g}·bbp + {reg['intercept']:.3g}  (R² = {reg['r2']:.2f})")
+        ax.plot(
+            x,
+            reg["slope"] * x + reg["intercept"],
+            color=_C_CORR,
+            lw=2,
+            label=f"{self.apply_to} = {reg['slope']:.3g}·bbp + {reg['intercept']:.3g}  (R² = {reg['r2']:.2f})",
+        )
         fig_spec.style_axes(ax, xlabel=self._bbp_label(), ylabel=self._chl_label())
         fig_spec.legend(ax)
-        fig_spec.finish(fig, "Hemsley et al. (2015) — deployment-wide nighttime regression")
+        fig_spec.finish(
+            fig, "Hemsley et al. (2015) — deployment-wide nighttime regression"
+        )
         return fig
 
     def _fig_night_reference(self):
@@ -1490,9 +1655,27 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         ref = self._night_refs[ref_idx]
         fig, axes = fig_spec.new_fig(1, 3, sharey=True)
         a1, a2, a3 = axes[0]
-        fig_spec.points(a1, ref["fl"], ref["z"], color=fig_spec.CATEGORY[0], label=f"night mean {self.apply_to}")
-        fig_spec.points(a2, ref["fl"] / ref["ratio"], ref["z"], color=fig_spec.CATEGORY[0], label="night mean bbp")
-        fig_spec.points(a3, ref["ratio"], ref["z"], color=_C_RATIO, label=f"night {self.apply_to} : bbp")
+        fig_spec.points(
+            a1,
+            ref["fl"],
+            ref["z"],
+            color=fig_spec.CATEGORY[0],
+            label=f"night mean {self.apply_to}",
+        )
+        fig_spec.points(
+            a2,
+            ref["fl"] / ref["ratio"],
+            ref["z"],
+            color=fig_spec.CATEGORY[0],
+            label="night mean bbp",
+        )
+        fig_spec.points(
+            a3,
+            ref["ratio"],
+            ref["z"],
+            color=_C_RATIO,
+            label=f"night {self.apply_to} : bbp",
+        )
         fig_spec.style_axes(a1, xlabel=self._chl_label(), ylabel="DEPTH [m]")
         fig_spec.style_axes(a2, xlabel=self._bbp_label())
         fig_spec.style_axes(a3, xlabel=f"{self.apply_to} / {self.bbp_var}")
@@ -1500,8 +1683,11 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
             fig_spec.legend(ax)
         a1.set_ylim(_zmax(self.max_photic_depth), 0)
         night = pd.Timestamp(int(ref["time"]))
-        fig_spec.finish(fig, f"Thomalla et al. (2018) — {NIGHT_REF_BIN_METRES:g} m binned night "
-                             f"reference for {self._profile_stamp(pn)} ({night:%Y-%m-%d})")
+        fig_spec.finish(
+            fig,
+            f"Thomalla et al. (2018) — {NIGHT_REF_BIN_METRES:g} m binned night "
+            f"reference for {self._profile_stamp(pn)} ({night:%Y-%m-%d})",
+        )
         return fig
 
     def _fig_quenching_depth(self):
@@ -1516,21 +1702,47 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
             return None
         fig, axes = fig_spec.new_fig()
         ax = axes[0][0]
-        fig_spec.points(ax, detail["D"], detail["z"], color=_C_ORIG, label=f"night − day {self.apply_to}")
+        fig_spec.points(
+            ax,
+            detail["D"],
+            detail["z"],
+            color=_C_ORIG,
+            label=f"night − day {self.apply_to}",
+        )
         ax.axvline(0, color="0.4", lw=1, ls=":")
         if detail["anchor"]:
-            ax.plot([detail["anchor"][0]], [detail["anchor"][1]], marker="*", ms=13, ls="",
-                    color=_C_CORR, label="anchor (max diff, top 5 m)")
+            ax.plot(
+                [detail["anchor"][0]],
+                [detail["anchor"][1]],
+                marker="*",
+                ms=13,
+                ls="",
+                color=_C_CORR,
+                label="anchor (max diff, top 5 m)",
+            )
         if detail["candidates"]:
             cd, cz = zip(*detail["candidates"])
-            ax.plot(cd, cz, marker="s", ms=6, ls="", color=_C_RECON, label="candidate depths")
+            ax.plot(
+                cd,
+                cz,
+                marker="s",
+                ms=6,
+                ls="",
+                color=_C_RECON,
+                label="candidate depths",
+            )
         for label, z, colour, ls in info.get("lines", []):
             _hline(ax, z, label, colour, ls)
         ax.set_ylim(_zmax(self.max_photic_depth), 0)
-        fig_spec.style_axes(ax, xlabel=f"night − day {self.apply_to}", ylabel="DEPTH [m]")
+        fig_spec.style_axes(
+            ax, xlabel=f"night − day {self.apply_to}", ylabel="DEPTH [m]"
+        )
         fig_spec.legend(ax)
-        fig_spec.finish(fig, f"{self._METHOD_LABELS[self.method.lower()]} — quenching depth, "
-                             f"{self._profile_stamp(pn)}")
+        fig_spec.finish(
+            fig,
+            f"{self._METHOD_LABELS[self.method.lower()]} — quenching depth, "
+            f"{self._profile_stamp(pn)}",
+        )
         return fig
 
     def _fig_night_interpolation(self):
@@ -1550,15 +1762,34 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
                 continue
             r0, r1, alpha = pair
             on = lambda r: np.interp(z, r["z"], r["ratio"], left=np.nan, right=np.nan)
-            _line(ax, on(r0), z, color=fig_spec.CATEGORY[0], ls="--", label="preceding night")
+            _line(
+                ax,
+                on(r0),
+                z,
+                color=fig_spec.CATEGORY[0],
+                ls="--",
+                label="preceding night",
+            )
             _line(ax, on(r1), z, color=_C_ORIG, ls="--", label="following night")
-            _line(ax, (1 - alpha) * on(r0) + alpha * on(r1), z, color=_C_CORR,
-                  label=f"interpolated (α = {alpha:.2f})")
-            fig_spec.style_axes(ax, title=label, xlabel=f"night {self.apply_to} / bbp",
-                                ylabel="DEPTH [m]" if label.startswith("Mean") else None)
+            _line(
+                ax,
+                (1 - alpha) * on(r0) + alpha * on(r1),
+                z,
+                color=_C_CORR,
+                label=f"interpolated (α = {alpha:.2f})",
+            )
+            fig_spec.style_axes(
+                ax,
+                title=label,
+                xlabel=f"night {self.apply_to} / bbp",
+                ylabel="DEPTH [m]" if label.startswith("Mean") else None,
+            )
             fig_spec.legend(ax)
         axes[0][0].set_ylim(_zmax(self.max_photic_depth), 0)
-        fig_spec.finish(fig, f"Thomalla 2018 with Mitchell et al. (2024) night_reference — {self._profile_stamp(pn)}")
+        fig_spec.finish(
+            fig,
+            f"Thomalla 2018 with Mitchell et al. (2024) night_reference — {self._profile_stamp(pn)}",
+        )
         return fig
 
     def _fig_mixing_regimes(self):
@@ -1568,7 +1799,10 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
             if self._sun_elevation_for(pn) <= self.day_min_elevation:
                 continue
             p = self._profile_subsets([pn])[pn]
-            mld, z_ipar = self._profile_scalar(p, "MLD"), self._profile_scalar(p, "Z_IPAR")
+            mld, z_ipar = (
+                self._profile_scalar(p, "MLD"),
+                self._profile_scalar(p, "Z_IPAR"),
+            )
             if not (np.isfinite(mld) and np.isfinite(z_ipar) and z_ipar > 0):
                 continue
             regime = "shallow" if z_ipar > mld else "deep"
@@ -1579,17 +1813,32 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         zmax = 30.0
         for ax, (regime, pick) in zip(axes[0], picks.items()):
             if pick is None:
-                ax.text(0.5, 0.5, f"no {regime}-mixing day profile", ha="center", va="center",
-                        transform=ax.transAxes)
+                ax.text(
+                    0.5,
+                    0.5,
+                    f"no {regime}-mixing day profile",
+                    ha="center",
+                    va="center",
+                    transform=ax.transAxes,
+                )
                 continue
             pn, p, mld, z_ipar = pick
-            fig_spec.points(ax, np.asarray(p[self.apply_to].values, float),
-                            np.asarray(p["DEPTH"].values, float), color=_C_ORIG, label=self.apply_to)
+            fig_spec.points(
+                ax,
+                np.asarray(p[self.apply_to].values, float),
+                np.asarray(p["DEPTH"].values, float),
+                color=_C_ORIG,
+                label=self.apply_to,
+            )
             _hline(ax, mld, "MLD", "k", "--")
             _hline(ax, z_ipar, "$Z_{IPAR}$", "0.5", "--")
             rel = "≤" if z_ipar <= mld else ">"
-            fig_spec.style_axes(ax, title=f"{regime.title()} mixing: $Z_{{IPAR}}$ {rel} MLD (profile {pn})",
-                                xlabel=self._chl_label(), ylabel="DEPTH [m]" if regime == "deep" else None)
+            fig_spec.style_axes(
+                ax,
+                title=f"{regime.title()} mixing: $Z_{{IPAR}}$ {rel} MLD (profile {pn})",
+                xlabel=self._chl_label(),
+                ylabel="DEPTH [m]" if regime == "deep" else None,
+            )
             fig_spec.legend(ax)
             zmax = max(zmax, _zmax(mld, z_ipar))
         axes[0][0].set_ylim(zmax, 0)
@@ -1605,21 +1854,36 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         s = r + (1 - r) / (1 + (par / ipar_mid) ** e)
         fig, axes = fig_spec.new_fig()
         ax = axes[0][0]
-        ax.plot(par, s, color=_C_CORR, lw=2, label=r"$s(I) = r + (1-r)\,/\,[1 + (I/I_{50})^{e}]$")
-        ax.axvline(ipar_mid, color="0.5", ls="--", lw=1.2, label=f"$I_{{50}}$ = {ipar_mid:g}")
+        ax.plot(
+            par,
+            s,
+            color=_C_CORR,
+            lw=2,
+            label=r"$s(I) = r + (1-r)\,/\,[1 + (I/I_{50})^{e}]$",
+        )
+        ax.axvline(
+            ipar_mid, color="0.5", ls="--", lw=1.2, label=f"$I_{{50}}$ = {ipar_mid:g}"
+        )
         ax.axhline(r, color=_C_RATIO, ls=":", lw=1.2, label=f"r = {r:g}")
         ax.set_xscale("log")
-        fig_spec.style_axes(ax, xlabel=fig_spec.axis_label(self.par_var, "µmol photons m-2 s-1"),
-                            ylabel="retained fluorescence fraction s(I)")
+        fig_spec.style_axes(
+            ax,
+            xlabel=fig_spec.axis_label(self.par_var, "µmol photons m-2 s-1"),
+            ylabel="retained fluorescence fraction s(I)",
+        )
         fig_spec.legend(ax)
         fig_spec.finish(fig, f"Xing et al. (2018) sigmoid (e = {e:g})")
         return fig
 
     def _chl_label(self):
-        return fig_spec.axis_label(self.apply_to, self.data[self.apply_to].attrs.get("units"))
+        return fig_spec.axis_label(
+            self.apply_to, self.data[self.apply_to].attrs.get("units")
+        )
 
     def _bbp_label(self):
-        return fig_spec.axis_label(self.bbp_var, self.data[self.bbp_var].attrs.get("units"))
+        return fig_spec.axis_label(
+            self.bbp_var, self.data[self.bbp_var].attrs.get("units")
+        )
 
     # --- Left column: method comparison -------------------------------
 
@@ -1742,9 +2006,7 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         # noon/midnight (the worst-case quenching extremes), capped at
         # MAX_COMPARE_PROFILES for speed.
         pns = [int(pn) for pn in self.sun_args.index]
-        times = {
-            pn: pd.to_datetime(self.sun_args.loc[pn, "TIME"]).value for pn in pns
-        }
+        times = {pn: pd.to_datetime(self.sun_args.loc[pn, "TIME"]).value for pn in pns}
         from_noon = {pn: self._hours_from_solar_noon(pn) for pn in pns}
         window = MIDDAY_MIDNIGHT_WINDOW_HOURS
         midday = [pn for pn in pns if from_noon[pn] <= window]
@@ -1852,6 +2114,7 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         if x.size < 2 or np.ptp(x) == 0:
             return None
         from scipy.stats import linregress
+
         fit = linregress(x, y)
         resid = y - x
         bias = float(np.mean(resid))
@@ -1861,8 +2124,8 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
             "y": y,
             "slope": float(fit.slope),
             "intercept": float(fit.intercept),
-            "r2": float(fit.rvalue ** 2),
-            "rmse": float(np.sqrt(np.mean(resid ** 2))),
+            "r2": float(fit.rvalue**2),
+            "rmse": float(np.sqrt(np.mean(resid**2))),
             "bias": bias,
             # Bias relative to the mean night fluorescence, as a percentage.
             "bias_pct": 100.0 * bias / mean_night if mean_night != 0 else np.nan,
@@ -1870,8 +2133,13 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         }
 
     def _draw_scatter_panel(
-        self, ax, label, stats,
-        show_xlabel=True, show_ylabel=True, placeholder=None,
+        self,
+        ax,
+        label,
+        stats,
+        show_xlabel=True,
+        show_ylabel=True,
+        placeholder=None,
     ):
         if placeholder is not None:
             ax.text(
@@ -1993,16 +2261,22 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         for pn, idx in self._profile_index.items():
             total_change[int(pn)] = float(np.nansum(change[idx]))
 
-        day_candidates = [p for p in total_change if elev.get(p, 0) > self.day_min_elevation]
+        day_candidates = [
+            p for p in total_change if elev.get(p, 0) > self.day_min_elevation
+        ]
         pool = day_candidates or list(total_change)
         day_pn = max(pool, key=lambda p: total_change[p])
 
-        night_candidates = [p for p in total_change if elev.get(p, 0) < self.night_max_elevation]
+        night_candidates = [
+            p for p in total_change if elev.get(p, 0) < self.night_max_elevation
+        ]
         if night_candidates:
             day_t = pd.to_datetime(self.sun_args.loc[day_pn, "TIME"]).value
             night_pn = min(
                 night_candidates,
-                key=lambda p: abs(pd.to_datetime(self.sun_args.loc[p, "TIME"]).value - day_t),
+                key=lambda p: abs(
+                    pd.to_datetime(self.sun_args.loc[p, "TIME"]).value - day_t
+                ),
             )
         else:
             night_pn = day_pn
@@ -2022,13 +2296,28 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         for o, c, d in zip(orig[changed], corr[changed], depth[changed]):
             ax.plot([o, c], [d, d], c="0.85", lw=0.6, zorder=1)
         ax.scatter(
-            orig[~changed], depth[~changed], s=16, c="#1f9e89", label="Unchanged", zorder=2
+            orig[~changed],
+            depth[~changed],
+            s=16,
+            c="#1f9e89",
+            label="Unchanged",
+            zorder=2,
         )
         ax.scatter(
-            orig[changed], depth[changed], s=16, c="0.6", label="Original (quenched)", zorder=2
+            orig[changed],
+            depth[changed],
+            s=16,
+            c="0.6",
+            label="Original (quenched)",
+            zorder=2,
         )
         ax.scatter(
-            corr[changed], depth[changed], s=16, c="#d1495b", label="Corrected", zorder=3
+            corr[changed],
+            depth[changed],
+            s=16,
+            c="#d1495b",
+            label="Corrected",
+            zorder=3,
         )
         ax.set_xlabel(self.apply_to, fontsize=8)
         ax.set_ylabel("DEPTH", fontsize=8)
@@ -2080,17 +2369,31 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
         chla_cmap = palettes.get_cmap("chlorophyll")
         ax1 = fig.add_subplot(gr[0, 0])
         sc1 = ax1.scatter(
-            time, depth, c=orig, cmap=chla_cmap, vmin=vmin, vmax=vmax,
-            s=SECTION_MARKER_SIZE, rasterized=True,
+            time,
+            depth,
+            c=orig,
+            cmap=chla_cmap,
+            vmin=vmin,
+            vmax=vmax,
+            s=SECTION_MARKER_SIZE,
+            rasterized=True,
         )
         ax1.set_title(f"Original fluorescence (top {depth_limit:.0f} m)", fontsize=9)
 
         ax2 = fig.add_subplot(gr[1, 0], sharex=ax1, sharey=ax1)
         sc2 = ax2.scatter(
-            time, depth, c=corr, cmap=chla_cmap, vmin=vmin, vmax=vmax,
-            s=SECTION_MARKER_SIZE, rasterized=True,
+            time,
+            depth,
+            c=corr,
+            cmap=chla_cmap,
+            vmin=vmin,
+            vmax=vmax,
+            s=SECTION_MARKER_SIZE,
+            rasterized=True,
         )
-        ax2.set_title(f"Quenching-corrected fluorescence (top {depth_limit:.0f} m)", fontsize=9)
+        ax2.set_title(
+            f"Quenching-corrected fluorescence (top {depth_limit:.0f} m)", fontsize=9
+        )
 
         # colour every section point by whether the correction touched it
         ax3 = fig.add_subplot(gr[2, 0], sharex=ax1, sharey=ax1)
@@ -2103,8 +2406,12 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
             if not n:
                 continue
             ax3.scatter(
-                cat_time[sel], cat_depth[sel], c=color,
-                s=SECTION_MARKER_SIZE, rasterized=True, zorder=2 + z,
+                cat_time[sel],
+                cat_depth[sel],
+                c=color,
+                s=SECTION_MARKER_SIZE,
+                rasterized=True,
+                zorder=2 + z,
                 label=f"{label} ({n})",
             )
         ax3.set_title("Quenching layer — points by correction status", fontsize=9)
@@ -2142,7 +2449,9 @@ class chla_quenching_correction(BaseStep, QCHandlingMixin):
             if idx is None:
                 continue
             in_profile = changed[idx]
-            qd.append(float(np.max(depth[idx][in_profile])) if np.any(in_profile) else np.nan)
+            qd.append(
+                float(np.max(depth[idx][in_profile])) if np.any(in_profile) else np.nan
+            )
         return np.asarray(qd)
 
     def _section_point_categories(self, depth_limit, max_points):

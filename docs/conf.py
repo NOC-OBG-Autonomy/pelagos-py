@@ -1,4 +1,5 @@
 import sys, os
+
 sys.path.insert(0, os.path.abspath("../src"))
 
 # Configuration file for the Sphinx documentation builder.
@@ -123,6 +124,7 @@ def _autoapi_skip_member(app, what, name, obj, skip, options):
 
 def setup(app):
     app.connect("autoapi-skip-member", _autoapi_skip_member)
+
 
 # autoapi_ignore = [
 #     "pelagos_pypy.metadata_parser.metadata_parser",  # Exclude it as a submodule

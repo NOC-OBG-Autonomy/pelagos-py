@@ -128,9 +128,12 @@ class stuck_value_qc(BaseQC):
             # Broadcast the QC found for var into variables specified by "also_flag"
             if extra_vars := self.also_flag.get(var):
                 for extra_var in extra_vars:
-                    base = self.data.get(f"{extra_var}_QC", xr.zeros_like(self.data[f"{var}_QC"]))
+                    base = self.data.get(
+                        f"{extra_var}_QC", xr.zeros_like(self.data[f"{var}_QC"])
+                    )
                     self.data[f"{extra_var}_QC"] = (
-                        ["N_MEASUREMENTS"], propagate_flags(base, self.data[f"{var}_QC"])
+                        ["N_MEASUREMENTS"],
+                        propagate_flags(base, self.data[f"{var}_QC"]),
                     )
 
         # Select just the flags

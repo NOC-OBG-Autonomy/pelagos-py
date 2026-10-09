@@ -51,7 +51,13 @@ PHASE_NAMES = {
     TRANSITION: "7 Transition",
 }
 
-DERIVED_COLUMNS = ["SCI_PHASE", "PROFILE_NUMBER", "PROFILE_DIRECTION", "CYCLE", "GRADIENT"]
+DERIVED_COLUMNS = [
+    "SCI_PHASE",
+    "PROFILE_NUMBER",
+    "PROFILE_DIRECTION",
+    "CYCLE",
+    "GRADIENT",
+]
 
 # ---------------------------------------------------------------------------
 # Core Processing Logic
@@ -61,9 +67,9 @@ DERIVED_COLUMNS = ["SCI_PHASE", "PROFILE_NUMBER", "PROFILE_DIRECTION", "CYCLE", 
 def _compute_chunk_id(time_seconds, gap_threshold_seconds):
     # Real data gaps split the record into disconnected chunks - velocity is
     # never computed, and no run ever allowed, across one.
-    return np.concatenate((
-        [0], np.cumsum(np.diff(time_seconds) > gap_threshold_seconds)
-    )).astype(np.int32)
+    return np.concatenate(
+        ([0], np.cumsum(np.diff(time_seconds) > gap_threshold_seconds))
+    ).astype(np.int32)
 
 
 def _gradient_per_chunk(values, time_seconds, chunk_id):
@@ -83,7 +89,9 @@ def _smoothed_velocity(depth, time, time_seconds, chunk_id, window):
     # itself (median, to despike) - both rolling passes are time-windowed so
     # they stay meaningful under irregular sampling.
     depth_series = pd.Series(depth, index=pd.DatetimeIndex(time))
-    smoothed_depth = depth_series.rolling(window, center=True, min_periods=1).mean().to_numpy()
+    smoothed_depth = (
+        depth_series.rolling(window, center=True, min_periods=1).mean().to_numpy()
+    )
     velocity = _gradient_per_chunk(smoothed_depth, time_seconds, chunk_id)
     return (
         pd.Series(velocity, index=depth_series.index)
@@ -109,7 +117,9 @@ def _runs_by_chunk(mask, chunk_id):
             yield int(s), int(e)
 
 
-def _classify_ascent_descent(smoothed_velocity, time_seconds, chunk_id, velocity_threshold, min_duration_seconds):
+def _classify_ascent_descent(
+    smoothed_velocity, time_seconds, chunk_id, velocity_threshold, min_duration_seconds
+):
     # Threshold velocity into raw ascent/descent, then run-length merge, dropping
     # runs too short to trust (sensor noise) or that straddle a chunk boundary.
     n = len(smoothed_velocity)
@@ -126,12 +136,21 @@ def _classify_ascent_descent(smoothed_velocity, time_seconds, chunk_id, velocity
     run_durations = time_seconds[run_ends - 1] - time_seconds[run_starts]
     keep = (run_values != UNKNOWN) & (run_durations >= min_duration_seconds)
 
-    return np.repeat(np.where(keep, run_values, UNKNOWN), run_ends - run_starts).astype(np.int8)
+    return np.repeat(np.where(keep, run_values, UNKNOWN), run_ends - run_starts).astype(
+        np.int8
+    )
 
 
-def _classify_propelled_surfacing(phase, depth, time_seconds, chunk_id,
-                                   surfacing_depth_threshold, min_duration_seconds,
-                                   min_transect_duration_seconds, transect_phase):
+def _classify_propelled_surfacing(
+    phase,
+    depth,
+    time_seconds,
+    chunk_id,
+    surfacing_depth_threshold,
+    min_duration_seconds,
+    min_transect_duration_seconds,
+    transect_phase,
+):
     # Applied only to what ascent/descent left unknown. A flat, undulating stretch
     # away from the surface, gated by a much longer minimum duration than surfacing
     # so a turnaround isn't mistaken for one (a turn also sits near-zero velocity
@@ -164,12 +183,14 @@ def _classify_inflection(phase, depth, chunk_id, surfacing_depth_threshold):
         lo = s if start_gap else s - 1
 
         if after == ASCENT and before in (DESCENT, None):
-            idx = lo + np.argmax(depth[lo:e + 1])
+            idx = lo + np.argmax(depth[lo : e + 1])
         elif after == DESCENT and before in (ASCENT, None):
-            idx = lo + np.argmin(depth[lo:e + 1])
+            idx = lo + np.argmin(depth[lo : e + 1])
         else:
             continue
-        phase[idx] = SURFACING if depth[idx] <= surfacing_depth_threshold else INFLECTION
+        phase[idx] = (
+            SURFACING if depth[idx] <= surfacing_depth_threshold else INFLECTION
+        )
 
 
 def _classify_transition(phase, depth, chunk_id, surfacing_depth_threshold):
@@ -188,10 +209,18 @@ def _classify_transition(phase, depth, chunk_id, surfacing_depth_threshold):
         before = None if start_gap else phase[s - 1]
         after = phase[e]
         turn_to_core = before in (SURFACING, INFLECTION) and after in (ASCENT, DESCENT)
-        core_to_turn = after in (SURFACING, INFLECTION) and before in (ASCENT, DESCENT, None)
+        core_to_turn = after in (SURFACING, INFLECTION) and before in (
+            ASCENT,
+            DESCENT,
+            None,
+        )
         if not (turn_to_core or core_to_turn):
             continue
-        phase[s:e] = SURFACING if np.median(depth[s:e]) <= surfacing_depth_threshold else TRANSITION
+        phase[s:e] = (
+            SURFACING
+            if np.median(depth[s:e]) <= surfacing_depth_threshold
+            else TRANSITION
+        )
 
 
 def _assign_profile_and_cycle(phase, chunk_id):
@@ -223,9 +252,16 @@ def _assign_profile_and_cycle(phase, chunk_id):
     current_cycle = 1
     for k, (s, e) in enumerate(zip(starts, ends), start=1):
         lo = s
-        while lo > 0 and phase[lo - 1] == TRANSITION and chunk_id[lo - 1] == chunk_id[lo]:
+        while (
+            lo > 0 and phase[lo - 1] == TRANSITION and chunk_id[lo - 1] == chunk_id[lo]
+        ):
             lo -= 1
-        if phase[s] == ASCENT and lo > 0 and phase[lo - 1] == INFLECTION and chunk_id[lo - 1] == chunk_id[lo]:
+        if (
+            phase[s] == ASCENT
+            and lo > 0
+            and phase[lo - 1] == INFLECTION
+            and chunk_id[lo - 1] == chunk_id[lo]
+        ):
             lo -= 1
 
         hi = e
@@ -304,15 +340,28 @@ def find_profiles(
 
     chunk_id = _compute_chunk_id(time_seconds, gap_threshold_minutes * 60)
     smoothed_velocity = _smoothed_velocity(
-        depth, df["TIME"].to_numpy(), time_seconds, chunk_id, f"{smoothing_window_seconds}s"
+        depth,
+        df["TIME"].to_numpy(),
+        time_seconds,
+        chunk_id,
+        f"{smoothing_window_seconds}s",
     )
 
     phase = _classify_ascent_descent(
-        smoothed_velocity, time_seconds, chunk_id, velocity_threshold, min_duration_seconds
+        smoothed_velocity,
+        time_seconds,
+        chunk_id,
+        velocity_threshold,
+        min_duration_seconds,
     )
     _classify_propelled_surfacing(
-        phase, depth, time_seconds, chunk_id,
-        surfacing_depth_threshold, min_duration_seconds, min_transect_duration_seconds,
+        phase,
+        depth,
+        time_seconds,
+        chunk_id,
+        surfacing_depth_threshold,
+        min_duration_seconds,
+        min_transect_duration_seconds,
         transect_phase,
     )
     _classify_inflection(phase, depth, chunk_id, surfacing_depth_threshold)
@@ -456,7 +505,13 @@ class FindProfilesStep(BaseStep, QCHandlingMixin):
 
     step_name = "Find Profiles"
     required_variables = ["TIME"]
-    provided_variables = ["PROFILE_NUMBER", "PROFILE_DIRECTION", "PROFILE_GRADIENT", "CYCLE", "SCI_PHASE"]
+    provided_variables = [
+        "PROFILE_NUMBER",
+        "PROFILE_DIRECTION",
+        "PROFILE_GRADIENT",
+        "CYCLE",
+        "SCI_PHASE",
+    ]
     variable_parameters = ["depth_column"]
     uses_data_subset = True
 
@@ -464,49 +519,51 @@ class FindProfilesStep(BaseStep, QCHandlingMixin):
         "depth_column": {
             "type": str,
             "default": "PRES",
-            "description": "Depth or pressure column name. Defaults to PRES."
+            "description": "Depth or pressure column name. Defaults to PRES.",
         },
         "smoothing_window_seconds": {
             "type": int,
             "default": 30,
-            "description": "Rolling-mean window (seconds) applied to depth before differentiating."
+            "description": "Rolling-mean window (seconds) applied to depth before differentiating.",
         },
         "velocity_threshold": {
             "type": float,
             "default": 0.033,
-            "description": "Vertical velocity (depth units/s) to trigger ascent/descent classification."
+            "description": "Vertical velocity (depth units/s) to trigger ascent/descent classification.",
         },
         "min_duration_seconds": {
             "type": int,
             "default": 60,
-            "description": "Minimum seconds for an ascent/descent/surfacing run to be trusted."
+            "description": "Minimum seconds for an ascent/descent/surfacing run to be trusted.",
         },
         "gap_threshold_minutes": {
             "type": int,
             "default": 5,
-            "description": "Time gap (minutes) that splits the record into disconnected chunks."
+            "description": "Time gap (minutes) that splits the record into disconnected chunks.",
         },
         "surfacing_depth_threshold": {
             "type": float,
             "default": 2.0,
-            "description": "Depth below which a propelled/turn run is classified surfacing instead."
+            "description": "Depth below which a propelled/turn run is classified surfacing instead.",
         },
         "min_transect_duration_seconds": {
             "type": int,
             "default": 300,
-            "description": "Minimum duration for an unknown run to be classified parking/propelled."
+            "description": "Minimum duration for an unknown run to be classified parking/propelled.",
         },
         "transect_phase": {
             "type": str,
             "default": "auto",
             "options": ["auto", "parking", "propelled"],
             "description": "Phase for a long, flat, non-surface unknown stretch. 'auto' detects "
-                            "'ALR' in the source filename and picks 'propelled', else 'parking'."
+            "'ALR' in the source filename and picks 'propelled', else 'parking'.",
         },
     }
 
     def run(self):
-        self.log("Attempting to designate profile numbers, cycles, directions, and phases")
+        self.log(
+            "Attempting to designate profile numbers, cycles, directions, and phases"
+        )
         self.check_data()
         self.filter_qc()
 
@@ -514,7 +571,9 @@ class FindProfilesStep(BaseStep, QCHandlingMixin):
         # so every declared attribute is guaranteed to be set.
         depth_col = self.depth_column
         if depth_col not in self.data.variables:
-            raise ValueError(f"Specified depth column '{depth_col}' not found in the dataset.")
+            raise ValueError(
+                f"Specified depth column '{depth_col}' not found in the dataset."
+            )
 
         cols_to_extract = ["TIME", depth_col]
         df_raw = self.data[cols_to_extract].to_dataframe().reset_index()
@@ -530,13 +589,18 @@ class FindProfilesStep(BaseStep, QCHandlingMixin):
         df_raw.loc[~calc_mask, depth_col] = np.nan
 
         if self.transect_phase == "auto":
-            source_file = self.context.get("global_parameters", {}).get("source_file") or ""
+            source_file = (
+                self.context.get("global_parameters", {}).get("source_file") or ""
+            )
             transect_phase = PROPELLED if "ALR" in str(source_file).upper() else PARKING
         else:
-            transect_phase = PROPELLED if self.transect_phase == "propelled" else PARKING
+            transect_phase = (
+                PROPELLED if self.transect_phase == "propelled" else PARKING
+            )
 
         df_final = find_profiles(
-            df_raw, depth_col,
+            df_raw,
+            depth_col,
             smoothing_window_seconds=self.smoothing_window_seconds,
             velocity_threshold=self.velocity_threshold,
             min_duration_seconds=self.min_duration_seconds,
@@ -549,7 +613,10 @@ class FindProfilesStep(BaseStep, QCHandlingMixin):
         if self.diagnostics:
             self.generate_diagnostics(df_final, depth_col)
 
-        self.data["PROFILE_NUMBER"] = (("N_MEASUREMENTS",), df_final["PROFILE_NUMBER"].to_numpy())
+        self.data["PROFILE_NUMBER"] = (
+            ("N_MEASUREMENTS",),
+            df_final["PROFILE_NUMBER"].to_numpy(),
+        )
         self.data.PROFILE_NUMBER.attrs = {
             "long_name": "Derived profile number. NaN indicates no profile.",
             "units": "None",
@@ -558,7 +625,10 @@ class FindProfilesStep(BaseStep, QCHandlingMixin):
             "valid_max": np.inf,
         }
 
-        self.data["PROFILE_DIRECTION"] = (("N_MEASUREMENTS",), df_final["PROFILE_DIRECTION"].to_numpy())
+        self.data["PROFILE_DIRECTION"] = (
+            ("N_MEASUREMENTS",),
+            df_final["PROFILE_DIRECTION"].to_numpy(),
+        )
         self.data.PROFILE_DIRECTION.attrs = {
             "long_name": "Profile direction: -1 ascent, 1 descent, 0 transect (surfacing/propelled), NaN otherwise.",
             "units": "None",
@@ -567,7 +637,10 @@ class FindProfilesStep(BaseStep, QCHandlingMixin):
             "valid_max": 1,
         }
 
-        self.data["PROFILE_GRADIENT"] = (("N_MEASUREMENTS",), df_final["GRADIENT"].to_numpy())
+        self.data["PROFILE_GRADIENT"] = (
+            ("N_MEASUREMENTS",),
+            df_final["GRADIENT"].to_numpy(),
+        )
         self.data.PROFILE_GRADIENT.attrs = {
             "long_name": "Smoothed vertical velocity used for phase classification",
             "units": "m/s",
@@ -589,15 +662,24 @@ class FindProfilesStep(BaseStep, QCHandlingMixin):
             "valid_min": 0,
             "valid_max": 7,
             "flag_values": "0, 1, 2, 3, 4, 5, 6, 7",
-            "flag_meanings": "unknown ascent descent surfacing parking inflection propelled transition"
+            "flag_meanings": "unknown ascent descent surfacing parking inflection propelled transition",
         }
 
         # 2 classified from real depth, 8 filled from neighbouring rows, 9 neither.
         label_qc = df_final["LABEL_QC"].to_numpy()
-        for var in ["PROFILE_NUMBER", "PROFILE_DIRECTION", "PROFILE_GRADIENT", "CYCLE", "SCI_PHASE"]:
+        for var in [
+            "PROFILE_NUMBER",
+            "PROFILE_DIRECTION",
+            "PROFILE_GRADIENT",
+            "CYCLE",
+            "SCI_PHASE",
+        ]:
             values = self.data[var].values
             missing = values == UNKNOWN if var == "SCI_PHASE" else np.isnan(values)
-            self.data[f"{var}_QC"] = (("N_MEASUREMENTS",), np.where(missing, 9, label_qc).astype(np.int8))
+            self.data[f"{var}_QC"] = (
+                ("N_MEASUREMENTS",),
+                np.where(missing, 9, label_qc).astype(np.int8),
+            )
 
         self.context["data"].update(self.data)
         return self.context
@@ -616,18 +698,35 @@ class FindProfilesStep(BaseStep, QCHandlingMixin):
             t_data = mapped_df["TIME"][mask] if n_points else []
             depth_data = mapped_df[depth_col][mask] if n_points else []
             lbl = f"{PHASE_NAMES.get(p_val, f'Phase {p_val}')} (n={n_points})"
-            fig_spec.points(ax1, t_data, depth_data,
-                            color=PHASE_COLOURS.get(p_val, "black"), label=lbl)
+            fig_spec.points(
+                ax1,
+                t_data,
+                depth_data,
+                color=PHASE_COLOURS.get(p_val, "black"),
+                label=lbl,
+            )
 
         ax1.invert_yaxis()
-        fig_spec.style_axes(ax1, title="High Resolution Phase Mapping", ylabel="Pressure/Depth")
+        fig_spec.style_axes(
+            ax1, title="High Resolution Phase Mapping", ylabel="Pressure/Depth"
+        )
         fig_spec.legend(ax1)
 
         # Panel 2: derived profile & cycle numbering.
-        fig_spec.points(ax2, mapped_df["TIME"], mapped_df["PROFILE_NUMBER"],
-                        color=fig_spec.CATEGORY[1], label="Profile Number")
-        fig_spec.points(ax2, mapped_df["TIME"], mapped_df["CYCLE"],
-                        color=fig_spec.CATEGORY[2], label="Cycle Number")
+        fig_spec.points(
+            ax2,
+            mapped_df["TIME"],
+            mapped_df["PROFILE_NUMBER"],
+            color=fig_spec.CATEGORY[1],
+            label="Profile Number",
+        )
+        fig_spec.points(
+            ax2,
+            mapped_df["TIME"],
+            mapped_df["CYCLE"],
+            color=fig_spec.CATEGORY[2],
+            label="Cycle Number",
+        )
         fig_spec.date_axis(ax2, which="x", index=mapped_df["TIME"].values)
         fig_spec.style_axes(ax2, xlabel="Time", ylabel="ID / Cycle")
         fig_spec.legend(ax2)

@@ -76,7 +76,11 @@ class impossible_speed_qc(BaseQC):
                 dlat = lat[i] - lat[ref]
                 dlon = (lon[i] - lon[ref] + 180) % 360 - 180  # dateline-safe
                 mid_lat = np.deg2rad((lat[i] + lat[ref]) / 2)
-                speed[i] = np.hypot(dlat, dlon * np.cos(mid_lat)) * 111_195 / (time[i] - time[ref])
+                speed[i] = (
+                    np.hypot(dlat, dlon * np.cos(mid_lat))
+                    * 111_195
+                    / (time[i] - time[ref])
+                )
                 bad[i] = speed[i] >= self.threshold
             if not bad[i] and (ref is None or time[i] - time[ref] >= self.min_interval):
                 ref = i

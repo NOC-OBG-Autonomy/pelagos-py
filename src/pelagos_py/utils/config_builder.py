@@ -33,7 +33,11 @@ from pelagos_py.utils import file_probe
 from pelagos_py.utils.file_probe import present
 from pelagos_py.utils.processing_utils import cndc_scale_factor
 from pelagos_py.steps.input_output.prepare_og1 import (
-    BBP_NAME, BETA_NAME, CNDC_MSCM_ABOVE, RENAMES, PrepareOG1,
+    BBP_NAME,
+    BETA_NAME,
+    CNDC_MSCM_ABOVE,
+    RENAMES,
+    PrepareOG1,
 )
 from pelagos_py.steps.processing.deep_correction import MIN_DEEP_THRESHOLD
 
@@ -42,12 +46,19 @@ PHASE_CANDIDATES = ("BPHASE_DOXY", "DPHASE_DOXY", "TPHASE_DOXY")
 _BAR = re.compile(r"^\s*#\s*[=~-]{5,}\s*$")
 _TITLE = re.compile(r"^\s*#\s*(\S.*?)\s*$")
 _STEP = re.compile(r"^  - name:")
-_FIELD = {f: re.compile(rf"(?m)^(\s*{f}:).*$")
-          for f in ("file_path", "output_path", "description", "out_directory")}
+_FIELD = {
+    f: re.compile(rf"(?m)^(\s*{f}:).*$")
+    for f in ("file_path", "output_path", "description", "out_directory")
+}
 
 DEEP_STEP = 50  # dbar between the offered deep correction thresholds
-RENAME_TARGETS = {"coord_latitude": "LATITUDE", "coord_longitude": "LONGITUDE",
-                  "bbp": BETA_NAME, "oxygen": "MOLAR_DOXY", "par": "DOWNWELLING_PAR"}
+RENAME_TARGETS = {
+    "coord_latitude": "LATITUDE",
+    "coord_longitude": "LONGITUDE",
+    "bbp": BETA_NAME,
+    "oxygen": "MOLAR_DOXY",
+    "par": "DOWNWELLING_PAR",
+}
 
 
 # ----------------------------------------------------------------------------
@@ -75,7 +86,9 @@ class _Block:
         return "\n".join(self.lines)
 
     def sub(self, pattern, repl, count=1):
-        self.lines = re.sub(pattern, repl, self.text(), count=count, flags=re.M).split("\n")
+        self.lines = re.sub(pattern, repl, self.text(), count=count, flags=re.M).split(
+            "\n"
+        )
 
 
 def _continues(lines, i):
@@ -86,8 +99,12 @@ def _continues(lines, i):
 
 
 def _is_banner(lines, i):
-    return (i + 2 < len(lines) and _BAR.match(lines[i])
-            and _TITLE.match(lines[i + 1]) and _BAR.match(lines[i + 2]))
+    return (
+        i + 2 < len(lines)
+        and _BAR.match(lines[i])
+        and _TITLE.match(lines[i + 1])
+        and _BAR.match(lines[i + 2])
+    )
 
 
 def _parse(text):
@@ -96,7 +113,10 @@ def _parse(text):
     # block), trailing text.
     lines = text.split("\n")
     try:
-        start = next(i for i, line in enumerate(lines) if re.match(r"^steps:\s*$", line)) + 1
+        start = (
+            next(i for i, line in enumerate(lines) if re.match(r"^steps:\s*$", line))
+            + 1
+        )
     except StopIteration:
         raise ValueError("Template has no 'steps:' list.")
     head = "\n".join(lines[:start])
@@ -107,15 +127,17 @@ def _parse(text):
         line = lines[i]
         if _is_banner(lines, i):
             section = _TITLE.match(lines[i + 1]).group(1)
-            banner = pending + lines[i:i + 3]
+            banner = pending + lines[i : i + 3]
             pending = []
             i += 3
             continue
         if _STEP.match(line):
             body = [line]
             i += 1
-            while i < len(lines) and (lines[i].startswith(" ") or (
-                    not lines[i].strip() and _continues(lines, i + 1))):
+            while i < len(lines) and (
+                lines[i].startswith(" ")
+                or (not lines[i].strip() and _continues(lines, i + 1))
+            ):
                 body.append(lines[i])
                 i += 1
             blocks.append(_Block(section, banner, pending + body))
@@ -142,20 +164,32 @@ def _render(head, blocks, tail):
 # ----------------------------------------------------------------------------
 def _decision(id_, title, detail, options=(), default=None, section=None):
     # `section`: the template section the choice can drop (shown as skipped by the dashboard).
-    return {"id": id_, "title": title, "detail": detail, "section": section,
-            "options": [{"key": key, "label": label} for key, label in options], "default": default}
+    return {
+        "id": id_,
+        "title": title,
+        "detail": detail,
+        "section": section,
+        "options": [{"key": key, "label": label} for key, label in options],
+        "default": default,
+    }
 
 
 def _rename_options(real, expected):
     # One "rename:<var>" option per file variable that could stand in for `expected`.
-    return [(f"rename:{v}", f"Use {v} as {expected}")
-            for v in sorted(real) if not v.endswith("_QC")]
+    return [
+        (f"rename:{v}", f"Use {v} as {expected}")
+        for v in sorted(real)
+        if not v.endswith("_QC")
+    ]
 
 
 def _renames(choices):
     # {expected: source} from every "rename:<source>" choice on a missing-variable decision.
-    return {RENAME_TARGETS[k]: v.split(":", 1)[1]
-            for k, v in (choices or {}).items() if k in RENAME_TARGETS and v.startswith("rename:")}
+    return {
+        RENAME_TARGETS[k]: v.split(":", 1)[1]
+        for k, v in (choices or {}).items()
+        if k in RENAME_TARGETS and v.startswith("rename:")
+    }
 
 
 def _oxygen_phase(probe):
@@ -190,18 +224,25 @@ def _coordinate_decisions(real):
             continue
         src = next((s for s, d in renames.items() if d == expected), None)
         if src:
-            decs.append(_decision(
-                f"coord_{expected.lower()}", f"{expected} renamed from {src}",
-                f"The file has no {expected}: {src} will be renamed to {expected}.",
-            ))
+            decs.append(
+                _decision(
+                    f"coord_{expected.lower()}",
+                    f"{expected} renamed from {src}",
+                    f"The file has no {expected}: {src} will be renamed to {expected}.",
+                )
+            )
         else:
-            decs.append(_decision(
-                f"coord_{expected.lower()}", f"{expected} missing",
-                f"No {expected} or any known alternative ({', '.join(RENAMES[expected])}) "
-                "in the file -- position QC and profile finding will fail unless it is "
-                "held under another name.",
-                [("none", "Leave missing")] + _rename_options(real, expected), "none",
-            ))
+            decs.append(
+                _decision(
+                    f"coord_{expected.lower()}",
+                    f"{expected} missing",
+                    f"No {expected} or any known alternative ({', '.join(RENAMES[expected])}) "
+                    "in the file -- position QC and profile finding will fail unless it is "
+                    "held under another name.",
+                    [("none", "Leave missing")] + _rename_options(real, expected),
+                    "none",
+                )
+            )
     return decs
 
 
@@ -210,18 +251,21 @@ def _cndc_decision(probe):
     units = (probe or {}).get("CNDC", {}).get("units", "")
     if cndc == "mislabelled":
         return _decision(
-            "cndc", "CNDC units mislabelled",
+            "cndc",
+            "CNDC units mislabelled",
             f"CNDC is labelled '{units}' but its values are mS/cm: it will be scaled "
             "x0.1 to S/m so the range test and gsw see the right units.",
         )
     if cndc == "relabel":
         return _decision(
-            "cndc", "CNDC units mislabelled",
+            "cndc",
+            "CNDC units mislabelled",
             f"CNDC is labelled '{units}' but its values are S/m: it will be relabelled S/m.",
         )
     if cndc == "mscm":
         return _decision(
-            "cndc", "CNDC in mS/cm",
+            "cndc",
+            "CNDC in mS/cm",
             "CNDC is genuinely in mS/cm; left as is, with the CTD range test scaled to match.",
         )
     return None
@@ -232,27 +276,38 @@ def _bbp_decision(real):
         return None
     if BBP_NAME in real:
         return _decision(
-            "bbp", "BETA_BACKSCATTERING700 missing, BBP700 present",
+            "bbp",
+            "BETA_BACKSCATTERING700 missing, BBP700 present",
             "Some files ship raw beta under BBP700 before it has been converted. Either "
             "treat BBP700 as beta (renamed to BETA_BACKSCATTERING700 and converted by "
             "'BBP from Beta') or trust it as already-converted BBP and skip the conversion.",
-            [("as_beta", "Use BBP700 as raw beta and convert it"),
-             ("direct", "Use BBP700 directly, skip conversion")],
-            "as_beta", section="BACKSCATTER",
+            [
+                ("as_beta", "Use BBP700 as raw beta and convert it"),
+                ("direct", "Use BBP700 directly, skip conversion"),
+            ],
+            "as_beta",
+            section="BACKSCATTER",
         )
     return _decision(
-        "bbp", "No backscatter",
+        "bbp",
+        "No backscatter",
         "Neither BETA_BACKSCATTERING700 nor BBP700 is in the file: the Backscatter "
         "section and the CHLA Quenching step (which needs BBP) are removed, unless "
         "raw beta is held under another name.",
-        [("remove", "Remove the Backscatter section")] + _rename_options(real, BETA_NAME),
-        "remove", section="BACKSCATTER",
+        [("remove", "Remove the Backscatter section")]
+        + _rename_options(real, BETA_NAME),
+        "remove",
+        section="BACKSCATTER",
     )
 
 
 def _oxygen_range_check(block):
     # The 0-1000 range tests on MOLAR_DOXY(_ADJUSTED), which apply to shipped oxygen too.
-    ranges = block.params.get("qc_settings", {}).get("range qc", {}).get("variable_ranges", {})
+    ranges = (
+        block.params.get("qc_settings", {})
+        .get("range qc", {})
+        .get("variable_ranges", {})
+    )
     return bool(ranges) and set(ranges) <= {"MOLAR_DOXY", "MOLAR_DOXY_ADJUSTED"}
 
 
@@ -267,37 +322,56 @@ def _oxygen_decision(probe, real):
     if not phase and not molar:
         opts += _rename_options(real, "MOLAR_DOXY")
     if "FREQUENCY_DOXY" in real:
-        notes.append("FREQUENCY_DOXY (SBE43 frequency) is present but no step converts it yet.")
+        notes.append(
+            "FREQUENCY_DOXY (SBE43 frequency) is present but no step converts it yet."
+        )
     empty = [v for v in PHASE_CANDIDATES if v in (probe or {}) and v not in real]
     if empty:
         notes.append(f"{', '.join(empty)} present but all-NaN.")
     if phase:
         title = f"Oxygen from {phase}"
-        detail = "Full optode chain: phase -> pressure correction -> shift -> concentration."
+        detail = (
+            "Full optode chain: phase -> pressure correction -> shift -> concentration."
+        )
     elif molar:
         title = "No optode phase; oxygen as shipped"
         detail = f"Only {molar} is available: the derivation steps are dropped and it is exposed as MOLAR_DOXY_ADJUSTED."
     else:
         title = "No oxygen"
-        detail = ("No optode phase or oxygen concentration in the file: the Oxygen section is "
-                  "removed, unless the concentration is held under another name.")
+        detail = (
+            "No optode phase or oxygen concentration in the file: the Oxygen section is "
+            "removed, unless the concentration is held under another name."
+        )
     # Known issue: "phase" is the default whenever it exists, but the template's SVU coefficients
     # are for one optode (aa4831). Revisit once it's decided how optode coefficients are supplied.
     # A lone "none" option is no choice: shown as automatic (default_choices skips it).
-    return _decision("oxygen", title, " ".join([detail] + notes),
-                     opts if len(opts) > 1 else (), opts[0][0], section="OXYGEN")
+    return _decision(
+        "oxygen",
+        title,
+        " ".join([detail] + notes),
+        opts if len(opts) > 1 else (),
+        opts[0][0],
+        section="OXYGEN",
+    )
 
 
 def _par_decision(probe, real):
     if present(probe, "DOWNWELLING_PAR"):
         return None
-    extra = " (DPAR is present but in a different unit and is not used.)" if "DPAR" in real else ""
+    extra = (
+        " (DPAR is present but in a different unit and is not used.)"
+        if "DPAR" in real
+        else ""
+    )
     return _decision(
-        "par", "No PAR",
+        "par",
+        "No PAR",
         f"DOWNWELLING_PAR is missing: the PAR QC section is removed, unless PAR is "
         f"held under another name.{extra}",
-        [("remove", "Remove the PAR QC section")] + _rename_options(real, "DOWNWELLING_PAR"),
-        "remove", section="PAR QC",
+        [("remove", "Remove the PAR QC section")]
+        + _rename_options(real, "DOWNWELLING_PAR"),
+        "remove",
+        section="PAR QC",
     )
 
 
@@ -308,22 +382,30 @@ def _deep_decision(probe):
     # Depth a tenth of the dives reach: enough profiles for Deep Correction without one-off deep dives.
     reach = sorted(dives, reverse=True)[len(dives) // 10]
     # Never suggest shallower than MIN_DEEP_THRESHOLD, but use it while some dives get past it.
-    suggested = max(round(reach / DEEP_STEP) * DEEP_STEP - DEEP_STEP, MIN_DEEP_THRESHOLD)
+    suggested = max(
+        round(reach / DEEP_STEP) * DEEP_STEP - DEEP_STEP, MIN_DEEP_THRESHOLD
+    )
     deepest_option = int(reach // DEEP_STEP) * DEEP_STEP
     depths = range(deepest_option, DEEP_STEP, -DEEP_STEP)
-    options = [("skip", "Skip deep correction")] + [(str(d), f"Use data below {d} dbar") for d in depths]
+    options = [("skip", "Skip deep correction")] + [
+        (str(d), f"Use data below {d} dbar") for d in depths
+    ]
     if reach > MIN_DEEP_THRESHOLD:
         return _decision(
-            "deep", f"Deep correction below {suggested} dbar",
+            "deep",
+            f"Deep correction below {suggested} dbar",
             f"Enough dives reach {reach:.0f} dbar, so the CHLA dark value is estimated "
             f"from data below {suggested} dbar.",
-            options, str(suggested),
+            options,
+            str(suggested),
         )
     return _decision(
-        "deep", "Dives too shallow for deep correction",
+        "deep",
+        "Dives too shallow for deep correction",
         f"Enough dives only reach {reach:.0f} dbar, too shallow (under {MIN_DEEP_THRESHOLD} dbar) "
         "to trust a CHLA dark value, so Deep Correction is removed.",
-        options if len(options) > 1 else (), "skip",
+        options if len(options) > 1 else (),
+        "skip",
     )
 
 
@@ -355,7 +437,9 @@ def ask_choices(decs, ask=input):
             continue
         # Rename options list every file variable, too many to number; typed by name instead.
         listed = [o for o in d["options"] if not o["key"].startswith("rename:")]
-        renamable = {o["key"].removeprefix("rename:") for o in d["options"] if o not in listed}
+        renamable = {
+            o["key"].removeprefix("rename:") for o in d["options"] if o not in listed
+        }
         for n, option in enumerate(listed, 1):
             default = "  (default)" if option["key"] == d["default"] else ""
             print(f"  {n}) {option['label']}{default}")
@@ -412,7 +496,7 @@ def _add_renames(block, renames):
     for line in block.lines:
         lines.append(line)
         if line.strip().startswith("bbp700_is_beta:"):
-            indent = line[:len(line) - len(line.lstrip())]
+            indent = line[: len(line) - len(line.lstrip())]
             lines.append(f"{indent}renames:  # file's name for a missing OG1 variable")
             for expected, source in renames.items():
                 lines.append(f"{indent}  {expected}: {source}")
@@ -424,7 +508,14 @@ def _yaml_string(value):
     return json.dumps(str(value))
 
 
-def build(template_text, file_path, probe=None, choices=None, description=None, output_path=None):
+def build(
+    template_text,
+    file_path,
+    probe=None,
+    choices=None,
+    description=None,
+    output_path=None,
+):
     """The template adapted to ``file_path``: paths patched in and each
     decision's choice applied (defaults where ``choices`` doesn't say)."""
     probe = probe if probe is not None else file_probe.probe_file(file_path)
@@ -444,16 +535,25 @@ def build(template_text, file_path, probe=None, choices=None, description=None, 
     output_path = output_path or str(Path(file_path).with_name(f"{stem}_Processed.nc"))
     description = description or f"Pipeline built for {Path(file_path).name}."
     head = _FIELD["description"].sub(set_field(description), head, count=1)
-    head = _FIELD["out_directory"].sub(set_field(f"{Path(file_path).parent}/"), head, count=1)
+    head = _FIELD["out_directory"].sub(
+        set_field(f"{Path(file_path).parent}/"), head, count=1
+    )
     for b in blocks:
         if b.name == "Load OG1":
-            b.sub(_FIELD["file_path"].pattern, set_field(file_path, "  # Path to the input NetCDF file"))
+            b.sub(
+                _FIELD["file_path"].pattern,
+                set_field(file_path, "  # Path to the input NetCDF file"),
+            )
         if b.name == "Data Export":
             b.sub(_FIELD["output_path"].pattern, set_field(output_path))
 
     if _cndc_state(probe) == "mscm":
         for b in blocks:
-            ranges = b.params.get("qc_settings", {}).get("range qc", {}).get("variable_ranges", {})
+            ranges = (
+                b.params.get("qc_settings", {})
+                .get("range qc", {})
+                .get("variable_ranges", {})
+            )
             if b.section == "CTD" and "CNDC" in ranges:
                 _scale_cndc_ranges(b)
 
@@ -475,19 +575,30 @@ def build(template_text, file_path, probe=None, choices=None, description=None, 
         drop(lambda b: b.section == "BACKSCATTER" or b.name == "CHLA Quenching")
 
     oxygen = choices.get("oxygen", "none")
-    if oxygen.startswith("rename:"):  # renamed to MOLAR_DOXY by Prepare OG1, then used as shipped
+    if oxygen.startswith(
+        "rename:"
+    ):  # renamed to MOLAR_DOXY by Prepare OG1, then used as shipped
         oxygen = "shipped"
     phase = _oxygen_phase(probe)
     if oxygen == "phase" and phase:
         for b in blocks:
             if b.name == "Derive Uncalibrated Phase":
-                b.sub(r'(?m)^(\s*blue_phase_name:).*$', rf'\1 "{phase}"')
+                b.sub(r"(?m)^(\s*blue_phase_name:).*$", rf'\1 "{phase}"')
     elif oxygen == "shipped":
-        drop(lambda b: b.section == "OXYGEN" and b.name != "Correct Values" and not _oxygen_range_check(b))
+        drop(
+            lambda b: (
+                b.section == "OXYGEN"
+                and b.name != "Correct Values"
+                and not _oxygen_range_check(b)
+            )
+        )
         for b in blocks:
             if b.section == "OXYGEN":
                 b.sub(r"(?m)^(\s*target_variable:).*$", r"\1 MOLAR_DOXY")
-                b.sub(r"(?m)^(\s*append_description:).*$", r"\1 Shipped MOLAR_DOXY, renamed.")
+                b.sub(
+                    r"(?m)^(\s*append_description:).*$",
+                    r"\1 Shipped MOLAR_DOXY, renamed.",
+                )
     else:
         drop(lambda b: b.section == "OXYGEN")
 

@@ -64,7 +64,9 @@ def test_computes_dark_value_and_creates_adjusted():
     assert float(deep.median()) == pytest.approx(0.0, abs=0.1)
     # The correction is a constant offset of the whole record.
     assert np.allclose(
-        data["CHLA_ADJUSTED"].values, data["CHLA"].values - step.dark_value, equal_nan=True
+        data["CHLA_ADJUSTED"].values,
+        data["CHLA"].values - step.dark_value,
+        equal_nan=True,
     )
 
 

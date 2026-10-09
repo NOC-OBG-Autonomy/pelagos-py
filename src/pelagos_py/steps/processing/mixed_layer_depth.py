@@ -106,7 +106,11 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
     # diagnostics panel, which computes MLD from every available method, not
     # just the configured one; TIME/PROFILE_DIRECTION are read only if present.
     optional_variables = [
-        "ABS_SALINITY", "CONS_TEMP", "TEMP", "TIME", "PROFILE_DIRECTION",
+        "ABS_SALINITY",
+        "CONS_TEMP",
+        "TEMP",
+        "TIME",
+        "PROFILE_DIRECTION",
     ]
     uses_data_subset = True
 
@@ -251,7 +255,9 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
         for pn in profile_numbers:
             indices = groups[pn]
             profile_mld = self._profile_mld(
-                search_depth[indices], search_values[indices], threshold,
+                search_depth[indices],
+                search_values[indices],
+                threshold,
                 two_sided=(method == "temp"),
             )
             if np.isfinite(profile_mld):
@@ -312,11 +318,7 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
         profile_number = self.data["PROFILE_NUMBER"].values
         depth = self.data["DEPTH"].values
         # TIME is not required by this step; fall back to measurement index.
-        x = (
-            self.data["TIME"].values
-            if "TIME" in self.data
-            else np.arange(depth.size)
-        )
+        x = self.data["TIME"].values if "TIME" in self.data else np.arange(depth.size)
 
         profile_spans = self._profile_spans(profile_number, x)
 
@@ -339,7 +341,11 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
             mlds.append((f"MLD from {method}", colour, mld))
 
         fig, axes = plt.subplots(
-            len(methods), 1, figsize=(14, 4 * len(methods)), dpi=150, sharex=True,
+            len(methods),
+            1,
+            figsize=(14, 4 * len(methods)),
+            dpi=150,
+            sharex=True,
             squeeze=False,
         )
         for ax, (method, _) in zip(axes[:, 0], methods):
@@ -355,12 +361,18 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
                 & (depth <= self.DIAGNOSTIC_MAX_DEPTH)
             )
             cmap = palettes.cmap_for_variable(panel_label, default="viridis")
-            scatter = ax.scatter(x[valid], depth[valid], c=values[valid], s=2, cmap=cmap)
+            scatter = ax.scatter(
+                x[valid], depth[valid], c=values[valid], s=2, cmap=cmap
+            )
             colourbar = fig.colorbar(scatter, ax=ax)
             colourbar.set_label(panel_label)
 
             # One NaN-separated line per MLD; one plot() per profile was slow
-            gap = np.datetime64("NaT") if np.issubdtype(x.dtype, np.datetime64) else np.nan
+            gap = (
+                np.datetime64("NaT")
+                if np.issubdtype(x.dtype, np.datetime64)
+                else np.nan
+            )
             for label, colour, mld in mlds:
                 xs, ys = [], []
                 for indices, span in profile_spans:

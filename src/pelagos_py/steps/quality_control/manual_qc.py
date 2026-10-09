@@ -82,20 +82,22 @@ class manual_qc(BaseQC):
 
     qc_name = "manual qc"
     dynamic = True
-    overwrite_flags = True  # Apply QC replaces the columns this returns instead of merging them
+    overwrite_flags = (
+        True  # Apply QC replaces the columns this returns instead of merging them
+    )
 
     parameter_schema = {
         "variables": {
             "type": list,
             "default": [],
             "description": "Variables to QC, one entry per dashboard plot: a name or a list of names "
-                           "flagged together, e.g. [CHLA, [TEMP, PSAL]].",
+            "flagged together, e.g. [CHLA, [TEMP, PSAL]].",
         },
         "x_variable": {
             "type": str,
             "default": "TIME",
             "description": "x axis for boxes that don't name their own; box x bounds are in its "
-                           "units (ISO timestamps for TIME).",
+            "units (ISO timestamps for TIME).",
         },
         "y_variable": {
             "type": str,
@@ -106,8 +108,8 @@ class manual_qc(BaseQC):
             "type": list,
             "default": [],
             "description": "List of {x: [lo, hi], y: [lo, hi], flag: 0-9, mode: inside|outside, "
-                           "variables: [...], override: true, profiles|cycles: [...]} boxes; single-value x/y "
-                           "is a point (nearest sample). Drawn in the dashboard, or written by hand.",
+            "variables: [...], override: true, profiles|cycles: [...]} boxes; single-value x/y "
+            "is a point (nearest sample). Drawn in the dashboard, or written by hand.",
         },
         "flag_remaining_good": {
             "type": bool,
@@ -136,20 +138,30 @@ class manual_qc(BaseQC):
 
     def _check_box(self, box):
         if not isinstance(box, dict):
-            raise ValueError(f"[{self.qc_name}] each box must be a mapping, got {box!r}.")
+            raise ValueError(
+                f"[{self.qc_name}] each box must be a mapping, got {box!r}."
+            )
         out = dict(box)
         for axis in ("x", "y"):
             bounds = out.get(axis)
             if not isinstance(bounds, (list, tuple)) or len(bounds) not in (1, 2):
-                raise ValueError(f"[{self.qc_name}] box {axis!r} must be [lo, hi] or [value], got {bounds!r}.")
+                raise ValueError(
+                    f"[{self.qc_name}] box {axis!r} must be [lo, hi] or [value], got {bounds!r}."
+                )
         if len(out["x"]) != len(out["y"]):
-            raise ValueError(f"[{self.qc_name}] a point needs single x and y values, got {out['x']!r}, {out['y']!r}.")
+            raise ValueError(
+                f"[{self.qc_name}] a point needs single x and y values, got {out['x']!r}, {out['y']!r}."
+            )
         flag = out.get("flag")
         if isinstance(flag, bool) or not isinstance(flag, int) or not 0 <= flag <= 9:
-            raise ValueError(f"[{self.qc_name}] box flag {flag!r} must be an Argo QC flag 0-9.")
+            raise ValueError(
+                f"[{self.qc_name}] box flag {flag!r} must be an Argo QC flag 0-9."
+            )
         mode = str(out.get("mode", "inside")).strip().lower()
         if mode not in ("inside", "outside"):
-            raise ValueError(f"[{self.qc_name}] box mode must be 'inside' or 'outside', got {mode!r}.")
+            raise ValueError(
+                f"[{self.qc_name}] box mode must be 'inside' or 'outside', got {mode!r}."
+            )
         out["mode"] = mode
         out["x_variable"] = str(out.get("x_variable") or self.x_variable)
         out["y_variable"] = str(out.get("y_variable") or self.y_variable)
@@ -159,7 +171,9 @@ class manual_qc(BaseQC):
         out["variables"] = list(variables)
         out["override"] = bool(out.get("override", True))
         if "profiles" in out and "cycles" in out:
-            raise ValueError(f"[{self.qc_name}] a box can limit to profiles or cycles, not both.")
+            raise ValueError(
+                f"[{self.qc_name}] a box can limit to profiles or cycles, not both."
+            )
         out["scope"] = None
         for key, var in (("profiles", "PROFILE_NUMBER"), ("cycles", "CYCLE")):
             if key in out:
@@ -180,7 +194,12 @@ class manual_qc(BaseQC):
     def _bound(value, is_time):
         # on a time axis, bounds are ISO strings or datetimes
         if is_time:
-            return float(pd.Timestamp(value).to_datetime64().astype("datetime64[ns]").astype("int64"))
+            return float(
+                pd.Timestamp(value)
+                .to_datetime64()
+                .astype("datetime64[ns]")
+                .astype("int64")
+            )
         return float(value)
 
     def _box_mask(self, box, x, x_time, y, y_time):
@@ -192,7 +211,10 @@ class manual_qc(BaseQC):
             inside = np.zeros_like(valid)
             if valid.any():
                 # Nearest valid sample, distances normalised by each axis' data range.
-                px, py = self._bound(box["x"][0], x_time), self._bound(box["y"][0], y_time)
+                px, py = (
+                    self._bound(box["x"][0], x_time),
+                    self._bound(box["y"][0], y_time),
+                )
                 sx = np.ptp(x[valid]) or 1.0
                 sy = np.ptp(y[valid]) or 1.0
                 d = np.where(valid, ((x - px) / sx) ** 2 + ((y - py) / sy) ** 2, np.inf)
@@ -223,11 +245,17 @@ class manual_qc(BaseQC):
         # Kept for the plot: Apply QC writes the result into existing_flags straight after
         self.start_flags = {var: qc.copy() for var, qc in qc_arrays.items()}
         for box in self.boxes:
-            hit = self._box_mask(box, *axes[box["x_variable"]], *axes[box["y_variable"]])
+            hit = self._box_mask(
+                box, *axes[box["x_variable"]], *axes[box["y_variable"]]
+            )
             for var in box["variables"]:
                 qc = qc_arrays[var]
                 hit_var = hit & (qc != 9)
-                qc[hit_var] = box["flag"] if box["override"] else QC_COMBINATRIX[qc[hit_var], box["flag"]]
+                qc[hit_var] = (
+                    box["flag"]
+                    if box["override"]
+                    else QC_COMBINATRIX[qc[hit_var], box["flag"]]
+                )
         if self.flag_remaining_good:
             for qc in qc_arrays.values():
                 qc[qc == 0] = 1
@@ -250,17 +278,23 @@ class manual_qc(BaseQC):
             var = group[0]
             has = np.isfinite(self.data[var].values.astype(float))
             if f"{var}_QC" in self.flags:
-                fig_spec.flag_points(ax, x[has], y[has], self.flags[f"{var}_QC"].values[has])
+                fig_spec.flag_points(
+                    ax, x[has], y[has], self.flags[f"{var}_QC"].values[has]
+                )
             else:
                 fig_spec.points(ax, x[has], y[has], color="#9aa5ad")
             for box in self.boxes:
-                if (box["x_variable"], box["y_variable"]) != (xv, yv) or box["variables"] != group:
+                if (box["x_variable"], box["y_variable"]) != (xv, yv) or box[
+                    "variables"
+                ] != group:
                     continue
                 self._draw_box(ax, box, x_time)
             fig_spec.style_axes(
                 ax,
                 title=" + ".join(group),
-                xlabel=fig_spec.axis_label(xv, self.data[xv].attrs.get("units")) if not x_time else "Time",
+                xlabel=fig_spec.axis_label(xv, self.data[xv].attrs.get("units"))
+                if not x_time
+                else "Time",
                 ylabel=fig_spec.axis_label(yv, self.data[yv].attrs.get("units")),
             )
             if x_time:
@@ -275,7 +309,10 @@ class manual_qc(BaseQC):
     def _draw_box(ax, box, x_time):
         # a point is drawn as a ring; '_' labels keep boxes out of the legend
         try:
-            bx = sorted(pd.Timestamp(v).to_datetime64() if x_time else float(v) for v in box["x"])
+            bx = sorted(
+                pd.Timestamp(v).to_datetime64() if x_time else float(v)
+                for v in box["x"]
+            )
             by = sorted(float(v) for v in box["y"])
         except (TypeError, ValueError):
             return
@@ -284,4 +321,11 @@ class manual_qc(BaseQC):
             ax.plot(bx, by, "o", mfc="none", mec=colour, ms=9, mew=1.5, label="_point")
             return
         (x0, x1), (y0, y1) = bx, by
-        ax.plot([x0, x1, x1, x0, x0], [y0, y0, y1, y1, y0], "--", lw=1.2, color=colour, label="_box")
+        ax.plot(
+            [x0, x1, x1, x0, x0],
+            [y0, y0, y1, y1, y0],
+            "--",
+            lw=1.2,
+            color=colour,
+            label="_box",
+        )

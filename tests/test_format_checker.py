@@ -60,19 +60,31 @@ def _step(parameters, global_parameters):
 
 
 def test_console_summary_ranks_failing_checks():
-    result = {"scored_points": 27, "possible_points": 35, "all_priorities": OG_PRIORITIES}
+    result = {
+        "scored_points": 27,
+        "possible_points": 35,
+        "all_priorities": OG_PRIORITIES,
+    }
     line = format_check.console_summary("og", result, passed=False, top=2)
     assert line.startswith("OG1: failed (27/35) — 6 issue(s) in 3 check(s): ")
-    assert "all attribute names are lowercase (3), mandatory global attributes (2), +1 more" in line
+    assert (
+        "all attribute names are lowercase (3), mandatory global attributes (2), +1 more"
+        in line
+    )
 
 
 def test_console_summary_pass():
     result = {"scored_points": 35, "possible_points": 35, "all_priorities": []}
-    assert format_check.console_summary("og", result, passed=True) == "OG1: passed (35/35)"
+    assert (
+        format_check.console_summary("og", result, passed=True) == "OG1: passed (35/35)"
+    )
 
 
 def test_header_names_standards():
-    assert format_check.join_labels([format_check.standard_label(c) for c in ["cf", "og"]]) == "CF and OG1"
+    assert (
+        format_check.join_labels([format_check.standard_label(c) for c in ["cf", "og"]])
+        == "CF and OG1"
+    )
 
 
 def test_console_only_run_succeeds():
@@ -101,7 +113,9 @@ def test_json_output_saved_and_registered(tmp_path):
         result = step.run()
 
     mock_json.assert_called_once()
-    output_filename = mock_json.call_args[0][2]  # (cs, score_dict, output_filename, ...)
+    output_filename = mock_json.call_args[0][
+        2
+    ]  # (cs, score_dict, output_filename, ...)
     assert output_filename.endswith("demo_test_check.json")
     assert result["global_parameters"]["cc_file"].endswith("demo_test_check.json")
 

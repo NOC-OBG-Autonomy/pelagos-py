@@ -42,25 +42,47 @@ ROW_H = 3.0  # inches per panel for multi-panel (nrows > 1) figures
 
 FS_SUPTITLE, FS_TITLE, FS_LABEL, FS_TICK, FS_LEGEND = 12, 11, 9, 8, 8
 
-MARKER = 4            # markersize for plot() point series
+MARKER = 4  # markersize for plot() point series
 ALPHA = 0.7
-RASTER_ABOVE = 5000   # rasterize dense point layers above this many points
+RASTER_ABOVE = 5000  # rasterize dense point layers above this many points
 CAPTURE_MAX_POINTS = 100_000  # point cap for figures saved to disk (report capture)
 MAX_POINTS = None  # set by report capture to thin dense series as they are drawn
 
 # Colours (hex, one mapping used everywhere).
 FLAG_COLOURS = {
-    0: "#9aa5ad", 1: "#1f6fd6", 2: "#7fb2e5", 3: "#e8912b", 4: "#d6392f",
-    5: "#9aa5ad", 6: "#9aa5ad", 7: "#9aa5ad", 8: "#17b6c4", 9: "#111111",
+    0: "#9aa5ad",
+    1: "#1f6fd6",
+    2: "#7fb2e5",
+    3: "#e8912b",
+    4: "#d6392f",
+    5: "#9aa5ad",
+    6: "#9aa5ad",
+    7: "#9aa5ad",
+    8: "#17b6c4",
+    9: "#111111",
 }
 FLAGGED = "#b2bec3"
-CATEGORY = ["#00b894", "#0984e3", "#d63031", "#fdcb6e", "#6c5ce7",
-            "#e84393", "#00cec9", "#e17055"]
+CATEGORY = [
+    "#00b894",
+    "#0984e3",
+    "#d63031",
+    "#fdcb6e",
+    "#6c5ce7",
+    "#e84393",
+    "#00cec9",
+    "#e17055",
+]
 
 # QC flag meanings, used to label flag legend entries as "1 (good)".
 FLAG_MEANINGS = {
-    0: "no QC", 1: "good", 2: "prob good", 3: "prob bad", 4: "bad",
-    5: "changed", 8: "interp", 9: "missing",
+    0: "no QC",
+    1: "good",
+    2: "prob good",
+    3: "prob bad",
+    4: "bad",
+    5: "changed",
+    8: "interp",
+    9: "missing",
 }
 
 
@@ -84,7 +106,13 @@ def categories(da):
     out = []
     for i, v in enumerate(values):
         v = int(v)
-        out.append((v, meanings[i] if i < len(meanings) else str(v), fixed.get(v, CATEGORY[i % len(CATEGORY)])))
+        out.append(
+            (
+                v,
+                meanings[i] if i < len(meanings) else str(v),
+                fixed.get(v, CATEGORY[i % len(CATEGORY)]),
+            )
+        )
     return out
 
 
@@ -94,22 +122,32 @@ def thin_idx(n, cap=None):
     return np.linspace(0, n - 1, cap).astype(int) if cap and n > cap else np.arange(n)
 
 
-def new_fig(nrows=1, ncols=1, sharex=False, sharey=False, height_ratios=None, width_ratios=None):
+def new_fig(
+    nrows=1, ncols=1, sharex=False, sharey=False, height_ratios=None, width_ratios=None
+):
     """A standard figure + axes at the standard width/dpi. Axes always 2D: axes[r][c].
 
     Single panel is 16:9; multi-panel grows height by ``ROW_H`` per row.
     ``height_ratios`` / ``width_ratios`` (e.g. ``(3, 1)``) set unequal panel sizes via gridspec.
     """
     import matplotlib.pyplot as plt
+
     height = FIG_H if nrows == 1 else ROW_H * nrows
     gridspec_kw = {}
     if height_ratios is not None:
         gridspec_kw["height_ratios"] = height_ratios
     if width_ratios is not None:
         gridspec_kw["width_ratios"] = width_ratios
-    return plt.subplots(nrows, ncols, figsize=(FIG_W, height), dpi=DPI,
-                        sharex=sharex, sharey=sharey, squeeze=False,
-                        gridspec_kw=gridspec_kw or None)
+    return plt.subplots(
+        nrows,
+        ncols,
+        figsize=(FIG_W, height),
+        dpi=DPI,
+        sharex=sharex,
+        sharey=sharey,
+        squeeze=False,
+        gridspec_kw=gridspec_kw or None,
+    )
 
 
 def style_axes(ax, *, title=None, xlabel=None, ylabel=None):
@@ -127,7 +165,9 @@ def style_axes(ax, *, title=None, xlabel=None, ylabel=None):
 def axis_label(var, units=None):
     """'TEMP [degC]' when units are meaningful, else just the name."""
     u = (units or "").strip()
-    return var if u in ("", "1", "unitless", "unknown", "none", "None") else f"{var} [{u}]"
+    return (
+        var if u in ("", "1", "unitless", "unknown", "none", "None") else f"{var} [{u}]"
+    )
 
 
 def date_axis(ax, which="x", index=None):
@@ -152,10 +192,14 @@ def date_axis(ax, which="x", index=None):
         return
     order = np.argsort(t, kind="stable")
     ts, is_ = t[order], i[order]
-    top = max(ax.get_shared_x_axes().get_siblings(ax), key=lambda a: a.get_position().y1)
+    top = max(
+        ax.get_shared_x_axes().get_siblings(ax), key=lambda a: a.get_position().y1
+    )
     # partials (not lambdas) so the figure stays picklable for background saving
-    sec = top.secondary_xaxis("top", functions=(partial(np.interp, xp=ts, fp=is_),
-                                                partial(np.interp, xp=i, fp=t)))
+    sec = top.secondary_xaxis(
+        "top",
+        functions=(partial(np.interp, xp=ts, fp=is_), partial(np.interp, xp=i, fp=t)),
+    )
     sec.set_xlabel("N_MEASUREMENTS", fontsize=FS_LABEL)
     sec.tick_params(labelsize=FS_TICK)
     top._pelagos_index = (ts, is_)  # picked up by the dashboard serialiser
@@ -163,7 +207,11 @@ def date_axis(ax, which="x", index=None):
 
 def x_time(data):
     """What a whole-dataset series is plotted against: TIME if present, else N_MEASUREMENTS."""
-    return data["TIME"].values if "TIME" in data else np.arange(data.sizes["N_MEASUREMENTS"])
+    return (
+        data["TIME"].values
+        if "TIME" in data
+        else np.arange(data.sizes["N_MEASUREMENTS"])
+    )
 
 
 def x_axis(ax, x):
@@ -181,9 +229,18 @@ def points(ax, x, y, *, color, label=None, size=MARKER, alpha=ALPHA):
     if MAX_POINTS:
         idx = thin_idx(x.size)
         x, y = x[idx], y[idx]
-    ax.plot(x, y, ls="", marker="o", markersize=size,
-            markeredgewidth=0, color=color, alpha=alpha, label=label,
-            rasterized=x.size > RASTER_ABOVE)
+    ax.plot(
+        x,
+        y,
+        ls="",
+        marker="o",
+        markersize=size,
+        markeredgewidth=0,
+        color=color,
+        alpha=alpha,
+        label=label,
+        rasterized=x.size > RASTER_ABOVE,
+    )
 
 
 def flag_points(ax, x, y, flags):
@@ -201,9 +258,15 @@ def flag_points(ax, x, y, flags):
 
 def legend(ax, *, title=None):
     """Compact legend just outside the axes on the right."""
-    ax.legend(title=title, fontsize=FS_LEGEND, title_fontsize=FS_LEGEND,
-              loc="center left", bbox_to_anchor=(1.01, 0.5),
-              framealpha=0.9, markerscale=2)
+    ax.legend(
+        title=title,
+        fontsize=FS_LEGEND,
+        title_fontsize=FS_LEGEND,
+        loc="center left",
+        bbox_to_anchor=(1.01, 0.5),
+        framealpha=0.9,
+        markerscale=2,
+    )
 
 
 def finish(fig, suptitle=None):
@@ -241,7 +304,9 @@ def coastlines(ax, extent, *, color="0.35", linewidth=0.8, fill=None):
     res = "10m" if span < 3 else "50m" if span < 20 else "110m"
     # Clip a little beyond the extent so the cut edges fall outside the axes.
     m = 0.05 * span
-    land = shapely.clip_by_rect(land_polygons(res), extent[0] - m, extent[2] - m, extent[1] + m, extent[3] + m)
+    land = shapely.clip_by_rect(
+        land_polygons(res), extent[0] - m, extent[2] - m, extent[1] + m, extent[3] + m
+    )
     xs, ys = [], []
     for poly in getattr(land, "geoms", [land]):
         if poly.is_empty or poly.geom_type != "Polygon":

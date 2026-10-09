@@ -102,9 +102,13 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
     def __init__(self, name, parameters=None, diagnostics=False, context=None):
         parameters = dict(parameters or {})
         if "qc_handling_settings" in parameters:
-            raise ValueError(f"[{name}] 'qc_handling_settings' is not used here: put the flags under 'variables'.")
+            raise ValueError(
+                f"[{name}] 'qc_handling_settings' is not used here: put the flags under 'variables'."
+            )
         # `variables` is the mixin's flag_filter_settings under a simpler name
-        parameters["qc_handling_settings"] = {"flag_filter_settings": dict(parameters.get("variables") or {})}
+        parameters["qc_handling_settings"] = {
+            "flag_filter_settings": dict(parameters.get("variables") or {})
+        }
         super().__init__(name, parameters, diagnostics, context)
 
     def run(self):
@@ -120,7 +124,9 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
         for var in variables:
             was_nan = np.isnan(self.data[var].values)
             if (~was_nan).sum() < 2:
-                self.log_warn(f"{var} has fewer than 2 valid values; skipping interpolation.")
+                self.log_warn(
+                    f"{var} has fewer than 2 valid values; skipping interpolation."
+                )
             interpolated = interpolate_by_time(self.data[var].values, time)
             if max_interp_seconds:
                 self._limit_gap_fill(time, interpolated, was_nan, max_interp_seconds)
@@ -129,7 +135,9 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
             values = self.data_copy[var].values.copy()
             values[filled] = interpolated[filled]
             self.data[var][:] = values
-            self.data[f"{var}_QC"].values[filled] = 8  # in place: xr.where would drop the attrs
+            self.data[f"{var}_QC"].values[filled] = (
+                8  # in place: xr.where would drop the attrs
+            )
 
         if self.diagnostics:
             self.generate_diagnostics()
@@ -169,7 +177,9 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
         next_valid[::-1] = np.minimum.accumulate(next_valid[::-1])
 
         interior = was_nan & (prev_valid >= 0) & (next_valid < was_nan.size)
-        gap_seconds = (time[next_valid[interior]] - time[prev_valid[interior]]) / np.timedelta64(1, "s")
+        gap_seconds = (
+            time[next_valid[interior]] - time[prev_valid[interior]]
+        ) / np.timedelta64(1, "s")
         too_far = np.flatnonzero(interior)[gap_seconds > max_seconds]
         interpolated[too_far] = np.nan
 
@@ -182,8 +192,20 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
         plot_var = next(iter(self.filter_settings))
         time = self.data["TIME"].values
         values, was_nan = self.data[plot_var].values, self.filled[plot_var]
-        fig_spec.points(ax, time[~was_nan], values[~was_nan], color=fig_spec.CATEGORY[1], label="original")
-        fig_spec.points(ax, time[was_nan], values[was_nan], color=fig_spec.CATEGORY[3], label="interpolated")
+        fig_spec.points(
+            ax,
+            time[~was_nan],
+            values[~was_nan],
+            color=fig_spec.CATEGORY[1],
+            label="original",
+        )
+        fig_spec.points(
+            ax,
+            time[was_nan],
+            values[was_nan],
+            color=fig_spec.CATEGORY[3],
+            label="interpolated",
+        )
         fig_spec.style_axes(ax, ylabel=plot_var)
         if plot_var in ("PRES", "DEPTH"):
             ax.invert_yaxis()

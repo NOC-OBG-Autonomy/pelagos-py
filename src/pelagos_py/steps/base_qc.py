@@ -69,7 +69,9 @@ class BaseQC:
     parameter_schema = {}
     required_variables = []
     qc_outputs = []
-    overwrite_flags = False  # set by Apply QC: return_qc then merges with existing_flags
+    overwrite_flags = (
+        False  # set by Apply QC: return_qc then merges with existing_flags
+    )
     existing_flags = None
 
     def __init__(self, data, **kwargs):
@@ -81,7 +83,9 @@ class BaseQC:
         self.data = data.copy(deep=False) if data is not None else None
 
         # Connect to the main pipeline logging hierarchy
-        self.logger = logging.getLogger(f"pelagos_py.pipeline.qc.{self.qc_name.replace(' ', '_')}")
+        self.logger = logging.getLogger(
+            f"pelagos_py.pipeline.qc.{self.qc_name.replace(' ', '_')}"
+        )
 
         # Resolve parameters against the schema: applies defaults, enforces required
         # parameters, and rejects unknown ones. Resolved values become attributes.
@@ -96,7 +100,9 @@ class BaseQC:
     def keep_vars(self, *extra):
         # required variables plus TIME (for plots) and any extra present in the data
         return self.required_variables + [
-            v for v in ("TIME", *extra) if v in self.data and v not in self.required_variables
+            v
+            for v in ("TIME", *extra)
+            if v in self.data and v not in self.required_variables
         ]
 
     @classmethod

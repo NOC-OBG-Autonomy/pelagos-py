@@ -16,11 +16,16 @@ def make_context(**variables):
 
 
 def run(context, **parameters):
-    return PrepareOG1(name="prepare", parameters=parameters, context=context).run()["data"]
+    return PrepareOG1(name="prepare", parameters=parameters, context=context).run()[
+        "data"
+    ]
 
 
 def test_renames_gps_coordinates_when_expected_missing():
-    ctx = make_context(LATITUDE_GPS=([50.0, 51.0], "degree_north"), LONGITUDE_GPS=([-5.0, -6.0], "degree_east"))
+    ctx = make_context(
+        LATITUDE_GPS=([50.0, 51.0], "degree_north"),
+        LONGITUDE_GPS=([-5.0, -6.0], "degree_east"),
+    )
     ctx["data"]["LATITUDE_GPS_QC"] = ("N_MEASUREMENTS", np.array([1, 1], dtype=np.int8))
 
     out = run(ctx)
@@ -46,7 +51,9 @@ def test_all_nan_alternative_does_not_count():
 
 
 def test_all_nan_expected_variable_is_replaced_by_real_alternative():
-    ctx = make_context(LATITUDE=([np.nan, np.nan], None), LATITUDE_GPS=([50.0, 51.0], None))
+    ctx = make_context(
+        LATITUDE=([np.nan, np.nan], None), LATITUDE_GPS=([50.0, 51.0], None)
+    )
     out = run(ctx)
     assert np.allclose(out["LATITUDE"].values, [50.0, 51.0])
     assert "LATITUDE_GPS" not in out
@@ -80,7 +87,9 @@ def test_bbp700_treated_as_beta_by_default():
 
 
 def test_bbp700_kept_when_beta_present_or_flag_off():
-    ctx = make_context(BBP700=([1e-4], "m-1"), BETA_BACKSCATTERING700=([1e-4], "m-1.sr-1"))
+    ctx = make_context(
+        BBP700=([1e-4], "m-1"), BETA_BACKSCATTERING700=([1e-4], "m-1.sr-1")
+    )
     assert "BBP700" in run(ctx)
     ctx = make_context(BBP700=([1e-4], "m-1"))
     assert "BBP700" in run(ctx, bbp700_is_beta=False)
@@ -89,13 +98,17 @@ def test_bbp700_kept_when_beta_present_or_flag_off():
 def test_renames_for_matches_run():
     names = {"LATITUDE_GPS", "LONGITUDE", "BBP700", "DOXY"}
     assert PrepareOG1.renames_for(names) == {
-        "LATITUDE_GPS": "LATITUDE", "BBP700": "BETA_BACKSCATTERING700", "DOXY": "MOLAR_DOXY",
+        "LATITUDE_GPS": "LATITUDE",
+        "BBP700": "BETA_BACKSCATTERING700",
+        "DOXY": "MOLAR_DOXY",
     }
     assert "BBP700" not in PrepareOG1.renames_for(names, bbp700_is_beta=False)
 
 
 def test_user_renames_apply_only_when_expected_absent():
-    ctx = make_context(PAR=([1.0, 2.0], None), TEMP=([10.0, 11.0], None), TEMP2=([0.0, 0.0], None))
+    ctx = make_context(
+        PAR=([1.0, 2.0], None), TEMP=([10.0, 11.0], None), TEMP2=([0.0, 0.0], None)
+    )
     ctx["data"]["PAR_QC"] = ("N_MEASUREMENTS", np.array([1, 1], dtype=np.int8))
     out = run(ctx, renames={"DOWNWELLING_PAR": "PAR", "TEMP": "TEMP2"})
     assert "DOWNWELLING_PAR" in out and "DOWNWELLING_PAR_QC" in out and "PAR" not in out

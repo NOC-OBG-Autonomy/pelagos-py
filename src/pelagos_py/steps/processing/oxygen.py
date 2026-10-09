@@ -59,15 +59,27 @@ def _plot_section(data, var, pressure_var, step_name):
     fig, axes = fig_spec.new_fig()
     ax = axes[0][0]
 
-    time, pres, values = data["TIME"].values, data[pressure_var].values, data[var].values
+    time, pres, values = (
+        data["TIME"].values,
+        data[pressure_var].values,
+        data[var].values,
+    )
     finite = ~pd.isnull(time) & np.isfinite(pres) & np.isfinite(values)
 
     sc = ax.scatter(
-        time[finite], pres[finite], c=values[finite], cmap="viridis",
-        s=fig_spec.MARKER, alpha=fig_spec.ALPHA, rasterized=finite.sum() > fig_spec.RASTER_ABOVE,
+        time[finite],
+        pres[finite],
+        c=values[finite],
+        cmap="viridis",
+        s=fig_spec.MARKER,
+        alpha=fig_spec.ALPHA,
+        rasterized=finite.sum() > fig_spec.RASTER_ABOVE,
     )
     cbar = fig.colorbar(sc, ax=ax)
-    cbar.set_label(fig_spec.axis_label(var, data[var].attrs.get("units")), fontsize=fig_spec.FS_LABEL)
+    cbar.set_label(
+        fig_spec.axis_label(var, data[var].attrs.get("units")),
+        fontsize=fig_spec.FS_LABEL,
+    )
     cbar.ax.tick_params(labelsize=fig_spec.FS_TICK)
 
     fig_spec.date_axis(ax, which="x", index=time)
@@ -104,12 +116,31 @@ def _plot_diff(data, raw_var, corrected_var, pressure_var, step_name):
 
     good = _qc_good_mask(data, raw_var) & _qc_good_mask(data, corrected_var)
     time = data["TIME"].values
-    fig_spec.points(ax0, time[good], data[raw_var].values[good], color=fig_spec.FLAGGED, label=raw_var)
-    fig_spec.points(ax0, time[good], data[corrected_var].values[good], color=fig_spec.CATEGORY[1], label=corrected_var)
-    fig_spec.style_axes(ax0, ylabel=fig_spec.axis_label(corrected_var, data[corrected_var].attrs.get("units")))
+    fig_spec.points(
+        ax0,
+        time[good],
+        data[raw_var].values[good],
+        color=fig_spec.FLAGGED,
+        label=raw_var,
+    )
+    fig_spec.points(
+        ax0,
+        time[good],
+        data[corrected_var].values[good],
+        color=fig_spec.CATEGORY[1],
+        label=corrected_var,
+    )
+    fig_spec.style_axes(
+        ax0,
+        ylabel=fig_spec.axis_label(
+            corrected_var, data[corrected_var].attrs.get("units")
+        ),
+    )
     # An outside (bbox_to_anchor) legend would need more width than the colorbar spacer
     # reserves above, re-breaking the TIME-axis alignment with ax1 - so keep it inside.
-    ax0.legend(fontsize=fig_spec.FS_LEGEND, loc="upper right", framealpha=0.9, markerscale=2)
+    ax0.legend(
+        fontsize=fig_spec.FS_LEGEND, loc="upper right", framealpha=0.9, markerscale=2
+    )
 
     diff = data[corrected_var].values - data[raw_var].values
     if pressure_var in data:
@@ -118,14 +149,25 @@ def _plot_diff(data, raw_var, corrected_var, pressure_var, step_name):
         divider1 = make_axes_locatable(ax1)
         cax1 = divider1.append_axes("right", size="3%", pad=0.15)
         sc = ax1.scatter(
-            time[finite], pres[finite], c=diff[finite], cmap="viridis",
-            s=fig_spec.MARKER, alpha=fig_spec.ALPHA, rasterized=True,
+            time[finite],
+            pres[finite],
+            c=diff[finite],
+            cmap="viridis",
+            s=fig_spec.MARKER,
+            alpha=fig_spec.ALPHA,
+            rasterized=True,
         )
         cbar = fig.colorbar(sc, cax=cax1)
         cbar.set_label(f"{corrected_var} - {raw_var}", fontsize=fig_spec.FS_LABEL)
         cbar.ax.tick_params(labelsize=fig_spec.FS_TICK)
         fig_spec.date_axis(ax1, which="x", index=time)
-        fig_spec.style_axes(ax1, xlabel="TIME", ylabel=fig_spec.axis_label(pressure_var, data[pressure_var].attrs.get("units")))
+        fig_spec.style_axes(
+            ax1,
+            xlabel="TIME",
+            ylabel=fig_spec.axis_label(
+                pressure_var, data[pressure_var].attrs.get("units")
+            ),
+        )
         ax1.invert_yaxis()
     else:
         fig_spec.points(ax1, time[good], diff[good], color=fig_spec.CATEGORY[0])
@@ -139,7 +181,6 @@ def _plot_diff(data, raw_var, corrected_var, pressure_var, step_name):
 
 @register_step
 class DeriveUncalibratedPhase(BaseStep, QCHandlingMixin):
-
     step_name = "Derive Uncalibrated Phase"
     beta = True
     provided_variables = ["UNCAL_PHASE_DOXY"]
@@ -199,10 +240,12 @@ class DeriveUncalibratedPhase(BaseStep, QCHandlingMixin):
         else:
             self.data["UNCAL_PHASE_DOXY"] = self.data[self.blue_phase_name]
 
-        self.data["UNCAL_PHASE_DOXY"].attrs["units"] = self.data[self.blue_phase_name].attrs.get(
-            "units", "degree"
+        self.data["UNCAL_PHASE_DOXY"].attrs["units"] = self.data[
+            self.blue_phase_name
+        ].attrs.get("units", "degree")
+        self.data["UNCAL_PHASE_DOXY"].attrs["long_name"] = (
+            "Uncalibrated oxygen optode phase"
         )
-        self.data["UNCAL_PHASE_DOXY"].attrs["long_name"] = "Uncalibrated oxygen optode phase"
         self.data["UNCAL_PHASE_DOXY"].attrs["standard_name"] = "UNCAL_PHASE_DOXY"
 
         self.reconstruct_data()
@@ -222,7 +265,6 @@ class DeriveUncalibratedPhase(BaseStep, QCHandlingMixin):
 
 @register_step
 class DeriveOptodeTemperature(BaseStep, QCHandlingMixin):
-
     step_name = "Derive Optode Temperature"
     beta = True
     provided_variables = ["TEMP_DOXY"]
@@ -304,7 +346,6 @@ class DeriveOptodeTemperature(BaseStep, QCHandlingMixin):
 
 @register_step
 class PhasePressureCorrection(BaseStep, QCHandlingMixin):
-
     step_name = "Phase Pressure Correction"
     beta = True
     required_variables = ["UNCAL_PHASE_DOXY"]
@@ -357,11 +398,15 @@ class PhasePressureCorrection(BaseStep, QCHandlingMixin):
             self.data["UNCAL_PHASE_DOXY"]
             + 0.001 * self.correction_coefficient * self.data[self.optode_pressure_name]
         )
-        self.data["UNCAL_PHASE_DOXY_PCORR"].attrs["units"] = self.data["UNCAL_PHASE_DOXY"].attrs.get(
-            "units", "degree"
+        self.data["UNCAL_PHASE_DOXY_PCORR"].attrs["units"] = self.data[
+            "UNCAL_PHASE_DOXY"
+        ].attrs.get("units", "degree")
+        self.data["UNCAL_PHASE_DOXY_PCORR"].attrs["long_name"] = (
+            "Pressure-corrected uncalibrated oxygen optode phase"
         )
-        self.data["UNCAL_PHASE_DOXY_PCORR"].attrs["long_name"] = "Pressure-corrected uncalibrated oxygen optode phase"
-        self.data["UNCAL_PHASE_DOXY_PCORR"].attrs["standard_name"] = "UNCAL_PHASE_DOXY_PCORR"
+        self.data["UNCAL_PHASE_DOXY_PCORR"].attrs["standard_name"] = (
+            "UNCAL_PHASE_DOXY_PCORR"
+        )
 
         self.reconstruct_data()
         self.update_qc()
@@ -407,8 +452,13 @@ def _plot_shift_diff(data, raw_var, shifted_var, pressure_var, step_name, lag_la
     finite = np.isfinite(diff) & np.isfinite(pres) & good
 
     sc = ax.scatter(
-        time[finite], pres[finite], c=diff[finite], cmap="viridis",
-        s=fig_spec.MARKER, alpha=fig_spec.ALPHA, rasterized=True,
+        time[finite],
+        pres[finite],
+        c=diff[finite],
+        cmap="viridis",
+        s=fig_spec.MARKER,
+        alpha=fig_spec.ALPHA,
+        rasterized=True,
     )
     cbar = fig.colorbar(sc, ax=ax)
     cbar.set_label(f"{shifted_var} - {raw_var}", fontsize=fig_spec.FS_LABEL)
@@ -428,13 +478,15 @@ def _plot_shift_diff(data, raw_var, shifted_var, pressure_var, step_name, lag_la
 
 @register_step
 class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
-
     step_name = "Shift Oxygen To CTD"
     beta = True
     required_variables = ["PROFILE_NUMBER"]
     optional_variables = ["TIME", "PROFILE_GRADIENT", "PRES"]
     variable_parameters = ["shift_vars", "pitch_name", "cast_id_var"]
-    variable_parameters_optional = ("pitch_name", "cast_id_var")  # unused with lag_seconds
+    variable_parameters_optional = (
+        "pitch_name",
+        "cast_id_var",
+    )  # unused with lag_seconds
     uses_data_subset = True
 
     parameter_schema = {
@@ -468,7 +520,9 @@ class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
 
     def _derive_profile_lag(self):
         # Per-profile geometric time lag (s) from mean pitch and dive rate, following Woo & Gourcuff (2023).
-        valid_casts = {"PROFILE_DIRECTION": (-1, 1), "SCI_PHASE": (1, 2)}[self.cast_id_var]
+        valid_casts = {"PROFILE_DIRECTION": (-1, 1), "SCI_PHASE": (1, 2)}[
+            self.cast_id_var
+        ]
 
         df = pd.DataFrame(
             {
@@ -480,7 +534,11 @@ class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
         ).dropna(subset=["PROFILE_NUMBER", "CAST"])
         df = df.loc[df["CAST"].isin(valid_casts)]
 
-        per_cast = df.groupby(["CAST", "PROFILE_NUMBER"])[["PITCH", "GRADIENT"]].mean().reset_index()
+        per_cast = (
+            df.groupby(["CAST", "PROFILE_NUMBER"])[["PITCH", "GRADIENT"]]
+            .mean()
+            .reset_index()
+        )
         velocity = per_cast["GRADIENT"] / np.sin(per_cast["PITCH"])
         per_cast["LAG"] = (self.distance_cm / 100) / velocity
 
@@ -491,14 +549,19 @@ class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
             filled = group["LAG"].ffill().bfill()
             if filled.notna().sum() >= 7:
                 from scipy.signal import butter, filtfilt
+
                 b, a = butter(N=3, Wn=1 / 30, btype="low", fs=1)
-                filled = pd.Series(filtfilt(b, a, filled.to_numpy()), index=filled.index)
+                filled = pd.Series(
+                    filtfilt(b, a, filled.to_numpy()), index=filled.index
+                )
             lag_lookup.update(dict(zip(group["PROFILE_NUMBER"], filled)))
 
         return lag_lookup
 
     def _shift_onto_grid(self, var, lag_lookup):
-        epoch_s = self.data["TIME"].values.astype("datetime64[ns]").astype("int64") / 1e9
+        epoch_s = (
+            self.data["TIME"].values.astype("datetime64[ns]").astype("int64") / 1e9
+        )
         values = self.data[var].values.astype(float)
         valid = ~np.isnan(values) & ~np.isnan(epoch_s)
 
@@ -514,7 +577,9 @@ class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
         if lag_lookup is None:
             lag = self.lag_seconds
         else:
-            lag = np.array([lag_lookup.get(p, np.nan) for p in self.data["PROFILE_NUMBER"].values])
+            lag = np.array(
+                [lag_lookup.get(p, np.nan) for p in self.data["PROFILE_NUMBER"].values]
+            )
 
         # Value at CTD time t is the optode measurement of the same water parcel, taken 'lag' seconds later.
         query_time = epoch_s + lag
@@ -565,7 +630,9 @@ class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
             if var not in self.data.data_vars:
                 raise KeyError(f"[{self.step_name}] '{var}' is missing from the data")
         if "PROFILE_NUMBER" not in self.data.data_vars:
-            raise KeyError(f"[{self.step_name}] PROFILE_NUMBER required but is missing from the data")
+            raise KeyError(
+                f"[{self.step_name}] PROFILE_NUMBER required but is missing from the data"
+            )
 
         lag_lookup = None
         if self.lag_seconds is not None:
@@ -587,26 +654,39 @@ class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
                     f"[{self.step_name}] PROFILE_GRADIENT required but is missing from the data"
                 )
             if self.cast_id_var not in self.data.data_vars:
-                raise KeyError(f"[{self.step_name}] {self.cast_id_var} required but is missing from the data")
+                raise KeyError(
+                    f"[{self.step_name}] {self.cast_id_var} required but is missing from the data"
+                )
 
             lag_lookup = self._derive_profile_lag()
             mean_lag = np.nanmean(list(lag_lookup.values())) if lag_lookup else np.nan
-            self._lag_label = f"per-profile (mean {mean_lag:.3f}s)" if np.isfinite(mean_lag) else "per-profile"
+            self._lag_label = (
+                f"per-profile (mean {mean_lag:.3f}s)"
+                if np.isfinite(mean_lag)
+                else "per-profile"
+            )
 
         for var in self.shift_vars:
             out_name = f"{var}_SHIFTED"
             if out_name in self.data.data_vars:
                 self.log_warn(f"{out_name} already exists in the data. Overwriting...")
-            self.data[out_name] = (("N_MEASUREMENTS",), self._shift_onto_grid(var, lag_lookup))
+            self.data[out_name] = (
+                ("N_MEASUREMENTS",),
+                self._shift_onto_grid(var, lag_lookup),
+            )
             self.data[out_name].attrs["units"] = self.data[var].attrs.get("units")
             parent_long_name = self.data[var].attrs.get("long_name", var)
-            self.data[out_name].attrs["long_name"] = f"{parent_long_name}, geometrically shifted onto the CTD grid"
+            self.data[out_name].attrs["long_name"] = (
+                f"{parent_long_name}, geometrically shifted onto the CTD grid"
+            )
             self.data[out_name].attrs["standard_name"] = out_name
 
         self.reconstruct_data()
         self.update_qc()
 
-        self.generate_qc({f"{var}_SHIFTED_QC": [f"{var}_QC"] for var in self.shift_vars})
+        self.generate_qc(
+            {f"{var}_SHIFTED_QC": [f"{var}_QC"] for var in self.shift_vars}
+        )
 
         # The shift evaluates every row via interpolation, so a valid shifted value is
         # never really its parent's original flag (e.g. still-missing 9) - it's "changed".
@@ -623,12 +703,18 @@ class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
 
     def generate_diagnostics(self):
         for var in self.shift_vars:
-            _plot_shift_diff(self.data, var, f"{var}_SHIFTED", "PRES", self.step_name, self._lag_label)
+            _plot_shift_diff(
+                self.data,
+                var,
+                f"{var}_SHIFTED",
+                "PRES",
+                self.step_name,
+                self._lag_label,
+            )
 
 
 @register_step
 class DeriveCalibratedPhase(BaseStep, QCHandlingMixin):
-
     step_name = "Derive Calibrated Phase"
     beta = True
     provided_variables = ["CAL_PHASE_DOXY"]
@@ -689,10 +775,12 @@ class DeriveCalibratedPhase(BaseStep, QCHandlingMixin):
         for i, coeff in enumerate(coeffs):
             cal_phase_doxy += coeff * self.data[self.uncalibrated_phase_name] ** i
         self.data["CAL_PHASE_DOXY"] = cal_phase_doxy
-        self.data["CAL_PHASE_DOXY"].attrs["units"] = self.data[self.uncalibrated_phase_name].attrs.get(
-            "units", "degree"
+        self.data["CAL_PHASE_DOXY"].attrs["units"] = self.data[
+            self.uncalibrated_phase_name
+        ].attrs.get("units", "degree")
+        self.data["CAL_PHASE_DOXY"].attrs["long_name"] = (
+            "Calibrated oxygen optode phase"
         )
-        self.data["CAL_PHASE_DOXY"].attrs["long_name"] = "Calibrated oxygen optode phase"
         self.data["CAL_PHASE_DOXY"].attrs["standard_name"] = "CAL_PHASE_DOXY"
 
         self.reconstruct_data()
@@ -712,7 +800,6 @@ class DeriveCalibratedPhase(BaseStep, QCHandlingMixin):
 
 @register_step
 class DeriveOxygenConcentration(BaseStep, QCHandlingMixin):
-
     step_name = "Derive Oxygen Concentration"
     beta = True
     required_variables = ["CAL_PHASE_DOXY"]
@@ -837,7 +924,9 @@ class DeriveOxygenConcentration(BaseStep, QCHandlingMixin):
 
         self.data["MOLAR_DOXY"] = (("N_MEASUREMENTS",), func())
         self.data["MOLAR_DOXY"].attrs["units"] = "micromole/l"
-        self.data["MOLAR_DOXY"].attrs["long_name"] = "Molar dissolved oxygen concentration"
+        self.data["MOLAR_DOXY"].attrs["long_name"] = (
+            "Molar dissolved oxygen concentration"
+        )
         self.data["MOLAR_DOXY"].attrs["standard_name"] = "MOLAR_DOXY"
 
         self.reconstruct_data()
@@ -859,7 +948,6 @@ class DeriveOxygenConcentration(BaseStep, QCHandlingMixin):
 
 @register_step
 class MolarDOXYSalinityCorrection(BaseStep, QCHandlingMixin):
-
     step_name = "Molar DOXY Salinity Correction"
     beta = True
     required_variables = ["MOLAR_DOXY"]
@@ -977,7 +1065,9 @@ class MolarDOXYSalinityCorrection(BaseStep, QCHandlingMixin):
         self.data["MOLAR_DOXY_PSAL"].attrs["units"] = self.data["MOLAR_DOXY"].attrs.get(
             "units", "micromole/l"
         )
-        self.data["MOLAR_DOXY_PSAL"].attrs["long_name"] = "Salinity-corrected molar dissolved oxygen concentration"
+        self.data["MOLAR_DOXY_PSAL"].attrs["long_name"] = (
+            "Salinity-corrected molar dissolved oxygen concentration"
+        )
         self.data["MOLAR_DOXY_PSAL"].attrs["standard_name"] = "MOLAR_DOXY_PSAL"
 
         self.reconstruct_data()
@@ -1005,7 +1095,6 @@ class MolarDOXYSalinityCorrection(BaseStep, QCHandlingMixin):
 
 @register_step
 class MolarDOXYPressureCorrection(BaseStep, QCHandlingMixin):
-
     step_name = "Molar DOXY Pressure Correction"
     beta = True
     provided_variables = ["MOLAR_DOXY_PSAL_PRES"]
@@ -1086,13 +1175,15 @@ class MolarDOXYPressureCorrection(BaseStep, QCHandlingMixin):
 
         # Apply the correction
         self.data["MOLAR_DOXY_PSAL_PRES"] = MOLAR_DOXY_PSAL_PRES
-        self.data["MOLAR_DOXY_PSAL_PRES"].attrs["units"] = self.data[self.molar_doxy_name].attrs.get(
-            "units", "micromole/l"
-        )
+        self.data["MOLAR_DOXY_PSAL_PRES"].attrs["units"] = self.data[
+            self.molar_doxy_name
+        ].attrs.get("units", "micromole/l")
         self.data["MOLAR_DOXY_PSAL_PRES"].attrs["long_name"] = (
             "Salinity- and pressure-corrected molar dissolved oxygen concentration"
         )
-        self.data["MOLAR_DOXY_PSAL_PRES"].attrs["standard_name"] = "MOLAR_DOXY_PSAL_PRES"
+        self.data["MOLAR_DOXY_PSAL_PRES"].attrs["standard_name"] = (
+            "MOLAR_DOXY_PSAL_PRES"
+        )
 
         self.reconstruct_data()
         self.update_qc()

@@ -29,7 +29,7 @@ import time
 @register_step
 class ExportStep(BaseStep):
     """
-    Exports the the data output by the previous step. 
+    Exports the the data output by the previous step.
 
     Parameters
     ----------
@@ -79,7 +79,9 @@ class ExportStep(BaseStep):
     }
 
     def run(self):
-        self.log(f"Exporting {self.parameters['export_format']} to {self.parameters['output_path']}")
+        self.log(
+            f"Exporting {self.parameters['export_format']} to {self.parameters['output_path']}"
+        )
 
         # Check if the data is in the context
         self.check_data()
@@ -115,7 +117,9 @@ class ExportStep(BaseStep):
             for var in data.data_vars:
                 encoding[var] = {"zlib": True, "complevel": compression}
                 if data[var].ndim == 1:
-                    encoding[var]["chunksizes"] = (max(1, min(data[var].size, 1_000_000)),)
+                    encoding[var]["chunksizes"] = (
+                        max(1, min(data[var].size, 1_000_000)),
+                    )
         else:
             encoding = None
 
@@ -135,7 +139,9 @@ class ExportStep(BaseStep):
         started = time.time()
         self._write_with_progress(write, output_path, data.nbytes)
         size_mb = os.path.getsize(output_path) / 1024**2
-        self.log(f"Exported {size_mb:.1f} MB to {output_path} in {time.time() - started:.1f}s")
+        self.log(
+            f"Exported {size_mb:.1f} MB to {output_path} in {time.time() - started:.1f}s"
+        )
         return self.context
 
     def _write_with_progress(self, write, output_path, nbytes):

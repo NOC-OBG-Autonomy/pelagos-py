@@ -35,23 +35,37 @@ def demo(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(prog="pelagos-py", description="Process glider data with pelagos-py.")
+    parser = argparse.ArgumentParser(
+        prog="pelagos-py", description="Process glider data with pelagos-py."
+    )
     commands = parser.add_subparsers(metavar="command", required=True)
 
-    dashboard_cmd = commands.add_parser("dashboard", help="open the config dashboard in your browser")
+    dashboard_cmd = commands.add_parser(
+        "dashboard", help="open the config dashboard in your browser"
+    )
     dashboard_cmd.set_defaults(func=dashboard)
 
-    build_cmd = commands.add_parser("build", help="write a config for an OG1 file (next to it, as <name>.yaml)")
+    build_cmd = commands.add_parser(
+        "build", help="write a config for an OG1 file (next to it, as <name>.yaml)"
+    )
     build_cmd.add_argument("file", help="OG1 NetCDF file")
-    build_cmd.add_argument("--ask", action="store_true", help="choose each option instead of using the defaults")
+    build_cmd.add_argument(
+        "--ask",
+        action="store_true",
+        help="choose each option instead of using the defaults",
+    )
     build_cmd.add_argument("-o", "--output", help="where to save the config")
     build_cmd.set_defaults(func=build)
 
-    run_cmd = commands.add_parser("run", help="run a config (.yaml), or build one for an OG1 file and run it")
+    run_cmd = commands.add_parser(
+        "run", help="run a config (.yaml), or build one for an OG1 file and run it"
+    )
     run_cmd.add_argument("path", help="config .yaml or OG1 NetCDF file")
     run_cmd.set_defaults(func=run)
 
-    demo_cmd = commands.add_parser("demo", help="list the demo datasets, or download one and print its path")
+    demo_cmd = commands.add_parser(
+        "demo", help="list the demo datasets, or download one and print its path"
+    )
     demo_cmd.add_argument("name", nargs="?", help="demo to download, e.g. nelson_646_r")
     demo_cmd.set_defaults(func=demo)
 

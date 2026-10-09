@@ -7,7 +7,10 @@ from pelagos_py.steps.quality_control.valid_profile_qc import valid_profile_qc
 def make_dataset(profile_numbers, pres):
     return xr.Dataset(
         {
-            "PROFILE_NUMBER": ("N_MEASUREMENTS", np.array(profile_numbers, dtype=float)),
+            "PROFILE_NUMBER": (
+                "N_MEASUREMENTS",
+                np.array(profile_numbers, dtype=float),
+            ),
             "PRES": ("N_MEASUREMENTS", np.array(pres, dtype=float)),
         },
         coords={"N_MEASUREMENTS": range(len(profile_numbers))},

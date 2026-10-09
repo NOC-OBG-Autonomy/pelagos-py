@@ -36,7 +36,7 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
     A processing step class for deriving oceanographic variables from CTD data.
 
     TEOS-10 implementation provided through Gibbs SeaWater (GSW) Oceanographic Toolbox functions.
-    This step requires that "TIME", "LATITUDE", "LONGITUDE", "CNDC", "PRES" and "TEMP" are present 
+    This step requires that "TIME", "LATITUDE", "LONGITUDE", "CNDC", "PRES" and "TEMP" are present
     in the dataset variables.
 
     Parameters
@@ -210,7 +210,11 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
         if "TIME" not in self.data:
             return
 
-        plot_vars = [var for var in self.provided_variables if var in self.to_derive and var in self.data]
+        plot_vars = [
+            var
+            for var in self.provided_variables
+            if var in self.to_derive and var in self.data
+        ]
 
         if not plot_vars:
             return
@@ -231,7 +235,9 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
                 fig_spec.points(ax, time_data, data_vals, color=fig_spec.CATEGORY[0])
 
             fig_spec.date_axis(ax, which="x", index=time_data)
-            ylabel = fig_spec.axis_label(var_name, self.data[var_name].attrs.get("units"))
+            ylabel = fig_spec.axis_label(
+                var_name, self.data[var_name].attrs.get("units")
+            )
             xlabel = "Time" if i == len(plot_vars) - 1 else None
             fig_spec.style_axes(ax, xlabel=xlabel, ylabel=ylabel)
 

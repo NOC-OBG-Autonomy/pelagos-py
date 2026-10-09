@@ -57,7 +57,9 @@ def probe_file(file_path, logger=None):
         return None
     probe, error = _probe(str(file_path), mtime)
     if error and logger:
-        logger.info("Could not read '%s' to inspect its variables: %s", file_path, error)
+        logger.info(
+            "Could not read '%s' to inspect its variables: %s", file_path, error
+        )
     return probe
 
 
@@ -71,7 +73,9 @@ def _probe(file_path, mtime):
     env = dict(os.environ, HDF5_USE_FILE_LOCKING="FALSE")
     cmd = [sys.executable, __file__, file_path, json.dumps(MEDIAN_VARIABLES)]
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=TIMEOUT, env=env)
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=TIMEOUT, env=env
+        )
     except Exception as exc:
         return None, str(exc)
     if result.returncode != 0:
@@ -93,13 +97,21 @@ def _chunks(v):
         yield np.ma.filled(np.ma.asarray(v[...]).astype(float), np.nan).ravel()
         return
     for start in range(0, v.shape[0], CHUNK):
-        yield np.ma.filled(np.ma.asarray(v[start:start + CHUNK]).astype(float), np.nan).ravel()
+        yield np.ma.filled(
+            np.ma.asarray(v[start : start + CHUNK]).astype(float), np.nan
+        ).ravel()
 
 
 def _summarise(v, want_median):
     kind = getattr(v.dtype, "kind", "")
-    info = {"units": str(getattr(v, "units", "")), "numeric": kind in "fiu", "all_nan": False}
-    can_be_nan = kind == "f" or (kind in "iu" and any(hasattr(v, a) for a in PACKED_ATTRS))
+    info = {
+        "units": str(getattr(v, "units", "")),
+        "numeric": kind in "fiu",
+        "all_nan": False,
+    }
+    can_be_nan = kind == "f" or (
+        kind in "iu" and any(hasattr(v, a) for a in PACKED_ATTRS)
+    )
     if not can_be_nan:
         return info
     info["all_nan"] = True
@@ -135,7 +147,7 @@ def _bottoms(pres, blocks):
     # Block maxima keep every bottom but cap the walk below at `blocks` steps.
     size = -(-pres.size // blocks)
     padded = np.full(size * blocks, np.nan, dtype=pres.dtype)
-    padded[:pres.size] = pres
+    padded[: pres.size] = pres
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)  # all-NaN blocks
         block_max = np.nanmax(padded.reshape(-1, size), axis=1)
@@ -166,7 +178,9 @@ def _dive_depths(v):
     length = min(n, DIVE_READ_LIMIT // windows)
     bottoms = []
     for start in np.linspace(0, n - length, windows).astype(int):
-        bottoms += _bottoms(_read_pres(v, start, start + length), DIVE_BLOCKS // windows)
+        bottoms += _bottoms(
+            _read_pres(v, start, start + length), DIVE_BLOCKS // windows
+        )
     return bottoms
 
 
@@ -175,9 +189,13 @@ def _summarise_file(file_path, median_vars):
     import netCDF4
 
     with netCDF4.Dataset(file_path) as ds:
-        probe = {name: _summarise(v, name in median_vars) for name, v in ds.variables.items()}
+        probe = {
+            name: _summarise(v, name in median_vars) for name, v in ds.variables.items()
+        }
         if DIVE_VARIABLE in probe and not probe[DIVE_VARIABLE]["all_nan"]:
-            probe[DIVE_VARIABLE]["dive_depths"] = _dive_depths(ds.variables[DIVE_VARIABLE])
+            probe[DIVE_VARIABLE]["dive_depths"] = _dive_depths(
+                ds.variables[DIVE_VARIABLE]
+            )
         return probe
 
 

@@ -58,15 +58,15 @@ def console_summary(checker_name, result, passed, top=3):
     failing = []
     for entry in result.get("all_priorities", []):
         if entry.get("msgs"):
-            failing.append((len(entry["msgs"]), _short_check_name(entry.get("name", ""))))
+            failing.append(
+                (len(entry["msgs"]), _short_check_name(entry.get("name", "")))
+            )
     failing.sort(key=lambda item: -item[0])
     n_issues = sum(count for count, _ in failing)
     worst = ", ".join(f"{name} ({count})" for count, name in failing[:top])
     if len(failing) > top:
         worst += f", +{len(failing) - top} more"
-    return (
-        f"{label}: failed ({scored}/{possible}) — {n_issues} issue(s) in {len(failing)} check(s): {worst}"
-    )
+    return f"{label}: failed ({scored}/{possible}) — {n_issues} issue(s) in {len(failing)} check(s): {worst}"
 
 
 @register_step
@@ -92,6 +92,7 @@ class FormatCheck(BaseStep):
     proceed_on_fail : bool
         If False, halt the pipeline when the file fails the checks.
     """
+
     step_name = "Format Checker"
 
     parameter_schema = {
@@ -123,14 +124,20 @@ class FormatCheck(BaseStep):
         if not raw:
             return []
         values = [raw] if isinstance(raw, str) else list(raw)
-        return [v.lower() for v in values if isinstance(v, str) and v.lower() in ("json", "rst")]
+        return [
+            v.lower()
+            for v in values
+            if isinstance(v, str) and v.lower() in ("json", "rst")
+        ]
 
     def run(self):
         check_suite = CheckSuite()
         check_suite.load_all_available_checkers()
 
         #   Fall back to the file loaded by a preceding Load OG1 step when no src is given.
-        src = self.parameters.get("src") or self.context.get("global_parameters", {}).get("source_file")
+        src = self.parameters.get("src") or self.context.get(
+            "global_parameters", {}
+        ).get("source_file")
         if not src:
             self.halt(
                 "No file to check. Provide a 'src' path in the config, "
@@ -160,7 +167,10 @@ class FormatCheck(BaseStep):
             save_formats = []
 
         #   If run after loading data, the filename stem is saved in the global pipeline params.
-        fname = self.context.get("global_parameters", {}).get("filename_core") or Path(src.strip("*.nc")).stem
+        fname = (
+            self.context.get("global_parameters", {}).get("filename_core")
+            or Path(src.strip("*.nc")).stem
+        )
 
         #   Run every requested checker once; reuse the results for the summary + files.
         ds = check_suite.load_dataset(src)
@@ -180,7 +190,9 @@ class FormatCheck(BaseStep):
         # lets the data report show a Format Checker section even without a saved file
         self.context["cc_results"] = cc_results
 
-        saved = self._write_reports(check_suite, score_dict, out_dir, fname, save_formats)
+        saved = self._write_reports(
+            check_suite, score_dict, out_dir, fname, save_formats
+        )
 
         labels = join_labels([standard_label(c) for c in cnames])
         header = f"'{fname}' {'passed' if overall_pass else 'failed'} {labels} format checks."
@@ -188,9 +200,16 @@ class FormatCheck(BaseStep):
         for line in summary_lines:
             self.log(line)
         if ComplianceChecker.check_errors(score_groups, verbose=0):
-            self.log_warn("Errors occurred while running the checker — see the full report.")
+            self.log_warn(
+                "Errors occurred while running the checker — see the full report."
+            )
         if saved:
-            self.log("  ".join(f"{fmt.upper()} report saved to: {path}" for fmt, path in saved.items()))
+            self.log(
+                "  ".join(
+                    f"{fmt.upper()} report saved to: {path}"
+                    for fmt, path in saved.items()
+                )
+            )
 
         if self.diagnostics:
             self._check_suite, self._score_dict = check_suite, score_dict
@@ -206,7 +225,9 @@ class FormatCheck(BaseStep):
     def generate_diagnostics(self):
         # full report (same text as the RST file) to stdout, where the dashboard captures it
         self.log_generating_diagnostics()
-        ComplianceChecker.stdout_output(self._check_suite, self._score_dict, 1, _LENIENT_LIMIT)
+        ComplianceChecker.stdout_output(
+            self._check_suite, self._score_dict, 1, _LENIENT_LIMIT
+        )
 
     def _write_reports(self, check_suite, score_dict, out_dir, fname, save_formats):
         # Returns {format: path}; JSON is preferred as the data report's cc_file.
@@ -233,5 +254,7 @@ class FormatCheck(BaseStep):
             saved["rst"] = rst_path
 
         #   Prefer JSON for the data report (structured); fall back to RST.
-        self.context["global_parameters"]["cc_file"] = saved.get("json") or saved.get("rst")
+        self.context["global_parameters"]["cc_file"] = saved.get("json") or saved.get(
+            "rst"
+        )
         return saved

@@ -23,13 +23,24 @@ def make_context(temp, phase):
 
 def make_step(parameters, context, diagnostics=False):
     return DeriveOxygenConcentration(
-        name="Derive Oxygen Concentration", parameters=parameters, diagnostics=diagnostics, context=context
+        name="Derive Oxygen Concentration",
+        parameters=parameters,
+        diagnostics=diagnostics,
+        context=context,
     )
 
 
 def test_svu_matches_stern_volmer_uchida_equation():
     """The 'SVU' method must reproduce (P0/Pc - 1) / K_SV directly from SVUFoilCoef0-6."""
-    c0, c1, c2, c3, c4, c5, c6 = 2.67915e-03, 1.12428e-04, 2.29021e-06, 1.43603e02, -2.08012e-01, -3.59303e01, 2.82344e00
+    c0, c1, c2, c3, c4, c5, c6 = (
+        2.67915e-03,
+        1.12428e-04,
+        2.29021e-06,
+        1.43603e02,
+        -2.08012e-01,
+        -3.59303e01,
+        2.82344e00,
+    )
     temp = [10.0, 15.0, 20.0]
     phase = [25.0, 27.0, 29.0]
 

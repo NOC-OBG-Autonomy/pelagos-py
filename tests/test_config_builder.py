@@ -117,7 +117,11 @@ def var(units="", all_nan=False, median=None):
 
 
 BASE = {
-    "TIME": var(), "LATITUDE": var(), "LONGITUDE": var(), "PRES": var(), "TEMP": var(),
+    "TIME": var(),
+    "LATITUDE": var(),
+    "LONGITUDE": var(),
+    "PRES": var(),
+    "TEMP": var(),
     "CNDC": var("mhos/m", median=3.6),
 }
 
@@ -141,7 +145,12 @@ def test_parse_render_round_trip():
 
 
 def test_full_file_needs_no_choices():
-    probe = {**BASE, "BETA_BACKSCATTERING700": var(), "BPHASE_DOXY": var(), "DOWNWELLING_PAR": var()}
+    probe = {
+        **BASE,
+        "BETA_BACKSCATTERING700": var(),
+        "BPHASE_DOXY": var(),
+        "DOWNWELLING_PAR": var(),
+    }
     decs = cb.decisions(probe)
     assert [d["id"] for d in decs] == ["oxygen"]
     text = cb.build(TEMPLATE, "/data/g.nc", probe)
@@ -151,7 +160,12 @@ def test_full_file_needs_no_choices():
 
 
 def test_bbp700_as_beta_default_and_direct_choice():
-    probe = {**BASE, "BBP700": var("m-1", median=1e-4), "BPHASE_DOXY": var(), "DOWNWELLING_PAR": var()}
+    probe = {
+        **BASE,
+        "BBP700": var("m-1", median=1e-4),
+        "BPHASE_DOXY": var(),
+        "DOWNWELLING_PAR": var(),
+    }
     d = ids(cb.decisions(probe))["bbp"]
     assert d["default"] == "as_beta" and option_keys(d) == ["as_beta", "direct"]
 
@@ -161,7 +175,10 @@ def test_bbp700_as_beta_default_and_direct_choice():
     text = cb.build(TEMPLATE, "/data/g.nc", probe, choices={"bbp": "direct"})
     assert "BBP from Beta" not in steps_of(text)
     assert "bbp700_is_beta: false" in text
-    assert "BETA_BACKSCATTERING700" not in text.split("BACKSCATTER", 1)[1].split("OXYGEN")[0]
+    assert (
+        "BETA_BACKSCATTERING700"
+        not in text.split("BACKSCATTER", 1)[1].split("OXYGEN")[0]
+    )
 
 
 def test_no_backscatter_drops_section_and_quenching():
@@ -173,8 +190,13 @@ def test_no_backscatter_drops_section_and_quenching():
 
 
 def test_oxygen_uses_first_real_phase_variable():
-    probe = {**BASE, "BETA_BACKSCATTERING700": var(), "DOWNWELLING_PAR": var(),
-             "BPHASE_DOXY": var(all_nan=True), "DPHASE_DOXY": var()}
+    probe = {
+        **BASE,
+        "BETA_BACKSCATTERING700": var(),
+        "DOWNWELLING_PAR": var(),
+        "BPHASE_DOXY": var(all_nan=True),
+        "DPHASE_DOXY": var(),
+    }
     d = ids(cb.decisions(probe))["oxygen"]
     assert d["default"] == "phase" and "BPHASE_DOXY" in d["detail"]
     text = cb.build(TEMPLATE, "/data/g.nc", probe)
@@ -182,7 +204,12 @@ def test_oxygen_uses_first_real_phase_variable():
 
 
 def test_oxygen_shipped_keeps_only_rename():
-    probe = {**BASE, "BETA_BACKSCATTERING700": var(), "DOWNWELLING_PAR": var(), "MOLAR_DOXY": var()}
+    probe = {
+        **BASE,
+        "BETA_BACKSCATTERING700": var(),
+        "DOWNWELLING_PAR": var(),
+        "MOLAR_DOXY": var(),
+    }
     d = ids(cb.decisions(probe))["oxygen"]
     assert d["default"] == "shipped"
     text = cb.build(TEMPLATE, "/data/g.nc", probe)
@@ -193,22 +220,39 @@ def test_oxygen_shipped_keeps_only_rename():
 
 def test_oxygen_shipped_keeps_range_checks_from_real_template():
     template = (Path(cb.__file__).parents[1] / "default_config.yaml").read_text()
-    probe = {**BASE, "BETA_BACKSCATTERING700": var(), "DOWNWELLING_PAR": var(), "MOLAR_DOXY": var()}
+    probe = {
+        **BASE,
+        "BETA_BACKSCATTERING700": var(),
+        "DOWNWELLING_PAR": var(),
+        "MOLAR_DOXY": var(),
+    }
     text = cb.build(template, "/data/g.nc", probe)
     assert "            MOLAR_DOXY:\n              4: [0, 1000, outside]" in text
-    assert "            MOLAR_DOXY_ADJUSTED:\n              4: [0, 1000, outside]" in text
+    assert (
+        "            MOLAR_DOXY_ADJUSTED:\n              4: [0, 1000, outside]" in text
+    )
     assert "UNCAL_PHASE_DOXY_PCORR" not in text
 
 
 def test_oxygen_none_and_no_par_drop_sections():
     probe = {**BASE, "BETA_BACKSCATTERING700": var(), "FREQUENCY_DOXY": var()}
     d = ids(cb.decisions(probe))
-    assert d["oxygen"]["default"] == "none" and "FREQUENCY_DOXY" in d["oxygen"]["detail"]
+    assert (
+        d["oxygen"]["default"] == "none" and "FREQUENCY_DOXY" in d["oxygen"]["detail"]
+    )
     assert "par" in d
     text = cb.build(TEMPLATE, "/data/g.nc", probe)
     assert "OXYGEN" not in text and "PAR QC" not in text
-    assert steps_of(text) == ["Load OG1", "Prepare OG1", "Apply QC", "Apply QC", "BBP from Beta",
-                              "Deep Correction", "CHLA Quenching", "Data Export"]
+    assert steps_of(text) == [
+        "Load OG1",
+        "Prepare OG1",
+        "Apply QC",
+        "Apply QC",
+        "BBP from Beta",
+        "Deep Correction",
+        "CHLA Quenching",
+        "Data Export",
+    ]
 
 
 def test_missing_par_can_be_renamed_from_another_variable():
@@ -220,7 +264,10 @@ def test_missing_par_can_be_renamed_from_another_variable():
     text = cb.build(TEMPLATE, "/data/g.nc", probe, choices={"par": "rename:PAR"})
     assert "PAR QC" in text and "Interpolate PAR" in steps_of(text)
     prep = next(s for s in yaml.safe_load(text)["steps"] if s["name"] == "Prepare OG1")
-    assert prep["parameters"] == {"bbp700_is_beta": True, "renames": {"DOWNWELLING_PAR": "PAR"}}
+    assert prep["parameters"] == {
+        "bbp700_is_beta": True,
+        "renames": {"DOWNWELLING_PAR": "PAR"},
+    }
 
 
 def test_missing_oxygen_can_be_renamed_to_molar_doxy():
@@ -228,10 +275,16 @@ def test_missing_oxygen_can_be_renamed_to_molar_doxy():
     d = ids(cb.decisions(probe))["oxygen"]
     assert option_keys(d)[0] == "none"
     assert "rename:OXY_UMOL" in option_keys(d)
-    assert "rename:" not in str(ids(cb.decisions({**BASE, "DOXY": var()}))["oxygen"]["options"])
-    text = cb.build(TEMPLATE, "/data/g.nc", probe, choices={"oxygen": "rename:OXY_UMOL"})
+    assert "rename:" not in str(
+        ids(cb.decisions({**BASE, "DOXY": var()}))["oxygen"]["options"]
+    )
+    text = cb.build(
+        TEMPLATE, "/data/g.nc", probe, choices={"oxygen": "rename:OXY_UMOL"}
+    )
     assert "MOLAR_DOXY: OXY_UMOL" in text and "MOLAR_DOXY_ADJUSTED" in text
-    assert "Derive Uncalibrated Phase" not in steps_of(text) and "Correct Values" in steps_of(text)
+    assert "Derive Uncalibrated Phase" not in steps_of(
+        text
+    ) and "Correct Values" in steps_of(text)
 
 
 def test_missing_beta_can_be_renamed_instead_of_dropped():
@@ -271,13 +324,26 @@ def test_ask_choices_takes_numbers_defaults_and_variable_names():
 def test_validator_credits_prepare_renames(monkeypatch):
     monkeypatch.setattr(
         "pelagos_py.utils.valid_config_check._read_file_variables",
-        lambda *a, **k: ({"TIME", "LATITUDE_GPS", "LONGITUDE_GPS", "PRES", "TEMP", "CNDC", "BBP700"}, set()),
+        lambda *a, **k: (
+            {"TIME", "LATITUDE_GPS", "LONGITUDE_GPS", "PRES", "TEMP", "CNDC", "BBP700"},
+            set(),
+        ),
     )
     steps = [
         {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
         {"name": "Prepare OG1", "parameters": {}},
-        {"name": "Apply QC", "parameters": {"qc_settings": {"range qc": {
-            "variable_ranges": {"BETA_BACKSCATTERING700": {4: [0, 1, "outside"]}}}}}},
+        {
+            "name": "Apply QC",
+            "parameters": {
+                "qc_settings": {
+                    "range qc": {
+                        "variable_ranges": {
+                            "BETA_BACKSCATTERING700": {4: [0, 1, "outside"]}
+                        }
+                    }
+                }
+            },
+        },
     ]
     assert check_pipeline_variables(steps, LOGGER) is True
     steps[1]["parameters"] = {"bbp700_is_beta": False}
@@ -306,15 +372,21 @@ def test_deep_threshold_follows_how_deep_enough_dives_go():
 
 def test_deep_threshold_applied_or_overridden():
     probe = dives(*[800] * 20)
-    assert "depth_threshold: 750     # Only use data below this depth" in cb.build(TEMPLATE, "/g.nc", probe)
+    assert "depth_threshold: 750     # Only use data below this depth" in cb.build(
+        TEMPLATE, "/g.nc", probe
+    )
     text = cb.build(TEMPLATE, "/g.nc", probe, {"deep": "500"})
     assert "depth_threshold: 500" in text
-    assert "Deep Correction" not in steps_of(cb.build(TEMPLATE, "/g.nc", probe, {"deep": "skip"}))
+    assert "Deep Correction" not in steps_of(
+        cb.build(TEMPLATE, "/g.nc", probe, {"deep": "skip"})
+    )
 
 
 def test_shallow_dives_skip_deep_correction_by_default():
     d = ids(cb.decisions(dives(*[290] * 20)))["deep"]
     assert d["default"] == "skip"
     assert option_keys(d) == ["skip", "250", "200", "150", "100"]
-    assert "Deep Correction" not in steps_of(cb.build(TEMPLATE, "/g.nc", dives(*[290] * 20)))
+    assert "Deep Correction" not in steps_of(
+        cb.build(TEMPLATE, "/g.nc", dives(*[290] * 20))
+    )
     assert "deep" not in ids(cb.decisions(BASE))

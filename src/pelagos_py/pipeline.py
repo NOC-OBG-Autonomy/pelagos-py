@@ -180,9 +180,7 @@ class Pipeline(ConfigMirrorMixin):
         self._init_config_mirror()
 
         if config_path is not None and config is not None:
-            raise ValueError(
-                "Provide either config_path or config, not both."
-            )
+            raise ValueError("Provide either config_path or config, not both.")
 
         has_config = config_path is not None or config is not None
         if config_path is not None:
@@ -240,20 +238,33 @@ class Pipeline(ConfigMirrorMixin):
             raise ValueError(f"Could not read '{file_path}' to build a config for it.")
         config_path = Path(config_path or Path(file_path).with_suffix(".yaml"))
         if ask and config_path.exists():
-            if input(f"{config_path} already exists. Overwrite it? [y/N] ").strip().lower() != "y":
-                raise FileExistsError(f"{config_path} exists; pass config_path= to save elsewhere.")
+            if (
+                input(f"{config_path} already exists. Overwrite it? [y/N] ")
+                .strip()
+                .lower()
+                != "y"
+            ):
+                raise FileExistsError(
+                    f"{config_path} exists; pass config_path= to save elsewhere."
+                )
 
         decisions = config_builder.decisions(probe)
         choices = config_builder.ask_choices(decisions) if ask else None
         template = config_builder.DEFAULT_CONFIG.read_text()
         replaced = config_path.exists()
-        config_path.write_text(config_builder.build(template, str(file_path), probe, choices))
+        config_path.write_text(
+            config_builder.build(template, str(file_path), probe, choices)
+        )
 
         pipeline = cls(config_path=str(config_path))
-        pipeline.logger.info(f"{'Replaced' if replaced else 'Wrote'} config {config_path}")
+        pipeline.logger.info(
+            f"{'Replaced' if replaced else 'Wrote'} config {config_path}"
+        )
         if not ask:
             for d in decisions:
-                chosen = next((o["label"] for o in d["options"] if o["key"] == d["default"]), None)
+                chosen = next(
+                    (o["label"] for o in d["options"] if o["key"] == d["default"]), None
+                )
                 pipeline.logger.warning(f"{d['title']}: {chosen or d['detail']}")
         return pipeline
 
@@ -268,7 +279,9 @@ class Pipeline(ConfigMirrorMixin):
         steps_config : list of dict
             List of step configurations.
         """
-        self.logger.info("Assembling steps to run from config.", extra={"console": False})
+        self.logger.info(
+            "Assembling steps to run from config.", extra={"console": False}
+        )
         for step in progress_bar(steps_config, desc="Assembling steps", unit="step"):
             self.add_step(
                 step_name=step["name"],
@@ -391,7 +404,8 @@ class Pipeline(ConfigMirrorMixin):
         # a QC test with diagnostics on counts even when the step's own flag is off
         qc_tests = (step.parameters or {}).get("qc_settings") or {}
         user_diagnostics = step.diagnostics or any(
-            isinstance(t, dict) and bool(t.get("diagnostics")) for t in qc_tests.values()
+            isinstance(t, dict) and bool(t.get("diagnostics"))
+            for t in qc_tests.values()
         )
         # True when diagnostics run only to feed the report (not user-requested).
         step._report_capture = bool(capture and not user_diagnostics)
@@ -482,7 +496,9 @@ class Pipeline(ConfigMirrorMixin):
         Runs the entire pipeline.
         """
         # Pausing needs the dashboard; here it just skips.
-        stop_on_fail = resolve_on_step_fail(self.global_parameters.get("on_step_fail")) == "stop"
+        stop_on_fail = (
+            resolve_on_step_fail(self.global_parameters.get("on_step_fail")) == "stop"
+        )
         with self.run_context() as report_present:
             # Headless Agg for the whole run: toggling the backend per step can crash on Windows
             backend_ctx = (

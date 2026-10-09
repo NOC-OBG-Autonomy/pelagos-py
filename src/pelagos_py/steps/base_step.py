@@ -156,9 +156,15 @@ class BaseStep(ConfigMirrorMixin):
         if not selection or not self.diagnostic_figures:
             return []
         if selection is True:
-            return [n for n, (_, level) in self.diagnostic_figures.items() if level is True]
+            return [
+                n for n, (_, level) in self.diagnostic_figures.items() if level is True
+            ]
         if selection == "all":
-            return [n for n, (_, level) in self.diagnostic_figures.items() if level is not None]
+            return [
+                n
+                for n, (_, level) in self.diagnostic_figures.items()
+                if level is not None
+            ]
         names = [selection] if isinstance(selection, str) else list(selection)
         unknown = [n for n in names if n not in self.diagnostic_figures]
         if unknown:
@@ -182,7 +188,9 @@ class BaseStep(ConfigMirrorMixin):
         import matplotlib as mpl
         import matplotlib.pyplot as plt
 
-        mpl.use("tkagg")  # report capture neutralises this; standalone runs pop a window
+        mpl.use(
+            "tkagg"
+        )  # report capture neutralises this; standalone runs pop a window
         drawn = 0
         for name in names:
             fig = self.draw_figure(name)
@@ -246,7 +254,7 @@ class BaseStep(ConfigMirrorMixin):
             import psutil
 
             mem_info = psutil.Process(os.getpid()).memory_info()
-            self.log(f"Current memory usage: {mem_info.rss / 1024 ** 2:.2f} MB")
+            self.log(f"Current memory usage: {mem_info.rss / 1024**2:.2f} MB")
         except ImportError:
             pass
 
@@ -304,7 +312,9 @@ class BaseStep(ConfigMirrorMixin):
         self.logger.error("[%s] %s", self.name, message)
         self.logger.log(STOP, "Pipeline stopped at step '%s'.", self.name)
         exc = SystemExit(1)
-        exc.halt_message = message  # lets the dashboard show the reason, not "SystemExit: 1"
+        exc.halt_message = (
+            message  # lets the dashboard show the reason, not "SystemExit: 1"
+        )
         raise exc
 
     # ----------- Config Handling -----------

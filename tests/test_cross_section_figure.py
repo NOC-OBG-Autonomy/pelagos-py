@@ -85,7 +85,10 @@ def test_oxygen_panel_prefers_fully_corrected_variable(tmp_path):
     )
 
     resolved = wrp._first_present(
-        ds, next(p for p in wrp._CROSS_SECTION_PANELS if p["label"] == "Oxygen")["candidates"]
+        ds,
+        next(p for p in wrp._CROSS_SECTION_PANELS if p["label"] == "Oxygen")[
+            "candidates"
+        ],
     )
 
     assert resolved == "MOLAR_DOXY_PSAL_PRES"
@@ -103,7 +106,10 @@ def test_oxygen_panel_prefers_adjusted_variable(tmp_path):
     )
 
     resolved = wrp._first_present(
-        ds, next(p for p in wrp._CROSS_SECTION_PANELS if p["label"] == "Oxygen")["candidates"]
+        ds,
+        next(p for p in wrp._CROSS_SECTION_PANELS if p["label"] == "Oxygen")[
+            "candidates"
+        ],
     )
 
     assert resolved == "MOLAR_DOXY_ADJUSTED"

@@ -103,23 +103,23 @@ class range_qc(BaseQC):
             "type": dict,
             "required": True,
             "description": "Per-variable {flag: band} ranges. A band is [low, high, 'inside'|'outside'] "
-                           "('outside' flags data outside it, 'inside' flags data within it); the keyword "
-                           "may be omitted, in which case an ascending pair means outside and a descending "
-                           "pair means inside. A flag may give a list of bands to cover several ranges.",
+            "('outside' flags data outside it, 'inside' flags data within it); the keyword "
+            "may be omitted, in which case an ascending pair means outside and a descending "
+            "pair means inside. A flag may give a list of bands to cover several ranges.",
         },
         "also_flag": {
             "type": dict,
             "default": {},
             "description": "Propagate a variable's flags onto companion variables, e.g. "
-                           "{'CNDC': ['PRES', 'TEMP']}. Merged with the Argo matrix so the worst "
-                           "flag wins.",
+            "{'CNDC': ['PRES', 'TEMP']}. Merged with the Argo matrix so the worst "
+            "flag wins.",
         },
         "flag_instead": {
             "type": dict,
             "default": {},
             "description": "Like also_flag, but the source variable's own flags are not written, e.g. "
-                           "{'DEPTH': ['CHLA']} flags CHLA by DEPTH's ranges while leaving DEPTH "
-                           "unflagged.",
+            "{'DEPTH': ['CHLA']} flags CHLA by DEPTH's ranges while leaving DEPTH "
+            "unflagged.",
         },
         "test_depth_range": {
             "type": list,
@@ -150,7 +150,11 @@ class range_qc(BaseQC):
         # up front for a clear config error rather than an IndexError in return_qc.
         for var, meta in self.variable_ranges.items():
             for flag in meta:
-                if isinstance(flag, bool) or not isinstance(flag, int) or not (0 <= flag <= 9):
+                if (
+                    isinstance(flag, bool)
+                    or not isinstance(flag, int)
+                    or not (0 <= flag <= 9)
+                ):
                     raise ValueError(
                         f"[{self.qc_name}] invalid QC flag {flag!r} for variable "
                         f"{var!r}; expected an Argo QC flag 0-9."
@@ -219,8 +223,12 @@ class range_qc(BaseQC):
 
         low, high = (a, b) if a <= b else (b, a)
         if mode == "outside":
-            return (vals < low) | (vals > high)  # good band -> flag outside (bounds good)
-        return (vals >= low) & (vals <= high)  # impossible band -> flag inside (bounds incl.)
+            return (vals < low) | (
+                vals > high
+            )  # good band -> flag outside (bounds good)
+        return (vals >= low) & (
+            vals <= high
+        )  # impossible band -> flag inside (bounds incl.)
 
     def return_qc(self):
         n = len(self.data["N_MEASUREMENTS"])
@@ -278,12 +286,13 @@ class range_qc(BaseQC):
         # (they get range lines), then any companions it propagated onto.
         # (flag_instead sources drop out below: they have no flags in self.flags.)
         plot_order = list(self.tested_variables)
-        for companion in sum(self.also_flag.values(), []) + sum(self.flag_instead.values(), []):
+        for companion in sum(self.also_flag.values(), []) + sum(
+            self.flag_instead.values(), []
+        ):
             if companion not in plot_order:
                 plot_order.append(companion)
         plot_vars = [
-            var for var in plot_order
-            if var in self.data and f"{var}_QC" in self.flags
+            var for var in plot_order if var in self.data and f"{var}_QC" in self.flags
         ]
         if not plot_vars:
             return
@@ -298,7 +307,9 @@ class range_qc(BaseQC):
 
         fig, axes = fig_spec.new_fig(nrows=len(plot_vars), sharex=True)
         for ax, var in zip(axes[:, 0], plot_vars):
-            fig_spec.flag_points(ax, x, self.data[var].values, self.flags[f"{var}_QC"].values)
+            fig_spec.flag_points(
+                ax, x, self.data[var].values, self.flags[f"{var}_QC"].values
+            )
 
             # Range boundaries for variables that define their own ranges (a single
             # scalar is drawn as one line, coloured by the flag it triggers).
@@ -311,7 +322,10 @@ class range_qc(BaseQC):
                             if isinstance(bound, str) or not np.isfinite(bound):
                                 continue
                             ax.axhline(
-                                bound, ls="--", lw=1, alpha=0.6,
+                                bound,
+                                ls="--",
+                                lw=1,
+                                alpha=0.6,
                                 color=fig_spec.FLAG_COLOURS.get(flag, "k"),
                             )
 

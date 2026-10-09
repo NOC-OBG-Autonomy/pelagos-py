@@ -33,7 +33,6 @@ from pelagos_py.utils import fig_spec
 
 @register_step
 class BBPFromBeta(BaseStep, QCHandlingMixin):
-
     step_name = "BBP from Beta"
     required_variables = ["TIME", "DEPTH", "TEMP", "PRAC_SALINITY"]
     provided_variables = []
@@ -106,7 +105,9 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
         beta_sw, _ = gt.flo_functions.flo_zhang_scatter_coeffs(
             self.data_subset["TEMP"], self.data_subset["PRAC_SALINITY"], self.theta, 700
         )
-        bbp_corrected = 2 * np.pi * self.xfactor * (self.data_subset[self.beta_var] - beta_sw)
+        bbp_corrected = (
+            2 * np.pi * self.xfactor * (self.data_subset[self.beta_var] - beta_sw)
+        )
 
         # Stitch back into the data
         self.data[self.output_as] = bbp_corrected
@@ -174,12 +175,20 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
         fig, axes = fig_spec.new_fig()
         ax = axes[0][0]
         # boxplot is not WebGL-safe (PNG-only in the dashboard) but is the point of this figure
-        ax.boxplot([beta_clean, bbp_clean], patch_artist=True,
-                   boxprops=dict(facecolor=fig_spec.CATEGORY[1], alpha=0.6))
-        ax.set_xticks([1, 2], [
-            fig_spec.axis_label(self.beta_var, self.data_subset[self.beta_var].attrs.get("units")),
-            fig_spec.axis_label(self.output_as, "m-1"),
-        ])
+        ax.boxplot(
+            [beta_clean, bbp_clean],
+            patch_artist=True,
+            boxprops=dict(facecolor=fig_spec.CATEGORY[1], alpha=0.6),
+        )
+        ax.set_xticks(
+            [1, 2],
+            [
+                fig_spec.axis_label(
+                    self.beta_var, self.data_subset[self.beta_var].attrs.get("units")
+                ),
+                fig_spec.axis_label(self.output_as, "m-1"),
+            ],
+        )
         fig_spec.style_axes(ax, ylabel="value")
         fig_spec.finish(fig, f"{self.beta_var} vs {self.output_as}")
         return fig
@@ -188,7 +197,9 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
 def _rolling(arr, n, name):
     # same as glidertools.cleaning.rolling_window, which uses expanding windows at both ends
     i0 = n // 2
-    interior = getattr(pd.Series(arr).rolling(n), name)().to_numpy()[n - 1 : arr.size - 1]
+    interior = getattr(pd.Series(arr).rolling(n), name)().to_numpy()[
+        n - 1 : arr.size - 1
+    ]
     head = getattr(pd.Series(arr[:i0]).expanding(), name)().to_numpy()
     tail = getattr(pd.Series(arr[::-1][: n - i0]).expanding(), name)().to_numpy()
     return np.concatenate([head, interior, tail])
@@ -212,7 +223,6 @@ def despike(var, window_size, spike_method="median"):
 
 @register_step
 class IsolateBBPSpikes(BaseStep, QCHandlingMixin):
-
     step_name = "Isolate BBP Spikes"
     required_variables = ["TIME"]
     provided_variables = []
@@ -259,9 +269,7 @@ class IsolateBBPSpikes(BaseStep, QCHandlingMixin):
         # Flagged samples are left out of the despike so they cannot drag their
         # neighbours' rolling baseline; they get no baseline and are flagged missing (9)
         # below. Add an Interpolate Data step first for a gap-free baseline.
-        usable = self.data[self.apply_to].where(
-            self.calculation_mask([self.apply_to])
-        )
+        usable = self.data[self.apply_to].where(self.calculation_mask([self.apply_to]))
 
         self.baseline, self.spikes = despike(
             usable, self.window_size, spike_method=self.method
@@ -292,7 +300,9 @@ class IsolateBBPSpikes(BaseStep, QCHandlingMixin):
         self.context["data"].update(self.data)
         return self.context
 
-    diagnostic_figures = {"baseline_spikes": ("Raw, baseline and isolated spikes", True)}
+    diagnostic_figures = {
+        "baseline_spikes": ("Raw, baseline and isolated spikes", True)
+    }
 
     def draw_figure(self, name):
         raw = self.data[self.apply_to]
@@ -302,16 +312,33 @@ class IsolateBBPSpikes(BaseStep, QCHandlingMixin):
         ax1, ax2 = axes[0][0], axes[1][0]
 
         # Panel 1: raw and baseline time series.
-        ax1.plot(time[~np.isnan(raw)], raw[~np.isnan(raw)],
-                 ls="--", color=fig_spec.FLAGGED, label="Raw")
-        ax1.plot(time[~np.isnan(self.baseline)], self.baseline[~np.isnan(self.baseline)],
-                 color=fig_spec.CATEGORY[1], alpha=fig_spec.ALPHA, label="Baseline")
+        ax1.plot(
+            time[~np.isnan(raw)],
+            raw[~np.isnan(raw)],
+            ls="--",
+            color=fig_spec.FLAGGED,
+            label="Raw",
+        )
+        ax1.plot(
+            time[~np.isnan(self.baseline)],
+            self.baseline[~np.isnan(self.baseline)],
+            color=fig_spec.CATEGORY[1],
+            alpha=fig_spec.ALPHA,
+            label="Baseline",
+        )
 
         # Panel 2: isolated spike points.
-        fig_spec.points(ax2, time[~np.isnan(self.spikes)], self.spikes[~np.isnan(self.spikes)],
-                        color=fig_spec.CATEGORY[2], label="Spikes")
+        fig_spec.points(
+            ax2,
+            time[~np.isnan(self.spikes)],
+            self.spikes[~np.isnan(self.spikes)],
+            color=fig_spec.CATEGORY[2],
+            label="Spikes",
+        )
 
-        ylabel = fig_spec.axis_label(self.apply_to, self.data[self.apply_to].attrs.get("units"))
+        ylabel = fig_spec.axis_label(
+            self.apply_to, self.data[self.apply_to].attrs.get("units")
+        )
         for ax in (ax1, ax2):
             fig_spec.date_axis(ax, which="x", index=time.values)
             fig_spec.legend(ax)

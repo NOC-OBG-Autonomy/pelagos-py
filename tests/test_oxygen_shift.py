@@ -38,7 +38,10 @@ def make_context(n=50, dt_s=1.0, with_pitch=True, with_gradient=True):
 
 def make_step(parameters, context, diagnostics=False):
     return ShiftOxygenToCTD(
-        name="Shift Oxygen To CTD", parameters=parameters, diagnostics=diagnostics, context=context
+        name="Shift Oxygen To CTD",
+        parameters=parameters,
+        diagnostics=diagnostics,
+        context=context,
     )
 
 
@@ -72,7 +75,9 @@ def test_custom_pitch_name_is_used_for_dynamic_lag():
     n = ctx["data"].sizes["N_MEASUREMENTS"]
     ctx["data"]["MY_PITCH"] = ("N_MEASUREMENTS", np.full(n, np.deg2rad(30)))
 
-    step = make_step({"shift_vars": ["UNCAL_PHASE_DOXY"], "pitch_name": "MY_PITCH"}, ctx)
+    step = make_step(
+        {"shift_vars": ["UNCAL_PHASE_DOXY"], "pitch_name": "MY_PITCH"}, ctx
+    )
     out = step.run()
 
     assert "UNCAL_PHASE_DOXY_SHIFTED" in out["data"]

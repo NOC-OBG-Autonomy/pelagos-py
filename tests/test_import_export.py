@@ -6,6 +6,7 @@ import xarray as xr
 import numpy as np
 import pandas as pd
 
+
 #   Fake data borrowed from write_report
 @pytest.fixture
 def qc_dataset():
@@ -42,7 +43,7 @@ def step(qc_dataset):
         },
     )
 
-    s.log = MagicMock() #   TODO: Test diagnostics log using the mock
+    s.log = MagicMock()  #   TODO: Test diagnostics log using the mock
     s.context = {"data": qc_dataset}
     return s
 

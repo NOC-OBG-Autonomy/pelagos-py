@@ -67,7 +67,9 @@ def _ref_line(line, ax):
         return None
     val, is_date = _coord(line.get_ydata()[:1] if is_h else line.get_xdata()[:1])
     return {
-        "axis": "y" if is_h else "x", "value": float(val[0]), "date": is_date,
+        "axis": "y" if is_h else "x",
+        "value": float(val[0]),
+        "date": is_date,
         "color": _hex(line.get_color()),
         "dash": DASH.get(line.get_linestyle(), "solid"),
         "opacity": _alpha(line.get_color(), line.get_alpha()),
@@ -88,8 +90,18 @@ def _line_trace(line):
         has_line = True
     color = line.get_color()
     return {
-        "x": x, "y": y, "x_date": x_date, "y_date": y_date, "rgba": None,
-        "mode": ("lines+markers" if has_line and has_marker else "lines" if has_line else "markers"),
+        "x": x,
+        "y": y,
+        "x_date": x_date,
+        "y_date": y_date,
+        "rgba": None,
+        "mode": (
+            "lines+markers"
+            if has_line and has_marker
+            else "lines"
+            if has_line
+            else "markers"
+        ),
         "label": line.get_label(),
         "gid": line.get_gid(),
         "color": _hex(color),
@@ -123,9 +135,18 @@ def _scatter_trace(coll):
         color, opacity = _hex(faces[0]), _alpha(faces[0], coll.get_alpha())
     sizes = coll.get_sizes()
     return {
-        "x": x, "y": y, "x_date": x_date, "y_date": y_date, "rgba": rgba,
-        "mode": "markers", "label": coll.get_label(), "gid": coll.get_gid(), "color": color, "opacity": opacity,
-        "width": 1.0, "dash": "solid",
+        "x": x,
+        "y": y,
+        "x_date": x_date,
+        "y_date": y_date,
+        "rgba": rgba,
+        "mode": "markers",
+        "label": coll.get_label(),
+        "gid": coll.get_gid(),
+        "color": color,
+        "opacity": opacity,
+        "width": 1.0,
+        "dash": "solid",
         "size": float(np.sqrt(sizes[0])) if len(sizes) else 6.0,  # points^2 -> diameter
     }
 
@@ -174,8 +195,10 @@ def _grid_cell(ax):
         r0, r1 = ss.rowspan.start, ss.rowspan.stop
         c0, c1 = ss.colspan.start, ss.colspan.stop
         return [
-            round(sum(wr[:c0]) / wtot, 6), round(sum(hr[:r0]) / htot, 6),
-            round(sum(wr[c0:c1]) / wtot, 6), round(sum(hr[r0:r1]) / htot, 6),
+            round(sum(wr[:c0]) / wtot, 6),
+            round(sum(hr[:r0]) / htot, 6),
+            round(sum(wr[c0:c1]) / wtot, 6),
+            round(sum(hr[r0:r1]) / htot, 6),
         ]
     except Exception:  # noqa: BLE001
         return None
@@ -207,7 +230,11 @@ def _top_axis(ax, x_date, t0):
         keep = np.linspace(0, len(t) - 1, 1000).astype(int)
         t, i = t[keep], i[keep]
     t = _rel(_epoch_ms(t) if x_date else t, x_date, t0)
-    return {"label": "N_MEASUREMENTS", "t": [round(float(v), 3) for v in t], "i": [int(v) for v in i]}
+    return {
+        "label": "N_MEASUREMENTS",
+        "t": [round(float(v), 3) for v in t],
+        "i": [int(v) for v in i],
+    }
 
 
 def _rel(values, is_date, t0):
@@ -217,7 +244,9 @@ def _rel(values, is_date, t0):
 
 def _pack(header, arrays):
     hb = json.dumps(header).encode("utf-8")
-    hb += b" " * (-len(hb) % 4)  # keep the float32 arrays 4-byte aligned for zero-copy views
+    hb += b" " * (
+        -len(hb) % 4
+    )  # keep the float32 arrays 4-byte aligned for zero-copy views
     return b"".join([len(hb).to_bytes(4, "little"), hb, *(a.tobytes() for a in arrays)])
 
 
@@ -225,7 +254,9 @@ def serialise(fig):
     """Return ``(spec, reason, blob, full)``: spec is None (with a reason) if unsupported,
     blob is the float32 data and full the float64 copy for exact click values."""
     # the N_MEASUREMENTS secondary axis holds no data; it ships as the panel's top_axis
-    axes = [ax for ax in fig.axes if ax.get_visible() and not isinstance(ax, SecondaryAxis)]
+    axes = [
+        ax for ax in fig.axes if ax.get_visible() and not isinstance(ax, SecondaryAxis)
+    ]
     if not axes:
         return None, "no axes", None, None
     for ax in axes:
@@ -268,27 +299,63 @@ def serialise(fig):
             arrays.append(_rel(t["y"], y_date, t0).astype("<f4"))
             if t["rgba"] is not None:
                 arrays.append(np.ascontiguousarray(t["rgba"]))
-            header_traces.append({"panel": i, "trace": j, "n": n, "rgba": t["rgba"] is not None})
-            specs.append({k: t[k] for k in ("mode", "label", "gid", "color", "opacity", "width", "dash", "size")} | {"n": n})
+            header_traces.append(
+                {"panel": i, "trace": j, "n": n, "rgba": t["rgba"] is not None}
+            )
+            specs.append(
+                {
+                    k: t[k]
+                    for k in (
+                        "mode",
+                        "label",
+                        "gid",
+                        "color",
+                        "opacity",
+                        "width",
+                        "dash",
+                        "size",
+                    )
+                }
+                | {"n": n}
+            )
         for r in reflines:
             is_date = x_date if r["axis"] == "x" else y_date
-            r["value"] = float(_rel(_epoch_ms(r["value"]) if is_date else r["value"], is_date, t0))
+            r["value"] = float(
+                _rel(_epoch_ms(r["value"]) if is_date else r["value"], is_date, t0)
+            )
             del r["date"]
         legend = ax.get_legend()
         xlim, ylim = ax.get_xlim(), ax.get_ylim()
-        panels.append({
-            "title": ax.get_title(), "xlabel": ax.get_xlabel(), "ylabel": ax.get_ylabel(),
-            "xdate": x_date, "ydate": y_date,
-            "xlim": [float(v) for v in _rel(_epoch_ms(xlim) if x_date else xlim, x_date, t0)],
-            "ylim": [float(v) for v in _rel(_epoch_ms(ylim) if y_date else ylim, y_date, t0)],
-            "xscale": ax.get_xscale(), "yscale": ax.get_yscale(),
-            "legend": legend is not None,
-            "legend_title": legend.get_title().get_text() if legend is not None else "",
-            "cell": _grid_cell(ax), "share_x": share_x[i], "share_y": share_y[i],
-            "traces": specs, "reflines": reflines,
-            "top_axis": _top_axis(ax, x_date, t0),
-            "cbar": getattr(ax, "_pelagos_cbar", None),
-        })
+        panels.append(
+            {
+                "title": ax.get_title(),
+                "xlabel": ax.get_xlabel(),
+                "ylabel": ax.get_ylabel(),
+                "xdate": x_date,
+                "ydate": y_date,
+                "xlim": [
+                    float(v)
+                    for v in _rel(_epoch_ms(xlim) if x_date else xlim, x_date, t0)
+                ],
+                "ylim": [
+                    float(v)
+                    for v in _rel(_epoch_ms(ylim) if y_date else ylim, y_date, t0)
+                ],
+                "xscale": ax.get_xscale(),
+                "yscale": ax.get_yscale(),
+                "legend": legend is not None,
+                "legend_title": legend.get_title().get_text()
+                if legend is not None
+                else "",
+                "cell": _grid_cell(ax),
+                "share_x": share_x[i],
+                "share_y": share_y[i],
+                "traces": specs,
+                "reflines": reflines,
+                "top_axis": _top_axis(ax, x_date, t0),
+                "cbar": getattr(ax, "_pelagos_cbar", None),
+            }
+        )
 
     width, height = fig.get_size_inches()
     spec = {

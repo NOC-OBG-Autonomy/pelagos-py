@@ -112,33 +112,33 @@ class CorrectValues(BaseStep):
             "type": [str, list],
             "default": None,
             "description": "Name(s) to write the result under (default: target_variable, "
-                           "i.e. in place). A new name copies/renames; a list writes the "
-                           "same result under several names (e.g. [CHLA, CHLA_MID]).",
+            "i.e. in place). A new name copies/renames; a list writes the "
+            "same result under several names (e.g. [CHLA, CHLA_MID]).",
         },
         "slope": {
             "type": float,
             "default": 1.0,
             "description": "Multiplicative factor (corrected = slope * value + intercept). "
-                           "For a simple x10 unit conversion, set 10.",
+            "For a simple x10 unit conversion, set 10.",
         },
         "intercept": {
             "type": float,
             "default": 0.0,
             "description": "Additive offset applied after scaling (corrected = slope * value + intercept). "
-                           "Use for sensor alignment.",
+            "Use for sensor alignment.",
         },
         "expected_range": {
             "type": list,
             "default": None,
             "description": "Optional [min, max] for the corrected variable. The correction is applied "
-                           "only when the data's median falls OUTSIDE this range. If omitted, the "
-                           "correction is always applied.",
+            "only when the data's median falls OUTSIDE this range. If omitted, the "
+            "correction is always applied.",
         },
         "corrected_units": {
             "type": str,
             "default": None,
             "description": "Optional units string written to the output variable's attributes "
-                           "after a correction is applied (e.g. 'mS/cm').",
+            "after a correction is applied (e.g. 'mS/cm').",
         },
         "time_start": {
             "type": str,
@@ -164,8 +164,8 @@ class CorrectValues(BaseStep):
             "type": bool,
             "default": False,
             "description": "If True, skip silently (no error) when target_variable is absent "
-                           "from the data, e.g. a rename that only applies under one of "
-                           "several file naming conventions.",
+            "from the data, e.g. a rename that only applies under one of "
+            "several file naming conventions.",
         },
     }
 
@@ -185,10 +185,14 @@ class CorrectValues(BaseStep):
             )
 
         outs = (
-            list(self.output_as) if isinstance(self.output_as, (list, tuple))
+            list(self.output_as)
+            if isinstance(self.output_as, (list, tuple))
             else [self.output_as or var]
         )
-        if self.append_description is not None and self.overwrite_description is not None:
+        if (
+            self.append_description is not None
+            and self.overwrite_description is not None
+        ):
             raise ValueError(
                 f"[{self.name}] set only one of 'append_description' / 'overwrite_description'."
             )
@@ -225,9 +229,7 @@ class CorrectValues(BaseStep):
             sample = vals[valid_mask & window]
             median_val = float(np.nanmedian(sample)) if sample.size else np.nan
             if np.isfinite(median_val) and lo <= median_val <= hi:
-                self._skip_reason = (
-                    f"median ({median_val:.4g}) already within expected range [{lo:g}, {hi:g}]"
-                )
+                self._skip_reason = f"median ({median_val:.4g}) already within expected range [{lo:g}, {hi:g}]"
             elif np.isfinite(median_val):
                 self.log(
                     f"'{var}' median ({median_val:.4g}) is outside expected range "
@@ -248,7 +250,9 @@ class CorrectValues(BaseStep):
             self.plot_diagnostics()
 
         # Nothing changes when there is no scaling, no rename/copy and no comment to set.
-        no_description = self.append_description is None and self.overwrite_description is None
+        no_description = (
+            self.append_description is None and self.overwrite_description is None
+        )
         if not self.applied and outs == [var] and no_description:
             self.context["data"] = self.data
             return self.context
@@ -274,7 +278,9 @@ class CorrectValues(BaseStep):
             elif self.append_description is not None:
                 existing = self.data[out].attrs.get("comment", "")
                 self.data[out].attrs["comment"] = (
-                    f"{existing} {self.append_description}".strip() if existing else self.append_description
+                    f"{existing} {self.append_description}".strip()
+                    if existing
+                    else self.append_description
                 )
         if self.corrected_units is not None:
             self.log(f"Set {names} units to '{self.corrected_units}'.")
@@ -304,13 +310,23 @@ class CorrectValues(BaseStep):
         self._series(ax, x, corrected, flags)
         if self.expected_range is not None:
             lo, hi = float(self.expected_range[0]), float(self.expected_range[1])
-            ax.axhline(hi, color="black", linestyle="--", alpha=0.6, linewidth=1,
-                       label=f"expected range [{lo:g}, {hi:g}]")
+            ax.axhline(
+                hi,
+                color="black",
+                linestyle="--",
+                alpha=0.6,
+                linewidth=1,
+                label=f"expected range [{lo:g}, {hi:g}]",
+            )
             ax.axhline(lo, color="black", linestyle="--", alpha=0.6, linewidth=1)
         for bound in (self.time_start, self.time_end):
             if bound is not None and "TIME" in self.data:
-                ax.axvline(np.datetime64(bound), color="black", linestyle=":", linewidth=1)
-        units = (self.corrected_units if self.applied else None) or self.data[var].attrs.get("units")
+                ax.axvline(
+                    np.datetime64(bound), color="black", linestyle=":", linewidth=1
+                )
+        units = (self.corrected_units if self.applied else None) or self.data[
+            var
+        ].attrs.get("units")
         ylabel = fig_spec.axis_label(outs[0], units)
         fig_spec.style_axes(ax, ylabel=ylabel)
         fig_spec.legend(ax, title="Flags" if flags is not None else None)

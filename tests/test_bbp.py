@@ -19,8 +19,14 @@ def make_beta_context(temp=None, depth=None, flags=None, n=8):
             np.arange(n).astype("datetime64[s]").astype("datetime64[ns]"),
         ),
         "PROFILE_NUMBER": ("N_MEASUREMENTS", np.zeros(n)),
-        "DEPTH": ("N_MEASUREMENTS", ones * 10 if depth is None else np.asarray(depth, dtype=float)),
-        "TEMP": ("N_MEASUREMENTS", ones * 10 if temp is None else np.asarray(temp, dtype=float)),
+        "DEPTH": (
+            "N_MEASUREMENTS",
+            ones * 10 if depth is None else np.asarray(depth, dtype=float),
+        ),
+        "TEMP": (
+            "N_MEASUREMENTS",
+            ones * 10 if temp is None else np.asarray(temp, dtype=float),
+        ),
         "PRAC_SALINITY": ("N_MEASUREMENTS", ones * 35),
         "BBP700": ("N_MEASUREMENTS", ones * 2e-4),
     }
@@ -35,7 +41,11 @@ def make_beta_context(temp=None, depth=None, flags=None, n=8):
 def make_beta_step(context, parameters=None):
     return BBPFromBeta(
         name="BBP from Beta",
-        parameters={"apply_to": "BBP700", "output_as": "BBP700_OUT", **(parameters or {})},
+        parameters={
+            "apply_to": "BBP700",
+            "output_as": "BBP700_OUT",
+            **(parameters or {}),
+        },
         diagnostics=False,
         context=context,
     )
@@ -69,6 +79,7 @@ def test_depth_is_never_modified():
 
 def _seawater_beta(temp=10.0, sal=35.0, theta=124.0):
     import glidertools as gt
+
     beta_sw, _ = gt.flo_functions.flo_zhang_scatter_coeffs(temp, sal, theta, 700)
     return float(beta_sw)
 
@@ -104,7 +115,9 @@ def make_spikes_context(values, flags=None, n=None):
             "BBP700": ("N_MEASUREMENTS", np.asarray(values, dtype=float)),
             "BBP700_QC": (
                 "N_MEASUREMENTS",
-                np.zeros(n, dtype=int) if flags is None else np.asarray(flags, dtype=int),
+                np.zeros(n, dtype=int)
+                if flags is None
+                else np.asarray(flags, dtype=int),
             ),
         }
     )
@@ -114,7 +127,11 @@ def make_spikes_context(values, flags=None, n=None):
 def make_spikes_step(context, window_size=5):
     return IsolateBBPSpikes(
         name="Isolate BBP Spikes",
-        parameters={"apply_to": "BBP700", "window_size": window_size, "method": "median"},
+        parameters={
+            "apply_to": "BBP700",
+            "window_size": window_size,
+            "method": "median",
+        },
         diagnostics=False,
         context=context,
     )

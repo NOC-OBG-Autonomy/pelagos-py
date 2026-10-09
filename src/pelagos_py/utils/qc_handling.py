@@ -61,7 +61,9 @@ def prefer_adjusted(settings, names):
         resolved = {}
         for key, value in settings.items():
             # CHLA and CHLA_ADJUSTED may both resolve to one name: keep the first.
-            resolved.setdefault(prefer_adjusted(key, names), prefer_adjusted(value, names))
+            resolved.setdefault(
+                prefer_adjusted(key, names), prefer_adjusted(value, names)
+            )
         return resolved
     if isinstance(settings, list):
         resolved = []
@@ -114,7 +116,9 @@ class QCHandlingMixin:
                 value = getattr(self, attr, None)
                 if value is None:
                     continue
-                values = [value] if isinstance(value, str) else list(value)  # a dict gives its keys
+                values = (
+                    [value] if isinstance(value, str) else list(value)
+                )  # a dict gives its keys
                 subset_names.update(values)
                 # Several steps use the OG1 "prefer an existing _ADJUSTED variant"
                 # convention (e.g. apply_to="CHLA" but CHLA_ADJUSTED is read/used if
@@ -123,9 +127,7 @@ class QCHandlingMixin:
                 subset_names.update(f"{v}_ADJUSTED" for v in values)
             subset_names.update(f"{var}_QC" for var in list(subset_names))
             subset_names.update(
-                name
-                for var in self.filter_settings
-                for name in (var, f"{var}_QC")
+                name for var in self.filter_settings for name in (var, f"{var}_QC")
             )
             subset_vars = [name for name in subset_names if name in full_data.variables]
             self.data = full_data[subset_vars].copy(deep=True)
@@ -194,7 +196,9 @@ class QCHandlingMixin:
             if f"{var}_QC" not in self.data:
                 ungated.append(var)
                 continue
-            mask &= ~np.isin(self.data[f"{var}_QC"].values, self.calculation_flag_filter)
+            mask &= ~np.isin(
+                self.data[f"{var}_QC"].values, self.calculation_flag_filter
+            )
 
         if ungated:
             self.log(
@@ -284,7 +288,9 @@ class QCHandlingMixin:
             self.data[qc_child] = self.data[qc_parents[0]].copy(deep=True)
 
             for qc_parent in qc_parents[1:]:
-                self.data[qc_child][:] = QC_COMBINATRIX[self.data[qc_child], self.data[qc_parent]]
+                self.data[qc_child][:] = QC_COMBINATRIX[
+                    self.data[qc_child], self.data[qc_parent]
+                ]
 
             # Flag nans as missing values
             is_nan = np.isnan(self.data[f"{qc_child[:-3]}"])

@@ -48,7 +48,9 @@ class impossible_location_qc(BaseQC):
         for label, bounds in zip(["LATITUDE", "LONGITUDE"], [(-90, 90), (-180, 180)]):
             values = self.data[label].values
             in_bounds = (values > bounds[0]) & (values < bounds[1])
-            flags[f"{label}_QC"] = np.where(np.isnan(values), 9, np.where(in_bounds, 1, 4))
+            flags[f"{label}_QC"] = np.where(
+                np.isnan(values), 9, np.where(in_bounds, 1, 4)
+            )
 
         self.flags = xr.Dataset(
             data_vars={col: ("N_MEASUREMENTS", qc) for col, qc in flags.items()},
@@ -65,7 +67,9 @@ class impossible_location_qc(BaseQC):
         for ax, var, bounds in zip(
             axes[:, 0], ["LATITUDE", "LONGITUDE"], [(-90, 90), (-180, 180)]
         ):
-            fig_spec.flag_points(ax, x, self.data[var].values, self.flags[f"{var}_QC"].values)
+            fig_spec.flag_points(
+                ax, x, self.data[var].values, self.flags[f"{var}_QC"].values
+            )
             ylabel = fig_spec.axis_label(var, self.data[var].attrs.get("units"))
             fig_spec.style_axes(ax, ylabel=ylabel)
             fig_spec.legend(ax, title="Flags")

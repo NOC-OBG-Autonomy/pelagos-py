@@ -33,9 +33,17 @@ plt.switch_backend = lambda *args, **kwargs: None
 
 import numpy as np  # noqa: E402
 from pelagos_py.dashboard import fig_spec  # noqa: E402
-from pelagos_py.pipeline import REPORT_STEP_NAME, SEVERE, STOP, Pipeline, resolve_on_step_fail  # noqa: E402
+from pelagos_py.pipeline import (
+    REPORT_STEP_NAME,
+    SEVERE,
+    STOP,
+    Pipeline,
+    resolve_on_step_fail,
+)  # noqa: E402
 
-signal.signal(signal.SIGINT, signal.default_int_handler)  # imports done: Stop is a KeyboardInterrupt again
+signal.signal(
+    signal.SIGINT, signal.default_int_handler
+)  # imports done: Stop is a KeyboardInterrupt again
 
 FIG_DIR = sys.argv[2]
 _saved = {"n": 0}
@@ -59,7 +67,7 @@ def _rss_mb():
     try:
         import psutil
 
-        return psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2
+        return psutil.Process(os.getpid()).memory_info().rss / 1024**2
     except Exception:  # noqa: BLE001
         return None
 
@@ -103,10 +111,12 @@ def _emit_mem(context):
         data = (context or {}).get("data")
         nbytes = getattr(data, "nbytes", None)
         if nbytes is not None:
-            data_mb = f"{nbytes / 1024 ** 2:.1f}"
+            data_mb = f"{nbytes / 1024**2:.1f}"
     except Exception:  # noqa: BLE001
         data_mb = ""
-    active = _clock["active"] + (time.time() - _clock["since"] if _clock["since"] else 0)
+    active = _clock["active"] + (
+        time.time() - _clock["since"] if _clock["since"] else 0
+    )
     print(
         f"__PELAGOS_MEM__ {rss_mb:.1f}\t{run_peak:.1f}\t{data_mb}\t{label}"
         f"\t{step_peak:.1f}\t{run_peak_label}\t{step_start:.1f}\t{active:.1f}",
@@ -161,8 +171,10 @@ def _capture_show(*args, **kwargs):
         try:
             fig.savefig(os.path.join(FIG_DIR, fname), dpi=130, bbox_inches="tight")
             spec, reason = _capture_spec(fig, stem)
-            print(f"__PELAGOS_FIG__ {fname}\t{_caption(fig)}\t{spec}\t{reason}",
-                  flush=True)
+            print(
+                f"__PELAGOS_FIG__ {fname}\t{_caption(fig)}\t{spec}\t{reason}",
+                flush=True,
+            )
         except Exception:  # noqa: BLE001
             pass
         finally:
@@ -282,9 +294,13 @@ def _qc_tests(step_config):
 
 def _pausable(step_config, test):
     step_diag = bool(step_config.get("diagnostics"))
-    if test is None:  # an unsplit QC step only exists when no test is pausable (see _expand)
+    if (
+        test is None
+    ):  # an unsplit QC step only exists when no test is pausable (see _expand)
         return step_diag
-    return bool(((_qc_tests(step_config) or {}).get(test) or {}).get("diagnostics", step_diag))
+    return bool(
+        ((_qc_tests(step_config) or {}).get(test) or {}).get("diagnostics", step_diag)
+    )
 
 
 def _expand(step_config):
@@ -297,7 +313,9 @@ def _expand(step_config):
     units = []
     for name, settings in tests.items():
         sub = dict(step_config)
-        sub["parameters"] = dict(step_config["parameters"], qc_settings={name: settings})
+        sub["parameters"] = dict(
+            step_config["parameters"], qc_settings={name: settings}
+        )
         units.append((sub, name))
     return units
 
@@ -317,12 +335,17 @@ def _emit_vars(context):
         if data is None:
             return
         names = [
-            name for name in data.variables
-            if data[name].dims == ("N_MEASUREMENTS",) and not name.endswith("_QC")
+            name
+            for name in data.variables
+            if data[name].dims == ("N_MEASUREMENTS",)
+            and not name.endswith("_QC")
             and name != "N_MEASUREMENTS"
         ]
         empty = [name for name in names if not _has_data(data[name].values)]
-        print(f"__PELAGOS_VARS__ {json.dumps({'names': names, 'empty': empty})}", flush=True)
+        print(
+            f"__PELAGOS_VARS__ {json.dumps({'names': names, 'empty': empty})}",
+            flush=True,
+        )
     except Exception:  # noqa: BLE001
         pass
 
@@ -342,7 +365,9 @@ def _emit_columns(context, snapshot, request):
             if base and name in before:
                 values = before[name].fillna(9).values.astype("<f4")
             elif base and base in data:
-                values = np.where(np.isfinite(data[base].values.astype(float)), 0, 9).astype("<f4")
+                values = np.where(
+                    np.isfinite(data[base].values.astype(float)), 0, 9
+                ).astype("<f4")
             elif name in data.variables and data[name].dims == ("N_MEASUREMENTS",):
                 values = data[name].values
             else:
@@ -354,7 +379,9 @@ def _emit_columns(context, snapshot, request):
             else:
                 values = values.astype("<f4")
                 cmap = palettes.cmap_for_variable(name, default=plt.get_cmap("viridis"))
-                entry["stops"] = [matplotlib.colors.to_hex(cmap(t)) for t in np.linspace(0, 1, 32)]
+                entry["stops"] = [
+                    matplotlib.colors.to_hex(cmap(t)) for t in np.linspace(0, 1, 32)
+                ]
                 if name in data.variables:
                     entry["categories"] = categories(data[name])
             header.append(entry)
@@ -384,7 +411,9 @@ def _emit_time(paused):
     if _clock["since"] is not None:
         _clock["active"] += now - _clock["since"]
     _clock["since"] = None if paused else now
-    print(f"__PELAGOS_TIME__ {_clock['active']:.3f}\t{int(paused)}\t{now:.3f}", flush=True)
+    print(
+        f"__PELAGOS_TIME__ {_clock['active']:.3f}\t{int(paused)}\t{now:.3f}", flush=True
+    )
 
 
 def _read_command():
@@ -398,7 +427,7 @@ def _read_command():
     for action in ("rerun", "data"):
         if line.startswith(action + " "):
             try:
-                return (action, json.loads(line[len(action) + 1:]))
+                return (action, json.loads(line[len(action) + 1 :]))
             except Exception:  # noqa: BLE001
                 return ("continue", None)
     return ("continue", None)
@@ -452,12 +481,16 @@ def _run(pipeline):
             except (RuntimeError, SystemExit) as exc:
                 _diag_capture["chunks"] = None
                 # same on_step_fail handling as Pipeline.run()
-                fail_mode = resolve_on_step_fail(pipeline.global_parameters.get("on_step_fail"))
+                fail_mode = resolve_on_step_fail(
+                    pipeline.global_parameters.get("on_step_fail")
+                )
                 if fail_mode == "stop":
                     pipeline.logger.log(STOP, "Pipeline stopped at step '%s'.", label)
                     sys.exit(1)
                 if fail_mode == "skip":
-                    pipeline.logger.log(SEVERE, "Step '%s' failed and was skipped.", label)
+                    pipeline.logger.log(
+                        SEVERE, "Step '%s' failed and was skipped.", label
+                    )
                     continue
                 failed = True
                 _emit_fail(idx, name, test, exc)
@@ -495,12 +528,15 @@ def _run(pipeline):
                     rerun_config["diagnostics"] = step_config.get("diagnostics") or True
                     if params is not None:
                         # a split QC unit only re-runs its own test
-                        if test is not None and isinstance(params.get("qc_settings"), dict):
+                        if test is not None and isinstance(
+                            params.get("qc_settings"), dict
+                        ):
                             params = dict(
                                 params,
                                 qc_settings={
                                     test: params["qc_settings"].get(
-                                        test, (_qc_tests(step_config) or {}).get(test, {})
+                                        test,
+                                        (_qc_tests(step_config) or {}).get(test, {}),
                                     )
                                 },
                             )
@@ -515,7 +551,9 @@ def _run(pipeline):
                     if snapshot is None:
                         # keep pre_context clean so Skip still means "before this step"
                         snapshot = _snapshot(pre_context)
-                    retry_context = _snapshot(snapshot) if snapshot is not None else pre_context
+                    retry_context = (
+                        _snapshot(snapshot) if snapshot is not None else pre_context
+                    )
                     try:
                         context = pipeline.execute_step(rerun_config, retry_context)
                     except (RuntimeError, SystemExit) as exc:

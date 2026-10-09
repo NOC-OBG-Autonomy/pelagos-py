@@ -87,8 +87,12 @@ class valid_profile_qc(BaseQC):
     def __init__(self, data, **kwargs):
         super().__init__(data, **kwargs)
         if not 0 <= self.flag <= 9:
-            raise ValueError(f"[{self.qc_name}] invalid QC flag {self.flag!r}; expected 0-9.")
-        self.required_variables = ["PROFILE_NUMBER"] + ([self.depth_var] if self.depth_range else [])
+            raise ValueError(
+                f"[{self.qc_name}] invalid QC flag {self.flag!r}; expected 0-9."
+            )
+        self.required_variables = ["PROFILE_NUMBER"] + (
+            [self.depth_var] if self.depth_range else []
+        )
 
     def return_qc(self):
         profile = pd.Series(self.data["PROFILE_NUMBER"].values)
@@ -98,7 +102,9 @@ class valid_profile_qc(BaseQC):
             lower, upper = self.depth_range
             depth = self.data[self.depth_var].values
             in_range = pd.Series((depth >= lower) & (depth <= upper))
-            bad |= ~in_range.groupby(profile).transform("any").fillna(False).to_numpy(dtype=bool)
+            bad |= ~in_range.groupby(profile).transform("any").fillna(False).to_numpy(
+                dtype=bool
+            )
 
         qc = np.where(has_profile, np.where(bad, self.flag, 1), 0).astype(np.int8)
         self.flags = xr.Dataset(
@@ -114,7 +120,9 @@ class valid_profile_qc(BaseQC):
         ax = axes[0][0]
         y = self.data[self.depth_var]
         fig_spec.flag_points(ax, x, y.values, self.flags["PROFILE_NUMBER_QC"].values)
-        fig_spec.style_axes(ax, ylabel=fig_spec.axis_label(self.depth_var, y.attrs.get("units")))
+        fig_spec.style_axes(
+            ax, ylabel=fig_spec.axis_label(self.depth_var, y.attrs.get("units"))
+        )
         ax.invert_yaxis()
         fig_spec.x_axis(ax, x)
         fig_spec.legend(ax, title="Flags")

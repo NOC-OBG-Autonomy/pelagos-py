@@ -120,8 +120,15 @@ QC_FLAG_DESCRIPTIONS = {
 #   Fallback Argo flag table (value, mnemonic) used when the dataset carries no
 #   QC variable with flag_values/flag_meanings attributes to read from.
 _DEFAULT_QC_FLAGS = [
-    (0, "NO_QC"), (1, "GOOD"), (2, "PROB_GOOD"), (3, "PROB_BAD"), (4, "BAD"),
-    (5, "VALUE_CHANGED"), (6, "NOT_USED"), (7, "NOT_USED"), (8, "ESTIMATED"),
+    (0, "NO_QC"),
+    (1, "GOOD"),
+    (2, "PROB_GOOD"),
+    (3, "PROB_BAD"),
+    (4, "BAD"),
+    (5, "VALUE_CHANGED"),
+    (6, "NOT_USED"),
+    (7, "NOT_USED"),
+    (8, "ESTIMATED"),
     (9, "MISSING"),
 ]
 #   The NOC logo lives in utils/ (alongside the other shared, non-step assets)
@@ -381,15 +388,23 @@ class ReportPDF(FPDF):
 
         self.set_font("Times", "B", 28)
         self.multi_cell(
-            0, 12, sanitize(self.report_title), align="C",
-            new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+            0,
+            12,
+            sanitize(self.report_title),
+            align="C",
+            new_x=XPos.LMARGIN,
+            new_y=YPos.NEXT,
         )
         self.ln(4)
         if self.report_subtitle:
             self.set_font("Times", "", 16)
             self.multi_cell(
-                0, 10, sanitize(self.report_subtitle), align="C",
-                new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+                0,
+                10,
+                sanitize(self.report_subtitle),
+                align="C",
+                new_x=XPos.LMARGIN,
+                new_y=YPos.NEXT,
             )
 
         #   Pipeline name and description, straight from the configuration.
@@ -397,14 +412,22 @@ class ReportPDF(FPDF):
             self.ln(5)
             self.set_font("Times", "I", 14)
             self.multi_cell(
-                0, 8, sanitize(self.pipeline_name), align="C",
-                new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+                0,
+                8,
+                sanitize(self.pipeline_name),
+                align="C",
+                new_x=XPos.LMARGIN,
+                new_y=YPos.NEXT,
             )
         if self.pipeline_description:
             self.set_font("Times", "", 11)
             self.multi_cell(
-                0, 6, sanitize(self.pipeline_description), align="C",
-                new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+                0,
+                6,
+                sanitize(self.pipeline_description),
+                align="C",
+                new_x=XPos.LMARGIN,
+                new_y=YPos.NEXT,
             )
 
         #   Glider track map, centred. Capped in height so the rest of the title
@@ -428,25 +451,42 @@ class ReportPDF(FPDF):
         stamp = long_date(datetime.now(timezone.utc))
         self.set_font("Times", "", 12)
         self.multi_cell(
-            0, 8, stamp, align="C",
-            new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+            0,
+            8,
+            stamp,
+            align="C",
+            new_x=XPos.LMARGIN,
+            new_y=YPos.NEXT,
         )
         self.ln(2)
         self.set_font("Times", "", 11)
         self.multi_cell(
-            0, 6, f"Generated with pelagos-py v{pelagos_version()}", align="C",
-            new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+            0,
+            6,
+            f"Generated with pelagos-py v{pelagos_version()}",
+            align="C",
+            new_x=XPos.LMARGIN,
+            new_y=YPos.NEXT,
         )
         self.multi_cell(
-            0, 6, f"Python {platform.python_version()} on "
-            f"{platform.system()} {platform.release()}", align="C",
-            new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+            0,
+            6,
+            f"Python {platform.python_version()} on "
+            f"{platform.system()} {platform.release()}",
+            align="C",
+            new_x=XPos.LMARGIN,
+            new_y=YPos.NEXT,
         )
         self.set_font("Times", "U", 11)
         self.set_text_color(*_LINK_TEAL)
         self.multi_cell(
-            0, 6, GITHUB_URL, align="C", link=GITHUB_URL,
-            new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+            0,
+            6,
+            GITHUB_URL,
+            align="C",
+            link=GITHUB_URL,
+            new_x=XPos.LMARGIN,
+            new_y=YPos.NEXT,
         )
         self.set_text_color(0)
 
@@ -469,15 +509,23 @@ class ReportPDF(FPDF):
 
         self.set_font("Times", "BI", 11)
         self.multi_cell(
-            0, 6, "Processing steps", align="C",
-            new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+            0,
+            6,
+            "Processing steps",
+            align="C",
+            new_x=XPos.LMARGIN,
+            new_y=YPos.NEXT,
         )
         self.ln(1)
         #   Kept small so a long step list still fits the title page.
         self.set_font("Times", "", 9)
         self.multi_cell(
-            0, 4.5, sanitize(listing), align="C",
-            new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+            0,
+            4.5,
+            sanitize(listing),
+            align="C",
+            new_x=XPos.LMARGIN,
+            new_y=YPos.NEXT,
         )
 
         self.set_left_margin(left)
@@ -531,9 +579,13 @@ class ReportPDF(FPDF):
             #   wrapped narrower than the text width so no line wraps visually.
             for line in lines:
                 self.multi_cell(
-                    0, line_h, sanitize(line),
-                    new_x=XPos.LMARGIN, new_y=YPos.NEXT,
-                    fill=True, border=0,
+                    0,
+                    line_h,
+                    sanitize(line),
+                    new_x=XPos.LMARGIN,
+                    new_y=YPos.NEXT,
+                    fill=True,
+                    border=0,
                 )
             self.set_fill_color(255, 255, 255)
             self.ln(2)
@@ -546,16 +598,25 @@ class ReportPDF(FPDF):
         for line in lines:
             text = sanitize(line) or " "
             h = self.multi_cell(
-                cols.col_w, line_h, text,
-                border=0, wrapmode=WrapMode.CHAR,
-                dry_run=True, output=MethodReturnValue.HEIGHT,
+                cols.col_w,
+                line_h,
+                text,
+                border=0,
+                wrapmode=WrapMode.CHAR,
+                dry_run=True,
+                output=MethodReturnValue.HEIGHT,
             )
             x, y = cols.place(h)
             self.set_xy(x, y)
             self.multi_cell(
-                cols.col_w, line_h, text,
-                new_x=XPos.LMARGIN, new_y=YPos.TOP,
-                fill=True, border=0, wrapmode=WrapMode.CHAR,
+                cols.col_w,
+                line_h,
+                text,
+                new_x=XPos.LMARGIN,
+                new_y=YPos.TOP,
+                fill=True,
+                border=0,
+                wrapmode=WrapMode.CHAR,
             )
         cols.finish()
         self.set_fill_color(255, 255, 255)
@@ -590,8 +651,13 @@ class ReportPDF(FPDF):
             #   multi_cell fills every wrapped line, so the dark panel stays
             #   continuous even when a long message spills onto another line.
             self.multi_cell(
-                0, line_h, sanitize(text),
-                new_x=XPos.LMARGIN, new_y=YPos.NEXT, fill=True, border=0,
+                0,
+                line_h,
+                sanitize(text),
+                new_x=XPos.LMARGIN,
+                new_y=YPos.NEXT,
+                fill=True,
+                border=0,
             )
 
         self.set_text_color(0)
@@ -628,14 +694,16 @@ class ReportPDF(FPDF):
         if url:
             self.set_text_color(*_LINK_TEAL)
             self.multi_cell(
-                0, 8, sanitize(label), link=url,
-                new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+                0,
+                8,
+                sanitize(label),
+                link=url,
+                new_x=XPos.LMARGIN,
+                new_y=YPos.NEXT,
             )
             self.set_text_color(0)
         else:
-            self.multi_cell(
-                0, 8, sanitize(label), new_x=XPos.LMARGIN, new_y=YPos.NEXT
-            )
+            self.multi_cell(0, 8, sanitize(label), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         if score_text:
             self.set_font("Times", "I", 10)
             self.set_text_color(90)
@@ -662,14 +730,22 @@ class ReportPDF(FPDF):
             #   rather than its heading being orphaned at a column foot.
             self.set_font("Times", "B", title_size)
             h_title = self.multi_cell(
-                w, title_h, sanitize(name), border=0,
-                dry_run=True, output=MethodReturnValue.HEIGHT,
+                w,
+                title_h,
+                sanitize(name),
+                border=0,
+                dry_run=True,
+                output=MethodReturnValue.HEIGHT,
             )
             self.set_font("Times", "", msg_size)
             msg_heights = [
                 self.multi_cell(
-                    w, msg_h, sanitize(f"- {m}"), border=0,
-                    dry_run=True, output=MethodReturnValue.HEIGHT,
+                    w,
+                    msg_h,
+                    sanitize(f"- {m}"),
+                    border=0,
+                    dry_run=True,
+                    output=MethodReturnValue.HEIGHT,
                 )
                 for m in msgs
             ]
@@ -679,8 +755,12 @@ class ReportPDF(FPDF):
             self.set_xy(x, y)
             self.set_font("Times", "B", title_size)
             self.multi_cell(
-                w, title_h, sanitize(name), border=0,
-                new_x=XPos.LMARGIN, new_y=YPos.TOP,
+                w,
+                title_h,
+                sanitize(name),
+                border=0,
+                new_x=XPos.LMARGIN,
+                new_y=YPos.TOP,
             )
 
             self.set_font("Times", "", msg_size)
@@ -688,8 +768,12 @@ class ReportPDF(FPDF):
                 x, y = cols.place(hm)
                 self.set_xy(x, y)
                 self.multi_cell(
-                    w, msg_h, sanitize(f"- {m}"), border=0,
-                    new_x=XPos.LMARGIN, new_y=YPos.TOP,
+                    w,
+                    msg_h,
+                    sanitize(f"- {m}"),
+                    border=0,
+                    new_x=XPos.LMARGIN,
+                    new_y=YPos.TOP,
                 )
             cols.place(2)  #   small gap after each block
         cols.finish()
@@ -984,8 +1068,13 @@ def contents_page(pdf: ReportPDF, outline) -> None:
         pdf.cell(pdf.epw - page_w, 5, sanitize(section.name), link=link)
         pdf.set_text_color(0)
         pdf.cell(
-            page_w, 5, str(section.page_number), align="R", link=link,
-            new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+            page_w,
+            5,
+            str(section.page_number),
+            align="R",
+            link=link,
+            new_x=XPos.LMARGIN,
+            new_y=YPos.NEXT,
         )
     pdf.ln(2)
 
@@ -998,14 +1087,23 @@ def index_section(pdf: ReportPDF, data: xr.Dataset) -> None:
     #   Repeat the pelagos-py credit and project link at the very end.
     pdf.set_font("Times", "", 11)
     pdf.multi_cell(
-        0, 6, f"Generated with pelagos-py v{pelagos_version()}", align="C",
-        new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+        0,
+        6,
+        f"Generated with pelagos-py v{pelagos_version()}",
+        align="C",
+        new_x=XPos.LMARGIN,
+        new_y=YPos.NEXT,
     )
     pdf.set_font("Times", "U", 11)
     pdf.set_text_color(*_LINK_TEAL)
     pdf.multi_cell(
-        0, 6, GITHUB_URL, align="C", link=GITHUB_URL,
-        new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+        0,
+        6,
+        GITHUB_URL,
+        align="C",
+        link=GITHUB_URL,
+        new_x=XPos.LMARGIN,
+        new_y=YPos.NEXT,
     )
     pdf.set_text_color(0)
     pdf.ln(8)
@@ -1136,15 +1234,15 @@ def _first_present(data: xr.Dataset, names) -> str:
 
 def _cs_date_format(span_days: float) -> str:
     #   Date format for the shared X axis, adapting to the visible span.
-    if span_days < 1.0 / 1440.0:      # sub-minute
+    if span_days < 1.0 / 1440.0:  # sub-minute
         return "%H:%M:%S"
-    if span_days < 1.0:               # minutes / hours
+    if span_days < 1.0:  # minutes / hours
         return "%H:%M"
-    if span_days < 60.0:              # days
+    if span_days < 60.0:  # days
         return "%d %b %Y"
-    if span_days < 730.0:             # months
+    if span_days < 730.0:  # months
         return "%b %Y"
-    return "%Y"                       # years
+    return "%Y"  # years
 
 
 def _var_label(data: xr.Dataset, var: str, label: str) -> str:
@@ -1252,7 +1350,9 @@ def qc_hist(
         )
     else:
         source = data[var_source]
-        source = source.isel({source.dims[0]: fig_spec.thin_idx(source.size, _QC_HIST_MAX_POINTS)})
+        source = source.isel(
+            {source.dims[0]: fig_spec.thin_idx(source.size, _QC_HIST_MAX_POINTS)}
+        )
         source.plot(ax=axs[0])
     #   xarray labels the axis with the (often long) description; replace it with
     #   a short name + units so the plot stays uncluttered. Skip the units when
@@ -1275,8 +1375,14 @@ def qc_hist(
         axs[1].bar(centres, counts, width=1.0)
         for x, c in zip(centres, counts):
             if c > 0:  # sqrt(c) is the bar's visual centre on a log axis from 1
-                axs[1].annotate(f"{c:g}", (x, np.sqrt(c)), ha="center", va="center",
-                                fontsize=7, rotation=90)
+                axs[1].annotate(
+                    f"{c:g}",
+                    (x, np.sqrt(c)),
+                    ha="center",
+                    va="center",
+                    fontsize=7,
+                    rotation=90,
+                )
         axs[1].set_yscale("log")
         axs[1].set_xticks(hislim)
         axs[1].set_xlim(xlims)
@@ -1323,10 +1429,19 @@ def qc_hist_figures(data: xr.Dataset, outdir: str, bar=None) -> list:
         if source_all_nan and flag_all_nan:
             figures.append((var, None))
         else:
-            figures.append((var, qc_hist(
-                data, outdir, var, dataset_label=dataset_label,
-                source_all_nan=source_all_nan, flag_all_nan=flag_all_nan,
-            )))
+            figures.append(
+                (
+                    var,
+                    qc_hist(
+                        data,
+                        outdir,
+                        var,
+                        dataset_label=dataset_label,
+                        source_all_nan=source_all_nan,
+                        flag_all_nan=flag_all_nan,
+                    ),
+                )
+            )
         if bar is not None:
             target = round(80 * i / len(qc_vars))
             bar.update(target - emitted)
@@ -1442,11 +1557,27 @@ def cross_section_figure(data: xr.Dataset, outdir: str, ext: str = ".png") -> st
 
         # Pixel markers draw ~35% faster than round ones at this density.
         sc = ax_main.scatter(
-            xo, po, c=co, cmap=cmap, vmin=vmin, vmax=vmax, s=size, marker=",", edgecolors="none"
+            xo,
+            po,
+            c=co,
+            cmap=cmap,
+            vmin=vmin,
+            vmax=vmax,
+            s=size,
+            marker=",",
+            edgecolors="none",
         )
         #   Left strip: the vertical profile of the same variable (value vs depth).
         ax_prof.scatter(
-            c, pres, c=c, cmap=cmap, vmin=vmin, vmax=vmax, s=2, marker=",", edgecolors="none"
+            c,
+            pres,
+            c=c,
+            cmap=cmap,
+            vmin=vmin,
+            vmax=vmax,
+            s=2,
+            marker=",",
+            edgecolors="none",
         )
 
         cbar = fig.colorbar(sc, cax=cax)
@@ -1492,7 +1623,9 @@ def cross_section_section(pdf: ReportPDF, img: str | None) -> None:
     pdf.add_page()
     pdf.section_heading("Cross Section Plots")
     if img is None:
-        pdf.body("No suitable TIME/PRES/variable data available for cross-section plots.")
+        pdf.body(
+            "No suitable TIME/PRES/variable data available for cross-section plots."
+        )
         return
     #   Cap the figure to the space left below the heading so the two stay on one
     #   page (the figure is near-A4 height, so a full-width placement would

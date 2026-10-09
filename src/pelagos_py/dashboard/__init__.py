@@ -7,7 +7,9 @@ def run(port=8791):
         import fastapi  # noqa: F401
         import uvicorn  # noqa: F401
     except ImportError:
-        raise ImportError('The dashboard needs extra packages: pip install "pelagos_py[dashboard]"') from None
+        raise ImportError(
+            'The dashboard needs extra packages: pip install "pelagos_py[dashboard]"'
+        ) from None
     from pelagos_py.dashboard.app import serve
 
     serve(port)

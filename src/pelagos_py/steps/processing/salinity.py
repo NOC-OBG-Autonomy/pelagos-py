@@ -94,6 +94,7 @@ def compute_optimal_lag(
 
     # Creates a callable function that predicts what CNDC would be at any given time
     from scipy import interpolate
+
     conductivity_from_time = interpolate.interp1d(
         profile_data["ELAPSED_TIME[s]"].values,
         profile_data["CNDC"].values,
@@ -113,7 +114,9 @@ def compute_optimal_lag(
         time_shifted_conductivity = conductivity_from_time(elapsed + lag)
 
         # Derive salinity with the time shifted CNDC (spiking will be minimized when CNDC and TEMP are aligned)
-        PSAL = gsw.conversions.SP_from_C(time_shifted_conductivity * cndc_factor, temp, pres)
+        PSAL = gsw.conversions.SP_from_C(
+            time_shifted_conductivity * cndc_factor, temp, pres
+        )
 
         # Smooth the salinity profile (to remove spiking)
         PSAL_Smooth = running_average_nan(PSAL, filter_window_size)
@@ -349,8 +352,14 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
             if len(valid_times) > 0:
                 duration = valid_times.values[-1] - valid_times.values[0]
 
-                if duration >= np.timedelta64(1, "h") and len(valid_times) > 3 * filter_size:
-                    if getattr(self, "diagnostics", False) and self._ct_cost_data is None:
+                if (
+                    duration >= np.timedelta64(1, "h")
+                    and len(valid_times) > 3 * filter_size
+                ):
+                    if (
+                        getattr(self, "diagnostics", False)
+                        and self._ct_cost_data is None
+                    ):
                         optimal_lag, cost_data = compute_optimal_lag(
                             profile, filter_size, self.time_col, return_cost_data=True
                         )
@@ -379,7 +388,9 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
         ]
         self.ct_lag_median = np.median(lags) if len(lags) > 0 else 0.0
 
-        data_subset = self.data[[self.time_col, "CNDC"]].where(valid_data_mask, drop=True)
+        data_subset = self.data[[self.time_col, "CNDC"]].where(
+            valid_data_mask, drop=True
+        )
 
         # Find the elapsed time in seconds
         t0 = data_subset[self.time_col].values[0]
@@ -397,6 +408,7 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
             return
 
         from scipy import interpolate
+
         CNDC_from_TIME = interpolate.interp1d(
             data_subset["ELAPSED_TIME[s]"].values[anchors],
             data_subset["CNDC"].values[anchors],
@@ -431,6 +443,7 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
         """
         from scipy import interpolate
         from scipy.signal import lfilter
+
         corrected_temp_array = np.full(len(self.data["TEMP"]), np.nan)
         temp_arr = self.data["TEMP"].values
         time_arr = self.data[self.time_col].values
@@ -442,7 +455,6 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
         self._thermal_scatter_data = None
 
         for prof in self.log_progress(profile_numbers, desc="Thermal Lag", unit="prof"):
-
             prof_indices = self._profile_index[prof]
             indices = prof_indices[~np.isnan(temp_arr[prof_indices])]
 
@@ -455,7 +467,9 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
                 continue
 
             # Find the elapsed time in seconds
-            elapsed = (time_arr[indices] - time_arr[indices[0]]) / np.timedelta64(1, "s")
+            elapsed = (time_arr[indices] - time_arr[indices[0]]) / np.timedelta64(
+                1, "s"
+            )
 
             # Define a function that can estimate TEMP at any time point
             TEMP_from_TIME = interpolate.interp1d(
@@ -496,7 +510,9 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
             b = 1 - (2 * a / alpha)
 
             # Apply the filter: y[i] = -b*y[i-1] + a*(x[i] - x[i-1]), as an IIR filter
-            TEMP_correction = lfilter([a, -a], [1.0, b], TEMP_1Hz_sampling - TEMP_1Hz_sampling[0])
+            TEMP_correction = lfilter(
+                [a, -a], [1.0, b], TEMP_1Hz_sampling - TEMP_1Hz_sampling[0]
+            )
             corrected_TEMP_1Hz_sampling = TEMP_1Hz_sampling - TEMP_correction
 
             # Resample the TEMP back onto the original time sampling
@@ -522,7 +538,9 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
 
         # Reinsert the corrected data back into self.data
         final_temp = np.where(
-            np.isnan(corrected_temp_array), self.data["TEMP"].values, corrected_temp_array
+            np.isnan(corrected_temp_array),
+            self.data["TEMP"].values,
+            corrected_temp_array,
         )
         self.data["TEMP"][:] = final_temp
 
@@ -596,7 +614,11 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
                 zorder=2,
             )
             ax_lag.axhline(
-                self.ct_lag_median, color=COLOUR_COMBINED, linestyle="--", lw=1.5, zorder=3
+                self.ct_lag_median,
+                color=COLOUR_COMBINED,
+                linestyle="--",
+                lw=1.5,
+                zorder=3,
             )
 
         ax_lag.set_title("Dataset Lag Distribution by Profile", fontsize=TITLE_SIZE)
@@ -611,12 +633,16 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
             c = self._ct_cost_data
             ax_cost.plot(c["lags"], c["costs"], "o-", color=COLOUR_SMOOTH, lw=1, ms=3)
             ax_cost.axvline(
-                c["best_lag"], color=COLOUR_BEST, ls="--", label=f"Best: {c['best_lag']:.2f}s"
+                c["best_lag"],
+                color=COLOUR_BEST,
+                ls="--",
+                label=f"Best: {c['best_lag']:.2f}s",
             )
             ax_cost.set_xlabel("Trial Lag (s)", fontsize=LABEL_SIZE)
             ax_cost.set_ylabel("std(PSAL - smooth)", fontsize=LABEL_SIZE)
             ax_cost.set_title(
-                f"Optimal CT Lag Search (Profile {sample_prof:.0f})", fontsize=TITLE_SIZE
+                f"Optimal CT Lag Search (Profile {sample_prof:.0f})",
+                fontsize=TITLE_SIZE,
             )
             ax_cost.tick_params(axis="both", labelsize=LABEL_SIZE)
             ax_cost.legend(fontsize=7)
@@ -636,7 +662,8 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
             ax_scatter.set_xlabel("dT/dt (°C/s)", fontsize=LABEL_SIZE)
             ax_scatter.set_ylabel("Corr Amplitude (°C)", fontsize=LABEL_SIZE)
             ax_scatter.set_title(
-                f"Thermal Mass Verification (Profile {sample_prof:.0f})", fontsize=TITLE_SIZE
+                f"Thermal Mass Verification (Profile {sample_prof:.0f})",
+                fontsize=TITLE_SIZE,
             )
             ax_scatter.tick_params(axis="both", labelsize=LABEL_SIZE)
             ax_scatter.grid(True, alpha=0.2)
@@ -651,7 +678,9 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
                 transform=ax_scatter.transAxes,
                 fontsize=7,
                 verticalalignment="top",
-                bbox=dict(boxstyle="round", facecolor="white", alpha=0.8, edgecolor="#ccc"),
+                bbox=dict(
+                    boxstyle="round", facecolor="white", alpha=0.8, edgecolor="#ccc"
+                ),
             )
 
         # (4)+(5) Row 2, Col 2-3: up/down-cast salinity, raw (left, all samples) vs
@@ -682,7 +711,9 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
             _dsal = np.abs(psal_corr[_sub] - psal_raw[_sub])
             _p = pres[_sub][np.isfinite(pres[_sub])]
             _sr = psal_raw[_sub]
-            _dropped = int((in_subset & ~plot_qc_mask.values & np.isfinite(psal_raw)).sum())
+            _dropped = int(
+                (in_subset & ~plot_qc_mask.values & np.isfinite(psal_raw)).sum()
+            )
             self.log(
                 f"Salinity profile panels: {int(_sub.sum())} samples shown, "
                 f"{_dropped} hidden by QC flags (3/4/9); "
@@ -745,5 +776,7 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
                     ax.set_ylim(pmax + ppad, pmin - ppad)
 
         # Final Render
-        fig.suptitle("Salinity Adjustment Diagnostics Dashboard", fontsize=11, fontweight="bold")
+        fig.suptitle(
+            "Salinity Adjustment Diagnostics Dashboard", fontsize=11, fontweight="bold"
+        )
         plt.show(block=True)

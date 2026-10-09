@@ -26,7 +26,9 @@ class FigStep(BaseStep):
 
 def drawn(diagnostics):
     step = FigStep("Fig Step", diagnostics=diagnostics)
-    with diagnostic_capture.force_headless_backend():  # no Tk window, plt.show is a no-op
+    with (
+        diagnostic_capture.force_headless_backend()
+    ):  # no Tk window, plt.show is a no-op
         step.run()
     plt.close("all")
     return step.drawn
@@ -55,8 +57,13 @@ def test_unknown_name_halts():
 
 def test_capture_names_files_by_figure(tmp_path):
     images = []
-    with diagnostic_capture.force_headless_backend(), \
-            diagnostic_capture.capture_figures(str(tmp_path), "Fig Step", 3, images):
+    with (
+        diagnostic_capture.force_headless_backend(),
+        diagnostic_capture.capture_figures(str(tmp_path), "Fig Step", 3, images),
+    ):
         FigStep("Fig Step", diagnostics="all").run()
     diagnostic_capture.wait_for_saves()
-    assert sorted(p.name for p in tmp_path.iterdir()) == ["03_Fig_Step_a.png", "03_Fig_Step_b.png"]
+    assert sorted(p.name for p in tmp_path.iterdir()) == [
+        "03_Fig_Step_a.png",
+        "03_Fig_Step_b.png",
+    ]

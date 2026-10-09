@@ -107,6 +107,7 @@ def small_netcdf_chunk_cache():
     """Shrink netCDF-C's 64 MB-per-variable chunk cache, which whole-variable reads don't
     use but which stays allocated until the file closes."""
     import netCDF4
+
     netCDF4.set_chunk_cache(1_000_000, *netCDF4.get_chunk_cache()[1:])
 
 
