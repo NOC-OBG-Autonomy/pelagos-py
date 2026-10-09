@@ -18,6 +18,7 @@
 from pelagos_py.utils.config_mirror import ConfigMirrorMixin
 
 import os
+import yaml
 from pelagos_py.utils.yaml_loading import safe_load as yaml_safe_load
 import pandas as pd
 import numpy as np
@@ -173,6 +174,8 @@ class PipelineManager(ConfigMirrorMixin):
 
         # Step 2: Find closest profiles across gliders
         # Extract diagnostic flags from settings
+        show_plots = self.settings.get("diagnostics", {}).get("show_plots", True)
+        save_plots = self.settings.get("diagnostics", {}).get("save_plots", False)
         distance_over_time_matrix = self.settings.get("diagnostics", {}).get(
             "distance_over_time_matrix", False
         )
@@ -200,7 +203,7 @@ class PipelineManager(ConfigMirrorMixin):
         else:
             print("[Pipeline Manager] Plotting distance time grid...")
             # After generating all summaries...
-            plot_distance_time_grid(
+            combined_summaries = plot_distance_time_grid(
                 summaries=self.summary_per_glider,
                 output_path=self.settings.get("diagnostics", {}).get(
                     "distance_plot_output", None
@@ -584,9 +587,9 @@ class PipelineManager(ConfigMirrorMixin):
 
             # Cache fits for metadata
             if anc in self.processed_per_glider:
-                self.processed_per_glider[anc][f"last_fit_to_target_{target}"] = (
-                    anc_fits
-                )
+                self.processed_per_glider[anc][
+                    f"last_fit_to_target_{target}"
+                ] = anc_fits
 
         return {"paths": saved_paths, "fits": fits_summary}
 
@@ -643,13 +646,13 @@ class PipelineManager(ConfigMirrorMixin):
         - "device_name": device label used
         """
         # --- Preconditions ---
-        if isinstance(target, str):
+        if type(target) == str:
             if target not in self.pipelines:
                 raise ValueError(f"Target pipeline '{target}' not found.")
             if target not in self._contexts:
                 raise ValueError(f"Target pipeline '{target}' has no context data.")
             target_name = target
-        elif isinstance(target, list):
+        elif type(target) == list:
             for platform in target:
                 if platform not in self.pipelines or platform not in self._contexts:
                     raise ValueError(f"Target '{platform}' not available.")
@@ -665,6 +668,8 @@ class PipelineManager(ConfigMirrorMixin):
         show_plots = bool(vcfg.get("show_plots", True))
         save_plots = bool(vcfg.get("save_plots", False))
         plot_output_path = vcfg.get("plot_output_path", "device_fit_scatter_grid.png")
+        apply_and_save = bool(vcfg.get("apply_and_save", False))
+        out_dir = vcfg.get("output_path", "") or ""
 
         # Validate thresholds exist for all requested variables
         missing = [v for v in variables if v not in var_r2_criteria]
@@ -800,9 +805,9 @@ class PipelineManager(ConfigMirrorMixin):
             self.processed_per_glider = {}
         if target not in self.processed_per_glider:
             self.processed_per_glider[target] = {}
-        self.processed_per_glider[target][f"last_fit_to_device_{device_name}"] = (
-            fit_params
-        )
+        self.processed_per_glider[target][
+            f"last_fit_to_device_{device_name}"
+        ] = fit_params
 
         return {"fits": fit_params, "device_name": device_name}
 

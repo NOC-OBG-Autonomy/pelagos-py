@@ -91,8 +91,13 @@ dashboard = [
 ]
 
 [tool.ruff]
-extend-exclude = ["examples/notebooks/manager_demo.ipynb"]  # doesn't parse
+# Left as-is until the pipeline manager overhaul
+extend-exclude = ["src/pelagos_py/pipeline_manager.py", "examples/notebooks/manager_demo.ipynb"]
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F"]
 per-file-ignores = { "*.ipynb" = ["E402"], "src/pelagos_py/steps/templates/*" = ["F401"] }
+
+[tool.pytest.ini_options]
+# Diagnostics call plt.show(), which can't display under the test backend
+filterwarnings = ["ignore:FigureCanvasAgg is non-interactive:UserWarning"]

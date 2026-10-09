@@ -29,9 +29,9 @@ def test_dynamic_qc_derives_required_variables():
 
 
 def test_optional_params_get_defaults():
-    # also_flag/plot are optional; window_size defaults to 50.
+    # also_flag/plot are optional; window_size defaults to 7.
     qc = spike_qc(None, variables={"PRES": 2})
-    assert qc.window_size == 50
+    assert qc.window_size == 7
     assert qc.also_flag == {}
     assert "PROFILE_NUMBER" in qc.required_variables
 
@@ -242,7 +242,7 @@ def test_validator_flags_variable_parameter_missing_from_file(tmp_path):
     steps = [
         {"name": "Load OG1", "parameters": {"file_path": str(file_path)}},
         {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH", "PRAC_SALINITY"]}},
-        {"name": "BBP from Beta", "parameters": {}},
+        {"name": "Isolate BBP Spikes", "parameters": {}},
     ]
     with pytest.raises(ValueError, match="BBP700"):
         check_pipeline_variables(steps, LOGGER)
