@@ -1,5 +1,6 @@
 numpy
 pandas
+polars
 scipy
 xarray
 netcdf4

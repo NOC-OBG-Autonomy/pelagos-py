@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import numpy as np
+import xarray as xr
 
 
 # ------------------------------- Units -----------------------------------
@@ -22,6 +23,37 @@ def cndc_scale_factor(units):
     """Factor converting conductivity to the mS/cm gsw expects; assumes S/m when units are unset."""
     u = (units or "").lower().replace(" ", "").replace("/", "")
     return 1.0 if u.startswith("mscm") else 10.0
+
+def attr_unit_checker(arr, acceptable_units):
+    if not isinstance(arr, xr.DataArray):
+        return False
+    units = arr.attrs.get("units")
+    if units not in acceptable_units:
+        print(
+            f"Warning: Units ({units}) do not match acceptable units ({acceptable_units})."
+            "Confirm this attribute before resuming."
+        )
+    return True
+
+def oxy_mmolm3_to_umolkg(oxygen, rho):
+    """Convert oxygen from mmol/m^3 to μmol/kg of seawater.
+
+    Requirements:
+    * oxygen in mmol m-3
+    * rho in kg m-3
+    """
+    #   Expecting to be passed a DataArray with clearly labeled units. Be robust here
+    if not attr_unit_checker(oxygen, ["mmol/kg","mmol m-3"]):
+        return
+    if not attr_unit_checker(rho, ["kg/m3","kg m-3"]):
+        return
+    oxy_umolkg = oxygen * 1000 / rho
+    oxy_umolkg.attrs = {
+        "units": "umol kg-1",
+        "function": "gsw.O2sol",
+        "equation": "Garcia and Gordon 1993",
+    }
+    return oxy_umolkg
 
 
 # ----------------------------- NaN Handling ------------------------------
