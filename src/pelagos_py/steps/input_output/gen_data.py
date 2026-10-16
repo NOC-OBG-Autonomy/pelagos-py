@@ -50,7 +50,7 @@ class GenerateData(BaseStep):
           - name: Generate Data
             parameters:
                 sampling_info: ["2025-01-01", "2025-01-02", 20]
-                additional_variables: ["DENSITY", "ABS_SALINITY"]
+                additional_variables: ["DENSITY", "ASAL"]
                 value_limits:
                     "DENSITY": [1028, 1032]
     """

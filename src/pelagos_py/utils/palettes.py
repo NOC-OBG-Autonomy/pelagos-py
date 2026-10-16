@@ -117,20 +117,17 @@ SEQUENTIAL = {
     ],
 }
 
-# Dataset variable names -> SEQUENTIAL palette key.
+# Dataset variable names -> SEQUENTIAL palette key; X_ADJUSTED uses X's.
 VARIABLE_PALETTES = {
     "TEMP": "temperature",
     "CONS_TEMP": "temperature",
     "PSAL": "salinity",
-    "PRAC_SALINITY": "salinity",
-    "ABS_SALINITY": "salinity",
+    "ASAL": "salinity",
     "DENSITY": "density",
     "SIGMA0": "density",
     "DOXY": "oxygen",
     "CHLA": "chlorophyll",
-    "CHLA_ADJUSTED": "chlorophyll",
     "BBP700": "backscatter",
-    "BBP700_ADJUSTED": "backscatter",
 }
 
 # Fixed colours for categorical variables (value -> hex), so every plot of one agrees.
@@ -164,7 +161,7 @@ def get_cmap(name):
 def cmap_for_variable(variable, default=None):
     """Colormap for a dataset variable name (case-insensitive), or ``default``
     when the variable has no mapping in VARIABLE_PALETTES."""
-    key = VARIABLE_PALETTES.get(str(variable).upper())
+    key = VARIABLE_PALETTES.get(str(variable).upper().removesuffix("_ADJUSTED"))
     if key is None:
         return default
     return get_cmap(key)

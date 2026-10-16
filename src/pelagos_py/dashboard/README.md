@@ -56,9 +56,9 @@ config). Each test gets its own pause and plot, and only its part of the QC
 editor unlocks. Re-run replays just that test; earlier tests in the step keep
 their flags. Runs that never pause are not split.
 
-## Manual QC
+## Visual QC
 
-The `manual qc` test (in an Apply QC step with diagnostics on) turns the pause
+The `visual qc` test (in an Apply QC step with diagnostics on) turns the pause
 into an editor. Each entry in its `variables` (one variable, or a group such as
 `[CHLA, [TEMP, PSAL]]`) gets a plot. "+ QC variable" adds one, and "Apply flag
 to" in the sidebar edits it ("All variables" ticks every variable with data).
@@ -127,7 +127,7 @@ commands on stdin.
 | `__PELAGOS_FAIL__` | index, name, QC test, base64 text | a step failed (`on_step_fail: pause`) |
 | `__PELAGOS_PAUSE__` | index, name, QC test | waiting for a command |
 | `__PELAGOS_RERUN__` | index | a re-run is starting |
-| `__PELAGOS_VARS__` | JSON | variables for the Manual QC pickers |
+| `__PELAGOS_VARS__` | JSON | variables for the Visual QC pickers |
 | `__PELAGOS_DATA__` | request id | requested columns written to `cols_<id>.bin` |
 | `__PELAGOS_REPORT__` | path, file name | a PDF report was written |
 | `__PELAGOS_MEM__` | RSS, peaks, dataset size, step | RAM meter reading after a step |
@@ -158,7 +158,7 @@ Commands on stdin: `continue`, `skip`, `rerun <json parameters>` and
 | `static/js/viewer.js` | Full-window figure viewer |
 | `static/js/plot.js` | WebGL renderer: spec + binary → zoomable panels |
 | `static/js/mem.js` | RAM meter from `__PELAGOS_MEM__` / `__PELAGOS_SAMPLE__` |
-| `static/js/manual.js` | Manual QC tab |
+| `static/js/visual.js` | Visual QC tab |
 | `static/js/inspect.js` | Inspect tab: variables, sensors and attributes of the input file |
 | `static/js/demos.js` | Files tab: your input files and demo deployments, grouped by mission |
 | `static/js/outputs.js` | Output files from runs (reports, exports, logs), with open/delete |

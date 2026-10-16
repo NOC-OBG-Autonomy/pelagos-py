@@ -30,7 +30,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 # Dataset variables each method reads; density is derived here as potential density.
-METHOD_INPUTS = {"density": ["ABS_SALINITY", "CONS_TEMP"], "temp": ["TEMP"]}
+METHOD_INPUTS = {"density": ["ASAL", "CONS_TEMP"], "temp": ["TEMP"]}
 
 # Name each method's values go by in logs and on plots.
 METHOD_LABELS = {"density": "SIGMA0", "temp": "TEMP"}
@@ -50,7 +50,8 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
     the mixed layer. The reference value is the median of samples within
     2.5 m of ``reference_depth``, so a single noisy sample cannot shift it. Density
     must increase by the threshold; temperature may change either way.
-    ``PROFILE_NUMBER`` and ``DEPTH`` must already be derived.
+    ``PROFILE_NUMBER`` and ``DEPTH`` must already be derived. Inputs are read from
+    their ``_ADJUSTED`` version (e.g. ``ASAL_ADJUSTED``) where one exists.
 
     Two derived variables are written on the ``N_MEASUREMENTS`` dimension: ``MLD``,
     the profile's mixed layer depth (positive down, matching ``DEPTH``; ``NaN`` where
@@ -60,7 +61,7 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
     written for every measurement in the profile.
 
     The density method uses potential density (sigma0, referenced to 0 dbar) derived
-    here from ``ABS_SALINITY`` and ``CONS_TEMP``, not the dataset's in-situ
+    here from ``ASAL`` and ``CONS_TEMP``, not the dataset's in-situ
     ``DENSITY`` whose pressure term alone crosses a typical threshold within a few
     metres of the surface. The derived sigma0 is not written to the dataset.
 
@@ -101,11 +102,11 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
     step_name = "Mixed Layer Depth"
     required_variables = ["PROFILE_NUMBER", "DEPTH"]
     provided_variables = ["MLD", "MLD_BOOL"]
-    # ABS_SALINITY/CONS_TEMP/TEMP cover both "auto" method resolution and the
+    # ASAL/CONS_TEMP/TEMP cover both "auto" method resolution and the
     # diagnostics panel, which computes MLD from every available method, not
     # just the configured one; TIME/PROFILE_DIRECTION are read only if present.
     optional_variables = [
-        "ABS_SALINITY",
+        "ASAL",
         "CONS_TEMP",
         "TEMP",
         "TIME",
@@ -138,6 +139,7 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
     }
 
     def run(self):
+        self.depth_var = self.resolve("DEPTH")
         self.filter_qc()
 
         self.resolved_method, self.threshold = self._resolve_method()
@@ -146,7 +148,7 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
             f"(threshold {self.threshold}, reference depth {self.reference_depth})..."
         )
 
-        depth = self.data["DEPTH"].values
+        depth = self.data[self.depth_var].values
         mld = self._compute_mld(self.resolved_method, self.threshold, progress=True)
 
         # Above MLD -> 0, at/below -> 1, NaN where depth or the profile's MLD is undefined.
@@ -176,7 +178,8 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
 
         qc_parents = [
             f"{var}_QC"
-            for var in ["PROFILE_NUMBER", "DEPTH"] + METHOD_INPUTS[self.resolved_method]
+            for var in ["PROFILE_NUMBER", self.depth_var]
+            + self._inputs(self.resolved_method)
         ]
         self.generate_qc({"MLD_QC": qc_parents, "MLD_BOOL_QC": qc_parents})
 
@@ -197,7 +200,7 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
                     break
             else:
                 self.halt(
-                    "Method 'auto' needs either ABS_SALINITY and CONS_TEMP (density) or "
+                    "Method 'auto' needs either ASAL and CONS_TEMP (density) or "
                     "TEMP in the dataset, but neither set is present. Derive them "
                     "beforehand (e.g. Derive CTD)."
                 )
@@ -209,7 +212,7 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
 
         if not self._method_available(method):
             missing = [
-                var for var in METHOD_INPUTS[method] if var not in self.data.data_vars
+                var for var in self._inputs(method) if var not in self.data.data_vars
             ]
             self.halt(
                 f"Method '{method}' requires {', '.join(METHOD_INPUTS[method])} in the "
@@ -222,25 +225,29 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
         )
         return method, threshold
 
+    def _inputs(self, method):
+        return [self.resolve(var) for var in METHOD_INPUTS[method]]
+
     def _method_available(self, method):
-        return all(var in self.data.data_vars for var in METHOD_INPUTS[method])
+        return all(var in self.data.data_vars for var in self._inputs(method))
 
     def _method_values(self, method):
         # Density is potential density (sigma0) derived here, only to place the MLD.
         if method == "temp":
-            return self.data["TEMP"].values
+            return self.data[self.resolve("TEMP")].values
         return gsw.sigma0(
-            self.data["ABS_SALINITY"].values, self.data["CONS_TEMP"].values
+            self.data[self.resolve("ASAL")].values,
+            self.data[self.resolve("CONS_TEMP")].values,
         )
 
     def _compute_mld(self, method, threshold, progress=False):
         profile_number = self.data["PROFILE_NUMBER"].values
-        depth = self.data["DEPTH"].values
+        depth = self.data[self.depth_var].values
 
         # Flagged samples must not influence the MLD, so the search runs on NaN-masked
         # copies; MLD/MLD_BOOL are still assigned to every sample using unmasked depth.
         usable = self.calculation_mask(
-            ["PROFILE_NUMBER", "DEPTH"] + METHOD_INPUTS[method]
+            ["PROFILE_NUMBER", self.depth_var] + self._inputs(method)
         )
         search_depth = np.where(usable, depth, np.nan)
         search_values = np.where(usable, self._method_values(method), np.nan)
@@ -315,7 +322,7 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
         matplotlib.use("tkagg")
 
         profile_number = self.data["PROFILE_NUMBER"].values
-        depth = self.data["DEPTH"].values
+        depth = self.data[self.depth_var].values
         # TIME is not required by this step; fall back to measurement index.
         x = self.data["TIME"].values if "TIME" in self.data else np.arange(depth.size)
 
@@ -352,7 +359,7 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
             values = self._method_values(method)
 
             # Flagged samples and points below the plotted range are kept off the scatter.
-            usable = self.calculation_mask(["DEPTH"] + METHOD_INPUTS[method])
+            usable = self.calculation_mask([self.depth_var] + self._inputs(method))
             valid = (
                 usable
                 & ~np.isnan(depth)

@@ -25,6 +25,7 @@ upstream input files are fixed.
 
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
+from pelagos_py.utils.qc_handling import adjusted_name
 
 #### Custom imports ####
 import numpy as np
@@ -51,14 +52,15 @@ class CorrectValues(BaseStep):
     Parameters
     ----------
     target_variable : str
-        Name of the variable to correct (e.g. ``"CNDC"``).
+        Name of the variable to correct (e.g. ``"CNDC"``). Its ``_ADJUSTED`` version
+        is read instead when present, so corrections stack.
     output_as : str or list, optional
-        Name(s) to write the result under. Defaults to ``target_variable`` (in-place).
-        Set it to a new name to copy/rename, e.g. ``LATITUDE_GPS`` -> ``LATITUDE``
-        with ``slope: 1`` leaves the values unchanged and just exposes the new name.
-        A list writes the same result under several names, e.g.
-        ``[CHLA, CHLA_MID]`` keeps a mid-processing snapshot in ``CHLA_MID`` while
-        later steps continue working on ``CHLA``.
+        Name(s) to write the result under. Defaults to ``<target_variable>_ADJUSTED``,
+        leaving the raw variable untouched. Set it to a new name to copy/rename, e.g.
+        ``LATITUDE_GPS`` -> ``LATITUDE`` with ``slope: 1`` leaves the values unchanged
+        and just exposes the new name. A list writes the same result under several
+        names, e.g. ``[CHLA_ADJUSTED, CHLA_MID]`` keeps a mid-processing snapshot in
+        ``CHLA_MID``. Each output gets a copy of the source's ``_QC``.
     slope : float, optional
         Multiplicative factor (default ``1.0``). For a x10 unit conversion, set ``10``.
     intercept : float, optional
@@ -101,19 +103,21 @@ class CorrectValues(BaseStep):
     step_name = "Correct Values"
     required_variables = []
     provided_variables = []
+    variable_parameters = ["target_variable"]
 
     parameter_schema = {
         "target_variable": {
             "type": str,
             "required": True,
-            "description": "Name of the variable to correct (e.g. 'CNDC').",
+            "description": "Name of the variable to correct (e.g. 'CNDC'); its _ADJUSTED "
+            "version is read instead when present.",
         },
         "output_as": {
             "type": [str, list],
             "default": None,
-            "description": "Name(s) to write the result under (default: target_variable, "
-            "i.e. in place). A new name copies/renames; a list writes the "
-            "same result under several names (e.g. [CHLA, CHLA_MID]).",
+            "description": "Name(s) to write the result under (default: "
+            "<target_variable>_ADJUSTED). A new name copies/renames; a list writes the "
+            "same result under several names (e.g. [CHLA_ADJUSTED, CHLA_MID]).",
         },
         "slope": {
             "type": float,
@@ -169,11 +173,20 @@ class CorrectValues(BaseStep):
         },
     }
 
+    @classmethod
+    def output_variables(cls, parameters):
+        output_as = parameters.get("output_as")
+        if output_as:
+            return [output_as] if isinstance(output_as, str) else list(output_as)
+        target = parameters.get("target_variable")
+        return [adjusted_name(target)] if target else []
+
     def run(self):
         self.check_data()
         self.data = self.context["data"]
 
-        var = self.target_variable
+        var = self.resolve(self.target_variable)
+        self._source = var
         if var not in self.data:
             if self.optional:
                 self.log(f"'{var}' not found in dataset; skipping (optional).")
@@ -187,7 +200,7 @@ class CorrectValues(BaseStep):
         outs = (
             list(self.output_as)
             if isinstance(self.output_as, (list, tuple))
-            else [self.output_as or var]
+            else [self.output_as or adjusted_name(var)]
         )
         if (
             self.append_description is not None
@@ -253,13 +266,15 @@ class CorrectValues(BaseStep):
         no_description = (
             self.append_description is None and self.overwrite_description is None
         )
-        if not self.applied and outs == [var] and no_description:
+        if not self.applied and self.output_as is None and no_description:
             self.context["data"] = self.data
             return self.context
 
         # Write to each output name (a copy/rename when it differs from target_variable).
         for out in outs:
             self.data[out] = self.data[var].copy(data=corrected)
+            if out != var and f"{var}_QC" in self.data:
+                self.data[f"{out}_QC"] = self.data[f"{var}_QC"].copy(deep=True)
 
         names = ", ".join(f"'{o}'" for o in outs)
         if self.applied:
@@ -290,7 +305,7 @@ class CorrectValues(BaseStep):
 
     def plot_diagnostics(self):
         # value + difference panels for a real correction, one panel otherwise
-        var, outs = self.target_variable, self._outs
+        var, outs = self._source, self._outs
         raw = self._raw_data
         corrected = self.slope * raw + self.intercept if self.applied else raw
         if self.applied:
@@ -351,7 +366,7 @@ class CorrectValues(BaseStep):
             fig_spec.points(ax, x, y, color=fig_spec.CATEGORY[1], label="corrected")
 
     def _title(self):
-        var, outs = self.target_variable, self._outs
+        var, outs = self._source, self._outs
         head = f"Correct Values: {var}"
         renamed = [o for o in outs if o != var]
         if renamed:

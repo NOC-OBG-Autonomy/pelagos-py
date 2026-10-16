@@ -19,7 +19,11 @@
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
 from pelagos_py.steps import QC_CLASSES
-from pelagos_py.utils.qc_handling import QC_COMBINATRIX, prefer_adjusted
+from pelagos_py.utils.qc_handling import (
+    QC_COMBINATRIX,
+    adjusted_name,
+    prefer_adjusted,
+)
 
 #### Custom imports ####
 import xarray as xr
@@ -96,7 +100,7 @@ class ApplyQC(BaseStep):
     def organise_flags(self, new_flags, overwrite=False):
         """
         Method for taking in new flags (new_flags) and cross checking against existing flags (self.flag_store), including upgrading flags when necessary, following ARGO flagging standards.
-        With ``overwrite`` the new flags replace the stored ones outright (tests that merge themselves, e.g. manual qc).
+        With ``overwrite`` the new flags replace the stored ones outright (tests that merge themselves, e.g. visual qc).
         See Wong et al. 2025 pp. 106 (http://dx.doi.org/10.13155/33951) and Mancini et al. 2021 pp. 43-44 for additional ARGO flag definitions.
 
         Combinatrix logic:
@@ -196,9 +200,13 @@ class ApplyQC(BaseStep):
             #   vars only), so a required variable stored as a coordinate (e.g. TIME,
             #   LATITUDE, LONGITUDE) is not falsely reported as missing.
             present = set(full_data.variables)
-            if not set(all_required_variables).issubset(present):
+            # Static names like DEPTH count as present through their _ADJUSTED version.
+            resolved_required = set(
+                prefer_adjusted(list(all_required_variables), present)
+            )
+            if not resolved_required.issubset(present):
                 self.halt(
-                    f"The data is missing variables: ({set(all_required_variables) - present}) which are required for running QC '{test.qc_name}'."
+                    f"The data is missing variables: ({resolved_required - present}) which are required for running QC '{test.qc_name}'."
                     f" Make sure that the variables are present in the data, or remove tests from the order."
                 )
 
@@ -207,6 +215,8 @@ class ApplyQC(BaseStep):
         # the QC output columns themselves and the variable each flags (needed to
         # build masks for outputs that don't exist yet, see mia_qc/base below).
         subset_names = set(all_required_variables) | set(test_qc_outputs_cols)
+        # Tests resolve hard-coded names (e.g. DEPTH) to their _ADJUSTED version themselves.
+        subset_names.update(adjusted_name(var) for var in all_required_variables)
         subset_names.update(var[:-3] for var in test_qc_outputs_cols)
         subset_names.add("TIME")  # diagnostics plot against time
         subset_vars = [name for name in subset_names if name in full_data.variables]

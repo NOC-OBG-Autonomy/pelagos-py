@@ -225,7 +225,7 @@ function flowLink(list, index, tail = false) {
 
 // The marker doubles as the drag handle: on hover the dot turns into a grip.
 function stepKind(item) {
-  if (isQcContainer(item.def)) return 'manual qc' in (item.values.qc_settings || {}) ? 'manual' : 'qc';
+  if (isQcContainer(item.def)) return 'visual qc' in (item.values.qc_settings || {}) ? 'visual' : 'qc';
   return { input_output: 'io', quality_control: 'qc' }[item.def.category] || 'proc';
 }
 function stepIcon(kind) {
@@ -236,7 +236,7 @@ function stepIcon(kind) {
   return el;
 }
 function testLabel(test) {
-  if (test === 'manual qc') return 'Manual QC';
+  if (test === 'visual qc') return 'Visual QC';
   const t = test.replace(/\s+qc$/, '');
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
@@ -252,10 +252,10 @@ function stepText(name, sub, nameCls = 'step-name') {
   return text;
 }
 
-// Manual QC only makes sense paused on its plot, so it starts with diagnostics on.
+// Visual QC only makes sense paused on its plot, so it starts with diagnostics on.
 function initTestValues(test) {
   const v = initValues(STATE.qcByName[test]);
-  if (test === 'manual qc') v.diagnostics = true;
+  if (test === 'visual qc') v.diagnostics = true;
   return v;
 }
 
@@ -922,7 +922,7 @@ function renderSection(sec, index = 0) {
 function renderStepCard(item) {
   const card = document.createElement('div');
   card.className = 'step-card cat-' + item.def.category;
-  if (isQcContainer(item.def) && 'manual qc' in (item.values.qc_settings || {})) card.classList.add('manual-qc');
+  if (isQcContainer(item.def) && 'visual qc' in (item.values.qc_settings || {})) card.classList.add('visual-qc');
   card.dataset.stepId = item.id;
 
   const head = document.createElement('div');
@@ -945,7 +945,7 @@ function renderStepCard(item) {
       const row = document.createElement('span');
       row.className = 'qc-row';
       row.dataset.test = t;
-      row.appendChild(stepIcon(t === 'manual qc' ? 'manual' : 'qc'));
+      row.appendChild(stepIcon(t === 'visual qc' ? 'visual' : 'qc'));
       row.appendChild(stepText(testLabel(t), testVars(item.values.qc_settings[t]).join(', '), 'qc-row-name'));
       row.onclick = (e) => { e.stopPropagation(); item.collapsed = false; item.qcOpen = { [t]: true }; renderPipeline(); };
       title.appendChild(row);

@@ -52,12 +52,12 @@ const Plot = {
     return traces;
   },
 
-  // `manual` turns on the Manual QC selection mode (see Chart._bind and manual.js).
-  async render(host, spec, { name, onProgress, signal, manual } = {}) {
+  // `visual` turns on the Visual QC selection mode (see Chart._bind and visual.js).
+  async render(host, spec, { name, onProgress, signal, visual } = {}) {
     const data = await Plot.fetchBin(name, onProgress, signal);
     if (signal && signal.aborted) throw new DOMException('aborted', 'AbortError');
     Plot.purge(host);
-    host._chart = new Chart(host, spec, data, name, manual);
+    host._chart = new Chart(host, spec, data, name, visual);
     return host._chart;
   },
 
@@ -166,10 +166,10 @@ const FONT = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-s
 const FONT_B = '600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
 class Chart {
-  constructor(host, spec, data, name, manual) {
+  constructor(host, spec, data, name, visual) {
     this.host = host; this.spec = spec; this.name = name;
-    // Manual QC boxes, in chart coordinates.
-    this.manual = manual || null; this.overlays = []; this.pending = null; this.overlayHits = [];
+    // Visual QC boxes, in chart coordinates.
+    this.visual = visual || null; this.overlays = []; this.pending = null; this.overlayHits = [];
     this.dpr = window.devicePixelRatio || 1;
     this.stage = document.createElement('div');
     this.stage.className = 'plot-stage';
@@ -183,7 +183,7 @@ class Chart {
 
     this.panels = spec.panels.map((p, i) => this._panel(p, i, data));
     this.box = null; this.pick = null;
-    this.busy = false; // Manual QC re-running
+    this.busy = false; // Visual QC re-running
     this._initGL();
     this._bind();
     this.resize();
@@ -559,7 +559,7 @@ class Chart {
   }
 
   _drawOverlay(fg) {
-    if (this.manual) this._drawBoxes(fg);
+    if (this.visual) this._drawBoxes(fg);
     if (this.box) {
       const b = this.box, x = Math.min(b.x0, b.x1), y = Math.min(b.y0, b.y1);
       const sel = b.select;
@@ -595,16 +595,16 @@ class Chart {
       if (!p) return;
       const hit = p.legendHits.find((h) => x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h);
       if (hit) { hit.trace.hidden = !hit.trace.hidden; this.draw(); return; }
-      if (this.manual) {
+      if (this.visual) {
         if (this.busy) return;
         const ohit = this.overlayHits.find((h) => x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h);
-        if (ohit) { this.manual.onRemove(ohit.box); return; }
+        if (ohit) { this.visual.onRemove(ohit.box); return; }
       }
       // A plain drag selects a region; Cmd/Ctrl- or Shift-drag zooms.
       const zoom = ev.metaKey || ev.ctrlKey || ev.shiftKey;
       // Boxes are only drawn on the main panel.
       const main = p === this.panels[0];
-      this.box = { panel: p, x0: x, y0: y, x1: x, y1: y, select: !!(this.manual && main && !zoom) };
+      this.box = { panel: p, x0: x, y0: y, x1: x, y1: y, select: !!(this.visual && main && !zoom) };
       el.setPointerCapture(ev.pointerId);
     };
     const move = (ev) => {
@@ -623,14 +623,14 @@ class Chart {
         if (!big) {
           const near = this._nearest(b.panel, b.x0, b.y0);
           this._drawFG();
-          if (near) this.manual.onPoint({ x: near.trace.x[near.index], y: near.trace.y[near.index] });
+          if (near) this.visual.onPoint({ x: near.trace.x[near.index], y: near.trace.y[near.index] });
           return;
         }
         const p = b.panel;
         this.pending = { x0: this.dx(p, Math.min(b.x0, b.x1)), x1: this.dx(p, Math.max(b.x0, b.x1)),
           y0: this.dy(p, Math.max(b.y0, b.y1)), y1: this.dy(p, Math.min(b.y0, b.y1)) };
         this._drawFG();
-        this.manual.onSelect(this.pending);
+        this.visual.onSelect(this.pending);
         return;
       }
       if (big) {
@@ -644,7 +644,7 @@ class Chart {
     el.addEventListener('pointercancel', () => { this.box = null; this._drawFG(); });
     el.addEventListener('dblclick', (ev) => {
       ev.preventDefault();
-      if (this.manual && this.manual.onDoubleClick) this.manual.onDoubleClick();
+      if (this.visual && this.visual.onDoubleClick) this.visual.onDoubleClick();
       this.reset();
     });
     this._onKey = (ev) => { if (ev.key === 'Escape' && this.pick) { this.pick = null; this.tip.classList.add('hidden'); this._drawFG(); ev.stopPropagation(); } };
@@ -671,14 +671,14 @@ class Chart {
         const inv = p.view.y0 > p.view.y1; p.view.y0 = inv ? yr[1] : yr[0]; p.view.y1 = inv ? yr[0] : yr[1];
       }
     }
-    if (this.manual && this.manual.onView) this.manual.onView();
+    if (this.visual && this.visual.onView) this.visual.onView();
     this.draw();
   }
 
   reset() {
     for (const p of this.panels) p.view = Object.assign({}, p.home);
     this.pick = null; this.tip.classList.add('hidden');
-    if (this.manual && this.manual.onView) this.manual.onView();
+    if (this.visual && this.visual.onView) this.visual.onView();
     this.draw();
   }
 

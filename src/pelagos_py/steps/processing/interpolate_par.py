@@ -189,8 +189,8 @@ class InterpolatePAR(BaseStep, QCHandlingMixin):
     def run(self):
         self.log("Deriving PAR light depths (ZEU / Z_IPAR)...")
 
-        par_var = self.par_var
-        depth_var = self.depth_variable
+        par_var = self.resolve(self.par_var)
+        depth_var = self.resolve(self.depth_variable)
         for var in (par_var, depth_var, "PROFILE_NUMBER", "TIME"):
             if var not in self.data:
                 self.halt(

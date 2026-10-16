@@ -32,7 +32,7 @@ const Run = {
   VARS_MARKER: '__PELAGOS_VARS__ ',
   TIME_MARKER: '__PELAGOS_TIME__ ',
   SAMPLE_MARKER: '__PELAGOS_SAMPLE__ ',
-  variables: [], // for Manual QC's axis pickers
+  variables: [], // for Visual QC's axis pickers
   emptyVariables: [], // those all NaN or 0
 
   // Reset on every __PELAGOS_STEP__, set by __PELAGOS_FAIL__.
@@ -694,7 +694,7 @@ const Run = {
   },
 
   syncToForm() {
-    if (Run.pausedStep === null || ManualQC.isActive()) return;
+    if (Run.pausedStep === null || VisualQC.isActive()) return;
     Run.setRunButton(Run.runBtnMode);
     Review.syncUseButtons();
   },
@@ -835,7 +835,7 @@ const Run = {
 
   onTabChange() {
     const which = document.querySelector('.tab.on')?.dataset.tab;
-    document.body.classList.toggle('manual-full', which === 'manual');
+    document.body.classList.toggle('visual-full', which === 'visual');
   },
 
   // Only on a finished/stopped run, never a transient stream drop (see handleDrop).

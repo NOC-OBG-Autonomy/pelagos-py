@@ -19,7 +19,7 @@
 #### Mandatory imports ####
 import numpy as np
 from pelagos_py.steps.base_qc import BaseQC, register_qc
-from pelagos_py.utils.qc_handling import propagate_flags
+from pelagos_py.utils.qc_handling import propagate_flags, raw_name
 
 #### Custom imports ####
 import matplotlib.pyplot as plt
@@ -160,7 +160,7 @@ class stuck_value_qc(BaseQC):
             fig_spec.flag_points(ax, x, self.data[var], self.data[f"{var}_QC"])
             ylabel = fig_spec.axis_label(var, self.data[var].attrs.get("units"))
             fig_spec.style_axes(ax, title=f"{var} Stuck Value Test", ylabel=ylabel)
-            if var in ("PRES", "DEPTH"):
+            if raw_name(var) in ("PRES", "DEPTH"):
                 ax.invert_yaxis()
             fig_spec.legend(ax, title="Flags")
         fig_spec.x_axis(axes[-1][0], x)

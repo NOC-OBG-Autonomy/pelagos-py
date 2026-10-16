@@ -16,7 +16,7 @@
 
 from pelagos_py.steps import STEP_CLASSES, QC_CLASSES
 from pelagos_py.utils import file_probe, parameter_spec
-from pelagos_py.utils.qc_handling import prefer_adjusted
+from pelagos_py.utils.qc_handling import adjusted_name, prefer_adjusted, raw_name
 
 # A pipeline needs exactly one of these to supply its base data.
 LOADER_STEP_NAMES = ("Load OG1", "Generate Data")
@@ -38,14 +38,14 @@ def _loader_hint(missing):
     )
 
 
-def _variable_parameter_names(step_class, parameters):
+def _variable_parameter_names(step_class, parameters, include_optional=False):
     # input variables named by parameters (e.g. apply_to: "BBP700"); output_as and
     # variable_parameters_optional are skipped as they aren't always required
     schema = getattr(step_class, "parameter_schema", None) or {}
     optional = getattr(step_class, "variable_parameters_optional", ())
     names = []
     for attr in getattr(step_class, "variable_parameters", []):
-        if attr == "output_as" or attr in optional:
+        if attr == "output_as" or (attr in optional and not include_optional):
             continue
         default = (schema.get(attr) or {}).get("default")
         value = parameters.get(attr, default)
@@ -53,29 +53,6 @@ def _variable_parameter_names(step_class, parameters):
             continue
         names.extend(list(value) if isinstance(value, (list, tuple, dict)) else [value])
     return names
-
-
-def _resolve_output_as(step_class, parameters):
-    # configured output_as, else its schema default (e.g. "BBP700" for "BBP from Beta")
-    schema = getattr(step_class, "parameter_schema", None) or {}
-    out = parameters.get("output_as", (schema.get("output_as") or {}).get("default"))
-    if not out:
-        return []
-    return list(out) if isinstance(out, (list, tuple)) else [out]
-
-
-def _shift_oxygen_output(parameters):
-    # "Shift Oxygen To CTD" writes {var}_SHIFTED for each shift_vars entry
-    return [f"{v}_SHIFTED" for v in (parameters.get("shift_vars") or [])]
-
-
-def _deep_correction_output(step_class, parameters):
-    # "Deep Correction" has no output_as; it always writes {apply_to}_ADJUSTED
-    schema = getattr(step_class, "parameter_schema", None) or {}
-    apply_to = parameters.get("apply_to", (schema.get("apply_to") or {}).get("default"))
-    if not apply_to:
-        return []
-    return [apply_to if apply_to.endswith("_ADJUSTED") else f"{apply_to}_ADJUSTED"]
 
 
 def _read_file_variables(file_path, logger):
@@ -107,14 +84,15 @@ def _raise_missing_variables(
     kind,
     label,
     missing,
-    pipeline_provided,
+    later_available,
     known_derived,
     file_vars,
     file_all_nan=None,
 ):
     # Raise the most specific error: produced later, produced by no step, or not
     # (or only as all-NaN) in the input file. Otherwise left for the run-time check.
-    out_of_order = [v for v in missing if v in pipeline_provided]
+    # later_available and known_derived hold raw names, so X_ADJUSTED counts for X.
+    out_of_order = [v for v in missing if raw_name(v) in later_available]
     if out_of_order:
         missing_str = ", ".join(out_of_order)
         logger.error(
@@ -131,7 +109,9 @@ def _raise_missing_variables(
         )
 
     not_produced = [
-        v for v in missing if v not in pipeline_provided and v in known_derived
+        v
+        for v in missing
+        if raw_name(v) not in later_available and raw_name(v) in known_derived
     ]
     if not_produced:
         missing_str = ", ".join(not_produced)
@@ -154,9 +134,13 @@ def _raise_missing_variables(
 
     if file_vars is not None:
         unverified = [
-            v for v in missing if v not in pipeline_provided and v not in known_derived
+            v
+            for v in missing
+            if raw_name(v) not in later_available and raw_name(v) not in known_derived
         ]
-        missing_from_file = [v for v in unverified if v not in file_vars]
+        missing_from_file = [
+            v for v in unverified if prefer_adjusted(v, file_vars) not in file_vars
+        ]
         if missing_from_file:
             missing_str = ", ".join(missing_from_file)
             logger.error(
@@ -238,64 +222,117 @@ def _qc_test_io(qc_class, qc_params):
     )
 
 
-def _pipeline_provided_variables(steps_list):
-    """All variables any step in the pipeline produces.
+def _step_io(step_config):
+    # (inputs, outputs) one step config names, before any _ADJUSTED resolution
+    step_class = STEP_CLASSES.get(step_config["name"])
+    if not step_class:
+        return [], []
+    parameters = step_config.get("parameters", {}) or {}
+    inputs = list(getattr(step_class, "required_variables", []))
+    inputs += _variable_parameter_names(step_class, parameters, include_optional=True)
+    try:
+        outputs = list(step_class.output_variables(parameters))
+    except (TypeError, ValueError, AttributeError):
+        # malformed parameters are reported by the per-step validation below
+        outputs = []
+    if step_config["name"] == "Apply QC":
+        for qc_name, qc_params in (parameters.get("qc_settings") or {}).items():
+            qc_class = QC_CLASSES.get(qc_name)
+            if qc_class is None:
+                continue
+            try:
+                qc_required, qc_outputs = _qc_test_io(qc_class, qc_params)
+            except Exception:
+                continue
+            inputs += qc_required
+            outputs += qc_outputs
+    return inputs, outputs
 
-    Used to tell an ordering mistake (a required variable that *is* produced, but
-    by a later step) apart from a variable that is simply unknown to the schema
-    because it comes straight from the input data file. Only the former is worth
-    reporting up front, so QC tests that legitimately depend on file-native
-    variables (e.g. DOWNWELLING_PAR) are not flagged.
-    """
-    provided = set()
-    for step_config in steps_list:
-        step_class = STEP_CLASSES.get(step_config["name"])
-        if not step_class:
+
+def _made_available_after(step_io, index):
+    # raw names that steps after `index` bring into existence; a step rewriting its
+    # own input (BBP700 -> BBP700_ADJUSTED) doesn't make that input available
+    names = set()
+    for inputs, outputs in step_io[index + 1 :]:
+        read = {raw_name(v) for v in inputs}
+        names.update(raw_name(v) for v in outputs if raw_name(v) not in read)
+    return names
+
+
+def _later_producer(var, steps_list, step_io, index, skip_corrections=False):
+    # skip_corrections: ignore steps that correct raw var, as those carry its QC flags over
+    for later in range(index + 1, len(steps_list)):
+        inputs, outputs = step_io[later]
+        if var not in outputs:
             continue
-        parameters = step_config.get("parameters", {}) or {}
-        provided.update(getattr(step_class, "provided_variables", []))
-        provided.update(getattr(step_class, "qc_outputs", []))
-        provided.update(parameters.get("to_derive", []))
-        provided.update(parameters.get("qc_outputs", []))
-        provided.update(_resolve_output_as(step_class, parameters))
-        if step_config["name"] == "Deep Correction":
-            provided.update(_deep_correction_output(step_class, parameters))
-        if step_config["name"] == "Shift Oxygen To CTD":
-            provided.update(_shift_oxygen_output(parameters))
-        if step_config["name"] == "Apply QC":
-            for qc_name, qc_params in (parameters.get("qc_settings") or {}).items():
-                qc_class = QC_CLASSES.get(qc_name)
-                if qc_class is None:
-                    continue
-                try:
-                    _, outputs = _qc_test_io(qc_class, qc_params)
-                except Exception:
-                    # Malformed parameters are reported by the per-step validation
-                    # below; here we only gather outputs, so skip what we can't resolve.
-                    continue
-                provided.update(outputs)
-    return provided
+        if skip_corrections and raw_name(var) in {raw_name(v) for v in inputs}:
+            continue
+        return steps_list[later]["name"]
+    return None
+
+
+def _warn_adjusted_resolution(
+    logger, kind, label, names, available_vars, steps_list, step_io, index
+):
+    # warn where a step will read raw values that have (or will have) an _ADJUSTED version
+    for name in names:
+        used = prefer_adjusted(name, available_vars)
+        if used not in available_vars or used.endswith("_ADJUSTED"):
+            continue
+        if name.endswith("_ADJUSTED"):
+            logger.warning(
+                "%s '%s' names %s, but only %s exists at that point -- falls back to %s.",
+                kind,
+                label,
+                name,
+                used,
+                used,
+                extra={"step_index": index},
+            )
+        if adjusted_name(used) in step_io[index][1]:
+            continue  # this step starts the X -> X_ADJUSTED chain itself
+        producer = _later_producer(
+            adjusted_name(used),
+            steps_list,
+            step_io,
+            index,
+            skip_corrections=kind == "QC test",
+        )
+        if producer:
+            logger.warning(
+                "%s '%s' uses raw %s; %s is produced later by '%s' -- move it "
+                "earlier to use adjusted values.",
+                kind,
+                label,
+                used,
+                adjusted_name(used),
+                producer,
+                extra={"step_index": index},
+            )
 
 
 def _non_loader_provided_variables(steps_list):
     # loaders claim TIME/LATITUDE/etc whatever the file holds, so leave them out
-    others = [
-        s
-        for s in steps_list
-        if not (isinstance(s, dict) and s.get("name") in LOADER_STEP_NAMES)
-    ]
-    return _pipeline_provided_variables(others)
+    provided = set()
+    for step_config in steps_list:
+        if (
+            isinstance(step_config, dict)
+            and step_config.get("name") in LOADER_STEP_NAMES
+        ):
+            continue
+        provided.update(_step_io(step_config)[1])
+    return provided
 
 
 def _known_derived_variables():
-    # every variable any registered step can produce, in this pipeline or not
+    # raw names of every variable any registered step can produce, in this pipeline or not
     known = set()
     for step_class in STEP_CLASSES.values():
         known.update(getattr(step_class, "provided_variables", []))
         known.update(getattr(step_class, "qc_outputs", []))
     for qc_class in QC_CLASSES.values():
         known.update(getattr(qc_class, "qc_outputs", []))
-    return known
+    return {raw_name(v) for v in known}
 
 
 def check_pipeline_variables(steps_list, logger, available_vars=None):
@@ -369,9 +406,8 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
                         exc.step_index = idx
                         raise exc
 
-    pipeline_provided = _pipeline_provided_variables(steps_list)
+    step_io = [_step_io(step_config) for step_config in steps_list]
     known_derived = _known_derived_variables()
-    skipped_outputs = set()
 
     for index, step_config in enumerate(steps_list):
         try:
@@ -519,6 +555,7 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
                             )
 
                     # resolve the variables the same way Apply QC does at run time
+                    configured, _ = _qc_test_io(qc_class, qc_params)
                     qc_params = prefer_adjusted(qc_params, available_vars)
                     qc_required, qc_outputs = _qc_test_io(qc_class, qc_params)
                     qc_missing = [v for v in qc_required if v not in available_vars]
@@ -528,11 +565,21 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
                             "QC test",
                             qc_name,
                             qc_missing,
-                            pipeline_provided - skipped_outputs,
+                            _made_available_after(step_io, index),
                             known_derived,
                             file_vars,
                             file_all_nan,
                         )
+                    _warn_adjusted_resolution(
+                        logger,
+                        "QC test",
+                        qc_name,
+                        configured,
+                        available_vars,
+                        steps_list,
+                        step_io,
+                        index,
+                    )
 
                     # Make this test's outputs available to later tests in the same
                     # Apply QC call, so a test that legitimately depends on an earlier
@@ -543,15 +590,7 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
             req_vars = list(getattr(step_class, "required_variables", []))
             req_vars.extend(_variable_parameter_names(step_class, parameters))
 
-            own_provided = set(getattr(step_class, "provided_variables", []))
-            own_provided.update(getattr(step_class, "qc_outputs", []))
-            own_provided.update(parameters.get("to_derive") or [])
-            own_provided.update(parameters.get("qc_outputs") or [])
-            own_provided.update(_resolve_output_as(step_class, parameters))
-            if step_name == "Deep Correction":
-                own_provided.update(_deep_correction_output(step_class, parameters))
-            if step_name == "Shift Oxygen To CTD":
-                own_provided.update(_shift_oxygen_output(parameters))
+            own_provided = set(step_class.output_variables(parameters))
             if step_name == "Prepare OG1" and file_vars is not None:
                 own_provided.update(
                     _prepare_outputs([step_config], file_vars - (file_all_nan or set()))
@@ -560,24 +599,38 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
             # an `optional: true` step skips when its target_variable is absent
             if parameters.get("optional") and file_vars is not None:
                 target = parameters.get("target_variable")
-                if target and target not in available_vars and target not in file_vars:
-                    skipped_outputs |= own_provided
+                present = available_vars | file_vars
+                if target and prefer_adjusted(target, present) not in present:
                     own_provided = set()
+                    req_vars = [v for v in req_vars if v != target]
 
-            missing_vars = [req for req in req_vars if req not in available_vars]
+            missing_vars = [
+                req
+                for req in req_vars
+                if prefer_adjusted(req, available_vars) not in available_vars
+            ]
 
             if missing_vars:
-                # a step that overwrites its input (e.g. BBP700 in "BBP from Beta") isn't "later"
                 _raise_missing_variables(
                     logger,
                     "step",
                     step_name,
                     missing_vars,
-                    pipeline_provided - own_provided - skipped_outputs,
+                    _made_available_after(step_io, index),
                     known_derived,
                     file_vars,
                     file_all_nan,
                 )
+            _warn_adjusted_resolution(
+                logger,
+                "step",
+                step_name,
+                req_vars,
+                available_vars,
+                steps_list,
+                step_io,
+                index,
+            )
 
             available_vars.update(own_provided)
             # all-NaN placeholders stay missing so the error can point at them

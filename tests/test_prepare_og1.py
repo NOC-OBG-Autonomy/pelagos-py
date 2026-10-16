@@ -100,7 +100,6 @@ def test_renames_for_matches_run():
     assert PrepareOG1.renames_for(names) == {
         "LATITUDE_GPS": "LATITUDE",
         "BBP700": "BETA_BACKSCATTERING700",
-        "DOXY": "MOLAR_DOXY",
     }
     assert "BBP700" not in PrepareOG1.renames_for(names, bbp700_is_beta=False)
 

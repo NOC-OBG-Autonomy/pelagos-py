@@ -60,6 +60,15 @@ def test_constant_lag_shifts_values_forward_in_time():
     assert np.allclose(data["UNCAL_PHASE_DOXY_SHIFTED"].values[:-3], expected[:-3])
     assert np.isnan(data["UNCAL_PHASE_DOXY_SHIFTED"].values[-3:]).all()
     assert "UNCAL_PHASE_DOXY_SHIFTED_QC" in data
+    assert out["intermediate_variables"] == ["UNCAL_PHASE_DOXY_SHIFTED"]
+
+
+def test_output_variables_follow_shift_vars():
+    parameters = {"shift_vars": ["UNCAL_PHASE_DOXY", "TEMP_DOXY"]}
+    assert ShiftOxygenToCTD.output_variables(parameters) == [
+        "UNCAL_PHASE_DOXY_SHIFTED",
+        "TEMP_DOXY_SHIFTED",
+    ]
 
 
 def test_missing_pitch_raises_when_no_constant_lag_given():

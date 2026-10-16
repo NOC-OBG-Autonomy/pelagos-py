@@ -21,6 +21,7 @@ from pelagos_py.steps.base_step import BaseStep, register_step
 from pelagos_py.utils.qc_handling import QCHandlingMixin
 
 #### Custom imports ####
+import gsw
 import matplotlib
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -251,6 +252,7 @@ class DeriveUncalibratedPhase(BaseStep, QCHandlingMixin):
         self.update_qc()
 
         self.generate_qc({"UNCAL_PHASE_DOXY_QC": qc_parents})
+        self.mark_intermediate("UNCAL_PHASE_DOXY")
 
         if self.diagnostics:
             self.generate_diagnostics()
@@ -315,14 +317,15 @@ class DeriveOptodeTemperature(BaseStep, QCHandlingMixin):
         for i in range(len(self.calib_coefficients)):
             coeffs[i] = self.calib_coefficients[i]
 
-        # Check if the output already exists
+        # A shipped TEMP_DOXY is raw instrument data, so it's kept rather than overwritten
         if "TEMP_DOXY" in self.data.data_vars:
-            self.log_warn("TEMP_DOXY already exists in the data. Overwriting...")
+            self.log_warn("TEMP_DOXY already exists in the data. Keeping it unchanged.")
+            return self.context
 
         # Calculate temp_doxy
         temp_doxy = 0
         for i, coeff in enumerate(coeffs):
-            temp_doxy += coeff[i] * self.data[self.temp_voltage_name] ** i
+            temp_doxy += coeff * self.data[self.temp_voltage_name] ** i
         self.data["TEMP_DOXY"] = temp_doxy
         self.data["TEMP_DOXY"].attrs["units"] = "degree_Celsius"
         self.data["TEMP_DOXY"].attrs["long_name"] = "Oxygen optode temperature"
@@ -332,6 +335,7 @@ class DeriveOptodeTemperature(BaseStep, QCHandlingMixin):
         self.update_qc()
 
         self.generate_qc({"TEMP_DOXY_QC": [f"{self.temp_voltage_name}_QC"]})
+        self.mark_intermediate("TEMP_DOXY")
 
         if self.diagnostics:
             self.generate_diagnostics()
@@ -418,6 +422,7 @@ class PhasePressureCorrection(BaseStep, QCHandlingMixin):
                 ]
             }
         )
+        self.mark_intermediate("UNCAL_PHASE_DOXY_PCORR")
 
         if self.diagnostics:
             self.generate_diagnostics()
@@ -516,6 +521,10 @@ class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
             "description": "Variable distinguishing up- and downcasts, used when deriving a per-profile lag.",
         },
     }
+
+    @classmethod
+    def output_variables(cls, parameters):
+        return [f"{var}_SHIFTED" for var in parameters.get("shift_vars") or []]
 
     def _derive_profile_lag(self):
         # Per-profile geometric time lag (s) from mean pitch and dive rate, following Woo & Gourcuff (2023).
@@ -693,6 +702,7 @@ class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
             qc_name = f"{var}_SHIFTED_QC"
             has_value = self.data[f"{var}_SHIFTED"].notnull()
             self.data[qc_name] = xr.where(has_value, 5, self.data[qc_name])
+        self.mark_intermediate(*(f"{var}_SHIFTED" for var in self.shift_vars))
 
         if self.diagnostics:
             self.generate_diagnostics()
@@ -786,6 +796,7 @@ class DeriveCalibratedPhase(BaseStep, QCHandlingMixin):
         self.update_qc()
 
         self.generate_qc({"CAL_PHASE_DOXY_QC": [f"{self.uncalibrated_phase_name}_QC"]})
+        self.mark_intermediate("CAL_PHASE_DOXY")
 
         if self.diagnostics:
             self.generate_diagnostics()
@@ -802,7 +813,7 @@ class DeriveOxygenConcentration(BaseStep, QCHandlingMixin):
     step_name = "Derive Oxygen Concentration"
     beta = True
     required_variables = ["CAL_PHASE_DOXY"]
-    provided_variables = ["MOLAR_DOXY"]
+    provided_variables = ["MOLAR_DOXY_ADJUSTED"]
     optional_variables = ["TIME", "PRES"]
     variable_parameters = ["temperature_name"]
     uses_data_subset = True
@@ -893,6 +904,8 @@ class DeriveOxygenConcentration(BaseStep, QCHandlingMixin):
         ``method: "poly"`` instead expects ``calib_coefficient_matrix`` (shape
         (5, 4)); ``method: "SVU"`` expects ``svu_coefficients``, the 7
         manufacturer SVUFoilCoef values (Stern-Volmer-Uchida equation).
+        Writes ``MOLAR_DOXY_ADJUSTED``, so a ``MOLAR_DOXY`` shipped in the file
+        is kept unchanged.
 
         Returns
         -------
@@ -913,27 +926,36 @@ class DeriveOxygenConcentration(BaseStep, QCHandlingMixin):
 
         # Unpack the method args and functions
         func, args = methods[self.method]
+        self.temperature_name = self.resolve(self.temperature_name)
 
         # Check the config satisfies requirements
         check_config(self, args)
 
         # Check if the output already exists
-        if "MOLAR_DOXY" in self.data.data_vars:
-            self.log_warn("MOLAR_DOXY already exists in the data. Overwriting...")
+        if "MOLAR_DOXY_ADJUSTED" in self.data.data_vars:
+            self.log_warn(
+                "MOLAR_DOXY_ADJUSTED already exists in the data. Overwriting..."
+            )
 
-        self.data["MOLAR_DOXY"] = (("N_MEASUREMENTS",), func())
-        self.data["MOLAR_DOXY"].attrs["units"] = "micromole/l"
-        self.data["MOLAR_DOXY"].attrs["long_name"] = (
+        self.data["MOLAR_DOXY_ADJUSTED"] = (("N_MEASUREMENTS",), func())
+        self.data["MOLAR_DOXY_ADJUSTED"].attrs["units"] = "micromole/l"
+        self.data["MOLAR_DOXY_ADJUSTED"].attrs["long_name"] = (
             "Molar dissolved oxygen concentration"
         )
-        self.data["MOLAR_DOXY"].attrs["standard_name"] = "MOLAR_DOXY"
+        self.data["MOLAR_DOXY_ADJUSTED"].attrs["standard_name"] = "MOLAR_DOXY_ADJUSTED"
 
         self.reconstruct_data()
         self.update_qc()
 
         self.generate_qc(
-            {"MOLAR_DOXY_QC": ["CAL_PHASE_DOXY_QC", f"{self.temperature_name}_QC"]}
+            {
+                "MOLAR_DOXY_ADJUSTED_QC": [
+                    "CAL_PHASE_DOXY_QC",
+                    f"{self.temperature_name}_QC",
+                ]
+            }
         )
+        self.mark_intermediate("MOLAR_DOXY_ADJUSTED")
 
         if self.diagnostics:
             self.generate_diagnostics()
@@ -942,7 +964,7 @@ class DeriveOxygenConcentration(BaseStep, QCHandlingMixin):
         return self.context
 
     def generate_diagnostics(self):
-        _plot_section(self.data, "MOLAR_DOXY", "PRES", self.step_name)
+        _plot_section(self.data, "MOLAR_DOXY_ADJUSTED", "PRES", self.step_name)
 
 
 @register_step
@@ -1029,7 +1051,7 @@ class MolarDOXYSalinityCorrection(BaseStep, QCHandlingMixin):
             - name: "Molar DOXY Salinity Correction"
               parameters:
                 # <MANDATORY>
-                salinity_name: "PRAC_SALINITY"
+                salinity_name: "PSAL"
                 temperature_name: "TEMP"
                 # <OPTIONAL>
                 reference_salinity: 0
@@ -1042,9 +1064,13 @@ class MolarDOXYSalinityCorrection(BaseStep, QCHandlingMixin):
 
         self.filter_qc()
 
+        self.salinity_name = self.resolve(self.salinity_name)
+        self.temperature_name = self.resolve(self.temperature_name)
+        self.molar_doxy_name = self.resolve("MOLAR_DOXY")
+
         # Check the requred variable names are specified
         check_config(self, ("salinity_name", "temperature_name"))
-        if "MOLAR_DOXY" not in self.data.data_vars:
+        if self.molar_doxy_name not in self.data.data_vars:
             raise KeyError(
                 f"[{self.step_name}] MOLAR_DOXY required but is missing from the data"
             )
@@ -1057,13 +1083,13 @@ class MolarDOXYSalinityCorrection(BaseStep, QCHandlingMixin):
 
         S_Corr = self.oxy_solubility_salinity_correction()
 
-        MOLAR_DOXY_PSAL = (A / B) * S_Corr * self.data["MOLAR_DOXY"]
+        MOLAR_DOXY_PSAL = (A / B) * S_Corr * self.data[self.molar_doxy_name]
 
         # Apply the correction
         self.data["MOLAR_DOXY_PSAL"] = MOLAR_DOXY_PSAL
-        self.data["MOLAR_DOXY_PSAL"].attrs["units"] = self.data["MOLAR_DOXY"].attrs.get(
-            "units", "micromole/l"
-        )
+        self.data["MOLAR_DOXY_PSAL"].attrs["units"] = self.data[
+            self.molar_doxy_name
+        ].attrs.get("units", "micromole/l")
         self.data["MOLAR_DOXY_PSAL"].attrs["long_name"] = (
             "Salinity-corrected molar dissolved oxygen concentration"
         )
@@ -1077,10 +1103,11 @@ class MolarDOXYSalinityCorrection(BaseStep, QCHandlingMixin):
                 "MOLAR_DOXY_PSAL_QC": [
                     f"{self.salinity_name}_QC",
                     f"{self.temperature_name}_QC",
-                    "MOLAR_DOXY_QC",
+                    f"{self.molar_doxy_name}_QC",
                 ]
             }
         )
+        self.mark_intermediate("MOLAR_DOXY_PSAL")
 
         if self.diagnostics:
             self.generate_diagnostics()
@@ -1089,7 +1116,9 @@ class MolarDOXYSalinityCorrection(BaseStep, QCHandlingMixin):
         return self.context
 
     def generate_diagnostics(self):
-        _plot_diff(self.data, "MOLAR_DOXY", "MOLAR_DOXY_PSAL", "PRES", self.step_name)
+        _plot_diff(
+            self.data, self.molar_doxy_name, "MOLAR_DOXY_PSAL", "PRES", self.step_name
+        )
 
 
 @register_step
@@ -1146,6 +1175,10 @@ class MolarDOXYPressureCorrection(BaseStep, QCHandlingMixin):
 
         self.filter_qc()
 
+        self.pressure_name = self.resolve(self.pressure_name)
+        self.temperature_name = self.resolve(self.temperature_name)
+        self.molar_doxy_name = self.resolve(self.molar_doxy_name)
+
         # Check the required variable names are supplied
         check_config(
             self,
@@ -1196,6 +1229,7 @@ class MolarDOXYPressureCorrection(BaseStep, QCHandlingMixin):
                 ]
             }
         )
+        self.mark_intermediate("MOLAR_DOXY_PSAL_PRES")
 
         if self.diagnostics:
             self.generate_diagnostics()
@@ -1211,3 +1245,128 @@ class MolarDOXYPressureCorrection(BaseStep, QCHandlingMixin):
             self.pressure_name,
             self.step_name,
         )
+
+
+@register_step
+class DeriveDOXY(BaseStep, QCHandlingMixin):
+    """
+    Convert molar oxygen (umol/L) to ``DOXY_ADJUSTED`` (umol/kg), the OG1/Argo ``DOXY`` unit.
+
+    Follows the Argo DAC oxygen processing (Thierry et al., *Processing Argo oxygen
+    data at the DAC level*, doi:10.13155/39795): ``DOXY = MOLAR_DOXY * 1000 / rho0``,
+    with ``rho0`` (kg/m3) the potential density at zero pressure, here TEOS-10
+    ``gsw.rho(SA, CT, 0)`` from salinity, temperature, pressure and position.
+    ``DOXY_ADJUSTED_QC`` combines the QC of ``apply_to``, salinity and temperature.
+
+    Example
+    -------
+    .. code-block:: yaml
+
+        - name: "Derive DOXY"
+          parameters:
+            apply_to: "MOLAR_DOXY_PSAL_PRES"  # or MOLAR_DOXY for a shipped value
+            salinity_name: "PSAL"
+            temperature_name: "TEMP"
+            pressure_name: "PRES"
+          diagnostics: false
+    """
+
+    step_name = "Derive DOXY"
+    beta = True
+    required_variables = ["LATITUDE", "LONGITUDE"]
+    provided_variables = ["DOXY_ADJUSTED"]
+    optional_variables = ["TIME"]
+    variable_parameters = [
+        "apply_to",
+        "salinity_name",
+        "temperature_name",
+        "pressure_name",
+    ]
+    uses_data_subset = True
+
+    parameter_schema = {
+        "apply_to": {
+            "type": str,
+            "default": "MOLAR_DOXY_PSAL_PRES",
+            "description": "Molar oxygen variable (umol/L) to convert.",
+        },
+        "salinity_name": {
+            "type": str,
+            "default": "PSAL",
+            "description": "Name of the practical salinity variable in the dataset.",
+        },
+        "temperature_name": {
+            "type": str,
+            "default": "TEMP",
+            "description": "Name of the in-situ temperature variable in the dataset.",
+        },
+        "pressure_name": {
+            "type": str,
+            "default": "PRES",
+            "description": "Name of the pressure variable in the dataset.",
+        },
+    }
+
+    def run(self):
+        self.filter_qc()
+
+        self.apply_to = self.resolve(self.apply_to)
+        self.salinity_name = self.resolve(self.salinity_name)
+        self.temperature_name = self.resolve(self.temperature_name)
+        self.pressure_name = self.resolve(self.pressure_name)
+        check_config(self, ("salinity_name", "temperature_name", "pressure_name"))
+        if self.apply_to not in self.data.data_vars:
+            raise KeyError(
+                f"[{self.step_name}] {self.apply_to} could not be found in the data"
+            )
+        units = self.data[self.apply_to].attrs.get("units", "")
+        if "kg" in units:
+            self.log_warn(
+                f"{self.apply_to} is labelled '{units}', not umol/L; converting anyway."
+            )
+
+        if "DOXY_ADJUSTED" in self.data.data_vars:
+            self.log_warn("DOXY_ADJUSTED already exists in the data. Overwriting...")
+
+        pres = self.data[self.pressure_name].values
+        sa = gsw.SA_from_SP(
+            self.data[self.salinity_name].values,
+            pres,
+            self.data["LONGITUDE"].values,
+            self.data["LATITUDE"].values,
+        )
+        ct = gsw.CT_from_t(sa, self.data[self.temperature_name].values, pres)
+        rho0 = gsw.rho(sa, ct, 0)
+
+        self.data["DOXY_ADJUSTED"] = (
+            ("N_MEASUREMENTS",),
+            self.data[self.apply_to].values * 1000 / rho0,
+        )
+        self.data["DOXY_ADJUSTED"].attrs = {
+            "units": "umol/kg",
+            "long_name": "Moles of oxygen per unit mass in sea water",
+            "standard_name": "moles_of_oxygen_per_unit_mass_in_sea_water",
+            "comment": f"{self.apply_to} divided by potential density at 0 dbar.",
+        }
+
+        self.reconstruct_data()
+        self.update_qc()
+
+        self.generate_qc(
+            {
+                "DOXY_ADJUSTED_QC": [
+                    f"{self.apply_to}_QC",
+                    f"{self.salinity_name}_QC",
+                    f"{self.temperature_name}_QC",
+                ]
+            }
+        )
+
+        if self.diagnostics:
+            self.generate_diagnostics()
+
+        self.context["data"].update(self.data)
+        return self.context
+
+    def generate_diagnostics(self):
+        _plot_section(self.data, "DOXY_ADJUSTED", self.pressure_name, self.step_name)

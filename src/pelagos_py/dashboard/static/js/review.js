@@ -21,7 +21,7 @@ const Review = {
     Review.selected = null;
     Review.build();
     Review.host().classList.remove('hidden');
-    if (ManualQC.isActive()) ManualQC.open();
+    if (VisualQC.isActive()) VisualQC.open();
     else Run.showTab('plots');
     Review.renderPlots();
     Run.renderGallery();
@@ -32,7 +32,7 @@ const Review = {
     Review.busy = false;
     Review.host().innerHTML = '';
     Review.host().classList.add('hidden');
-    ManualQC.close();
+    VisualQC.close();
     Run.renderGallery();
   },
 
@@ -170,10 +170,10 @@ const Review = {
       main.appendChild(cards);
       host.appendChild(main);
     }
-    // Manual QC edits the latest attempt in its own tab.
-    if (ManualQC.isActive()) {
+    // Visual QC edits the latest attempt in its own tab.
+    if (VisualQC.isActive()) {
       const latest = attempts[attempts.length - 1];
-      ManualQC.render(latest && latest.figs.length && latest.figs[0].spec ? latest.figs[0] : null);
+      VisualQC.render(latest && latest.figs.length && latest.figs[0].spec ? latest.figs[0] : null);
     }
 
     if (attempts.length > 1) {
@@ -277,6 +277,6 @@ const Review = {
 
   setBusy(busy) {
     Review.busy = busy;
-    ManualQC.setBusy(busy);
+    VisualQC.setBusy(busy);
   },
 };

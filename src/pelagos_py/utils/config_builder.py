@@ -301,14 +301,25 @@ def _bbp_decision(real):
     )
 
 
-def _oxygen_range_check(block):
-    # The 0-1000 range tests on MOLAR_DOXY(_ADJUSTED), which apply to shipped oxygen too.
+def _oxygen_range_check(block, names=("MOLAR_DOXY_ADJUSTED", "DOXY_ADJUSTED")):
+    # The 0-1000 range tests on the oxygen products, which apply to shipped oxygen too.
     ranges = (
         block.params.get("qc_settings", {})
         .get("range qc", {})
         .get("variable_ranges", {})
     )
-    return bool(ranges) and set(ranges) <= {"MOLAR_DOXY", "MOLAR_DOXY_ADJUSTED"}
+    return bool(ranges) and set(ranges) <= set(names)
+
+
+# Replaces Derive DOXY when the file ships DOXY, which OG1 gives in umol/kg already.
+_SHIPPED_DOXY_STEP = """\
+# The file's DOXY is already in umol/kg, so it is exposed as DOXY_ADJUSTED as is.
+  - name: Correct Values
+    parameters:
+      target_variable: DOXY
+      append_description: Shipped DOXY, used as is.
+    diagnostics: false
+"""
 
 
 def _oxygen_decision(probe, real):
@@ -335,7 +346,7 @@ def _oxygen_decision(probe, real):
         )
     elif molar:
         title = "No optode phase; oxygen as shipped"
-        detail = f"Only {molar} is available: the derivation steps are dropped and it is exposed as MOLAR_DOXY_ADJUSTED."
+        detail = f"Only {molar} is available: the derivation steps are dropped and it is exposed as DOXY_ADJUSTED."
     else:
         title = "No oxygen"
         detail = (
@@ -515,11 +526,11 @@ def build(
     choices=None,
     description=None,
     output_path=None,
-    manual_qc=True,
+    visual_qc=True,
 ):
     """The template adapted to ``file_path``: paths patched in and each
     decision's choice applied (defaults where ``choices`` doesn't say).
-    ``manual_qc=False`` drops the Manual QC step, which pauses the run for the dashboard."""
+    ``visual_qc=False`` drops the Visual QC step, which pauses the run for the dashboard."""
     probe = probe if probe is not None else file_probe.probe_file(file_path)
     decs = decisions(probe)
     choices = {**default_choices(decs), **(choices or {})}
@@ -577,30 +588,38 @@ def build(
         drop(lambda b: b.section == "BACKSCATTER" or b.name == "CHLA Quenching")
 
     oxygen = choices.get("oxygen", "none")
-    if oxygen.startswith(
-        "rename:"
-    ):  # renamed to MOLAR_DOXY by Prepare OG1, then used as shipped
-        oxygen = "shipped"
+    molar = _oxygen_molar(probe)
+    if oxygen.startswith("rename:"):  # renamed to MOLAR_DOXY by Prepare OG1
+        oxygen, molar = "shipped", "MOLAR_DOXY"
     phase = _oxygen_phase(probe)
     if oxygen == "phase" and phase:
         for b in blocks:
             if b.name == "Derive Uncalibrated Phase":
                 b.sub(r"(?m)^(\s*blue_phase_name:).*$", rf'\1 "{phase}"')
+    elif oxygen == "shipped" and molar == "DOXY":
+        drop(
+            lambda b: (
+                b.section == "OXYGEN"
+                and b.name != "Derive DOXY"
+                and not _oxygen_range_check(b, ["DOXY_ADJUSTED"])
+            )
+        )
+        for i, b in enumerate(blocks):
+            if b.name == "Derive DOXY":
+                lines = _SHIPPED_DOXY_STEP.rstrip("\n").split("\n")
+                blocks[i] = _Block(b.section, b.banner, lines)
     elif oxygen == "shipped":
         drop(
             lambda b: (
                 b.section == "OXYGEN"
-                and b.name != "Correct Values"
+                and b.name != "Derive DOXY"
                 and not _oxygen_range_check(b)
             )
         )
         for b in blocks:
             if b.section == "OXYGEN":
-                b.sub(r"(?m)^(\s*target_variable:).*$", r"\1 MOLAR_DOXY")
-                b.sub(
-                    r"(?m)^(\s*append_description:).*$",
-                    r"\1 Shipped MOLAR_DOXY, renamed.",
-                )
+                b.sub(r"(?m)^(\s*apply_to:).*$", r"\1 MOLAR_DOXY")
+                b.sub(r"(?m)^(\s*)MOLAR_DOXY_ADJUSTED:", r"\1MOLAR_DOXY:")
     else:
         drop(lambda b: b.section == "OXYGEN")
 
@@ -615,7 +634,7 @@ def build(
             if b.name == "Deep Correction":
                 b.sub(r"(?m)^(\s*depth_threshold:)\s*[^\s#]+", rf"\g<1> {deep}")
 
-    if not manual_qc:
-        drop(lambda b: b.section == "MANUAL QC")
+    if not visual_qc:
+        drop(lambda b: b.section == "VISUAL QC")
 
     return _render(head, blocks, tail)

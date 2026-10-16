@@ -74,11 +74,9 @@ steps:
       blue_phase_name: "BPHASE_DOXY"
     diagnostics: false
 
-  - name: Correct Values
+  - name: Derive DOXY
     parameters:
-      target_variable: MOLAR_DOXY_PSAL_PRES
-      output_as: MOLAR_DOXY_ADJUSTED
-      append_description: Renamed from MOLAR_DOXY_PSAL_PRES.
+      apply_to: MOLAR_DOXY_PSAL_PRES
     diagnostics: false
 
 # ===========================================================
@@ -203,7 +201,7 @@ def test_oxygen_uses_first_real_phase_variable():
     assert 'blue_phase_name: "DPHASE_DOXY"' in text
 
 
-def test_oxygen_shipped_keeps_only_rename():
+def test_oxygen_shipped_molar_keeps_only_derive_doxy():
     probe = {
         **BASE,
         "BETA_BACKSCATTERING700": var(),
@@ -211,11 +209,28 @@ def test_oxygen_shipped_keeps_only_rename():
         "MOLAR_DOXY": var(),
     }
     d = ids(cb.decisions(probe))["oxygen"]
-    assert d["default"] == "shipped"
+    assert d["default"] == "shipped" and "DOXY_ADJUSTED" in d["detail"]
     text = cb.build(TEMPLATE, "/data/g.nc", probe)
     assert "Derive Uncalibrated Phase" not in steps_of(text)
-    assert "target_variable: MOLAR_DOXY\n" in text
-    assert "MOLAR_DOXY_ADJUSTED" in text
+    assert "Derive DOXY" in steps_of(text)
+    assert "apply_to: MOLAR_DOXY\n" in text
+
+
+def test_oxygen_shipped_doxy_is_corrected_not_converted():
+    template = cb.DEFAULT_CONFIG.read_text()
+    probe = {
+        **BASE,
+        "BETA_BACKSCATTERING700": var(),
+        "DOWNWELLING_PAR": var(),
+        "DOXY": var("umol/kg"),
+    }
+    text = cb.build(template, "/data/g.nc", probe)
+    oxygen = [
+        s for s in yaml.safe_load(text)["steps"] if "DOXY" in str(s.get("parameters"))
+    ]
+    assert [s["name"] for s in oxygen] == ["Correct Values", "Apply QC"]
+    assert oxygen[0]["parameters"]["target_variable"] == "DOXY"
+    assert "DOXY_ADJUSTED:\n              4: [0, 1000, outside]" in text
 
 
 def test_oxygen_shipped_keeps_range_checks_from_real_template():
@@ -228,9 +243,8 @@ def test_oxygen_shipped_keeps_range_checks_from_real_template():
     }
     text = cb.build(template, "/data/g.nc", probe)
     assert "            MOLAR_DOXY:\n              4: [0, 1000, outside]" in text
-    assert (
-        "            MOLAR_DOXY_ADJUSTED:\n              4: [0, 1000, outside]" in text
-    )
+    assert "            DOXY_ADJUSTED:\n              4: [0, 1000, outside]" in text
+    assert "MOLAR_DOXY_ADJUSTED:" not in text
     assert "UNCAL_PHASE_DOXY_PCORR" not in text
 
 
@@ -281,10 +295,10 @@ def test_missing_oxygen_can_be_renamed_to_molar_doxy():
     text = cb.build(
         TEMPLATE, "/data/g.nc", probe, choices={"oxygen": "rename:OXY_UMOL"}
     )
-    assert "MOLAR_DOXY: OXY_UMOL" in text and "MOLAR_DOXY_ADJUSTED" in text
+    assert "MOLAR_DOXY: OXY_UMOL" in text and "apply_to: MOLAR_DOXY\n" in text
     assert "Derive Uncalibrated Phase" not in steps_of(
         text
-    ) and "Correct Values" in steps_of(text)
+    ) and "Derive DOXY" in steps_of(text)
 
 
 def test_missing_beta_can_be_renamed_instead_of_dropped():
@@ -392,10 +406,10 @@ def test_shallow_dives_skip_deep_correction_by_default():
     assert "deep" not in ids(cb.decisions(BASE))
 
 
-def test_manual_qc_dropped_on_request():
+def test_visual_qc_dropped_on_request():
     probe = {**BASE, "BPHASE_DOXY": var(), "DOWNWELLING_PAR": var()}
     template = cb.DEFAULT_CONFIG.read_text()
-    assert "manual qc" in cb.build(template, "/data/g.nc", probe)
-    text = cb.build(template, "/data/g.nc", probe, manual_qc=False)
-    assert "manual qc" not in text
+    assert "visual qc" in cb.build(template, "/data/g.nc", probe)
+    text = cb.build(template, "/data/g.nc", probe, visual_qc=False)
+    assert "visual qc" not in text
     assert "Data Export" in steps_of(text)

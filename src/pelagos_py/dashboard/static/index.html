@@ -36,8 +36,8 @@
             <button class="tab" data-tab="yaml"><span data-icon="code" data-icon-size="17"></span>YAML</button>
             <button class="tab on" data-tab="run"><span data-icon="file" data-icon-size="17"></span>Log</button>
             <button class="tab" data-tab="plots"><span data-icon="image" data-icon-size="17"></span>Plots</button>
-            <!-- Only while a run is paused on the `manual qc` test, in place of Plots. -->
-            <button class="tab tab-manual hidden" data-tab="manual"><span data-icon="image" data-icon-size="17"></span>Manual QC</button>
+            <!-- Only while a run is paused on the `visual qc` test, in place of Plots. -->
+            <button class="tab tab-visual hidden" data-tab="visual"><span data-icon="image" data-icon-size="17"></span>Visual QC</button>
             <button class="tab" data-tab="report"><span data-icon="file" data-icon-size="17"></span>Output</button>
             <button class="tab" data-tab="inspect"><span data-icon="search" data-icon-size="17"></span>Inspect</button>
             <button class="tab tab-files" data-tab="files"><span data-icon="folder" data-icon-size="17"></span>Files</button>
@@ -57,9 +57,9 @@
       </div>
 
       <main class="layout">
-        <!-- Left rail: only shown on the Manual QC tab. -->
+        <!-- Left rail: only shown on the Visual QC tab. -->
         <aside class="palette">
-          <div id="manual-rail" class="manual-rail"></div>
+          <div id="visual-rail" class="visual-rail"></div>
         </aside>
         <!-- Centre: pipeline builder -->
         <section class="builder">
@@ -81,7 +81,7 @@
             <span class="fc-legend-item"><span class="step-ico k-io"></span>Load / export</span>
             <span class="fc-legend-item"><span class="step-ico k-proc"></span>Processing</span>
             <span class="fc-legend-item"><span class="step-ico k-qc"></span>Quality control</span>
-            <span class="fc-legend-item"><span class="step-ico k-manual"></span>Manual QC</span>
+            <span class="fc-legend-item"><span class="step-ico k-visual"></span>Visual QC</span>
           </div>
         </section>
 
@@ -142,8 +142,8 @@
             </div>
           </div>
 
-          <div class="tab-panel hidden" data-panel="manual">
-            <div id="manual-workspace" class="manual-ws"></div>
+          <div class="tab-panel hidden" data-panel="visual">
+            <div id="visual-workspace" class="visual-ws"></div>
           </div>
 
           <div class="tab-panel hidden" data-panel="plots">
@@ -249,7 +249,7 @@
   <script src="/js/build.js"></script>
   <script src="/js/plot.js"></script>
   <script src="/js/viewer.js"></script>
-  <script src="/js/manual.js"></script>
+  <script src="/js/visual.js"></script>
   <script src="/js/review.js"></script>
   <script src="/js/inspect.js"></script>
   <script src="/js/demos.js"></script>

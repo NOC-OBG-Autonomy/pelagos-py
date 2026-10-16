@@ -53,13 +53,13 @@ def _row_count_drawn(monkeypatch, ds, tmp_path, subdir):
 def test_only_panels_with_data_are_drawn(tmp_path, monkeypatch):
     n = 200
 
-    ds_two = make_dataset(n, extra={"PRAC_SALINITY": np.full(n, 35.0)})
+    ds_two = make_dataset(n, extra={"PSAL": np.full(n, 35.0)})
     rows_two = _row_count_drawn(monkeypatch, ds_two, tmp_path, "two")
 
     ds_all = make_dataset(
         n,
         extra={
-            "PRAC_SALINITY": np.full(n, 35.0),
+            "PSAL": np.full(n, 35.0),
             "DENSITY": np.full(n, 1025.0),
             "MOLAR_DOXY": np.full(n, 200.0),
             "CHLA": np.full(n, 0.5),
@@ -101,7 +101,7 @@ def test_oxygen_panel_prefers_adjusted_variable(tmp_path):
         extra={
             "MOLAR_DOXY": np.full(n, 200.0),
             "MOLAR_DOXY_PSAL_PRES": np.full(n, 250.0),
-            "MOLAR_DOXY_ADJUSTED": np.full(n, 260.0),
+            "DOXY_ADJUSTED": np.full(n, 260.0),
         },
     )
 
@@ -112,4 +112,4 @@ def test_oxygen_panel_prefers_adjusted_variable(tmp_path):
         ],
     )
 
-    assert resolved == "MOLAR_DOXY_ADJUSTED"
+    assert resolved == "DOXY_ADJUSTED"

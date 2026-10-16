@@ -18,7 +18,7 @@
 
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
-from pelagos_py.utils.qc_handling import QCHandlingMixin
+from pelagos_py.utils.qc_handling import QCHandlingMixin, adjusted_name
 from pelagos_py.utils.processing_utils import profile_indices
 import pelagos_py.utils.palettes as palettes
 from pelagos_py.utils import fig_spec
@@ -77,23 +77,18 @@ SECTION_CATEGORY_STYLE = [
 
 def check_chl_variables(self, allowed_requests):
     user_request = self.apply_to
-    if user_request not in self.data.data_vars:
-        raise KeyError(f"The variable {user_request} does not exist in the data.")
     if user_request not in allowed_requests:
         raise KeyError(
             f"The variable {user_request} is not permitted for [{self.step_name}]"
         )
+    resolved = self.resolve(user_request)
+    if resolved not in self.data.data_vars:
+        raise KeyError(f"The variable {user_request} does not exist in the data.")
+    if resolved != user_request:
+        self.log_warn(f"User requested processing on {user_request}; using {resolved}.")
 
-    if f"{user_request}_ADJUSTED" in self.data.data_vars:
-        self.log_warn(
-            f"User requested processing on {user_request} but {user_request}_ADJUSTED already exists. Using {user_request}_ADJUSTED..."
-        )
-        user_request = f"{user_request}_ADJUSTED"
-
-    output_as = user_request + ("_ADJUSTED" if "_ADJUSTED" not in user_request else "")
-
-    self.log(f"Processing {user_request}...")
-    return user_request, output_as
+    self.log(f"Processing {resolved}...")
+    return resolved, adjusted_name(resolved)
 
 
 @register_step
@@ -285,11 +280,19 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
     # ==================================================================
     # Step entry point
     # ==================================================================
+    @classmethod
+    def output_variables(cls, parameters):
+        apply_to = parameters.get(
+            "apply_to", cls.parameter_schema["apply_to"]["default"]
+        )
+        return [adjusted_name(apply_to)]
+
     def run(self):
         self.filter_qc()
 
         # kept uncorrected for the diagnostics plots
         self.data_copy = self.data.copy(deep=True)
+        self.par_var = self.resolve(self.par_var)
 
         self.apply_to, self.output_as = check_chl_variables(
             self,
@@ -300,8 +303,8 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
                 "CHLA_FLUORESCENCE_ADJUSTED",
             ],
         )
-        if self.apply_to != self.output_as:
-            self.data[self.output_as] = self.data[self.apply_to]
+        # a deep copy (with its _QC): a plain assignment shares, and so corrects, the raw array
+        self.adjusted_copy(self.apply_to)
 
         method_key = self.method.lower()
         methods = {
@@ -359,14 +362,14 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
 
         # Per-profile median surface fix (time/lat/lon) for the solar-angle lookup.
         if method_key in self.methods_requiring_sun:
-            cols = ["PROFILE_NUMBER", "TIME", "DEPTH", "LATITUDE", "LONGITUDE"]
+            cols = ["PROFILE_NUMBER", "TIME", self.depth_var, "LATITUDE", "LONGITUDE"]
             arrays = {c: self.data[c].values for c in cols}
             complete = np.ones(self.data.sizes["N_MEASUREMENTS"], dtype=bool)
             for values in arrays.values():
                 complete &= ~pd.isnull(values)
 
             # median of each profile's 50 shallowest complete samples (numpy: a DataFrame is GBs)
-            depth = arrays["DEPTH"]
+            depth = arrays[self.depth_var]
             picked = []
             for indices in self._profile_index.values():
                 indices = indices[complete[indices]]
@@ -426,7 +429,7 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
 
         # Subset to just the variables the chosen method needs; par_var is only
         # needed by the effective Terrats hybrid (raw PAR at depth).
-        subset_vars = ["PROFILE_NUMBER", "DEPTH", self.apply_to]
+        subset_vars = ["PROFILE_NUMBER", self.depth_var, self.apply_to]
         if needs_mld:
             subset_vars.append("MLD")
         if needs_bbp:
@@ -455,7 +458,7 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
             ]
 
         for var in calc_vars:
-            usable = self.calculation_mask(["PROFILE_NUMBER", "DEPTH", var])
+            usable = self.calculation_mask(["PROFILE_NUMBER", self.depth_var, var])
             calc = np.where(
                 usable, np.asarray(self.data_copy[var].values, dtype=float), np.nan
             )
@@ -514,10 +517,6 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
         self.reconstruct_data()
         self.update_qc()
 
-        # a new _ADJUSTED output variable needs its own QC, copied from the source
-        if self.apply_to != self.output_as:
-            self.generate_qc({f"{self.output_as}_QC": [f"{self.apply_to}_QC"]})
-
         if self.diagnostics:
             self.generate_diagnostics()
 
@@ -527,6 +526,10 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
     # ==================================================================
     # Shared helpers - inputs and per-profile quantities used by the methods below
     # ==================================================================
+    @cached_property
+    def depth_var(self):
+        return self.resolve("DEPTH")
+
     @cached_property
     def _profile_index(self):
         # {profile number: sample indices}, shared by every per-profile pass
@@ -566,7 +569,7 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
         if self.par_var not in self.data.data_vars:
             return len(day_pns)
         par = np.asarray(self.data[self.par_var].values, dtype=float)
-        depth = np.asarray(self.data["DEPTH"].values, dtype=float)
+        depth = np.asarray(self.data[self.depth_var].values, dtype=float)
         missing = 0
         for pn in day_pns:
             sel = self._profile_index.get(pn, [])
@@ -586,12 +589,13 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
     def _resolve_bbp_var(self):
         # Configured bbp_var if present, else the first available fallback (logged);
         # None if none are present, so the caller can halt.
-        candidates = [self.bbp_var] + [
-            b for b in BBP_VAR_FALLBACKS if b != self.bbp_var
+        wanted = self.resolve(self.bbp_var)
+        candidates = [wanted] + [
+            self.resolve(b) for b in BBP_VAR_FALLBACKS if b != self.bbp_var
         ]
         for name in candidates:
             if name in self.data.data_vars:
-                if name != self.bbp_var:
+                if name != wanted:
                     self.log(
                         f"Backscatter variable '{self.bbp_var}' not found; "
                         f"using fallback '{name}'."
@@ -665,13 +669,13 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
         is_night = {pn: elev[pn] < self.night_max_elevation for pn in pns}
 
         pnum = self.data["PROFILE_NUMBER"].values
-        z_all = np.asarray(self.data["DEPTH"].values, dtype=float)
+        z_all = np.asarray(self.data[self.depth_var].values, dtype=float)
         fl_all = np.asarray(self.data[self.apply_to].values, dtype=float)
         bbp_all = np.asarray(self.data[self.bbp_var].values, dtype=float)
 
         # The references are pure calculation, so flagged samples are dropped from
         # them entirely (day profiles are still corrected against the result).
-        usable = self.calculation_mask(["DEPTH", self.apply_to, self.bbp_var])
+        usable = self.calculation_mask([self.depth_var, self.apply_to, self.bbp_var])
         fl_all = np.where(usable, fl_all, np.nan)
         bbp_all = np.where(usable, bbp_all, np.nan)
 
@@ -814,7 +818,7 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
         # max ratio. Returns (corrected, info); chlf unchanged if it can't correct;
         # never lowers F.
         chlf = np.asarray(profile[self.apply_to].values, dtype=float)
-        depth = np.asarray(profile["DEPTH"].values, dtype=float)
+        depth = np.asarray(profile[self.depth_var].values, dtype=float)
         bbp = np.asarray(profile[self.bbp_var].values, dtype=float)
         chlf_calc = self._calc_values(profile, self.apply_to)
         bbp_calc = self._calc_values(profile, self.bbp_var)
@@ -884,7 +888,7 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
 
     def _xing2012(self, profile):
         chlf = np.asarray(profile[self.apply_to].values, dtype=float)
-        depth = np.asarray(profile["DEPTH"].values, dtype=float)
+        depth = np.asarray(profile[self.depth_var].values, dtype=float)
         N = len(chlf)
 
         mld_values = np.asarray(profile["MLD"].values, dtype=float)
@@ -938,7 +942,7 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
 
     def _biermann2015(self, profile):
         chlf = np.asarray(profile[self.apply_to].values, dtype=float)
-        depth = np.asarray(profile["DEPTH"].values, dtype=float)
+        depth = np.asarray(profile[self.depth_var].values, dtype=float)
         N = len(chlf)
 
         sun_angle = self._sun_elevation(profile)
@@ -988,7 +992,7 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
 
     def _hemsley2015(self, profile):
         chlf = np.asarray(profile[self.apply_to].values, dtype=float)
-        depth = np.asarray(profile["DEPTH"].values, dtype=float)
+        depth = np.asarray(profile[self.depth_var].values, dtype=float)
         bbp = np.asarray(profile[self.bbp_var].values, dtype=float)
         N = len(chlf)
 
@@ -1048,7 +1052,7 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
 
     def _thomalla2018(self, profile):
         chlf = np.asarray(profile[self.apply_to].values, dtype=float)
-        depth = np.asarray(profile["DEPTH"].values, dtype=float)
+        depth = np.asarray(profile[self.depth_var].values, dtype=float)
         bbp = np.asarray(profile[self.bbp_var].values, dtype=float)
         N = len(chlf)
 
@@ -1221,7 +1225,7 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
 
     def _xing_terrats(self, profile, hybrid):
         chlf = np.asarray(profile[self.apply_to].values, dtype=float)
-        depth = np.asarray(profile["DEPTH"].values, dtype=float)
+        depth = np.asarray(profile[self.depth_var].values, dtype=float)
         bbp = np.asarray(profile[self.bbp_var].values, dtype=float)
         chlf_calc = self._calc_values(profile, self.apply_to)
         bbp_calc = self._calc_values(profile, self.bbp_var)
@@ -1531,7 +1535,7 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
         zmax = 30.0
         for col, pn in enumerate(pns):
             ax, p = axes[0][col], subsets[pn]
-            depth = np.asarray(p["DEPTH"].values, dtype=float)
+            depth = np.asarray(p[self.depth_var].values, dtype=float)
             orig = np.asarray(p[self.apply_to].values, dtype=float)
             corr, info = impl(p)
             fig_spec.points(
@@ -1827,7 +1831,7 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
             fig_spec.points(
                 ax,
                 np.asarray(p[self.apply_to].values, float),
-                np.asarray(p["DEPTH"].values, float),
+                np.asarray(p[self.depth_var].values, float),
                 color=_C_ORIG,
                 label=self.apply_to,
             )
@@ -2048,7 +2052,7 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
         for pn in profile_numbers:
             s = subsets.get(pn)
             if s is not None:
-                out[pn] = (s["DEPTH"].values, s[self.apply_to].values)
+                out[pn] = (s[self.depth_var].values, s[self.apply_to].values)
         return out
 
     def _run_method_over(self, method_fn, profile_numbers, subsets):
@@ -2062,7 +2066,7 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
                 corrected = method_fn(s)
             except Exception:  # a single bad profile shouldn't sink the panel
                 continue
-            out[pn] = (s["DEPTH"].values, np.asarray(corrected, dtype=float))
+            out[pn] = (s[self.depth_var].values, np.asarray(corrected, dtype=float))
         return out
 
     def _score(self, day_dv, night_dv, pairs):
@@ -2285,7 +2289,7 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
 
     def _draw_profile_change(self, ax, profile_number, title):
         idx = self._profile_index[profile_number]
-        depth = self.data["DEPTH"].values[idx]
+        depth = self.data[self.depth_var].values[idx]
         orig = self.data_copy[self.apply_to].values[idx]
         corr = self.data[self.output_as].values[idx]
 
@@ -2338,7 +2342,7 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
             3, 2, width_ratios=[1, 0.02], wspace=0.015, hspace=0.35
         )
         time = self.data["TIME"].values
-        depth = self.data["DEPTH"].values
+        depth = self.data[self.depth_var].values
         orig = self.data_copy[self.apply_to].values
         corr = self.data[self.output_as].values
 
@@ -2439,7 +2443,7 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
     def _section_quenching_depths(self):
         # per-profile quenching depth (deepest changed point), used to zoom the
         # sections; NaN where the correction touched nothing
-        depth = self.data["DEPTH"].values
+        depth = self.data[self.depth_var].values
         orig = self.data_copy[self.apply_to].values
         corr = self.data[self.output_as].values
         changed = np.isfinite(corr) & np.isfinite(orig) & (np.abs(corr - orig) > 1e-9)
@@ -2460,7 +2464,7 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
         # real CHLA value, within depth_limit, subsampled to max_points. cat is
         # 'corrected' where the value changed, else 'uncorrected'.
         pnum = self.data["PROFILE_NUMBER"].values
-        depth = self.data["DEPTH"].values
+        depth = self.data[self.depth_var].values
         time = self.data["TIME"].values
         orig = self.data_copy[self.apply_to].values
         corr = self.data[self.output_as].values

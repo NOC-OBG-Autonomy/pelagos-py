@@ -23,7 +23,7 @@ region (the offset and thresholds are all parameters)."""
 
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
-from pelagos_py.utils.qc_handling import QCHandlingMixin
+from pelagos_py.utils.qc_handling import QCHandlingMixin, adjusted_name
 
 #### Custom imports ####
 from collections import Counter
@@ -135,11 +135,18 @@ class DeepCorrection(BaseStep, QCHandlingMixin):
         },
     }
 
+    @classmethod
+    def output_variables(cls, parameters):
+        apply_to = parameters.get(
+            "apply_to", cls.parameter_schema["apply_to"]["default"]
+        )
+        return [adjusted_name(apply_to)]
+
     def run(self):
         self.filter_qc()
 
-        # Resolve the input/output variable names (OG1 _ADJUSTED convention).
         self.apply_to, self.output_as = self.resolve_variables()
+        self.depth_var = self.resolve(self.depth_var)
 
         self.compute_dark_value()
         self.log(f"Dark correction value for {self.apply_to} = {self.dark_value:.6f}")
@@ -159,31 +166,13 @@ class DeepCorrection(BaseStep, QCHandlingMixin):
         return self.context
 
     def resolve_variables(self):
-        # OG1 convention: prefer an existing _ADJUSTED variable as input, else
-        # produce one.
-        apply_to = self.apply_to
+        apply_to = self.resolve(self.apply_to)
         if apply_to not in self.data.data_vars:
             raise KeyError(
                 f"[{self.step_name}] The variable {apply_to} does not exist in the data."
             )
-
-        if (
-            not apply_to.endswith("_ADJUSTED")
-            and f"{apply_to}_ADJUSTED" in self.data.data_vars
-        ):
-            self.log(
-                f"User requested processing on {apply_to} but {apply_to}_ADJUSTED "
-                f"already exists. Using {apply_to}_ADJUSTED...",
-                console=False,
-            )
-            apply_to = f"{apply_to}_ADJUSTED"
-
-        output_as = (
-            apply_to if apply_to.endswith("_ADJUSTED") else f"{apply_to}_ADJUSTED"
-        )
-
         self.log(f"Processing {apply_to}...", console=False)
-        return apply_to, output_as
+        return apply_to, adjusted_name(apply_to)
 
     def compute_dark_value(self):
         # Per-profile diagnostics for plotting; empty when dark_value is given.

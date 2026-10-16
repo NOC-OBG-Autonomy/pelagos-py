@@ -51,6 +51,7 @@ import numpy as np
 
 from pelagos_py.utils.console import progress_bar
 from pelagos_py.utils import fig_spec
+from pelagos_py.utils.qc_handling import adjusted_name
 from pelagos_py.utils.diagnostic_capture import save_figure, wait_for_saves
 
 
@@ -1167,7 +1168,7 @@ _CROSS_SECTION_PANELS = (
     },
     {
         "label": "Salinity",
-        "candidates": ("PRAC_SALINITY", "ABS_SALINITY", "PSAL", "SALINITY", "salinity"),
+        "candidates": ("PSAL", "ASAL", "SALINITY", "salinity"),
         "stops": palettes.SEQUENTIAL["salinity"],
     },
     {
@@ -1178,19 +1179,18 @@ _CROSS_SECTION_PANELS = (
     {
         "label": "Oxygen",
         "candidates": (
-            "MOLAR_DOXY_ADJUSTED",  #   renamed fully corrected output, if the config adds that step
-            "MOLAR_DOXY_PSAL_PRES",  #   fully corrected output of the oxygen processing chain
+            "DOXY",  #   final product (DOXY_ADJUSTED) of the oxygen processing chain
+            "MOLAR_DOXY_PSAL_PRES",
             "MOLAR_DOXY_PSAL",
             "MOLAR_DOXY",
             "molar_doxy",
-            "DOXY",
             "molar_deoxy",
         ),
         "stops": palettes.SEQUENTIAL["oxygen"],
     },
     {
         "label": "Chlorophyll",
-        "candidates": ("CHLA_ADJUSTED", "CHLA", "chla_adjusted", "CHLOROPHYLL"),
+        "candidates": ("CHLA", "CHLOROPHYLL"),
         "stops": palettes.SEQUENTIAL["chlorophyll"],
     },
     {
@@ -1224,10 +1224,11 @@ _QC_HIST_MAX_POINTS = 20_000
 
 
 def _first_present(data: xr.Dataset, names) -> str:
-    #   First of names that is a variable in data, else None.
+    #   First of names that is a variable in data, its _ADJUSTED version first, else None.
     for name in names:
-        if name in data.variables:
-            return name
+        for candidate in (adjusted_name(name), name):
+            if candidate in data.variables:
+                return candidate
     return None
 
 

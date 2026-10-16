@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 import xarray as xr
 
-from pelagos_py.steps.quality_control.manual_qc import manual_qc
+from pelagos_py.steps.quality_control.visual_qc import visual_qc
 
 
 def make_data():
@@ -18,7 +18,7 @@ def make_data():
 
 
 def test_inside_box_flags_y_variable_by_default():
-    qc = manual_qc(
+    qc = visual_qc(
         make_data(),
         boxes=[
             {"x": ["2024-05-01T00:30", "2024-05-01T03:30"], "y": [0, 12], "flag": 4},
@@ -31,7 +31,7 @@ def test_inside_box_flags_y_variable_by_default():
 
 
 def test_remaining_left_zero_when_off():
-    qc = manual_qc(
+    qc = visual_qc(
         make_data(),
         flag_remaining_good=False,
         boxes=[
@@ -42,7 +42,7 @@ def test_remaining_left_zero_when_off():
 
 
 def test_point_flags_nearest_sample_only():
-    qc = manual_qc(
+    qc = visual_qc(
         make_data(),
         flag_remaining_good=False,
         boxes=[
@@ -53,7 +53,7 @@ def test_point_flags_nearest_sample_only():
 
 
 def test_outside_box_and_extra_variables():
-    qc = manual_qc(
+    qc = visual_qc(
         make_data(),
         boxes=[
             {
@@ -72,7 +72,7 @@ def test_outside_box_and_extra_variables():
 
 
 def test_later_box_wins_on_overlap():
-    qc = manual_qc(
+    qc = visual_qc(
         make_data(),
         boxes=[
             {"x": ["2024-05-01T01:30", "2024-05-01T02:30"], "y": [0, 100], "flag": 4},
@@ -86,7 +86,7 @@ def test_override_lowers_existing_flag_but_combinatrix_box_does_not():
     data = make_data()
     data["PRES_QC"] = ("N_MEASUREMENTS", np.array([4, 4, 4, 4, 9, 0]))
     box = {"x": ["2024-05-01T00:30", "2024-05-01T01:30"], "y": [0, 100], "flag": 1}
-    assert list(manual_qc(data, boxes=[box]).return_qc()["PRES_QC"].values) == [
+    assert list(visual_qc(data, boxes=[box]).return_qc()["PRES_QC"].values) == [
         4,
         1,
         4,
@@ -95,14 +95,14 @@ def test_override_lowers_existing_flag_but_combinatrix_box_does_not():
         1,
     ]
     assert list(
-        manual_qc(data, boxes=[{**box, "override": False}])
+        visual_qc(data, boxes=[{**box, "override": False}])
         .return_qc()["PRES_QC"]
         .values
     ) == [4, 4, 4, 4, 9, 1]
 
 
 def test_apply_qc_store_is_the_starting_point():
-    qc = manual_qc(make_data(), flag_remaining_good=False, variables=["PRES"], boxes=[])
+    qc = visual_qc(make_data(), flag_remaining_good=False, variables=["PRES"], boxes=[])
     qc.existing_flags = xr.Dataset(
         {"PRES_QC": ("N_MEASUREMENTS", np.array([3, 3, 0, 0, 9, 0]))}
     )
@@ -110,7 +110,7 @@ def test_apply_qc_store_is_the_starting_point():
 
 
 def test_start_flags_survive_store_overwrite():
-    qc = manual_qc(
+    qc = visual_qc(
         make_data(),
         boxes=[
             {"x": ["2024-05-01T00:30", "2024-05-01T03:30"], "y": [0, 12], "flag": 4},
@@ -126,7 +126,7 @@ def test_start_flags_survive_store_overwrite():
 
 
 def test_numeric_x_axis():
-    qc = manual_qc(
+    qc = visual_qc(
         make_data(),
         x_variable="TEMP",
         y_variable="PRES",
@@ -138,13 +138,13 @@ def test_numeric_x_axis():
 
 
 def test_only_listed_variables_are_targets():
-    assert manual_qc(None, boxes=[]).qc_outputs == []
-    qc = manual_qc(None, variables=["CHLA", ["TEMP", "PSAL"]], boxes=[])
+    assert visual_qc(None, boxes=[]).qc_outputs == []
+    qc = visual_qc(None, variables=["CHLA", ["TEMP", "PSAL"]], boxes=[])
     assert qc.qc_outputs == ["CHLA_QC", "TEMP_QC", "PSAL_QC"]
 
 
 def test_listed_variables_untouched_become_good():
-    qc = manual_qc(make_data(), variables=[["PRES", "TEMP"]], boxes=[])
+    qc = visual_qc(make_data(), variables=[["PRES", "TEMP"]], boxes=[])
     flags = qc.return_qc()
     assert list(flags["PRES_QC"].values) == [1, 1, 1, 1, 9, 1]
     assert list(flags["TEMP_QC"].values) == [1, 1, 1, 1, 1, 1]
@@ -162,11 +162,11 @@ def test_listed_variables_untouched_become_good():
 )
 def test_invalid_box_rejected(box):
     with pytest.raises(ValueError):
-        manual_qc(None, boxes=[box])
+        visual_qc(None, boxes=[box])
 
 
 def test_box_on_its_own_axes():
-    qc = manual_qc(
+    qc = visual_qc(
         make_data(),
         flag_remaining_good=False,
         boxes=[
@@ -188,7 +188,7 @@ def test_box_limited_to_profiles():
     data = make_data().assign(
         PROFILE_NUMBER=("N_MEASUREMENTS", [1.0, 1.0, 1.0, 2.0, 2.0, 2.0])
     )
-    qc = manual_qc(
+    qc = visual_qc(
         data,
         flag_remaining_good=False,
         boxes=[

@@ -19,7 +19,7 @@
 #### Mandatory imports ####
 import numpy as np
 from pelagos_py.steps.base_qc import BaseQC, register_qc
-from pelagos_py.utils.qc_handling import propagate_flags
+from pelagos_py.utils.qc_handling import prefer_adjusted, propagate_flags
 
 #### Custom imports ####
 import matplotlib
@@ -160,9 +160,12 @@ class range_qc(BaseQC):
                         f"{var!r}; expected an Argo QC flag 0-9."
                     )
 
+        # data is None when Apply QC only introspects the required variables
+        names = data.variables if data is not None else []
+        self.depth_var = prefer_adjusted("DEPTH", names)
         self.required_variables = self.tested_variables.copy()
         if self.test_depth_range is not None:
-            self.required_variables.append("DEPTH")
+            self.required_variables.append(self.depth_var)
 
         # Outputs are the tested variables plus any companions they propagate onto,
         # less the flag_instead sources (tested only to flag their companions).
@@ -235,7 +238,7 @@ class range_qc(BaseQC):
 
         # Restrict checks to a DEPTH window if requested; otherwise check everything.
         if self.test_depth_range is not None:
-            depth = self.data["DEPTH"].values
+            depth = self.data[self.depth_var].values
             low, high = self.test_depth_range
             depth_mask = (depth >= low) & (depth <= high)
         else:

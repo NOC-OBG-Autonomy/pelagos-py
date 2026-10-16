@@ -18,7 +18,7 @@
 
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
-from pelagos_py.utils.qc_handling import QCHandlingMixin
+from pelagos_py.utils.qc_handling import QCHandlingMixin, raw_name
 
 #### Custom imports ####
 from pelagos_py.utils.processing_utils import interpolate_by_time
@@ -206,7 +206,7 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
             label="interpolated",
         )
         fig_spec.style_axes(ax, ylabel=plot_var)
-        if plot_var in ("PRES", "DEPTH"):
+        if raw_name(plot_var) in ("PRES", "DEPTH"):
             ax.invert_yaxis()
         fig_spec.x_axis(ax, time)
         fig_spec.legend(ax)

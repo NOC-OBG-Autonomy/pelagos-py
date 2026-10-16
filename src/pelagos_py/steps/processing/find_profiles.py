@@ -569,7 +569,7 @@ class FindProfilesStep(BaseStep, QCHandlingMixin):
 
         # Parameters are resolved from parameter_schema in BaseStep.__init__,
         # so every declared attribute is guaranteed to be set.
-        depth_col = self.depth_column
+        depth_col = self.resolve(self.depth_column)
         if depth_col not in self.data.variables:
             raise ValueError(
                 f"Specified depth column '{depth_col}' not found in the dataset."

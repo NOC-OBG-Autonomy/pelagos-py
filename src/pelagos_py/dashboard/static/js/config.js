@@ -208,7 +208,7 @@ const Config = {
     el.textContent = text;
   },
 
-  // Manual QC boxes belong to one data file, so offer to clear them when it changes.
+  // Visual QC boxes belong to one data file, so offer to clear them when it changes.
   dataFile: null,
   checkDataFile() {
     const load = STATE.pipeline.items.find((i) => (i.def.parameters || []).some((p) => p.name === 'file_path'));
@@ -216,15 +216,15 @@ const Config = {
     const previous = Config.dataFile;
     Config.dataFile = path;
     if (Config.loading || !previous || path === previous) return;
-    const manual = STATE.pipeline.items
+    const visual = STATE.pipeline.items
       .filter((i) => isQcContainer(i.def))
-      .map((i) => (i.values.qc_settings || {})['manual qc'])
+      .map((i) => (i.values.qc_settings || {})['visual qc'])
       .filter((t) => t && (t.boxes || []).length);
-    if (!manual.length) return;
-    Config.notice('Manual QC boxes were drawn on the previous data file.', { sticky: true, action: {
+    if (!visual.length) return;
+    Config.notice('Visual QC boxes were drawn on the previous data file.', { sticky: true, action: {
       label: 'Clear boxes',
       onClick: () => {
-        for (const t of manual) t.boxes = [];
+        for (const t of visual) t.boxes = [];
         Config.notice('');
         Defaults.commit();
       },

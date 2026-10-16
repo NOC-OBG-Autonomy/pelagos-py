@@ -321,7 +321,7 @@ def _expand(step_config):
 
 
 def _has_data(values):
-    # all-NaN/NaT or all-zero columns go last in Manual QC's colour picker
+    # all-NaN/NaT or all-zero columns go last in Visual QC's colour picker
     if np.issubdtype(values.dtype, np.datetime64):
         return bool((~np.isnat(values)).any())
     if not np.issubdtype(values.dtype, np.number):

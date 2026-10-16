@@ -175,7 +175,7 @@ def test_validator_flags_out_of_order_variable_parameter():
             "name": "Deep Correction",
             "parameters": {"apply_to": "DEPTH", "depth_var": "PRES"},
         },
-        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH", "PRAC_SALINITY"]}},
+        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH", "PSAL"]}},
     ]
     with pytest.raises(ValueError, match="DEPTH"):
         check_pipeline_variables(steps, LOGGER)
@@ -185,7 +185,7 @@ def test_validator_ignores_self_produced_variable_parameter():
     # apply_to and output_as are both BBP700; that is not an ordering mistake.
     steps = [
         {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
-        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH", "PRAC_SALINITY"]}},
+        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH", "PSAL"]}},
         {"name": "BBP from Beta", "parameters": {}},
     ]
     # No file to check BBP700 against, so it is left for the run-time check.
@@ -241,7 +241,7 @@ def test_validator_flags_variable_parameter_missing_from_file(tmp_path):
     )  # no BBP700
     steps = [
         {"name": "Load OG1", "parameters": {"file_path": str(file_path)}},
-        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH", "PRAC_SALINITY"]}},
+        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH", "PSAL"]}},
         {"name": "Isolate BBP Spikes", "parameters": {}},
     ]
     with pytest.raises(ValueError, match="BBP700"):
@@ -284,7 +284,7 @@ def test_validator_passes_when_file_has_everything(tmp_path):
     )
     steps = [
         {"name": "Load OG1", "parameters": {"file_path": str(file_path)}},
-        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH", "PRAC_SALINITY"]}},
+        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH", "PSAL"]}},
         {"name": "BBP from Beta", "parameters": {}},
     ]
     assert check_pipeline_variables(steps, LOGGER) is True
@@ -406,3 +406,91 @@ def test_validator_tracks_shifted_oxygen_outputs(monkeypatch):
     del steps[4]
     with pytest.raises(ValueError, match="UNCAL_PHASE_DOXY_PCORR_SHIFTED"):
         check_pipeline_variables(steps, LOGGER)
+
+
+# --- _ADJUSTED resolution -----------------------------------------------------
+
+
+def _file_with(monkeypatch, *extra):
+    monkeypatch.setattr(
+        "pelagos_py.utils.valid_config_check._read_file_variables",
+        lambda *a, **k: (
+            {"TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC", *extra},
+            set(),
+        ),
+    )
+
+
+def _range_qc(var):
+    return {
+        "name": "Apply QC",
+        "parameters": {
+            "qc_settings": {
+                "range qc": {"variable_ranges": {var: {4: [0, 1, "outside"]}}}
+            }
+        },
+    }
+
+
+def test_validator_accepts_adjusted_version_of_required_variable(monkeypatch):
+    # Mixed Layer Depth requires DEPTH; Derive CTD only writes DEPTH_ADJUSTED.
+    _file_with(monkeypatch)
+    steps = [
+        {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
+        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH"]}},
+        {"name": "Find Profiles", "parameters": {}},
+        {"name": "Mixed Layer Depth", "parameters": {"method": "temp"}},
+    ]
+    assert check_pipeline_variables(steps, LOGGER) is True
+
+
+def test_validator_tracks_output_variables_of_deep_correction(monkeypatch, caplog):
+    _file_with(monkeypatch, "CHLA")
+    steps = [
+        {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
+        {"name": "Find Profiles", "parameters": {}},
+        {"name": "Deep Correction", "parameters": {"apply_to": "CHLA"}},
+        _range_qc("CHLA_ADJUSTED"),
+    ]
+    with caplog.at_level(logging.WARNING):
+        assert check_pipeline_variables(steps, LOGGER) is True
+    assert not caplog.records
+
+
+def test_validator_warns_raw_variable_adjusted_by_later_step(monkeypatch, caplog):
+    _file_with(monkeypatch, "PSAL")
+    steps = [
+        {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
+        _range_qc("PSAL"),
+        {"name": "Derive CTD", "parameters": {"to_derive": ["PSAL"]}},
+    ]
+    with caplog.at_level(logging.WARNING):
+        assert check_pipeline_variables(steps, LOGGER) is True
+    assert "uses raw PSAL; PSAL_ADJUSTED is produced later by 'Derive CTD'" in (
+        caplog.text
+    )
+
+
+def test_validator_quiet_for_qc_before_correction(monkeypatch, caplog):
+    # Deep Correction copies CHLA_QC onto CHLA_ADJUSTED, so QC on raw CHLA first is fine.
+    _file_with(monkeypatch, "CHLA")
+    steps = [
+        {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
+        _range_qc("CHLA"),
+        {"name": "Find Profiles", "parameters": {}},
+        {"name": "Deep Correction", "parameters": {"apply_to": "CHLA"}},
+    ]
+    with caplog.at_level(logging.WARNING):
+        assert check_pipeline_variables(steps, LOGGER) is True
+    assert not caplog.records
+
+
+def test_validator_warns_adjusted_name_falls_back_to_raw(monkeypatch, caplog):
+    _file_with(monkeypatch, "CHLA")
+    steps = [
+        {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
+        _range_qc("CHLA_ADJUSTED"),
+    ]
+    with caplog.at_level(logging.WARNING):
+        assert check_pipeline_variables(steps, LOGGER) is True
+    assert "names CHLA_ADJUSTED" in caplog.text and "falls back to CHLA" in caplog.text

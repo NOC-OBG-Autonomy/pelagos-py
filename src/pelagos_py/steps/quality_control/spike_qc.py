@@ -21,7 +21,7 @@ import numpy as np
 import pandas as pd
 from pelagos_py.steps.base_qc import BaseQC, register_qc
 from pelagos_py.utils.processing_utils import profile_indices
-from pelagos_py.utils.qc_handling import propagate_flags
+from pelagos_py.utils.qc_handling import propagate_flags, raw_name
 
 #### Custom imports ####
 import matplotlib.pyplot as plt
@@ -204,7 +204,7 @@ class spike_qc(BaseQC):
                     f" — {untested} of {total} profiles untested (< window_size points)"
                 )
             fig_spec.style_axes(ax, title=title, ylabel=ylabel)
-            if var in ("PRES", "DEPTH"):
+            if raw_name(var) in ("PRES", "DEPTH"):
                 ax.invert_yaxis()
             fig_spec.legend(ax, title="Flags")
         fig_spec.x_axis(axes[-1][0], x)

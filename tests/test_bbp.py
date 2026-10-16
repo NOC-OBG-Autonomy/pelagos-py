@@ -27,11 +27,11 @@ def make_beta_context(temp=None, depth=None, flags=None, n=8):
             "N_MEASUREMENTS",
             ones * 10 if temp is None else np.asarray(temp, dtype=float),
         ),
-        "PRAC_SALINITY": ("N_MEASUREMENTS", ones * 35),
+        "PSAL": ("N_MEASUREMENTS", ones * 35),
         "BBP700": ("N_MEASUREMENTS", ones * 2e-4),
     }
     ds = xr.Dataset(data)
-    for var in ("BBP700", "DEPTH", "TEMP", "PRAC_SALINITY"):
+    for var in ("BBP700", "DEPTH", "TEMP", "PSAL"):
         ds[f"{var}_QC"] = ("N_MEASUREMENTS", np.zeros(n, dtype=int))
     for var, var_flags in (flags or {}).items():
         ds[f"{var}_QC"] = ("N_MEASUREMENTS", np.asarray(var_flags, dtype=int))
@@ -84,6 +84,23 @@ def test_depth_is_never_modified():
     out = make_beta_step(ctx).run()["data"]
 
     assert np.array_equal(out["DEPTH"].values, before, equal_nan=True)
+
+
+def test_reads_adjusted_inputs_when_only_they_exist():
+    ctx = make_beta_context()
+    ctx["data"] = ctx["data"].rename(
+        {
+            "DEPTH": "DEPTH_ADJUSTED",
+            "DEPTH_QC": "DEPTH_ADJUSTED_QC",
+            "PSAL": "PSAL_ADJUSTED",
+            "PSAL_QC": "PSAL_ADJUSTED_QC",
+        }
+    )
+
+    out = make_beta_step(ctx).run()["data"]
+
+    assert np.isfinite(out["BBP700_OUT"].values).all()
+    assert "DEPTH" not in out and "PSAL" not in out
 
 
 def _seawater_beta(temp=10.0, sal=35.0, theta=124.0):
@@ -181,3 +198,18 @@ def test_unflagged_stretch_does_drag_the_baseline():
     out = make_spikes_step(make_spikes_context(values)).run()["data"]
 
     assert out["BBP700_BASELINE"].values[good] == pytest.approx(99.0)
+
+
+def test_spikes_read_adjusted_but_keep_raw_based_names():
+    ctx = make_spikes_context(np.ones(20))
+    ctx["data"]["BBP700_ADJUSTED"] = ctx["data"]["BBP700"] * 2
+    ctx["data"]["BBP700_ADJUSTED_QC"] = ctx["data"]["BBP700_QC"]
+
+    out = make_spikes_step(ctx).run()["data"]
+
+    assert np.allclose(out["BBP700_BASELINE"].values, 2.0)
+    assert "BBP700_ADJUSTED_BASELINE" not in out
+    assert IsolateBBPSpikes.output_variables({"apply_to": "BBP700_ADJUSTED"}) == [
+        "BBP700_BASELINE",
+        "BBP700_SPIKES",
+    ]

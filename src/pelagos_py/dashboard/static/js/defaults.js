@@ -1,5 +1,5 @@
 // Diff against default.yaml so the builder can flag edited, extra and removed steps and restore them.
-// Diagnostics switches, the manual QC test and per-file paths never count as edits.
+// Diagnostics switches, the visual QC test and per-file paths never count as edits.
 const Defaults = {
   template: null, // default.yaml's text
   steps: null, // default.yaml's steps as built for filePath, or null
@@ -7,7 +7,7 @@ const Defaults = {
   filePath: null, // input file the decisions below were fetched for
   decisions: {},  // build decisions with a choice, keyed by the section they can drop
   IGNORE: new Set(['file_path', 'output_path']),
-  IGNORE_TESTS: new Set(['manual qc']),
+  IGNORE_TESTS: new Set(['visual qc']),
 
   async load() {
     try {
@@ -231,7 +231,7 @@ const Defaults = {
     Defaults.commit();
   },
 
-  // Keeps each test's current diagnostics override and any manual QC set up.
+  // Keeps each test's current diagnostics override and any visual QC set up.
   restoredQc(cur, base) {
     const out = {};
     for (const t of Object.keys(base)) {

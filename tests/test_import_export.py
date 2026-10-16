@@ -112,6 +112,40 @@ def test_zero_compression_disables_compression(step, tmp_path):
     ds.close()
 
 
+def test_intermediates_dropped_unless_included(step, qc_dataset, tmp_path):
+    qc_dataset["WORK"] = xr.DataArray(np.ones(5))
+    qc_dataset["WORK_QC"] = xr.DataArray(np.zeros(5, dtype=np.int8))
+    step.context["intermediate_variables"] = ["WORK"]
+    outfile = tmp_path / "test.nc"
+    step.parameters["output_path"] = str(outfile)
+
+    step.run()
+    with xr.open_dataset(outfile) as ds:
+        assert "WORK" not in ds and "WORK_QC" not in ds
+        assert "TEMP" in ds
+    assert "WORK" in step.context["data"]
+
+    step.parameters["include_intermediates"] = True
+    step.include_intermediates = True
+    step.run()
+    with xr.open_dataset(outfile) as ds:
+        assert "WORK" in ds and "WORK_QC" in ds
+
+
+def test_missing_qc_is_added(step, qc_dataset, tmp_path):
+    qc_dataset["LATITUDE"][1] = np.nan
+    outfile = tmp_path / "test.nc"
+    step.parameters["output_path"] = str(outfile)
+
+    step.run()
+
+    with xr.open_dataset(outfile) as ds:
+        assert ds["LATITUDE_QC"].values.tolist() == [0, 9, 0, 0, 0]
+        assert ds["LATITUDE_QC"].dtype == np.int8
+        assert "LONGITUDE_QC" in ds
+        assert "TEMP_QC_QC" not in ds
+
+
 #   Test the valueerrors
 def test_invalid_export_format(step):
     step.parameters["export_format"] = "xlsx"

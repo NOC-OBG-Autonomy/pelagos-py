@@ -59,7 +59,7 @@ steps:
       # [additional_variables]:
       #   By default, TIME, GPS and raw CTD data are generated ("LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC")
       #   Variables listed in "additional_variables" will be added to the defaults
-      additional_variables: ["DENSITY", "ABS_SALINITY"]
+      additional_variables: ["DENSITY", "ASAL"]
       # [value_limits]:
       #   Random sampling range for specified variables
       value_limits:
@@ -92,7 +92,9 @@ steps:
 #   Applies an affine correction (corrected = slope * value + intercept) to a single variable.
 #   Useful for sensor cross-calibration or unit conversions. (Not needed for CNDC units:
 #   Derive CTD reads the units attribute and converts S/m -> mS/cm for gsw itself.)
-#   The shown config applies a cross-calibration to TEMP.
+#   The result is written to <target_variable>_ADJUSTED (the raw variable is kept), or to output_as
+#   if set. An existing <target_variable>_ADJUSTED is read instead, so corrections stack.
+#   The shown config applies a cross-calibration to TEMP, writing TEMP_ADJUSTED.
   - name: "Correct Values"
     parameters:
       # [target_variable]:
@@ -151,6 +153,10 @@ steps:
       # [output_path]:
       #   path to the file where the dataset will be exported to
       output_path: "../examples/data/OG1/Nelson_646_R_Processed.nc"
+      # [include_intermediates]:
+      #   Also export the working variables steps made along the way (e.g. the oxygen chain's
+      #   UNCAL_PHASE_DOXY, MOLAR_DOXY_PSAL). Defaults to false.
+      include_intermediates: false
 
 
 # ------------------------------------------------------------------------------------------- Quality Control ---------------------------------------------------------------------------------------------------
@@ -402,15 +408,17 @@ steps:
 # CTD processing operates on variables output by the glider CTD (PRES, CNDC, TEMP).
 
 # Derive CTD (src/pelagos_py/steps/processing/derive_ctd.py):
-# Derives CTD variables using gsw-python (TEOS-10) from PRES, CNDC & TEMP
+# Derives CTD variables using gsw-python (TEOS-10) from PRES, CNDC & TEMP (their _ADJUSTED
+# versions where present). Each derived variable is written as <name>_ADJUSTED, e.g. PSAL_ADJUSTED;
+# one already in the dataset (e.g. PSAL_ADJUSTED from Salinity Adjustment) is skipped with a warning.
   - name: "Derive CTD"
     parameters:
       # [to_derive]:
       #   The user may specify a subset of the below variables to be derived and added to the dataset.
       to_derive: [
         DEPTH,
-        PRAC_SALINITY,
-        ABS_SALINITY,
+        PSAL,
+        ASAL,
         CONS_TEMP,
         DENSITY
       ]
@@ -419,7 +427,8 @@ steps:
 
 # Salinity Adjustment (src/pelagos_py/steps/processing/salinity.py -> AdjustSalinity):
 # Applies the thermal-lag correction for Salinity presented in Morrison et al 1994. It is recomended that this be used with
-# QC filtering as the data is used to optimize adjustment coefficients.
+# QC filtering as the data is used to optimize adjustment coefficients. Writes PSAL_ADJUSTED from the
+# corrected conductivity and temperature; the raw CNDC and TEMP are left unchanged.
   - name: "Salinity Adjustment"
     parameters:
       # [filter_window_size]:
@@ -432,8 +441,8 @@ steps:
 
 # ------------------------------------------------------------------------------------------- Chl-a processing -------------------------------------------------------------------------------------------
 
-# Note that the variables added to the dataset by these steps will appear as <input>_ADJUSTED unless
-# <input> already has the _ADJUSTED suffix, in which case, the input will be modified inplace.
+# These steps write <input>_ADJUSTED and keep the raw <input>. If <input>_ADJUSTED already exists
+# (e.g. CHLA_ADJUSTED after Deep Correction), it is read and updated instead.
 
 # Deep Correction (src/pelagos_py/steps/processing/deep_correction.py -> DeepCorrection):
 # Subtracts a constant dark offset so that deep, signal-free values are zeroed.
@@ -516,8 +525,8 @@ steps:
 
 # ------------------------------------------------------------------------------------------- Backscatter processing -------------------------------------------------------------------------------------------
 
-# Note that the variables added to the dataset by these steps will appear as <input>_ADJUSTED unless
-# <input> already has the _ADJUSTED suffix, in which case, the input will be modified inplace.
+# BBP from Beta writes a new variable (output_as, e.g. BBP700); later corrections to it, such as
+# Deep Correction, write BBP700_ADJUSTED.
 
 # BBP from Beta (src/pelagos_py/steps/processing/bbp.py -> BBPFromBeta):
 # Converts from units of beta to BBP
@@ -621,7 +630,7 @@ steps:
   - name: "Molar DOXY Salinity Correction"
     parameters:
       # <MANDATORY>
-      salinity_name: "PRAC_SALINITY"
+      salinity_name: "PSAL"
       temperature_name: "CONS_TEMP"
       # <OPTIONAL>
       # reference_salinity: 0
@@ -635,11 +644,16 @@ steps:
       uncalibrated_phase_correction_applied: true
     diagnostics: false
 
-  - name: Correct Values
+# Derive DOXY (src/pelagos_py/steps/processing/oxygen.py -> DeriveDOXY):
+# Converts molar oxygen (umol/L) to DOXY_ADJUSTED (umol/kg) using the potential density at zero pressure.
+  - name: "Derive DOXY"
     parameters:
-      target_variable: MOLAR_DOXY_PSAL_PRES
-      output_as: MOLAR_DOXY_ADJUSTED
-      append_description: Renamed from MOLAR_DOXY_PSAL_PRES.
+      # [apply_to]:
+      #   Molar oxygen variable to convert; MOLAR_DOXY for a file's shipped value.
+      apply_to: "MOLAR_DOXY_PSAL_PRES"
+      salinity_name: "PSAL"
+      temperature_name: "TEMP"
+      pressure_name: "PRES"
     diagnostics: false
 
 # ------------------------------------------------------------------------------------------- Report assembly -------------------------------------------------------------------------------------------

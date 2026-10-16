@@ -225,14 +225,18 @@ function showValidating(force = false) {
   if (!statusHost || (statusHost.firstChild && !force)) return;
   statusHost.innerHTML = '';
   statusHost.appendChild(statusBar('pending', 'Validating…', 'Checking the config against the step schemas'));
-  if (force) document.getElementById('top-slot').classList.remove('has-error');
+  if (force) document.getElementById('top-slot').classList.remove('expanded');
 }
 
 function renderValidation(result) {
   const statusHost = document.getElementById('validation-status');
   statusHost.innerHTML = '';
   setIssueMarks(issueMarksFor(result.issues || []));
-  document.getElementById('top-slot').classList.toggle('has-error', !result.ok);
+  const slot = document.getElementById('top-slot');
+  const warnings = result.warnings || [];
+  // An opened warnings box stays open while the user edits.
+  const keepOpen = slot.classList.contains('expanded') && result.ok && warnings.length > 0;
+  slot.classList.toggle('expanded', !result.ok || keepOpen);
 
   if (result.yaml_error) {
     const y = formatYamlError(result.yaml_error);
@@ -244,6 +248,10 @@ function renderValidation(result) {
     return;
   }
 
+  if (result.ok && warnings.length) {
+    statusHost.appendChild(warningsBar(warnings, slot));
+    return;
+  }
   if (result.ok) {
     statusHost.appendChild(statusBar('ok', 'Valid', "Matches every step's parameter schema"));
     return;
@@ -273,6 +281,24 @@ function renderValidation(result) {
     bar.appendChild(row);
   }
   statusHost.appendChild(bar);
+}
+
+// Valid but worth a look: a pill that opens into the same box errors use.
+function warningsBar(warnings, slot) {
+  const title = warnings.length === 1 ? '1 warning' : `${warnings.length} warnings`;
+  const bar = statusBar('warn', title, 'Valid, but check before running');
+  bar.title = 'Show or hide the warnings';
+  for (const warning of warnings) {
+    const row = issueBody(
+      `<div class="v-msg"><span class="v-muted">${issueWhere(warning)} ·</span> ` +
+      `${escapeHtml(warning.message)}</div>`);
+    linkToStep(row, warning);
+    bar.appendChild(row);
+  }
+  bar.onclick = (e) => {
+    if (!e.target.closest('.v-body')) slot.classList.toggle('expanded');
+  };
+  return bar;
 }
 
 function issueMarksFor(issues) {
@@ -623,13 +649,13 @@ async function boot() {
   document.getElementById('btn-run').addEventListener('click', () => {
     if (Build.active) return;
     if (Run.pausedStep === null) Run.start(editor.getValue());
-    else if (ManualQC.isActive()) ManualQC.applyAndContinue();
+    else if (VisualQC.isActive()) VisualQC.applyAndContinue();
     else Run.continueRun();
   });
   document.getElementById('btn-stop').addEventListener('click', () => Run.stop());
   document.getElementById('btn-clear').addEventListener('click', () => Run.clearRun());
   document.getElementById('btn-rerun').addEventListener('click', () =>
-    ManualQC.isActive() ? ManualQC.apply() : Run.rerunStep());
+    VisualQC.isActive() ? VisualQC.apply() : Run.rerunStep());
 
   // Reattach after a refresh mid-run instead of offering a Run that would 409.
   Run.resumeIfRunning();

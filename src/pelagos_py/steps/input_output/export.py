@@ -24,6 +24,8 @@ import json
 import os
 import threading
 import time
+import numpy as np
+import xarray as xr
 
 
 @register_step
@@ -40,6 +42,12 @@ class ExportStep(BaseStep):
     compression : int
         zlib compression level for netcdf/hdf5 output: 0 turns compression off,
         1 (fastest) to 9 (smallest). Defaults to 2. Ignored for csv/parquet.
+    include_intermediates : bool
+        Also write the working variables steps made along the way (and their
+        ``_QC``). Defaults to False.
+
+    Every exported variable gets a ``_QC`` companion: one missing it is given
+    0 (no QC) flags, 9 where the value is missing.
 
     Examples
     --------
@@ -53,6 +61,7 @@ class ExportStep(BaseStep):
                 output_path: "save/my/data/here.nc"
                 export_format: "netcdf"
                 compression: 2
+                include_intermediates: false
     """
 
     step_name = "Data Export"
@@ -76,6 +85,11 @@ class ExportStep(BaseStep):
             "max": 9,
             "description": "zlib level for netcdf/hdf5 (0 = off, 1-9). Ignored for csv/parquet.",
         },
+        "include_intermediates": {
+            "type": bool,
+            "default": False,
+            "description": "Also write the working variables steps made along the way (and their _QC).",
+        },
     }
 
     def run(self):
@@ -90,6 +104,10 @@ class ExportStep(BaseStep):
         if "qc_history" in self.context:
             self.log("QC history found in context.", console=False)
             data.attrs["delayed_qc_history"] = json.dumps(self.context["qc_history"])
+
+        if not self.include_intermediates:
+            data = self._drop_intermediates(data)
+        data = self._add_missing_qc(data)
 
         export_format = self.parameters["export_format"]
         output_path = self.parameters["output_path"]
@@ -143,6 +161,41 @@ class ExportStep(BaseStep):
             f"Exported {size_mb:.1f} MB to {output_path} in {time.time() - started:.1f}s"
         )
         return self.context
+
+    def _drop_intermediates(self, data):
+        names = self.context.get("intermediate_variables", [])
+        dropped = [
+            name
+            for var in names
+            for name in (var, f"{var}_QC")
+            if name in data.data_vars
+        ]
+        if not dropped:
+            return data
+        self.log(
+            f"Leaving out {len(dropped)} intermediate variable(s); "
+            "set include_intermediates to keep them."
+        )
+        self.log(f"Left out: {', '.join(dropped)}", console=False)
+        return data.drop_vars(dropped)
+
+    def _add_missing_qc(self, data):
+        missing = [
+            var
+            for var in data.data_vars
+            if var.isupper()
+            and not var.endswith("_QC")
+            and var not in data.dims
+            and f"{var}_QC" not in data.data_vars
+        ]
+        if not missing:
+            return data
+        self.log(
+            f"{len(missing)} variable(s) have no QC; writing unchecked (0) flags for them."
+        )
+        self.log(f"Unchecked QC added for: {', '.join(missing)}", console=False)
+        flags = xr.where(data[missing].isnull(), 9, 0).astype(np.int8)
+        return data.assign(flags.rename({var: f"{var}_QC" for var in missing}))
 
     def _write_with_progress(self, write, output_path, nbytes):
         # writers report no progress, so watch the file grow against the in-memory size

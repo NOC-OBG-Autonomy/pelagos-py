@@ -223,10 +223,19 @@ class ValidatePayload(BaseModel):
     yaml_content: str
 
 
-# validate runs on every keystroke and the UI shows the error, so mute the checker's log line
-_VALIDATE_LOGGER = logging.getLogger("pelagos_py.dashboard.validate")
-_VALIDATE_LOGGER.addHandler(logging.NullHandler())
-_VALIDATE_LOGGER.propagate = False
+class _WarningCollector(logging.Handler):
+    def __init__(self):
+        super().__init__(logging.WARNING)
+        self.warnings = []
+
+    def emit(self, record):
+        if record.levelno == logging.WARNING:
+            self.warnings.append(
+                {
+                    "index": getattr(record, "step_index", None),
+                    "message": record.getMessage(),
+                }
+            )
 
 
 def _locate_variable_issue(steps, message):
@@ -310,9 +319,16 @@ def validate(payload: ValidatePayload):
                 issues.append({"index": index, "name": name, "error": file_error})
 
     # the variable check instantiates steps, so only run it once the parameters are valid
+    warnings = []
     if not issues:
+        # unregistered logger per request: validate runs on every keystroke, so its lines
+        # stay off the console, and concurrent requests can't mix up their warnings
+        collector = _WarningCollector()
+        logger = logging.Logger("pelagos_py.dashboard.validate")
+        logger.addHandler(collector)
+        warnings = collector.warnings
         try:
-            check_pipeline_variables(steps, _VALIDATE_LOGGER)
+            check_pipeline_variables(steps, logger)
         except ValueError as exc:
             # name-matching is wrong when a QC test appears in several Apply QC steps
             index = getattr(exc, "step_index", None)
@@ -324,7 +340,15 @@ def validate(payload: ValidatePayload):
                 index, name = _locate_variable_issue(steps, str(exc))
             issues.append({"index": index, "name": name, "error": str(exc)})
 
-    return {"ok": not issues, "yaml_error": None, "issues": issues}
+    for warning in warnings:
+        index = warning["index"]
+        warning["name"] = steps[index].get("name") if index is not None else None
+    return {
+        "ok": not issues,
+        "yaml_error": None,
+        "issues": issues,
+        "warnings": warnings,
+    }
 
 
 # ============================ Config management =============================
@@ -1062,7 +1086,7 @@ def rerun_step(payload: RerunPayload):
 
 @app.get("/api/run/columns")
 def run_columns(names: str):
-    """Raw columns from the paused run, for the Manual QC views."""
+    """Raw columns from the paused run, for the Visual QC views."""
     blob = _run.columns([n for n in names.split(",") if n])
     if blob is None:
         raise HTTPException(
@@ -1073,7 +1097,7 @@ def run_columns(names: str):
 
 @app.get("/api/sigma0")
 def sigma0_lines(smin: float, smax: float, tmin: float, tmax: float):
-    """Sigma0 contours over a T-S window, for the Manual QC T-S view."""
+    """Sigma0 contours over a T-S window, for the Visual QC T-S view."""
     # practical salinity and in-situ temperature stand in for SA and CT; close enough to draw
     import contourpy
     import gsw

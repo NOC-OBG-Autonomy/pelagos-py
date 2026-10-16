@@ -159,14 +159,17 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
     Corrects conductivity- and temperature-related sensor errors so that salinity
     can be derived cleanly from a glider CTD.
 
-    Two corrections are applied in sequence to the dataset:
+    Two corrections are applied in sequence to working copies of ``CNDC`` and
+    ``TEMP`` (read from their ``_ADJUSTED`` versions where present), and
+    ``PSAL_ADJUSTED`` is derived from the corrected copies. ``CNDC`` and ``TEMP``
+    themselves are left unchanged:
 
     - **Conductivity-temperature lag (C-T lag).** Conductivity and temperature are
       measured by separate sensors with different response times, so the two records
       are slightly misaligned and produce salinity spikes at sharp gradients.
       :meth:`correct_ct_lag` estimates the optimal time shift between ``CNDC`` and
       ``TEMP`` from a sample of profiles and applies the median shift to the whole
-      dataset, following Woo (2019) [3]_.
+      record, following Woo (2019) [3]_.
     - **Thermal-mass (thermal lag) error.** The conductivity cell stores and releases
       heat, so the temperature of the water inside it lags the ambient temperature.
       :meth:`correct_thermal_lag` reconstructs the in-cell temperature with the
@@ -216,7 +219,7 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
 
     step_name = "Salinity Adjustment"
     required_variables = ["TIME", "PROFILE_NUMBER", "CNDC", "TEMP", "PRES"]
-    provided_variables = []
+    provided_variables = ["PSAL_ADJUSTED"]
     # Read only if present: TIME_CTD is an optional fallback for TIME (see run());
     # PROFILE_DIRECTION/DEPTH are only used to build the diagnostics QC mask.
     optional_variables = ["TIME_CTD", "PROFILE_DIRECTION", "DEPTH"]
@@ -234,6 +237,10 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
         self.log("Running adjustment...")
         # TODO: TIME_CTD checking
 
+        self.cndc_var = self.resolve("CNDC")
+        self.temp_var = self.resolve("TEMP")
+        self.pres_var = self.resolve("PRES")
+
         # Required for plotting later
         self.data_copy = self.data.copy(deep=True)
 
@@ -248,10 +255,15 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
 
         # Per-input usable masks: flagged samples anchor no interpolant and inform no
         # lag estimate; the combined mask drops a sample if any one input is flagged.
-        self._usable_ct = self.calculation_mask(["CNDC", "TEMP", "PRES"])
-        self._usable_cndc = self.calculation_mask(["CNDC"])
-        self._usable_temp = self.calculation_mask(["TEMP"])
+        self._usable_ct = self.calculation_mask(
+            [self.cndc_var, self.temp_var, self.pres_var]
+        )
+        self._usable_cndc = self.calculation_mask([self.cndc_var])
+        self._usable_temp = self.calculation_mask([self.temp_var])
         self._profile_index = profile_indices(self.data["PROFILE_NUMBER"].values)
+
+        self.cndc = self.data[self.cndc_var].values.copy()
+        self.temp = self.data[self.temp_var].values.copy()
 
         # Correct conductivity-temperature response time misalignment (C-T Lag)
         self.correct_ct_lag()
@@ -261,6 +273,7 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
 
         self.reconstruct_data()
         self.update_qc()
+        self.write_adjusted_salinity()
 
         if self.diagnostics:
             self.generate_diagnostics()
@@ -291,8 +304,8 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
 
         Notes
         -----
-        Operates in place on ``self.data``. ``self.ct_lag_median`` is stored for the
-        diagnostics dashboard.
+        Shifts the working copy ``self.cndc``; ``self.data`` is not changed.
+        ``self.ct_lag_median`` is stored for the diagnostics dashboard.
         """
         profile_numbers = np.unique(
             self.data["PROFILE_NUMBER"].dropna(dim="N_MEASUREMENTS").values
@@ -336,13 +349,19 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
 
             # NaN out flagged samples so they do not affect the lag estimate
             usable = self._usable_ct[prof_indices]
+            # compute_optimal_lag reads plain CNDC/TEMP/PRES, whichever versions were resolved
             profile = profile.assign(
                 **{
                     var: (
-                        profile[var].dims,
-                        np.where(usable, profile[var].values, np.nan),
+                        profile[name].dims,
+                        np.where(usable, profile[name].values, np.nan),
+                        profile[name].attrs,
                     )
-                    for var in ("CNDC", "TEMP", "PRES")
+                    for var, name in (
+                        ("CNDC", self.cndc_var),
+                        ("TEMP", self.temp_var),
+                        ("PRES", self.pres_var),
+                    )
                 }
             )
 
@@ -376,7 +395,7 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
 
         # Apply shifts
         valid_data_mask = (
-            self.data["CNDC"].notnull() & self.data[self.time_col].notnull()
+            self.data[self.cndc_var].notnull() & self.data[self.time_col].notnull()
         )
         if not np.any(valid_data_mask):
             self.log("No valid CNDC data found. Skipping CT lag correction.")
@@ -387,7 +406,7 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
         ]
         self.ct_lag_median = np.median(lags) if len(lags) > 0 else 0.0
 
-        data_subset = self.data[[self.time_col, "CNDC"]].where(
+        data_subset = self.data[[self.time_col, self.cndc_var]].where(
             valid_data_mask, drop=True
         )
 
@@ -410,15 +429,12 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
 
         CNDC_from_TIME = interpolate.interp1d(
             data_subset["ELAPSED_TIME[s]"].values[anchors],
-            data_subset["CNDC"].values[anchors],
+            data_subset[self.cndc_var].values[anchors],
             bounds_error=False,
         )
         shifted_time = data_subset["ELAPSED_TIME[s]"].values + self.ct_lag_median
 
-        data_subset["CNDC"].values = CNDC_from_TIME(shifted_time)
-
-        # Reinsert the time-shifted data back into self.data
-        self.data["CNDC"][valid_data_mask] = data_subset["CNDC"]
+        self.cndc[valid_data_mask.values] = CNDC_from_TIME(shifted_time)
 
     def correct_thermal_lag(self):
         """
@@ -438,13 +454,13 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
 
         Notes
         -----
-        Operates in place on ``self.data``.
+        Corrects the working copy ``self.temp``; ``self.data`` is not changed.
         """
         from scipy import interpolate
         from scipy.signal import lfilter
 
-        corrected_temp_array = np.full(len(self.data["TEMP"]), np.nan)
-        temp_arr = self.data["TEMP"].values
+        corrected_temp_array = np.full(len(self.temp), np.nan)
+        temp_arr = self.temp
         time_arr = self.data[self.time_col].values
         profile_numbers = np.unique(
             self.data["PROFILE_NUMBER"].dropna(dim="N_MEASUREMENTS").values
@@ -534,13 +550,34 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
                     "correction": TEMP_correction,
                 }
 
-        # Reinsert the corrected data back into self.data
-        final_temp = np.where(
-            np.isnan(corrected_temp_array),
-            self.data["TEMP"].values,
-            corrected_temp_array,
+        self.temp = np.where(
+            np.isnan(corrected_temp_array), temp_arr, corrected_temp_array
         )
-        self.data["TEMP"][:] = final_temp
+
+    def write_adjusted_salinity(self):
+        # Samples left uncorrected (e.g. reinserted after filter_qc) fall back to their raw values
+        cndc = np.where(np.isnan(self.cndc), self.data[self.cndc_var].values, self.cndc)
+        temp = np.where(np.isnan(self.temp), self.data[self.temp_var].values, self.temp)
+        cndc_factor = cndc_scale_factor(self.data[self.cndc_var].attrs.get("units"))
+        psal = gsw.conversions.SP_from_C(
+            cndc * cndc_factor, temp, self.data[self.pres_var].values
+        )
+
+        self.data["PSAL_ADJUSTED"] = (("N_MEASUREMENTS",), psal)
+        self.data["PSAL_ADJUSTED"].attrs = {
+            "long_name": "Practical salinity, corrected for C-T lag and thermal mass",
+            "units": "1",
+            "standard_name": "sea_water_practical_salinity",
+            "valid_min": 2,
+            "valid_max": 42,
+        }
+        source_qcs = [
+            f"{var}_QC"
+            for var in (self.cndc_var, self.temp_var, self.pres_var)
+            if f"{var}_QC" in self.data
+        ]
+        if source_qcs:
+            self.generate_qc({"PSAL_ADJUSTED_QC": source_qcs})
 
     def generate_diagnostics(self):
         # Dashboard of applied CNDC/TEMP adjustments and their dataset-wide impact
@@ -565,7 +602,13 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
         unique_profs = np.unique(prof_arr[~pd.isnull(prof_arr)])
 
         plot_qc_mask = xr.ones_like(self.data_copy["PROFILE_NUMBER"], dtype=bool)
-        for var in ["TEMP", "CNDC", "PRES", "DEPTH", self.time_col]:
+        for var in [
+            self.temp_var,
+            self.cndc_var,
+            self.pres_var,
+            self.resolve("DEPTH"),
+            self.time_col,
+        ]:
             qc_col = f"{var}_QC"
             if qc_col in self.data_copy.data_vars:
                 plot_qc_mask = plot_qc_mask & ~self.data_copy[qc_col].isin([3, 4, 9])
@@ -687,8 +730,11 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
         COLOUR_UP = "tab:blue"
 
         def psal_from(ds):
-            c = ds["CNDC"].values * cndc_scale_factor(ds["CNDC"].attrs.get("units"))
-            return gsw.conversions.SP_from_C(c, ds["TEMP"].values, ds["PRES"].values)
+            cndc = ds[self.cndc_var]
+            c = cndc.values * cndc_scale_factor(cndc.attrs.get("units"))
+            return gsw.conversions.SP_from_C(
+                c, ds[self.temp_var].values, ds[self.pres_var].values
+            )
 
         has_direction = "PROFILE_DIRECTION" in self.data
         if len(unique_profs) > 0 and has_direction:
@@ -699,9 +745,9 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
             subset_mask = in_subset & plot_qc_mask.values
 
             dir_arr = self.data["PROFILE_DIRECTION"].values
-            pres = self.data_copy["PRES"].values
+            pres = self.data_copy[self.pres_var].values
             psal_raw = psal_from(self.data_copy)
-            psal_corr = psal_from(self.data)
+            psal_corr = self.data["PSAL_ADJUSTED"].values
 
             # Log sample counts and depth/salinity scales so a small correction on a
             # deep axis stays diagnosable

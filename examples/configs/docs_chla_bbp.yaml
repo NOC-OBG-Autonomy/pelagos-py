@@ -53,7 +53,7 @@ steps:
 
   - name: Derive CTD
     parameters:
-      to_derive: [PRAC_SALINITY, ABS_SALINITY, CONS_TEMP]
+      to_derive: [PSAL, ASAL, CONS_TEMP]
 
   - name: Mixed Layer Depth
 

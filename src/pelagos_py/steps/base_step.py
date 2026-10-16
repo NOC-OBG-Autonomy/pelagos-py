@@ -18,6 +18,7 @@
 from pelagos_py.utils.config_mirror import ConfigMirrorMixin
 from pelagos_py.utils import parameter_spec
 from pelagos_py.utils.log_levels import STOP
+from pelagos_py.utils.qc_handling import adjusted_name, prefer_adjusted, raw_name
 import logging
 import os
 import time
@@ -116,6 +117,38 @@ class BaseStep(ConfigMirrorMixin):
         :func:`pelagos_py.utils.parameter_spec.describe`.
         """
         return parameter_spec.describe(cls.parameter_schema or {})
+
+    @classmethod
+    def output_variables(cls, parameters):
+        """Variables this step writes for the given config ``parameters`` (read by the config validator)."""
+        outputs = list(getattr(cls, "provided_variables", []))
+        outputs += parameters.get("qc_outputs") or []
+        schema = cls.parameter_schema or {}
+        output_as = parameters.get(
+            "output_as", (schema.get("output_as") or {}).get("default")
+        )
+        if output_as:
+            outputs += [output_as] if isinstance(output_as, str) else list(output_as)
+        return outputs
+
+    def resolve(self, var):
+        """``var``'s ``_ADJUSTED`` version if it exists in ``self.data``, else the raw one."""
+        return prefer_adjusted(var, self.data.variables)
+
+    def adjusted_copy(self, var):
+        """Name of ``var``'s ``_ADJUSTED`` version, created (with its ``_QC``) as a copy of the raw variable if missing."""
+        name = adjusted_name(var)
+        if name not in self.data:
+            raw = raw_name(var)
+            self.data[name] = self.data[raw].copy(deep=True)
+            if f"{raw}_QC" in self.data:
+                self.data[f"{name}_QC"] = self.data[f"{raw}_QC"].copy(deep=True)
+        return name
+
+    def mark_intermediate(self, *names):
+        """Record pipeline-made working variables that Data Export leaves out unless asked to keep them."""
+        known = self.context.get("intermediate_variables", [])
+        self.context["intermediate_variables"] = sorted(set(known) | set(names))
 
     def run(self):
         """

@@ -62,6 +62,7 @@ def make_step(sun_angle=40.0, hybrid=True):
     step.apply_to = "CHLA"
     step.bbp_var = "BBP700"
     step.par_var = "DOWNWELLING_PAR"
+    step.depth_var = "DEPTH"
     step.hybrid = hybrid
     step.max_photic_depth = 100.0
     step.day_min_elevation = 0.0
@@ -345,6 +346,7 @@ _PAR = np.array([100, 50, 25, 12, np.nan, np.nan, np.nan, np.nan, 200, 100, 50, 
 def _disable_step(scalar_name=None, scalar_values=None):
     step = Quenching.__new__(Quenching)
     step.par_var = "DOWNWELLING_PAR"
+    step.depth_var = "DEPTH"
     step.method = "biermann2015"
     data = {
         "DOWNWELLING_PAR": ("N_MEASUREMENTS", _PAR),
@@ -432,3 +434,43 @@ def test_night_reference_falls_back_to_preceding_when_not_bracketed():
     assert _recon(_bracketed_step("mz", day_time_ns=9)) == pytest.approx(
         0.1
     )  # preceding night alone
+
+
+def test_run_writes_adjusted_leaving_raw_and_reads_depth_adjusted():
+    n = 50
+    depth = np.tile(np.linspace(0, 100, 25), 2)
+    data = xr.Dataset(
+        {
+            "PROFILE_NUMBER": ("N_MEASUREMENTS", np.repeat([1.0, 2.0], 25)),
+            "TIME": (
+                "N_MEASUREMENTS",
+                np.datetime64("2024-06-21T12:30", "ns")
+                + np.arange(n) * np.timedelta64(1, "m"),
+            ),
+            "DEPTH_ADJUSTED": ("N_MEASUREMENTS", depth),
+            "LATITUDE": ("N_MEASUREMENTS", np.full(n, 50.0)),
+            "LONGITUDE": ("N_MEASUREMENTS", np.full(n, -10.0)),
+            "CHLA": ("N_MEASUREMENTS", np.where(depth < 20, 0.5, 1.0)),
+            "CHLA_QC": ("N_MEASUREMENTS", np.zeros(n, dtype=np.int8)),
+            "BBP700": ("N_MEASUREMENTS", np.full(n, 1e-3)),
+            "MLD": ("N_MEASUREMENTS", np.full(n, 40.0)),
+        }
+    )
+    step = Quenching(
+        name="CHLA Quenching",
+        parameters={"method": "sackmann2008", "apply_to": "CHLA"},
+        diagnostics=False,
+        context={"data": data, "global_parameters": {}},
+    )
+
+    out = step.run()["data"]
+
+    assert np.allclose(out["CHLA"].values[depth < 20], 0.5)
+    assert np.allclose(out["CHLA_ADJUSTED"].values, 1.0)
+    assert "CHLA_QC" in out and "CHLA_ADJUSTED_QC" in out
+
+
+def test_output_variables_is_adjusted_apply_to():
+    assert Quenching.output_variables({"apply_to": "CHLA_FLUORESCENCE"}) == [
+        "CHLA_FLUORESCENCE_ADJUSTED"
+    ]

@@ -48,6 +48,14 @@ def propagate_flags(base, src):
     return QC_COMBINATRIX[np.asarray(base), np.where(np.asarray(src) == 9, 0, src)]
 
 
+def adjusted_name(var):
+    return var if var.endswith("_ADJUSTED") else f"{var}_ADJUSTED"
+
+
+def raw_name(var):
+    return var.removesuffix("_ADJUSTED")
+
+
 def prefer_adjusted(settings, names):
     """Swap each variable name in QC ``settings`` for its ``_ADJUSTED`` version if
     present in ``names``, else its raw version. Other values are left unchanged."""
@@ -78,7 +86,11 @@ def prefer_adjusted(settings, names):
 class QCHandlingMixin:
     def __init__(self):
         qc_settings = self.parameters.get("qc_handling_settings") or {}
-        self.filter_settings = qc_settings.get("flag_filter_settings") or {}
+        self.check_data()
+        full_data = self.context["data"]
+        self.filter_settings = prefer_adjusted(
+            qc_settings.get("flag_filter_settings") or {}, full_data.variables
+        )
         self.behaviour = qc_settings.get("reconstruction_behaviour") or "reinsert"
 
         calculation_flags = qc_settings.get("calculation_flag_filter")
@@ -91,10 +103,6 @@ class QCHandlingMixin:
         self.flag_mapping = {flag: flag for flag in list(range(10))}
         if user_mappings := qc_settings.get("flag_mapping"):
             self.flag_mapping.update(user_mappings)
-
-        # Logs + STOPs the pipeline if data is absent (see BaseStep.check_data).
-        self.check_data()
-        full_data = self.context["data"]
 
         if getattr(self, "uses_data_subset", False):
             # Opt-in: deep-copying the whole dataset is wasteful when a step only
@@ -120,11 +128,8 @@ class QCHandlingMixin:
                     [value] if isinstance(value, str) else list(value)
                 )  # a dict gives its keys
                 subset_names.update(values)
-                # Several steps use the OG1 "prefer an existing _ADJUSTED variant"
-                # convention (e.g. apply_to="CHLA" but CHLA_ADJUSTED is read/used if
-                # present). Harmless to include speculatively: filtered out below if
-                # it doesn't exist in the full dataset.
-                subset_names.update(f"{v}_ADJUSTED" for v in values)
+            # Steps read X_ADJUSTED when it exists; names that don't are filtered out below.
+            subset_names.update(adjusted_name(v) for v in list(subset_names))
             subset_names.update(f"{var}_QC" for var in list(subset_names))
             subset_names.update(
                 name for var in self.filter_settings for name in (var, f"{var}_QC")

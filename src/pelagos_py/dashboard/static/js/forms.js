@@ -204,7 +204,7 @@ const Forms = {
       wrap.appendChild(label);
       wrap.appendChild(row);
     } else if (kind === 'yaml' && Array.isArray(cur) && cur.length > 3) {
-      // Long lists (manual QC boxes) fold behind a count.
+      // Long lists (visual QC boxes) fold behind a count.
       const details = document.createElement('details');
       details.className = 'yaml-fold';
       const summary = document.createElement('summary');
@@ -236,7 +236,7 @@ const Forms = {
 
   _scalarText(x) { return jsyaml.dump(x, { flowLevel: 0, lineWidth: -1 }).trimEnd(); },
 
-  // One item per line, so a config with many manual QC boxes stays readable.
+  // One item per line, so a config with many visual QC boxes stays readable.
   _FLOW_KEYS: new Set(['boxes']),
 
   _flowMap(m) {

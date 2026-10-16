@@ -214,3 +214,21 @@ def test_raises_when_too_few_valid_deep_points():
 
     with pytest.raises(ValueError, match="valid deep points"):
         step.run()
+
+
+def test_depth_var_resolves_to_adjusted():
+    ctx = make_context(dark=0.7)
+    ctx["data"] = ctx["data"].rename({"PRES": "DEPTH_ADJUSTED"})
+    step = make_step({"apply_to": "CHLA", "depth_var": "DEPTH"}, ctx)
+
+    out = step.run()["data"]
+
+    assert step.dark_value == pytest.approx(0.7, abs=0.05)
+    assert "CHLA_ADJUSTED_QC" in out
+
+
+def test_output_variables_is_adjusted_apply_to():
+    assert DeepCorrection.output_variables({"apply_to": "BBP700"}) == [
+        "BBP700_ADJUSTED"
+    ]
+    assert DeepCorrection.output_variables({}) == ["CHLA_ADJUSTED"]

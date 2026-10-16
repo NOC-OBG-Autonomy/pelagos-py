@@ -218,7 +218,7 @@ class Pipeline(ConfigMirrorMixin):
         Build a config for an OG1 file from the default template and create a pipeline from it.
 
         The template's steps are adapted to what the file holds (e.g. the PAR steps are
-        dropped if it has no PAR; Manual QC is left out as it needs the dashboard) and the
+        dropped if it has no PAR; Visual QC is left out as it needs the dashboard) and the
         config is saved to ``config_path`` (default: ``<file name>.yaml`` next to the file), so the run can be edited and repeated with
         :meth:`load_config`. With ``ask=True`` each choice is asked in the terminal;
         otherwise the defaults are used and logged.
@@ -249,7 +249,7 @@ class Pipeline(ConfigMirrorMixin):
         replaced = config_path.exists()
         config_path.write_text(
             config_builder.build(
-                template, str(file_path), probe, choices, manual_qc=False
+                template, str(file_path), probe, choices, visual_qc=False
             )
         )
 

@@ -5,6 +5,7 @@ import numpy as np
 import xarray as xr
 import pytest
 
+from pelagos_py.steps.quality_control.apply_qc import ApplyQC
 from pelagos_py.steps.quality_control.range_qc import range_qc
 
 
@@ -297,3 +298,24 @@ def test_also_flag_chains_through_companions():
     flags = qc.return_qc()
     assert list(flags["TEMP_QC"].values) == [1, 4]
     assert list(flags["CNDC_QC"].values) == [1, 4]
+
+
+def test_apply_qc_resolves_depth_to_adjusted():
+    data = make_data(TEMP=[100.0, 100.0], DEPTH_ADJUSTED=[-50.0, -500.0])
+    data["TEMP"].attrs["long_name"] = "temperature"
+    step = ApplyQC(
+        name="Apply QC",
+        parameters={
+            "qc_settings": {
+                "range qc": {
+                    "variable_ranges": {"TEMP": {4: [-2.5, 40]}},
+                    "test_depth_range": [-100, 0],
+                }
+            }
+        },
+        diagnostics=False,
+        context={"data": data, "global_parameters": {}},
+    )
+
+    flags = step.run()["data"]["TEMP_QC"].values
+    assert list(flags) == [4, 0]

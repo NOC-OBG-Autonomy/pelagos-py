@@ -14,12 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Manual QC: flag data inside (or outside) hand-drawn boxes on a two-variable plot."""
+"""Visual QC: flag data inside (or outside) hand-drawn boxes on a two-variable plot."""
 
 #### Mandatory imports ####
 import numpy as np
 from pelagos_py.steps.base_qc import BaseQC, register_qc
-from pelagos_py.utils.qc_handling import QC_COMBINATRIX
+from pelagos_py.utils.qc_handling import QC_COMBINATRIX, raw_name
 
 #### Custom imports ####
 import matplotlib
@@ -30,7 +30,7 @@ from pelagos_py.utils import fig_spec
 
 
 @register_qc
-class manual_qc(BaseQC):
+class visual_qc(BaseQC):
     """
     Flag samples inside (or outside) boxes drawn on an ``x_variable`` vs
     ``y_variable`` plot. The dashboard lets you draw the boxes, but the result
@@ -60,7 +60,7 @@ class manual_qc(BaseQC):
         - name: "Apply QC"
           parameters:
             qc_settings:
-              manual qc:
+              visual qc:
                 variables: [CHLA, [TEMP, PSAL]]   # CHLA alone, TEMP and PSAL together
                 x_variable: TIME              # axes for boxes that don't name their own
                 y_variable: PRES
@@ -80,7 +80,7 @@ class manual_qc(BaseQC):
           diagnostics: true
     """
 
-    qc_name = "manual qc"
+    qc_name = "visual qc"
     dynamic = True
     overwrite_flags = (
         True  # Apply QC replaces the columns this returns instead of merging them
@@ -299,10 +299,10 @@ class manual_qc(BaseQC):
             )
             if x_time:
                 fig_spec.date_axis(ax, which="x", index=x)
-            if yv in ("PRES", "DEPTH"):
+            if raw_name(yv) in ("PRES", "DEPTH"):
                 ax.invert_yaxis()
             fig_spec.legend(ax, title="Flag")
-        fig_spec.finish(fig, suptitle=f"Manual QC — {yv} vs {xv}")
+        fig_spec.finish(fig, suptitle=f"Visual QC — {yv} vs {xv}")
         plt.show(block=True)
 
     @staticmethod
