@@ -1402,9 +1402,21 @@ app.mount("/", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
 def serve(port=8791):
+    import socket
     import webbrowser
 
     import uvicorn
+
+    # Otherwise the browser opens on whatever already holds the port, e.g. a stale dashboard.
+    with socket.socket() as probe:
+        try:
+            probe.bind(("127.0.0.1", port))
+        except OSError:
+            sys.exit(
+                f"Port {port} is already in use, probably by a dashboard that is still "
+                "running (maybe with older code). Stop it (Ctrl+C in its terminal, or "
+                f"`kill $(lsof -ti tcp:{port})`) and try again."
+            )
 
     os.chdir(
         WORKSPACE_DIR

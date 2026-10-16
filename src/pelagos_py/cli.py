@@ -38,7 +38,7 @@ def main():
     parser = argparse.ArgumentParser(
         prog="pelagos-py", description="Process glider data with pelagos-py."
     )
-    commands = parser.add_subparsers(metavar="command", required=True)
+    commands = parser.add_subparsers(metavar="command")
 
     dashboard_cmd = commands.add_parser(
         "dashboard", help="open the config dashboard in your browser"
@@ -70,4 +70,7 @@ def main():
     demo_cmd.set_defaults(func=demo)
 
     args = parser.parse_args()
+    if not hasattr(args, "func"):
+        parser.print_help()
+        return
     args.func(args)

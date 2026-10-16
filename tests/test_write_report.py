@@ -388,3 +388,25 @@ def test_write_data_report_python_missing_dataset_id(tmp_path, qc_dataset):
         "Dataset ID missing from OG1 file. Reporting with unknown platform information."
     )
     assert qc_dataset.attrs["dataset_id"] == wrp.UNKNOWN_DATASET_ID
+
+
+def test_glidertest_section_uses_adjusted_names(tmp_path):
+    n = 5
+    data = xr.Dataset(
+        {
+            "TIME": ("N_MEASUREMENTS", np.arange(n).astype("datetime64[s]")),
+            "DEPTH_ADJUSTED": ("N_MEASUREMENTS", np.linspace(0, 10, n)),
+            "PSAL_ADJUSTED": ("N_MEASUREMENTS", np.full(n, 35.0)),
+            "PSAL_ADJUSTED_QC": ("N_MEASUREMENTS", np.ones(n, dtype=np.int8)),
+        }
+    )
+    with patch.object(wrp, "gtplots") as gtplots:
+        wrp.glidertest_section(
+            MagicMock(), data, f"{tmp_path}/", log=MagicMock(), log_warn=MagicMock()
+        )
+
+    shown = gtplots.plot_glider_track.call_args.kwargs["ds"]
+    assert "DEPTH" in shown.coords
+    assert list(shown["PSAL"].values) == [35.0] * n
+    assert "PSAL_QC" in shown
+    assert "PSAL" not in data

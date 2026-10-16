@@ -1696,7 +1696,7 @@ def glidertest_section(
     #   Glidertest requires certain names for salinity, DO variables
     #   Units should be handled appropriately in var attributes
     required_vars = {
-        "PSAL": ["PRAC_SALINITY", "CTDSAL", "SALINITY"],
+        "PSAL": ["CTDSAL", "SALINITY"],
         "CNDC": ["CONDUCTIVITY", "CTDCOND"],
         "DOXY": [
             "OXYGEN_CONCENTRATION",
@@ -1709,7 +1709,12 @@ def glidertest_section(
         ],
         "DPAR": ["downwelling_PAR", "DOWNWELLING_PAR", "downwelling_par"],
     }
-    data = data.set_coords(["TIME", "DEPTH"])
+    # Glidertest looks variables up by standard name, so give it the final _ADJUSTED values (and QC) under those names.
+    data = data.copy()
+    for name in list(data.data_vars):
+        if "_ADJUSTED" in name:
+            data[name.replace("_ADJUSTED", "")] = data[name]
+    data = data.set_coords([c for c in ("TIME", "DEPTH") if c in data])
     for target, other_names in required_vars.items():
         if target not in data.data_vars:
             for name in other_names:
@@ -2056,7 +2061,7 @@ def cross_section_figure(data: xr.Dataset, outdir: str, ext: str = ".png") -> st
             xo, po, co = x, pres, c
             size = _CS_MARKER_SIZE
 
-        # Pixel markers draw ~35% faster than round ones at this density.
+        # Square markers draw ~35% faster than round ones at this density.
         sc = ax_main.scatter(
             xo,
             po,
@@ -2065,7 +2070,7 @@ def cross_section_figure(data: xr.Dataset, outdir: str, ext: str = ".png") -> st
             vmin=vmin,
             vmax=vmax,
             s=size,
-            marker=",",
+            marker="s",
             edgecolors="none",
         )
         #   Left strip: the vertical profile of the same variable (value vs depth).
@@ -2077,7 +2082,7 @@ def cross_section_figure(data: xr.Dataset, outdir: str, ext: str = ".png") -> st
             vmin=vmin,
             vmax=vmax,
             s=2,
-            marker=",",
+            marker="s",
             edgecolors="none",
         )
 
