@@ -274,6 +274,11 @@ class QCHandlingMixin:
         qc_constituents : dict
             Maps child QC variable names to lists of parent QC variable names.
         """
+        #   Stash the data attributes before potentially overwriting them
+        attrs_before = {
+            name: dict(variable.attrs) for name, variable in self.data.variables.items()
+        }
+
         for qc_child, qc_parents in qc_constituents.items():
             # Check the child exists
             if qc_child[:-3] not in self.data:
@@ -319,5 +324,14 @@ class QCHandlingMixin:
                 xr.where(data_subset.isnull(), 9, 0)
                 .astype(np.int8)
                 .rename({var: f"{var}_QC" for var in missing_qc})
+                .reset_coords(drop=True)
             )
             self.data.update(flags)
+
+        for name, attrs in attrs_before.items():
+            if name in self.data.variables:
+                if self.data[name].attrs != attrs:
+                    self.log_warn(
+                        f"Attributes when initializing QC do not match:\n{self.data[name].attrs}\n{attrs}"
+                    )
+                # self.data[name].attrs = attrs

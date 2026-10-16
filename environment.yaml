@@ -52,6 +52,7 @@ dependencies:
   - pre-commit
   - cartopy
   - pyarrow
+  - glidertest
 
   # Pypi only
   - pip:

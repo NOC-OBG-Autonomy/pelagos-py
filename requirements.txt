@@ -24,3 +24,4 @@ compliance-checker
 cc-plugin-ncei
 cc-plugin-og
 psutil>=5.9
+glidertest

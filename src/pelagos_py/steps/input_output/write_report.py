@@ -38,6 +38,7 @@ from fpdf.enums import (
 )
 from fpdf.fonts import FontFace
 from datetime import datetime, timezone
+from glidertest import plots as gtplots
 import os
 import platform
 import json
@@ -131,6 +132,28 @@ _DEFAULT_QC_FLAGS = [
     (8, "ESTIMATED"),
     (9, "MISSING"),
 ]
+
+#   Stoplight colours for the QC summary table, keyed by the status returned by
+#   qc_status(). Kept dark enough that a small dot still reads on white paper.
+QC_STATUS_COLORS = {
+    "green": (0, 138, 79),
+    "yellow": (206, 166, 0),
+    "orange": (216, 118, 24),
+    "red": (198, 38, 38),
+    "black": (25, 25, 25),
+    "grey": (150, 150, 150),
+}
+
+#   What each stoplight colour means, in the order the legend lists them.
+QC_STATUS_LABELS = {
+    "green": "all points passed",
+    "yellow": "up to 50 bad points",
+    "orange": "under 2% bad",
+    "red": "2% or more bad",
+    "black": "every point failed",
+    "grey": "no usable result",
+}
+
 #   The NOC logo lives in utils/ (alongside the other shared, non-step assets)
 #   rather than in a dedicated assets folder.
 LOGO_PATH = os.path.join(
@@ -686,6 +709,96 @@ class ReportPDF(FPDF):
                 table.row([sanitize(c) for c in r])
         self.ln(2)
 
+    #   Stoplight dots are drawn with ZapfDingbats, a core PDF font: "l" is a
+    #   filled circle and "m" a hollow one. The core text fonts are latin-1
+    #   only, so a unicode bullet (or an emoji) cannot be used here.
+    _DOT_FONT = "ZapfDingbats"
+    _DOT_FILLED = "l"
+    _DOT_HOLLOW = "m"
+    _DOT_ABSENT = (170, 170, 170)
+
+    def stoplight_table(self, headers, rows, font_size=8) -> None:
+        #   Render a variable x test matrix as coloured stoplight dots. Each row
+        #   is [name, *cells], where a cell is (status, has_flag_8) or None when
+        #   that test was never run on the variable.
+        n_dots = len(headers) - 1
+        self.set_font("Times", "", font_size)
+        with self.table(
+            #   Only the first column carries text; the rest hold one dot each,
+            #   so give the names the room and split the remainder evenly.
+            col_widths=(2.4, *([1] * n_dots)),
+            text_align=("LEFT", *(["CENTER"] * n_dots)),
+            borders_layout=BOOKTABS,
+            #   Test names are long next to a dot, so the headings run a size
+            #   smaller to wrap over fewer lines.
+            headings_style=FontFace(emphasis="BOLD", size_pt=font_size - 1),
+            padding=(1, 2, 1, 2),
+            line_height=font_size * 0.55,
+        ) as table:
+            table.row([sanitize(h) for h in headers])
+
+            for name, *cells in rows:
+                row = table.row()
+                row.cell(sanitize(name))
+
+                for cell in cells:
+                    if cell is None:
+                        #   Test not run: a quiet dash, since any dot here would
+                        #   imply the test produced a result.
+                        row.cell("-", style=FontFace(color=self._DOT_ABSENT))
+                        continue
+
+                    status, has_flag_8 = cell
+                    row.cell(
+                        self._DOT_HOLLOW if has_flag_8 else self._DOT_FILLED,
+                        style=FontFace(
+                            family=self._DOT_FONT,
+                            size_pt=font_size,
+                            color=QC_STATUS_COLORS[status],
+                        ),
+                    )
+        self.ln(2)
+
+    def stoplight_legend(self, font_size=7.5) -> None:
+        #   Key for the dots above in pdf.stoplight_table: a sample of each dot with its meaning, run
+        #   inline across the text width and wrapped when a line fills up.
+        entries = [
+            (self._DOT_FONT, self._DOT_FILLED, color, QC_STATUS_LABELS[status])
+            for status, color in QC_STATUS_COLORS.items()
+        ]
+        entries += [
+            (
+                self._DOT_FONT,
+                self._DOT_HOLLOW,
+                (60, 60, 60),
+                "test also flagged estimated values",
+            ),
+            ("Times", "-", self._DOT_ABSENT, "test not run"),
+        ]
+
+        line_h = font_size * 0.75
+        gap = 5
+        for font, glyph, color, label in entries:
+            self.set_font(font, "", font_size)
+            w_dot = self.get_string_width(glyph)
+            self.set_font("Times", "I", font_size)
+            w_label = self.get_string_width(f" {label}") + gap
+
+            #   Wrap before an entry that would overrun the right margin, so a
+            #   dot never ends up parted from the words it explains.
+            if self.get_x() + w_dot + w_label > self.w - self.r_margin:
+                self.ln(line_h)
+
+            self.set_text_color(*color)
+            self.set_font(font, "", font_size)
+            self.cell(w_dot, line_h, glyph)
+            self.set_text_color(90)
+            self.set_font("Times", "I", font_size)
+            self.cell(w_label, line_h, sanitize(f" {label}"))
+
+        self.set_text_color(0)
+        self.ln(line_h + 2)
+
     def cc_heading(self, label: str, url: str = None, score_text: str = None) -> None:
         #   Compliance-checker heading. With url, the label becomes a link to the
         #   format docs; score_text adds a secondary line (e.g. the score).
@@ -883,23 +996,137 @@ def diagnostics_section(pdf: ReportPDF, captured: list) -> None:
             pdf.image_fit(img, aspect=_image_aspect(img), max_h=max_h)
 
 
+def qc_status(flag_counts: dict):
+    """
+    Return the stoplight status and whether flag 8 occurred.
+
+    Any variable can include a flag 8 - it's handy to denote this differently than by color.
+
+    Argo flags 0, 8, and 9 can't be considered as "good" or "bad" and therefore should be excluded from the % good spectrum.
+
+    This spectrum is (arbitrarily) assigned as follows:
+    * Grey - no evaluated points remain after excluding flags 0, 8, and 9.
+    * Green - all evaluated points are good or probably good (flags 1, 2).
+    * Yellow - up to `yellow_pts` evaluated points are bad or have another non-good flag, with fewer than `orange_per` bad.
+    * Orange - more than `yellow_pts` evaluated points are bad or have another non-good flag, with fewer than `orange_per` bad.
+    * Red - at least `orange_per` of evaluated points are bad, but not all are bad.
+    * Black - all evaluated points are bad (flags 3, 4).
+
+    In the future, these flag tolerances could be an optional kwarg that the user could specify in their configuration yaml.
+    """
+    yellow_pts = 50  #   Number of *points* distinguishing yellow to orange
+    orange_per = (
+        0.02  #   Fraction of evaluated data points that distinguishes orange from red
+    )
+
+    counts = {int(flag): int(count) for flag, count in flag_counts.items()}
+    has_flag_8 = (
+        counts.get(8, 0) > 0
+    )  #   If any 8 flags are found, return this bool to denote special formatting
+
+    #   Trim down to flags that actually occurred.
+    active_flags = {flag for flag, count in counts.items() if count > 0}
+    evaluated_flags = active_flags & set(range(1, 8))
+    #   Otherwise it's all 0, 8, and 9
+    if not evaluated_flags:
+        return "grey", has_flag_8
+
+    #   Working with valid flag values - can be a subset of N_MEASUREMENTS.size
+    n_evaluated = sum(counts.get(flag, 0) for flag in range(1, 8))
+    n_bad = counts.get(3, 0) + counts.get(4, 0)
+
+    if evaluated_flags <= {1, 2}:
+        return "green", has_flag_8
+
+    #   Working with any amount of questionable points
+    bad_fraction = n_bad / n_evaluated
+    if n_bad <= yellow_pts and bad_fraction < orange_per:
+        return "yellow", has_flag_8
+    if bad_fraction < orange_per:
+        return "orange", has_flag_8
+    if n_bad < n_evaluated:
+        return "red", has_flag_8
+    return "black", has_flag_8
+
+
+def build_qc_stoplight_summary(qc_dict: dict, n_points: int):
+    """Build a flaxible matrix of QC methods and variables
+
+    For each method picked out of the qc_dict, add that to the columns in `tests`.
+    For each variable, add that to the rows. Then assess the contents of QC dict for each
+    column in the row with qc_status to assign the stoplight for the cell.
+    """
+    if n_points == 0:
+        msg = "Number of points passed into QC stoplight summary is not able to be evaluated."
+        raise ValueError(msg)
+
+    # fromkeys - preserves list order
+    tests = list(
+        dict.fromkeys(
+            test_name
+            for variable_tests in qc_dict.values()
+            for test_name in variable_tests
+        )
+    )
+
+    rows = []
+    for variable, variable_tests in qc_dict.items():
+        row = [variable]
+        for test in tests:
+            #   This test was not run on this variable.
+            if test not in variable_tests:
+                row.append(None)
+                continue
+            flag_counts = variable_tests[test]["flag_counts"]
+
+            status, has_flag_8 = qc_status(flag_counts)
+
+            row.append((status, has_flag_8))
+
+        rows.append(row)
+
+    return tests, rows
+
+
 def qc_section(pdf: ReportPDF, data: xr.Dataset) -> None:
-    #   Write the Quality Control summary table.
+    """Write the Quality Control tables.
+
+    This consists of two tables:
+    * A stoplight summary table, highlighting which tests were ran on which QC variables and how many were successful.
+    * A row-by-row variable summary, listing the number of each flag that were determined from the individual tests.
+    """
+
     pdf.add_page()
     pdf.section_heading("Quality Control Summary")
 
     qc_dict = build_qc_dict(data)
-    rows = flatten_qc_dict(qc_dict)
 
-    if not rows:
+    if not any(qc_dict.values()):
         pdf.body("No QC tests found.")
         return
 
-    pdf.add_table(
-        ["QC Variable", "Test", "Flag", "Count"],
-        rows,
-        widths=(30, 30, 20, 20),
+    # ID the unique tests (column names) and the distinct variables, with their appropriate
+    # tests that were run. All of this should be visisble in the individual variable's attributes
+    # that were assigned when `Apply QC` was run.
+    tests, qc_rows = build_qc_stoplight_summary(
+        qc_dict,
+        n_points=data.N_MEASUREMENTS.size,
     )
+    pdf.stoplight_table(
+        ["QC Variable", *(test.replace("_", " ") for test in tests)],
+        qc_rows,
+    )
+    pdf.stoplight_legend()
+
+    # Detailed flag-count table.
+    flag_rows = flatten_qc_dict(qc_dict)
+
+    if flag_rows:
+        pdf.add_table(
+            ["QC Variable", "Test", "Flag", "Count"],
+            flag_rows,
+            widths=(30, 30, 20, 20),
+        )
 
 
 def add_log(logfile, pdf: ReportPDF, ncols: int = 4) -> None:
@@ -1459,6 +1686,280 @@ def make_plots(pdf: ReportPDF, figures: list) -> None:
             pdf.image_full(hist_img, aspect=3.2 / 8)
 
 
+def glidertest_section(
+    pdf: ReportPDF, data: xr.Dataset, outdir: str, log=print, log_warn=print
+) -> None:
+    """
+    Runs plotting routines from `glidertest` and inserts them into the document.
+    """
+
+    #   Glidertest requires certain names for salinity, DO variables
+    #   Units should be handled appropriately in var attributes
+    required_vars = {
+        "PSAL": ["PRAC_SALINITY", "CTDSAL", "SALINITY"],
+        "CNDC": ["CONDUCTIVITY", "CTDCOND"],
+        "DOXY": [
+            "OXYGEN_CONCENTRATION",
+            "MOLAR_DOXY_ADJUSTED",
+            "MOLAR_DOXY_PSAL_PRES",
+            "MOLAR_DOXY_PSAL",
+            "MOLAR_DOXY",
+            "molar_doxy",
+            "molar_deoxy",
+        ],
+        "DPAR": ["downwelling_PAR", "DOWNWELLING_PAR", "downwelling_par"],
+    }
+    data = data.set_coords(["TIME", "DEPTH"])
+    for target, other_names in required_vars.items():
+        if target not in data.data_vars:
+            for name in other_names:
+                if name in data.data_vars:
+                    data[target] = data[name]
+                    log(f"{target} now in data - using {name}.")
+                    break
+            if target not in data.data_vars:
+                log_warn(f"Could not find {target} equivalent in data.")
+
+    #   Glider track - comparable to `glider_track_map` above
+    try:
+        fig, __ = gtplots.plot_glider_track(ds=data)
+        fig_name = f"{outdir}glider_track_glidertest.png"
+        fig.savefig(fig_name)
+        plt.close(fig)
+
+        pdf.add_page()
+        pdf.section_heading("Glidertest Plots: Glider Mission Track")
+        pdf.image_fit(fig_name, aspect=_image_aspect(fig_name), max_h=100)
+    except Exception as err:
+        log_warn(f"Glidertest failed on Glider Track plotting: {err}")
+
+    #   Basic variables: T, S, DO, CHLA
+    try:
+        fig, __ = gtplots.plot_basic_vars(ds=data)
+        fig_name = f"{outdir}basic_vars.png"
+        fig.savefig(fig_name)
+        plt.close(fig)
+
+        pdf.add_page()
+        pdf.section_heading("Glidertest Plots: Basic Variables")
+        pdf.image_fit(fig_name, aspect=_image_aspect(fig_name), max_h=100)
+    except Exception as err:
+        log_warn(f"Glidertest failed on Basic Variable plotting: {err}")
+
+    #   Up/down bias
+    try:
+        #   This is the only routine that will print the page even when failing due to the loop
+        pdf.add_page()
+        pdf.section_heading("Glidertest Plots: Up/Down Bias")
+
+        #   TODO: Pull these out as a config option.
+        for var in ["TEMP", "CNDC", "DOXY"]:
+            fig, __ = gtplots.plot_updown_bias(data, var=var)
+            fig_name = f"{outdir}{var}_updown.png"
+            fig.savefig(fig_name)
+            plt.close(fig)
+            pdf.image_fit(
+                fig_name,
+                aspect=_image_aspect(fig_name),
+                max_h=100,
+            )
+    except Exception as err:
+        log_warn(f"Glidertest failed on Up/Down Bias plotting: {err}")
+
+    #   Assessing optics
+    try:
+        #   This step has an output - capture it (eventually) and type it in underneat the figures.
+        fig, __ = gtplots.process_optics_assess(ds=data)
+        fig_name = f"{outdir}optics_assess.png"
+        fig.savefig(fig_name)
+        plt.close(fig)
+
+        pdf.add_page()
+        pdf.section_heading("Glidertest Plots: Optics Assessment")
+        pdf.image_fit(fig_name, aspect=_image_aspect(fig_name), max_h=100)
+    except Exception as err:
+        log_warn(f"Glidertest failed on Optics Assessment plotting: {err}")
+
+    #   Day/Night for influenced variables
+    try:
+        pdf.add_page()
+        pdf.section_heading("Glidertest Plots: Day/Night")
+        for var in ["CHLA", "CDOM", "DPAR", "DOXY"]:  #   TODO: Pull these out into yaml
+            if var in data.data_vars:
+                fig, __ = gtplots.plot_daynight_avg(ds=data, var=var)
+                fig_name = f"{outdir}daynight_avg_{var}.png"
+                fig.savefig(fig_name)
+                plt.close(fig)
+
+                pdf.image_fit(fig_name, aspect=_image_aspect(fig_name), max_h=100)
+    except Exception as err:
+        log_warn(f"Glidertest failed on Day/Night plotting: {err}")
+
+    #   Chlorophyll quenching
+    try:
+        if "CHLA" in data.data_vars:
+            fig, __ = gtplots.plot_quench_assess(ds=data, sel_var="CHLA")
+            fig_name = f"{outdir}chla_quench_assess.png"
+            fig.savefig(fig_name)
+            plt.close(fig)
+
+            pdf.add_page()
+            pdf.section_heading("Glidertest Plots: Chlorophyll Quench Assessment")
+
+            pdf.image_fit(fig_name, aspect=_image_aspect(fig_name), max_h=100)
+        else:
+            log_warn(
+                "CHLA not in data variables. Check alternatives or sensors for this glider."
+            )
+    except Exception as err:
+        log_warn(f"Glidertest failed on Chloropphyll Quench Assessment plotting: {err}")
+
+    #   Sensor temporal drift
+    #   Note: Time intensive
+    try:
+        pdf.add_page()
+        pdf.section_heading("Glidertest Plots: Temporal Drift by Variable")
+
+        for var in ["CNDC", "PSAL", "DOXY"]:
+            fig, __ = gtplots.check_temporal_drift(ds=data, var=var)
+            fig_name = f"{outdir}{var}_temporal_drift_check.png"
+            fig.savefig(fig_name)
+            plt.close(fig)
+
+            pdf.image_fit(
+                fig_name,
+                aspect=_image_aspect(fig_name),
+                max_h=100,
+            )
+    except Exception as err:
+        log_warn(f"Glidertest failed on Sensor Temporal Drift plotting: {err}")
+
+    #   Grid spacing
+    try:
+        fig, __ = gtplots.plot_grid_spacing(ds=data)
+        fig_name = f"{outdir}grid_spacing.png"
+        fig.savefig(fig_name)
+        plt.close(fig)
+
+        pdf.add_page()
+        pdf.section_heading("Glidertest Plots: Grid Spacing")
+
+        pdf.image_fit(
+            fig_name,
+            aspect=_image_aspect(fig_name),
+            max_h=100,
+        )
+    except Exception as err:
+        log_warn(f"Glidertest failed on Grid Spacing plotting: {err}")
+
+    #   Sampling period
+    try:
+        fig, __ = gtplots.plot_sampling_period_all(ds=data)
+        fig_name = f"{outdir}default_sample_period.png"
+        fig.savefig(fig_name)
+        plt.close(fig)
+
+        pdf.add_page()
+        pdf.section_heading("Glidertest Plots: Sample Periods")
+
+        pdf.image_fit(
+            fig_name,
+            aspect=_image_aspect(fig_name),
+            max_h=100,
+        )
+    except Exception as err:
+        log_warn(f"Glidertest failed on Sample Period plotting: {err}")
+
+    #   TS plot with 2D density
+    try:
+        fig, __ = gtplots.plot_ts(ds=data)
+        fig_name = f"{outdir}ts.png"
+        fig.savefig(fig_name)
+        plt.close(fig)
+
+        pdf.add_page()
+        pdf.section_heading("Glidertest Plots: Temperature-Salinity (TS)")
+
+        pdf.image_fit(
+            fig_name,
+            aspect=_image_aspect(fig_name),
+            max_h=100,
+        )
+    except Exception as err:
+        log_warn(f"Glidertest failed on TS plotting: {err}")
+
+    #   Hysteresis for known sensors
+    try:
+        pdf.add_page()
+        pdf.section_heading("Glidertest Plots: Hysteresis")
+        for var in [
+            "TEMP",
+            "CNDC",
+            "DOXY",
+        ]:  #   TODO: Pull these out into yaml
+            if var in data.data_vars:
+                fig, __ = gtplots.plot_hysteresis(ds=data, var=var)
+                fig_name = f"{outdir}hysteresis_{var}.png"
+                fig.savefig(fig_name)
+                plt.close(fig)
+
+                pdf.image_fit(fig_name, aspect=_image_aspect(fig_name), max_h=100)
+    except Exception as err:
+        log_warn(f"Glidertest failed on Hysteresis plotting: {err}")
+
+    #   Global range figures
+    try:
+        pdf.add_page()
+        pdf.section_heading("Glidertest Plots: Global Range")
+        for var in [
+            "TEMP",
+            "CNDC",
+            "DOXY",
+        ]:  #   TODO: Pull these out into yaml
+            if var in data.data_vars:
+                #   Just using the "bad" bounds, extracted from config stashed in QC variable
+                params = json.loads(data[var + "_QC"].attrs["range_qc_params"])[
+                    "variable_ranges"
+                ][var]["4"]
+                min_val, max_val = params[0:2]
+                fig, __ = gtplots.plot_global_range(
+                    ds=data, var=var, min_val=min_val, max_val=max_val
+                )
+                fig_name = f"{outdir}global_range_{var}.png"
+                fig.savefig(fig_name)
+                plt.close(fig)
+
+                pdf.image_fit(fig_name, aspect=_image_aspect(fig_name), max_h=100)
+                pdf.body(
+                    f"{var} ranges: {min_val} to {max_val} ({data[var].attrs['units']})."
+                )
+    except Exception as err:
+        log_warn(f"Glidertest failed on Global Range plotting: {err}")
+
+    #   Max depth for individual profiles
+    try:
+        fig, __ = gtplots.plot_max_depth_per_profile(
+            ds=data,
+            bins=20,  #   For shallow profiles - could use bins = max(data["DEPTH"])
+        )
+        fig_name = f"{outdir}profile_depths.png"
+        fig.savefig(fig_name)
+        plt.close(fig)
+
+        pdf.add_page()
+        pdf.section_heading("Glidertest Plots: Profile Depths")
+
+        pdf.image_fit(
+            fig_name,
+            aspect=_image_aspect(fig_name),
+            max_h=100,
+        )
+    except Exception as err:
+        log_warn(f"Glidertest failed on Profile Depth plotting: {err}")
+
+    log("Glidertest section written out.")
+
+
 def cross_section_figure(data: xr.Dataset, outdir: str, ext: str = ".png") -> str:
     #   A4-portrait stack of PRES-vs-TIME panels (see _CROSS_SECTION_PANELS), one
     #   per variable, sharing the TIME axis, each with a profile strip and
@@ -1785,6 +2286,13 @@ class WriteDataReport(BaseStep):
             "default": None,
             "description": "Path to a logo image for the title page. Defaults to the NOC logo.",
         },
+        "show_glidertest": {
+            "type": bool,
+            "default": False,
+            "description": (
+                "Generate additional figures as done in glidertest's summary sheet."
+            ),
+        },
     }
 
     def run(self) -> xr.DataArray:
@@ -1916,6 +2424,12 @@ class WriteDataReport(BaseStep):
 
             if self.parameters.get("show_qc_plots", True):
                 make_plots(pdf, qc_figures)
+
+            if self.parameters.get("show_glidertest", True):
+                self.log("Generating figures from glidertest.")
+                glidertest_section(
+                    pdf, data, fig_dir, log=self.log, log_warn=self.log_warn
+                )
 
             if self.parameters.get("show_logs", True):
                 log_path = odir + self.context["global_parameters"]["log_file"]
