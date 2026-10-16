@@ -33,6 +33,8 @@ WebGL-safe rules:
 
 import matplotlib.dates as mdates
 import numpy as np
+import pandas as pd
+from functools import partial
 
 # Geometry: single panel is 16:9; multi-panel keeps width, grows height by ROW_H/row.
 FIG_W, FIG_H, DPI = 10, 5.625, 130
@@ -40,23 +42,47 @@ ROW_H = 3.0  # inches per panel for multi-panel (nrows > 1) figures
 
 FS_SUPTITLE, FS_TITLE, FS_LABEL, FS_TICK, FS_LEGEND = 12, 11, 9, 8, 8
 
-MARKER = 4            # markersize for plot() point series
+MARKER = 4  # markersize for plot() point series
 ALPHA = 0.7
-RASTER_ABOVE = 5000   # rasterize dense point layers above this many points
+RASTER_ABOVE = 5000  # rasterize dense point layers above this many points
+CAPTURE_MAX_POINTS = 100_000  # point cap for figures saved to disk (report capture)
+MAX_POINTS = None  # set by report capture to thin dense series as they are drawn
 
 # Colours (hex, one mapping used everywhere).
 FLAG_COLOURS = {
-    0: "#9aa5ad", 1: "#1f6fd6", 2: "#7fb2e5", 3: "#e8912b", 4: "#d6392f",
-    5: "#9aa5ad", 6: "#9aa5ad", 7: "#9aa5ad", 8: "#17b6c4", 9: "#111111",
+    0: "#9aa5ad",
+    1: "#1f6fd6",
+    2: "#7fb2e5",
+    3: "#e8912b",
+    4: "#d6392f",
+    5: "#9aa5ad",
+    6: "#9aa5ad",
+    7: "#9aa5ad",
+    8: "#17b6c4",
+    9: "#111111",
 }
 FLAGGED = "#b2bec3"
-CATEGORY = ["#00b894", "#0984e3", "#d63031", "#fdcb6e", "#6c5ce7",
-            "#e84393", "#00cec9", "#e17055"]
+CATEGORY = [
+    "#00b894",
+    "#0984e3",
+    "#d63031",
+    "#fdcb6e",
+    "#6c5ce7",
+    "#e84393",
+    "#00cec9",
+    "#e17055",
+]
 
 # QC flag meanings, used to label flag legend entries as "1 (good)".
 FLAG_MEANINGS = {
-    0: "no QC", 1: "good", 2: "prob good", 3: "prob bad", 4: "bad",
-    5: "changed", 8: "interp", 9: "missing",
+    0: "no QC",
+    1: "good",
+    2: "prob good",
+    3: "prob bad",
+    4: "bad",
+    5: "changed",
+    8: "interp",
+    9: "missing",
 }
 
 
@@ -66,18 +92,62 @@ def flag_label(flag):
     return f"{flag} ({meaning})" if meaning else str(flag)
 
 
-def new_fig(nrows=1, ncols=1, sharex=False, sharey=False, height_ratios=None):
+def categories(da):
+    """``[(value, meaning, colour)]`` for a variable with CF ``flag_values``, else None."""
+    from pelagos_py.utils import palettes
+
+    values = da.attrs.get("flag_values")
+    if values is None:
+        return None
+    if isinstance(values, str):
+        values = values.replace(",", " ").split()
+    meanings = str(da.attrs.get("flag_meanings", "")).split()
+    fixed = palettes.CATEGORICAL.get(da.name, {})
+    out = []
+    for i, v in enumerate(values):
+        v = int(v)
+        out.append(
+            (
+                v,
+                meanings[i] if i < len(meanings) else str(v),
+                fixed.get(v, CATEGORY[i % len(CATEGORY)]),
+            )
+        )
+    return out
+
+
+def thin_idx(n, cap=None):
+    """Indices evenly thinning ``n`` points to ``cap`` (default MAX_POINTS); arange(n) if under the cap."""
+    cap = cap or MAX_POINTS
+    return np.linspace(0, n - 1, cap).astype(int) if cap and n > cap else np.arange(n)
+
+
+def new_fig(
+    nrows=1, ncols=1, sharex=False, sharey=False, height_ratios=None, width_ratios=None
+):
     """A standard figure + axes at the standard width/dpi. Axes always 2D: axes[r][c].
 
     Single panel is 16:9; multi-panel grows height by ``ROW_H`` per row.
-    ``height_ratios`` (e.g. ``(3, 1)``) sets unequal row heights via gridspec.
+    ``height_ratios`` / ``width_ratios`` (e.g. ``(3, 1)``) set unequal panel sizes via gridspec.
     """
     import matplotlib.pyplot as plt
+
     height = FIG_H if nrows == 1 else ROW_H * nrows
-    gridspec_kw = {"height_ratios": height_ratios} if height_ratios is not None else None
-    return plt.subplots(nrows, ncols, figsize=(FIG_W, height), dpi=DPI,
-                        sharex=sharex, sharey=sharey, squeeze=False,
-                        gridspec_kw=gridspec_kw)
+    gridspec_kw = {}
+    if height_ratios is not None:
+        gridspec_kw["height_ratios"] = height_ratios
+    if width_ratios is not None:
+        gridspec_kw["width_ratios"] = width_ratios
+    return plt.subplots(
+        nrows,
+        ncols,
+        figsize=(FIG_W, height),
+        dpi=DPI,
+        sharex=sharex,
+        sharey=sharey,
+        squeeze=False,
+        gridspec_kw=gridspec_kw or None,
+    )
 
 
 def style_axes(ax, *, title=None, xlabel=None, ylabel=None):
@@ -95,39 +165,108 @@ def style_axes(ax, *, title=None, xlabel=None, ylabel=None):
 def axis_label(var, units=None):
     """'TEMP [degC]' when units are meaningful, else just the name."""
     u = (units or "").strip()
-    return var if u in ("", "1", "unitless", "unknown", "none", "None") else f"{var} [{u}]"
+    return (
+        var if u in ("", "1", "unitless", "unknown", "none", "None") else f"{var} [{u}]"
+    )
 
 
-def date_axis(ax, which="x"):
-    """Consistent date formatting on the chosen axis (x or y)."""
+def date_axis(ax, which="x", index=None):
+    """Consistent date formatting on the chosen axis (x or y).
+
+    ``index`` (the full TIME array) also adds an N_MEASUREMENTS axis along the top.
+    """
     axis = ax.xaxis if which == "x" else ax.yaxis
     loc = mdates.AutoDateLocator()
     axis.set_major_locator(loc)
     axis.set_major_formatter(mdates.ConciseDateFormatter(loc))
+    if index is None or which != "x":
+        return
+    t = np.asarray(index)
+    pos = thin_idx(t.size)  # report capture: a thinned index maps just as well
+    t = t[pos]
+    if np.issubdtype(t.dtype, np.datetime64) or t.dtype == object:
+        t = np.asarray(mdates.date2num(t), dtype=float)
+    ok = np.isfinite(t)
+    t, i = t[ok], pos[ok].astype(float)
+    if t.size < 2:
+        return
+    order = np.argsort(t, kind="stable")
+    ts, is_ = t[order], i[order]
+    top = max(
+        ax.get_shared_x_axes().get_siblings(ax), key=lambda a: a.get_position().y1
+    )
+    # partials (not lambdas) so the figure stays picklable for background saving
+    sec = top.secondary_xaxis(
+        "top",
+        functions=(partial(np.interp, xp=ts, fp=is_), partial(np.interp, xp=i, fp=t)),
+    )
+    sec.set_xlabel("N_MEASUREMENTS", fontsize=FS_LABEL)
+    sec.tick_params(labelsize=FS_TICK)
+    top._pelagos_index = (ts, is_)  # picked up by the dashboard serialiser
+
+
+def x_time(data):
+    """What a whole-dataset series is plotted against: TIME if present, else N_MEASUREMENTS."""
+    return (
+        data["TIME"].values
+        if "TIME" in data
+        else np.arange(data.sizes["N_MEASUREMENTS"])
+    )
+
+
+def x_axis(ax, x):
+    """Label the x axis for an ``x_time`` array: TIME below + N_MEASUREMENTS on top, or Index."""
+    if np.issubdtype(np.asarray(x).dtype, np.datetime64):
+        date_axis(ax, index=x)
+        style_axes(ax, xlabel="TIME")
+    else:
+        style_axes(ax, xlabel="Index")
 
 
 def points(ax, x, y, *, color, label=None, size=MARKER, alpha=ALPHA):
     """Standard point series: fast plot() markers, WebGL-safe, one legend entry."""
-    x = np.asarray(x)
-    ax.plot(x, np.asarray(y), ls="", marker="o", markersize=size,
-            markeredgewidth=0, color=color, alpha=alpha, label=label,
-            rasterized=x.size > RASTER_ABOVE)
+    x, y = np.asarray(x), np.asarray(y)
+    if MAX_POINTS:
+        idx = thin_idx(x.size)
+        x, y = x[idx], y[idx]
+    ax.plot(
+        x,
+        y,
+        ls="",
+        marker="o",
+        markersize=size,
+        markeredgewidth=0,
+        color=color,
+        alpha=alpha,
+        label=label,
+        rasterized=x.size > RASTER_ABOVE,
+    )
 
 
 def flag_points(ax, x, y, flags):
     """y vs x coloured by QC flag: one series per present flag (0..9)."""
     flags, x, y = np.asarray(flags), np.asarray(x), np.asarray(y)
+    # A flag with nothing drawable (e.g. 9 on NaN samples) gets no legend entry.
+    drawable = np.isfinite(y) if np.issubdtype(y.dtype, np.number) else ~pd.isnull(y)
     for f in range(10):
-        m = flags == f
-        if m.any():
-            points(ax, x[m], y[m], color=FLAG_COLOURS[f], label=flag_label(f))
+        idx = np.flatnonzero((flags == f) & drawable)
+        if MAX_POINTS:
+            idx = idx[thin_idx(idx.size)]  # thin before gathering x/y
+        if idx.size:
+            points(ax, x[idx], y[idx], color=FLAG_COLOURS[f], label=flag_label(f))
 
 
 def legend(ax, *, title=None):
     """Compact legend just outside the axes on the right."""
-    ax.legend(title=title, fontsize=FS_LEGEND, title_fontsize=FS_LEGEND,
-              loc="center left", bbox_to_anchor=(1.01, 0.5),
-              framealpha=0.9, markerscale=2)
+    ax.legend(
+        title=title,
+        fontsize=FS_LEGEND,
+        title_fontsize=FS_LEGEND,
+        loc="center left",
+        bbox_to_anchor=(1.01, 0.5),
+        framealpha=0.9,
+        markerscale=2,
+    )
 
 
 def finish(fig, suptitle=None):
@@ -135,3 +274,51 @@ def finish(fig, suptitle=None):
     if suptitle:
         fig.suptitle(suptitle, fontsize=FS_SUPTITLE, fontweight="bold")
     fig.tight_layout()
+
+
+def land_polygons(resolution="110m"):
+    """Natural Earth land as one shapely geometry (cartopy caches the download)."""
+    import cartopy.io.shapereader as sr
+    import shapely
+
+    path = sr.natural_earth(resolution=resolution, category="physical", name="land")
+    return shapely.unary_union(list(sr.Reader(path).geometries()))
+
+
+def map_extent(lon, lat, pad=0.3, min_span=0.05):
+    """[lon0, lon1, lat0, lat1] around the finite positions, widened in longitude so land keeps its shape."""
+    lon, lat = np.asarray(lon, float), np.asarray(lat, float)
+    ok = np.isfinite(lon) & np.isfinite(lat)
+    lon, lat = lon[ok], lat[ok]
+    lon_mid, lat_mid = (lon.min() + lon.max()) / 2, (lat.min() + lat.max()) / 2
+    half = max(lon.max() - lon.min(), lat.max() - lat.min(), min_span) * (0.5 + pad)
+    cos = max(np.cos(np.deg2rad(lat_mid)), 0.2)
+    return [lon_mid - half / cos, lon_mid + half / cos, lat_mid - half, lat_mid + half]
+
+
+def coastlines(ax, extent, *, color="0.35", linewidth=0.8, fill=None):
+    """Coastlines clipped to ``extent`` as one plot() call (WebGL-safe); ``fill`` adds land fill (PNG-only)."""
+    import shapely
+
+    span = max(extent[1] - extent[0], extent[3] - extent[2])
+    res = "10m" if span < 3 else "50m" if span < 20 else "110m"
+    # Clip a little beyond the extent so the cut edges fall outside the axes.
+    m = 0.05 * span
+    land = shapely.clip_by_rect(
+        land_polygons(res), extent[0] - m, extent[2] - m, extent[1] + m, extent[3] + m
+    )
+    xs, ys = [], []
+    for poly in getattr(land, "geoms", [land]):
+        if poly.is_empty or poly.geom_type != "Polygon":
+            continue
+        if fill:
+            ax.fill(*poly.exterior.xy, color=fill, lw=0, zorder=0)
+        for ring in (poly.exterior, *poly.interiors):
+            x, y = ring.xy
+            xs += [*x, np.nan]
+            ys += [*y, np.nan]
+    ax.plot(xs, ys, color=color, lw=linewidth, zorder=1)
+    ax.grid(False)
+    ax.set_xlim(extent[0], extent[1])
+    ax.set_ylim(extent[2], extent[3])
+    ax.set_aspect(1 / max(np.cos(np.deg2rad((extent[2] + extent[3]) / 2)), 0.2))

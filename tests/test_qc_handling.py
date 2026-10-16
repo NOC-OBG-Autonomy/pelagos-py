@@ -38,14 +38,24 @@ def make_step(flags=None, calculation_flag_filter=None):
 def test_defaults_exclude_probably_bad_bad_and_missing():
     step = make_step({"CHLA": [0, 1, 2, 3, 4, 5, 8, 9]})
     assert step.calculation_mask(["CHLA"]).tolist() == [
-        True, True, True, False, False, True, True, False
+        True,
+        True,
+        True,
+        False,
+        False,
+        True,
+        True,
+        False,
     ]
 
 
 def test_a_sample_needs_every_listed_variable_to_be_usable():
     step = make_step({"CHLA": [1, 1, 4, 1], "DEPTH": [1, 4, 1, 1]})
     assert step.calculation_mask(["CHLA", "DEPTH"]).tolist() == [
-        True, False, False, True
+        True,
+        False,
+        False,
+        True,
     ]
     # Gating on one variable alone ignores the other's flags.
     assert step.calculation_mask(["CHLA"]).tolist() == [True, True, False, True]
@@ -71,3 +81,26 @@ def test_mask_does_not_mutate_the_data():
     before = step.data["CHLA"].values.copy()
     step.calculation_mask(["CHLA"])
     assert np.array_equal(step.data["CHLA"].values, before)
+
+
+def test_generate_qc_unchecked_parent_does_not_downgrade():
+    step = make_step({"A": [1, 2, 4, 0], "B": [0, 0, 0, 1]})
+    step.data["C"] = ("N_MEASUREMENTS", np.zeros(4))
+    step.generate_qc({"C_QC": ["A_QC", "B_QC"]})
+    assert list(step.data["C_QC"].values) == [1, 2, 4, 1]
+
+
+def test_prefer_adjusted_uses_adjusted_when_present():
+    settings = {
+        "variable_ranges": {"DEPTH": {3: [-np.inf, 2, "inside"]}},
+        "flag_instead": {"DEPTH": ["CHLA", "CHLA_ADJUSTED"]},
+    }
+    resolved = qc_handling.prefer_adjusted(settings, {"DEPTH", "CHLA", "CHLA_ADJUSTED"})
+    assert resolved["flag_instead"] == {"DEPTH": ["CHLA_ADJUSTED"]}
+    assert resolved["variable_ranges"] == settings["variable_ranges"]
+
+
+def test_prefer_adjusted_falls_back_to_raw():
+    settings = {"variable_ranges": {"CHLA_ADJUSTED": {4: [0, 100, "outside"]}}}
+    resolved = qc_handling.prefer_adjusted(settings, {"CHLA"})
+    assert resolved == {"variable_ranges": {"CHLA": {4: [0, 100, "outside"]}}}
