@@ -28,7 +28,7 @@ Sits just above ERROR so it always surfaces, and is rendered as "STOP" in logs.
 logging.addLevelName(STOP, "STOP")
 
 SEVERE = logging.WARNING + 5
-"""Custom log level for a step that failed but was skipped (continue_on_step_fail).
+"""Custom log level for a step that failed but was skipped (on_step_fail).
 
 Sits between WARNING and ERROR, and is rendered amber (vs. WARNING's yellow) to
 stand out from ordinary warnings.

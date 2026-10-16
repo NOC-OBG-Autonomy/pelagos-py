@@ -71,12 +71,25 @@ def test_validator_flags_missing_required_qc_param():
 
 def test_validator_passes_valid_qc_config():
     steps = [
+        {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
+        {
+            "name": "Apply QC",
+            "parameters": {"qc_settings": {"impossible date qc": {}}},
+        },
+    ]
+    assert check_pipeline_variables(steps, LOGGER) is True
+
+
+def test_validator_flags_missing_load_step():
+    # No loader step, so nothing provides TIME etc.
+    steps = [
         {
             "name": "Apply QC",
             "parameters": {"qc_settings": {"impossible date qc": {}}},
         }
     ]
-    assert check_pipeline_variables(steps, LOGGER) is True
+    with pytest.raises(ValueError, match="TIME"):
+        check_pipeline_variables(steps, LOGGER)
 
 
 # --- Validator catches QC variable ordering mistakes -----------------------------
@@ -98,6 +111,7 @@ def test_validator_flags_qc_var_produced_by_later_step():
 
 def test_validator_passes_qc_var_in_correct_order():
     steps = [
+        {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
         {"name": "Find Profiles", "parameters": {}},
         {
             "name": "Apply QC",
@@ -109,13 +123,34 @@ def test_validator_passes_qc_var_in_correct_order():
     assert check_pipeline_variables(steps, LOGGER) is True
 
 
-def test_validator_ignores_file_native_qc_requirement():
-    # With no producing step in the pipeline, a missing requirement is assumed to
-    # come from the input data file and is left for the run-time check.
+def test_validator_flags_derived_only_qc_requirement_with_no_producing_step():
+    # No "Find Profiles" anywhere, so PROFILE_NUMBER must be flagged up front.
     steps = [
         {
             "name": "Apply QC",
             "parameters": {"qc_settings": {"PAR irregularity qc": {}}},
         }
     ]
-    assert check_pipeline_variables(steps, LOGGER) is True
+    with pytest.raises(ValueError, match="PROFILE_NUMBER"):
+        check_pipeline_variables(steps, LOGGER)
+
+
+def test_validator_flags_missing_load_step_points_at_loader():
+    # Missing TIME should point at adding a loader step, not the generic wording.
+    steps = [
+        {
+            "name": "Apply QC",
+            "parameters": {"qc_settings": {"impossible date qc": {}}},
+        }
+    ]
+    with pytest.raises(ValueError, match="Load OG1"):
+        check_pipeline_variables(steps, LOGGER)
+
+
+def test_validator_flags_multiple_load_steps():
+    steps = [
+        {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
+        {"name": "Generate Data", "parameters": {}},
+    ]
+    with pytest.raises(ValueError, match="Multiple data-loading steps"):
+        check_pipeline_variables(steps, LOGGER)
