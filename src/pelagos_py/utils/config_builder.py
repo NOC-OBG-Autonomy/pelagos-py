@@ -544,8 +544,11 @@ def build(
         # A function, not a "\1 value" template, so backslashes in e.g. Windows paths stay literal.
         return lambda m: f"{m.group(1)} {_yaml_string(value)}{comment}"
 
-    stem = Path(file_path).stem
-    output_path = output_path or str(Path(file_path).with_name(f"{stem}_Processed.nc"))
+    file_path = str(file_path)
+    name, stem = Path(file_path).name, Path(file_path).stem
+    # swap only the file name, so the folder keeps the slashes it was given on any OS
+    folder = file_path[: len(file_path) - len(name)]
+    output_path = output_path or f"{folder}{stem}_Processed.nc"
     description = description or f"Pipeline built for {Path(file_path).name}."
     head = _FIELD["description"].sub(set_field(description), head, count=1)
     head = _FIELD["out_directory"].sub(
