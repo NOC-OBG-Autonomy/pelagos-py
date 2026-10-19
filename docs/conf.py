@@ -1,4 +1,8 @@
-import sys, os
+import sys
+import os
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _get_version
+
 sys.path.insert(0, os.path.abspath("../src"))
 
 # Configuration file for the Sphinx documentation builder.
@@ -17,9 +21,6 @@ author = "National Oceanography Centre"
 # ``release`` is the full version (e.g. "2.4.1.dev3+gabc1234"); ``version`` is
 # the short X.Y form shown in the docs. Both feed the |release| / |version|
 # substitutions used on the index page.
-from importlib.metadata import PackageNotFoundError
-from importlib.metadata import version as _get_version
-
 try:
     release = _get_version("pelagos_py")
 except PackageNotFoundError:
@@ -123,6 +124,7 @@ def _autoapi_skip_member(app, what, name, obj, skip, options):
 
 def setup(app):
     app.connect("autoapi-skip-member", _autoapi_skip_member)
+
 
 # autoapi_ignore = [
 #     "pelagos_pypy.metadata_parser.metadata_parser",  # Exclude it as a submodule

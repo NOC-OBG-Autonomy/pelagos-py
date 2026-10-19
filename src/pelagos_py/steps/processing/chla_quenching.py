@@ -29,9 +29,8 @@ from functools import cached_property
 import pandas as pd
 import matplotlib.pyplot as plt
 
-CALC_SUFFIX = (
-    "__FOR_CALC"  # suffix of the QC-masked calculation-only copies; see run().
-)
+# suffix of the QC-masked, calculation-only copies (see run())
+CALC_SUFFIX = "__FOR_CALC"
 
 # Backscatter variables tried, in order, when 'bbp_var' is absent (despiked
 # baseline preferred, raw BBP as fallbacks); the step halts if none are present.
@@ -39,9 +38,7 @@ BBP_VAR_FALLBACKS = ["BBP700_BASELINE", "BBP700", "BBP532_BASELINE", "BBP532"]
 
 # Night-reference tuning ('hemsley2015'/'thomalla2018').
 NIGHT_REF_BIN_METRES = 1.0  # depth bin (m) for averaging nighttime profiles.
-HEMSLEY_REGRESSION_DEPTH = (
-    60.0  # top-of-water depth (m) the Hemsley regression is fit over.
-)
+HEMSLEY_REGRESSION_DEPTH = 60.0  # depth (m) the Hemsley regression is fit down to
 
 XB18_SIGMOID = (0.092, 261.0, 2.2)  # r, I_50, e of the Xing 2018 sigmoid
 
@@ -52,13 +49,9 @@ CORRECTION_WARN_FACTOR = 5.0
 # Diagnostics-only tuning for the method-comparison figure: plot appearance and
 # how day/night profiles are paired and scored. None of these affect the correction.
 COMPARE_BIN_METRES = 5.0  # depth bin (m) for pairing day/night median fluorescence.
-COMPARE_SURFACE_LIMIT_METRES = (
-    50.0  # only bins this shallow are scored (where methods differ).
-)
+COMPARE_SURFACE_LIMIT_METRES = 50.0  # only bins this shallow are scored
 MAX_COMPARE_PROFILES = 200  # cap on day profiles run through every method.
-MIDDAY_MIDNIGHT_WINDOW_HOURS = (
-    1.5  # solar-time half-window (h) around noon/midnight for the regression.
-)
+MIDDAY_MIDNIGHT_WINDOW_HOURS = 1.5  # half-window (h) around solar noon/midnight
 TIMESERIES_DEPTH_LIMIT = 300.0  # max depth (m) shown in the timeseries section.
 TIMESERIES_DEPTH_MIN = 50.0  # min depth (m) the dynamic section window shrinks to.
 SECTION_MARKER_SIZE = 1.5  # scatter marker size for the section plots.

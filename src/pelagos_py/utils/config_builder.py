@@ -62,8 +62,8 @@ RENAME_TARGETS = {
 
 
 # ----------------------------------------------------------------------------
-# Template text model: the same "# ==== / # TITLE / # ====" banners the
-# dashboard builder groups steps by, and one block per step (its explanatory
+# Template text model: the "# ==== / # TITLE / # ====" banners that group the
+# steps into sections, and one block per step (its explanatory
 # comment lines plus the step itself) so both are dropped together.
 # ----------------------------------------------------------------------------
 class _Block:
@@ -163,7 +163,7 @@ def _render(head, blocks, tail):
 # Decisions
 # ----------------------------------------------------------------------------
 def _decision(id_, title, detail, options=(), default=None, section=None):
-    # `section`: the template section the choice can drop (shown as skipped by the dashboard).
+    # `section`: the template section the choice can drop.
     return {
         "id": id_,
         "title": title,
@@ -440,7 +440,7 @@ def default_choices(decs):
 
 
 def ask_choices(decs, ask=input):
-    # Terminal version of the dashboard's Build panel; Enter keeps the default.
+    # Enter keeps the default.
     choices = {}
     for d in decs:
         print(f"\n{d['title']}\n  {d['detail']}")
@@ -530,7 +530,7 @@ def build(
 ):
     """The template adapted to ``file_path``: paths patched in and each
     decision's choice applied (defaults where ``choices`` doesn't say).
-    ``visual_qc=False`` drops the Visual QC step, which pauses the run for the dashboard."""
+    ``visual_qc=False`` drops the Visual QC step, which pauses the run for interactive flagging."""
     probe = probe if probe is not None else file_probe.probe_file(file_path)
     decs = decisions(probe)
     choices = {**default_choices(decs), **(choices or {})}

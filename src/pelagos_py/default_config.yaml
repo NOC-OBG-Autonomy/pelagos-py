@@ -17,7 +17,7 @@
 # Pipeline Configuration
 pipeline:
   name: Complete processing pipeline
-  description: Default template for Pipeline.make_config and the dashboard, with no glider file loaded yet.
+  description: Default template for Pipeline.make_config, with no glider file loaded yet.
   out_directory: examples/data/OG1/
   log_file: complete_processing.log
   on_step_fail: pause  # pause (fix and re-run, or skip), skip, or stop
@@ -494,8 +494,8 @@ steps:
 # ===========================================================
 #                       VISUAL QC
 # ===========================================================
-# Flag by hand: the run pauses here and boxes drawn on the plot in the
-# dashboard are saved into 'boxes', so the same flags are repeated on re-runs.
+# Flag by hand: the run pauses here and boxes drawn on the plot are saved
+# into 'boxes', so the same flags are repeated on re-runs.
   - name: Apply QC
     parameters:
       qc_settings:

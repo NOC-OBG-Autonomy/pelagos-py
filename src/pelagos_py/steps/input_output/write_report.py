@@ -1014,15 +1014,13 @@ def qc_status(flag_counts: dict):
 
     In the future, these flag tolerances could be an optional kwarg that the user could specify in their configuration yaml.
     """
-    yellow_pts = 50  #   Number of *points* distinguishing yellow to orange
-    orange_per = (
-        0.02  #   Fraction of evaluated data points that distinguishes orange from red
-    )
+    yellow_pts = 50  # flagged points that turn yellow into orange
+    # fraction of evaluated points that turns orange into red
+    orange_per = 0.02
 
     counts = {int(flag): int(count) for flag, count in flag_counts.items()}
-    has_flag_8 = (
-        counts.get(8, 0) > 0
-    )  #   If any 8 flags are found, return this bool to denote special formatting
+    # any 8 (interpolated) flags get special formatting
+    has_flag_8 = counts.get(8, 0) > 0
 
     #   Trim down to flags that actually occurred.
     active_flags = {flag for flag, count in counts.items() if count > 0}
@@ -2293,7 +2291,7 @@ class WriteDataReport(BaseStep):
         },
         "show_glidertest": {
             "type": bool,
-            "default": False,
+            "default": True,
             "description": (
                 "Generate additional figures as done in glidertest's summary sheet."
             ),

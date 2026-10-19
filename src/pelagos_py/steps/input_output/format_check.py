@@ -223,7 +223,7 @@ class FormatCheck(BaseStep):
         return self.context
 
     def generate_diagnostics(self):
-        # full report (same text as the RST file) to stdout, where the dashboard captures it
+        # full report (same text as the RST file) to stdout
         self.log_generating_diagnostics()
         ComplianceChecker.stdout_output(
             self._check_suite, self._score_dict, 1, _LENIENT_LIMIT

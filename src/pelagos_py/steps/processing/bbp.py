@@ -137,6 +137,11 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
         fallback = self._closest_wavelength_var(full_vars, "BETA_BACKSCATTERING")
         if fallback:
             self.log_warn(f"'{self.apply_to}' not found; using '{fallback}' instead.")
+            if not fallback.endswith("700"):
+                self.log_warn(
+                    "Seawater scattering is still removed at 700 nm, so BBP from "
+                    f"'{fallback}' will be slightly off."
+                )
             return self._pull_into_subset(fallback)
 
         # Raw beta mislabelled as BBP<wl> is handled upstream by Prepare OG1 (bbp700_is_beta).

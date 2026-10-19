@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Demo OG1 datasets: the registry behind the dashboard's picker, and :func:`get_demo_file`.
+"""Demo OG1 datasets: the demo registry and :func:`get_demo_file`.
 
 ``DEMOS`` keys are the lower-case file names, e.g. ``churchill_647`` (delayed mode) and
 ``churchill_647_r`` (near real time); ``MISSIONS`` groups them by campaign in picker order.
@@ -161,14 +161,19 @@ MISSIONS = {
     mission: [_key(e) for e in entries] for mission, entries in _MISSION_ENTRIES.items()
 }
 
-# Where the dashboard keeps configs and demo data; relative paths in its configs resolve from here.
 WORKSPACE_DIR = Path.home() / "Documents" / "pelagos-py"
-DEMO_DATA_DIR = WORKSPACE_DIR / "demo_data"
+_REPO_EXAMPLES = Path(__file__).resolve().parents[3] / "examples"
+# A source checkout keeps demos with the examples; a pip install has no examples folder.
+if _REPO_EXAMPLES.is_dir():
+    DEMO_DATA_DIR = _REPO_EXAMPLES / "data" / "OG1"
+else:
+    DEMO_DATA_DIR = WORKSPACE_DIR / "demo_data"
 
 
 def get_demo_file(name=None, on_progress=None):
     """
-    Download a demo OG1 file into ``~/Documents/pelagos-py/demo_data`` (only the first time) and return its path.
+    Download a demo OG1 file into ``examples/data/OG1`` (``~/Documents/pelagos-py/demo_data``
+    for a pip install), only the first time, and return its path.
 
     Long deployments are cut down to a shorter time window after downloading. Call it with
     no name to list the demos.

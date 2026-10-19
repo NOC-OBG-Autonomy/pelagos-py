@@ -39,9 +39,8 @@ def test_descending_band_flags_values_inside_it():
 def test_infinite_descending_bound():
     """A descending [-5, -inf] flags everything below -5 (impossible band)."""
     data = make_data(PRES=[-10.0, -3.0])  # below -5, above -5
-    qc = range_qc(
-        data, variable_ranges={"PRES": {4: [-5, float("-inf")]}}
-    )  # descending
+    # descending bounds
+    qc = range_qc(data, variable_ranges={"PRES": {4: [-5, float("-inf")]}})
 
     assert list(qc.return_qc()["PRES_QC"].values) == [4, 1]
 
@@ -57,9 +56,8 @@ def test_single_scalar_flags_exact_matches():
 
 def test_scalar_and_range_entries_combine():
     """A variable can mix a scalar fill-value flag with band ranges."""
-    data = make_data(
-        PRES=[0.0, -3.0, -10.0]
-    )  # fill value, inside impossible band, deep-bad
+    # fill value, inside impossible band, deep-bad
+    data = make_data(PRES=[0.0, -3.0, -10.0])
     qc = range_qc(
         data,
         variable_ranges={"PRES": {9: 0.0, 3: [-2.4, -5], 4: [-5, float("-inf")]}},
@@ -104,9 +102,8 @@ def test_outside_keyword_flags_values_outside_band():
 def test_inside_keyword_flags_values_inside_band():
     """An explicit 'inside' keyword flags data within the band, regardless of bound order."""
     data = make_data(PRES=[-10.0, -3.0, 0.0])  # outside, inside, outside
-    qc = range_qc(
-        data, variable_ranges={"PRES": {3: [-5, -2.4, "inside"]}}
-    )  # ascending bounds
+    # ascending bounds
+    qc = range_qc(data, variable_ranges={"PRES": {3: [-5, -2.4, "inside"]}})
 
     assert list(qc.return_qc()["PRES_QC"].values) == [1, 3, 1]
 
@@ -136,9 +133,8 @@ def test_inside_keyword_aliases(kw):
 
 def test_multiple_bands_for_one_flag():
     """A flag can list several bands; a point is flagged if it falls in any of them."""
-    data = make_data(
-        X=[2.5, 5.0, 0.05, 20.0]
-    )  # inside [2,3]; clean; outside [0.1,10]; outside
+    # inside [2,3]; clean; outside [0.1,10]; outside
+    data = make_data(X=[2.5, 5.0, 0.05, 20.0])
     qc = range_qc(
         data,
         variable_ranges={"X": {4: [[2, 3, "inside"], [0.1, 10, "outside"]]}},
@@ -229,9 +225,8 @@ def test_flag_instead_flags_companion_without_flagging_the_source():
 
 
 def test_flag_instead_merges_rather_than_overwrites_a_tested_companion():
-    data = make_data(
-        DEPTH=[50.0, 50.0], CHLA=[0.5, 200.0]
-    )  # second CHLA is out of range
+    # second CHLA is out of range
+    data = make_data(DEPTH=[50.0, 50.0], CHLA=[0.5, 200.0])
     qc = range_qc(
         data,
         variable_ranges={
@@ -262,9 +257,8 @@ def test_test_depth_range_adds_depth_requirement_and_limits_checks():
     )
     assert "DEPTH" in qc.required_variables
 
-    data = make_data(
-        TEMP=[100.0, 100.0], DEPTH=[-50.0, -500.0]
-    )  # in-window, out-of-window
+    # in-window, out-of-window
+    data = make_data(TEMP=[100.0, 100.0], DEPTH=[-50.0, -500.0])
     qc = range_qc(
         data,
         variable_ranges={"TEMP": {4: [-2.5, 40]}},

@@ -202,9 +202,8 @@ def _write_og1_file(path, variables):
 
 def test_validator_flags_loader_variable_missing_from_file(tmp_path):
     file_path = tmp_path / "data.nc"
-    _write_og1_file(
-        file_path, ["TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP"]
-    )  # no CNDC
+    # no CNDC
+    _write_og1_file(file_path, ["TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP"])
     steps = [{"name": "Load OG1", "parameters": {"file_path": str(file_path)}}]
     with pytest.raises(ValueError, match="CNDC"):
         check_pipeline_variables(steps, LOGGER)
@@ -236,9 +235,10 @@ def test_validator_allows_loader_variable_renamed_by_later_step(tmp_path):
 
 def test_validator_flags_variable_parameter_missing_from_file(tmp_path):
     file_path = tmp_path / "data.nc"
+    # no BBP700
     _write_og1_file(
         file_path, ["TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC"]
-    )  # no BBP700
+    )
     steps = [
         {"name": "Load OG1", "parameters": {"file_path": str(file_path)}},
         {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH", "PSAL"]}},

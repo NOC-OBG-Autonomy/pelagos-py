@@ -19,7 +19,6 @@
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
 from pelagos_py.utils.processing_utils import small_netcdf_chunk_cache
-import pelagos_py.utils.diagnostics as diag
 import json
 import os
 import threading
@@ -224,9 +223,5 @@ class ExportStep(BaseStep):
             bar.close()
 
     def generate_diagnostics(self):
-        """
-        Generate diagnostics for the export step.
-        """
-        self.log(f"Generating diagnostics for {self.step_name}")
-        diag.generate_diagnostics(self.context, self.step_name)
-        self.log("Diagnostics generated successfully.")
+        # nothing to plot for an export
+        return

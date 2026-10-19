@@ -487,10 +487,8 @@ class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
     required_variables = ["PROFILE_NUMBER"]
     optional_variables = ["TIME", "PROFILE_GRADIENT", "PRES"]
     variable_parameters = ["shift_vars", "pitch_name", "cast_id_var"]
-    variable_parameters_optional = (
-        "pitch_name",
-        "cast_id_var",
-    )  # unused with lag_seconds
+    # unused with lag_seconds
+    variable_parameters_optional = ("pitch_name", "cast_id_var")
     uses_data_subset = True
 
     parameter_schema = {
@@ -852,21 +850,13 @@ class DeriveOxygenConcentration(BaseStep, QCHandlingMixin):
                 f"[{self.step_name}] Calib coefficient matrix must be of shape (5, 4) for method 'poly'."
             )
 
-        # Build the internal coefficient matrix
-        coeffs_matrix = np.full((5, 4), 0)
-        for i, row in enumerate(self.calib_coefficient_matrix):
-            coeffs_matrix[i, :] = row
-
-        # Apply the conversion
-        poly_temp = np.array(
-            [self.data[self.temperature_name].values ** i for i in range(4)]
-        )[np.newaxis, :, :]
-        molar_doxy = (
-            (poly_temp * coeffs_matrix[:, :, np.newaxis]).sum(axis=1)
-            * np.array([self.data["CAL_PHASE_DOXY"].values ** i for i in range(5)])
-        ).sum(axis=0)
-
-        return molar_doxy
+        # row i, column j multiplies CAL_PHASE_DOXY**i * temperature**j
+        coeffs_matrix = np.asarray(self.calib_coefficient_matrix, dtype=float)
+        return np.polynomial.polynomial.polyval2d(
+            self.data["CAL_PHASE_DOXY"].values,
+            self.data[self.temperature_name].values,
+            coeffs_matrix,
+        )
 
     def func_SVU(self):
         if len(self.svu_coefficients) != 7:

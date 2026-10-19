@@ -226,12 +226,10 @@ class range_qc(BaseQC):
 
         low, high = (a, b) if a <= b else (b, a)
         if mode == "outside":
-            return (vals < low) | (
-                vals > high
-            )  # good band -> flag outside (bounds good)
-        return (vals >= low) & (
-            vals <= high
-        )  # impossible band -> flag inside (bounds incl.)
+            # good band: flag outside it, bounds are good
+            return (vals < low) | (vals > high)
+        # impossible band: flag inside it, bounds included
+        return (vals >= low) & (vals <= high)
 
     def return_qc(self):
         n = len(self.data["N_MEASUREMENTS"])
