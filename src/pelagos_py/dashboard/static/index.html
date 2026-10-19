@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pelagos-py</title>
+  <link rel="icon" type="image/svg+xml" href="/img/NOC_logo.svg" />
+  <!-- CDN for now; vendor into static/vendor/ for a fully offline app later. -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/yaml/yaml.min.js"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Ubuntu:wght@500&display=swap" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div id="server-down" class="server-down hidden">Dashboard server stopped. Restart it with <code>pelagos-py dashboard</code>.</div>
+  <div class="shell">
+    <div class="main-col">
+      <div class="tabs">
+        <div class="tab-left">
+          <!-- Name is filled from document.title; sizes are fitted by logo.js. -->
+          <div class="brand">
+            <img class="logo" src="/img/NOC_logo.svg" alt="" />
+            <div class="brand-text">
+              <span class="brand-name"></span>
+              <span class="brand-org">National Oceanography Centre</span>
+            </div>
+          </div>
+          <a class="docs-link" href="https://noc-obg-autonomy.github.io/pelagos-py/"
+             target="_blank" rel="noopener noreferrer" title="Guides &amp; step reference">
+            Documentation<span data-icon="external" data-icon-size="12"></span></a>
+        </div>
+        <div class="tab-main">
+          <div class="seg lg">
+            <button class="tab" data-tab="yaml"><span data-icon="code" data-icon-size="17"></span>YAML</button>
+            <button class="tab on" data-tab="run"><span data-icon="file" data-icon-size="17"></span>Log</button>
+            <button class="tab" data-tab="plots"><span data-icon="image" data-icon-size="17"></span>Plots</button>
+            <!-- Only while a run is paused on the `visual qc` test, in place of Plots. -->
+            <button class="tab tab-visual hidden" data-tab="visual"><span data-icon="image" data-icon-size="17"></span>Visual QC</button>
+            <button class="tab" data-tab="report"><span data-icon="file" data-icon-size="17"></span>Output</button>
+            <button class="tab" data-tab="inspect"><span data-icon="search" data-icon-size="17"></span>Inspect</button>
+            <button class="tab tab-files" data-tab="files"><span data-icon="folder" data-icon-size="17"></span>Files</button>
+          </div>
+          <div class="tab-right">
+            <!-- While paused, Run reads Continue and Re-run shows beside it. -->
+            <div class="tab-actions tab-actions-run">
+              <button id="btn-clear" class="warn" disabled title="Clear the last run's log and plots (the pipeline is kept)">
+                <span data-icon="trash2"></span>Clear</button>
+              <button id="btn-stop" class="danger" disabled><span data-icon="stop"></span>Stop</button>
+              <button id="btn-rerun" class="hidden" title="Re-run the paused step (or QC test) with the parameters in the builder">
+                <span data-icon="rerun"></span>Re-run</button>
+              <button id="btn-run" class="primary"><span data-icon="play"></span>Run</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <main class="layout">
+        <!-- Left rail: only shown on the Visual QC tab. -->
+        <aside class="palette">
+          <div id="visual-rail" class="visual-rail"></div>
+        </aside>
+        <!-- Centre: pipeline builder -->
+        <section class="builder">
+          <div class="builder-scroll">
+          <div id="build-panel" class="build-panel" hidden></div>
+          <!-- An error covers the settings at the same size, so the steps below never shift. -->
+          <div id="top-slot" class="top-slot">
+            <div id="pipeline-settings"></div>
+            <div id="validation-status" class="validation-status"></div>
+            <div id="config-note" class="config-note hidden"></div>
+          </div>
+          <div id="pipeline-steps"></div>
+          <div class="empty-hint" id="empty-hint">
+            Use “Add step” to start building a pipeline.
+          </div>
+          </div>
+          <div class="fc-legend step-legend">
+            <span class="fc-legend-title">Step type</span>
+            <span class="fc-legend-item"><span class="step-ico k-io"></span>Load / export</span>
+            <span class="fc-legend-item"><span class="step-ico k-proc"></span>Processing</span>
+            <span class="fc-legend-item"><span class="step-ico k-qc"></span>Quality control</span>
+            <span class="fc-legend-item"><span class="step-ico k-visual"></span>Visual QC</span>
+          </div>
+        </section>
+
+        <!-- Right: YAML + validation + run -->
+        <section class="output">
+          <div class="tab-panel hidden" data-panel="yaml">
+            <section class="files-section pipeline-file">
+              <div class="demos-head">
+                <strong>Pipeline</strong>
+                <!-- Type a name to save under, or ▾ to open a saved pipeline. -->
+                <div id="config-select" class="cfg-select">
+                  <input id="config-name" placeholder="pipeline name"
+                         title="Saves under this name — a new name creates a new pipeline, the current name overwrites it" />
+                  <button type="button" class="cfg-trigger icon-btn" aria-haspopup="listbox" aria-expanded="false"
+                          title="Open a saved pipeline"><span data-icon="down"></span></button>
+                  <ul class="cfg-menu hidden" role="listbox"></ul>
+                </div>
+                <button id="btn-save"><span data-icon="save"></span><span class="btn-label">Save</span></button>
+                <button id="btn-delete" class="danger"><span data-icon="trash"></span>Delete</button>
+                <button id="btn-reveal" title="Open the pipelines folder in Finder — saved pipelines live there as .yaml files">
+                  <span data-icon="folder"></span>Show folder</button>
+              </div>
+              <div class="demos-head pipeline-file-foot">
+                <span id="config-status" class="outputs-sub"></span>
+                <select id="theme-select" title="Editor colour theme">
+                  <option value="vscode-dark">Dark Modern</option>
+                  <option value="one-dark">One Dark Pro</option>
+                  <option value="dracula">Dracula</option>
+                  <option value="vscode-light">Light Modern</option>
+                </select>
+                <button id="btn-copy" title="Copy the YAML to the clipboard">
+                  <span data-icon="copy"></span>Copy</button>
+              </div>
+            </section>
+            <textarea id="yaml-editor"></textarea>
+          </div>
+
+          <div class="tab-panel" data-panel="run">
+            <div id="mem-meter" class="mem-meter hidden">
+              <div class="mem-head">
+                <span id="run-status" class="run-status"></span>
+                <span class="mem-stat">RAM <b id="mem-cur">–</b></span>
+                <span class="mem-stat mem-peak">peak <b id="mem-peak">–</b></span>
+                <span class="mem-stat mem-data">data <b id="mem-data">–</b></span>
+              </div>
+              <svg id="mem-spark" class="mem-spark" preserveAspectRatio="none"></svg>
+              <span class="mem-stat mem-time" title="Processing time; stops while the run is paused">time <b id="run-time">–</b></span>
+            </div>
+            <div id="mem-tooltip" class="mem-tooltip hidden"></div>
+
+            <div id="log-wrap" class="log-wrap">
+              <button id="log-to-bottom" class="icon-btn log-to-bottom hidden"
+                      title="Jump to latest" aria-label="Jump to latest">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"
+                     aria-hidden="true"><path d="M10 3h4v9h4l-6 7-6-7h4z"/></svg>
+              </button>
+              <pre id="log-console" class="log-console"></pre>
+            </div>
+          </div>
+
+          <div class="tab-panel hidden" data-panel="visual">
+            <div id="visual-workspace" class="visual-ws"></div>
+          </div>
+
+          <div class="tab-panel hidden" data-panel="plots">
+            <div id="step-review" class="step-review hidden"></div>
+            <div id="plots-gallery" class="plots-gallery"></div>
+            <p class="empty-hint" id="plots-empty">
+              Plots from steps with <code>diagnostics: true</code> show up here while
+              the pipeline runs. Click one to view it full size.
+            </p>
+          </div>
+
+          <div class="tab-panel hidden" data-panel="report">
+            <div id="report-view" class="report-view hidden"></div>
+            <p class="empty-hint" id="report-empty">
+              If the pipeline writes a PDF report (a <strong>Write Data Report</strong>
+              step), it appears here when the run reaches it — ready to open.
+            </p>
+            <section id="outputs" class="outputs">
+              <div class="outputs-head">
+                <div class="outputs-title">
+                  <strong>Output files</strong>
+                  <span id="outputs-sub" class="outputs-sub"></span>
+                </div>
+                <button id="btn-outputs-reveal" title="Open the output folder in Finder"><span data-icon="folder"></span>Show folder</button>
+                <button id="btn-outputs-clean" class="warn"><span data-icon="trash2"></span>Delete all</button>
+              </div>
+              <div id="outputs-list" class="outputs-list"></div>
+            </section>
+          </div>
+
+          <div class="tab-panel hidden" data-panel="inspect">
+            <div class="inspect-search-wrap">
+              <span class="inspect-search-icon" data-icon="search" data-icon-size="14"></span>
+              <input id="inspect-search" class="inspect-search" type="text"
+                     placeholder="Search parameters, sensors, attributes…" autocomplete="off" spellcheck="false" />
+            </div>
+            <div id="inspect-path" class="inspect-path"></div>
+            <div id="inspect-body" class="inspect-body hidden">
+              <section class="inspect-section" data-section="parameters">
+                <h3 class="inspect-section-title">Parameters <span class="inspect-count" id="inspect-count-parameters"></span></h3>
+                <div class="inspect-rows" id="inspect-rows-parameters"></div>
+              </section>
+              <section class="inspect-section" data-section="sensors">
+                <h3 class="inspect-section-title">Sensors <span class="inspect-count" id="inspect-count-sensors"></span></h3>
+                <div class="inspect-rows" id="inspect-rows-sensors"></div>
+              </section>
+              <section class="inspect-section" data-section="attributes">
+                <h3 class="inspect-section-title">Attributes <span class="inspect-count" id="inspect-count-attributes"></span></h3>
+                <div class="inspect-rows" id="inspect-rows-attributes"></div>
+              </section>
+            </div>
+            <p class="empty-hint" id="inspect-empty">
+              Add a file to '<strong>Load OG1</strong>'.
+            </p>
+          </div>
+
+          <!-- The user's own input files (paths kept in the browser) above the demo deployments. -->
+          <div class="tab-panel hidden" data-panel="files">
+            <div class="files-scroll">
+              <section class="files-section">
+                <div class="demos-head">
+                  <strong>Your files</strong>
+                  <input id="files-path" placeholder="Paste paths to OG1 NetCDF files" spellcheck="false" />
+                  <button id="btn-files-add" disabled>Add</button>
+                  <button id="btn-files-browse"><span data-icon="folder"></span>Browse…</button>
+                </div>
+                <div id="files-list"></div>
+              </section>
+              <p class="config-note files-tip">Click a file or demo to load it into the pipeline (demos download first).</p>
+              <section class="files-section" id="demos-section">
+                <div class="demos-head demos-toggle" id="demos-toggle">
+                  <span class="sec-chevron" id="demos-chevron"></span>
+                  <strong>Demo data</strong>
+                  <span id="demos-sub" class="outputs-sub"></span>
+                </div>
+                <div id="demos-body">
+                  <div id="demos-list" class="demos-list"></div>
+                  <div class="fc-legend">
+                    <span class="fc-legend-title">Data mode</span>
+                    <span class="fc-legend-item"><span class="tag accent">NRT</span>near real time: decimated, sent over satellite at sea</span>
+                    <span class="fc-legend-item"><span class="tag ok">Delayed</span>delayed mode: full dataset, offloaded after recovery</span>
+                  </div>
+                  <div class="demos-foot">
+                    <span>Data provided by <a href="https://www.bodc.ac.uk/" target="_blank" rel="noopener">BODC</a> (<a href="https://noc.ac.uk/" target="_blank" rel="noopener">NOC</a>) and <a href="https://voiceoftheocean.org/" target="_blank" rel="noopener">VOTO</a></span>
+                    <button id="btn-demos-clean" class="sm warn hidden"><span data-icon="trash2" data-icon-size="12"></span>Delete all downloads</button>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="/js/logo.js"></script>
+  <script src="/js/icons.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/forms.js"></script>
+  <script src="/js/builder.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/defaults.js"></script>
+  <script src="/js/build.js"></script>
+  <script src="/js/plot.js"></script>
+  <script src="/js/viewer.js"></script>
+  <script src="/js/visual.js"></script>
+  <script src="/js/review.js"></script>
+  <script src="/js/inspect.js"></script>
+  <script src="/js/demos.js"></script>
+  <script src="/js/outputs.js"></script>
+  <script src="/js/mem.js"></script>
+  <script src="/js/run.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
