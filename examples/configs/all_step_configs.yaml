@@ -31,8 +31,8 @@ pipeline:
  #   Console logging is always on. If log_file is not set (or set to None/null), no log file is written.
  log_file: last_run.log
  # [on_step_fail]: pause | skip | stop
- #   What happens when a step fails. pause (default) lets the dashboard show the step's
- #   failure plot so you can fix it and re-run, or skip it; outside the dashboard it skips.
+ #   What happens when a step fails. pause (default) waits so an interactive front end
+ #   can show the failure plot and let you fix and re-run; run from Python, it skips.
  on_step_fail: pause
 
 # All step configs
@@ -435,7 +435,7 @@ steps:
       #   Running average filter size used to smooth raw data when computing optimal time lags
       filter_window_size: 21
     # [diagnostics]:
-    #   Generates a dashboard summarising the CT-lag and thermal-mass corrections applied
+    #   Generates a figure summarising the CT-lag and thermal-mass corrections applied
     diagnostics: false
 
 
@@ -518,8 +518,8 @@ steps:
     # [diagnostics]:
     #   true: one overview figure (method comparison, corrected sections, example
     #   profile). all: also the annotated 'profile' for plot_profiles and the
-    #   method's reference / quenching-depth / sigmoid figures ("more diagnostics"
-    #   in the dashboard). A list of figure names selects individually.
+    #   method's reference / quenching-depth / sigmoid figures. A list of figure
+    #   names selects individually.
     diagnostics: false
 
 

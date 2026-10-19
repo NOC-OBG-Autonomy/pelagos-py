@@ -33,8 +33,8 @@ from pelagos_py.utils import fig_spec
 class visual_qc(BaseQC):
     """
     Flag samples inside (or outside) boxes drawn on an ``x_variable`` vs
-    ``y_variable`` plot. The dashboard lets you draw the boxes, but the result
-    is plain YAML, so the run can be repeated anywhere.
+    ``y_variable`` plot. Boxes can be drawn interactively or added to YAML;
+    either way they are plain YAML, so the run can be repeated anywhere.
 
     ``variables`` lists the variables to QC: a name, or a list of names flagged
     together. Each box flags its own ``variables`` (default: its ``y_variable``).
@@ -82,15 +82,14 @@ class visual_qc(BaseQC):
 
     qc_name = "visual qc"
     dynamic = True
-    overwrite_flags = (
-        True  # Apply QC replaces the columns this returns instead of merging them
-    )
+    # Apply QC replaces the returned columns instead of merging them
+    overwrite_flags = True
 
     parameter_schema = {
         "variables": {
             "type": list,
             "default": [],
-            "description": "Variables to QC, one entry per dashboard plot: a name or a list of names "
+            "description": "Variables to QC, one entry per plot: a name or a list of names "
             "flagged together, e.g. [CHLA, [TEMP, PSAL]].",
         },
         "x_variable": {
@@ -109,7 +108,7 @@ class visual_qc(BaseQC):
             "default": [],
             "description": "List of {x: [lo, hi], y: [lo, hi], flag: 0-9, mode: inside|outside, "
             "variables: [...], override: true, profiles|cycles: [...]} boxes; single-value x/y "
-            "is a point (nearest sample). Drawn in the dashboard, or written by hand.",
+            "is a point (nearest sample). Drawn interactively, or added to YAML.",
         },
         "flag_remaining_good": {
             "type": bool,
@@ -282,7 +281,7 @@ class visual_qc(BaseQC):
                     ax, x[has], y[has], self.flags[f"{var}_QC"].values[has]
                 )
             else:
-                fig_spec.points(ax, x[has], y[has], color="#9aa5ad")
+                fig_spec.points(ax, x[has], y[has], color=fig_spec.FLAG_COLOURS[0])
             for box in self.boxes:
                 if (box["x_variable"], box["y_variable"]) != (xv, yv) or box[
                     "variables"

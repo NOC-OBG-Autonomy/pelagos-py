@@ -393,7 +393,7 @@ class DeepCorrection(BaseStep, QCHandlingMixin):
             ax_reach,
             pnum[ok & ~has_val],
             depth[ok & ~has_val],
-            color="#b2bec3",
+            color=fig_spec.FLAGGED,
             label=f"no {self.apply_to}",
         )
         fig_spec.points(

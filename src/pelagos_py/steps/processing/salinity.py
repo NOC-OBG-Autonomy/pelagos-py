@@ -305,7 +305,7 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
         Notes
         -----
         Shifts the working copy ``self.cndc``; ``self.data`` is not changed.
-        ``self.ct_lag_median`` is stored for the diagnostics dashboard.
+        ``self.ct_lag_median`` is stored for the diagnostics figure.
         """
         profile_numbers = np.unique(
             self.data["PROFILE_NUMBER"].dropna(dim="N_MEASUREMENTS").values

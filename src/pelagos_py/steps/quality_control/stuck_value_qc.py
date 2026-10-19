@@ -18,6 +18,7 @@
 
 #### Mandatory imports ####
 import numpy as np
+import pandas as pd
 from pelagos_py.steps.base_qc import BaseQC, register_qc
 from pelagos_py.utils.qc_handling import propagate_flags, raw_name
 
@@ -90,33 +91,11 @@ class stuck_value_qc(BaseQC):
             # remove nans
             var_data = self.data[var].dropna(dim="N_MEASUREMENTS")
 
-            # Calculate forward (step=1) and backward (step=-1) differences across the variable
-            backward_diff = np.diff(var_data, append=0)
-            forward_diff = np.diff(var_data[::-1], append=0)[::-1]
-
-            # When either diff is 0 at a given index, then the value is stuck
-            stuck_value_mask = (backward_diff == 0) | (forward_diff == 0)
-
-            # Handle edge cases
-            for index, step in zip([0, -1], [1, -1]):
-                stuck_value_mask[index] = var_data[index] == var_data[index + step]
-
-            # The remaining processing has to be in int dtype
-            stuck_value_mask = stuck_value_mask.astype(int)
-
-            # Find transitions between stuck and unstuck
-            switching_points = np.diff(np.concatenate([[0], stuck_value_mask, [0]]))
-            starts = np.where(switching_points == 1)[0]
-            ends = np.where(switching_points == -1)[0]
-
-            # Replace the value of each element in a group of stuck values with the length of that group
-            for start, end in zip(starts, ends):
-                stuck_value_mask[start:end] = end - start
-
-            # Convert the stuck values mask into flags
-            bad_values = stuck_value_mask > n_stuck
-            stuck_value_mask[bad_values] = 4
-            stuck_value_mask[~bad_values] = 1
+            # each sample gets the length of the run of identical values it is in
+            values = pd.Series(var_data.values)
+            run_id = (values != values.shift()).cumsum()
+            run_length = values.groupby(run_id).transform("size").to_numpy()
+            stuck_value_mask = np.where(run_length > n_stuck, 4, 1)
 
             # Insert the flags into the QC column
             nan_mask = np.isnan(self.data[var])

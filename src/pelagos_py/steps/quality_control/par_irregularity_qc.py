@@ -195,16 +195,14 @@ def qc_par_flagging(pres, par, sun_elev, nei_par=3e-2):
     # ───────────────────────────────────────────────
     from scipy.stats import shapiro
 
-    _shapiro = getattr(
-        shapiro, "__wrapped__", shapiro
-    )  # scipy's nan_policy wrapper costs ~5x the test
+    # skip scipy's nan_policy wrapper, which costs ~5x the test itself
+    _shapiro = getattr(shapiro, "__wrapped__", shapiro)
     # Scan bottom-up and stop once pa (deepest p <= 1e-4) and, for night, any p <= 0 are known.
     pvals = np.full_like(pres_i, np.nan, dtype=float)
     finite_par = np.isfinite(par_i)
     found_pa, all_positive = False, True
-    with (
-        warnings.catch_warnings()
-    ):  # TODO: Dev. verbosity to disable warning ignoring. Also below...
+    # TODO: Dev. verbosity to disable warning ignoring. Also below...
+    with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         for i in range(pres_i.size - 1, -1, -1):
             seg = par_i[i:][finite_par[i:]]

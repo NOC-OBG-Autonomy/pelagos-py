@@ -425,15 +425,13 @@ def test_night_reference_mz_interpolates_the_bracketing_night_means():
 
 
 def test_night_reference_flz_uses_last_and_first_profiles():
-    assert _recon(_bracketed_step("flz")) == pytest.approx(
-        0.35
-    )  # 200 -> 400 at alpha 3/4
+    # 200 -> 400 at alpha 3/4
+    assert _recon(_bracketed_step("flz")) == pytest.approx(0.35)
 
 
 def test_night_reference_falls_back_to_preceding_when_not_bracketed():
-    assert _recon(_bracketed_step("mz", day_time_ns=9)) == pytest.approx(
-        0.1
-    )  # preceding night alone
+    # preceding night alone
+    assert _recon(_bracketed_step("mz", day_time_ns=9)) == pytest.approx(0.1)
 
 
 def test_run_writes_adjusted_leaving_raw_and_reads_depth_adjusted():

@@ -2,7 +2,7 @@ name: pelagos_py
 channels:
   - conda-forge
 dependencies:
-  # Core environment
+  # Core environment (matches requirements.txt)
   - python
   - pip
   - numpy
@@ -12,28 +12,23 @@ dependencies:
   - netcdf4
   - h5py
   - h5netcdf
-  - zarr
-  - numcodecs
   - gsw
   - geopy
   - scikit-learn
-  - matplotlib
-  - seaborn
+  - matplotlib=3.11.0
   - requests
-  - python-graphviz
-  - polars
-  - geodatasets
   - shapely
-  - geopandas
   - pvlib
   - tqdm
+  - pyarrow
+  - cartopy
   - pyyaml
-  - pip
+  - psutil>=5.9
+  - glidertest
 
   # Dashboard (config authoring/running web UI)
   - fastapi>=0.110
   - uvicorn>=0.29
-  - psutil>=5.9
 
   # Documentation and development tools
   - ipykernel
@@ -48,17 +43,14 @@ dependencies:
   - sphinxcontrib-serializinghtml
   - myst-parser
   - pytest
-  - black
-  - pre-commit
-  - cartopy
-  - pyarrow
-  - glidertest
+  - ruff=0.16.10
 
   # Pypi only
   - pip:
     - glidertools
     - fpdf2
     - compliance-checker
+    - cc-plugin-ncei
     - cc-plugin-og
     - autoapi
     - sphinx_copybutton

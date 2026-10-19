@@ -134,9 +134,8 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
             values = self.data_copy[var].values.copy()
             values[filled] = interpolated[filled]
             self.data[var][:] = values
-            self.data[f"{var}_QC"].values[filled] = (
-                8  # in place: xr.where would drop the attrs
-            )
+            # set in place: xr.where would drop the attrs
+            self.data[f"{var}_QC"].values[filled] = 8
 
         if self.diagnostics:
             self.generate_diagnostics()

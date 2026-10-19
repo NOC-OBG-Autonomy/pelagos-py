@@ -28,45 +28,14 @@ from pelagos_py.utils.qc_handling import (
 #### Custom imports ####
 import xarray as xr
 import numpy as np
+import pandas as pd
 import json
 
 
 def _flag_summary(flags):
-    # flag counts 0-9 and the same stats as pandas describe(), from one bincount
     counts = np.bincount(flags.astype(np.int64), minlength=10)
-    n = int(counts.sum())
-    if n == 0:
-        return {i: 0 for i in range(10)}, {"count": 0.0}
-    values = np.arange(counts.size, dtype=float)
-    cum = np.cumsum(counts)
-    mean = float((values * counts).sum() / n)
-    std = (
-        float(np.sqrt(((values - mean) ** 2 * counts).sum() / (n - 1)))
-        if n > 1
-        else float("nan")
-    )
-
-    def quantile(q):  # numpy 'linear' method, as pandas describe uses
-        pos = q * (n - 1)
-        lo, hi = values[
-            np.searchsorted(cum, [int(pos), int(np.ceil(pos))], side="right")
-        ]
-        return float(lo + (hi - lo) * (pos - int(pos)))
-
-    lowest, highest = values[np.flatnonzero(counts)[[0, -1]]]
-    stats = {
-        "count": float(n),
-        "mean": mean,
-        "std": std,
-        "min": float(lowest),
-        "25%": quantile(0.25),
-        "50%": quantile(0.5),
-        "75%": quantile(0.75),
-        "max": float(highest),
-    }
-    return {i: int(counts[i]) for i in range(10)}, {
-        k: round(v, 5) for k, v in stats.items()
-    }
+    stats = pd.Series(flags).describe().round(5).to_dict()
+    return {i: int(counts[i]) for i in range(10)}, stats
 
 
 def _split_test_settings(settings):

@@ -299,7 +299,7 @@ def _make_step(context, parameters):
     return step
 
 
-def test_write_data_report_python(tmp_path, qc_dataset):
+def test_write_data_report(tmp_path, qc_dataset):
     context = {
         "global_parameters": {
             "out_directory": str(tmp_path) + "/",
@@ -337,7 +337,7 @@ def test_write_data_report_python(tmp_path, qc_dataset):
     assert result is context
 
 
-def test_write_data_report_python_defaults(tmp_path, qc_dataset):
+def test_write_data_report_defaults(tmp_path, qc_dataset):
     # No fname/title, so the name comes from filename_core.
     context = {
         "global_parameters": {
@@ -361,7 +361,7 @@ def test_write_data_report_python_defaults(tmp_path, qc_dataset):
     assert (tmp_path / "test_filename.pdf").exists()
 
 
-def test_write_data_report_python_missing_dataset_id(tmp_path, qc_dataset):
+def test_write_data_report_missing_dataset_id(tmp_path, qc_dataset):
     qc_dataset = qc_dataset.copy()
     qc_dataset.attrs.pop("dataset_id", None)
 

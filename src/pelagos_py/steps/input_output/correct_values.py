@@ -285,9 +285,10 @@ class CorrectValues(BaseStep):
         if copies:
             self.log(f"Wrote '{var}' to {', '.join(repr(o) for o in copies)}.")
 
+        new_units = self.corrected_units if self.applied else None
         for out in outs:
-            if self.corrected_units is not None:
-                self.data[out].attrs["units"] = self.corrected_units
+            if new_units is not None:
+                self.data[out].attrs["units"] = new_units
             if self.overwrite_description is not None:
                 self.data[out].attrs["comment"] = self.overwrite_description
             elif self.append_description is not None:
@@ -297,8 +298,8 @@ class CorrectValues(BaseStep):
                     if existing
                     else self.append_description
                 )
-        if self.corrected_units is not None:
-            self.log(f"Set {names} units to '{self.corrected_units}'.")
+        if new_units is not None:
+            self.log(f"Set {names} units to '{new_units}'.")
 
         self.context["data"] = self.data
         return self.context
