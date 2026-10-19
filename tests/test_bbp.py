@@ -19,13 +19,19 @@ def make_beta_context(temp=None, depth=None, flags=None, n=8):
             np.arange(n).astype("datetime64[s]").astype("datetime64[ns]"),
         ),
         "PROFILE_NUMBER": ("N_MEASUREMENTS", np.zeros(n)),
-        "DEPTH": ("N_MEASUREMENTS", ones * 10 if depth is None else np.asarray(depth, dtype=float)),
-        "TEMP": ("N_MEASUREMENTS", ones * 10 if temp is None else np.asarray(temp, dtype=float)),
-        "PRAC_SALINITY": ("N_MEASUREMENTS", ones * 35),
+        "DEPTH": (
+            "N_MEASUREMENTS",
+            ones * 10 if depth is None else np.asarray(depth, dtype=float),
+        ),
+        "TEMP": (
+            "N_MEASUREMENTS",
+            ones * 10 if temp is None else np.asarray(temp, dtype=float),
+        ),
+        "PSAL": ("N_MEASUREMENTS", ones * 35),
         "BBP700": ("N_MEASUREMENTS", ones * 2e-4),
     }
     ds = xr.Dataset(data)
-    for var in ("BBP700", "DEPTH", "TEMP", "PRAC_SALINITY"):
+    for var in ("BBP700", "DEPTH", "TEMP", "PSAL"):
         ds[f"{var}_QC"] = ("N_MEASUREMENTS", np.zeros(n, dtype=int))
     for var, var_flags in (flags or {}).items():
         ds[f"{var}_QC"] = ("N_MEASUREMENTS", np.asarray(var_flags, dtype=int))
@@ -35,7 +41,11 @@ def make_beta_context(temp=None, depth=None, flags=None, n=8):
 def make_beta_step(context, parameters=None):
     return BBPFromBeta(
         name="BBP from Beta",
-        parameters={"apply_to": "BBP700", "output_as": "BBP700_OUT", **(parameters or {})},
+        parameters={
+            "apply_to": "BBP700",
+            "output_as": "BBP700_OUT",
+            **(parameters or {}),
+        },
         diagnostics=False,
         context=context,
     )
@@ -57,6 +67,15 @@ def test_gaps_in_inputs_are_left_alone_and_bbp_is_not_derived_there():
     assert np.isfinite(out["BBP700_OUT"].values[[0, 1, 3, 4, 5, 6, 7]]).all()
 
 
+def test_runs_without_profile_number():
+    ctx = make_beta_context()
+    ctx["data"] = ctx["data"].drop_vars("PROFILE_NUMBER")
+
+    out = make_beta_step(ctx).run()["data"]
+
+    assert np.isfinite(out["BBP700_OUT"].values).all()
+
+
 def test_depth_is_never_modified():
     depth = [1, 2, np.nan, 4, 5, 6, 7, 8]
     ctx = make_beta_context(depth=depth)
@@ -65,6 +84,47 @@ def test_depth_is_never_modified():
     out = make_beta_step(ctx).run()["data"]
 
     assert np.array_equal(out["DEPTH"].values, before, equal_nan=True)
+
+
+def test_reads_adjusted_inputs_when_only_they_exist():
+    ctx = make_beta_context()
+    ctx["data"] = ctx["data"].rename(
+        {
+            "DEPTH": "DEPTH_ADJUSTED",
+            "DEPTH_QC": "DEPTH_ADJUSTED_QC",
+            "PSAL": "PSAL_ADJUSTED",
+            "PSAL_QC": "PSAL_ADJUSTED_QC",
+        }
+    )
+
+    out = make_beta_step(ctx).run()["data"]
+
+    assert np.isfinite(out["BBP700_OUT"].values).all()
+    assert "DEPTH" not in out and "PSAL" not in out
+
+
+def _seawater_beta(temp=10.0, sal=35.0, theta=124.0):
+    import glidertools as gt
+
+    beta_sw, _ = gt.flo_functions.flo_zhang_scatter_coeffs(temp, sal, theta, 700)
+    return float(beta_sw)
+
+
+def test_pure_seawater_beta_gives_zero_bbp():
+    ctx = make_beta_context()
+    ctx["data"]["BBP700"].values[:] = _seawater_beta()
+    out = make_beta_step(ctx).run()["data"]
+    assert out["BBP700_OUT"].values == pytest.approx(0.0, abs=1e-9)
+
+
+def test_bbp_is_particulate_definition():
+    # BBP = 2*pi*chi*(beta - beta_sw); the old flo_bback_total added b_bsw/2 (~3e-4) on top.
+    beta = 2e-4
+    ctx = make_beta_context()
+    ctx["data"]["BBP700"].values[:] = beta
+    out = make_beta_step(ctx).run()["data"]
+    expected = 2 * np.pi * 1.076 * (beta - _seawater_beta())
+    assert out["BBP700_OUT"].values == pytest.approx(expected, rel=1e-9)
 
 
 # --- Isolate BBP Spikes -----------------------------------------------------
@@ -81,7 +141,9 @@ def make_spikes_context(values, flags=None, n=None):
             "BBP700": ("N_MEASUREMENTS", np.asarray(values, dtype=float)),
             "BBP700_QC": (
                 "N_MEASUREMENTS",
-                np.zeros(n, dtype=int) if flags is None else np.asarray(flags, dtype=int),
+                np.zeros(n, dtype=int)
+                if flags is None
+                else np.asarray(flags, dtype=int),
             ),
         }
     )
@@ -91,7 +153,11 @@ def make_spikes_context(values, flags=None, n=None):
 def make_spikes_step(context, window_size=5):
     return IsolateBBPSpikes(
         name="Isolate BBP Spikes",
-        parameters={"apply_to": "BBP700", "window_size": window_size, "method": "median"},
+        parameters={
+            "apply_to": "BBP700",
+            "window_size": window_size,
+            "method": "median",
+        },
         diagnostics=False,
         context=context,
     )
@@ -132,3 +198,18 @@ def test_unflagged_stretch_does_drag_the_baseline():
     out = make_spikes_step(make_spikes_context(values)).run()["data"]
 
     assert out["BBP700_BASELINE"].values[good] == pytest.approx(99.0)
+
+
+def test_spikes_read_adjusted_but_keep_raw_based_names():
+    ctx = make_spikes_context(np.ones(20))
+    ctx["data"]["BBP700_ADJUSTED"] = ctx["data"]["BBP700"] * 2
+    ctx["data"]["BBP700_ADJUSTED_QC"] = ctx["data"]["BBP700_QC"]
+
+    out = make_spikes_step(ctx).run()["data"]
+
+    assert np.allclose(out["BBP700_BASELINE"].values, 2.0)
+    assert "BBP700_ADJUSTED_BASELINE" not in out
+    assert IsolateBBPSpikes.output_variables({"apply_to": "BBP700_ADJUSTED"}) == [
+        "BBP700_BASELINE",
+        "BBP700_SPIKES",
+    ]

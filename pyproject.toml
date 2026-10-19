@@ -1,7 +1,7 @@
 [build-system]
 build-backend = "setuptools.build_meta"
 requires = [
-  "setuptools>=42",
+  "setuptools>=77",
   "setuptools-scm",
   "wheel",
 ]
@@ -14,6 +14,8 @@ maintainers = [
   { name = "Daniel Bangay", email = "Daniel.Bangay@noc.ac.uk" },
 ]
 requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 classifiers = [
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.10",
@@ -36,11 +38,14 @@ dependencies = { file = [
   "requirements.txt",
 ] }
 
+[project.scripts]
+pelagos-py = "pelagos_py.cli:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-pelagos_py = ["default_config.yaml"]
+pelagos_py = ["default_config.yaml", "dashboard/static/**/*"]
 
 [tool.setuptools_scm]
 write_to = "src/pelagos_py/_version.py"
@@ -82,3 +87,20 @@ test = [
     "pytest",
     "pytest-cov",
 ]
+dashboard = [
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+    "psutil>=5.9",
+]
+
+[tool.ruff]
+# Left as-is until the pipeline manager overhaul
+extend-exclude = ["src/pelagos_py/pipeline_manager.py", "examples/notebooks/manager_demo.ipynb"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+per-file-ignores = { "*.ipynb" = ["E402"], "src/pelagos_py/steps/templates/*" = ["F401"] }
+
+[tool.pytest.ini_options]
+# Diagnostics call plt.show(), which can't display under the test backend
+filterwarnings = ["ignore:FigureCanvasAgg is non-interactive:UserWarning"]

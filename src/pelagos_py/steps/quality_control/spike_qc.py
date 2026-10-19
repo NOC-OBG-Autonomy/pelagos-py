@@ -18,7 +18,10 @@
 
 #### Mandatory imports ####
 import numpy as np
+import pandas as pd
 from pelagos_py.steps.base_qc import BaseQC, register_qc
+from pelagos_py.utils.processing_utils import profile_indices
+from pelagos_py.utils.qc_handling import propagate_flags, raw_name
 
 #### Custom imports ####
 import matplotlib.pyplot as plt
@@ -33,8 +36,9 @@ class spike_qc(BaseQC):
     Target Variable: Any
     Flag Number: 4 (bad)
     Variables Flagged: Any
-    Checks for spiking in the data using rolling median values compared against the
-    median average deviation (MAD).
+    Checks for spikes by comparing each value to a rolling median: values whose
+    residual exceeds the standard deviation of the residuals times the variable's
+    sensitivity are flagged.
 
     EXAMPLE
     -------
@@ -42,14 +46,12 @@ class spike_qc(BaseQC):
 
         - name: "Apply QC"
           parameters:
-            qc_settings: {
-                "spike test": {
-                  "variables": {"PRES": 2, "LATITUDE": 1},
-                  "also_flag": {"PRES": ["CNDC", "TEMP"], "LATITUDE": ["LONGITUDE"]},
-                  "plot": ["PRES", "LATITUDE"]
-                  "window_size": 10,
-                }
-            }
+            qc_settings:
+              spike qc:
+                variables: {PRES: 2, LATITUDE: 1}
+                also_flag: {PRES: [CNDC, TEMP], LATITUDE: [LONGITUDE]}
+                plot: [PRES, LATITUDE]
+                window_size: 10
           diagnostics: true
     """
 
@@ -76,11 +78,11 @@ class spike_qc(BaseQC):
         "plot": {
             "type": list,
             "default": [],
-            "description": "Variables to plot in diagnostics.",
+            "description": "Variables to plot in diagnostics (default: every tested variable).",
         },
         "window_size": {
             "type": int,
-            "default": 50,
+            "default": 7,
             "description": "Rolling-median window size used for spike detection.",
         },
     }
@@ -96,45 +98,45 @@ class spike_qc(BaseQC):
     def return_qc(self):
         # Subset the data, keeping any existing _QC so already-bad samples can be
         # excluded from the baseline below.
-        qc_cols = [f"{v}_QC" for v in self.variables if f"{v}_QC" in self.data]
-        self.data = self.data[self.required_variables + qc_cols]
+        self.data = self.data[self.keep_vars(*(f"{v}_QC" for v in self.variables))]
 
         # Generate the variable-specific flags
+        groups = profile_indices(self.data["PROFILE_NUMBER"].values)
+        self._untested = {}
         for var, sensitivity in self.variables.items():
             spike_qc = np.full(len(self.data[var]), 0)
+            values = self.data[var].values
+            qc_flags = (
+                self.data[f"{var}_QC"].values if f"{var}_QC" in self.data else None
+            )
+            untested = 0
 
             # Apply the checks across individual profiles
-            profile_numbers = np.unique(
-                self.data["PROFILE_NUMBER"].dropna(dim="N_MEASUREMENTS")
-            )
-            for profile_number in self.log_progress(
-                profile_numbers,
-                desc=f"[{var}]",
-                unit="prof",
+            for indices in self.log_progress(
+                groups.values(), desc=f"[{var}]", unit="prof", total=len(groups)
             ):
-                # Subset the data
-                profile = self.data.where(
-                    self.data["PROFILE_NUMBER"] == profile_number, drop=True
-                )
+                profile = values[indices]
+                missing = np.isnan(profile)
 
                 # Usable = not NaN and not already flagged bad/missing; only these
                 # inform the baseline, so prior-bad spikes can't bias detection.
-                usable = ~profile[var].isnull()
-                if f"{var}_QC" in profile:
-                    usable = usable & ~profile[f"{var}_QC"].isin(self.IGNORE_FLAGS)
+                usable = ~missing
+                if qc_flags is not None:
+                    usable &= ~np.isin(qc_flags[indices], self.IGNORE_FLAGS)
 
-                var_data = profile[var].where(usable, drop=True)
+                var_data = profile[usable]
                 if len(var_data) < self.window_size:
+                    untested += 1  # left 0: Apply QC's merge keeps the existing flag
                     continue
 
                 # Calculate the residules from the running median of the data
                 rolling_median = (
-                    var_data.to_pandas()
+                    pd.Series(var_data)
                     .rolling(window=self.window_size, center=True)
                     .median()
                     .to_numpy()
                 )
-                residules = var_data.to_numpy() - rolling_median
+                residules = var_data - rolling_median
 
                 # Define the residule threshold
                 threshold = np.nanstd(residules) * sensitivity
@@ -145,14 +147,16 @@ class spike_qc(BaseQC):
                 # NaNs are missing (9); excluded/usable points start good (1).
                 # Excluded points stay 1 so Apply QC's combinatrix keeps their
                 # existing (worse) flag; usable points take their spike result.
-                profile_flags = np.where(profile[var].isnull().to_numpy(), 9, 1)
-                profile_flags[np.where(usable.to_numpy())] = spike_flags
+                profile_flags = np.where(missing, 9, 1)
+                profile_flags[usable] = spike_flags
+                spike_qc[indices] = profile_flags
 
-                # Stitch the QC results back into the QC container
-                profile_indices = np.where(
-                    self.data["PROFILE_NUMBER"] == profile_number
+            self._untested[var] = (untested, len(groups))
+            if untested:
+                self.log_warn(
+                    f"{untested} of {len(groups)} profiles have fewer than {self.window_size} "
+                    f"usable {var} points (window_size) and were not tested."
                 )
-                spike_qc[profile_indices] = profile_flags
 
             # Add the flags to the data
             self.data[f"{var}_QC"] = (["N_MEASUREMENTS"], spike_qc)
@@ -160,7 +164,13 @@ class spike_qc(BaseQC):
             # Broadcast the QC found for var into variables specified by "also_flag"
             if extra_vars := self.also_flag.get(var):
                 for extra_var in extra_vars:
-                    self.data[f"{extra_var}_QC"] = self.data[f"{var}_QC"]
+                    base = self.data.get(
+                        f"{extra_var}_QC", xr.zeros_like(self.data[f"{var}_QC"])
+                    )
+                    self.data[f"{extra_var}_QC"] = (
+                        ["N_MEASUREMENTS"],
+                        propagate_flags(base, self.data[f"{var}_QC"]),
+                    )
 
         # Select just the flags
         self.flags = self.data[
@@ -172,16 +182,12 @@ class spike_qc(BaseQC):
     def plot_diagnostics(self):
         matplotlib.use("tkagg")
 
-        # If not plots were specified
-        if len(self.plot) == 0:
-            print(
-                f"WARNING: In '{self.qc_name}', diagnostics were called but no variables were specified for plotting."
-            )
-            return
+        plot_vars = self.plot or list(self.variables)
 
         # Plot the QC output
-        fig, axes = fig_spec.new_fig(nrows=len(self.plot), sharex=True)
-        for ax, var in zip(axes[:, 0], self.plot):
+        fig, axes = fig_spec.new_fig(nrows=len(plot_vars), sharex=True)
+        x = fig_spec.x_time(self.data)
+        for ax, var in zip(axes[:, 0], plot_vars):
             # Check that the user specified var exists in the test set
             if f"{var}_QC" not in self.qc_outputs:
                 print(
@@ -189,12 +195,19 @@ class spike_qc(BaseQC):
                 )
                 continue
 
-            fig_spec.flag_points(
-                ax, self.data["N_MEASUREMENTS"], self.data[var], self.data[f"{var}_QC"]
-            )
+            fig_spec.flag_points(ax, x, self.data[var], self.data[f"{var}_QC"])
             ylabel = fig_spec.axis_label(var, self.data[var].attrs.get("units"))
-            fig_spec.style_axes(ax, title=f"{var} Spike Test", xlabel="Index", ylabel=ylabel)
+            untested, total = self._untested.get(var, (0, 0))
+            title = f"{var} Spike Test"
+            if untested:
+                title += (
+                    f" — {untested} of {total} profiles untested (< window_size points)"
+                )
+            fig_spec.style_axes(ax, title=title, ylabel=ylabel)
+            if raw_name(var) in ("PRES", "DEPTH"):
+                ax.invert_yaxis()
             fig_spec.legend(ax, title="Flags")
+        fig_spec.x_axis(axes[-1][0], x)
 
         fig_spec.finish(fig)
         plt.show(block=True)

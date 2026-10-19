@@ -24,12 +24,60 @@ which redirects ``plt.show`` so the figures are written to disk instead of being
 displayed. The saved paths are then embedded by the report writer.
 """
 
+import atexit
 import contextlib
 import functools
 import os
+import pickle
+import subprocess
+import sys
 
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.collections import PathCollection
+from matplotlib.lines import Line2D
+from pelagos_py.utils import fig_spec
+
+
+def _decimate(fig):
+    # thins dense lines/scatters in place; returns the original data to restore
+    cap = fig_spec.CAPTURE_MAX_POINTS
+    restore = []
+    for ax in fig.axes:
+        for artist in ax.lines:
+            x, y = artist.get_data()
+            if len(x) > cap:
+                idx = fig_spec.thin_idx(len(x), cap)
+                restore.append((artist, x, y))
+                artist.set_data(np.asarray(x)[idx], np.asarray(y)[idx])
+        for artist in ax.collections:
+            if not isinstance(artist, PathCollection):
+                continue
+            offsets = artist.get_offsets()
+            if len(offsets) > cap:
+                idx = fig_spec.thin_idx(len(offsets), cap)
+                array = artist.get_array()
+                restore.append((artist, offsets, array))
+                artist.set_offsets(offsets[idx])
+                if array is not None:
+                    artist.set_array(array[idx])
+    return restore
+
+
+@contextlib.contextmanager
+def _decimated_for_save(fig):
+    restore = _decimate(fig)
+    try:
+        yield
+    finally:
+        for artist, a, b in restore:
+            if isinstance(artist, Line2D):
+                artist.set_data(a, b)
+            else:
+                artist.set_offsets(a)
+                if b is not None:
+                    artist.set_array(b)
 
 
 @contextlib.contextmanager
@@ -52,15 +100,78 @@ def force_headless_backend():
     original_backend = matplotlib.get_backend()
     matplotlib.use("Agg", force=True)
     matplotlib.use = lambda *args, **kwargs: None
+    fig_spec.MAX_POINTS = fig_spec.CAPTURE_MAX_POINTS
     try:
         yield
     finally:
+        fig_spec.MAX_POINTS = None
         matplotlib.use = original_use
         #   Best-effort restore: never let backend restoration break the run.
         try:
             matplotlib.use(original_backend, force=True)
         except Exception:  # noqa: BLE001 - backend restore must never be fatal
             pass
+
+
+# Rasterising a PNG often costs more than the step that drew it, so headless saves go to worker subprocesses.
+_SAVE_WORKERS = min(4, os.cpu_count() or 1)
+_workers = []  # [proc, [pending paths]]
+_next_worker = 0
+
+
+def _worker(i):
+    if i == len(_workers):
+        proc = subprocess.Popen(
+            [
+                sys.executable,
+                os.path.join(os.path.dirname(__file__), "fig_save_worker.py"),
+            ],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            text=True,
+        )
+        _workers.append([proc, []])
+    return _workers[i]
+
+
+def save_figure(fig, path, **kwargs):
+    """Save ``fig`` to ``path`` in the background; falls back to a direct save."""
+    global _next_worker
+    try:
+        with open(path + ".fig", "wb") as fh:
+            pickle.dump((fig, kwargs), fh, protocol=pickle.HIGHEST_PROTOCOL)
+        entry = _worker(_next_worker % _SAVE_WORKERS)
+        entry[0].stdin.write(path + "\n")
+        entry[0].stdin.flush()
+        entry[1].append(path)
+        _next_worker += 1
+    except Exception:  # noqa: BLE001 - unpicklable figure or dead worker
+        if os.path.exists(path + ".fig"):
+            os.remove(path + ".fig")
+        fig.savefig(path, **kwargs)
+
+
+def wait_for_saves():
+    """Block until every save_figure() call has produced its file."""
+    for proc, pending in _workers:
+        while pending:
+            path = pending.pop(0)
+            reply = proc.stdout.readline() if proc.poll() is None else ""
+            if not reply.startswith("ok") and os.path.exists(path + ".fig"):
+                with open(path + ".fig", "rb") as fh:
+                    fig, kwargs = pickle.load(fh)
+                os.remove(path + ".fig")
+                fig.savefig(path, **kwargs)
+
+
+@atexit.register
+def _shutdown_workers():
+    with contextlib.suppress(Exception):
+        wait_for_saves()
+    for proc, _ in _workers:
+        with contextlib.suppress(Exception):
+            proc.stdin.close()
+            proc.wait(timeout=5)
 
 
 def _save_open_figures(
@@ -81,9 +192,16 @@ def _save_open_figures(
     safe = f"{step_index:02d}_" + step_name.replace(os.sep, "_").replace(" ", "_")
     for num in plt.get_fignums():
         fig = plt.figure(num)
-        path = os.path.join(outdir, f"{safe}_{len(images) + 1}.png")
+        # registry figures carry their name (BaseStep.generate_diagnostics); others are numbered
+        suffix = getattr(fig, "_pelagos_figure", None) or str(len(images) + 1)
+        path = os.path.join(outdir, f"{safe}_{suffix}.png")
         try:
-            fig.savefig(path, dpi=150, bbox_inches="tight")
+            if close:
+                _decimate(fig)
+                save_figure(fig, path, dpi=150, bbox_inches="tight")
+            else:
+                with _decimated_for_save(fig):
+                    fig.savefig(path, dpi=150, bbox_inches="tight")
             images.append(path)
         except Exception:  # noqa: BLE001 - a capture failure must never be fatal
             pass
@@ -137,8 +255,12 @@ def capture_figures(
         GUI backend is the reason this path is opt-in only.
     """
     original_show = plt.show
+    max_points = fig_spec.MAX_POINTS
 
     if interactive:
+        fig_spec.MAX_POINTS = (
+            None  # the user sees every point; only the saved copy is thinned
+        )
         #   Switch this step to the interactive Tk backend so its figure can be
         #   displayed. ``matplotlib.use`` is neutralised for the run, so switch
         #   via pyplot directly.
@@ -175,6 +297,7 @@ def capture_figures(
             yield
     finally:
         plt.show = original_show
+        fig_spec.MAX_POINTS = max_points
         #   Catch any figures a diagnostic left open without calling show()
         #   (headless: never display these, just save them).
         _save_open_figures(outdir, step_name, step_index, images, close=True)

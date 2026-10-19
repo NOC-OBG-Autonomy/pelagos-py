@@ -7,7 +7,6 @@ interpolants, while still receiving the corrections themselves.
 from pelagos_py.steps.processing.salinity import AdjustSalinity
 
 import numpy as np
-import pytest
 import xarray as xr
 
 #: Sized so profiles span over an hour with > 3 * filter_window_size samples, which correct_ct_lag requires.
@@ -65,34 +64,58 @@ def run_step(context, parameters=None):
 
 
 def test_flagged_stretch_does_not_affect_its_neighbours_correction():
-    clean = run_step(make_context())["TEMP"].values
-    flagged = run_step(make_context(bad_block=BAD_BLOCK))["TEMP"].values
+    clean = run_step(make_context())["PSAL_ADJUSTED"].values
+    flagged = run_step(make_context(bad_block=BAD_BLOCK))["PSAL_ADJUSTED"].values
 
     assert np.allclose(clean[GOOD], flagged[GOOD], atol=1e-9)
 
 
 def test_flagged_samples_are_still_corrected():
-    flagged = run_step(make_context(bad_block=BAD_BLOCK))["TEMP"].values
+    flagged = run_step(make_context(bad_block=BAD_BLOCK))["PSAL_ADJUSTED"].values
 
     assert np.isfinite(flagged[BAD_BLOCK]).all()
 
 
 def test_without_the_filter_the_flagged_stretch_poisons_its_neighbours():
     # Counterpart: an empty calculation_flag_filter lets the bad stretch anchor the interpolants, which the default prevents above.
-    clean = run_step(make_context())["TEMP"].values
+    clean = run_step(make_context())["PSAL_ADJUSTED"].values
     unmasked = run_step(
         make_context(bad_block=BAD_BLOCK),
         {"qc_handling_settings": {"calculation_flag_filter": []}},
-    )["TEMP"].values
+    )["PSAL_ADJUSTED"].values
 
     # The good samples are dragged well away from their true correction.
     assert np.nanmax(np.abs(clean[GOOD] - unmasked[GOOD])) > 1.0
 
 
 def test_clean_data_is_unaffected_by_the_filter():
-    default = run_step(make_context())["TEMP"].values
+    default = run_step(make_context())["PSAL_ADJUSTED"].values
     disabled = run_step(
         make_context(), {"qc_handling_settings": {"calculation_flag_filter": []}}
-    )["TEMP"].values
+    )["PSAL_ADJUSTED"].values
 
     assert np.allclose(default, disabled, atol=1e-12, equal_nan=True)
+
+
+def test_cndc_and_temp_are_left_unchanged():
+    context = make_context(bad_block=BAD_BLOCK)
+    raw = context["data"].copy(deep=True)
+    result = run_step(context)
+
+    for var in ("CNDC", "TEMP", "CNDC_QC", "TEMP_QC"):
+        assert np.array_equal(result[var].values, raw[var].values)
+    assert "PSAL_ADJUSTED_QC" in result
+    assert (
+        result["PSAL_ADJUSTED"].attrs["standard_name"] == "sea_water_practical_salinity"
+    )
+
+
+def test_reads_adjusted_temperature_when_present():
+    context = make_context()
+    context["data"]["TEMP_ADJUSTED"] = context["data"]["TEMP"] + 1.0
+    context["data"]["TEMP_ADJUSTED_QC"] = context["data"]["TEMP_QC"].copy()
+
+    plain = run_step(make_context())["PSAL_ADJUSTED"].values
+    adjusted = run_step(context)["PSAL_ADJUSTED"].values
+
+    assert np.nanmean(np.abs(adjusted - plain)) > 0.5

@@ -30,6 +30,10 @@ pipeline:
  #   Default behavior overwrites the previous log file.
  #   Console logging is always on. If log_file is not set (or set to None/null), no log file is written.
  log_file: last_run.log
+ # [on_step_fail]: pause | skip | stop
+ #   What happens when a step fails. pause (default) waits so an interactive front end
+ #   can show the failure plot and let you fix and re-run; run from Python, it skips.
+ on_step_fail: pause
 
 # All step configs
 # The general structure of a step follows:
@@ -55,7 +59,7 @@ steps:
       # [additional_variables]:
       #   By default, TIME, GPS and raw CTD data are generated ("LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC")
       #   Variables listed in "additional_variables" will be added to the defaults
-      additional_variables: ["DENSITY", "ABS_SALINITY"]
+      additional_variables: ["DENSITY", "ASAL"]
       # [value_limits]:
       #   Random sampling range for specified variables
       value_limits:
@@ -88,7 +92,9 @@ steps:
 #   Applies an affine correction (corrected = slope * value + intercept) to a single variable.
 #   Useful for sensor cross-calibration or unit conversions. (Not needed for CNDC units:
 #   Derive CTD reads the units attribute and converts S/m -> mS/cm for gsw itself.)
-#   The shown config applies a cross-calibration to TEMP.
+#   The result is written to <target_variable>_ADJUSTED (the raw variable is kept), or to output_as
+#   if set. An existing <target_variable>_ADJUSTED is read instead, so corrections stack.
+#   The shown config applies a cross-calibration to TEMP, writing TEMP_ADJUSTED.
   - name: "Correct Values"
     parameters:
       # [target_variable]:
@@ -147,6 +153,10 @@ steps:
       # [output_path]:
       #   path to the file where the dataset will be exported to
       output_path: "../examples/data/OG1/Nelson_646_R_Processed.nc"
+      # [include_intermediates]:
+      #   Also export the working variables steps made along the way (e.g. the oxygen chain's
+      #   UNCAL_PHASE_DOXY, MOLAR_DOXY_PSAL). Defaults to false.
+      include_intermediates: false
 
 
 # ------------------------------------------------------------------------------------------- Quality Control ---------------------------------------------------------------------------------------------------
@@ -257,16 +267,14 @@ steps:
           #   Plots data coloured by flag for the variables listed.
           plot: [PRES, LATITUDE]
 
-        # valid_profile_test (*/valid_profile_test.py):
-        #   Flag: 4 (bad), 3 (probably bad)
-        #   Checks if profiles have at least N datapoints and contain data in a specific depth range
+        # valid_profile_qc (*/valid_profile_qc.py):
+        #   Flag: `flag` (default 4)
+        #   Flags whole profiles with fewer than min_length rows or no sample in depth_range
         valid profile qc:
-          # [profile_length]:
-          #   Number of datapoints per profile below which the entire profile will be flagged 4
-          profile_length: 1000
-          # [depth_range]:
-          #   DEPTH range that a profile must have at least one point in, otherwise it is flagged 3
-          depth_range: [0, .inf]
+          min_length: 1000        # Rows per profile below which the whole profile is flagged
+          depth_range: [0, .inf]  # OPTIONAL: depth_var window a profile must have a sample in
+          depth_var: PRES         # Variable used for depth_range
+          flag: 4                 # QC flag for failing profiles
 
         # flag_full_profile (*/flag_full_profile.py):
         #   Flag: 4 (bad)
@@ -326,21 +334,15 @@ steps:
         calculation_flag_filter: [3, 4, 9]
 
 # Interpolate Data (src/pelagos_py/steps/processing/interpolate_data.py):
-# Interpolates over nan values. Paired with QC handling allowing "bad data" to be replaced with nans and interpolated over.
+# Interpolates over nan values, and over samples carrying the listed QC flags; filled samples are flagged 8.
   - name: "Interpolate Data"
     parameters:
-      qc_handling_settings:
-        flag_filter_settings:
-          PRES: [3, 4, 9]
-          LATITUDE: [3, 4, 9]
-          LONGITUDE: [3, 4, 9]
-        reconstruction_behaviour: "replace"
-        flag_mapping:
-          3: 8
-          4: 8
-          9: 8
+      variables:  # per variable, the QC flags treated as gaps to fill
+        PRES: [3, 4, 9]
+        LATITUDE: [3, 4, 9]
+        LONGITUDE: [3, 4, 9]
     # [diagnostics]:
-    #   Creates two comparison plots of before & after interpolation
+    #   Plots the first variable, original samples vs interpolated fills
     diagnostics: false
 
 
@@ -406,15 +408,17 @@ steps:
 # CTD processing operates on variables output by the glider CTD (PRES, CNDC, TEMP).
 
 # Derive CTD (src/pelagos_py/steps/processing/derive_ctd.py):
-# Derives CTD variables using gsw-python (TEOS-10) from PRES, CNDC & TEMP
+# Derives CTD variables using gsw-python (TEOS-10) from PRES, CNDC & TEMP (their _ADJUSTED
+# versions where present). Each derived variable is written as <name>_ADJUSTED, e.g. PSAL_ADJUSTED;
+# one already in the dataset (e.g. PSAL_ADJUSTED from Salinity Adjustment) is skipped with a warning.
   - name: "Derive CTD"
     parameters:
       # [to_derive]:
       #   The user may specify a subset of the below variables to be derived and added to the dataset.
       to_derive: [
         DEPTH,
-        PRAC_SALINITY,
-        ABS_SALINITY,
+        PSAL,
+        ASAL,
         CONS_TEMP,
         DENSITY
       ]
@@ -423,23 +427,24 @@ steps:
 
 # Salinity Adjustment (src/pelagos_py/steps/processing/salinity.py -> AdjustSalinity):
 # Applies the thermal-lag correction for Salinity presented in Morrison et al 1994. It is recomended that this be used with
-# QC filtering as the data is used to optimize adjustment coefficients.
+# QC filtering as the data is used to optimize adjustment coefficients. Writes PSAL_ADJUSTED from the
+# corrected conductivity and temperature; the raw CNDC and TEMP are left unchanged.
   - name: "Salinity Adjustment"
     parameters:
       # [filter_window_size]:
       #   Running average filter size used to smooth raw data when computing optimal time lags
       filter_window_size: 21
     # [diagnostics]:
-    #   Generates a dashboard summarising the CT-lag and thermal-mass corrections applied
+    #   Generates a figure summarising the CT-lag and thermal-mass corrections applied
     diagnostics: false
 
 
 # ------------------------------------------------------------------------------------------- Chl-a processing -------------------------------------------------------------------------------------------
 
-# Note that the variables added to the dataset by these steps will appear as <input>_ADJUSTED unless
-# <input> already has the _ADJUSTED suffix, in which case, the input will be modified inplace.
+# These steps write <input>_ADJUSTED and keep the raw <input>. If <input>_ADJUSTED already exists
+# (e.g. CHLA_ADJUSTED after Deep Correction), it is read and updated instead.
 
-# Deep Correction (src/pelagos_py/steps/processing/deep_correction.py -> deep_correction):
+# Deep Correction (src/pelagos_py/steps/processing/deep_correction.py -> DeepCorrection):
 # Subtracts a constant dark offset so that deep, signal-free values are zeroed.
   - name: "Deep Correction"
     parameters:
@@ -471,7 +476,7 @@ steps:
     #   Plot the deep profiles used and the deep values before/after correction.
     diagnostics: false
 
-# CHLA Quenching (src/pelagos_py/steps/processing/chla_quenching.py -> chla_quenching_correction):
+# CHLA Quenching (src/pelagos_py/steps/processing/chla_quenching.py -> ChlaQuenchingCorrection):
 # Offers a selection of Non-photochemical quenching correction techniques for removing Chla signal
 # supression caused by phytoplankton quenching.
   - name: "CHLA Quenching"
@@ -485,6 +490,12 @@ steps:
       #   fl:bbp ratio within the MLD, needs BBP + MLD) and 'swart2015' (max fl:bbp
       #   ratio within the euphotic zone, needs BBP + PAR).
       method: xing2012
+      # [night_reference]:
+      #   thomalla2018 only. 'preceding' (default) uses the most recent night's
+      #   reference; 'mz' / 'flz' interpolate it in time between the bracketing
+      #   nights (Mitchell et al. 2024): between their mean profiles, or between the
+      #   last profile of the preceding night and the first of the following one.
+      night_reference: preceding
       # [hybrid]:
       #   Only used when method is 'xing2018'. When true (the default), shallow-mixing
       #   profiles (iPAR=15 depth > MLD) use the Terrats et al. (2020) X18_S08 hybrid
@@ -504,13 +515,18 @@ steps:
       # Note: the MLD-based methods ('xing2012'/'xing2018'/'sackmann2008')
       #   read the 'MLD' variable produced by a preceding 'Mixed Layer Depth' step;
       #   configure the MLD method and thresholds there, not here.
+    # [diagnostics]:
+    #   true: one overview figure (method comparison, corrected sections, example
+    #   profile). all: also the annotated 'profile' for plot_profiles and the
+    #   method's reference / quenching-depth / sigmoid figures. A list of figure
+    #   names selects individually.
     diagnostics: false
 
 
 # ------------------------------------------------------------------------------------------- Backscatter processing -------------------------------------------------------------------------------------------
 
-# Note that the variables added to the dataset by these steps will appear as <input>_ADJUSTED unless
-# <input> already has the _ADJUSTED suffix, in which case, the input will be modified inplace.
+# BBP from Beta writes a new variable (output_as, e.g. BBP700); later corrections to it, such as
+# Deep Correction, write BBP700_ADJUSTED.
 
 # BBP from Beta (src/pelagos_py/steps/processing/bbp.py -> BBPFromBeta):
 # Converts from units of beta to BBP
@@ -543,7 +559,7 @@ steps:
       apply_to: BBP700
       # [window_size]:
       #   Median/minmax filter window size in sample number
-      window_size: 50
+      window_size: 7
       # [method]:
       #   Method used to filter the data to determine the baseline
       method: median
@@ -614,7 +630,7 @@ steps:
   - name: "Molar DOXY Salinity Correction"
     parameters:
       # <MANDATORY>
-      salinity_name: "PRAC_SALINITY"
+      salinity_name: "PSAL"
       temperature_name: "CONS_TEMP"
       # <OPTIONAL>
       # reference_salinity: 0
@@ -628,11 +644,16 @@ steps:
       uncalibrated_phase_correction_applied: true
     diagnostics: false
 
-  - name: Correct Values
+# Derive DOXY (src/pelagos_py/steps/processing/oxygen.py -> DeriveDOXY):
+# Converts molar oxygen (umol/L) to DOXY_ADJUSTED (umol/kg) using the potential density at zero pressure.
+  - name: "Derive DOXY"
     parameters:
-      target_variable: MOLAR_DOXY_PSAL_PRES
-      output_as: MOLAR_DOXY_ADJUSTED
-      append_description: Renamed from MOLAR_DOXY_PSAL_PRES.
+      # [apply_to]:
+      #   Molar oxygen variable to convert; MOLAR_DOXY for a file's shipped value.
+      apply_to: "MOLAR_DOXY_PSAL_PRES"
+      salinity_name: "PSAL"
+      temperature_name: "TEMP"
+      pressure_name: "PRES"
     diagnostics: false
 
 # ------------------------------------------------------------------------------------------- Report assembly -------------------------------------------------------------------------------------------
@@ -650,24 +671,24 @@ steps:
   - name: Write Data Report
     parameters:
       # [title]: string of the title
-      #   The title of the report, which will go on the title page
+      #   The title of the report, which will go on the title page.
       #   If left blank, it will use the filename core.
       title: "Data Pipeline Report"
-      # [fname]: string of the .rst filename
-      #   The filename of the main .rst file which will be written to within the pipeline's 
-      #   `out_directory`. If left blank, it will use the filename core.
-      fname: "data_report.rst"
-      # [build]: true/false
-      #   Whether to run Sphinx on the .rst at the end and generate the specified PDF
-      build: false
-      # [extent]: list of lat/lon
-      #   This is for use on the geographic extent of the inset figure. Helpful for providing
-      #   context to each glider mission, which can vary. Defaults to the Baltic Sea.
-      extent: [min_lon max_lon min_lat max_lon]
-
-      ### Below are additional reporting parameters for the future
-      # ext_format: pdf   # Something to eventually support - singletext, html
-      # overwrite: True   # Delete _build from within the "out_directory", if it exists
-      # template: None    # Could define conf.py or report generation orders different from the current base one
-      # figures: png      # Add .svg, .pdf support for vector formats
-      # method: Sphinx    # if Sphinx is found to be problematic on certain systems, attempt with another system
+      # [fname]: string of the .pdf filename
+      #   Written within the pipeline's `out_directory`. If left blank, it will use the filename core.
+      fname: "data_report.pdf"
+      # [delete_figures]: true/false
+      #   Delete the plot images once the PDF is built; false keeps them in a folder beside it.
+      delete_figures: true
+      # [show_*]: true/false
+      #   Include each section of the report.
+      show_format_check: true
+      show_configuration: true
+      show_diagnostic_plots: true
+      show_qc_summary: true
+      show_qc_plots: true
+      show_cross_section_plots: true
+      show_logs: true
+      show_index: true
+      # [logo_path]: path to a title-page logo image. Defaults to the NOC logo.
+      logo_path:

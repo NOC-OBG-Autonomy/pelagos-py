@@ -38,7 +38,7 @@ pip install pelagos-py
 Alternatively, you can install directly from the source using git:
 
 ```bash
-git clone [https://github.com/NOC-OBG-Autonomy/pelagos-py.git](https://github.com/NOC-OBG-Autonomy/pelagos-py.git)
+git clone https://github.com/NOC-OBG-Autonomy/pelagos-py.git
 cd pelagos-py
 # create/activate a virtual environment
 pip install -e . 
@@ -48,6 +48,20 @@ pip install -e .
 See [Getting Started](https://noc-obg-autonomy.github.io/pelagos-py/getting_started.html) for more details.
 
 ## How to run
+
+### From the terminal
+
+Installing pelagos-py adds a `pelagos-py` command:
+```bash
+pelagos-py dashboard              # opens the dashboard (pip install "pelagos_py[dashboard]")
+pelagos-py build glider.nc        # writes glider.yaml   (--ask to choose options, -o to save elsewhere)
+pelagos-py run glider.nc          # builds a config, then runs it
+pelagos-py run my_pipeline.yaml   # runs an existing config
+pelagos-py demo                   # lists demo datasets
+pelagos-py demo nelson_646_r      # downloads one and prints its path
+```
+
+### From Python
 
 1. ### Initialization
 
@@ -79,8 +93,7 @@ pipeline = Pipeline.make_config(get_demo_file("nelson_646_r"))
 
 Running the pipeline executes each step defined by the config in order
 ```python
- results = pipeline.run()
-
+results = pipeline.run()
 ```
 
 
@@ -100,7 +113,6 @@ Steps can optionally include diagnostic plots or summaries by setting:
 The entire pipeline configuration can be exported to a YAML file for reproducibility:
 ```python
 pipeline.export_config("exported_pipeline.yaml")
-
 ```
 
 
@@ -123,10 +135,11 @@ An example YAML configuration for a simple pipeline. See examples/notebooks/pipe
  
    - name: Derive CTD
      parameters:
+       # written as DEPTH_ADJUSTED, PSAL_ADJUSTED, ...
        to_derive: [
          DEPTH,
-         PRAC_SALINITY,
-         ABS_SALINITY,
+         PSAL,
+         ASAL,
          CONS_TEMP,
          DENSITY
        ]
@@ -136,12 +149,13 @@ An example YAML configuration for a simple pipeline. See examples/notebooks/pipe
      parameters:
        export_format: "netcdf"
        output_path: "../examples/data/OG1/Nelson_646_R_Processed.nc"
+       include_intermediates: false # true also exports working variables
 
 ```
 
 ## Extending the Pipeline
 
-A full breakdown can be found here: [Developer Guide](https://noc-obg-autonomy.github.io/pelagos-py/developer_guide.html).
+A full breakdown can be found here: [Developer Guide](https://noc-obg-autonomy.github.io/pelagos-py/development.html).
 
 # License
 

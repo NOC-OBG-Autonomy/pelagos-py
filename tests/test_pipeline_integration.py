@@ -65,7 +65,9 @@ def synthetic_nc(tmp_path_factory):
     try:
         Pipeline(config_path=str(config_file)).run()
     except Exception as e:
-        pytest.fail(f"Synthetic data pipeline (Generate Data + Data Export) failed: {e}")
+        pytest.fail(
+            f"Synthetic data pipeline (Generate Data + Data Export) failed: {e}"
+        )
 
     assert output_nc.exists(), (
         "Synthetic data pipeline ran without error but did not produce an output file."
@@ -91,7 +93,9 @@ def test_generate_and_export(synthetic_nc):
 
 
 @pytest.mark.filterwarnings("ignore:.*monotonically increasing.*")
-@pytest.mark.filterwarnings("ignore:.*Removed.*records containing invalid or pre-deployment timestamps.*")
+@pytest.mark.filterwarnings(
+    "ignore:.*Removed.*records containing invalid or pre-deployment timestamps.*"
+)
 @pytest.mark.filterwarnings("ignore:.*Sanitised invalid flags to 0 in.*")
 def test_full_pipeline_execution(tmp_path, synthetic_nc):
 
@@ -117,7 +121,9 @@ def test_full_pipeline_execution(tmp_path, synthetic_nc):
         p = Pipeline(config_path=str(config_file))
         p.run()
 
-        assert output_nc.exists(), "The pipeline completed, but the output file was not created."
+        assert output_nc.exists(), (
+            "The pipeline completed, but the output file was not created."
+        )
 
     except Exception as e:
         pytest.fail(f"Pipeline stopped unexpectedly: {e}")
@@ -136,10 +142,11 @@ steps:
 
   - name: "Apply QC"
     parameters:
+      # Unknown test name: passes pre-flight validation, fails at run time -> exercises on_step_fail
       qc_settings:
-        range qc:
+        nonexistent qc:
           variable_ranges:
-            BBP700:
+            PRES:
               4: [0, 10]
 
   - name: "Data Export"
@@ -149,15 +156,15 @@ steps:
 """
 
 
-def _build_failing_step_pipeline(tmp_path, synthetic_nc, continue_on_step_fail=None):
+def _build_failing_step_pipeline(tmp_path, synthetic_nc, on_step_fail=None):
     config = yaml.safe_load(FAILING_STEP_YAML)
     config_file = tmp_path / "failing_step_pipeline.yaml"
     output_nc = tmp_path / "continue_on_fail_output.nc"
 
     config["pipeline"]["out_directory"] = str(tmp_path)
     config["pipeline"]["log_file"] = str(tmp_path / "test.log")
-    if continue_on_step_fail is not None:
-        config["pipeline"]["continue_on_step_fail"] = continue_on_step_fail
+    if on_step_fail is not None:
+        config["pipeline"]["on_step_fail"] = on_step_fail
 
     for step in config["steps"]:
         if step["name"] == "Load OG1":
@@ -172,32 +179,34 @@ def _build_failing_step_pipeline(tmp_path, synthetic_nc, continue_on_step_fail=N
 
 
 @pytest.mark.filterwarnings("ignore:.*monotonically increasing.*")
-def test_step_failure_stops_pipeline_when_disabled(tmp_path, synthetic_nc):
+def test_on_step_fail_stop_raises(tmp_path, synthetic_nc):
     p, output_nc = _build_failing_step_pipeline(
-        tmp_path, synthetic_nc, continue_on_step_fail=False
+        tmp_path, synthetic_nc, on_step_fail="stop"
     )
-    with pytest.raises(SystemExit):
+    with pytest.raises(RuntimeError):
         p.run()
     assert not output_nc.exists()
 
 
 @pytest.mark.filterwarnings("ignore:.*monotonically increasing.*")
-def test_continue_on_step_fail_skips_failing_step(tmp_path, synthetic_nc):
+def test_on_step_fail_skip_skips_failing_step(tmp_path, synthetic_nc):
     p, output_nc = _build_failing_step_pipeline(
-        tmp_path, synthetic_nc, continue_on_step_fail=True
+        tmp_path, synthetic_nc, on_step_fail="skip"
     )
     p.run()
     assert output_nc.exists(), (
-        "continue_on_step_fail should let the pipeline finish after a step fails."
+        "on_step_fail: skip should let the pipeline finish after a step fails."
     )
 
 
 @pytest.mark.filterwarnings("ignore:.*monotonically increasing.*")
-def test_continue_on_step_fail_defaults_to_enabled(tmp_path, synthetic_nc):
+def test_on_step_fail_defaults_to_pause_which_skips_outside_dashboard(
+    tmp_path, synthetic_nc
+):
     p, output_nc = _build_failing_step_pipeline(tmp_path, synthetic_nc)
     p.run()
     assert output_nc.exists(), (
-        "continue_on_step_fail should default to enabled (skip on fail)."
+        "the default (pause) should skip on fail outside the dashboard."
     )
 
 
@@ -211,5 +220,7 @@ def test_make_config_saves_yaml_next_to_file(tmp_path, synthetic_nc):
     config = yaml.safe_load(saved.read_text())
     assert config["steps"][0]["parameters"]["file_path"] == str(nc)
     assert config["pipeline"]["out_directory"] == f"{tmp_path}/"
-    assert "Interpolate PAR" not in [s["name"] for s in config["steps"]]  # no PAR in the file
+    assert "Interpolate PAR" not in [
+        s["name"] for s in config["steps"]
+    ]  # no PAR in the file
     assert Pipeline.load_config(saved).steps == pipeline.steps

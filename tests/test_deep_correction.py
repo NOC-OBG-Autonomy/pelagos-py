@@ -7,7 +7,7 @@ import numpy as np
 import xarray as xr
 import pytest
 
-DeepCorrection = deep_correction.deep_correction
+DeepCorrection = deep_correction.DeepCorrection
 MIN_DEEP_THRESHOLD = deep_correction.MIN_DEEP_THRESHOLD
 
 
@@ -64,7 +64,9 @@ def test_computes_dark_value_and_creates_adjusted():
     assert float(deep.median()) == pytest.approx(0.0, abs=0.1)
     # The correction is a constant offset of the whole record.
     assert np.allclose(
-        data["CHLA_ADJUSTED"].values, data["CHLA"].values - step.dark_value, equal_nan=True
+        data["CHLA_ADJUSTED"].values,
+        data["CHLA"].values - step.dark_value,
+        equal_nan=True,
     )
 
 
@@ -212,3 +214,21 @@ def test_raises_when_too_few_valid_deep_points():
 
     with pytest.raises(ValueError, match="valid deep points"):
         step.run()
+
+
+def test_depth_var_resolves_to_adjusted():
+    ctx = make_context(dark=0.7)
+    ctx["data"] = ctx["data"].rename({"PRES": "DEPTH_ADJUSTED"})
+    step = make_step({"apply_to": "CHLA", "depth_var": "DEPTH"}, ctx)
+
+    out = step.run()["data"]
+
+    assert step.dark_value == pytest.approx(0.7, abs=0.05)
+    assert "CHLA_ADJUSTED_QC" in out
+
+
+def test_output_variables_is_adjusted_apply_to():
+    assert DeepCorrection.output_variables({"apply_to": "BBP700"}) == [
+        "BBP700_ADJUSTED"
+    ]
+    assert DeepCorrection.output_variables({}) == ["CHLA_ADJUSTED"]
