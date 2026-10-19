@@ -38,11 +38,14 @@ dependencies = { file = [
   "requirements.txt",
 ] }
 
+[project.scripts]
+pelagos-py = "pelagos_py.cli:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-pelagos_py = ["default_config.yaml"]
+pelagos_py = ["default_config.yaml", "dashboard/static/**/*"]
 
 [tool.setuptools_scm]
 write_to = "src/pelagos_py/_version.py"
@@ -83,6 +86,11 @@ color = true
 test = [
     "pytest",
     "pytest-cov",
+]
+dashboard = [
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+    "psutil>=5.9",
 ]
 
 [tool.ruff]

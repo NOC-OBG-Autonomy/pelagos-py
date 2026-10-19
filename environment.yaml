@@ -26,6 +26,10 @@ dependencies:
   - psutil>=5.9
   - glidertest
 
+  # Dashboard (config authoring/running web UI)
+  - fastapi>=0.110
+  - uvicorn>=0.29
+
   # Documentation and development tools
   - ipykernel
   - jupyterlab
