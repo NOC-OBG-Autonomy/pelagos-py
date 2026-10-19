@@ -19,110 +19,27 @@ A module for diagnostic plotting and data summarization.
 """
 
 import matplotlib.pyplot as plt
-import seaborn as sns
 import xarray as xr
 import pandas as pd
 import numpy as np
-import matplotlib.dates as mdates
-from geopy.distance import geodesic
 from pelagos_py.utils.time import safe_median_datetime, add_datetime_secondary_xaxis
-from typing import Dict, List, Optional
-
-
-def plot_time_series(
-    data, x_var, y_var, title="Time Series Plot", xlabel=None, ylabel=None, **kwargs
-):
-    """Generates a time series plot for xarray data."""
-    if isinstance(data, xr.Dataset):
-        # Ensure that the variables exist in the xarray dataset
-        if x_var not in data.coords or y_var not in data:
-            raise ValueError(
-                f"Variables {x_var} and {y_var} must exist in the dataset."
-            )
-        x_data = data[x_var].values  # Extract x_data (usually time dimension)
-        y_data = data[y_var].values  # Extract the y_data (variable to plot)
-    else:
-        # Assuming custom format such as lists or arrays
-        x_data, y_data = data[0], data[1]
-
-    plt.figure(figsize=(10, 6))
-    plt.plot(x_data, y_data, **kwargs)
-    plt.xlabel(xlabel or x_var)
-    plt.ylabel(ylabel or y_var)
-    plt.title(title)
-    plt.show()
-
-
-def plot_histogram(data, var, bins=30, title="Histogram", xlabel=None, **kwargs):
-    """Generates a histogram for a given variable in xarray data."""
-    if isinstance(data, xr.Dataset):
-        # Ensure that the variable exists in the xarray dataset
-        if var not in data:
-            raise ValueError(f"Variable {var} must exist in the dataset.")
-        data_to_plot = data[var].values
-    else:
-        # Handle custom data types like lists or arrays
-        data_to_plot = data
-
-    plt.figure(figsize=(10, 6))
-    plt.hist(data_to_plot, bins=bins, alpha=0.7, **kwargs)
-    plt.xlabel(xlabel or var)
-    plt.ylabel("Frequency")
-    plt.title(title)
-    plt.show()
-
-
-def plot_boxplot(data, var, title="Box Plot", xlabel=None, **kwargs):
-    """Generates a box plot for a given variable in xarray data."""
-    if isinstance(data, xr.Dataset):
-        # Ensure that the variable exists in the xarray dataset
-        if var not in data:
-            raise ValueError(f"Variable {var} must exist in the dataset.")
-        data_to_plot = data[var].values
-    else:
-        # Handle custom data types like lists or arrays
-        data_to_plot = data
-
-    plt.figure(figsize=(10, 6))
-    sns.boxplot(data=data_to_plot, **kwargs)
-    plt.title(title)
-    plt.xlabel(xlabel or var)
-    plt.show()
-
-
-def plot_correlation_matrix(data, variables=None, title="Correlation Matrix", **kwargs):
-    """Generates a heatmap of the correlation matrix for xarray data."""
-    if isinstance(data, xr.Dataset):
-        if variables is None:
-            variables = list(data.data_vars)  # Use all variables by default
-        # Extract the variables to calculate the correlation matrix
-        corr = data[variables].to_array().T.corr(dim="dim_0")
-    else:
-        raise TypeError("Data must be a Xarray Dataset to generate correlation matrix.")
-
-    plt.figure(figsize=(10, 6))
-    sns.heatmap(corr, annot=True, cmap="coolwarm", fmt=".2f", linewidths=0.5, **kwargs)
-    plt.title(title)
-    plt.show()
+from typing import Dict, Optional
 
 
 def generate_info(data):
-    """Generate info for a given dataset"""
-    if isinstance(data, xr.Dataset):
-        # For xarray, we'll summarize each data variable
-        print("Data Info:")
-        print(data.info())
-    else:
+    """Print one line per variable: name, dtype, units, and whether a QC companion exists."""
+    if not isinstance(data, xr.Dataset):
         print("Data Info only supported for xarray Dataset ")
-
-
-def check_missing_values(data):
-    """Check for missing values in the dataset."""
-    if isinstance(data, xr.Dataset):
-        missing = data.isnull().sum()
-        print("Missing Values in Xarray Dataset:\n", missing)
-    else:
-        print("Missing value check only supported for xarray Dataset ")
+        return
+    names = sorted(v for v in data.variables if not str(v).endswith("_QC"))
+    n_qc = sum(f"{v}_QC" in data.variables for v in names)
+    print("Dimensions: " + ", ".join(f"{k}={v}" for k, v in data.sizes.items()))
+    print(f"Variables: {len(names)} ({n_qc} with QC flags)")
+    width = min(max((len(str(v)) for v in names), default=0), 24)
+    for v in names:
+        units = str(data[v].attrs.get("units", ""))
+        qc = "QC" if f"{v}_QC" in data.variables else ""
+        print(f"  {str(v):<{width}} {str(data[v].dtype):<14} {units:<12} {qc}".rstrip())
 
 
 #### General Diagnostics Functions ####
@@ -214,6 +131,8 @@ def find_closest_prof(df_a: pd.DataFrame, df_b: pd.DataFrame) -> pd.DataFrame:
     closest_ids = []
     time_diffs = []
     distances = []
+
+    from geopy.distance import geodesic
 
     for a_time, a_lat, a_lon in zip(a_times, a_lats, a_lons):
         time_diff = np.abs(b_times - a_time)
@@ -373,6 +292,8 @@ def find_candidate_glider_pairs(
     if df_cross.empty:
         return pd.DataFrame()
 
+    from geopy.distance import geodesic
+
     # Vectorised geodesic distance using np.vectorize
     def compute_dist_km(lat_a, lon_a, lat_b, lon_b):
         if pd.isna(lat_a) or pd.isna(lon_a) or pd.isna(lat_b) or pd.isna(lon_b):
@@ -448,7 +369,7 @@ def plot_heatmap_glider_df(
 
     H_cum = H.cumsum(axis=0).cumsum(axis=1)
     X, Y = np.meshgrid(yedges, xedges)
-    im = ax.pcolormesh(X, Y, H_cum, cmap="PuBu", shading="auto")
+    ax.pcolormesh(X, Y, H_cum, cmap="PuBu", shading="auto")
     # add additional axis if top row or right column
     if i == 0:
         secax = ax.secondary_xaxis("top")

@@ -18,36 +18,36 @@
 
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
-from pelagos_py.utils.qc_handling import QCHandlingMixin
-from pelagos_py.utils.processing_utils import *
-import pelagos_py.utils.diagnostics as diag
+from pelagos_py.utils.qc_handling import QCHandlingMixin, prefer_adjusted, raw_name
+from pelagos_py.utils.processing_utils import remove_outliers
 
 #### Custom imports ####
-import xarray as xr
-import matplotlib.pyplot as plt
-import matplotlib as mpl
+import re
 import numpy as np
 import glidertools as gt
+import pandas as pd
 from pelagos_py.utils import fig_spec
 
 
 @register_step
 class BBPFromBeta(BaseStep, QCHandlingMixin):
-
     step_name = "BBP from Beta"
-    required_variables = ["TIME", "DEPTH", "TEMP", "PRAC_SALINITY"]
+    required_variables = ["TIME", "DEPTH", "TEMP", "PSAL"]
     provided_variables = []
-    # PROFILE_NUMBER is read in run() (data_subset) but not declared required above
-    # (pre-existing; left as-is to avoid changing pipeline-validation behaviour).
-    optional_variables = ["PROFILE_NUMBER"]
     variable_parameters = ["apply_to", "output_as"]
+    # apply_to is resolved at run time with fallbacks (see _resolve_beta_var)
+    variable_parameters_optional = ("apply_to",)
     uses_data_subset = True
 
     parameter_schema = {
         "apply_to": {
             "type": str,
-            "default": "BBP700",
-            "description": "Name of the variable to convert.",
+            "default": "BETA_BACKSCATTERING700",
+            "description": (
+                "Name of the beta backscatter variable to convert. If not found, "
+                "falls back to any other BETA_BACKSCATTERING<wavelength> variable "
+                "(closest to 700nm if several are present)."
+            ),
         },
         "output_as": {
             "type": str,
@@ -74,7 +74,7 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
 
             - name: "BBP from Beta"
               parameters:
-                apply_to: "BBP700"
+                apply_to: "BETA_BACKSCATTERING700"
                 output_as: "BBP700"
                 theta: 124
                 xfactor: 1.076
@@ -86,39 +86,39 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
         """
         self.filter_qc()
 
-        # Get the required variables
+        self.beta_var = self._resolve_beta_var()
+
+        temp, psal = self.resolve("TEMP"), self.resolve("PSAL")
         self.data_subset = self.data[
-            ["TIME", "PROFILE_NUMBER", "DEPTH", "TEMP", "PRAC_SALINITY", self.apply_to]
+            ["TIME", self.resolve("DEPTH"), temp, psal, self.beta_var]
         ]
 
-        # Gaps in TEMP/PRAC_SALINITY are left as NaN: BBP is not derived there and is
+        # Gaps in TEMP/PSAL are left as NaN: BBP is not derived there and is
         # flagged missing (9) below. Add an Interpolate Data step first for gap-free BBP.
 
-        # Apply the correction
-        bbp_corrected = gt.flo_functions.flo_bback_total(
-            self.data_subset[self.apply_to],
-            self.data_subset["TEMP"],
-            self.data_subset["PRAC_SALINITY"],
-            self.theta,
-            700,
-            self.xfactor,
+        # Particulate only, as BGC-Argo (Schmechtig et al.); gt's flo_bback_total adds seawater back in.
+        beta_sw, _ = gt.flo_functions.flo_zhang_scatter_coeffs(
+            self.data_subset[temp], self.data_subset[psal], self.theta, 700
+        )
+        bbp_corrected = (
+            2 * np.pi * self.xfactor * (self.data_subset[self.beta_var] - beta_sw)
         )
 
         # Stitch back into the data
         self.data[self.output_as] = bbp_corrected
         self.data[self.output_as].attrs["units"] = "m-1"
-        self.data[self.output_as].attrs["long_name"] = "Total particulate backscatter"
+        self.data[self.output_as].attrs["long_name"] = "Particulate backscatter"
         self.data[self.output_as].attrs["standard_name"] = self.output_as
 
         self.reconstruct_data()
         self.update_qc()
 
         # Generate QC if a new variable is added. Otherwise warn the user that input is being overwritten.
-        if self.apply_to != self.output_as:
-            self.generate_qc({f"{self.output_as}_QC": [f"{self.apply_to}_QC"]})
+        if self.beta_var != self.output_as:
+            self.generate_qc({f"{self.output_as}_QC": [f"{self.beta_var}_QC"]})
         else:
             self.log_warn(
-                f"'apply_to' and 'output_as' are the same. This will cause {self.apply_to} to be overwritten."
+                f"'apply_to' and 'output_as' are the same. This will cause {self.beta_var} to be overwritten."
             )
 
         if self.diagnostics:
@@ -127,31 +127,103 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
         self.context["data"].update(self.data)
         return self.context
 
-    def generate_diagnostics(self):
-        mpl.use("tkagg")
+    def _resolve_beta_var(self):
+        # apply_to, else the BETA_BACKSCATTERING<wl> closest to 700 nm
+        full_vars = self.context["data"].data_vars
+        beta_var = prefer_adjusted(self.apply_to, full_vars)
+        if beta_var in full_vars:
+            return self._pull_into_subset(beta_var)
 
-        # Clean both datasets
-        beta_clean = remove_outliers(self.data_subset[self.apply_to])
-        bbp_clean = remove_outliers(self.data[self.output_as])
+        fallback = self._closest_wavelength_var(full_vars, "BETA_BACKSCATTERING")
+        if fallback:
+            self.log_warn(f"'{self.apply_to}' not found; using '{fallback}' instead.")
+            if not fallback.endswith("700"):
+                self.log_warn(
+                    "Seawater scattering is still removed at 700 nm, so BBP from "
+                    f"'{fallback}' will be slightly off."
+                )
+            return self._pull_into_subset(fallback)
 
-        # Plot
-        plt.figure(figsize=(10, 6))
-        plt.boxplot(
-            [beta_clean, bbp_clean],
-            vert=True,
-            patch_artist=True,
-            labels=["Beta", "BBP"],
+        # Raw beta mislabelled as BBP<wl> is handled upstream by Prepare OG1 (bbp700_is_beta).
+        raise ValueError(
+            f"'{self.apply_to}' not found, and no BETA_BACKSCATTERING* variable is "
+            "present to fall back to."
         )
 
-        plt.title("Beta vs BBP")
-        plt.ylabel("Value")
-        plt.grid(True, linestyle="--", alpha=0.6)
-        plt.show(block=True)
+    def _pull_into_subset(self, name):
+        # QCHandlingMixin only subsets the configured apply_to, so a fallback may be missing
+        if name not in self.data:
+            self.data[name] = self.context["data"][name]
+            if f"{name}_QC" in self.context["data"]:
+                self.data[f"{name}_QC"] = self.context["data"][f"{name}_QC"]
+        return name
+
+    @staticmethod
+    def _closest_wavelength_var(names, prefix):
+        pattern = re.compile(rf"^{re.escape(prefix)}(\d+)$")
+        candidates = [
+            (abs(int(match.group(1)) - 700), name)
+            for name in names
+            if (match := pattern.match(name))
+        ]
+        return min(candidates)[1] if candidates else None
+
+    diagnostic_figures = {"boxplot": ("Beta vs BBP value distributions", True)}
+
+    def draw_figure(self, name):
+        beta_clean = remove_outliers(self.data_subset[self.beta_var])
+        bbp_clean = remove_outliers(self.data[self.output_as])
+        fig, axes = fig_spec.new_fig()
+        ax = axes[0][0]
+        # boxplot is not WebGL-safe (PNG-only in the dashboard) but is the point of this figure
+        ax.boxplot(
+            [beta_clean, bbp_clean],
+            patch_artist=True,
+            boxprops=dict(facecolor=fig_spec.CATEGORY[1], alpha=0.6),
+        )
+        ax.set_xticks(
+            [1, 2],
+            [
+                fig_spec.axis_label(
+                    self.beta_var, self.data_subset[self.beta_var].attrs.get("units")
+                ),
+                fig_spec.axis_label(self.output_as, "m-1"),
+            ],
+        )
+        fig_spec.style_axes(ax, ylabel="value")
+        fig_spec.finish(fig, f"{self.beta_var} vs {self.output_as}")
+        return fig
+
+
+def _rolling(arr, n, name):
+    # same as glidertools.cleaning.rolling_window, which uses expanding windows at both ends
+    i0 = n // 2
+    interior = getattr(pd.Series(arr).rolling(n), name)().to_numpy()[
+        n - 1 : arr.size - 1
+    ]
+    head = getattr(pd.Series(arr[:i0]).expanding(), name)().to_numpy()
+    tail = getattr(pd.Series(arr[::-1][: n - i0]).expanding(), name)().to_numpy()
+    return np.concatenate([head, interior, tail])
+
+
+def despike(var, window_size, spike_method="median"):
+    """Briggs et al. (2011) despike, as glidertools.cleaning.despike. Returns (baseline, spikes).
+
+    Gives the same result without building a (window x N) matrix (~1.6 GB on 2M samples).
+    """
+    arr = np.asarray(var, dtype=float)
+    mask = ~np.isnan(arr)
+    if spike_method.startswith("min"):
+        base = _rolling(_rolling(arr[mask], window_size, "min"), window_size, "max")
+    else:
+        base = _rolling(arr[mask], window_size, "median")
+    baseline = np.full(arr.shape, np.nan)
+    baseline[mask] = base
+    return baseline, arr - baseline
 
 
 @register_step
 class IsolateBBPSpikes(BaseStep, QCHandlingMixin):
-
     step_name = "Isolate BBP Spikes"
     required_variables = ["TIME"]
     provided_variables = []
@@ -166,8 +238,8 @@ class IsolateBBPSpikes(BaseStep, QCHandlingMixin):
         },
         "window_size": {
             "type": int,
-            "default": 50,
-            "description": "Median/minmax filter window size in samples.",
+            "default": 7,
+            "description": "Median/minmax filter window size in samples (7-point filter of Briggs et al. 2011).",
         },
         "method": {
             "type": str,
@@ -175,6 +247,13 @@ class IsolateBBPSpikes(BaseStep, QCHandlingMixin):
             "description": "Filter method used to determine the baseline.",
         },
     }
+
+    @classmethod
+    def output_variables(cls, parameters):
+        apply_to = parameters.get(
+            "apply_to", cls.parameter_schema["apply_to"]["default"]
+        )
+        return [f"{raw_name(apply_to)}_BASELINE", f"{raw_name(apply_to)}_SPIKES"]
 
     def run(self):
         """
@@ -185,7 +264,7 @@ class IsolateBBPSpikes(BaseStep, QCHandlingMixin):
             - name: "Isolate BBP Spikes"
               parameters:
                 apply_to: "BBP700"
-                window_size: 50
+                window_size: 7
                 method: "median"
               diagnostics: false
 
@@ -194,20 +273,25 @@ class IsolateBBPSpikes(BaseStep, QCHandlingMixin):
 
         """
         self.filter_qc()
+        self.source = self.resolve(self.apply_to)
+        base = raw_name(self.apply_to)
 
         # Flagged samples are left out of the despike so they cannot drag their
         # neighbours' rolling baseline; they get no baseline and are flagged missing (9)
         # below. Add an Interpolate Data step first for a gap-free baseline.
-        usable = self.data[self.apply_to].where(
-            self.calculation_mask([self.apply_to])
-        )
+        usable = self.data[self.source].where(self.calculation_mask([self.source]))
 
-        self.baseline, self.spikes = gt.cleaning.despike(
+        self.baseline, self.spikes = despike(
             usable, self.window_size, spike_method=self.method
         )
 
-        self.data[f"{self.apply_to}_BASELINE"] = self.baseline
-        self.data[f"{self.apply_to}_SPIKES"] = self.spikes
+        attrs = dict(usable.attrs)
+        attrs["history"] = attrs.get("history", "") + (
+            f"Isolate BBP Spikes: despike(window_size={self.window_size}, "
+            f"spike_method='{self.method}'), Briggs et al. (2011) as in glidertools.cleaning.despike;\n"
+        )
+        self.data[f"{base}_BASELINE"] = (usable.dims, self.baseline, attrs)
+        self.data[f"{base}_SPIKES"] = (usable.dims, self.spikes, dict(attrs))
 
         self.reconstruct_data()
         self.update_qc()
@@ -215,8 +299,8 @@ class IsolateBBPSpikes(BaseStep, QCHandlingMixin):
         # Generate QC if a new variable is added. Otherwise warn the user that input is being overwritten.
         self.generate_qc(
             {
-                f"{self.apply_to}_BASELINE_QC": [f"{self.apply_to}_QC"],
-                f"{self.apply_to}_SPIKES_QC": [f"{self.apply_to}_QC"],
+                f"{base}_BASELINE_QC": [f"{self.source}_QC"],
+                f"{base}_SPIKES_QC": [f"{self.source}_QC"],
             }
         )
 
@@ -226,31 +310,50 @@ class IsolateBBPSpikes(BaseStep, QCHandlingMixin):
         self.context["data"].update(self.data)
         return self.context
 
-    def generate_diagnostics(self):
-        mpl.use("tkagg")
+    diagnostic_figures = {
+        "baseline_spikes": ("Raw, baseline and isolated spikes", True)
+    }
 
-        raw = self.data[self.apply_to]
+    def draw_figure(self, name):
+        raw = self.data[self.source]
         time = self.data["TIME"]
 
         fig, axes = fig_spec.new_fig(nrows=2, sharex=True, height_ratios=(2, 1))
         ax1, ax2 = axes[0][0], axes[1][0]
 
         # Panel 1: raw and baseline time series.
-        ax1.plot(time[~np.isnan(raw)], raw[~np.isnan(raw)],
-                 ls="--", color=fig_spec.FLAGGED, label="Raw")
-        ax1.plot(time[~np.isnan(self.baseline)], self.baseline[~np.isnan(self.baseline)],
-                 color=fig_spec.CATEGORY[1], alpha=fig_spec.ALPHA, label="Baseline")
+        ax1.plot(
+            time[~np.isnan(raw)],
+            raw[~np.isnan(raw)],
+            ls="--",
+            color=fig_spec.FLAGGED,
+            label="Raw",
+        )
+        ax1.plot(
+            time[~np.isnan(self.baseline)],
+            self.baseline[~np.isnan(self.baseline)],
+            color=fig_spec.CATEGORY[1],
+            alpha=fig_spec.ALPHA,
+            label="Baseline",
+        )
 
         # Panel 2: isolated spike points.
-        fig_spec.points(ax2, time[~np.isnan(self.spikes)], self.spikes[~np.isnan(self.spikes)],
-                        color=fig_spec.CATEGORY[2], label="Spikes")
+        fig_spec.points(
+            ax2,
+            time[~np.isnan(self.spikes)],
+            self.spikes[~np.isnan(self.spikes)],
+            color=fig_spec.CATEGORY[2],
+            label="Spikes",
+        )
 
-        ylabel = fig_spec.axis_label(self.apply_to, self.data[self.apply_to].attrs.get("units"))
+        ylabel = fig_spec.axis_label(
+            self.source, self.data[self.source].attrs.get("units")
+        )
         for ax in (ax1, ax2):
-            fig_spec.date_axis(ax, which="x")
+            fig_spec.date_axis(ax, which="x", index=time.values)
             fig_spec.legend(ax)
         fig_spec.style_axes(ax1, ylabel=ylabel)
         fig_spec.style_axes(ax2, xlabel="Time", ylabel=ylabel)
 
-        fig_spec.finish(fig, suptitle=f"{self.apply_to}: Baseline Timeseries & Spikes")
-        plt.show(block=True)
+        fig_spec.finish(fig, suptitle=f"{self.source}: Baseline Timeseries & Spikes")
+        return fig

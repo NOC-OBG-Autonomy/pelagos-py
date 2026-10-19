@@ -17,14 +17,10 @@
 """Pipeline class definition to handle configuration and step execution."""
 
 import yaml
-import pandas as pd
-import numpy as np
-import xarray as xr
 import gc
 import os
 import time
 import logging
-import datetime as _dt
 import difflib
 import contextlib
 import shutil
@@ -36,14 +32,24 @@ from pelagos_py.utils.valid_config_check import check_pipeline_variables
 from pelagos_py.utils.log_levels import STOP, SEVERE
 from pelagos_py.utils.console import make_console_handler, progress_bar
 from pelagos_py.utils import config_builder, diagnostic_capture, file_probe
-
-REPORT_STEP_NAME = "Write Data Report (Python)"
-"""Name of the report step that triggers background diagnostic capture."""
-
 from pelagos_py.steps import create_step, STEP_CLASSES, resolve_step_name
+
+REPORT_STEP_NAME = "Write Data Report"
+"""Name of the report step that triggers background diagnostic capture."""
 
 _PIPELINE_LOGGER_NAME = "pelagos_py.pipeline"
 """Global logger name for the pipeline. Used to create child loggers for steps."""
+
+
+ON_STEP_FAIL = ("skip", "pause", "stop")
+
+
+def resolve_on_step_fail(value):
+    """Return the ``on_step_fail`` setting: "skip", "pause" or "stop" (default "pause")."""
+    v = str(value or "pause").strip().lower()
+    if v not in ON_STEP_FAIL:
+        raise ValueError(f"on_step_fail must be one of {ON_STEP_FAIL}, got {value!r}")
+    return v
 
 
 def _setup_logging(out_dir=None, log_file=None, level=logging.INFO):
@@ -162,14 +168,14 @@ class Pipeline(ConfigMirrorMixin):
         self.steps = []  # hierarchical step configs
         self.global_parameters = {}  # mirrors _parameters["pipeline"]
         self._context = None
+        self._diagnose_failures = False  # dashboard: plot every step failure
+        self.headless = False  # never open plot windows
 
         # initialise config mirror system
         self._init_config_mirror()
 
         if config_path is not None and config is not None:
-            raise ValueError(
-                "Provide either config_path or config, not both."
-            )
+            raise ValueError("Provide either config_path or config, not both.")
 
         has_config = config_path is not None or config is not None
         if config_path is not None:
@@ -212,8 +218,8 @@ class Pipeline(ConfigMirrorMixin):
         Build a config for an OG1 file from the default template and create a pipeline from it.
 
         The template's steps are adapted to what the file holds (e.g. the PAR steps are
-        dropped if it has no PAR) and the config is saved to ``config_path`` (default:
-        ``<file name>.yaml`` next to the file), so the run can be edited and repeated with
+        dropped if it has no PAR; Visual QC is left out as it needs the dashboard) and the
+        config is saved to ``config_path`` (default: ``<file name>.yaml`` next to the file), so the run can be edited and repeated with
         :meth:`load_config`. With ``ask=True`` each choice is asked in the terminal;
         otherwise the defaults are used and logged.
 
@@ -227,20 +233,35 @@ class Pipeline(ConfigMirrorMixin):
             raise ValueError(f"Could not read '{file_path}' to build a config for it.")
         config_path = Path(config_path or Path(file_path).with_suffix(".yaml"))
         if ask and config_path.exists():
-            if input(f"{config_path} already exists. Overwrite it? [y/N] ").strip().lower() != "y":
-                raise FileExistsError(f"{config_path} exists; pass config_path= to save elsewhere.")
+            if (
+                input(f"{config_path} already exists. Overwrite it? [y/N] ")
+                .strip()
+                .lower()
+                != "y"
+            ):
+                raise FileExistsError(
+                    f"{config_path} exists; pass config_path= to save elsewhere."
+                )
 
         decisions = config_builder.decisions(probe)
         choices = config_builder.ask_choices(decisions) if ask else None
         template = config_builder.DEFAULT_CONFIG.read_text()
         replaced = config_path.exists()
-        config_path.write_text(config_builder.build(template, str(file_path), probe, choices))
+        config_path.write_text(
+            config_builder.build(
+                template, str(file_path), probe, choices, visual_qc=False
+            )
+        )
 
         pipeline = cls(config_path=str(config_path))
-        pipeline.logger.info(f"{'Replaced' if replaced else 'Wrote'} config {config_path}")
+        pipeline.logger.info(
+            f"{'Replaced' if replaced else 'Wrote'} config {config_path}"
+        )
         if not ask:
             for d in decisions:
-                chosen = next((o["label"] for o in d["options"] if o["key"] == d["default"]), None)
+                chosen = next(
+                    (o["label"] for o in d["options"] if o["key"] == d["default"]), None
+                )
                 pipeline.logger.warning(f"{d['title']}: {chosen or d['detail']}")
         return pipeline
 
@@ -255,7 +276,9 @@ class Pipeline(ConfigMirrorMixin):
         steps_config : list of dict
             List of step configurations.
         """
-        self.logger.info("Assembling steps to run from config.", extra={"console": False})
+        self.logger.info(
+            "Assembling steps to run from config.", extra={"console": False}
+        )
         for step in progress_bar(steps_config, desc="Assembling steps", unit="step"):
             self.add_step(
                 step_name=step["name"],
@@ -375,12 +398,18 @@ class Pipeline(ConfigMirrorMixin):
         # performance logging. Capture mode additionally force-enables the
         # diagnostic code path so its figures can be saved for the report,
         # without otherwise changing how the step reports performance.
-        user_diagnostics = step.diagnostics
+        # a QC test with diagnostics on counts even when the step's own flag is off
+        qc_tests = (step.parameters or {}).get("qc_settings") or {}
+        user_diagnostics = step.diagnostics or any(
+            isinstance(t, dict) and bool(t.get("diagnostics"))
+            for t in qc_tests.values()
+        )
         # True when diagnostics run only to feed the report (not user-requested).
         step._report_capture = bool(capture and not user_diagnostics)
         captured_images = []
         if capture:
-            step.diagnostics = True
+            if not step.diagnostics:  # keep a user's own figure selection
+                step.diagnostics = True
             diagnostic_capture.make_diagnostics_safe(step)
 
         try:
@@ -398,7 +427,7 @@ class Pipeline(ConfigMirrorMixin):
                     # Steps the user explicitly enabled diagnostics on still get
                     # their interactive blocking popup (in addition to being
                     # saved into the report); force-captured steps stay headless.
-                    interactive=user_diagnostics,
+                    interactive=user_diagnostics and not self.headless,
                 )
                 if capture
                 else contextlib.nullcontext()
@@ -430,11 +459,23 @@ class Pipeline(ConfigMirrorMixin):
 
             return result
 
+        except SystemExit:  # step.halt(): already logged, propagates as is
+            self._plot_failure(step, user_diagnostics)
+            raise
         except Exception as e:
             self.logger.error(
                 f"Fatal error encountered while executing step '{step.name}': {e}"
             )
+            self._plot_failure(step, user_diagnostics)
             raise RuntimeError(f"Pipeline failed at step '{step.name}': {e}") from e
+
+    def _plot_failure(self, step, user_diagnostics):
+        if not (self._diagnose_failures or user_diagnostics):
+            return
+        try:
+            step.plot_failure()
+        except Exception as exc:  # noqa: BLE001 - never mask the real error
+            self.logger.warning("Failure plot for '%s' failed: %s", step.name, exc)
 
     def run_last_step(self):
         """
@@ -451,6 +492,34 @@ class Pipeline(ConfigMirrorMixin):
         """
         Runs the entire pipeline.
         """
+        # Pausing needs the dashboard; here it just skips.
+        stop_on_fail = (
+            resolve_on_step_fail(self.global_parameters.get("on_step_fail")) == "stop"
+        )
+        with self.run_context() as report_present:
+            # Headless Agg for the whole run: toggling the backend per step can crash on Windows
+            backend_ctx = (
+                diagnostic_capture.force_headless_backend()
+                if report_present
+                else contextlib.nullcontext()
+            )
+            with backend_ctx:
+                for step in self.steps:
+                    try:
+                        self._context = self.execute_step(step, self._context)
+                    except (RuntimeError, SystemExit):
+                        if stop_on_fail:
+                            raise
+                        # execute_step/halt() already logged the underlying
+                        # error; this just marks the step as skipped and moves
+                        # on, keeping the prior step's context.
+                        self.logger.log(
+                            SEVERE, "Step '%s' failed and was skipped.", step["name"]
+                        )
+
+    @contextlib.contextmanager
+    def run_context(self):
+        """Validate and set up report capture around a run; yields whether a report step is present."""
         try:
             check_pipeline_variables(self.steps, self.logger)
         except ValueError:
@@ -461,17 +530,20 @@ class Pipeline(ConfigMirrorMixin):
             )
             raise SystemExit(1) from None
 
-        # If the pipeline writes a report, capture each step's diagnostic plots
-        # in the background (regardless of that step's own diagnostics setting)
-        # so they can be embedded in the report. This exercises every step's
-        # diagnostic code, which is why it can slow the run down.
+        # A report captures every step's diagnostic plots (regardless of its own
+        # diagnostics setting) so they can be embedded, which slows the run down.
         report_params = next(
-            (s["parameters"] for s in self.steps if s["name"] == REPORT_STEP_NAME),
+            (
+                s.get("parameters") or {}
+                for s in self.steps
+                if s["name"] == REPORT_STEP_NAME
+            ),
             None,
         )
         report_present = report_params is not None
-        capture_diagnostics = report_present and report_params.get("show_diagnostic_plots", True)
-
+        capture_diagnostics = report_present and report_params.get(
+            "show_diagnostic_plots", True
+        )
         self._step_index = 0
         if capture_diagnostics:
             self._capture_diagnostics = True
@@ -483,38 +555,16 @@ class Pipeline(ConfigMirrorMixin):
                 "may run more slowly than usual. `pdb.trace()` may not work as "
                 "intended."
             )
-
-        # When capturing for the report, force the headless Agg backend once for
-        # the whole run (see force_headless_backend). Toggling the backend per
-        # step can hard-crash on Windows, so it stays on Agg start to finish.
-        backend_ctx = (
-            diagnostic_capture.force_headless_backend()
-            if report_present
-            else contextlib.nullcontext()
-        )
-        continue_on_step_fail = self.global_parameters.get(
-            "continue_on_step_fail", True
-        )
+        gc.freeze()  # keeps the per-step gc.collect() from walking every library object
         try:
-            with backend_ctx:
-                for step in self.steps:
-                    try:
-                        self._context = self.execute_step(step, self._context)
-                    except (RuntimeError, SystemExit):
-                        if not continue_on_step_fail:
-                            raise
-                        # execute_step/halt() already logged the underlying
-                        # error; this just marks the step as skipped and moves
-                        # on, keeping the prior step's context.
-                        self.logger.log(
-                            SEVERE, "Step '%s' failed and was skipped.", step["name"]
-                        )
+            yield report_present
         finally:
-            if report_present:
-                #   Figures have been embedded by the report writer by now.
-                if capture_diagnostics:
-                    shutil.rmtree(self._capture_dir, ignore_errors=True)
-                    self._capture_diagnostics = False
+            gc.unfreeze()
+            if capture_diagnostics:
+                #   Figures have been embedded by the report writer by now, unless it failed.
+                diagnostic_capture.wait_for_saves()
+                shutil.rmtree(self._capture_dir, ignore_errors=True)
+                self._capture_diagnostics = False
 
     def generate_config(self):
         """

@@ -15,7 +15,9 @@
 # limitations under the License.
 
 # config_mirror.py
-import os, yaml, json
+import os
+import yaml
+import json
 from pelagos_py.utils.yaml_loading import safe_load as yaml_safe_load
 
 
