@@ -1,0 +1,62 @@
+# Which step figure lands where under docs/_static. Rendered by render_figures.py.
+#
+# figures:  figures drawn by steps inside the pipeline run (their `diagnostics`
+#           must select them), keyed by output path -> {step, figure}.
+# variants: a step re-run on the pipeline's final dataset with its own
+#           parameters, for figures that need a different method/profile than
+#           the pipeline itself used. `figures` maps figure name -> output path.
+pipeline: examples/configs/docs_chla_bbp.yaml
+
+figures:
+  bbp/bbp_from_beta_boxplot.png: {step: BBP from Beta, figure: boxplot}
+  bbp/bbp_baseline_spikes_timeseries.png: {step: Isolate BBP Spikes, figure: baseline_spikes}
+  chla/npq_method_comparison.png: {step: CHLA Quenching, figure: method_comparison}
+  chla/npq_timeseries.png: {step: CHLA Quenching, figure: timeseries}
+  chla/npq_example_profile.png: {step: CHLA Quenching, figure: example_profile}
+
+# PROFILE is the shared example day profile, set by the docs dataset window.
+variants:
+  - step: CHLA Quenching
+    parameters: {method: sackmann2008, apply_to: CHLA_ADJUSTED, plot_profiles: [PROFILE]}
+    figures: {profile: chla/npq_sackmann2008.png}
+  - step: CHLA Quenching
+    parameters: {method: xing2012, apply_to: CHLA_ADJUSTED, plot_profiles: [PROFILE]}
+    figures: {profile: chla/npq_xing2012.png}
+  - step: CHLA Quenching
+    parameters: {method: biermann2015, apply_to: CHLA_ADJUSTED, plot_profiles: [PROFILE]}
+    figures: {profile: chla/npq_biermann2015.png}
+  - step: CHLA Quenching
+    parameters: {method: hemsley2015, apply_to: CHLA_ADJUSTED, plot_profiles: [PROFILE]}
+    figures: {reference: chla/npq_hemsley_regression.png, profile: chla/npq_hemsley_profile.png}
+  - step: CHLA Quenching
+    parameters: {method: swart2015, apply_to: CHLA_ADJUSTED, plot_profiles: [PROFILE]}
+    figures: {profile: chla/npq_swart2015.png}
+  - step: CHLA Quenching
+    # Thomalla anchors its quenching depth in the top 5 m, which the surface flag
+    # (3) excludes from calculations; let flag 3 through so the method can run.
+    parameters:
+      method: thomalla2018
+      apply_to: CHLA_ADJUSTED
+      qc_handling_settings: {calculation_flag_filter: [4, 9]}
+    figures:
+      reference: chla/npq_thomalla_night_reference.png
+      quenching_depth: chla/npq_thomalla_quenching_depth.png
+      profile: chla/npq_thomalla_profile.png
+  - step: CHLA Quenching
+    parameters:
+      method: thomalla2018
+      night_reference: mz
+      apply_to: CHLA_ADJUSTED
+      qc_handling_settings: {calculation_flag_filter: [4, 9]}
+    figures:
+      reference: chla/npq_mitchell_interpolation.png
+      profile: chla/npq_mitchell_profile.png
+  - step: CHLA Quenching
+    parameters: {method: xing2018, hybrid: false, apply_to: CHLA_ADJUSTED, plot_profiles: [PROFILE]}
+    figures: {profile: chla/npq_xing2018.png}
+  - step: CHLA Quenching
+    parameters: {method: xing2018, hybrid: true, apply_to: CHLA_ADJUSTED}
+    figures:
+      reference: chla/npq_terrats_mixing_regimes.png
+      sigmoid: chla/npq_terrats_sigmoid.png
+      profile: chla/npq_terrats_profile.png

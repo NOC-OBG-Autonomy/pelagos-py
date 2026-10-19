@@ -12,6 +12,15 @@ Steps are not limited to one per file — a single module can define multiple st
 
 Some steps can filter out bad data before processing, using the QC handling mechanism. The pipeline preserves the original dataset dimensions, so filtered data is either replaced or reinserted once the step completes. For how to build a step with this behaviour, see :doc:`Extending pelagos_py <user_guide>`.
 
+Raw and Adjusted Variables
+--------------------------
+
+Variables loaded from the input file are never overwritten. A step that changes the values of an existing variable, such as ``CHLA``, writes the result to ``CHLA_ADJUSTED`` instead, and every variable keeps its own QC column (``CHLA_QC`` and ``CHLA_ADJUSTED_QC``). The derived CTD variables (``PSAL``, ``ASAL``, ``CONS_TEMP``, ``DENSITY`` and ``DEPTH``) are always written with the ``_ADJUSTED`` suffix, so a value shipped in the file stays alongside the one the pipeline computed. The final oxygen product is ``DOXY_ADJUSTED``.
+
+Steps and QC tests read the ``_ADJUSTED`` version of a variable when it exists, and the raw one otherwise. This means a config can name ``PSAL`` and still use ``PSAL_ADJUSTED`` once a step has produced it, and corrections stack: a second correction of ``CHLA`` is applied to ``CHLA_ADJUSTED``. Because of this the order of the steps matters. Before running, the pipeline warns when a step reads a raw variable whose ``_ADJUSTED`` version is only produced by a later step, and when a config names an ``_ADJUSTED`` variable that will not exist yet, so the raw one is used instead.
+
+Some steps make working variables along the way, for example the intermediate stages of the oxygen processing. ``Data Export`` leaves these out of the exported file unless ``include_intermediates: true`` is set.
+
 Non-specific Steps
 ------------------
 
@@ -26,7 +35,6 @@ These steps are general utility tools used for data management, preparation, and
 * :doc:`Interpolate Data <api/pelagos_py/steps/processing/interpolate_data/index>`: Fills gaps in variables using mathematical interpolation.
 * :doc:`Load Data <api/pelagos_py/steps/input_output/load_data/index>`: The entry point for importing data into the pelagos_py.
 * :doc:`Prepare OG1 <api/pelagos_py/steps/input_output/prepare_og1/index>`: Normalises a loaded file's variable names and units onto what the other steps expect.
-* :doc:`Find Profile Direction <api/pelagos_py/steps/processing/profile_direction/index>`: Identifies whether data was collected during an ascent or descent.
 
 Variable Specific Steps
 -----------------------
@@ -47,4 +55,4 @@ When you add ``Apply QC`` to your configuration, you define a list of QC (such a
 2. **Merging Flags**: Combining results from multiple QC into a single QC column using standardised Argo flagging logic.
 3. **Diagnostics**: Generating visualisations to show which data points were flagged and why.
 
-For a full list of available QC and how to configure them, please refer to the :doc:`qc` page.
+For a full list of available QC and how to configure them, please refer to the :doc:`quality_control` page.

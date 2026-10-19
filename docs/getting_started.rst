@@ -95,7 +95,8 @@ Running the pipeline executes each step defined by the config in order:
 
 .. code-block:: python
 
-   results = pipeline.run()
+   pipeline.run()
+   data = pipeline.get_data()
 
 **Diagnostics & Visualisation**
 
@@ -129,10 +130,11 @@ A minimal YAML configuration for a simple pipeline. See ``examples/notebooks/pip
 
      - name: Derive CTD
        parameters:
+         # written as DEPTH_ADJUSTED, PSAL_ADJUSTED, ...
          to_derive: [
            DEPTH,
-           PRAC_SALINITY,
-           ABS_SALINITY,
+           PSAL,
+           ASAL,
            CONS_TEMP,
            DENSITY
          ]
@@ -142,6 +144,7 @@ A minimal YAML configuration for a simple pipeline. See ``examples/notebooks/pip
        parameters:
          export_format: "netcdf"
          output_path: "../examples/data/OG1/Nelson_646_R_Processed.nc"
+         include_intermediates: false # true also exports working variables
 
 Example Pipeline
 ----------------
