@@ -38,7 +38,7 @@ pip install pelagos-py
 Alternatively, you can install directly from the source using git:
 
 ```bash
-git clone [https://github.com/NOC-OBG-Autonomy/pelagos-py.git](https://github.com/NOC-OBG-Autonomy/pelagos-py.git)
+git clone https://github.com/NOC-OBG-Autonomy/pelagos-py.git
 cd pelagos-py
 # create/activate a virtual environment
 pip install -e . 
@@ -66,7 +66,7 @@ pipeline = Pipeline.make_config("glider.nc", ask=True)
 pipeline = Pipeline.load_config("my_pipeline.yaml")
 ```
 
-To try it without your own data, `get_demo_file` downloads a demo OG1 file into `examples/data/OG1` (only the first time) and returns its path; `get_demo_file()` lists the demos. `examples/python/run_demo.py` does this end to end.
+To try it without your own data, `get_demo_file` downloads a demo OG1 file into `~/Documents/pelagos-py/demo_data` (only the first time) and returns its path; `get_demo_file()` lists the demos. `examples/python/run_demo.py` does this end to end.
 ```python
 from pelagos_py import Pipeline, get_demo_file
 
@@ -79,8 +79,7 @@ pipeline = Pipeline.make_config(get_demo_file("nelson_646_r"))
 
 Running the pipeline executes each step defined by the config in order
 ```python
- results = pipeline.run()
-
+results = pipeline.run()
 ```
 
 
@@ -100,7 +99,6 @@ Steps can optionally include diagnostic plots or summaries by setting:
 The entire pipeline configuration can be exported to a YAML file for reproducibility:
 ```python
 pipeline.export_config("exported_pipeline.yaml")
-
 ```
 
 
@@ -123,10 +121,11 @@ An example YAML configuration for a simple pipeline. See examples/notebooks/pipe
  
    - name: Derive CTD
      parameters:
+       # written as DEPTH_ADJUSTED, PSAL_ADJUSTED, ...
        to_derive: [
          DEPTH,
-         PRAC_SALINITY,
-         ABS_SALINITY,
+         PSAL,
+         ASAL,
          CONS_TEMP,
          DENSITY
        ]
@@ -136,12 +135,13 @@ An example YAML configuration for a simple pipeline. See examples/notebooks/pipe
      parameters:
        export_format: "netcdf"
        output_path: "../examples/data/OG1/Nelson_646_R_Processed.nc"
+       include_intermediates: false # true also exports working variables
 
 ```
 
 ## Extending the Pipeline
 
-A full breakdown can be found here: [Developer Guide](https://noc-obg-autonomy.github.io/pelagos-py/developer_guide.html).
+A full breakdown can be found here: [Developer Guide](https://noc-obg-autonomy.github.io/pelagos-py/development.html).
 
 # License
 

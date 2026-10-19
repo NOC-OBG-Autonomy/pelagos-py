@@ -33,23 +33,42 @@ def test_unknown_demo_raises():
 
 def test_existing_file_is_not_downloaded_again(demo_dir, monkeypatch):
     (demo_dir / "Nelson_646_R.nc").write_bytes(b"already here")
-    monkeypatch.setattr(demo_data.requests, "get", lambda *a, **k: pytest.fail("downloaded"))
+    monkeypatch.setattr(
+        demo_data.requests, "get", lambda *a, **k: pytest.fail("downloaded")
+    )
     assert demo_data.get_demo_file("nelson_646_r") == demo_dir / "Nelson_646_R.nc"
 
 
 def test_download_is_cut_to_window(demo_dir, tmp_path_factory, monkeypatch):
     # Out-of-window and out-of-order samples are dropped.
-    times = np.array(["2024-07-31", "2024-08-02", "2024-08-01", "2024-08-03", "2024-09-05"],
-                     dtype="datetime64[ns]")
+    times = np.array(
+        ["2024-07-31", "2024-08-02", "2024-08-01", "2024-08-03", "2024-09-05"],
+        dtype="datetime64[ns]",
+    )
     source = tmp_path_factory.mktemp("src") / "full.nc"
-    xr.Dataset({"TEMP": ("N_MEASUREMENTS", np.arange(5.0))},
-               coords={"TIME": ("N_MEASUREMENTS", times)}).to_netcdf(source)
-    monkeypatch.setitem(demo_data.DEMOS, "tiny", DemoEntry(
-        "https://example.invalid/full.nc", "tiny.nc", ("2024-08-01", "2024-09-01"), "Tiny", "delayed"))
-    monkeypatch.setattr(demo_data.requests, "get", lambda *a, **k: FakeResponse(source.read_bytes()))
+    xr.Dataset(
+        {"TEMP": ("N_MEASUREMENTS", np.arange(5.0))},
+        coords={"TIME": ("N_MEASUREMENTS", times)},
+    ).to_netcdf(source)
+    monkeypatch.setitem(
+        demo_data.DEMOS,
+        "tiny",
+        DemoEntry(
+            "https://example.invalid/full.nc",
+            "tiny.nc",
+            ("2024-08-01", "2024-09-01"),
+            "Tiny",
+            "delayed",
+        ),
+    )
+    monkeypatch.setattr(
+        demo_data.requests, "get", lambda *a, **k: FakeResponse(source.read_bytes())
+    )
     progress = []
 
-    path = demo_data.get_demo_file("tiny", on_progress=lambda done, total: progress.append(done))
+    path = demo_data.get_demo_file(
+        "tiny", on_progress=lambda done, total: progress.append(done)
+    )
 
     with xr.open_dataset(path) as ds:
         assert ds["TEMP"].values.tolist() == [1.0, 3.0]

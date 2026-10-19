@@ -19,6 +19,7 @@
 #### Mandatory imports ####
 import numpy as np
 from pelagos_py.steps.base_qc import BaseQC, register_qc
+from pelagos_py.utils.qc_handling import prefer_adjusted, propagate_flags
 
 #### Custom imports ####
 import matplotlib
@@ -26,24 +27,6 @@ import matplotlib.pyplot as plt
 import xarray as xr
 from pelagos_py.utils import fig_spec
 
-
-# Argo flag-merge matrix for propagating flags onto a companion: merging an existing
-# flag (row) with a new one (column) gives QC_COMBINATRIX[existing, new], so a worse
-# flag is never downgraded. Same logic as ApplyQC.organise_flags.
-QC_COMBINATRIX = np.array(
-    [
-        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-        [1, 1, 2, 3, 4, 5, 1, 1, 8, 9],
-        [2, 2, 2, 3, 4, 5, 2, 2, 8, 9],
-        [3, 3, 3, 3, 4, 3, 3, 3, 3, 9],
-        [4, 4, 4, 4, 4, 4, 4, 4, 4, 9],
-        [5, 5, 5, 3, 4, 5, 5, 5, 8, 9],
-        [6, 1, 2, 3, 4, 5, 6, 6, 8, 9],
-        [7, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-        [8, 8, 8, 3, 4, 8, 8, 8, 8, 9],
-        [9, 9, 9, 9, 9, 9, 9, 9, 9, 9],
-    ]
-)
 
 @register_qc
 class range_qc(BaseQC):
@@ -83,7 +66,7 @@ class range_qc(BaseQC):
                     4: [-5, -.inf, inside]
                     9: 0.0                  # single scalar -> flag the exact fill value 0.0
                   TEMP:
-                    3: [0, 30, outside]     # good band: flag data OUTSIDE it
+                    3: [-1, 30, outside]    # good band: flag data OUTSIDE it
                     4: [-2.5, 40, outside]
                   CNDC:
                     # one flag, two bands: flag bad both inside [2, 3] and outside [0.1, 10]
@@ -120,23 +103,23 @@ class range_qc(BaseQC):
             "type": dict,
             "required": True,
             "description": "Per-variable {flag: band} ranges. A band is [low, high, 'inside'|'outside'] "
-                           "('outside' flags data outside it, 'inside' flags data within it); the keyword "
-                           "may be omitted, in which case an ascending pair means outside and a descending "
-                           "pair means inside. A flag may give a list of bands to cover several ranges.",
+            "('outside' flags data outside it, 'inside' flags data within it); the keyword "
+            "may be omitted, in which case an ascending pair means outside and a descending "
+            "pair means inside. A flag may give a list of bands to cover several ranges.",
         },
         "also_flag": {
             "type": dict,
             "default": {},
             "description": "Propagate a variable's flags onto companion variables, e.g. "
-                           "{'CNDC': ['PRES', 'TEMP']}. Merged with the Argo matrix so the worst "
-                           "flag wins.",
+            "{'CNDC': ['PRES', 'TEMP']}. Merged with the Argo matrix so the worst "
+            "flag wins.",
         },
         "flag_instead": {
             "type": dict,
             "default": {},
             "description": "Like also_flag, but the source variable's own flags are not written, e.g. "
-                           "{'DEPTH': ['CHLA']} flags CHLA by DEPTH's ranges while leaving DEPTH "
-                           "unflagged.",
+            "{'DEPTH': ['CHLA']} flags CHLA by DEPTH's ranges while leaving DEPTH "
+            "unflagged.",
         },
         "test_depth_range": {
             "type": list,
@@ -167,15 +150,22 @@ class range_qc(BaseQC):
         # up front for a clear config error rather than an IndexError in return_qc.
         for var, meta in self.variable_ranges.items():
             for flag in meta:
-                if isinstance(flag, bool) or not isinstance(flag, int) or not (0 <= flag <= 9):
+                if (
+                    isinstance(flag, bool)
+                    or not isinstance(flag, int)
+                    or not (0 <= flag <= 9)
+                ):
                     raise ValueError(
                         f"[{self.qc_name}] invalid QC flag {flag!r} for variable "
                         f"{var!r}; expected an Argo QC flag 0-9."
                     )
 
+        # data is None when Apply QC only introspects the required variables
+        names = data.variables if data is not None else []
+        self.depth_var = prefer_adjusted("DEPTH", names)
         self.required_variables = self.tested_variables.copy()
         if self.test_depth_range is not None:
-            self.required_variables.append("DEPTH")
+            self.required_variables.append(self.depth_var)
 
         # Outputs are the tested variables plus any companions they propagate onto,
         # less the flag_instead sources (tested only to flag their companions).
@@ -236,15 +226,19 @@ class range_qc(BaseQC):
 
         low, high = (a, b) if a <= b else (b, a)
         if mode == "outside":
-            return (vals < low) | (vals > high)  # good band -> flag outside (bounds good)
-        return (vals >= low) & (vals <= high)  # impossible band -> flag inside (bounds incl.)
+            return (vals < low) | (
+                vals > high
+            )  # good band -> flag outside (bounds good)
+        return (vals >= low) & (
+            vals <= high
+        )  # impossible band -> flag inside (bounds incl.)
 
     def return_qc(self):
         n = len(self.data["N_MEASUREMENTS"])
 
         # Restrict checks to a DEPTH window if requested; otherwise check everything.
         if self.test_depth_range is not None:
-            depth = self.data["DEPTH"].values
+            depth = self.data[self.depth_var].values
             low, high = self.test_depth_range
             depth_mask = (depth >= low) & (depth <= high)
         else:
@@ -276,7 +270,7 @@ class range_qc(BaseQC):
                     continue
                 for companion in companions:
                     base = qc_arrays.get(companion, np.zeros(n, dtype=int))
-                    qc_arrays[companion] = QC_COMBINATRIX[base, src]
+                    qc_arrays[companion] = propagate_flags(base, src)
 
         # Drop the flag_instead sources now their flags have been propagated.
         for var in self.flag_instead:
@@ -295,12 +289,13 @@ class range_qc(BaseQC):
         # (they get range lines), then any companions it propagated onto.
         # (flag_instead sources drop out below: they have no flags in self.flags.)
         plot_order = list(self.tested_variables)
-        for companion in sum(self.also_flag.values(), []) + sum(self.flag_instead.values(), []):
+        for companion in sum(self.also_flag.values(), []) + sum(
+            self.flag_instead.values(), []
+        ):
             if companion not in plot_order:
                 plot_order.append(companion)
         plot_vars = [
-            var for var in plot_order
-            if var in self.data and f"{var}_QC" in self.flags
+            var for var in plot_order if var in self.data and f"{var}_QC" in self.flags
         ]
         if not plot_vars:
             return
@@ -315,7 +310,9 @@ class range_qc(BaseQC):
 
         fig, axes = fig_spec.new_fig(nrows=len(plot_vars), sharex=True)
         for ax, var in zip(axes[:, 0], plot_vars):
-            fig_spec.flag_points(ax, x, self.data[var].values, self.flags[f"{var}_QC"].values)
+            fig_spec.flag_points(
+                ax, x, self.data[var].values, self.flags[f"{var}_QC"].values
+            )
 
             # Range boundaries for variables that define their own ranges (a single
             # scalar is drawn as one line, coloured by the flag it triggers).
@@ -328,7 +325,10 @@ class range_qc(BaseQC):
                             if isinstance(bound, str) or not np.isfinite(bound):
                                 continue
                             ax.axhline(
-                                bound, ls="--", lw=1, alpha=0.6,
+                                bound,
+                                ls="--",
+                                lw=1,
+                                alpha=0.6,
                                 color=fig_spec.FLAG_COLOURS.get(flag, "k"),
                             )
 
@@ -339,7 +339,7 @@ class range_qc(BaseQC):
             fig_spec.legend(ax, title="Flag")
 
         if xlabel == "Time":
-            fig_spec.date_axis(axes[-1][0], which="x")
+            fig_spec.date_axis(axes[-1][0], which="x", index=x)
         fig_spec.style_axes(axes[-1][0], xlabel=xlabel)
         fig_spec.finish(fig, suptitle="Range QC")
         plt.show(block=True)

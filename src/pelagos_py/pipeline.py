@@ -248,7 +248,9 @@ class Pipeline(ConfigMirrorMixin):
         template = config_builder.DEFAULT_CONFIG.read_text()
         replaced = config_path.exists()
         config_path.write_text(
-            config_builder.build(template, str(file_path), probe, choices)
+            config_builder.build(
+                template, str(file_path), probe, choices, visual_qc=False
+            )
         )
 
         pipeline = cls(config_path=str(config_path))

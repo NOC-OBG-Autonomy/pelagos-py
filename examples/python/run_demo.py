@@ -11,7 +11,7 @@ call make_config with ask=True to be prompted about each choice:
 make_config saves the config next to the data file (e.g. Nelson_646_R.yaml), so you can
 edit it and rerun it with load_config.
 
-Demo files (downloaded into examples/data/OG1 the first time; get_demo_file() prints this
+Demo files (downloaded into ~/Documents/pelagos-py/demo_data the first time; get_demo_file() prints this
 list; names ending in _r are near real time, the rest delayed mode):
 
     Bio-Carbon: nelson_646_r, nelson_646, doombar_648_r, doombar_648, churchill_647_r,

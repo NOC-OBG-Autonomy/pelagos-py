@@ -25,6 +25,7 @@ upstream input files are fixed.
 
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
+from pelagos_py.utils.qc_handling import adjusted_name
 
 #### Custom imports ####
 import numpy as np
@@ -51,14 +52,15 @@ class CorrectValues(BaseStep):
     Parameters
     ----------
     target_variable : str
-        Name of the variable to correct (e.g. ``"CNDC"``).
+        Name of the variable to correct (e.g. ``"CNDC"``). Its ``_ADJUSTED`` version
+        is read instead when present, so corrections stack.
     output_as : str or list, optional
-        Name(s) to write the result under. Defaults to ``target_variable`` (in-place).
-        Set it to a new name to copy/rename, e.g. ``LATITUDE_GPS`` -> ``LATITUDE``
-        with ``slope: 1`` leaves the values unchanged and just exposes the new name.
-        A list writes the same result under several names, e.g.
-        ``[CHLA, CHLA_MID]`` keeps a mid-processing snapshot in ``CHLA_MID`` while
-        later steps continue working on ``CHLA``.
+        Name(s) to write the result under. Defaults to ``<target_variable>_ADJUSTED``,
+        leaving the raw variable untouched. Set it to a new name to copy/rename, e.g.
+        ``LATITUDE_GPS`` -> ``LATITUDE`` with ``slope: 1`` leaves the values unchanged
+        and just exposes the new name. A list writes the same result under several
+        names, e.g. ``[CHLA_ADJUSTED, CHLA_MID]`` keeps a mid-processing snapshot in
+        ``CHLA_MID``. Each output gets a copy of the source's ``_QC``.
     slope : float, optional
         Multiplicative factor (default ``1.0``). For a x10 unit conversion, set ``10``.
     intercept : float, optional
@@ -77,6 +79,10 @@ class CorrectValues(BaseStep):
         Note written to the output variable's ``comment`` attribute (e.g.
         ``"Renamed from LATITUDE_GPS"``). ``append_description`` adds to any existing
         comment; ``overwrite_description`` replaces it. Set at most one.
+    optional : bool, optional
+        If ``True``, skip without an error when ``target_variable`` is absent,
+        e.g. a rename that only applies to some file naming conventions.
+        Default ``False``.
 
     Examples
     --------
@@ -97,44 +103,46 @@ class CorrectValues(BaseStep):
     step_name = "Correct Values"
     required_variables = []
     provided_variables = []
+    variable_parameters = ["target_variable"]
 
     parameter_schema = {
         "target_variable": {
             "type": str,
             "required": True,
-            "description": "Name of the variable to correct (e.g. 'CNDC').",
+            "description": "Name of the variable to correct (e.g. 'CNDC'); its _ADJUSTED "
+            "version is read instead when present.",
         },
         "output_as": {
             "type": [str, list],
             "default": None,
-            "description": "Name(s) to write the result under (default: target_variable, "
-                           "i.e. in place). A new name copies/renames; a list writes the "
-                           "same result under several names (e.g. [CHLA, CHLA_MID]).",
+            "description": "Name(s) to write the result under (default: "
+            "<target_variable>_ADJUSTED). A new name copies/renames; a list writes the "
+            "same result under several names (e.g. [CHLA_ADJUSTED, CHLA_MID]).",
         },
         "slope": {
             "type": float,
             "default": 1.0,
             "description": "Multiplicative factor (corrected = slope * value + intercept). "
-                           "For a simple x10 unit conversion, set 10.",
+            "For a simple x10 unit conversion, set 10.",
         },
         "intercept": {
             "type": float,
             "default": 0.0,
             "description": "Additive offset applied after scaling (corrected = slope * value + intercept). "
-                           "Use for sensor alignment.",
+            "Use for sensor alignment.",
         },
         "expected_range": {
             "type": list,
             "default": None,
             "description": "Optional [min, max] for the corrected variable. The correction is applied "
-                           "only when the data's median falls OUTSIDE this range. If omitted, the "
-                           "correction is always applied.",
+            "only when the data's median falls OUTSIDE this range. If omitted, the "
+            "correction is always applied.",
         },
         "corrected_units": {
             "type": str,
             "default": None,
             "description": "Optional units string written to the output variable's attributes "
-                           "after a correction is applied (e.g. 'mS/cm').",
+            "after a correction is applied (e.g. 'mS/cm').",
         },
         "time_start": {
             "type": str,
@@ -156,31 +164,57 @@ class CorrectValues(BaseStep):
             "default": None,
             "description": "Optional note that replaces the output variable's 'comment' attribute.",
         },
+        "optional": {
+            "type": bool,
+            "default": False,
+            "description": "If True, skip silently (no error) when target_variable is absent "
+            "from the data, e.g. a rename that only applies under one of "
+            "several file naming conventions.",
+        },
     }
+
+    @classmethod
+    def output_variables(cls, parameters):
+        output_as = parameters.get("output_as")
+        if output_as:
+            return [output_as] if isinstance(output_as, str) else list(output_as)
+        target = parameters.get("target_variable")
+        return [adjusted_name(target)] if target else []
 
     def run(self):
         self.check_data()
         self.data = self.context["data"]
 
-        var = self.target_variable
+        var = self.resolve(self.target_variable)
+        self._source = var
         if var not in self.data:
+            if self.optional:
+                self.log(f"'{var}' not found in dataset; skipping (optional).")
+                self.context["data"] = self.data
+                return self.context
             raise ValueError(
                 f"[{self.name}] target_variable '{var}' not found in dataset. "
                 f"Available variables: {list(self.data.data_vars)}."
             )
 
         outs = (
-            list(self.output_as) if isinstance(self.output_as, (list, tuple))
-            else [self.output_as or var]
+            list(self.output_as)
+            if isinstance(self.output_as, (list, tuple))
+            else [self.output_as or adjusted_name(var)]
         )
-        if self.append_description is not None and self.overwrite_description is not None:
+        if (
+            self.append_description is not None
+            and self.overwrite_description is not None
+        ):
             raise ValueError(
                 f"[{self.name}] set only one of 'append_description' / 'overwrite_description'."
             )
 
         vals = self.data[var].values.astype(float)
         self._raw_data = vals.copy()
+        self._outs = outs
         self.applied = False
+        self._skip_reason = None
 
         valid_mask = ~np.isnan(vals)
         if not np.any(valid_mask):
@@ -200,41 +234,47 @@ class CorrectValues(BaseStep):
                 window &= times >= np.datetime64(self.time_start)
             if self.time_end is not None:
                 window &= times <= np.datetime64(self.time_end)
+        self._window = window
 
         # Decide whether the correction is needed, judging by the windowed data.
-        do_scale = True
         if self.expected_range is not None:
             lo, hi = float(self.expected_range[0]), float(self.expected_range[1])
             sample = vals[valid_mask & window]
             median_val = float(np.nanmedian(sample)) if sample.size else np.nan
             if np.isfinite(median_val) and lo <= median_val <= hi:
-                self.log(
-                    f"'{var}' median ({median_val:.4g}) is within expected range "
-                    f"[{lo}, {hi}]; skipping correction."
-                )
-                do_scale = False
+                self._skip_reason = f"median ({median_val:.4g}) already within expected range [{lo:g}, {hi:g}]"
             elif np.isfinite(median_val):
                 self.log(
                     f"'{var}' median ({median_val:.4g}) is outside expected range "
                     f"[{lo}, {hi}]; applying correction."
                 )
-
-        # Nothing changes when there is no scaling, no rename/copy and no comment to set.
-        no_description = self.append_description is None and self.overwrite_description is None
-        if not do_scale and outs == [var] and no_description:
-            self.context["data"] = self.data
-            return self.context
+        if self._skip_reason is None and self.slope == 1.0 and self.intercept == 0.0:
+            self._skip_reason = "slope 1 / intercept 0 is the identity"
+        if self._skip_reason is not None:
+            self.log(f"'{var}' {self._skip_reason}; values unchanged.")
 
         # Apply the affine correction within the window (NaNs propagate harmlessly).
         corrected = vals.copy()
-        if do_scale:
+        if self._skip_reason is None:
             corrected[window] = self.slope * vals[window] + self.intercept
             self.applied = True
+
+        if self.diagnostics:
+            self.plot_diagnostics()
+
+        # Nothing changes when there is no scaling, no rename/copy and no comment to set.
+        no_description = (
+            self.append_description is None and self.overwrite_description is None
+        )
+        if not self.applied and self.output_as is None and no_description:
+            self.context["data"] = self.data
+            return self.context
 
         # Write to each output name (a copy/rename when it differs from target_variable).
         for out in outs:
             self.data[out] = self.data[var].copy(data=corrected)
-        self._outs = outs
+            if out != var and f"{var}_QC" in self.data:
+                self.data[f"{out}_QC"] = self.data[f"{var}_QC"].copy(deep=True)
 
         names = ", ".join(f"'{o}'" for o in outs)
         if self.applied:
@@ -253,53 +293,99 @@ class CorrectValues(BaseStep):
             elif self.append_description is not None:
                 existing = self.data[out].attrs.get("comment", "")
                 self.data[out].attrs["comment"] = (
-                    f"{existing} {self.append_description}".strip() if existing else self.append_description
+                    f"{existing} {self.append_description}".strip()
+                    if existing
+                    else self.append_description
                 )
         if self.corrected_units is not None:
             self.log(f"Set {names} units to '{self.corrected_units}'.")
-
-        if self.diagnostics:
-            self.plot_diagnostics()
 
         self.context["data"] = self.data
         return self.context
 
     def plot_diagnostics(self):
-        if not self.applied:
-            return
-
-        var = self.target_variable
-        corrected = self.data[self._outs[0]].values
-
-        # Plot against TIME if available, otherwise against sample index.
-        if "TIME" in self.data:
-            x = self.data["TIME"].values
-            xlabel = "Time"
-        else:
-            x = np.arange(len(corrected))
-            xlabel = "Sample index"
+        # value + difference panels for a real correction, one panel otherwise
+        var, outs = self._source, self._outs
+        raw = self._raw_data
+        corrected = self.slope * raw + self.intercept if self.applied else raw
+        if self.applied:
+            corrected = np.where(self._window, corrected, raw)
+        flags = self.data[f"{var}_QC"].values if f"{var}_QC" in self.data else None
+        x = fig_spec.x_time(self.data)
 
         matplotlib.use("tkagg")
-        fig, axes = fig_spec.new_fig()
+        if self.applied:
+            fig, axes = fig_spec.new_fig(nrows=2, sharex=True, height_ratios=(3, 2))
+        else:
+            fig, axes = fig_spec.new_fig()
         ax = axes[0][0]
 
-        fig_spec.points(ax, x, self._raw_data, color=fig_spec.FLAGGED, label="Raw")
-        fig_spec.points(ax, x, corrected, color=fig_spec.CATEGORY[1], label="Corrected")
-
+        if self.applied:
+            fig_spec.points(ax, x, raw, color=fig_spec.FLAGGED, label="raw")
+        self._series(ax, x, corrected, flags)
         if self.expected_range is not None:
             lo, hi = float(self.expected_range[0]), float(self.expected_range[1])
-            ax.axhline(hi, color="black", linestyle="--", alpha=0.6, linewidth=1, label=f"Max ({hi})")
-            ax.axhline(lo, color="black", linestyle="--", alpha=0.6, linewidth=1, label=f"Min ({lo})")
+            ax.axhline(
+                hi,
+                color="black",
+                linestyle="--",
+                alpha=0.6,
+                linewidth=1,
+                label=f"expected range [{lo:g}, {hi:g}]",
+            )
+            ax.axhline(lo, color="black", linestyle="--", alpha=0.6, linewidth=1)
+        for bound in (self.time_start, self.time_end):
+            if bound is not None and "TIME" in self.data:
+                ax.axvline(
+                    np.datetime64(bound), color="black", linestyle=":", linewidth=1
+                )
+        units = (self.corrected_units if self.applied else None) or self.data[
+            var
+        ].attrs.get("units")
+        ylabel = fig_spec.axis_label(outs[0], units)
+        fig_spec.style_axes(ax, ylabel=ylabel)
+        fig_spec.legend(ax, title="Flags" if flags is not None else None)
 
-        if xlabel == "Time":
-            fig_spec.date_axis(ax, which="x")
-        ylabel = fig_spec.axis_label(var, self.data[var].attrs.get("units"))
-        fig_spec.style_axes(ax, xlabel=xlabel, ylabel=ylabel)
-        fig_spec.legend(ax)
+        if self.applied:
+            ax2 = axes[1][0]
+            self._series(ax2, x, corrected - raw, flags)
+            ax2.axhline(0, color="black", linewidth=1, alpha=0.6)
+            fig_spec.style_axes(ax2, ylabel="corrected - raw")
+            fig_spec.x_axis(ax2, x)
+        else:
+            fig_spec.x_axis(ax, x)
 
-        fig_spec.finish(
-            fig,
-            suptitle=f"Value Correction: {var}\n"
-            f"(corrected = {self.slope} * value + {self.intercept})",
-        )
+        fig_spec.finish(fig, suptitle=self._title())
         plt.show(block=True)
+
+    @staticmethod
+    def _series(ax, x, y, flags):
+        if flags is not None:
+            fig_spec.flag_points(ax, x, y, flags)
+        else:
+            fig_spec.points(ax, x, y, color=fig_spec.CATEGORY[1], label="corrected")
+
+    def _title(self):
+        var, outs = self._source, self._outs
+        head = f"Correct Values: {var}"
+        renamed = [o for o in outs if o != var]
+        if renamed:
+            head += f" -> {', '.join(renamed)}"
+        note = self.overwrite_description or self.append_description
+        if note:
+            head += f"  -  {note}"
+
+        if self.applied:
+            n_changed = int(np.sum(self._window & np.isfinite(self._raw_data)))
+            n_valid = int(np.sum(np.isfinite(self._raw_data)))
+            what = f"corrected = {self.slope:g} * value + {self.intercept:g}"
+            if self.time_start or self.time_end:
+                what += f"  |  window {self.time_start or '...'} to {self.time_end or '...'}"
+            what += f"  |  {n_changed:,} of {n_valid:,} points changed"
+        elif renamed:
+            what = f"Values unchanged ({self._skip_reason}); copied to {', '.join(renamed)}"
+        else:
+            what = f"NOT applied: {self._skip_reason}"
+            if "identity" in self._skip_reason:
+                what += "  -  placeholder, values unchanged"
+        return f"{head}\n{what}"

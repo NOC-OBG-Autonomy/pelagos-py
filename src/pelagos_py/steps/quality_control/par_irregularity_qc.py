@@ -21,20 +21,16 @@ QC tests to identify irregularities in PAR profiles based on La Forgia & Organel
 """
 
 #### Mandatory imports ####
-from IPython.core.pylabtools import figsize
 from pelagos_py.steps.base_qc import BaseQC, register_qc, flag_cols
+from pelagos_py.utils.processing_utils import profile_indices
 
 #### Custom imports ####
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+from pelagos_py.utils import fig_spec
 import numpy as np
-from scipy.stats import shapiro
-from scipy.interpolate import interp1d
-from datetime import datetime
 import warnings
-import xarray as xr
 import pandas as pd
-import pvlib
 
 
 # Functions written and provided by Thomas Ryan-Keogh based off of (https://doi.org/10.1002/lom3.10701)
@@ -62,6 +58,8 @@ def calculate_solar_elevation(latitude, longitude, datetime):
     - Intended for use with xarray datasets where each profile has a single latitude,
       longitude, and datetime (e.g., one value per `N_PROF`).
     """
+    import pvlib  # slow import, deferred to first use
+
     # Ensure datetime is timezone-aware (UTC)
     time_utc = pd.to_datetime(datetime).tz_localize("UTC")
 
@@ -187,24 +185,38 @@ def qc_par_flagging(pres, par, sun_elev, nei_par=3e-2):
         pres_i = np.arange(p_min, p_max + 0.125, 0.25)
 
     # now perform interpolation
+    from scipy.interpolate import interp1d
+
     f = interp1d(pres_v, par_v, kind="linear", bounds_error=False, fill_value=np.nan)
     par_i = f(pres_i)
 
     # ───────────────────────────────────────────────
     # 3. Shapiro–Wilk test on successive tails
     # ───────────────────────────────────────────────
+    from scipy.stats import shapiro
+
+    _shapiro = getattr(
+        shapiro, "__wrapped__", shapiro
+    )  # scipy's nan_policy wrapper costs ~5x the test
+    # Scan bottom-up and stop once pa (deepest p <= 1e-4) and, for night, any p <= 0 are known.
     pvals = np.full_like(pres_i, np.nan, dtype=float)
-    for i in range(pres_i.size):
-        seg = par_i[i:]
-        seg = seg[np.isfinite(seg)]
-        if seg.size >= 3:
-            try:
-                # TODO: Dev. verbosity to disable warning ignoring. Also below...
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    _, pvals[i] = shapiro(seg)
-            except Exception:
-                pvals[i] = np.nan
+    finite_par = np.isfinite(par_i)
+    found_pa, all_positive = False, True
+    with (
+        warnings.catch_warnings()
+    ):  # TODO: Dev. verbosity to disable warning ignoring. Also below...
+        warnings.simplefilter("ignore")
+        for i in range(pres_i.size - 1, -1, -1):
+            seg = par_i[i:][finite_par[i:]]
+            if seg.size >= 3:
+                try:
+                    _, pvals[i] = _shapiro(seg)
+                except Exception:
+                    pvals[i] = np.nan
+            found_pa |= bool(pvals[i] <= 1e-4)
+            all_positive &= bool(pvals[i] > 0)
+            if found_pa and (mode == "day" or not all_positive):
+                break
 
     # Determine P_A = last depth where p ≈ 0 (non-normal)
     null_mask = np.isfinite(pvals) & (pvals <= 1e-4)
@@ -262,7 +274,9 @@ def qc_par_flagging(pres, par, sun_elev, nei_par=3e-2):
         else (
             1
             if n_good / N >= 0.25
-            else 2 if np.sum(flags == 2) >= np.sum(flags == 3) else 3
+            else 2
+            if np.sum(flags == 2) >= np.sum(flags == 3)
+            else 3
         )
     )
 
@@ -285,7 +299,7 @@ class par_irregularity_qc(BaseQC):
         "plot_profiles": {
             "type": list,
             "default": [],
-            "description": "Profile numbers to plot in diagnostics.",
+            "description": "Profile numbers to plot per-profile in diagnostics (default: whole record vs time).",
         },
     }
     required_variables = [
@@ -305,22 +319,21 @@ class par_irregularity_qc(BaseQC):
         # Make an unchecked (0) QC container for PAR QC
         par_qc = np.full(len(self.data["DOWNWELLING_PAR"]), 0)
 
-        # Apply the checks across individual profiles
-        profile_numbers = np.unique(
-            self.data["PROFILE_NUMBER"].dropna(dim="N_MEASUREMENTS")
+        # Solar elevation from each profile's first sample, all profiles in one call
+        groups = profile_indices(self.data["PROFILE_NUMBER"].values)
+        first = np.array([idx[0] for idx in groups.values()], dtype=int)
+        solar_elevations = calculate_solar_elevation(
+            self.data["LATITUDE"].values[first],
+            self.data["LONGITUDE"].values[first],
+            self.data["TIME"].values[first],
         )
-        for profile_number in self.log_progress(profile_numbers, desc="", unit="profile"):
-            # Subset the data
-            profile = self.data.where(
-                self.data["PROFILE_NUMBER"] == profile_number, drop=True
-            )
-
-            # Find the solar elevation
-            solar_elevation = calculate_solar_elevation(
-                profile["LATITUDE"][0].values,
-                profile["LONGITUDE"][0].values,
-                profile["TIME"][0].values,
-            )
+        for (profile_number, idx), solar_elevation in zip(
+            self.log_progress(
+                groups.items(), total=len(groups), desc="", unit="profile"
+            ),
+            solar_elevations,
+        ):
+            profile = self.data.isel(N_MEASUREMENTS=idx)
 
             # Apply the QC opperation
             profile_element_qc, _, _ = qc_par_flagging(
@@ -331,10 +344,7 @@ class par_irregularity_qc(BaseQC):
             )
 
             # Stitch the QC results back into the QC container
-            profile_element_indices = np.where(
-                self.data["PROFILE_NUMBER"] == profile_number
-            )
-            par_qc[profile_element_indices] = profile_element_qc
+            par_qc[idx] = profile_element_qc
 
         # any remaining flags that are 0 (unchecked) are updated to 1 (good)
         par_qc[par_qc == 0] = 1
@@ -349,7 +359,21 @@ class par_irregularity_qc(BaseQC):
         mpl.use("tkagg")
 
         if len(self.plot_profiles) == 0:
-            self.log("To see diagnostics, please specify the plot_profiles setting.")
+            # no plot_profiles: whole record vs time
+            x = fig_spec.x_time(self.data)
+            fig, axes = fig_spec.new_fig()
+            ax = axes[0][0]
+            y = self.data["DOWNWELLING_PAR"]
+            fig_spec.flag_points(
+                ax, x, y.values, self.flags["DOWNWELLING_PAR_QC"].values
+            )
+            fig_spec.style_axes(
+                ax, ylabel=fig_spec.axis_label("DOWNWELLING_PAR", y.attrs.get("units"))
+            )
+            fig_spec.x_axis(ax, x)
+            fig_spec.legend(ax, title="Flags")
+            fig_spec.finish(fig, suptitle="PAR irregularity test")
+            plt.show(block=True)
             return
 
         nrows = int(np.ceil(len(self.plot_profiles) / 3))

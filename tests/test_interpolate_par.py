@@ -22,7 +22,9 @@ def test_estimate_euphotic_depth_recovers_1pct_level():
 def test_estimate_euphotic_depth_invalid_inputs_return_nan():
     z = np.arange(0, 60, 2.0)
     assert np.isnan(estimate_euphotic_depth(np.full(z.size, np.nan), z))  # no data
-    assert np.isnan(estimate_euphotic_depth(np.full(z.size, 50.0), z))  # flat -> no slope
+    assert np.isnan(
+        estimate_euphotic_depth(np.full(z.size, 50.0), z)
+    )  # flat -> no slope
 
 
 # --- depth_of_ipar ----------------------------------------------------------

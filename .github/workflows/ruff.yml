@@ -1,0 +1,23 @@
+name: Ruff
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - "**"
+
+jobs:
+  ruff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pinned so a new ruff release can't change the formatting under everyone
+      - uses: astral-sh/ruff-action@v3
+        with:
+          version: "0.16.10"
+          args: "check"
+
+      - run: ruff format --check --diff

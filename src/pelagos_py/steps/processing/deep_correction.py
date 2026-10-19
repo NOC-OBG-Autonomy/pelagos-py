@@ -23,14 +23,16 @@ region (the offset and thresholds are all parameters)."""
 
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
-from pelagos_py.utils.qc_handling import QCHandlingMixin
+from pelagos_py.utils.qc_handling import QCHandlingMixin, adjusted_name
 
 #### Custom imports ####
+from collections import Counter
 import xarray as xr
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import pelagos_py.utils.palettes as palettes
+from pelagos_py.utils import fig_spec
 
 # A depth_threshold shallower than this warns the user.
 MIN_DEEP_THRESHOLD = 300
@@ -40,7 +42,7 @@ MAX_DIAGNOSTIC_POINTS = 10_000
 
 
 @register_step
-class deep_correction(BaseStep, QCHandlingMixin):
+class DeepCorrection(BaseStep, QCHandlingMixin):
     """
     Subtract a deep dark offset from a profile variable.
 
@@ -133,16 +135,21 @@ class deep_correction(BaseStep, QCHandlingMixin):
         },
     }
 
+    @classmethod
+    def output_variables(cls, parameters):
+        apply_to = parameters.get(
+            "apply_to", cls.parameter_schema["apply_to"]["default"]
+        )
+        return [adjusted_name(apply_to)]
+
     def run(self):
         self.filter_qc()
 
-        # Resolve the input/output variable names (OG1 _ADJUSTED convention).
         self.apply_to, self.output_as = self.resolve_variables()
+        self.depth_var = self.resolve(self.depth_var)
 
         self.compute_dark_value()
-        self.log(
-            f"Dark correction value for {self.apply_to} = {self.dark_value:.6f}"
-        )
+        self.log(f"Dark correction value for {self.apply_to} = {self.dark_value:.6f}")
         self.apply_dark_correction()
 
         self.reconstruct_data()
@@ -159,30 +166,20 @@ class deep_correction(BaseStep, QCHandlingMixin):
         return self.context
 
     def resolve_variables(self):
-        # OG1 convention: prefer an existing _ADJUSTED variable as input, else
-        # produce one.
-        apply_to = self.apply_to
+        apply_to = self.resolve(self.apply_to)
         if apply_to not in self.data.data_vars:
             raise KeyError(
                 f"[{self.step_name}] The variable {apply_to} does not exist in the data."
             )
-
-        if not apply_to.endswith("_ADJUSTED") and f"{apply_to}_ADJUSTED" in self.data.data_vars:
-            self.log(
-                f"User requested processing on {apply_to} but {apply_to}_ADJUSTED "
-                f"already exists. Using {apply_to}_ADJUSTED...",
-                console=False,
-            )
-            apply_to = f"{apply_to}_ADJUSTED"
-
-        output_as = apply_to if apply_to.endswith("_ADJUSTED") else f"{apply_to}_ADJUSTED"
-
         self.log(f"Processing {apply_to}...", console=False)
-        return apply_to, output_as
+        return apply_to, adjusted_name(apply_to)
 
     def compute_dark_value(self):
         # Per-profile diagnostics for plotting; empty when dark_value is given.
         self._profile_diagnostics = {}
+        # Candidates examined and why each was rejected, for plot_failure.
+        self._candidates = []
+        self._deep_reach = None
 
         if self.dark_value is not None:
             self.log(f"Using dark value from config: {self.dark_value}", console=False)
@@ -219,6 +216,7 @@ class deep_correction(BaseStep, QCHandlingMixin):
         # Profiles reaching past the threshold, in order of occurrence; coverage
         # is checked below before a candidate spends an n_profiles slot.
         deep_reach = df.groupby("PROFILE_NUMBER")[depth].max()
+        self._deep_reach = deep_reach
         candidates = deep_reach[deep_reach > self.depth_threshold].index.to_numpy()
         if len(candidates) == 0:
             self.halt(
@@ -237,7 +235,19 @@ class deep_correction(BaseStep, QCHandlingMixin):
             n_points = int(profile[var].notna().sum())
             below = profile[profile[depth] > self.depth_threshold]
             n_deep_points = int(below[var].notna().sum())
-            if n_points < self.min_profile_points or n_deep_points < self.min_valid_points:
+            cand = {
+                "profile": int(profile_number),
+                "n_points": n_points,
+                "n_deep": n_deep_points,
+                "depth": profile[depth].to_numpy(),
+                "raw": profile[var].to_numpy(),
+            }
+            self._candidates.append(cand)
+            if (
+                n_points < self.min_profile_points
+                or n_deep_points < self.min_valid_points
+            ):
+                cand["reason"] = "too few points"
                 skipped.append(int(profile_number))
                 continue
 
@@ -262,11 +272,15 @@ class deep_correction(BaseStep, QCHandlingMixin):
             self._profile_diagnostics[profile_number] = record
 
             deep_vals = smoothed[deep_mask]
+            cand["smoothed"] = smoothed.to_numpy()
             if int(deep_vals.notnull().sum()) >= self.min_valid_points:
                 idxmin = deep_vals.idxmin()
                 record["min_value"] = float(deep_vals.loc[idxmin])
                 record["min_depth"] = float(profile.loc[idxmin, depth])
                 minima.append(record["min_value"])
+                cand["reason"] = "used"
+            else:
+                cand["reason"] = "no valid deep values"
 
         if skipped:
             self.log(
@@ -303,10 +317,109 @@ class deep_correction(BaseStep, QCHandlingMixin):
 
         if hasattr(self.data[self.apply_to], "attrs"):
             self.data[self.output_as].attrs = self.data[self.apply_to].attrs.copy()
-        self.data[self.output_as].attrs[
-            "comment"
-        ] = f"{self.apply_to} with dark value correction (dark_value={self.dark_value:.6f})"
+        self.data[self.output_as].attrs["comment"] = (
+            f"{self.apply_to} with dark value correction (dark_value={self.dark_value:.6f})"
+        )
         self.data[self.output_as].attrs["dark_value"] = self.dark_value
+
+    def plot_failure(self):
+        # Why no dark value: rejected deep profiles (left), depth reached per profile (right).
+        if getattr(self, "_deep_reach", None) is None:
+            return
+        reasons = {
+            "too few points": fig_spec.CATEGORY[2],
+            "no valid deep values": fig_spec.CATEGORY[3],
+            "used": fig_spec.CATEGORY[0],
+        }
+        n_cand = int((self._deep_reach > self.depth_threshold).sum())
+        # only the depth panel when no profile reached the threshold
+        fig, axes = fig_spec.new_fig(1, 2 if self._candidates else 1, sharey=True)
+        ax_prof, ax_reach = axes[0][0], axes[0][-1]
+        reason_counts = Counter(c["reason"] for c in self._candidates)
+        seen = set()
+        for cand in self._candidates:
+            colour = reasons[cand["reason"]]
+            label = None
+            if cand["reason"] not in seen:
+                label = f"{cand['reason']} ({reason_counts[cand['reason']]})"
+            seen.add(cand["reason"])
+            # markers so sparse profiles still show up
+            ax_prof.plot(
+                cand["raw"],
+                cand["depth"],
+                c=colour,
+                alpha=0.3,
+                lw=0.8,
+                marker="o",
+                ms=2,
+            )
+            ax_prof.plot(
+                cand.get("smoothed", cand["raw"]),
+                cand["depth"],
+                c=colour,
+                lw=1.2,
+                label=label,
+            )
+        if self._candidates:
+            ax_prof.axhline(
+                self.depth_threshold,
+                ls="--",
+                c="grey",
+                lw=1,
+                label=f"depth_threshold ({self.depth_threshold:g})",
+            )
+            ax_prof.axvline(
+                self.max_valid_value,
+                ls=":",
+                c="k",
+                lw=1,
+                label=f"max_valid_value ({self.max_valid_value:g})",
+            )
+            fig_spec.style_axes(
+                ax_prof,
+                xlabel=self.apply_to,
+                ylabel=self.depth_var,
+                title=f"{len(self._candidates)} of {n_cand} deep profiles examined "
+                f"(need >= {self.min_valid_points} valid deep points)",
+            )
+            fig_spec.legend(ax_prof)
+
+        # samples with a value are drawn on top of those without
+        pnum = np.asarray(self.data["PROFILE_NUMBER"].values, dtype=float)
+        depth = np.asarray(self.data[self.depth_var].values, dtype=float)
+        has_val = np.isfinite(np.asarray(self.data[self.apply_to].values, dtype=float))
+        ok = np.isfinite(pnum) & np.isfinite(depth)
+        fig_spec.points(
+            ax_reach,
+            pnum[ok & ~has_val],
+            depth[ok & ~has_val],
+            color="#b2bec3",
+            label=f"no {self.apply_to}",
+        )
+        fig_spec.points(
+            ax_reach,
+            pnum[ok & has_val],
+            depth[ok & has_val],
+            color=fig_spec.CATEGORY[1],
+            label=f"{self.apply_to} present",
+        )
+        ax_reach.axhline(
+            self.depth_threshold,
+            ls="--",
+            c="grey",
+            lw=1,
+            label=f"depth_threshold ({self.depth_threshold:g})",
+        )
+        ax_reach.invert_yaxis()
+        fig_spec.style_axes(
+            ax_reach,
+            xlabel="PROFILE_NUMBER",
+            ylabel=None if self._candidates else self.depth_var,
+            title=f"{n_cand} of {self._deep_reach.size} profiles reach past {self.depth_threshold:g}",
+        )
+        fig_spec.legend(ax_reach)
+        fig_spec.finish(fig, suptitle=f"Deep Correction failed — {self.apply_to}")
+        plt.show(block=True)
 
     def generate_diagnostics(self):
         # Two-panel figure: deep profiles used for the estimate (left) and the
@@ -354,7 +467,11 @@ class deep_correction(BaseStep, QCHandlingMixin):
         )
         ax_prof.axvline(0, ls=":", c="0.4", lw=1, label="Zero")
         ax_prof.axvline(
-            self.dark_value, ls="--", c="r", lw=1, label=f"Dark value ({self.dark_value:.4g})"
+            self.dark_value,
+            ls="--",
+            c="r",
+            lw=1,
+            label=f"Dark value ({self.dark_value:.4g})",
         )
         ax_prof.invert_yaxis()  # deeper (larger depth_var) at the bottom
         ax_prof.set_xlabel(self.apply_to, fontsize=8)

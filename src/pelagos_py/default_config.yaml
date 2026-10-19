@@ -17,9 +17,10 @@
 # Pipeline Configuration
 pipeline:
   name: Complete processing pipeline
-  description: Default template for Pipeline.make_config, with no glider file loaded yet.
+  description: Default template for Pipeline.make_config and the dashboard, with no glider file loaded yet.
   out_directory: examples/data/OG1/
   log_file: complete_processing.log
+  on_step_fail: pause  # pause (fix and re-run, or skip), skip, or stop
 
 # Steps in the pipeline
 # For further details on step parameters, see all_step_configs.yaml
@@ -104,7 +105,8 @@ steps:
 #              TEMPERATURE CROSS CALIBRATION
 # ===========================================================
 # Align TEMP against the reference sensor, as early as possible so that
-# everything downstream (salinity, density, MLD) sees the calibrated value.
+# everything downstream (salinity, density, MLD) reads the calibrated
+# TEMP_ADJUSTED. The raw TEMP is kept.
 # PLACEHOLDER: slope 1.0 / intercept 0.0 is the identity (corrected =
 # slope * value + intercept), so this currently does nothing. Put the real
 # cross-calibration coefficients in here when they are available.
@@ -124,19 +126,10 @@ steps:
 # process CTD, we need to intepolate to fill in the missing data.
   - name: Interpolate Data
     parameters:
-      qc_handling_settings:
-        # This QC filtering functionality can be specified in most processing steps by
-        # adding the qc_handling_settings parameter. Here we are using it to nan-out bad (4)
-        # probably bad (3) and missing (9) data so that it can be interpolated over.
-        flag_filter_settings:
-          PRES: [3, 4, 9]
-          LATITUDE: [3, 4, 9]
-          LONGITUDE: [3, 4, 9]
-        reconstruction_behaviour: replace
-        flag_mapping: # The QC flags where bad data has been replaced turn into 8 (interpolated)
-          3: 8
-          4: 8
-          9: 8
+      variables:  # per variable, the QC flags treated as gaps to fill
+        PRES: [3, 4, 9]
+        LATITUDE: [3, 4, 9]
+        LONGITUDE: [3, 4, 9]
     diagnostics: false # Plot the outcome after interpolation
 
 # ===========================================================
@@ -158,14 +151,16 @@ steps:
     parameters:
       qc_settings:
           valid profile qc:
-            profile_length: 50      # Profiles must be at least 50 points long
-            depth_range: [0, 1000]  # and must contain data within 0 and 1000 m
+            min_length: 50          # Profiles must be at least 50 points long
+            depth_range: [0, 1000]  # and reach into 0-1000 dbar (PRES)
+            flag: 4                 # Flag given to every row of a failing profile
     diagnostics: false
 
 # ===========================================================
 #                  SALINITY ADJUSTMENT
 # ===========================================================
-# Now we move onto adjustment of the CNDC variable and subsequent salinity derivations
+# Correct the conductivity/temperature sensor lags and derive PSAL_ADJUSTED from
+# the corrected values. The raw CNDC and TEMP are left unchanged.
   - name: Salinity Adjustment
     parameters:
       qc_handling_settings:
@@ -181,24 +176,17 @@ steps:
       filter_window_size: 21
     diagnostics: false
 
-# Derive practical salinity on its own, so that the cross calibration below can
-# be applied to it before the remaining variables are derived from it.
-  - name: Derive CTD
-    parameters:
-      to_derive: [PRAC_SALINITY]
-    diagnostics: false
-
 # ===========================================================
 #                SALINITY CROSS CALIBRATION
 # ===========================================================
-# Align PRAC_SALINITY against the reference sensor. This sits between the two
-# Derive CTD calls so ABS_SALINITY, CONS_TEMP and DENSITY below are derived from
-# the calibrated salinity rather than the raw one.
+# Align PSAL_ADJUSTED against the reference sensor. This runs before the
+# Derive CTD below, so ASAL, CONS_TEMP and DENSITY are derived from the
+# calibrated salinity.
 # PLACEHOLDER: slope 1.0 / intercept 0.0 is the identity, so this currently does
 # nothing. Put the real cross-calibration coefficients in here when available.
   - name: Correct Values
     parameters:
-      target_variable: PRAC_SALINITY
+      target_variable: PSAL_ADJUSTED
       slope: 1.0        # PLACEHOLDER - identity, replace with real coefficient
       intercept: 0.0    # PLACEHOLDER - identity, replace with real offset
     diagnostics: false
@@ -207,7 +195,7 @@ steps:
   - name: Derive CTD
     parameters:
       to_derive: [
-        ABS_SALINITY,
+        ASAL,
         CONS_TEMP,
         DENSITY
       ]
@@ -217,20 +205,14 @@ steps:
 #              CTD INTERPOLATION (POST CALIBRATION)
 # ===========================================================
 # Fill out the calibrated CTD variables so every timestamp carries a TEMP, PRES
-# and PRAC_SALINITY value. Bad (4), probably-bad (3) and missing (9) points are
+# and PSAL_ADJUSTED value. Bad (4), probably-bad (3) and missing (9) points are
 # nan'd out, interpolated over, and reflagged as interpolated (8).
   - name: Interpolate Data
     parameters:
-      qc_handling_settings:
-        flag_filter_settings:
-          TEMP: [3, 4, 9]
-          PRES: [3, 4, 9]
-          PRAC_SALINITY: [3, 4, 9]
-        reconstruction_behaviour: replace
-        flag_mapping:
-          3: 8
-          4: 8
-          9: 8
+      variables:  # per variable, the QC flags treated as gaps to fill
+        TEMP: [3, 4, 9]
+        PRES: [3, 4, 9]
+        PSAL_ADJUSTED: [3, 4, 9]
     diagnostics: false
 
 # ===========================================================
@@ -282,9 +264,10 @@ steps:
 # ===========================================================
 #                        OXYGEN
 # ===========================================================
-# Recompute MOLAR_DOXY from the raw phase rather than trust the instrument's
-# on-board value, so the pressure/salinity corrections and geometric time-shift
-# below are all applied consistently.
+# Recompute oxygen from the raw phase rather than trust the instrument's
+# on-board MOLAR_DOXY, so the pressure/salinity corrections and geometric
+# time-shift below are all applied consistently. The final product is
+# DOXY_ADJUSTED (umol/kg); the shipped MOLAR_DOXY is kept.
   - name: "Derive Uncalibrated Phase"
     parameters:
       blue_phase_name: "BPHASE_DOXY"
@@ -341,9 +324,20 @@ steps:
       svu_coefficients: [2.67915e-03, 1.12428e-04, 2.29021e-06, 1.43603e+02, -2.08012e-01, -3.59303e+01, 2.82344e+00]
     diagnostics: false
 
+# Oxygen outside 0-1000 umol/l is not physical (some files hold spikes near -2000):
+# flag it bad. Also kept when the file's own MOLAR_DOXY is used as shipped.
+  - name: Apply QC
+    parameters:
+      qc_settings:
+        range qc:
+          variable_ranges:
+            MOLAR_DOXY_ADJUSTED:
+              4: [0, 1000, outside]
+    diagnostics: false
+
   - name: "Molar DOXY Salinity Correction"
     parameters:
-      salinity_name: "PRAC_SALINITY"
+      salinity_name: "PSAL"
       temperature_name: "TEMP"
     diagnostics: false
 
@@ -355,11 +349,20 @@ steps:
       uncalibrated_phase_correction_applied: true
     diagnostics: false
 
-  - name: Correct Values
+# Convert the corrected molar oxygen (umol/l) to DOXY_ADJUSTED (umol/kg).
+  - name: Derive DOXY
     parameters:
-      target_variable: MOLAR_DOXY_PSAL_PRES
-      output_as: MOLAR_DOXY_ADJUSTED
-      append_description: Renamed from MOLAR_DOXY_PSAL_PRES.
+      apply_to: MOLAR_DOXY_PSAL_PRES
+    diagnostics: false
+
+# Same range check on the final product, in case the corrections pushed any values out.
+  - name: Apply QC
+    parameters:
+      qc_settings:
+        range qc:
+          variable_ranges:
+            DOXY_ADJUSTED:
+              4: [0, 1000, outside]
     diagnostics: false
 
 # ===========================================================
@@ -451,8 +454,8 @@ steps:
 # then leaves the top 2 m out of its calculations while still correcting it.
 # Kept at 2 m (not 5): thomalla2018 needs at least one calc-eligible CHLA point
 # within its own 5 m surface-anchor window, so this can't reach/exceed that.
-# CHLA_ADJUSTED is flagged too, not just CHLA: Deep Correction has already run,
-# so the quenching step reads CHLA_ADJUSTED and gates on CHLA_ADJUSTED_QC.
+# The flags go on CHLA_ADJUSTED: Deep Correction has already run, so the
+# quenching step reads CHLA_ADJUSTED and gates on CHLA_ADJUSTED_QC.
   - name: Apply QC
     parameters:
       qc_settings:
@@ -462,7 +465,7 @@ steps:
               3: [-.inf, 2, inside]
               2: [-.inf, 2, outside]
           flag_instead:
-            DEPTH: [CHLA, CHLA_ADJUSTED]
+            DEPTH: [CHLA_ADJUSTED]
     diagnostics: false
 
 # Second, a non-photochemical quenching (NPQ) correction. Near the surface,
@@ -489,6 +492,20 @@ steps:
     diagnostics: false
 
 # ===========================================================
+#                       VISUAL QC
+# ===========================================================
+# Flag by hand: the run pauses here and boxes drawn on the plot in the
+# dashboard are saved into 'boxes', so the same flags are repeated on re-runs.
+  - name: Apply QC
+    parameters:
+      qc_settings:
+        visual qc:
+          x_variable: TIME
+          y_variable: PRES
+          boxes: []
+    diagnostics: true
+
+# ===========================================================
 #                      EXPORT DATA
 # ===========================================================
 # Exporting the output data to the same folder as the input data
@@ -496,6 +513,7 @@ steps:
     parameters:
       export_format: "netcdf"
       output_path: "examples/data/OG1/Processed.nc"
+      include_intermediates: false # true also exports working variables (e.g. the oxygen chain's)
 
 # Report assembly
-  - name: Write Data Report (Python)
+  - name: Write Data Report

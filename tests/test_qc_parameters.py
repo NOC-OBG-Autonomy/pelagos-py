@@ -2,7 +2,9 @@
 
 import logging
 
+import numpy as np
 import pytest
+import xarray as xr
 
 from pelagos_py.steps.quality_control.range_qc import range_qc
 from pelagos_py.steps.quality_control.spike_qc import spike_qc
@@ -27,9 +29,9 @@ def test_dynamic_qc_derives_required_variables():
 
 
 def test_optional_params_get_defaults():
-    # also_flag/plot are optional; window_size defaults to 50.
+    # also_flag/plot are optional; window_size defaults to 7.
     qc = spike_qc(None, variables={"PRES": 2})
-    assert qc.window_size == 50
+    assert qc.window_size == 7
     assert qc.also_flag == {}
     assert "PROFILE_NUMBER" in qc.required_variables
 
@@ -154,3 +156,341 @@ def test_validator_flags_multiple_load_steps():
     ]
     with pytest.raises(ValueError, match="Multiple data-loading steps"):
         check_pipeline_variables(steps, LOGGER)
+
+
+def test_validator_flags_blank_file_path():
+    steps = [{"name": "Load OG1", "parameters": {"file_path": ""}}]
+    with pytest.raises(ValueError, match="does not include a data file"):
+        check_pipeline_variables(steps, LOGGER)
+
+
+# --- Config-driven variable-name parameters (variable_parameters) ----------------
+
+
+def test_validator_flags_out_of_order_variable_parameter():
+    # apply_to needs DEPTH, but "Derive CTD" runs after Deep Correction.
+    steps = [
+        {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
+        {
+            "name": "Deep Correction",
+            "parameters": {"apply_to": "DEPTH", "depth_var": "PRES"},
+        },
+        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH", "PSAL"]}},
+    ]
+    with pytest.raises(ValueError, match="DEPTH"):
+        check_pipeline_variables(steps, LOGGER)
+
+
+def test_validator_ignores_self_produced_variable_parameter():
+    # apply_to and output_as are both BBP700; that is not an ordering mistake.
+    steps = [
+        {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
+        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH", "PSAL"]}},
+        {"name": "BBP from Beta", "parameters": {}},
+    ]
+    # No file to check BBP700 against, so it is left for the run-time check.
+    assert check_pipeline_variables(steps, LOGGER) is True
+
+
+# --- Cross-checking against the actual input file (once Load OG1 has one) -------
+
+
+def _write_og1_file(path, variables):
+    ds = xr.Dataset({name: ("N", np.arange(3)) for name in variables})
+    ds.to_netcdf(path)
+
+
+def test_validator_flags_loader_variable_missing_from_file(tmp_path):
+    file_path = tmp_path / "data.nc"
+    _write_og1_file(
+        file_path, ["TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP"]
+    )  # no CNDC
+    steps = [{"name": "Load OG1", "parameters": {"file_path": str(file_path)}}]
+    with pytest.raises(ValueError, match="CNDC"):
+        check_pipeline_variables(steps, LOGGER)
+
+
+def test_validator_allows_loader_variable_renamed_by_later_step(tmp_path):
+    # Raw ALR names are renamed to LATITUDE/LONGITUDE by a later "Correct Values" step.
+    file_path = tmp_path / "data.nc"
+    _write_og1_file(
+        file_path,
+        ["TIME", "LATITUDE_GPS", "LONGITUDE_GPS", "PRES", "TEMP", "CNDC"],
+    )
+    steps = [
+        {"name": "Load OG1", "parameters": {"file_path": str(file_path)}},
+        {
+            "name": "Correct Values",
+            "parameters": {"target_variable": "LATITUDE_GPS", "output_as": "LATITUDE"},
+        },
+        {
+            "name": "Correct Values",
+            "parameters": {
+                "target_variable": "LONGITUDE_GPS",
+                "output_as": "LONGITUDE",
+            },
+        },
+    ]
+    assert check_pipeline_variables(steps, LOGGER) is True
+
+
+def test_validator_flags_variable_parameter_missing_from_file(tmp_path):
+    file_path = tmp_path / "data.nc"
+    _write_og1_file(
+        file_path, ["TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC"]
+    )  # no BBP700
+    steps = [
+        {"name": "Load OG1", "parameters": {"file_path": str(file_path)}},
+        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH", "PSAL"]}},
+        {"name": "Isolate BBP Spikes", "parameters": {}},
+    ]
+    with pytest.raises(ValueError, match="BBP700"):
+        check_pipeline_variables(steps, LOGGER)
+
+
+def test_validator_attributes_error_to_correct_step_with_duplicate_qc_names(tmp_path):
+    # Both steps have a "range qc" key, so the error must carry the failing step index.
+    file_path = tmp_path / "data.nc"
+    _write_og1_file(
+        file_path, ["TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC"]
+    )
+    steps = [
+        {"name": "Load OG1", "parameters": {"file_path": str(file_path)}},
+        {
+            "name": "Apply QC",
+            "parameters": {
+                "qc_settings": {"range qc": {"variable_ranges": {"PRES": {4: [-5, 0]}}}}
+            },
+        },
+        {
+            "name": "Apply QC",
+            "parameters": {
+                "qc_settings": {
+                    "range qc": {"variable_ranges": {"BBP700": {4: [0, 10]}}}
+                }
+            },
+        },
+    ]
+    with pytest.raises(ValueError, match="BBP700") as excinfo:
+        check_pipeline_variables(steps, LOGGER)
+    assert excinfo.value.step_index == 2
+
+
+def test_validator_passes_when_file_has_everything(tmp_path):
+    file_path = tmp_path / "data.nc"
+    _write_og1_file(
+        file_path,
+        ["TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC", "BBP700"],
+    )
+    steps = [
+        {"name": "Load OG1", "parameters": {"file_path": str(file_path)}},
+        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH", "PSAL"]}},
+        {"name": "BBP from Beta", "parameters": {}},
+    ]
+    assert check_pipeline_variables(steps, LOGGER) is True
+
+
+def _optional_rename_steps(qc_var):
+    return [
+        {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
+        {
+            "name": "Correct Values",
+            "parameters": {
+                "target_variable": "BBP700",
+                "output_as": "BETA_BACKSCATTERING700",
+                "optional": True,
+            },
+        },
+        {
+            "name": "Apply QC",
+            "parameters": {
+                "qc_settings": {
+                    "range qc": {"variable_ranges": {qc_var: {4: [0, 1, "outside"]}}}
+                }
+            },
+        },
+    ]
+
+
+def test_validator_flags_output_of_skipped_optional_step(monkeypatch):
+    # Neither name is in the file, so the optional rename skips and can't satisfy the QC.
+    monkeypatch.setattr(
+        "pelagos_py.utils.valid_config_check._read_file_variables",
+        lambda *a, **k: (
+            {"TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC"},
+            set(),
+        ),
+    )
+    with pytest.raises(
+        ValueError, match="BETA_BACKSCATTERING700.*input file does not contain"
+    ):
+        check_pipeline_variables(
+            _optional_rename_steps("BETA_BACKSCATTERING700"), LOGGER
+        )
+
+
+def test_validator_passes_output_of_optional_step_with_input_present(monkeypatch):
+    monkeypatch.setattr(
+        "pelagos_py.utils.valid_config_check._read_file_variables",
+        lambda *a, **k: (
+            {"TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC", "BBP700"},
+            set(),
+        ),
+    )
+    assert (
+        check_pipeline_variables(
+            _optional_rename_steps("BETA_BACKSCATTERING700"), LOGGER
+        )
+        is True
+    )
+
+
+def test_validator_flags_oxygen_name_parameter_missing_from_file(monkeypatch):
+    monkeypatch.setattr(
+        "pelagos_py.utils.valid_config_check._read_file_variables",
+        lambda *a, **k: (
+            {"TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC"},
+            set(),
+        ),
+    )
+    steps = [
+        {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
+        {
+            "name": "Derive Uncalibrated Phase",
+            "parameters": {"blue_phase_name": "BPHASE_DOXY"},
+        },
+    ]
+    with pytest.raises(ValueError, match="BPHASE_DOXY.*input file does not contain"):
+        check_pipeline_variables(steps, LOGGER)
+
+
+def test_validator_tracks_shifted_oxygen_outputs(monkeypatch):
+    monkeypatch.setattr(
+        "pelagos_py.utils.valid_config_check._read_file_variables",
+        lambda *a, **k: (
+            {"TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC", "BPHASE_DOXY"},
+            set(),
+        ),
+    )
+    steps = [
+        {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
+        {"name": "Find Profiles", "parameters": {}},
+        {
+            "name": "Derive Uncalibrated Phase",
+            "parameters": {"blue_phase_name": "BPHASE_DOXY"},
+        },
+        {
+            "name": "Phase Pressure Correction",
+            "parameters": {
+                "optode_pressure_name": "PRES",
+                "correction_coefficient": 0.1,
+            },
+        },
+        {
+            "name": "Shift Oxygen To CTD",
+            "parameters": {
+                "shift_vars": ["UNCAL_PHASE_DOXY_PCORR"],
+                "lag_seconds": 3.0,
+            },
+        },
+        {
+            "name": "Derive Calibrated Phase",
+            "parameters": {
+                "uncalibrated_phase_name": "UNCAL_PHASE_DOXY_PCORR_SHIFTED",
+                "calib_coefficients": [0, 1],
+            },
+        },
+    ]
+    assert check_pipeline_variables(steps, LOGGER) is True
+    # Without the shift step the _SHIFTED name is produced by nothing.
+    del steps[4]
+    with pytest.raises(ValueError, match="UNCAL_PHASE_DOXY_PCORR_SHIFTED"):
+        check_pipeline_variables(steps, LOGGER)
+
+
+# --- _ADJUSTED resolution -----------------------------------------------------
+
+
+def _file_with(monkeypatch, *extra):
+    monkeypatch.setattr(
+        "pelagos_py.utils.valid_config_check._read_file_variables",
+        lambda *a, **k: (
+            {"TIME", "LATITUDE", "LONGITUDE", "PRES", "TEMP", "CNDC", *extra},
+            set(),
+        ),
+    )
+
+
+def _range_qc(var):
+    return {
+        "name": "Apply QC",
+        "parameters": {
+            "qc_settings": {
+                "range qc": {"variable_ranges": {var: {4: [0, 1, "outside"]}}}
+            }
+        },
+    }
+
+
+def test_validator_accepts_adjusted_version_of_required_variable(monkeypatch):
+    # Mixed Layer Depth requires DEPTH; Derive CTD only writes DEPTH_ADJUSTED.
+    _file_with(monkeypatch)
+    steps = [
+        {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
+        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH"]}},
+        {"name": "Find Profiles", "parameters": {}},
+        {"name": "Mixed Layer Depth", "parameters": {"method": "temp"}},
+    ]
+    assert check_pipeline_variables(steps, LOGGER) is True
+
+
+def test_validator_tracks_output_variables_of_deep_correction(monkeypatch, caplog):
+    _file_with(monkeypatch, "CHLA")
+    steps = [
+        {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
+        {"name": "Find Profiles", "parameters": {}},
+        {"name": "Deep Correction", "parameters": {"apply_to": "CHLA"}},
+        _range_qc("CHLA_ADJUSTED"),
+    ]
+    with caplog.at_level(logging.WARNING):
+        assert check_pipeline_variables(steps, LOGGER) is True
+    assert not caplog.records
+
+
+def test_validator_warns_raw_variable_adjusted_by_later_step(monkeypatch, caplog):
+    _file_with(monkeypatch, "PSAL")
+    steps = [
+        {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
+        _range_qc("PSAL"),
+        {"name": "Derive CTD", "parameters": {"to_derive": ["PSAL"]}},
+    ]
+    with caplog.at_level(logging.WARNING):
+        assert check_pipeline_variables(steps, LOGGER) is True
+    assert "uses raw PSAL; PSAL_ADJUSTED is produced later by 'Derive CTD'" in (
+        caplog.text
+    )
+
+
+def test_validator_quiet_for_qc_before_correction(monkeypatch, caplog):
+    # Deep Correction copies CHLA_QC onto CHLA_ADJUSTED, so QC on raw CHLA first is fine.
+    _file_with(monkeypatch, "CHLA")
+    steps = [
+        {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
+        _range_qc("CHLA"),
+        {"name": "Find Profiles", "parameters": {}},
+        {"name": "Deep Correction", "parameters": {"apply_to": "CHLA"}},
+    ]
+    with caplog.at_level(logging.WARNING):
+        assert check_pipeline_variables(steps, LOGGER) is True
+    assert not caplog.records
+
+
+def test_validator_warns_adjusted_name_falls_back_to_raw(monkeypatch, caplog):
+    _file_with(monkeypatch, "CHLA")
+    steps = [
+        {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
+        _range_qc("CHLA_ADJUSTED"),
+    ]
+    with caplog.at_level(logging.WARNING):
+        assert check_pipeline_variables(steps, LOGGER) is True
+    assert "names CHLA_ADJUSTED" in caplog.text and "falls back to CHLA" in caplog.text

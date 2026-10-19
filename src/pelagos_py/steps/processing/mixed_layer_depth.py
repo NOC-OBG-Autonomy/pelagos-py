@@ -19,8 +19,9 @@
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
 from pelagos_py.utils.qc_handling import QCHandlingMixin
-import pelagos_py.utils.diagnostics as diag
+from pelagos_py.utils.processing_utils import profile_indices
 import pelagos_py.utils.palettes as palettes
+from pelagos_py.utils import fig_spec
 
 #### Custom imports ####
 import gsw
@@ -29,10 +30,13 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 # Dataset variables each method reads; density is derived here as potential density.
-METHOD_INPUTS = {"density": ["ABS_SALINITY", "CONS_TEMP"], "temp": ["TEMP"]}
+METHOD_INPUTS = {"density": ["ASAL", "CONS_TEMP"], "temp": ["TEMP"]}
 
 # Name each method's values go by in logs and on plots.
 METHOD_LABELS = {"density": "SIGMA0", "temp": "TEMP"}
+
+# Samples within this distance (m) of reference_depth give the reference value.
+REFERENCE_HALF_WINDOW = 2.5
 
 
 @register_step
@@ -40,10 +44,14 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
     """
     Calculate the mixed layer depth (MLD) of each profile.
 
-    The MLD is found per profile by a threshold method: from a near-surface
-    reference point, the first depth at which the chosen variable departs from its
-    reference value by more than a threshold marks the base of the mixed layer.
-    ``PROFILE_NUMBER`` and ``DEPTH`` must already be derived.
+    The MLD is found per profile by the threshold method of de Boyer Montégut et
+    al. (2004) [1]_: the first depth below ``reference_depth`` at which the chosen
+    variable departs from its reference value by the threshold marks the base of
+    the mixed layer. The reference value is the median of samples within
+    2.5 m of ``reference_depth``, so a single noisy sample cannot shift it. Density
+    must increase by the threshold; temperature may change either way.
+    ``PROFILE_NUMBER`` and ``DEPTH`` must already be derived. Inputs are read from
+    their ``_ADJUSTED`` version (e.g. ``ASAL_ADJUSTED``) where one exists.
 
     Two derived variables are written on the ``N_MEASUREMENTS`` dimension: ``MLD``,
     the profile's mixed layer depth (positive down, matching ``DEPTH``; ``NaN`` where
@@ -53,7 +61,7 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
     written for every measurement in the profile.
 
     The density method uses potential density (sigma0, referenced to 0 dbar) derived
-    here from ``ABS_SALINITY`` and ``CONS_TEMP``, not the dataset's in-situ
+    here from ``ASAL`` and ``CONS_TEMP``, not the dataset's in-situ
     ``DENSITY`` whose pressure term alone crosses a typical threshold within a few
     metres of the surface. The derived sigma0 is not written to the dataset.
 
@@ -82,16 +90,27 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
               density_threshold: 0.03
               temp_threshold: 0.2
             diagnostics: true
+
+    References
+    ----------
+    .. [1] de Boyer Montégut, C., Madec, G., Fischer, A. S., Lazar, A., & Iudicone, D.
+       (2004). Mixed layer depth over the global ocean: An examination of profile
+       data and a profile-based climatology. *Journal of Geophysical Research:
+       Oceans*, 109(C12), C12003. https://doi.org/10.1029/2004JC002378
     """
 
     step_name = "Mixed Layer Depth"
     required_variables = ["PROFILE_NUMBER", "DEPTH"]
     provided_variables = ["MLD", "MLD_BOOL"]
-    # ABS_SALINITY/CONS_TEMP/TEMP cover both "auto" method resolution and the
+    # ASAL/CONS_TEMP/TEMP cover both "auto" method resolution and the
     # diagnostics panel, which computes MLD from every available method, not
     # just the configured one; TIME/PROFILE_DIRECTION are read only if present.
     optional_variables = [
-        "ABS_SALINITY", "CONS_TEMP", "TEMP", "TIME", "PROFILE_DIRECTION",
+        "ASAL",
+        "CONS_TEMP",
+        "TEMP",
+        "TIME",
+        "PROFILE_DIRECTION",
     ]
     uses_data_subset = True
 
@@ -120,6 +139,7 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
     }
 
     def run(self):
+        self.depth_var = self.resolve("DEPTH")
         self.filter_qc()
 
         self.resolved_method, self.threshold = self._resolve_method()
@@ -128,7 +148,7 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
             f"(threshold {self.threshold}, reference depth {self.reference_depth})..."
         )
 
-        depth = self.data["DEPTH"].values
+        depth = self.data[self.depth_var].values
         mld = self._compute_mld(self.resolved_method, self.threshold, progress=True)
 
         # Above MLD -> 0, at/below -> 1, NaN where depth or the profile's MLD is undefined.
@@ -158,7 +178,8 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
 
         qc_parents = [
             f"{var}_QC"
-            for var in ["PROFILE_NUMBER", "DEPTH"] + METHOD_INPUTS[self.resolved_method]
+            for var in ["PROFILE_NUMBER", self.depth_var]
+            + self._inputs(self.resolved_method)
         ]
         self.generate_qc({"MLD_QC": qc_parents, "MLD_BOOL_QC": qc_parents})
 
@@ -179,7 +200,7 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
                     break
             else:
                 self.halt(
-                    "Method 'auto' needs either ABS_SALINITY and CONS_TEMP (density) or "
+                    "Method 'auto' needs either ASAL and CONS_TEMP (density) or "
                     "TEMP in the dataset, but neither set is present. Derive them "
                     "beforehand (e.g. Derive CTD)."
                 )
@@ -191,7 +212,7 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
 
         if not self._method_available(method):
             missing = [
-                var for var in METHOD_INPUTS[method] if var not in self.data.data_vars
+                var for var in self._inputs(method) if var not in self.data.data_vars
             ]
             self.halt(
                 f"Method '{method}' requires {', '.join(METHOD_INPUTS[method])} in the "
@@ -204,64 +225,69 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
         )
         return method, threshold
 
+    def _inputs(self, method):
+        return [self.resolve(var) for var in METHOD_INPUTS[method]]
+
     def _method_available(self, method):
-        return all(var in self.data.data_vars for var in METHOD_INPUTS[method])
+        return all(var in self.data.data_vars for var in self._inputs(method))
 
     def _method_values(self, method):
         # Density is potential density (sigma0) derived here, only to place the MLD.
         if method == "temp":
-            return self.data["TEMP"].values
+            return self.data[self.resolve("TEMP")].values
         return gsw.sigma0(
-            self.data["ABS_SALINITY"].values, self.data["CONS_TEMP"].values
+            self.data[self.resolve("ASAL")].values,
+            self.data[self.resolve("CONS_TEMP")].values,
         )
 
     def _compute_mld(self, method, threshold, progress=False):
         profile_number = self.data["PROFILE_NUMBER"].values
-        depth = self.data["DEPTH"].values
+        depth = self.data[self.depth_var].values
 
         # Flagged samples must not influence the MLD, so the search runs on NaN-masked
         # copies; MLD/MLD_BOOL are still assigned to every sample using unmasked depth.
         usable = self.calculation_mask(
-            ["PROFILE_NUMBER", "DEPTH"] + METHOD_INPUTS[method]
+            ["PROFILE_NUMBER", self.depth_var] + self._inputs(method)
         )
         search_depth = np.where(usable, depth, np.nan)
         search_values = np.where(usable, self._method_values(method), np.nan)
 
         mld = np.full(profile_number.shape, np.nan)
-        profile_numbers = np.unique(profile_number[~np.isnan(profile_number)])
+        groups = profile_indices(profile_number)
+        profile_numbers = list(groups)
         if progress:
             profile_numbers = self.log_progress(profile_numbers, desc="", unit="prof")
 
         for pn in profile_numbers:
-            indices = np.where(profile_number == pn)[0]
+            indices = groups[pn]
             profile_mld = self._profile_mld(
-                search_depth[indices], search_values[indices], threshold
+                search_depth[indices],
+                search_values[indices],
+                threshold,
+                two_sided=(method == "temp"),
             )
             if np.isfinite(profile_mld):
                 mld[indices] = profile_mld
         return mld
 
-    def _profile_mld(self, depth, values, threshold):
-        # Restrict to valid points at or below the reference depth.
-        below_reference = depth >= self.reference_depth
-        valid = below_reference & ~np.isnan(depth) & ~np.isnan(values)
+    def _profile_mld(self, depth, values, threshold, two_sided):
+        valid = ~np.isnan(depth) & ~np.isnan(values)
         depth = depth[valid]
         values = values[valid]
-        if depth.size == 0:
-            return np.nan
 
-        # Reference point: shallowest remaining measurement; if deeper than twice the
-        # reference depth there is nothing near the surface to anchor to.
-        reference_index = np.argmin(depth)
-        if depth[reference_index] > 2 * self.reference_depth:
+        near_reference = np.abs(depth - self.reference_depth) <= REFERENCE_HALF_WINDOW
+        if not near_reference.any():
             return np.nan
-        reference_value = values[reference_index]
+        reference_value = np.median(values[near_reference])
 
-        # Scan from the surface downward for the first threshold crossing.
-        order = np.argsort(depth)
-        depth = depth[order]
-        values = values[order]
-        exceeded = np.where(np.abs(values - reference_value) >= np.abs(threshold))[0]
+        # Scan from the reference depth downward for the first threshold crossing.
+        below_reference = depth >= self.reference_depth
+        order = np.argsort(depth[below_reference])
+        depth = depth[below_reference][order]
+        departure = values[below_reference][order] - reference_value
+        if two_sided:
+            departure = np.abs(departure)
+        exceeded = np.where(departure >= np.abs(threshold))[0]
         if exceeded.size == 0:
             return np.nan
         return float(depth[exceeded[0]])
@@ -280,8 +306,7 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
         )
 
         spans = []
-        for pn in np.unique(profile_number[~np.isnan(profile_number)]):
-            indices = np.where(profile_number == pn)[0]
+        for indices in profile_indices(profile_number).values():
             span_indices = indices
             if direction is not None:
                 core = indices[np.isin(direction[indices], (-1, 1))]
@@ -297,13 +322,9 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
         matplotlib.use("tkagg")
 
         profile_number = self.data["PROFILE_NUMBER"].values
-        depth = self.data["DEPTH"].values
+        depth = self.data[self.depth_var].values
         # TIME is not required by this step; fall back to measurement index.
-        x = (
-            self.data["TIME"].values
-            if "TIME" in self.data
-            else np.arange(depth.size)
-        )
+        x = self.data["TIME"].values if "TIME" in self.data else np.arange(depth.size)
 
         profile_spans = self._profile_spans(profile_number, x)
 
@@ -326,7 +347,11 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
             mlds.append((f"MLD from {method}", colour, mld))
 
         fig, axes = plt.subplots(
-            len(methods), 1, figsize=(14, 4 * len(methods)), dpi=150, sharex=True,
+            len(methods),
+            1,
+            figsize=(14, 4 * len(methods)),
+            dpi=150,
+            sharex=True,
             squeeze=False,
         )
         for ax, (method, _) in zip(axes[:, 0], methods):
@@ -334,7 +359,7 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
             values = self._method_values(method)
 
             # Flagged samples and points below the plotted range are kept off the scatter.
-            usable = self.calculation_mask(["DEPTH"] + METHOD_INPUTS[method])
+            usable = self.calculation_mask([self.depth_var] + self._inputs(method))
             valid = (
                 usable
                 & ~np.isnan(depth)
@@ -342,24 +367,28 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
                 & (depth <= self.DIAGNOSTIC_MAX_DEPTH)
             )
             cmap = palettes.cmap_for_variable(panel_label, default="viridis")
-            scatter = ax.scatter(x[valid], depth[valid], c=values[valid], s=2, cmap=cmap)
+            scatter = ax.scatter(
+                x[valid], depth[valid], c=values[valid], s=2, cmap=cmap
+            )
             colourbar = fig.colorbar(scatter, ax=ax)
             colourbar.set_label(panel_label)
 
-            # Draw each MLD as a line spanning every profile's span.
+            # One NaN-separated line per MLD; one plot() per profile was slow
+            gap = (
+                np.datetime64("NaT")
+                if np.issubdtype(x.dtype, np.datetime64)
+                else np.nan
+            )
             for label, colour, mld in mlds:
+                xs, ys = [], []
                 for indices, span in profile_spans:
                     finite_mld = mld[indices][np.isfinite(mld[indices])]
                     if finite_mld.size == 0:
                         continue
-                    ax.plot(
-                        span,
-                        [finite_mld[0], finite_mld[0]],
-                        c=colour,
-                        lw=1,
-                        label=label,
-                    )
-                    label = None  # only label the first line of each MLD
+                    xs += [span[0], span[1], gap]
+                    ys += [finite_mld[0], finite_mld[0], np.nan]
+                if xs:
+                    ax.plot(np.array(xs), ys, c=colour, lw=1, label=label)
 
             ax.set_ylabel("DEPTH")
             # Positive-down depth: surface at the top, clipped to the shallow range.
@@ -368,6 +397,6 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
             if ax.get_legend_handles_labels()[0]:
                 ax.legend(loc="lower right")
 
-        axes[-1, 0].set_xlabel("TIME" if "TIME" in self.data else "Measurement")
+        fig_spec.x_axis(axes[-1, 0], x)
         fig.tight_layout()
         plt.show(block=True)

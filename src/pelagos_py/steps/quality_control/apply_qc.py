@@ -18,13 +18,62 @@
 
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
-import pelagos_py.utils.diagnostics as diag
 from pelagos_py.steps import QC_CLASSES
+from pelagos_py.utils.qc_handling import (
+    QC_COMBINATRIX,
+    adjusted_name,
+    prefer_adjusted,
+)
 
 #### Custom imports ####
 import xarray as xr
 import numpy as np
 import json
+
+
+def _flag_summary(flags):
+    # flag counts 0-9 and the same stats as pandas describe(), from one bincount
+    counts = np.bincount(flags.astype(np.int64), minlength=10)
+    n = int(counts.sum())
+    if n == 0:
+        return {i: 0 for i in range(10)}, {"count": 0.0}
+    values = np.arange(counts.size, dtype=float)
+    cum = np.cumsum(counts)
+    mean = float((values * counts).sum() / n)
+    std = (
+        float(np.sqrt(((values - mean) ** 2 * counts).sum() / (n - 1)))
+        if n > 1
+        else float("nan")
+    )
+
+    def quantile(q):  # numpy 'linear' method, as pandas describe uses
+        pos = q * (n - 1)
+        lo, hi = values[
+            np.searchsorted(cum, [int(pos), int(np.ceil(pos))], side="right")
+        ]
+        return float(lo + (hi - lo) * (pos - int(pos)))
+
+    lowest, highest = values[np.flatnonzero(counts)[[0, -1]]]
+    stats = {
+        "count": float(n),
+        "mean": mean,
+        "std": std,
+        "min": float(lowest),
+        "25%": quantile(0.25),
+        "50%": quantile(0.5),
+        "75%": quantile(0.75),
+        "max": float(highest),
+    }
+    return {i: int(counts[i]) for i in range(10)}, {
+        k: round(v, 5) for k, v in stats.items()
+    }
+
+
+def _split_test_settings(settings):
+    # `diagnostics` is a per-test override, not a QC parameter
+    return {k: v for k, v in settings.items() if k != "diagnostics"}, settings.get(
+        "diagnostics"
+    )
 
 
 @register_step
@@ -48,9 +97,10 @@ class ApplyQC(BaseStep):
         },
     }
 
-    def organise_flags(self, new_flags):
+    def organise_flags(self, new_flags, overwrite=False):
         """
         Method for taking in new flags (new_flags) and cross checking against existing flags (self.flag_store), including upgrading flags when necessary, following ARGO flagging standards.
+        With ``overwrite`` the new flags replace the stored ones outright (tests that merge themselves, e.g. visual qc).
         See Wong et al. 2025 pp. 106 (http://dx.doi.org/10.13155/33951) and Mancini et al. 2021 pp. 43-44 for additional ARGO flag definitions.
 
         Combinatrix logic:
@@ -75,30 +125,15 @@ class ApplyQC(BaseStep):
             Dataset containing new QC flag variables to be merged into the existing flag store.
         """
 
-        # Define combinatrix for handling flag upgrade behaviour
-        qc_combinatrix = np.array(
-            [
-                [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-                [1, 1, 2, 3, 4, 5, 1, 1, 8, 9],
-                [2, 2, 2, 3, 4, 5, 2, 2, 8, 9],
-                [3, 3, 3, 3, 4, 3, 3, 3, 3, 9],
-                [4, 4, 4, 4, 4, 4, 4, 4, 4, 9],
-                [5, 5, 5, 3, 4, 5, 5, 5, 8, 9],
-                [6, 1, 2, 3, 4, 5, 6, 6, 8, 9],
-                [7, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-                [8, 8, 8, 3, 4, 8, 8, 8, 8, 9],
-                [9, 9, 9, 9, 9, 9, 9, 9, 9, 9],
-            ]
-        )
-
         # Update existing flag columns
         flag_columns_to_update = set(new_flags.data_vars) & set(
             self.flag_store.data_vars
         )
         for column_name in flag_columns_to_update:
-            self.flag_store[column_name][:] = qc_combinatrix[
-                self.flag_store[column_name], new_flags[column_name]
-            ]
+            new = new_flags[column_name].values
+            if not overwrite:
+                new = QC_COMBINATRIX[self.flag_store[column_name], new]
+            self.flag_store[column_name][:] = new
 
         # Add new QC flag columns if they dont already exist
         flag_columns_to_add = set(new_flags.data_vars) - set(self.flag_store.data_vars)
@@ -135,6 +170,14 @@ class ApplyQC(BaseStep):
         self.check_data()
         full_data = self.context["data"]
 
+        resolved_settings = prefer_adjusted(self.qc_settings, set(full_data.variables))
+        if resolved_settings != self.qc_settings:
+            self.log(
+                f"Resolved variable names (preferring _ADJUSTED):{json.dumps(resolved_settings)}",
+                console=False,
+            )
+        self.qc_settings = resolved_settings
+
         # Try and fetch the qc history from context and update it
         qc_history = self.context.setdefault("qc_history", {})
 
@@ -144,7 +187,8 @@ class ApplyQC(BaseStep):
         for test in queued_qc:
             if hasattr(test, "dynamic"):
                 # Initialise the test to check its dynamic attributes
-                test_instance = test(None, **self.qc_settings[test.qc_name])
+                test_params, _ = _split_test_settings(self.qc_settings[test.qc_name])
+                test_instance = test(None, **test_params)
                 all_required_variables.update(test_instance.required_variables)
                 test_qc_outputs_cols.update(test_instance.qc_outputs)
                 del test_instance
@@ -156,9 +200,13 @@ class ApplyQC(BaseStep):
             #   vars only), so a required variable stored as a coordinate (e.g. TIME,
             #   LATITUDE, LONGITUDE) is not falsely reported as missing.
             present = set(full_data.variables)
-            if not set(all_required_variables).issubset(present):
+            # Static names like DEPTH count as present through their _ADJUSTED version.
+            resolved_required = set(
+                prefer_adjusted(list(all_required_variables), present)
+            )
+            if not resolved_required.issubset(present):
                 self.halt(
-                    f"The data is missing variables: ({set(all_required_variables) - present}) which are required for running QC '{test.qc_name}'."
+                    f"The data is missing variables: ({resolved_required - present}) which are required for running QC '{test.qc_name}'."
                     f" Make sure that the variables are present in the data, or remove tests from the order."
                 )
 
@@ -167,7 +215,10 @@ class ApplyQC(BaseStep):
         # the QC output columns themselves and the variable each flags (needed to
         # build masks for outputs that don't exist yet, see mia_qc/base below).
         subset_names = set(all_required_variables) | set(test_qc_outputs_cols)
+        # Tests resolve hard-coded names (e.g. DEPTH) to their _ADJUSTED version themselves.
+        subset_names.update(adjusted_name(var) for var in all_required_variables)
         subset_names.update(var[:-3] for var in test_qc_outputs_cols)
+        subset_names.add("TIME")  # diagnostics plot against time
         subset_vars = [name for name in subset_names if name in full_data.variables]
         data = full_data[subset_vars].copy(deep=True)
         # Fetch existing flags from the data and create a place to store them
@@ -177,7 +228,7 @@ class ApplyQC(BaseStep):
         self.flag_store = xr.Dataset(coords={"N_MEASUREMENTS": data["N_MEASUREMENTS"]})
         if len(existing_flags) > 0:
             self.log(f"Found existing flags columns {set(existing_flags)} in data.")
-            self.flag_store = data[existing_flags].fillna(9).astype(int)
+            self.flag_store = data[existing_flags].fillna(9).astype(np.int8)
 
         other_existing_qc = set(
             [var for var in data.data_vars if var.endswith("_QC")]
@@ -203,21 +254,26 @@ class ApplyQC(BaseStep):
                 f" Double check the configuration file and make sure all variable parameters (like 'also flag' [CHLA]) are present in the data."
             )
         data_subset = data[base]
-        masks = xr.where(data_subset.isnull(), 9, 0).astype(int)
+        masks = xr.where(data_subset.isnull(), 9, 0).astype(np.int8)
         masks = masks.rename({var: f"{var}_QC" for var in base})
         self.flag_store.update(masks)
 
         # Run through all of the QC steps and add the flags to flag_store
-        for qc_qc_name, qc_test_params in self.qc_settings.items():
-            # Create an instance of this test step
+        for qc_qc_name, qc_test_settings in self.qc_settings.items():
+            qc_test_params, test_diagnostics = _split_test_settings(qc_test_settings)
+            if test_diagnostics is None:
+                test_diagnostics = self.diagnostics
             self.log(
                 f"Applying: {qc_qc_name}"
             )  # print(f"[Apply QC] Applying: {qc_qc_name}")
             qc_test_instance = QC_CLASSES[qc_qc_name](data, **qc_test_params)
+            overwrite = qc_test_instance.overwrite_flags
+            if overwrite:  # the test merges against the store itself
+                qc_test_instance.existing_flags = self.flag_store
             returned_flags = (
                 qc_test_instance.return_qc()
             )  #   Runs the test, returns the flags
-            self.organise_flags(returned_flags)
+            self.organise_flags(returned_flags, overwrite=overwrite)
 
             # Update QC history
             for flagged_var in returned_flags.data_vars:
@@ -257,19 +313,24 @@ class ApplyQC(BaseStep):
                 if parent_standard_name is not None:
                     attrs["standard_name"] = f"{parent_standard_name}_flag"
                 attr_test = qc_qc_name.replace(" ", "_").lower()
-                attrs[f"{attr_test}_flag_cts"] = json.dumps(
-                    {i: int(np.sum(var_flags.to_numpy() == i)) for i in range(10)}
-                )
-                attrs[f"{attr_test}_stats"] = json.dumps(
-                    var_flags.to_series().describe().round(5).to_dict()
-                )
+                counts, stats = _flag_summary(var_flags.to_numpy())
+                attrs[f"{attr_test}_flag_cts"] = json.dumps(counts)
+                attrs[f"{attr_test}_stats"] = json.dumps(stats)
                 attrs[f"{attr_test}_params"] = json.dumps(qc_test_params)
                 # Can get indices of 3/4 with np.where(var_flags.to_numpy() == 3)[0] for future reference
 
             # Diagnostic plotting. Never let a diagnostic-only error abort QC;
             # this matters when the report writer force-enables diagnostics to
             # capture plots for every test.
-            if self.diagnostics:
+            if test_diagnostics:
+                # plot the merged flags after this test, not just this test's output
+                for col in returned_flags.data_vars:
+                    for holder in (
+                        qc_test_instance.data,
+                        getattr(qc_test_instance, "flags", None),
+                    ):
+                        if holder is not None and col in holder:
+                            holder[col] = self.flag_store[col]
                 try:
                     qc_test_instance.plot_diagnostics()
                 except Exception as exc:  # noqa: BLE001 - diagnostics must not be fatal
@@ -294,7 +355,7 @@ class ApplyQC(BaseStep):
 
             data[flag_column] = (
                 ("N_MEASUREMENTS",),
-                self.flag_store[flag_column].to_numpy(),
+                self.flag_store[flag_column].to_numpy().astype(np.int8),
             )
             data[flag_column].attrs = self.flag_store[flag_column].attrs.copy()
         # data is a subset of context["data"]; merge rather than replace so

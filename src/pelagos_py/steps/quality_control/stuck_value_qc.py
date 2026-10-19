@@ -19,6 +19,7 @@
 #### Mandatory imports ####
 import numpy as np
 from pelagos_py.steps.base_qc import BaseQC, register_qc
+from pelagos_py.utils.qc_handling import propagate_flags, raw_name
 
 #### Custom imports ####
 import matplotlib.pyplot as plt
@@ -41,13 +42,11 @@ class stuck_value_qc(BaseQC):
 
         - name: "Apply QC"
           parameters:
-            qc_settings: {
-                "stuck value test": {
-                  "variables": {"PRES": 4, "LATITUDE": 100},
-                  "also_flag": {"PRES": ["CNDC", "TEMP"], "LATITUDE": ["LONGITUDE"]},
-                  "plot": ["PRES", "LATITUDE"]
-                }
-            }
+            qc_settings:
+              stuck value qc:
+                variables: {PRES: 4, LATITUDE: 100}
+                also_flag: {PRES: [CNDC, TEMP], LATITUDE: [LONGITUDE]}
+                plot: [PRES, LATITUDE]
           diagnostics: true
     """
 
@@ -70,7 +69,7 @@ class stuck_value_qc(BaseQC):
         "plot": {
             "type": list,
             "default": [],
-            "description": "Variables to plot in diagnostics.",
+            "description": "Variables to plot in diagnostics (default: every tested variable).",
         },
     }
 
@@ -84,7 +83,7 @@ class stuck_value_qc(BaseQC):
 
     def return_qc(self):
         # Subset the data
-        self.data = self.data[self.required_variables]
+        self.data = self.data[self.keep_vars()]
 
         # Generate the variable-specific flags
         for var, n_stuck in self.variables.items():
@@ -127,7 +126,13 @@ class stuck_value_qc(BaseQC):
             # Broadcast the QC found for var into variables specified by "also_flag"
             if extra_vars := self.also_flag.get(var):
                 for extra_var in extra_vars:
-                    self.data[f"{extra_var}_QC"] = self.data[f"{var}_QC"]
+                    base = self.data.get(
+                        f"{extra_var}_QC", xr.zeros_like(self.data[f"{var}_QC"])
+                    )
+                    self.data[f"{extra_var}_QC"] = (
+                        ["N_MEASUREMENTS"],
+                        propagate_flags(base, self.data[f"{var}_QC"]),
+                    )
 
         # Select just the flags
         self.flags = self.data[
@@ -139,16 +144,12 @@ class stuck_value_qc(BaseQC):
     def plot_diagnostics(self):
         matplotlib.use("tkagg")
 
-        # If not plots were specified
-        if len(self.plot) == 0:
-            print(
-                f"WARNING: In '{self.qc_name}', diagnostics were called but no variables were specified for plotting."
-            )
-            return
+        plot_vars = self.plot or list(self.variables)
 
         # Plot the QC output
-        fig, axes = fig_spec.new_fig(nrows=len(self.plot), sharex=True)
-        for ax, var in zip(axes[:, 0], self.plot):
+        fig, axes = fig_spec.new_fig(nrows=len(plot_vars), sharex=True)
+        x = fig_spec.x_time(self.data)
+        for ax, var in zip(axes[:, 0], plot_vars):
             # Check that the user specified var exists in the test set
             if f"{var}_QC" not in self.qc_outputs:
                 print(
@@ -156,12 +157,13 @@ class stuck_value_qc(BaseQC):
                 )
                 continue
 
-            fig_spec.flag_points(
-                ax, self.data["N_MEASUREMENTS"], self.data[var], self.data[f"{var}_QC"]
-            )
+            fig_spec.flag_points(ax, x, self.data[var], self.data[f"{var}_QC"])
             ylabel = fig_spec.axis_label(var, self.data[var].attrs.get("units"))
-            fig_spec.style_axes(ax, title=f"{var} Stuck Value Test", xlabel="Index", ylabel=ylabel)
+            fig_spec.style_axes(ax, title=f"{var} Stuck Value Test", ylabel=ylabel)
+            if raw_name(var) in ("PRES", "DEPTH"):
+                ax.invert_yaxis()
             fig_spec.legend(ax, title="Flags")
+        fig_spec.x_axis(axes[-1][0], x)
 
         fig_spec.finish(fig)
         plt.show(block=True)
