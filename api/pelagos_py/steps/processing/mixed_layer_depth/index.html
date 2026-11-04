@@ -366,7 +366,6 @@
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/load_data/index.html">pelagos_py.steps.input_output.load_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/prepare_og1/index.html">pelagos_py.steps.input_output.prepare_og1</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/write_report/index.html">pelagos_py.steps.input_output.write_report</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../input_output/write_report_python/index.html">pelagos_py.steps.input_output.write_report_python</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="../index.html">pelagos_py.steps.processing</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
@@ -394,6 +393,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/spike_qc/index.html">pelagos_py.steps.quality_control.spike_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/stuck_value_qc/index.html">pelagos_py.steps.quality_control.stuck_value_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/valid_profile_qc/index.html">pelagos_py.steps.quality_control.valid_profile_qc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../quality_control/visual_qc/index.html">pelagos_py.steps.quality_control.visual_qc</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../templates/index.html">pelagos_py.steps.templates</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -492,10 +492,14 @@
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.processing.mixed_layer_depth.</span></span><span class="sig-name descname"><span class="pre">MixedLayerDepthStep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/mixed_layer_depth.html#MixedLayerDepthStep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.mixed_layer_depth.MixedLayerDepthStep" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="../../base_step/index.html#pelagos_py.steps.base_step.BaseStep" title="pelagos_py.steps.base_step.BaseStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pelagos_py.steps.base_step.BaseStep</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">pelagos_py.utils.qc_handling.QCHandlingMixin</span></code></p>
 <p>Calculate the mixed layer depth (MLD) of each profile.</p>
-<p>The MLD is found per profile by a threshold method: from a near-surface
-reference point, the first depth at which the chosen variable departs from its
-reference value by more than a threshold marks the base of the mixed layer.
-<code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER</span></code> and <code class="docutils literal notranslate"><span class="pre">DEPTH</span></code> must already be derived.</p>
+<p>The MLD is found per profile by the threshold method of de Boyer Montégut et
+al. (2004) <a class="reference internal" href="#rcbdb4649715a-1" id="id1">[1]</a>: the first depth below <code class="docutils literal notranslate"><span class="pre">reference_depth</span></code> at which the chosen
+variable departs from its reference value by the threshold marks the base of
+the mixed layer. The reference value is the median of samples within
+2.5 m of <code class="docutils literal notranslate"><span class="pre">reference_depth</span></code>, so a single noisy sample cannot shift it. Density
+must increase by the threshold; temperature may change either way.
+<code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER</span></code> and <code class="docutils literal notranslate"><span class="pre">DEPTH</span></code> must already be derived. Inputs are read from
+their <code class="docutils literal notranslate"><span class="pre">_ADJUSTED</span></code> version (e.g. <code class="docutils literal notranslate"><span class="pre">ASAL_ADJUSTED</span></code>) where one exists.</p>
 <p>Two derived variables are written on the <code class="docutils literal notranslate"><span class="pre">N_MEASUREMENTS</span></code> dimension: <code class="docutils literal notranslate"><span class="pre">MLD</span></code>,
 the profile’s mixed layer depth (positive down, matching <code class="docutils literal notranslate"><span class="pre">DEPTH</span></code>; <code class="docutils literal notranslate"><span class="pre">NaN</span></code> where
 undefined), and <code class="docutils literal notranslate"><span class="pre">MLD_BOOL</span></code>, <code class="docutils literal notranslate"><span class="pre">0</span></code> above the MLD, <code class="docutils literal notranslate"><span class="pre">1</span></code> at/below it, <code class="docutils literal notranslate"><span class="pre">NaN</span></code>
@@ -503,7 +507,7 @@ where undefined. Samples whose flags fall in <code class="docutils literal notra
 part in the search, so a bad value cannot place the MLD; both variables are still
 written for every measurement in the profile.</p>
 <p>The density method uses potential density (sigma0, referenced to 0 dbar) derived
-here from <code class="docutils literal notranslate"><span class="pre">ABS_SALINITY</span></code> and <code class="docutils literal notranslate"><span class="pre">CONS_TEMP</span></code>, not the dataset’s in-situ
+here from <code class="docutils literal notranslate"><span class="pre">ASAL</span></code> and <code class="docutils literal notranslate"><span class="pre">CONS_TEMP</span></code>, not the dataset’s in-situ
 <code class="docutils literal notranslate"><span class="pre">DENSITY</span></code> whose pressure term alone crosses a typical threshold within a few
 metres of the surface. The derived sigma0 is not written to the dataset.</p>
 <dl class="field-list simple">
@@ -529,6 +533,16 @@ pipeline.</p></li>
 <span class="w">      </span><span class="nt">temp_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.2</span>
 <span class="w">    </span><span class="nt">diagnostics</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </pre></div>
+</div>
+</div>
+<p class="rubric">References</p>
+<div role="list" class="citation-list">
+<div class="citation" id="rcbdb4649715a-1" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
+<p>de Boyer Montégut, C., Madec, G., Fischer, A. S., Lazar, A., &amp; Iudicone, D.
+(2004). Mixed layer depth over the global ocean: An examination of profile
+data and a profile-based climatology. <em>Journal of Geophysical Research:
+Oceans</em>, 109(C12), C12003. <a class="reference external" href="https://doi.org/10.1029/2004JC002378">https://doi.org/10.1029/2004JC002378</a></p>
 </div>
 </div>
 </dd></dl>

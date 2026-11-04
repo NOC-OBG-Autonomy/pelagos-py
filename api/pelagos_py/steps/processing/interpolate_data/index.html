@@ -366,7 +366,6 @@
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/load_data/index.html">pelagos_py.steps.input_output.load_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/prepare_og1/index.html">pelagos_py.steps.input_output.prepare_og1</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/write_report/index.html">pelagos_py.steps.input_output.write_report</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../input_output/write_report_python/index.html">pelagos_py.steps.input_output.write_report_python</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="../index.html">pelagos_py.steps.processing</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
@@ -394,6 +393,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/spike_qc/index.html">pelagos_py.steps.quality_control.spike_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/stuck_value_qc/index.html">pelagos_py.steps.quality_control.stuck_value_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/valid_profile_qc/index.html">pelagos_py.steps.quality_control.valid_profile_qc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../quality_control/visual_qc/index.html">pelagos_py.steps.quality_control.visual_qc</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../templates/index.html">pelagos_py.steps.templates</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -522,58 +522,16 @@ handling and optional diagnostic visualization.</p>
 <p>Example config usage:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="s2">"Interpolate Data"</span>
   <span class="n">parameters</span><span class="p">:</span>
+    <span class="n">variables</span><span class="p">:</span>  <span class="c1"># per variable, the QC flags treated as gaps to fill</span>
+      <span class="n">PRES</span><span class="p">:</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">9</span><span class="p">]</span>
+      <span class="n">LATITUDE</span><span class="p">:</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">9</span><span class="p">]</span>
+      <span class="n">LONGITUDE</span><span class="p">:</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">9</span><span class="p">]</span>
     <span class="n">max_interp_time</span><span class="p">:</span> <span class="mf">5.0</span>
-    <span class="n">qc_handling_settings</span><span class="p">:</span> <span class="p">{</span>
-      <span class="n">flag_filter_settings</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">"PRES"</span><span class="p">:</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">9</span><span class="p">],</span>
-        <span class="s2">"LATITUDE"</span><span class="p">:</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">9</span><span class="p">],</span>
-        <span class="s2">"LONGITUDE"</span><span class="p">:</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">9</span><span class="p">]</span>
-      <span class="p">},</span>
-      <span class="n">reconstruction_behaviour</span><span class="p">:</span> <span class="s2">"replace"</span><span class="p">,</span>
-      <span class="n">flag_mapping</span><span class="p">:</span> <span class="p">{</span> <span class="mi">3</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">:</span> <span class="mi">8</span> <span class="p">}</span>
-    <span class="p">}</span>
   <span class="n">diagnostics</span><span class="p">:</span> <span class="n">false</span>
 </pre></div>
 </div>
+<p>Filled samples are flagged 8 (interpolated).</p>
 </div>
-<dl class="py method">
-<dt class="sig sig-object py" id="pelagos_py.steps.processing.interpolate_data.InterpolateVariables.run">
-<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/interpolate_data.html#InterpolateVariables.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.interpolate_data.InterpolateVariables.run" title="Link to this definition">#</a></dt>
-<dd><p>Execute the interpolation workflow.</p>
-<p>This method performs the following steps:</p>
-<ol class="arabic simple">
-<li><p>Filters data based on quality control flags</p></li>
-<li><p>Converts xarray data to a Polars DataFrame</p></li>
-<li><p>Interpolates missing values using time as the reference dimension</p></li>
-<li><p>QC and data reconstruction based on user specification</p></li>
-<li><p>Updates QC flags for interpolated values</p></li>
-<li><p>Generates diagnostic plots if enabled</p></li>
-</ol>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>The updated context dictionary containing the interpolated dataset
-under the “data” key.</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)">dict</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pelagos_py.steps.processing.interpolate_data.InterpolateVariables.generate_diagnostics">
-<span class="sig-name descname"><span class="pre">generate_diagnostics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/interpolate_data.html#InterpolateVariables.generate_diagnostics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.interpolate_data.InterpolateVariables.generate_diagnostics" title="Link to this definition">#</a></dt>
-<dd><p>Generate diagnostic plots comparing original and interpolated data.</p>
-<p>Creates a side-by-side comparison visualization showing the first
-variable in filter_settings before and after interpolation.</p>
-<p>This method uses the Tkinter backend for interactive display.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>None</p>
-</dd>
-</dl>
-</dd></dl>
-
 </dd></dl>
 
 </section>
@@ -603,8 +561,6 @@ variable in filter_settings before and after interpolation.</p>
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.interpolate_data.InterpolateVariables"><code class="docutils literal notranslate"><span class="pre">InterpolateVariables</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.interpolate_data.InterpolateVariables.step_name"><code class="docutils literal notranslate"><span class="pre">InterpolateVariables.step_name</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.interpolate_data.InterpolateVariables.run"><code class="docutils literal notranslate"><span class="pre">InterpolateVariables.run()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.interpolate_data.InterpolateVariables.generate_diagnostics"><code class="docutils literal notranslate"><span class="pre">InterpolateVariables.generate_diagnostics()</span></code></a></li>
 </ul>
 </li>
 </ul>

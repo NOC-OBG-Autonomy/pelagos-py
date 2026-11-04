@@ -366,7 +366,6 @@
 <li class="toctree-l3"><a class="reference internal" href="../../steps/input_output/load_data/index.html">pelagos_py.steps.input_output.load_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../steps/input_output/prepare_og1/index.html">pelagos_py.steps.input_output.prepare_og1</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../steps/input_output/write_report/index.html">pelagos_py.steps.input_output.write_report</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../steps/input_output/write_report_python/index.html">pelagos_py.steps.input_output.write_report_python</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../steps/processing/index.html">pelagos_py.steps.processing</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -394,6 +393,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../steps/quality_control/spike_qc/index.html">pelagos_py.steps.quality_control.spike_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../steps/quality_control/stuck_value_qc/index.html">pelagos_py.steps.quality_control.stuck_value_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../steps/quality_control/valid_profile_qc/index.html">pelagos_py.steps.quality_control.valid_profile_qc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../steps/quality_control/visual_qc/index.html">pelagos_py.steps.quality_control.visual_qc</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../steps/templates/index.html">pelagos_py.steps.templates</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -487,7 +487,8 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="pelagos_py.utils.demo_data.get_demo_file">
 <span class="sig-prename descclassname"><span class="pre">pelagos_py.utils.demo_data.</span></span><span class="sig-name descname"><span class="pre">get_demo_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_progress</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/utils/demo_data.html#get_demo_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.utils.demo_data.get_demo_file" title="Link to this definition">#</a></dt>
-<dd><p>Download a demo OG1 file into <code class="docutils literal notranslate"><span class="pre">examples/data/OG1</span></code> (only the first time) and return its path.</p>
+<dd><p>Download a demo OG1 file into <code class="docutils literal notranslate"><span class="pre">examples/data/OG1</span></code> (<code class="docutils literal notranslate"><span class="pre">~/Documents/pelagos-py/demo_data</span></code>
+for a pip install), only the first time, and return its path.</p>
 <p>Long deployments are cut down to a shorter time window after downloading. Call it with
 no name to list the demos.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pipeline</span><span class="p">,</span> <span class="n">get_demo_file</span>

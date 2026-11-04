@@ -56,7 +56,7 @@
     <link rel="icon" href="../../../../../_static/NOC_logo.svg"/>
     <link rel="index" title="Index" href="../../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../../search.html" />
-    <link rel="next" title="pelagos_py.steps.templates" href="../../templates/index.html" />
+    <link rel="next" title="pelagos_py.steps.quality_control.visual_qc" href="../visual_qc/index.html" />
     <link rel="prev" title="pelagos_py.steps.quality_control.stuck_value_qc" href="../stuck_value_qc/index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -366,7 +366,6 @@
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/load_data/index.html">pelagos_py.steps.input_output.load_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/prepare_og1/index.html">pelagos_py.steps.input_output.prepare_og1</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/write_report/index.html">pelagos_py.steps.input_output.write_report</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../input_output/write_report_python/index.html">pelagos_py.steps.input_output.write_report_python</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../processing/index.html">pelagos_py.steps.processing</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -394,6 +393,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../spike_qc/index.html">pelagos_py.steps.quality_control.spike_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../stuck_value_qc/index.html">pelagos_py.steps.quality_control.stuck_value_qc</a></li>
 <li class="toctree-l3 current active"><a class="current reference internal" href="#">pelagos_py.steps.quality_control.valid_profile_qc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../visual_qc/index.html">pelagos_py.steps.quality_control.visual_qc</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../templates/index.html">pelagos_py.steps.templates</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -495,50 +495,23 @@
 <div class="line-block">
 <div class="line"><strong>Target variable:</strong> <code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER</span></code></div>
 <div class="line"><strong>Variables flagged:</strong> <code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER</span></code></div>
-<div class="line"><strong>Flags applied:</strong> 1 (good), 3 (probably bad), 4 (bad), 9 (missing)</div>
+<div class="line"><strong>Flags applied:</strong> <code class="docutils literal notranslate"><span class="pre">flag</span></code> (default 4, bad)</div>
 </div>
-<p>Each profile (a group of measurements sharing a <code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER</span></code>, as produced
-by <span class="xref std std-doc">Find Profiles</span>) is assessed as a
-whole and every row in that profile receives the same <code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER_QC</span></code>:</p>
-<ul class="simple">
-<li><p><strong>9 (missing)</strong> — the row has no profile (<code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER</span></code> is NaN, e.g.
-surfacing rows or data gaps).</p></li>
-<li><p><strong>4 (bad)</strong> — the profile contains fewer than <code class="docutils literal notranslate"><span class="pre">profile_length</span></code> measurements.</p></li>
-<li><p><strong>3 (probably bad)</strong> — the profile is long enough but has no measurement whose
-<code class="docutils literal notranslate"><span class="pre">DEPTH</span></code> falls inside <code class="docutils literal notranslate"><span class="pre">depth_range</span></code>.</p></li>
-<li><p><strong>1 (good)</strong> — the profile passes both checks.</p></li>
-</ul>
-<p>Only <code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER_QC</span></code> is written; the underlying data is never modified.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>profile_length</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><em>int</em></a><em>, </em><em>optional</em>) – Minimum number of measurements a profile must contain to be kept. Profiles
-shorter than this are flagged bad (4). Default <code class="docutils literal notranslate"><span class="pre">100</span></code>.</p></li>
-<li><p><strong>depth_range</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><em>tuple</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">(min,</span> <span class="pre">max)</span></code> depth window (in the same units/sign convention as <code class="docutils literal notranslate"><span class="pre">DEPTH</span></code>,
-i.e. positive downward) that a profile must reach into. A profile with no data
-inside this window is flagged probably bad (3). Default <code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">1000)</span></code>.</p></li>
-</ul>
-</dd>
-</dl>
+<p>Every row of a profile (rows sharing a <code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER</span></code> from
+<span class="xref std std-doc">Find Profiles</span>) gets <code class="docutils literal notranslate"><span class="pre">flag</span></code> when the
+profile has fewer than <code class="docutils literal notranslate"><span class="pre">min_length</span></code> rows or, if <code class="docutils literal notranslate"><span class="pre">depth_range</span></code> is set, no
+<code class="docutils literal notranslate"><span class="pre">depth_var</span></code> sample inside it. Passing profiles are flagged 1; rows without a
+profile are left unchecked (0), so their existing flag is kept.</p>
 <div class="admonition-examples admonition">
 <p class="admonition-title">Examples</p>
-<p>The check works with its defaults, so the minimal configuration sets no
-parameters:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">"Apply</span><span class="nv"> </span><span class="s">QC"</span>
-<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">qc_settings</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">valid profile qc</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
-</pre></div>
-</div>
-<p>Both parameters may be tuned — here profiles must be at least 50 points long and
-contain data somewhere between 1000 m depth and the surface:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">"Apply</span><span class="nv"> </span><span class="s">QC"</span>
 <span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">qc_settings</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">valid profile qc</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">profile_length</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
-<span class="w">        </span><span class="nt">depth_range</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">1000</span><span class="p p-Indicator">]</span>
-<span class="w">  </span><span class="nt">diagnostics</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">  </span><span class="c1"># plot DEPTH vs index, coloured by the resulting flag</span>
+<span class="w">        </span><span class="nt">min_length</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span><span class="w">          </span><span class="c1"># rows per profile</span>
+<span class="w">        </span><span class="nt">depth_range</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">1000</span><span class="p p-Indicator">]</span><span class="w">  </span><span class="c1"># PRES window the profile must reach into</span>
+<span class="w">        </span><span class="nt">flag</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<span class="w">  </span><span class="nt">diagnostics</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </pre></div>
 </div>
 </div>

@@ -415,8 +415,7 @@
 
 <span class="c1">#### Mandatory imports ####</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.qc_handling</span><span class="w"> </span><span class="kn">import</span> <span class="n">QCHandlingMixin</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">pelagos_py.utils.diagnostics</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">diag</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.qc_handling</span><span class="w"> </span><span class="kn">import</span> <span class="n">QCHandlingMixin</span><span class="p">,</span> <span class="n">raw_name</span>
 
 <span class="c1">#### Custom imports ####</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.processing_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">interpolate_by_time</span>
@@ -461,17 +460,14 @@
 
 <span class="sd">        - name: "Interpolate Data"</span>
 <span class="sd">          parameters:</span>
+<span class="sd">            variables:  # per variable, the QC flags treated as gaps to fill</span>
+<span class="sd">              PRES: [3, 4, 9]</span>
+<span class="sd">              LATITUDE: [3, 4, 9]</span>
+<span class="sd">              LONGITUDE: [3, 4, 9]</span>
 <span class="sd">            max_interp_time: 5.0</span>
-<span class="sd">            qc_handling_settings: {</span>
-<span class="sd">              flag_filter_settings: {</span>
-<span class="sd">                "PRES": [3, 4, 9],</span>
-<span class="sd">                "LATITUDE": [3, 4, 9],</span>
-<span class="sd">                "LONGITUDE": [3, 4, 9]</span>
-<span class="sd">              },</span>
-<span class="sd">              reconstruction_behaviour: "replace",</span>
-<span class="sd">              flag_mapping: { 3: 8, 4: 8, 9: 8 }</span>
-<span class="sd">            }</span>
 <span class="sd">          diagnostics: false</span>
+
+<span class="sd">    Filled samples are flagged 8 (interpolated).</span>
 <span class="sd">    """</span>
 
 <div class="viewcode-block" id="InterpolateVariables.step_name">
@@ -481,10 +477,17 @@
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span>
     <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">uses_data_subset</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">variable_parameters</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"variables"</span><span class="p">]</span>
 
-    <span class="c1"># Variables to interpolate are driven entirely by the framework</span>
-    <span class="c1"># ``qc_handling_settings`` (flag_filter_settings).</span>
     <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"variables"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+            <span class="s2">"required"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="p">(</span>
+                <span class="s2">"Variables to interpolate, each with the QC flags whose samples are "</span>
+                <span class="s2">"treated as gaps (e.g. PRES: [3, 4, 9]). NaN samples are always gaps."</span>
+            <span class="p">),</span>
+        <span class="p">},</span>
         <span class="s2">"max_interp_time"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
             <span class="s2">"default"</span><span class="p">:</span> <span class="mf">5.0</span><span class="p">,</span>
@@ -497,56 +500,53 @@
         <span class="p">},</span>
     <span class="p">}</span>
 
-<div class="viewcode-block" id="InterpolateVariables.run">
-<a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/interpolate_data/index.html#pelagos_py.steps.processing.interpolate_data.InterpolateVariables.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">diagnostics</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">parameters</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">parameters</span> <span class="ow">or</span> <span class="p">{})</span>
+        <span class="k">if</span> <span class="s2">"qc_handling_settings"</span> <span class="ow">in</span> <span class="n">parameters</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">] 'qc_handling_settings' is not used here: put the flags under 'variables'."</span>
+            <span class="p">)</span>
+        <span class="c1"># `variables` is the mixin's flag_filter_settings under a simpler name</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="s2">"qc_handling_settings"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"flag_filter_settings"</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"variables"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span>
+        <span class="p">}</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">diagnostics</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+        <span class="c1"># consumed by the mixin above; keep it out of saved configs, which would reject it</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"qc_handling_settings"</span><span class="p">)</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Execute the interpolation workflow.</span>
-
-<span class="sd">        This method performs the following steps:</span>
-
-<span class="sd">        1. Filters data based on quality control flags</span>
-<span class="sd">        2. Converts xarray data to a Polars DataFrame</span>
-<span class="sd">        3. Interpolates missing values using time as the reference dimension</span>
-<span class="sd">        4. QC and data reconstruction based on user specification</span>
-<span class="sd">        5. Updates QC flags for interpolated values</span>
-<span class="sd">        6. Generates diagnostic plots if enabled</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        dict</span>
-<span class="sd">            The updated context dictionary containing the interpolated dataset</span>
-<span class="sd">            under the "data" key.</span>
-<span class="sd">        """</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Interpolating variables..."</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">"Interpolating variables..."</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
+        <span class="n">variables</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filter_settings</span><span class="p">)</span>
 
         <span class="n">max_interp_seconds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_max_interp_seconds</span><span class="p">()</span>
 
-        <span class="c1"># Keep the pre-interpolation values for the diagnostics plot</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">unprocessed</span> <span class="o">=</span> <span class="p">{</span><span class="n">var</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter_settings</span><span class="p">}</span>
-
+        <span class="bp">self</span><span class="o">.</span><span class="n">filled</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># for the diagnostics plot</span>
         <span class="n">time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter_settings</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unprocessed</span><span class="p">[</span><span class="n">var</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2"> has fewer than 2 valid values; skipping interpolation."</span><span class="p">)</span>
-            <span class="n">interpolated</span> <span class="o">=</span> <span class="n">interpolate_by_time</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unprocessed</span><span class="p">[</span><span class="n">var</span><span class="p">],</span> <span class="n">time</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">:</span>
+            <span class="n">was_nan</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="o">~</span><span class="n">was_nan</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2"> has fewer than 2 valid values; skipping interpolation."</span>
+                <span class="p">)</span>
+            <span class="n">interpolated</span> <span class="o">=</span> <span class="n">interpolate_by_time</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">max_interp_seconds</span><span class="p">:</span>
-                <span class="n">was_nan</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unprocessed</span><span class="p">[</span><span class="n">var</span><span class="p">])</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_limit_gap_fill</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">interpolated</span><span class="p">,</span> <span class="n">was_nan</span><span class="p">,</span> <span class="n">max_interp_seconds</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">interpolated</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct_data</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">update_qc</span><span class="p">()</span>
+            <span class="n">filled</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">filled</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">was_nan</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">interpolated</span><span class="p">)</span>
+            <span class="c1"># Only filled samples change; flagged ones that stay unfilled keep their original value</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_copy</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">values</span><span class="p">[</span><span class="n">filled</span><span class="p">]</span> <span class="o">=</span> <span class="n">interpolated</span><span class="p">[</span><span class="n">filled</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">values</span>
+            <span class="c1"># set in place: xr.where would drop the attrs</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">filled</span><span class="p">]</span> <span class="o">=</span> <span class="mi">8</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
         <span class="c1"># Update the context with the enhanced dataset</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
-
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_max_interp_seconds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Resolve ``max_interp_time`` (minutes) to seconds, or None if disabled."""</span>
@@ -579,40 +579,43 @@
         <span class="n">next_valid</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="o">.</span><span class="n">accumulate</span><span class="p">(</span><span class="n">next_valid</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
 
         <span class="n">interior</span> <span class="o">=</span> <span class="n">was_nan</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">prev_valid</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">next_valid</span> <span class="o">&lt;</span> <span class="n">was_nan</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
-        <span class="n">gap_seconds</span> <span class="o">=</span> <span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="n">next_valid</span><span class="p">[</span><span class="n">interior</span><span class="p">]]</span> <span class="o">-</span> <span class="n">time</span><span class="p">[</span><span class="n">prev_valid</span><span class="p">[</span><span class="n">interior</span><span class="p">]])</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">timedelta64</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">"s"</span><span class="p">)</span>
+        <span class="n">gap_seconds</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">time</span><span class="p">[</span><span class="n">next_valid</span><span class="p">[</span><span class="n">interior</span><span class="p">]]</span> <span class="o">-</span> <span class="n">time</span><span class="p">[</span><span class="n">prev_valid</span><span class="p">[</span><span class="n">interior</span><span class="p">]]</span>
+        <span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">timedelta64</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">"s"</span><span class="p">)</span>
         <span class="n">too_far</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">interior</span><span class="p">)[</span><span class="n">gap_seconds</span> <span class="o">&gt;</span> <span class="n">max_seconds</span><span class="p">]</span>
         <span class="n">interpolated</span><span class="p">[</span><span class="n">too_far</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
 
-<div class="viewcode-block" id="InterpolateVariables.generate_diagnostics">
-<a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/interpolate_data/index.html#pelagos_py.steps.processing.interpolate_data.InterpolateVariables.generate_diagnostics">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Generate diagnostic plots comparing original and interpolated data.</span>
-
-<span class="sd">        Creates a side-by-side comparison visualization showing the first</span>
-<span class="sd">        variable in filter_settings before and after interpolation.</span>
-
-<span class="sd">        This method uses the Tkinter backend for interactive display.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        None</span>
-<span class="sd">        """</span>
-
+        <span class="c1"># first variable only</span>
         <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">"tkagg"</span><span class="p">)</span>
-        <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">new_fig</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">sharey</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">new_fig</span><span class="p">()</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
 
-        <span class="n">plot_var</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filter_settings</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">titles</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Original"</span><span class="p">,</span> <span class="s2">"Interpolated"</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">title</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
-            <span class="n">axes</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">unprocessed</span><span class="p">[</span><span class="n">plot_var</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">plot_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">],</span> <span class="n">titles</span>
-        <span class="p">):</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">CATEGORY</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-            <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="n">plot_var</span><span class="p">)</span>
+        <span class="n">plot_var</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filter_settings</span><span class="p">))</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">values</span><span class="p">,</span> <span class="n">was_nan</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">plot_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">filled</span><span class="p">[</span><span class="n">plot_var</span><span class="p">]</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">points</span><span class="p">(</span>
+            <span class="n">ax</span><span class="p">,</span>
+            <span class="n">time</span><span class="p">[</span><span class="o">~</span><span class="n">was_nan</span><span class="p">],</span>
+            <span class="n">values</span><span class="p">[</span><span class="o">~</span><span class="n">was_nan</span><span class="p">],</span>
+            <span class="n">color</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">CATEGORY</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">label</span><span class="o">=</span><span class="s2">"original"</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">points</span><span class="p">(</span>
+            <span class="n">ax</span><span class="p">,</span>
+            <span class="n">time</span><span class="p">[</span><span class="n">was_nan</span><span class="p">],</span>
+            <span class="n">values</span><span class="p">[</span><span class="n">was_nan</span><span class="p">],</span>
+            <span class="n">color</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">CATEGORY</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
+            <span class="n">label</span><span class="o">=</span><span class="s2">"interpolated"</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="n">plot_var</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">raw_name</span><span class="p">(</span><span class="n">plot_var</span><span class="p">)</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"PRES"</span><span class="p">,</span> <span class="s2">"DEPTH"</span><span class="p">):</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">x_axis</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
 
         <span class="n">fig_spec</span><span class="o">.</span><span class="n">finish</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">suptitle</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Interpolation: </span><span class="si">{</span><span class="n">plot_var</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
-</div>
 
 </pre></div>
 

@@ -366,7 +366,6 @@
 <li class="toctree-l3"><a class="reference internal" href="../load_data/index.html">pelagos_py.steps.input_output.load_data</a></li>
 <li class="toctree-l3 current active"><a class="current reference internal" href="#">pelagos_py.steps.input_output.prepare_og1</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../write_report/index.html">pelagos_py.steps.input_output.write_report</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../write_report_python/index.html">pelagos_py.steps.input_output.write_report_python</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../processing/index.html">pelagos_py.steps.processing</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -394,6 +393,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/spike_qc/index.html">pelagos_py.steps.quality_control.spike_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/stuck_value_qc/index.html">pelagos_py.steps.quality_control.stuck_value_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/valid_profile_qc/index.html">pelagos_py.steps.quality_control.valid_profile_qc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../quality_control/visual_qc/index.html">pelagos_py.steps.quality_control.visual_qc</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../templates/index.html">pelagos_py.steps.templates</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -497,8 +497,8 @@ the OG1 format. Should be run straight after <code class="docutils literal notra
 file needs, logging each one (CNDC fixes also raise a warning):</p>
 <ul class="simple">
 <li><p>Missing <code class="docutils literal notranslate"><span class="pre">LATITUDE</span></code>/<code class="docutils literal notranslate"><span class="pre">LONGITUDE</span></code> are renamed from <code class="docutils literal notranslate"><span class="pre">LATITUDE_GPS</span></code> or
-<code class="docutils literal notranslate"><span class="pre">ALATPT01</span></code>/<code class="docutils literal notranslate"><span class="pre">ALONPT01</span></code> if found instead; <code class="docutils literal notranslate"><span class="pre">DOXY</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">MOLAR_DOXY</span></code>,
-<code class="docutils literal notranslate"><span class="pre">TEMPDOXY</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">TEMP_DOXY</span></code>. QC flag variables are renamed alongside.</p></li>
+<code class="docutils literal notranslate"><span class="pre">ALATPT01</span></code>/<code class="docutils literal notranslate"><span class="pre">ALONPT01</span></code> if found instead; <code class="docutils literal notranslate"><span class="pre">TEMPDOXY</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">TEMP_DOXY</span></code>. QC
+flag variables are renamed alongside.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">CNDC</span></code> labelled S/m but holding mS/cm values (median &gt; 8) is scaled x0.1 to
 S/m and relabelled.</p></li>
 <li><p>When <code class="docutils literal notranslate"><span class="pre">BBP700</span></code> is found with no <code class="docutils literal notranslate"><span class="pre">BETA_BACKSCATTERING700</span></code> alongside, it can be

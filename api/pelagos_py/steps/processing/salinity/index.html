@@ -366,7 +366,6 @@
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/load_data/index.html">pelagos_py.steps.input_output.load_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/prepare_og1/index.html">pelagos_py.steps.input_output.prepare_og1</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/write_report/index.html">pelagos_py.steps.input_output.write_report</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../input_output/write_report_python/index.html">pelagos_py.steps.input_output.write_report_python</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="../index.html">pelagos_py.steps.processing</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
@@ -394,6 +393,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/spike_qc/index.html">pelagos_py.steps.quality_control.spike_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/stuck_value_qc/index.html">pelagos_py.steps.quality_control.stuck_value_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/valid_profile_qc/index.html">pelagos_py.steps.quality_control.valid_profile_qc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../quality_control/visual_qc/index.html">pelagos_py.steps.quality_control.visual_qc</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../templates/index.html">pelagos_py.steps.templates</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -493,14 +493,17 @@
 <dd><p>Bases: <a class="reference internal" href="../../base_step/index.html#pelagos_py.steps.base_step.BaseStep" title="pelagos_py.steps.base_step.BaseStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pelagos_py.steps.base_step.BaseStep</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">pelagos_py.utils.qc_handling.QCHandlingMixin</span></code></p>
 <p>Corrects conductivity- and temperature-related sensor errors so that salinity
 can be derived cleanly from a glider CTD.</p>
-<p>Two corrections are applied in sequence to the dataset:</p>
+<p>Two corrections are applied in sequence to working copies of <code class="docutils literal notranslate"><span class="pre">CNDC</span></code> and
+<code class="docutils literal notranslate"><span class="pre">TEMP</span></code> (read from their <code class="docutils literal notranslate"><span class="pre">_ADJUSTED</span></code> versions where present), and
+<code class="docutils literal notranslate"><span class="pre">PSAL_ADJUSTED</span></code> is derived from the corrected copies. <code class="docutils literal notranslate"><span class="pre">CNDC</span></code> and <code class="docutils literal notranslate"><span class="pre">TEMP</span></code>
+themselves are left unchanged:</p>
 <ul class="simple">
 <li><p><strong>Conductivity-temperature lag (C-T lag).</strong> Conductivity and temperature are
 measured by separate sensors with different response times, so the two records
 are slightly misaligned and produce salinity spikes at sharp gradients.
 <a class="reference internal" href="#pelagos_py.steps.processing.salinity.AdjustSalinity.correct_ct_lag" title="pelagos_py.steps.processing.salinity.AdjustSalinity.correct_ct_lag"><code class="xref py py-meth docutils literal notranslate"><span class="pre">correct_ct_lag()</span></code></a> estimates the optimal time shift between <code class="docutils literal notranslate"><span class="pre">CNDC</span></code> and
 <code class="docutils literal notranslate"><span class="pre">TEMP</span></code> from a sample of profiles and applies the median shift to the whole
-dataset, following Woo (2019) <a class="reference internal" href="#r9a407ee3a2de-3" id="id1">[3]</a>.</p></li>
+record, following Woo (2019) <a class="reference internal" href="#r9a407ee3a2de-3" id="id1">[3]</a>.</p></li>
 <li><p><strong>Thermal-mass (thermal lag) error.</strong> The conductivity cell stores and releases
 heat, so the temperature of the water inside it lags the ambient temperature.
 <a class="reference internal" href="#pelagos_py.steps.processing.salinity.AdjustSalinity.correct_thermal_lag" title="pelagos_py.steps.processing.salinity.AdjustSalinity.correct_thermal_lag"><code class="xref py py-meth docutils literal notranslate"><span class="pre">correct_thermal_lag()</span></code></a> reconstructs the in-cell temperature with the
@@ -571,8 +574,8 @@ one hour with more than <code class="docutils literal notranslate"><span class="
 median.</p>
 <div class="admonition-notes admonition">
 <p class="admonition-title">Notes</p>
-<p>Operates in place on <code class="docutils literal notranslate"><span class="pre">self.data</span></code>. <code class="docutils literal notranslate"><span class="pre">self.ct_lag_median</span></code> is stored for the
-diagnostics dashboard.</p>
+<p>Shifts the working copy <code class="docutils literal notranslate"><span class="pre">self.cndc</span></code>; <code class="docutils literal notranslate"><span class="pre">self.data</span></code> is not changed.
+<code class="docutils literal notranslate"><span class="pre">self.ct_lag_median</span></code> is stored for the diagnostics figure.</p>
 </div>
 </dd></dl>
 
@@ -592,7 +595,7 @@ Garau et al., 2011). Temperature is resampled to 1 Hz for the filter and
 interpolated back onto the original sampling.</p>
 <div class="admonition-notes admonition">
 <p class="admonition-title">Notes</p>
-<p>Operates in place on <code class="docutils literal notranslate"><span class="pre">self.data</span></code>.</p>
+<p>Corrects the working copy <code class="docutils literal notranslate"><span class="pre">self.temp</span></code>; <code class="docutils literal notranslate"><span class="pre">self.data</span></code> is not changed.</p>
 </div>
 </dd></dl>
 

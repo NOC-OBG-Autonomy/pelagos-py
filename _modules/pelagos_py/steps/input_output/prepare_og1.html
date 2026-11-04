@@ -427,7 +427,6 @@
 <span class="n">RENAMES</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">"LATITUDE"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"LATITUDE_GPS"</span><span class="p">,</span> <span class="s2">"ALATPT01"</span><span class="p">],</span>
     <span class="s2">"LONGITUDE"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"LONGITUDE_GPS"</span><span class="p">,</span> <span class="s2">"ALONPT01"</span><span class="p">],</span>
-    <span class="s2">"MOLAR_DOXY"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"DOXY"</span><span class="p">],</span>
     <span class="s2">"TEMP_DOXY"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"TEMPDOXY"</span><span class="p">],</span>
 <span class="p">}</span>
 
@@ -453,8 +452,8 @@
 <span class="sd">    file needs, logging each one (CNDC fixes also raise a warning):</span>
 
 <span class="sd">    - Missing ``LATITUDE``/``LONGITUDE`` are renamed from ``LATITUDE_GPS`` or</span>
-<span class="sd">      ``ALATPT01``/``ALONPT01`` if found instead; ``DOXY`` -&gt; ``MOLAR_DOXY``,</span>
-<span class="sd">      ``TEMPDOXY`` -&gt; ``TEMP_DOXY``. QC flag variables are renamed alongside.</span>
+<span class="sd">      ``ALATPT01``/``ALONPT01`` if found instead; ``TEMPDOXY`` -&gt; ``TEMP_DOXY``. QC</span>
+<span class="sd">      flag variables are renamed alongside.</span>
 <span class="sd">    - ``CNDC`` labelled S/m but holding mS/cm values (median &gt; 8) is scaled x0.1 to</span>
 <span class="sd">      S/m and relabelled.</span>
 <span class="sd">    - When ``BBP700`` is found with no ``BETA_BACKSCATTERING700`` alongside, it can be</span>
@@ -484,13 +483,13 @@
             <span class="s2">"type"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
             <span class="s2">"default"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
             <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Treat a BBP700 with no BETA_BACKSCATTERING700 alongside as raw "</span>
-                           <span class="s2">"beta and rename it, so later steps can use it."</span><span class="p">,</span>
+            <span class="s2">"beta and rename it, so later steps can use it."</span><span class="p">,</span>
         <span class="p">},</span>
         <span class="s2">"renames"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
             <span class="s2">"default"</span><span class="p">:</span> <span class="p">{},</span>
             <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Expected name -&gt; the file's name for it (e.g. "</span>
-                           <span class="s2">"{DOWNWELLING_PAR: PAR}); renamed only when the expected one is absent."</span><span class="p">,</span>
+            <span class="s2">"{DOWNWELLING_PAR: PAR}); renamed only when the expected one is absent."</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">}</span>
 
@@ -516,10 +515,14 @@
 
         <span class="c1"># All-NaN placeholders don't count as present (e.g. an empty LATITUDE_GPS).</span>
         <span class="n">present</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">v</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="o">!=</span> <span class="s2">"f"</span> <span class="ow">or</span> <span class="nb">bool</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">v</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">())</span>
+            <span class="n">v</span>
+            <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">v</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="o">!=</span> <span class="s2">"f"</span>
+            <span class="ow">or</span> <span class="nb">bool</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">v</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">())</span>
         <span class="p">}</span>
-        <span class="k">for</span> <span class="n">src</span><span class="p">,</span> <span class="n">dst</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">renames_for</span><span class="p">(</span><span class="n">present</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">renames</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bbp700_is_beta</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">src</span><span class="p">,</span> <span class="n">dst</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">renames_for</span><span class="p">(</span>
+            <span class="n">present</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">renames</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bbp700_is_beta</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="c1"># `dst` can only exist here as an all-NaN placeholder, which would block the rename.</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">drop_vars</span><span class="p">([</span><span class="n">dst</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">dst</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">],</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">)</span>
             <span class="n">mapping</span> <span class="o">=</span> <span class="p">{</span><span class="n">src</span><span class="p">:</span> <span class="n">dst</span><span class="p">}</span>

@@ -427,24 +427,37 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.file_probe</span><span class="w"> </span><span class="kn">import</span> <span class="n">present</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.processing_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">cndc_scale_factor</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.input_output.prepare_og1</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">BBP_NAME</span><span class="p">,</span> <span class="n">BETA_NAME</span><span class="p">,</span> <span class="n">CNDC_MSCM_ABOVE</span><span class="p">,</span> <span class="n">RENAMES</span><span class="p">,</span> <span class="n">PrepareOG1</span><span class="p">,</span>
+    <span class="n">BBP_NAME</span><span class="p">,</span>
+    <span class="n">BETA_NAME</span><span class="p">,</span>
+    <span class="n">CNDC_MSCM_ABOVE</span><span class="p">,</span>
+    <span class="n">RENAMES</span><span class="p">,</span>
+    <span class="n">PrepareOG1</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.processing.deep_correction</span><span class="w"> </span><span class="kn">import</span> <span class="n">MIN_DEEP_THRESHOLD</span>
 
 <span class="n">DEFAULT_CONFIG</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parents</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="s2">"default_config.yaml"</span>
 <span class="n">PHASE_CANDIDATES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"BPHASE_DOXY"</span><span class="p">,</span> <span class="s2">"DPHASE_DOXY"</span><span class="p">,</span> <span class="s2">"TPHASE_DOXY"</span><span class="p">)</span>
 <span class="n">_BAR</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^\s*#\s*[=~-]{5,}\s*$"</span><span class="p">)</span>
 <span class="n">_TITLE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^\s*#\s*(\S.*?)\s*$"</span><span class="p">)</span>
 <span class="n">_STEP</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^  - name:"</span><span class="p">)</span>
-<span class="n">_FIELD</span> <span class="o">=</span> <span class="p">{</span><span class="n">f</span><span class="p">:</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rf</span><span class="s2">"(?m)^(\s*</span><span class="si">{</span><span class="n">f</span><span class="si">}</span><span class="s2">:).*$"</span><span class="p">)</span>
-          <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"file_path"</span><span class="p">,</span> <span class="s2">"output_path"</span><span class="p">,</span> <span class="s2">"description"</span><span class="p">,</span> <span class="s2">"out_directory"</span><span class="p">)}</span>
+<span class="n">_FIELD</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">f</span><span class="p">:</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rf</span><span class="s2">"(?m)^(\s*</span><span class="si">{</span><span class="n">f</span><span class="si">}</span><span class="s2">:).*$"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"file_path"</span><span class="p">,</span> <span class="s2">"output_path"</span><span class="p">,</span> <span class="s2">"description"</span><span class="p">,</span> <span class="s2">"out_directory"</span><span class="p">)</span>
+<span class="p">}</span>
 
-<span class="n">RENAME_TARGETS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"coord_latitude"</span><span class="p">:</span> <span class="s2">"LATITUDE"</span><span class="p">,</span> <span class="s2">"coord_longitude"</span><span class="p">:</span> <span class="s2">"LONGITUDE"</span><span class="p">,</span>
-                  <span class="s2">"bbp"</span><span class="p">:</span> <span class="n">BETA_NAME</span><span class="p">,</span> <span class="s2">"oxygen"</span><span class="p">:</span> <span class="s2">"MOLAR_DOXY"</span><span class="p">,</span> <span class="s2">"par"</span><span class="p">:</span> <span class="s2">"DOWNWELLING_PAR"</span><span class="p">}</span>
+<span class="n">DEEP_STEP</span> <span class="o">=</span> <span class="mi">50</span>  <span class="c1"># dbar between the offered deep correction thresholds</span>
+<span class="n">RENAME_TARGETS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"coord_latitude"</span><span class="p">:</span> <span class="s2">"LATITUDE"</span><span class="p">,</span>
+    <span class="s2">"coord_longitude"</span><span class="p">:</span> <span class="s2">"LONGITUDE"</span><span class="p">,</span>
+    <span class="s2">"bbp"</span><span class="p">:</span> <span class="n">BETA_NAME</span><span class="p">,</span>
+    <span class="s2">"oxygen"</span><span class="p">:</span> <span class="s2">"MOLAR_DOXY"</span><span class="p">,</span>
+    <span class="s2">"par"</span><span class="p">:</span> <span class="s2">"DOWNWELLING_PAR"</span><span class="p">,</span>
+<span class="p">}</span>
 
 
 <span class="c1"># ----------------------------------------------------------------------------</span>
-<span class="c1"># Template text model: the same "# ==== / # TITLE / # ====" banners the</span>
-<span class="c1"># dashboard builder groups steps by, and one block per step (its explanatory</span>
+<span class="c1"># Template text model: the "# ==== / # TITLE / # ====" banners that group the</span>
+<span class="c1"># steps into sections, and one block per step (its explanatory</span>
 <span class="c1"># comment lines plus the step itself) so both are dropped together.</span>
 <span class="c1"># ----------------------------------------------------------------------------</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">_Block</span><span class="p">:</span>
@@ -467,7 +480,9 @@
         <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lines</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">sub</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pattern</span><span class="p">,</span> <span class="n">repl</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">lines</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">repl</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">(),</span> <span class="n">count</span><span class="o">=</span><span class="n">count</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">M</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lines</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">repl</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">(),</span> <span class="n">count</span><span class="o">=</span><span class="n">count</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">M</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span>
+            <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_continues</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
@@ -478,8 +493,12 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_is_banner</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
-    <span class="k">return</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="ow">and</span> <span class="n">_BAR</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
-            <span class="ow">and</span> <span class="n">_TITLE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span> <span class="ow">and</span> <span class="n">_BAR</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">2</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">i</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+        <span class="ow">and</span> <span class="n">_BAR</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="ow">and</span> <span class="n">_TITLE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="ow">and</span> <span class="n">_BAR</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">2</span><span class="p">])</span>
+    <span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_parse</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
@@ -488,7 +507,10 @@
     <span class="c1"># block), trailing text.</span>
     <span class="n">lines</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">start</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^steps:\s*$"</span><span class="p">,</span> <span class="n">line</span><span class="p">))</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">next</span><span class="p">(</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^steps:\s*$"</span><span class="p">,</span> <span class="n">line</span><span class="p">))</span>
+            <span class="o">+</span> <span class="mi">1</span>
+        <span class="p">)</span>
     <span class="k">except</span> <span class="ne">StopIteration</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Template has no 'steps:' list."</span><span class="p">)</span>
     <span class="n">head</span> <span class="o">=</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">[:</span><span class="n">start</span><span class="p">])</span>
@@ -499,15 +521,17 @@
         <span class="n">line</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">_is_banner</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
             <span class="n">section</span> <span class="o">=</span> <span class="n">_TITLE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-            <span class="n">banner</span> <span class="o">=</span> <span class="n">pending</span> <span class="o">+</span> <span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span> <span class="o">+</span> <span class="mi">3</span><span class="p">]</span>
+            <span class="n">banner</span> <span class="o">=</span> <span class="n">pending</span> <span class="o">+</span> <span class="n">lines</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">3</span><span class="p">]</span>
             <span class="n">pending</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="n">i</span> <span class="o">+=</span> <span class="mi">3</span>
             <span class="k">continue</span>
         <span class="k">if</span> <span class="n">_STEP</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
             <span class="n">body</span> <span class="o">=</span> <span class="p">[</span><span class="n">line</span><span class="p">]</span>
             <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
-            <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
-                    <span class="ow">not</span> <span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">and</span> <span class="n">_continues</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))):</span>
+            <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span>
+                <span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
+                <span class="ow">or</span> <span class="p">(</span><span class="ow">not</span> <span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">and</span> <span class="n">_continues</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+            <span class="p">):</span>
                 <span class="n">body</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
                 <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
             <span class="n">blocks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_Block</span><span class="p">(</span><span class="n">section</span><span class="p">,</span> <span class="n">banner</span><span class="p">,</span> <span class="n">pending</span> <span class="o">+</span> <span class="n">body</span><span class="p">))</span>
@@ -533,21 +557,33 @@
 <span class="c1"># Decisions</span>
 <span class="c1"># ----------------------------------------------------------------------------</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">_decision</span><span class="p">(</span><span class="n">id_</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">detail</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">(),</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">section</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="c1"># `section`: the template section the choice can drop (shown as skipped by the dashboard).</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">id_</span><span class="p">,</span> <span class="s2">"title"</span><span class="p">:</span> <span class="n">title</span><span class="p">,</span> <span class="s2">"detail"</span><span class="p">:</span> <span class="n">detail</span><span class="p">,</span> <span class="s2">"section"</span><span class="p">:</span> <span class="n">section</span><span class="p">,</span>
-            <span class="s2">"options"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"key"</span><span class="p">:</span> <span class="n">key</span><span class="p">,</span> <span class="s2">"label"</span><span class="p">:</span> <span class="n">label</span><span class="p">}</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">options</span><span class="p">],</span> <span class="s2">"default"</span><span class="p">:</span> <span class="n">default</span><span class="p">}</span>
+    <span class="c1"># `section`: the template section the choice can drop.</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"id"</span><span class="p">:</span> <span class="n">id_</span><span class="p">,</span>
+        <span class="s2">"title"</span><span class="p">:</span> <span class="n">title</span><span class="p">,</span>
+        <span class="s2">"detail"</span><span class="p">:</span> <span class="n">detail</span><span class="p">,</span>
+        <span class="s2">"section"</span><span class="p">:</span> <span class="n">section</span><span class="p">,</span>
+        <span class="s2">"options"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"key"</span><span class="p">:</span> <span class="n">key</span><span class="p">,</span> <span class="s2">"label"</span><span class="p">:</span> <span class="n">label</span><span class="p">}</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">options</span><span class="p">],</span>
+        <span class="s2">"default"</span><span class="p">:</span> <span class="n">default</span><span class="p">,</span>
+    <span class="p">}</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_rename_options</span><span class="p">(</span><span class="n">real</span><span class="p">,</span> <span class="n">expected</span><span class="p">):</span>
     <span class="c1"># One "rename:&lt;var&gt;" option per file variable that could stand in for `expected`.</span>
-    <span class="k">return</span> <span class="p">[(</span><span class="sa">f</span><span class="s2">"rename:</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"Use </span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2"> as </span><span class="si">{</span><span class="n">expected</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">real</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">v</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">"_QC"</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="p">(</span><span class="sa">f</span><span class="s2">"rename:</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"Use </span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2"> as </span><span class="si">{</span><span class="n">expected</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">real</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">v</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">"_QC"</span><span class="p">)</span>
+    <span class="p">]</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_renames</span><span class="p">(</span><span class="n">choices</span><span class="p">):</span>
     <span class="c1"># {expected: source} from every "rename:&lt;source&gt;" choice on a missing-variable decision.</span>
-    <span class="k">return</span> <span class="p">{</span><span class="n">RENAME_TARGETS</span><span class="p">[</span><span class="n">k</span><span class="p">]:</span> <span class="n">v</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">":"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
-            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">(</span><span class="n">choices</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">RENAME_TARGETS</span> <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"rename:"</span><span class="p">)}</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="n">RENAME_TARGETS</span><span class="p">[</span><span class="n">k</span><span class="p">]:</span> <span class="n">v</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">":"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">(</span><span class="n">choices</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">RENAME_TARGETS</span> <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"rename:"</span><span class="p">)</span>
+    <span class="p">}</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_oxygen_phase</span><span class="p">(</span><span class="n">probe</span><span class="p">):</span>
@@ -582,18 +618,25 @@
             <span class="k">continue</span>
         <span class="n">src</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">renames</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">d</span> <span class="o">==</span> <span class="n">expected</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">src</span><span class="p">:</span>
-            <span class="n">decs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_decision</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"coord_</span><span class="si">{</span><span class="n">expected</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">expected</span><span class="si">}</span><span class="s2"> renamed from </span><span class="si">{</span><span class="n">src</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">"The file has no </span><span class="si">{</span><span class="n">expected</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">src</span><span class="si">}</span><span class="s2"> will be renamed to </span><span class="si">{</span><span class="n">expected</span><span class="si">}</span><span class="s2">."</span><span class="p">,</span>
-            <span class="p">))</span>
+            <span class="n">decs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">_decision</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"coord_</span><span class="si">{</span><span class="n">expected</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">expected</span><span class="si">}</span><span class="s2"> renamed from </span><span class="si">{</span><span class="n">src</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">"The file has no </span><span class="si">{</span><span class="n">expected</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">src</span><span class="si">}</span><span class="s2"> will be renamed to </span><span class="si">{</span><span class="n">expected</span><span class="si">}</span><span class="s2">."</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">decs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_decision</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"coord_</span><span class="si">{</span><span class="n">expected</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">expected</span><span class="si">}</span><span class="s2"> missing"</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">"No </span><span class="si">{</span><span class="n">expected</span><span class="si">}</span><span class="s2"> or any known alternative (</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">RENAMES</span><span class="p">[</span><span class="n">expected</span><span class="p">])</span><span class="si">}</span><span class="s2">) "</span>
-                <span class="s2">"in the file -- position QC and profile finding will fail unless it is "</span>
-                <span class="s2">"held under another name."</span><span class="p">,</span>
-                <span class="p">[(</span><span class="s2">"none"</span><span class="p">,</span> <span class="s2">"Leave missing"</span><span class="p">)]</span> <span class="o">+</span> <span class="n">_rename_options</span><span class="p">(</span><span class="n">real</span><span class="p">,</span> <span class="n">expected</span><span class="p">),</span> <span class="s2">"none"</span><span class="p">,</span>
-            <span class="p">))</span>
+            <span class="n">decs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">_decision</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"coord_</span><span class="si">{</span><span class="n">expected</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">expected</span><span class="si">}</span><span class="s2"> missing"</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">"No </span><span class="si">{</span><span class="n">expected</span><span class="si">}</span><span class="s2"> or any known alternative (</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">RENAMES</span><span class="p">[</span><span class="n">expected</span><span class="p">])</span><span class="si">}</span><span class="s2">) "</span>
+                    <span class="s2">"in the file -- position QC and profile finding will fail unless it is "</span>
+                    <span class="s2">"held under another name."</span><span class="p">,</span>
+                    <span class="p">[(</span><span class="s2">"none"</span><span class="p">,</span> <span class="s2">"Leave missing"</span><span class="p">)]</span> <span class="o">+</span> <span class="n">_rename_options</span><span class="p">(</span><span class="n">real</span><span class="p">,</span> <span class="n">expected</span><span class="p">),</span>
+                    <span class="s2">"none"</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
     <span class="k">return</span> <span class="n">decs</span>
 
 
@@ -602,18 +645,21 @@
     <span class="n">units</span> <span class="o">=</span> <span class="p">(</span><span class="n">probe</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"CNDC"</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">cndc</span> <span class="o">==</span> <span class="s2">"mislabelled"</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_decision</span><span class="p">(</span>
-            <span class="s2">"cndc"</span><span class="p">,</span> <span class="s2">"CNDC units mislabelled"</span><span class="p">,</span>
+            <span class="s2">"cndc"</span><span class="p">,</span>
+            <span class="s2">"CNDC units mislabelled"</span><span class="p">,</span>
             <span class="sa">f</span><span class="s2">"CNDC is labelled '</span><span class="si">{</span><span class="n">units</span><span class="si">}</span><span class="s2">' but its values are mS/cm: it will be scaled "</span>
             <span class="s2">"x0.1 to S/m so the range test and gsw see the right units."</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">if</span> <span class="n">cndc</span> <span class="o">==</span> <span class="s2">"relabel"</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_decision</span><span class="p">(</span>
-            <span class="s2">"cndc"</span><span class="p">,</span> <span class="s2">"CNDC units mislabelled"</span><span class="p">,</span>
+            <span class="s2">"cndc"</span><span class="p">,</span>
+            <span class="s2">"CNDC units mislabelled"</span><span class="p">,</span>
             <span class="sa">f</span><span class="s2">"CNDC is labelled '</span><span class="si">{</span><span class="n">units</span><span class="si">}</span><span class="s2">' but its values are S/m: it will be relabelled S/m."</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">if</span> <span class="n">cndc</span> <span class="o">==</span> <span class="s2">"mscm"</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_decision</span><span class="p">(</span>
-            <span class="s2">"cndc"</span><span class="p">,</span> <span class="s2">"CNDC in mS/cm"</span><span class="p">,</span>
+            <span class="s2">"cndc"</span><span class="p">,</span>
+            <span class="s2">"CNDC in mS/cm"</span><span class="p">,</span>
             <span class="s2">"CNDC is genuinely in mS/cm; left as is, with the CTD range test scaled to match."</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">return</span> <span class="kc">None</span>
@@ -624,22 +670,50 @@
         <span class="k">return</span> <span class="kc">None</span>
     <span class="k">if</span> <span class="n">BBP_NAME</span> <span class="ow">in</span> <span class="n">real</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_decision</span><span class="p">(</span>
-            <span class="s2">"bbp"</span><span class="p">,</span> <span class="s2">"BETA_BACKSCATTERING700 missing, BBP700 present"</span><span class="p">,</span>
+            <span class="s2">"bbp"</span><span class="p">,</span>
+            <span class="s2">"BETA_BACKSCATTERING700 missing, BBP700 present"</span><span class="p">,</span>
             <span class="s2">"Some files ship raw beta under BBP700 before it has been converted. Either "</span>
             <span class="s2">"treat BBP700 as beta (renamed to BETA_BACKSCATTERING700 and converted by "</span>
             <span class="s2">"'BBP from Beta') or trust it as already-converted BBP and skip the conversion."</span><span class="p">,</span>
-            <span class="p">[(</span><span class="s2">"as_beta"</span><span class="p">,</span> <span class="s2">"Use BBP700 as raw beta and convert it"</span><span class="p">),</span>
-             <span class="p">(</span><span class="s2">"direct"</span><span class="p">,</span> <span class="s2">"Use BBP700 directly, skip conversion"</span><span class="p">)],</span>
-            <span class="s2">"as_beta"</span><span class="p">,</span> <span class="n">section</span><span class="o">=</span><span class="s2">"BACKSCATTER"</span><span class="p">,</span>
+            <span class="p">[</span>
+                <span class="p">(</span><span class="s2">"as_beta"</span><span class="p">,</span> <span class="s2">"Use BBP700 as raw beta and convert it"</span><span class="p">),</span>
+                <span class="p">(</span><span class="s2">"direct"</span><span class="p">,</span> <span class="s2">"Use BBP700 directly, skip conversion"</span><span class="p">),</span>
+            <span class="p">],</span>
+            <span class="s2">"as_beta"</span><span class="p">,</span>
+            <span class="n">section</span><span class="o">=</span><span class="s2">"BACKSCATTER"</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">return</span> <span class="n">_decision</span><span class="p">(</span>
-        <span class="s2">"bbp"</span><span class="p">,</span> <span class="s2">"No backscatter"</span><span class="p">,</span>
+        <span class="s2">"bbp"</span><span class="p">,</span>
+        <span class="s2">"No backscatter"</span><span class="p">,</span>
         <span class="s2">"Neither BETA_BACKSCATTERING700 nor BBP700 is in the file: the Backscatter "</span>
         <span class="s2">"section and the CHLA Quenching step (which needs BBP) are removed, unless "</span>
         <span class="s2">"raw beta is held under another name."</span><span class="p">,</span>
-        <span class="p">[(</span><span class="s2">"remove"</span><span class="p">,</span> <span class="s2">"Remove the Backscatter section"</span><span class="p">)]</span> <span class="o">+</span> <span class="n">_rename_options</span><span class="p">(</span><span class="n">real</span><span class="p">,</span> <span class="n">BETA_NAME</span><span class="p">),</span>
-        <span class="s2">"remove"</span><span class="p">,</span> <span class="n">section</span><span class="o">=</span><span class="s2">"BACKSCATTER"</span><span class="p">,</span>
+        <span class="p">[(</span><span class="s2">"remove"</span><span class="p">,</span> <span class="s2">"Remove the Backscatter section"</span><span class="p">)]</span>
+        <span class="o">+</span> <span class="n">_rename_options</span><span class="p">(</span><span class="n">real</span><span class="p">,</span> <span class="n">BETA_NAME</span><span class="p">),</span>
+        <span class="s2">"remove"</span><span class="p">,</span>
+        <span class="n">section</span><span class="o">=</span><span class="s2">"BACKSCATTER"</span><span class="p">,</span>
     <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_oxygen_range_check</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="p">(</span><span class="s2">"MOLAR_DOXY_ADJUSTED"</span><span class="p">,</span> <span class="s2">"DOXY_ADJUSTED"</span><span class="p">)):</span>
+    <span class="c1"># The 0-1000 range tests on the oxygen products, which apply to shipped oxygen too.</span>
+    <span class="n">ranges</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">block</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"qc_settings"</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"range qc"</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"variable_ranges"</span><span class="p">,</span> <span class="p">{})</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">ranges</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">set</span><span class="p">(</span><span class="n">ranges</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="nb">set</span><span class="p">(</span><span class="n">names</span><span class="p">)</span>
+
+
+<span class="c1"># Replaces Derive DOXY when the file ships DOXY, which OG1 gives in umol/kg already.</span>
+<span class="n">_SHIPPED_DOXY_STEP</span> <span class="o">=</span> <span class="s2">"""</span><span class="se">\</span>
+<span class="s2"># The file's DOXY is already in umol/kg, so it is exposed as DOXY_ADJUSTED as is.</span>
+<span class="s2">  - name: Correct Values</span>
+<span class="s2">    parameters:</span>
+<span class="s2">      target_variable: DOXY</span>
+<span class="s2">      append_description: Shipped DOXY, used as is.</span>
+<span class="s2">    diagnostics: false</span>
+<span class="s2">"""</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_oxygen_decision</span><span class="p">(</span><span class="n">probe</span><span class="p">,</span> <span class="n">real</span><span class="p">):</span>
@@ -653,37 +727,90 @@
     <span class="k">if</span> <span class="ow">not</span> <span class="n">phase</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">molar</span><span class="p">:</span>
         <span class="n">opts</span> <span class="o">+=</span> <span class="n">_rename_options</span><span class="p">(</span><span class="n">real</span><span class="p">,</span> <span class="s2">"MOLAR_DOXY"</span><span class="p">)</span>
     <span class="k">if</span> <span class="s2">"FREQUENCY_DOXY"</span> <span class="ow">in</span> <span class="n">real</span><span class="p">:</span>
-        <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"FREQUENCY_DOXY (SBE43 frequency) is present but no step converts it yet."</span><span class="p">)</span>
+        <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="s2">"FREQUENCY_DOXY (SBE43 frequency) is present but no step converts it yet."</span>
+        <span class="p">)</span>
     <span class="n">empty</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">PHASE_CANDIDATES</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">(</span><span class="n">probe</span> <span class="ow">or</span> <span class="p">{})</span> <span class="ow">and</span> <span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">real</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">empty</span><span class="p">:</span>
         <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">empty</span><span class="p">)</span><span class="si">}</span><span class="s2"> present but all-NaN."</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">phase</span><span class="p">:</span>
         <span class="n">title</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Oxygen from </span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s2">"</span>
-        <span class="n">detail</span> <span class="o">=</span> <span class="s2">"Full optode chain: phase -&gt; pressure correction -&gt; shift -&gt; concentration."</span>
+        <span class="n">detail</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">"Full optode chain: phase -&gt; pressure correction -&gt; shift -&gt; concentration."</span>
+        <span class="p">)</span>
     <span class="k">elif</span> <span class="n">molar</span><span class="p">:</span>
         <span class="n">title</span> <span class="o">=</span> <span class="s2">"No optode phase; oxygen as shipped"</span>
-        <span class="n">detail</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Only </span><span class="si">{</span><span class="n">molar</span><span class="si">}</span><span class="s2"> is available: the derivation steps are dropped and it is exposed as MOLAR_DOXY_ADJUSTED."</span>
+        <span class="n">detail</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Only </span><span class="si">{</span><span class="n">molar</span><span class="si">}</span><span class="s2"> is available: the derivation steps are dropped and it is exposed as DOXY_ADJUSTED."</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">title</span> <span class="o">=</span> <span class="s2">"No oxygen"</span>
-        <span class="n">detail</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"No optode phase or oxygen concentration in the file: the Oxygen section is "</span>
-                  <span class="s2">"removed, unless the concentration is held under another name."</span><span class="p">)</span>
+        <span class="n">detail</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">"No optode phase or oxygen concentration in the file: the Oxygen section is "</span>
+            <span class="s2">"removed, unless the concentration is held under another name."</span>
+        <span class="p">)</span>
     <span class="c1"># Known issue: "phase" is the default whenever it exists, but the template's SVU coefficients</span>
     <span class="c1"># are for one optode (aa4831). Revisit once it's decided how optode coefficients are supplied.</span>
     <span class="c1"># A lone "none" option is no choice: shown as automatic (default_choices skips it).</span>
-    <span class="k">return</span> <span class="n">_decision</span><span class="p">(</span><span class="s2">"oxygen"</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">detail</span><span class="p">]</span> <span class="o">+</span> <span class="n">notes</span><span class="p">),</span>
-                     <span class="n">opts</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">opts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="p">(),</span> <span class="n">opts</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">section</span><span class="o">=</span><span class="s2">"OXYGEN"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_decision</span><span class="p">(</span>
+        <span class="s2">"oxygen"</span><span class="p">,</span>
+        <span class="n">title</span><span class="p">,</span>
+        <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">detail</span><span class="p">]</span> <span class="o">+</span> <span class="n">notes</span><span class="p">),</span>
+        <span class="n">opts</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">opts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="p">(),</span>
+        <span class="n">opts</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+        <span class="n">section</span><span class="o">=</span><span class="s2">"OXYGEN"</span><span class="p">,</span>
+    <span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_par_decision</span><span class="p">(</span><span class="n">probe</span><span class="p">,</span> <span class="n">real</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">present</span><span class="p">(</span><span class="n">probe</span><span class="p">,</span> <span class="s2">"DOWNWELLING_PAR"</span><span class="p">):</span>
         <span class="k">return</span> <span class="kc">None</span>
-    <span class="n">extra</span> <span class="o">=</span> <span class="s2">" (DPAR is present but in a different unit and is not used.)"</span> <span class="k">if</span> <span class="s2">"DPAR"</span> <span class="ow">in</span> <span class="n">real</span> <span class="k">else</span> <span class="s2">""</span>
+    <span class="n">extra</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">" (DPAR is present but in a different unit and is not used.)"</span>
+        <span class="k">if</span> <span class="s2">"DPAR"</span> <span class="ow">in</span> <span class="n">real</span>
+        <span class="k">else</span> <span class="s2">""</span>
+    <span class="p">)</span>
     <span class="k">return</span> <span class="n">_decision</span><span class="p">(</span>
-        <span class="s2">"par"</span><span class="p">,</span> <span class="s2">"No PAR"</span><span class="p">,</span>
+        <span class="s2">"par"</span><span class="p">,</span>
+        <span class="s2">"No PAR"</span><span class="p">,</span>
         <span class="sa">f</span><span class="s2">"DOWNWELLING_PAR is missing: the PAR QC section is removed, unless PAR is "</span>
         <span class="sa">f</span><span class="s2">"held under another name.</span><span class="si">{</span><span class="n">extra</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
-        <span class="p">[(</span><span class="s2">"remove"</span><span class="p">,</span> <span class="s2">"Remove the PAR QC section"</span><span class="p">)]</span> <span class="o">+</span> <span class="n">_rename_options</span><span class="p">(</span><span class="n">real</span><span class="p">,</span> <span class="s2">"DOWNWELLING_PAR"</span><span class="p">),</span>
-        <span class="s2">"remove"</span><span class="p">,</span> <span class="n">section</span><span class="o">=</span><span class="s2">"PAR QC"</span><span class="p">,</span>
+        <span class="p">[(</span><span class="s2">"remove"</span><span class="p">,</span> <span class="s2">"Remove the PAR QC section"</span><span class="p">)]</span>
+        <span class="o">+</span> <span class="n">_rename_options</span><span class="p">(</span><span class="n">real</span><span class="p">,</span> <span class="s2">"DOWNWELLING_PAR"</span><span class="p">),</span>
+        <span class="s2">"remove"</span><span class="p">,</span>
+        <span class="n">section</span><span class="o">=</span><span class="s2">"PAR QC"</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_deep_decision</span><span class="p">(</span><span class="n">probe</span><span class="p">):</span>
+    <span class="n">dives</span> <span class="o">=</span> <span class="p">((</span><span class="n">probe</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"PRES"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"dive_depths"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">dives</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="c1"># Depth a tenth of the dives reach: enough profiles for Deep Correction without one-off deep dives.</span>
+    <span class="n">reach</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">dives</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="nb">len</span><span class="p">(</span><span class="n">dives</span><span class="p">)</span> <span class="o">//</span> <span class="mi">10</span><span class="p">]</span>
+    <span class="c1"># Never suggest shallower than MIN_DEEP_THRESHOLD, but use it while some dives get past it.</span>
+    <span class="n">suggested</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+        <span class="nb">round</span><span class="p">(</span><span class="n">reach</span> <span class="o">/</span> <span class="n">DEEP_STEP</span><span class="p">)</span> <span class="o">*</span> <span class="n">DEEP_STEP</span> <span class="o">-</span> <span class="n">DEEP_STEP</span><span class="p">,</span> <span class="n">MIN_DEEP_THRESHOLD</span>
+    <span class="p">)</span>
+    <span class="n">deepest_option</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">reach</span> <span class="o">//</span> <span class="n">DEEP_STEP</span><span class="p">)</span> <span class="o">*</span> <span class="n">DEEP_STEP</span>
+    <span class="n">depths</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">deepest_option</span><span class="p">,</span> <span class="n">DEEP_STEP</span><span class="p">,</span> <span class="o">-</span><span class="n">DEEP_STEP</span><span class="p">)</span>
+    <span class="n">options</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">"skip"</span><span class="p">,</span> <span class="s2">"Skip deep correction"</span><span class="p">)]</span> <span class="o">+</span> <span class="p">[</span>
+        <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">d</span><span class="p">),</span> <span class="sa">f</span><span class="s2">"Use data below </span><span class="si">{</span><span class="n">d</span><span class="si">}</span><span class="s2"> dbar"</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">depths</span>
+    <span class="p">]</span>
+    <span class="k">if</span> <span class="n">reach</span> <span class="o">&gt;</span> <span class="n">MIN_DEEP_THRESHOLD</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_decision</span><span class="p">(</span>
+            <span class="s2">"deep"</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"Deep correction below </span><span class="si">{</span><span class="n">suggested</span><span class="si">}</span><span class="s2"> dbar"</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"Enough dives reach </span><span class="si">{</span><span class="n">reach</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> dbar, so the CHLA dark value is estimated "</span>
+            <span class="sa">f</span><span class="s2">"from data below </span><span class="si">{</span><span class="n">suggested</span><span class="si">}</span><span class="s2"> dbar."</span><span class="p">,</span>
+            <span class="n">options</span><span class="p">,</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">suggested</span><span class="p">),</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">_decision</span><span class="p">(</span>
+        <span class="s2">"deep"</span><span class="p">,</span>
+        <span class="s2">"Dives too shallow for deep correction"</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">"Enough dives only reach </span><span class="si">{</span><span class="n">reach</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> dbar, too shallow (under </span><span class="si">{</span><span class="n">MIN_DEEP_THRESHOLD</span><span class="si">}</span><span class="s2"> dbar) "</span>
+        <span class="s2">"to trust a CHLA dark value, so Deep Correction is removed."</span><span class="p">,</span>
+        <span class="n">options</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">options</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="p">(),</span>
+        <span class="s2">"skip"</span><span class="p">,</span>
     <span class="p">)</span>
 
 
@@ -699,6 +826,7 @@
         <span class="n">_bbp_decision</span><span class="p">(</span><span class="n">real</span><span class="p">),</span>
         <span class="n">_oxygen_decision</span><span class="p">(</span><span class="n">probe</span><span class="p">,</span> <span class="n">real</span><span class="p">),</span>
         <span class="n">_par_decision</span><span class="p">(</span><span class="n">probe</span><span class="p">,</span> <span class="n">real</span><span class="p">),</span>
+        <span class="n">_deep_decision</span><span class="p">(</span><span class="n">probe</span><span class="p">),</span>
     <span class="p">]</span>
     <span class="k">return</span> <span class="p">[</span><span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">decs</span> <span class="k">if</span> <span class="n">d</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">]</span></div>
 
@@ -709,7 +837,7 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">ask_choices</span><span class="p">(</span><span class="n">decs</span><span class="p">,</span> <span class="n">ask</span><span class="o">=</span><span class="nb">input</span><span class="p">):</span>
-    <span class="c1"># Terminal version of the dashboard's Build panel; Enter keeps the default.</span>
+    <span class="c1"># Enter keeps the default.</span>
     <span class="n">choices</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">decs</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="si">{</span><span class="n">d</span><span class="p">[</span><span class="s1">'title'</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">  </span><span class="si">{</span><span class="n">d</span><span class="p">[</span><span class="s1">'detail'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
@@ -717,7 +845,9 @@
             <span class="k">continue</span>
         <span class="c1"># Rename options list every file variable, too many to number; typed by name instead.</span>
         <span class="n">listed</span> <span class="o">=</span> <span class="p">[</span><span class="n">o</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">d</span><span class="p">[</span><span class="s2">"options"</span><span class="p">]</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">o</span><span class="p">[</span><span class="s2">"key"</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"rename:"</span><span class="p">)]</span>
-        <span class="n">renamable</span> <span class="o">=</span> <span class="p">{</span><span class="n">o</span><span class="p">[</span><span class="s2">"key"</span><span class="p">]</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="s2">"rename:"</span><span class="p">)</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">d</span><span class="p">[</span><span class="s2">"options"</span><span class="p">]</span> <span class="k">if</span> <span class="n">o</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">listed</span><span class="p">}</span>
+        <span class="n">renamable</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">o</span><span class="p">[</span><span class="s2">"key"</span><span class="p">]</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="s2">"rename:"</span><span class="p">)</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">d</span><span class="p">[</span><span class="s2">"options"</span><span class="p">]</span> <span class="k">if</span> <span class="n">o</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">listed</span>
+        <span class="p">}</span>
         <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">option</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">listed</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
             <span class="n">default</span> <span class="o">=</span> <span class="s2">"  (default)"</span> <span class="k">if</span> <span class="n">option</span><span class="p">[</span><span class="s2">"key"</span><span class="p">]</span> <span class="o">==</span> <span class="n">d</span><span class="p">[</span><span class="s2">"default"</span><span class="p">]</span> <span class="k">else</span> <span class="s2">""</span>
             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2">) </span><span class="si">{</span><span class="n">option</span><span class="p">[</span><span class="s1">'label'</span><span class="p">]</span><span class="si">}{</span><span class="n">default</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
@@ -774,7 +904,7 @@
     <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">block</span><span class="o">.</span><span class="n">lines</span><span class="p">:</span>
         <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"bbp700_is_beta:"</span><span class="p">):</span>
-            <span class="n">indent</span> <span class="o">=</span> <span class="n">line</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">lstrip</span><span class="p">())]</span>
+            <span class="n">indent</span> <span class="o">=</span> <span class="n">line</span><span class="p">[:</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">lstrip</span><span class="p">())]</span>
             <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">indent</span><span class="si">}</span><span class="s2">renames:  # file's name for a missing OG1 variable"</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">expected</span><span class="p">,</span> <span class="n">source</span> <span class="ow">in</span> <span class="n">renames</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                 <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">indent</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">expected</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
@@ -788,9 +918,18 @@
 
 <div class="viewcode-block" id="build">
 <a class="viewcode-back" href="../../../api/pelagos_py/utils/config_builder/index.html#pelagos_py.utils.config_builder.build">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span><span class="n">template_text</span><span class="p">,</span> <span class="n">file_path</span><span class="p">,</span> <span class="n">probe</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span>
+    <span class="n">template_text</span><span class="p">,</span>
+    <span class="n">file_path</span><span class="p">,</span>
+    <span class="n">probe</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">choices</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">visual_qc</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">):</span>
 <span class="w">    </span><span class="sd">"""The template adapted to ``file_path``: paths patched in and each</span>
-<span class="sd">    decision's choice applied (defaults where ``choices`` doesn't say)."""</span>
+<span class="sd">    decision's choice applied (defaults where ``choices`` doesn't say).</span>
+<span class="sd">    ``visual_qc=False`` drops the Visual QC step, which pauses the run for interactive flagging."""</span>
     <span class="n">probe</span> <span class="o">=</span> <span class="n">probe</span> <span class="k">if</span> <span class="n">probe</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">file_probe</span><span class="o">.</span><span class="n">probe_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
     <span class="n">decs</span> <span class="o">=</span> <span class="n">decisions</span><span class="p">(</span><span class="n">probe</span><span class="p">)</span>
     <span class="n">choices</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">default_choices</span><span class="p">(</span><span class="n">decs</span><span class="p">),</span> <span class="o">**</span><span class="p">(</span><span class="n">choices</span> <span class="ow">or</span> <span class="p">{})}</span>
@@ -804,20 +943,32 @@
         <span class="c1"># A function, not a "\1 value" template, so backslashes in e.g. Windows paths stay literal.</span>
         <span class="k">return</span> <span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">_yaml_string</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="si">}{</span><span class="n">comment</span><span class="si">}</span><span class="s2">"</span>
 
-    <span class="n">stem</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span><span class="o">.</span><span class="n">stem</span>
-    <span class="n">output_path</span> <span class="o">=</span> <span class="n">output_path</span> <span class="ow">or</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span><span class="o">.</span><span class="n">with_name</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">stem</span><span class="si">}</span><span class="s2">_Processed.nc"</span><span class="p">))</span>
+    <span class="n">file_path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+    <span class="n">name</span><span class="p">,</span> <span class="n">stem</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">Path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span><span class="o">.</span><span class="n">stem</span>
+    <span class="c1"># swap only the file name, so the folder keeps the slashes it was given on any OS</span>
+    <span class="n">folder</span> <span class="o">=</span> <span class="n">file_path</span><span class="p">[:</span> <span class="nb">len</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">)]</span>
+    <span class="n">output_path</span> <span class="o">=</span> <span class="n">output_path</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">folder</span><span class="si">}{</span><span class="n">stem</span><span class="si">}</span><span class="s2">_Processed.nc"</span>
     <span class="n">description</span> <span class="o">=</span> <span class="n">description</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">"Pipeline built for </span><span class="si">{</span><span class="n">Path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">."</span>
     <span class="n">head</span> <span class="o">=</span> <span class="n">_FIELD</span><span class="p">[</span><span class="s2">"description"</span><span class="p">]</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">set_field</span><span class="p">(</span><span class="n">description</span><span class="p">),</span> <span class="n">head</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-    <span class="n">head</span> <span class="o">=</span> <span class="n">_FIELD</span><span class="p">[</span><span class="s2">"out_directory"</span><span class="p">]</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">set_field</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">Path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="si">}</span><span class="s2">/"</span><span class="p">),</span> <span class="n">head</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">head</span> <span class="o">=</span> <span class="n">_FIELD</span><span class="p">[</span><span class="s2">"out_directory"</span><span class="p">]</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span>
+        <span class="n">set_field</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">Path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="si">}</span><span class="s2">/"</span><span class="p">),</span> <span class="n">head</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="mi">1</span>
+    <span class="p">)</span>
     <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">blocks</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">b</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">"Load OG1"</span><span class="p">:</span>
-            <span class="n">b</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">_FIELD</span><span class="p">[</span><span class="s2">"file_path"</span><span class="p">]</span><span class="o">.</span><span class="n">pattern</span><span class="p">,</span> <span class="n">set_field</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s2">"  # Path to the input NetCDF file"</span><span class="p">))</span>
+            <span class="n">b</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span>
+                <span class="n">_FIELD</span><span class="p">[</span><span class="s2">"file_path"</span><span class="p">]</span><span class="o">.</span><span class="n">pattern</span><span class="p">,</span>
+                <span class="n">set_field</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="s2">"  # Path to the input NetCDF file"</span><span class="p">),</span>
+            <span class="p">)</span>
         <span class="k">if</span> <span class="n">b</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">"Data Export"</span><span class="p">:</span>
             <span class="n">b</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">_FIELD</span><span class="p">[</span><span class="s2">"output_path"</span><span class="p">]</span><span class="o">.</span><span class="n">pattern</span><span class="p">,</span> <span class="n">set_field</span><span class="p">(</span><span class="n">output_path</span><span class="p">))</span>
 
     <span class="k">if</span> <span class="n">_cndc_state</span><span class="p">(</span><span class="n">probe</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"mscm"</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">blocks</span><span class="p">:</span>
-            <span class="n">ranges</span> <span class="o">=</span> <span class="n">b</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"qc_settings"</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"range qc"</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"variable_ranges"</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="n">ranges</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">b</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"qc_settings"</span><span class="p">,</span> <span class="p">{})</span>
+                <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"range qc"</span><span class="p">,</span> <span class="p">{})</span>
+                <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"variable_ranges"</span><span class="p">,</span> <span class="p">{})</span>
+            <span class="p">)</span>
             <span class="k">if</span> <span class="n">b</span><span class="o">.</span><span class="n">section</span> <span class="o">==</span> <span class="s2">"CTD"</span> <span class="ow">and</span> <span class="s2">"CNDC"</span> <span class="ow">in</span> <span class="n">ranges</span><span class="p">:</span>
                 <span class="n">_scale_cndc_ranges</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
 
@@ -839,24 +990,54 @@
         <span class="n">drop</span><span class="p">(</span><span class="k">lambda</span> <span class="n">b</span><span class="p">:</span> <span class="n">b</span><span class="o">.</span><span class="n">section</span> <span class="o">==</span> <span class="s2">"BACKSCATTER"</span> <span class="ow">or</span> <span class="n">b</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">"CHLA Quenching"</span><span class="p">)</span>
 
     <span class="n">oxygen</span> <span class="o">=</span> <span class="n">choices</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"oxygen"</span><span class="p">,</span> <span class="s2">"none"</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">oxygen</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"rename:"</span><span class="p">):</span>  <span class="c1"># renamed to MOLAR_DOXY by Prepare OG1, then used as shipped</span>
-        <span class="n">oxygen</span> <span class="o">=</span> <span class="s2">"shipped"</span>
+    <span class="n">molar</span> <span class="o">=</span> <span class="n">_oxygen_molar</span><span class="p">(</span><span class="n">probe</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">oxygen</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"rename:"</span><span class="p">):</span>  <span class="c1"># renamed to MOLAR_DOXY by Prepare OG1</span>
+        <span class="n">oxygen</span><span class="p">,</span> <span class="n">molar</span> <span class="o">=</span> <span class="s2">"shipped"</span><span class="p">,</span> <span class="s2">"MOLAR_DOXY"</span>
     <span class="n">phase</span> <span class="o">=</span> <span class="n">_oxygen_phase</span><span class="p">(</span><span class="n">probe</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">oxygen</span> <span class="o">==</span> <span class="s2">"phase"</span> <span class="ow">and</span> <span class="n">phase</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">blocks</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">b</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">"Derive Uncalibrated Phase"</span><span class="p">:</span>
-                <span class="n">b</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">'(?m)^(\s*blue_phase_name:).*$'</span><span class="p">,</span> <span class="sa">rf</span><span class="s1">'\1 "</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s1">"'</span><span class="p">)</span>
+                <span class="n">b</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">"(?m)^(\s*blue_phase_name:).*$"</span><span class="p">,</span> <span class="sa">rf</span><span class="s1">'\1 "</span><span class="si">{</span><span class="n">phase</span><span class="si">}</span><span class="s1">"'</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">oxygen</span> <span class="o">==</span> <span class="s2">"shipped"</span> <span class="ow">and</span> <span class="n">molar</span> <span class="o">==</span> <span class="s2">"DOXY"</span><span class="p">:</span>
+        <span class="n">drop</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">b</span><span class="p">:</span> <span class="p">(</span>
+                <span class="n">b</span><span class="o">.</span><span class="n">section</span> <span class="o">==</span> <span class="s2">"OXYGEN"</span>
+                <span class="ow">and</span> <span class="n">b</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s2">"Derive DOXY"</span>
+                <span class="ow">and</span> <span class="ow">not</span> <span class="n">_oxygen_range_check</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="p">[</span><span class="s2">"DOXY_ADJUSTED"</span><span class="p">])</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">blocks</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">b</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">"Derive DOXY"</span><span class="p">:</span>
+                <span class="n">lines</span> <span class="o">=</span> <span class="n">_SHIPPED_DOXY_STEP</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+                <span class="n">blocks</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">_Block</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">section</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">banner</span><span class="p">,</span> <span class="n">lines</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">oxygen</span> <span class="o">==</span> <span class="s2">"shipped"</span><span class="p">:</span>
-        <span class="n">drop</span><span class="p">(</span><span class="k">lambda</span> <span class="n">b</span><span class="p">:</span> <span class="n">b</span><span class="o">.</span><span class="n">section</span> <span class="o">==</span> <span class="s2">"OXYGEN"</span> <span class="ow">and</span> <span class="n">b</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s2">"Correct Values"</span><span class="p">)</span>
+        <span class="n">drop</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">b</span><span class="p">:</span> <span class="p">(</span>
+                <span class="n">b</span><span class="o">.</span><span class="n">section</span> <span class="o">==</span> <span class="s2">"OXYGEN"</span>
+                <span class="ow">and</span> <span class="n">b</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s2">"Derive DOXY"</span>
+                <span class="ow">and</span> <span class="ow">not</span> <span class="n">_oxygen_range_check</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
         <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">blocks</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">b</span><span class="o">.</span><span class="n">section</span> <span class="o">==</span> <span class="s2">"OXYGEN"</span><span class="p">:</span>
-                <span class="n">b</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">"(?m)^(\s*target_variable:).*$"</span><span class="p">,</span> <span class="sa">r</span><span class="s2">"\1 MOLAR_DOXY"</span><span class="p">)</span>
-                <span class="n">b</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">"(?m)^(\s*append_description:).*$"</span><span class="p">,</span> <span class="sa">r</span><span class="s2">"\1 Shipped MOLAR_DOXY, renamed."</span><span class="p">)</span>
+                <span class="n">b</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">"(?m)^(\s*apply_to:).*$"</span><span class="p">,</span> <span class="sa">r</span><span class="s2">"\1 MOLAR_DOXY"</span><span class="p">)</span>
+                <span class="n">b</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">"(?m)^(\s*)MOLAR_DOXY_ADJUSTED:"</span><span class="p">,</span> <span class="sa">r</span><span class="s2">"\1MOLAR_DOXY:"</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">drop</span><span class="p">(</span><span class="k">lambda</span> <span class="n">b</span><span class="p">:</span> <span class="n">b</span><span class="o">.</span><span class="n">section</span> <span class="o">==</span> <span class="s2">"OXYGEN"</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">choices</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"par"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"remove"</span><span class="p">:</span>
         <span class="n">drop</span><span class="p">(</span><span class="k">lambda</span> <span class="n">b</span><span class="p">:</span> <span class="n">b</span><span class="o">.</span><span class="n">section</span> <span class="o">==</span> <span class="s2">"PAR QC"</span><span class="p">)</span>
+
+    <span class="n">deep</span> <span class="o">=</span> <span class="n">choices</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"deep"</span><span class="p">)</span> <span class="k">if</span> <span class="s2">"deep"</span> <span class="ow">in</span> <span class="n">ids</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">deep</span> <span class="o">==</span> <span class="s2">"skip"</span><span class="p">:</span>
+        <span class="n">drop</span><span class="p">(</span><span class="k">lambda</span> <span class="n">b</span><span class="p">:</span> <span class="n">b</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">"Deep Correction"</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">deep</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">blocks</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">b</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">"Deep Correction"</span><span class="p">:</span>
+                <span class="n">b</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">"(?m)^(\s*depth_threshold:)\s*[^\s#]+"</span><span class="p">,</span> <span class="sa">rf</span><span class="s2">"\g&lt;1&gt; </span><span class="si">{</span><span class="n">deep</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">visual_qc</span><span class="p">:</span>
+        <span class="n">drop</span><span class="p">(</span><span class="k">lambda</span> <span class="n">b</span><span class="p">:</span> <span class="n">b</span><span class="o">.</span><span class="n">section</span> <span class="o">==</span> <span class="s2">"VISUAL QC"</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">_render</span><span class="p">(</span><span class="n">head</span><span class="p">,</span> <span class="n">blocks</span><span class="p">,</span> <span class="n">tail</span><span class="p">)</span></div>
 

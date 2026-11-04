@@ -366,7 +366,6 @@
 <li class="toctree-l3"><a class="reference internal" href="../../steps/input_output/load_data/index.html">pelagos_py.steps.input_output.load_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../steps/input_output/prepare_og1/index.html">pelagos_py.steps.input_output.prepare_og1</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../steps/input_output/write_report/index.html">pelagos_py.steps.input_output.write_report</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../steps/input_output/write_report_python/index.html">pelagos_py.steps.input_output.write_report_python</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../steps/processing/index.html">pelagos_py.steps.processing</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -394,6 +393,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../steps/quality_control/spike_qc/index.html">pelagos_py.steps.quality_control.spike_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../steps/quality_control/stuck_value_qc/index.html">pelagos_py.steps.quality_control.stuck_value_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../steps/quality_control/valid_profile_qc/index.html">pelagos_py.steps.quality_control.valid_profile_qc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../steps/quality_control/visual_qc/index.html">pelagos_py.steps.quality_control.visual_qc</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../steps/templates/index.html">pelagos_py.steps.templates</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -488,8 +488,9 @@
 <dt class="sig sig-object py" id="pelagos_py.utils.file_probe.probe_file">
 <span class="sig-prename descclassname"><span class="pre">pelagos_py.utils.file_probe.</span></span><span class="sig-name descname"><span class="pre">probe_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/utils/file_probe.html#probe_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.utils.file_probe.probe_file" title="Link to this definition">#</a></dt>
 <dd><p><code class="docutils literal notranslate"><span class="pre">{variable:</span> <span class="pre">{&quot;units&quot;,</span> <span class="pre">&quot;numeric&quot;,</span> <span class="pre">&quot;all_nan&quot;,</span> <span class="pre">&quot;median&quot;?}}</span></code> for every
-variable in <code class="docutils literal notranslate"><span class="pre">file_path</span></code>, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if it can’t be read. Cached on
-(path, mtime) so repeated validation of the same file is free.</p>
+variable in <code class="docutils literal notranslate"><span class="pre">file_path</span></code> (PRES also gets <code class="docutils literal notranslate"><span class="pre">&quot;dive_depths&quot;</span></code>), or <code class="docutils literal notranslate"><span class="pre">None</span></code>
+if it can’t be read. Cached on (path, mtime) so repeated validation of the
+same file is free.</p>
 </dd></dl>
 
 <dl class="py function">

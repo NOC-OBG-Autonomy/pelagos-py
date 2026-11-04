@@ -366,7 +366,6 @@
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/load_data/index.html">pelagos_py.steps.input_output.load_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/prepare_og1/index.html">pelagos_py.steps.input_output.prepare_og1</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/write_report/index.html">pelagos_py.steps.input_output.write_report</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../input_output/write_report_python/index.html">pelagos_py.steps.input_output.write_report_python</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../processing/index.html">pelagos_py.steps.processing</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -394,6 +393,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../spike_qc/index.html">pelagos_py.steps.quality_control.spike_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../stuck_value_qc/index.html">pelagos_py.steps.quality_control.stuck_value_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../valid_profile_qc/index.html">pelagos_py.steps.quality_control.valid_profile_qc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../visual_qc/index.html">pelagos_py.steps.quality_control.visual_qc</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../templates/index.html">pelagos_py.steps.templates</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -495,8 +495,9 @@
 <p>Inherits properties from BaseStep (see base_step.py).</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.quality_control.apply_qc.ApplyQC.organise_flags">
-<span class="sig-name descname"><span class="pre">organise_flags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_flags</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/quality_control/apply_qc.html#ApplyQC.organise_flags"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.quality_control.apply_qc.ApplyQC.organise_flags" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">organise_flags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_flags</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/quality_control/apply_qc.html#ApplyQC.organise_flags"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.quality_control.apply_qc.ApplyQC.organise_flags" title="Link to this definition">#</a></dt>
 <dd><p>Method for taking in new flags (new_flags) and cross checking against existing flags (self.flag_store), including upgrading flags when necessary, following ARGO flagging standards.
+With <code class="docutils literal notranslate"><span class="pre">overwrite</span></code> the new flags replace the stored ones outright (tests that merge themselves, e.g. visual qc).
 See Wong et al. 2025 pp. 106 (<a class="reference external" href="http://dx.doi.org/10.13155/33951">http://dx.doi.org/10.13155/33951</a>) and Mancini et al. 2021 pp. 43-44 for additional ARGO flag definitions.</p>
 <p>Combinatrix logic:
 0: No QC performed, the initial flag.

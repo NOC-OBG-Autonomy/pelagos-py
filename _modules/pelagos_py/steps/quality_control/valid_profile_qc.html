@@ -411,7 +411,7 @@
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
 
-<span class="sd">"""QC tests for assessing validity of a glider profile, based on different definitions of successful data."""</span>
+<span class="sd">"""Flag whole profiles that are too short or never reach a target depth range."""</span>
 
 <span class="c1">#### Mandatory imports ####</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_qc</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseQC</span><span class="p">,</span> <span class="n">register_qc</span>
@@ -423,6 +423,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fig_spec</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.qc_handling</span><span class="w"> </span><span class="kn">import</span> <span class="n">prefer_adjusted</span>
 
 
 <span class="nd">@register_qc</span>
@@ -434,97 +435,87 @@
 
 <span class="sd">    | **Target variable:** ``PROFILE_NUMBER``</span>
 <span class="sd">    | **Variables flagged:** ``PROFILE_NUMBER``</span>
-<span class="sd">    | **Flags applied:** 1 (good), 3 (probably bad), 4 (bad), 9 (missing)</span>
+<span class="sd">    | **Flags applied:** ``flag`` (default 4, bad)</span>
 
-<span class="sd">    Each profile (a group of measurements sharing a ``PROFILE_NUMBER``, as produced</span>
-<span class="sd">    by :doc:`Find Profiles &lt;../processing/find_profiles/index&gt;`) is assessed as a</span>
-<span class="sd">    whole and every row in that profile receives the same ``PROFILE_NUMBER_QC``:</span>
-
-<span class="sd">    - **9 (missing)** — the row has no profile (``PROFILE_NUMBER`` is NaN, e.g.</span>
-<span class="sd">      surfacing rows or data gaps).</span>
-<span class="sd">    - **4 (bad)** — the profile contains fewer than ``profile_length`` measurements.</span>
-<span class="sd">    - **3 (probably bad)** — the profile is long enough but has no measurement whose</span>
-<span class="sd">      ``DEPTH`` falls inside ``depth_range``.</span>
-<span class="sd">    - **1 (good)** — the profile passes both checks.</span>
-
-<span class="sd">    Only ``PROFILE_NUMBER_QC`` is written; the underlying data is never modified.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    profile_length : int, optional</span>
-<span class="sd">        Minimum number of measurements a profile must contain to be kept. Profiles</span>
-<span class="sd">        shorter than this are flagged bad (4). Default ``100``.</span>
-<span class="sd">    depth_range : tuple of float, optional</span>
-<span class="sd">        ``(min, max)`` depth window (in the same units/sign convention as ``DEPTH``,</span>
-<span class="sd">        i.e. positive downward) that a profile must reach into. A profile with no data</span>
-<span class="sd">        inside this window is flagged probably bad (3). Default ``(0, 1000)``.</span>
+<span class="sd">    Every row of a profile (rows sharing a ``PROFILE_NUMBER`` from</span>
+<span class="sd">    :doc:`Find Profiles &lt;../processing/find_profiles/index&gt;`) gets ``flag`` when the</span>
+<span class="sd">    profile has fewer than ``min_length`` rows or, if ``depth_range`` is set, no</span>
+<span class="sd">    ``depth_var`` sample inside it. Passing profiles are flagged 1; rows without a</span>
+<span class="sd">    profile are left unchecked (0), so their existing flag is kept.</span>
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
-<span class="sd">    The check works with its defaults, so the minimal configuration sets no</span>
-<span class="sd">    parameters:</span>
-
-<span class="sd">    .. code-block:: yaml</span>
-
-<span class="sd">        - name: "Apply QC"</span>
-<span class="sd">          parameters:</span>
-<span class="sd">            qc_settings:</span>
-<span class="sd">              valid profile qc: {}</span>
-
-<span class="sd">    Both parameters may be tuned — here profiles must be at least 50 points long and</span>
-<span class="sd">    contain data somewhere between 1000 m depth and the surface:</span>
-
 <span class="sd">    .. code-block:: yaml</span>
 
 <span class="sd">        - name: "Apply QC"</span>
 <span class="sd">          parameters:</span>
 <span class="sd">            qc_settings:</span>
 <span class="sd">              valid profile qc:</span>
-<span class="sd">                profile_length: 50</span>
-<span class="sd">                depth_range: [0, 1000]</span>
-<span class="sd">          diagnostics: true  # plot DEPTH vs index, coloured by the resulting flag</span>
+<span class="sd">                min_length: 50          # rows per profile</span>
+<span class="sd">                depth_range: [0, 1000]  # PRES window the profile must reach into</span>
+<span class="sd">                flag: 4</span>
+<span class="sd">          diagnostics: true</span>
 <span class="sd">    """</span>
 
     <span class="n">qc_name</span> <span class="o">=</span> <span class="s2">"valid profile qc"</span>
     <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">"profile_length"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"min_length"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
             <span class="s2">"default"</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
-            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Minimum number of measurements a profile must contain to be kept."</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Minimum number of rows a profile must contain."</span><span class="p">,</span>
         <span class="p">},</span>
         <span class="s2">"depth_range"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
-            <span class="s2">"default"</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1000</span><span class="p">),</span>
-            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"(min, max) depth window a profile must reach into."</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Optional [min, max] depth_var window a profile must have a sample in."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"depth_var"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="s2">"PRES"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Vertical-coordinate variable used for depth_range."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"flag"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"QC flag given to every row of a failing profile."</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">}</span>
-    <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">,</span> <span class="s2">"DEPTH"</span><span class="p">]</span>
-    <span class="n">qc_outputs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span>
+    <span class="n">dynamic</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span>
+    <span class="n">qc_outputs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"PROFILE_NUMBER_QC"</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flag</span> <span class="o">&lt;=</span> <span class="mi">9</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">qc_name</span><span class="si">}</span><span class="s2">] invalid QC flag </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">flag</span><span class="si">!r}</span><span class="s2">; expected 0-9."</span>
+            <span class="p">)</span>
+        <span class="c1"># data is None when Apply QC only introspects the required variables</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">variables</span> <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">depth_var</span> <span class="o">=</span> <span class="n">prefer_adjusted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">depth_var</span><span class="p">,</span> <span class="n">names</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span>
+            <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">depth_var</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth_range</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="p">)</span>
 
 <div class="viewcode-block" id="valid_profile_qc.return_qc">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/quality_control/valid_profile_qc/index.html#pelagos_py.steps.quality_control.valid_profile_qc.valid_profile_qc.return_qc">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">return_qc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">profile_number</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-        <span class="n">depth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"DEPTH"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-        <span class="n">lower</span><span class="p">,</span> <span class="n">upper</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth_range</span>
+        <span class="n">profile</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="n">has_profile</span> <span class="o">=</span> <span class="n">profile</span><span class="o">.</span><span class="n">notna</span><span class="p">()</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+        <span class="n">bad</span> <span class="o">=</span> <span class="n">profile</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">profile</span><span class="p">)</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="s2">"size"</span><span class="p">)</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_length</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth_range</span><span class="p">:</span>
+            <span class="n">lower</span><span class="p">,</span> <span class="n">upper</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth_range</span>
+            <span class="n">depth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">depth_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+            <span class="n">in_range</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">((</span><span class="n">depth</span> <span class="o">&gt;=</span> <span class="n">lower</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">depth</span> <span class="o">&lt;=</span> <span class="n">upper</span><span class="p">))</span>
+            <span class="n">bad</span> <span class="o">|=</span> <span class="o">~</span><span class="n">in_range</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">profile</span><span class="p">)</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="s2">"any"</span><span class="p">)</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span>
+            <span class="p">)</span>
 
-        <span class="c1"># Per-sample: length of its profile, and whether the profile reaches the depth</span>
-        <span class="c1"># range (samples without a profile number get NaN here and are flagged 9 below)</span>
-        <span class="n">by_profile</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">((</span><span class="n">depth</span> <span class="o">&gt;=</span> <span class="n">lower</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">depth</span> <span class="o">&lt;=</span> <span class="n">upper</span><span class="p">))</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">profile_number</span><span class="p">)</span>
-        <span class="n">count</span> <span class="o">=</span> <span class="n">by_profile</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="s2">"size"</span><span class="p">)</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-        <span class="n">in_depth_range</span> <span class="o">=</span> <span class="n">by_profile</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="s2">"any"</span><span class="p">)</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
-
-        <span class="n">qc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">select</span><span class="p">(</span>
-            <span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">profile_number</span><span class="p">),</span> <span class="n">count</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile_length</span><span class="p">,</span> <span class="o">~</span><span class="n">in_depth_range</span><span class="p">],</span>
-            <span class="p">[</span><span class="mi">9</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span>
-            <span class="n">default</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-        <span class="p">)</span>
-
+        <span class="n">qc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">has_profile</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">bad</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">flag</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span>
-            <span class="n">data_vars</span><span class="o">=</span><span class="p">{</span><span class="s2">"PROFILE_NUMBER_QC"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">,</span> <span class="n">qc</span><span class="p">)},</span>
+            <span class="p">{</span><span class="s2">"PROFILE_NUMBER_QC"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">,</span> <span class="n">qc</span><span class="p">)},</span>
             <span class="n">coords</span><span class="o">=</span><span class="p">{</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">]},</span>
         <span class="p">)</span>
-
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">flags</span></div>
 
 
@@ -532,11 +523,19 @@
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/quality_control/valid_profile_qc/index.html#pelagos_py.steps.quality_control.valid_profile_qc.valid_profile_qc.plot_diagnostics">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">plot_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">"tkagg"</span><span class="p">)</span>
-        <span class="n">depth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"DEPTH"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">x_time</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
         <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">new_fig</span><span class="p">()</span>
         <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">fig_spec</span><span class="o">.</span><span class="n">flag_points</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">depth</span><span class="o">.</span><span class="n">size</span><span class="p">),</span> <span class="n">depth</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER_QC"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
-        <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">xlabel</span><span class="o">=</span><span class="s2">"Index"</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="s2">"Pressure"</span><span class="p">)</span>
+        <span class="c1"># without depth_range the depth variable isn't required, so it may be absent</span>
+        <span class="n">plot_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth_var</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth_var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="k">else</span> <span class="s2">"PROFILE_NUMBER"</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">plot_var</span><span class="p">]</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">flag_points</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">flags</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER_QC"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span>
+            <span class="n">ax</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">axis_label</span><span class="p">(</span><span class="n">plot_var</span><span class="p">,</span> <span class="n">y</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">plot_var</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth_var</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">x_axis</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
         <span class="n">fig_spec</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Flags"</span><span class="p">)</span>
         <span class="n">fig_spec</span><span class="o">.</span><span class="n">finish</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">suptitle</span><span class="o">=</span><span class="s2">"Valid Profile Test"</span><span class="p">)</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>

@@ -630,7 +630,9 @@
 
     <span class="c1"># Coerce numeric strings (e.g. "3e-2" from a hand-parsed/plain-YAML config)</span>
     <span class="c1"># to their declared numeric type before any type checking.</span>
-    <span class="n">supplied</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">coerce</span><span class="p">(</span><span class="n">schema</span><span class="p">[</span><span class="n">name</span><span class="p">],</span> <span class="n">params</span><span class="p">[</span><span class="n">name</span><span class="p">])</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">params</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">schema</span><span class="p">}</span>
+    <span class="n">supplied</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">name</span><span class="p">:</span> <span class="n">coerce</span><span class="p">(</span><span class="n">schema</span><span class="p">[</span><span class="n">name</span><span class="p">],</span> <span class="n">params</span><span class="p">[</span><span class="n">name</span><span class="p">])</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">params</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">schema</span>
+    <span class="p">}</span>
 
     <span class="n">resolved</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">missing</span> <span class="o">=</span> <span class="p">[]</span>
@@ -649,9 +651,7 @@
 
     <span class="n">bad_types</span> <span class="o">=</span> <span class="n">type_errors</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">supplied</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">bad_types</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">] invalid parameter type(s): </span><span class="si">{</span><span class="s1">'; '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">bad_types</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
-        <span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">] invalid parameter type(s): </span><span class="si">{</span><span class="s1">'; '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">bad_types</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
     <span class="n">bad_options</span> <span class="o">=</span> <span class="n">option_errors</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">supplied</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">bad_options</span><span class="p">:</span>

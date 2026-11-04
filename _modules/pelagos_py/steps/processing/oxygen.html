@@ -416,9 +416,9 @@
 <span class="c1">#### Mandatory imports ####</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.qc_handling</span><span class="w"> </span><span class="kn">import</span> <span class="n">QCHandlingMixin</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">pelagos_py.utils.diagnostics</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">diag</span>
 
 <span class="c1">#### Custom imports ####</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">gsw</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">mpl_toolkits.axes_grid1</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_axes_locatable</span>
@@ -426,7 +426,6 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">butter</span><span class="p">,</span> <span class="n">filtfilt</span>
 
 
 <div class="viewcode-block" id="check_config">
@@ -460,18 +459,30 @@
     <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">new_fig</span><span class="p">()</span>
     <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
 
-    <span class="n">time</span><span class="p">,</span> <span class="n">pres</span><span class="p">,</span> <span class="n">values</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">pressure_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">time</span><span class="p">,</span> <span class="n">pres</span><span class="p">,</span> <span class="n">values</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">data</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">[</span><span class="n">pressure_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+    <span class="p">)</span>
     <span class="n">finite</span> <span class="o">=</span> <span class="o">~</span><span class="n">pd</span><span class="o">.</span><span class="n">isnull</span><span class="p">(</span><span class="n">time</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">pres</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
 
     <span class="n">sc</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
-        <span class="n">time</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span> <span class="n">pres</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="n">values</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span>
-        <span class="n">s</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">MARKER</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">ALPHA</span><span class="p">,</span> <span class="n">rasterized</span><span class="o">=</span><span class="n">finite</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">RASTER_ABOVE</span><span class="p">,</span>
+        <span class="n">time</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span>
+        <span class="n">pres</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span>
+        <span class="n">c</span><span class="o">=</span><span class="n">values</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span>
+        <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span>
+        <span class="n">s</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">MARKER</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">ALPHA</span><span class="p">,</span>
+        <span class="n">rasterized</span><span class="o">=</span><span class="n">finite</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">RASTER_ABOVE</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">cbar</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
-    <span class="n">cbar</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">axis_label</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">)),</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">FS_LABEL</span><span class="p">)</span>
+    <span class="n">cbar</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">axis_label</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">)),</span>
+        <span class="n">fontsize</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">FS_LABEL</span><span class="p">,</span>
+    <span class="p">)</span>
     <span class="n">cbar</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">labelsize</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">FS_TICK</span><span class="p">)</span>
 
-    <span class="n">fig_spec</span><span class="o">.</span><span class="n">date_axis</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s2">"x"</span><span class="p">)</span>
+    <span class="n">fig_spec</span><span class="o">.</span><span class="n">date_axis</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s2">"x"</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">time</span><span class="p">)</span>
     <span class="n">ylabel</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">axis_label</span><span class="p">(</span><span class="n">pressure_var</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">pressure_var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">))</span>
     <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="n">ylabel</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
@@ -505,12 +516,31 @@
 
     <span class="n">good</span> <span class="o">=</span> <span class="n">_qc_good_mask</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">raw_var</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">_qc_good_mask</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">corrected_var</span><span class="p">)</span>
     <span class="n">time</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-    <span class="n">fig_spec</span><span class="o">.</span><span class="n">points</span><span class="p">(</span><span class="n">ax0</span><span class="p">,</span> <span class="n">time</span><span class="p">[</span><span class="n">good</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="n">raw_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">good</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">FLAGGED</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">raw_var</span><span class="p">)</span>
-    <span class="n">fig_spec</span><span class="o">.</span><span class="n">points</span><span class="p">(</span><span class="n">ax0</span><span class="p">,</span> <span class="n">time</span><span class="p">[</span><span class="n">good</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="n">corrected_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">good</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">CATEGORY</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="n">corrected_var</span><span class="p">)</span>
-    <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">ax0</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">axis_label</span><span class="p">(</span><span class="n">corrected_var</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">corrected_var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">)))</span>
+    <span class="n">fig_spec</span><span class="o">.</span><span class="n">points</span><span class="p">(</span>
+        <span class="n">ax0</span><span class="p">,</span>
+        <span class="n">time</span><span class="p">[</span><span class="n">good</span><span class="p">],</span>
+        <span class="n">data</span><span class="p">[</span><span class="n">raw_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">good</span><span class="p">],</span>
+        <span class="n">color</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">FLAGGED</span><span class="p">,</span>
+        <span class="n">label</span><span class="o">=</span><span class="n">raw_var</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">fig_spec</span><span class="o">.</span><span class="n">points</span><span class="p">(</span>
+        <span class="n">ax0</span><span class="p">,</span>
+        <span class="n">time</span><span class="p">[</span><span class="n">good</span><span class="p">],</span>
+        <span class="n">data</span><span class="p">[</span><span class="n">corrected_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">good</span><span class="p">],</span>
+        <span class="n">color</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">CATEGORY</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+        <span class="n">label</span><span class="o">=</span><span class="n">corrected_var</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span>
+        <span class="n">ax0</span><span class="p">,</span>
+        <span class="n">ylabel</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">axis_label</span><span class="p">(</span>
+            <span class="n">corrected_var</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">corrected_var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">)</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
     <span class="c1"># An outside (bbox_to_anchor) legend would need more width than the colorbar spacer</span>
     <span class="c1"># reserves above, re-breaking the TIME-axis alignment with ax1 - so keep it inside.</span>
-    <span class="n">ax0</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">FS_LEGEND</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">"upper right"</span><span class="p">,</span> <span class="n">framealpha</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">markerscale</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">ax0</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span>
+        <span class="n">fontsize</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">FS_LEGEND</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">"upper right"</span><span class="p">,</span> <span class="n">framealpha</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">markerscale</span><span class="o">=</span><span class="mi">2</span>
+    <span class="p">)</span>
 
     <span class="n">diff</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">corrected_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">-</span> <span class="n">data</span><span class="p">[</span><span class="n">raw_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
     <span class="k">if</span> <span class="n">pressure_var</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
@@ -519,19 +549,30 @@
         <span class="n">divider1</span> <span class="o">=</span> <span class="n">make_axes_locatable</span><span class="p">(</span><span class="n">ax1</span><span class="p">)</span>
         <span class="n">cax1</span> <span class="o">=</span> <span class="n">divider1</span><span class="o">.</span><span class="n">append_axes</span><span class="p">(</span><span class="s2">"right"</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="s2">"3%"</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mf">0.15</span><span class="p">)</span>
         <span class="n">sc</span> <span class="o">=</span> <span class="n">ax1</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
-            <span class="n">time</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span> <span class="n">pres</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="n">diff</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span>
-            <span class="n">s</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">MARKER</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">ALPHA</span><span class="p">,</span> <span class="n">rasterized</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">time</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span>
+            <span class="n">pres</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span>
+            <span class="n">c</span><span class="o">=</span><span class="n">diff</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span>
+            <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span>
+            <span class="n">s</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">MARKER</span><span class="p">,</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">ALPHA</span><span class="p">,</span>
+            <span class="n">rasterized</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">cbar</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">cax</span><span class="o">=</span><span class="n">cax1</span><span class="p">)</span>
         <span class="n">cbar</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">corrected_var</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">raw_var</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">FS_LABEL</span><span class="p">)</span>
         <span class="n">cbar</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">labelsize</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">FS_TICK</span><span class="p">)</span>
-        <span class="n">fig_spec</span><span class="o">.</span><span class="n">date_axis</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s2">"x"</span><span class="p">)</span>
-        <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">xlabel</span><span class="o">=</span><span class="s2">"TIME"</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">axis_label</span><span class="p">(</span><span class="n">pressure_var</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">pressure_var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">)))</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">date_axis</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s2">"x"</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">time</span><span class="p">)</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span>
+            <span class="n">ax1</span><span class="p">,</span>
+            <span class="n">xlabel</span><span class="o">=</span><span class="s2">"TIME"</span><span class="p">,</span>
+            <span class="n">ylabel</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">axis_label</span><span class="p">(</span>
+                <span class="n">pressure_var</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">pressure_var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">)</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
         <span class="n">ax1</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">fig_spec</span><span class="o">.</span><span class="n">points</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">time</span><span class="p">[</span><span class="n">good</span><span class="p">],</span> <span class="n">diff</span><span class="p">[</span><span class="n">good</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">CATEGORY</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
         <span class="n">ax1</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"grey"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
-        <span class="n">fig_spec</span><span class="o">.</span><span class="n">date_axis</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s2">"x"</span><span class="p">)</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">date_axis</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s2">"x"</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">time</span><span class="p">)</span>
         <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">xlabel</span><span class="o">=</span><span class="s2">"TIME"</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">corrected_var</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">raw_var</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
     <span class="n">fig_spec</span><span class="o">.</span><span class="n">finish</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">suptitle</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">step_name</span><span class="si">}</span><span class="s2"> Diagnostics"</span><span class="p">)</span>
@@ -542,8 +583,12 @@
 <div class="viewcode-block" id="DeriveUncalibratedPhase">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.DeriveUncalibratedPhase">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DeriveUncalibratedPhase</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
-
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Derive Uncalibrated Phase"</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY"</span><span class="p">]</span>
+    <span class="n">optional_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"TIME"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">]</span>
+    <span class="n">variable_parameters</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"blue_phase_name"</span><span class="p">,</span> <span class="s2">"red_phase_name"</span><span class="p">]</span>
+    <span class="n">uses_data_subset</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">"blue_phase_name"</span><span class="p">:</span> <span class="p">{</span>
@@ -599,21 +644,24 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">blue_phase_name</span><span class="p">]</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"units"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">blue_phase_name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-            <span class="s2">"units"</span><span class="p">,</span> <span class="s2">"degree"</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"units"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">blue_phase_name</span>
+        <span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">,</span> <span class="s2">"degree"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"long_name"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">"Uncalibrated oxygen optode phase"</span>
         <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"long_name"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"Uncalibrated oxygen optode phase"</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"standard_name"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"UNCAL_PHASE_DOXY"</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct_data</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">update_qc</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">({</span><span class="s2">"UNCAL_PHASE_DOXY_QC"</span><span class="p">:</span> <span class="n">qc_parents</span><span class="p">})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mark_intermediate</span><span class="p">(</span><span class="s2">"UNCAL_PHASE_DOXY"</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
 
 
@@ -626,8 +674,12 @@
 <div class="viewcode-block" id="DeriveOptodeTemperature">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.DeriveOptodeTemperature">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DeriveOptodeTemperature</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
-
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Derive Optode Temperature"</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"TEMP_DOXY"</span><span class="p">]</span>
+    <span class="n">optional_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"TIME"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">]</span>
+    <span class="n">variable_parameters</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"temp_voltage_name"</span><span class="p">]</span>
+    <span class="n">uses_data_subset</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">"temp_voltage_name"</span><span class="p">:</span> <span class="p">{</span>
@@ -675,14 +727,15 @@
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">calib_coefficients</span><span class="p">)):</span>
             <span class="n">coeffs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calib_coefficients</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
 
-        <span class="c1"># Check if the output already exists</span>
+        <span class="c1"># A shipped TEMP_DOXY is raw instrument data, so it's kept rather than overwritten</span>
         <span class="k">if</span> <span class="s2">"TEMP_DOXY"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span><span class="s2">"TEMP_DOXY already exists in the data. Overwriting..."</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span><span class="s2">"TEMP_DOXY already exists in the data. Keeping it unchanged."</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
 
         <span class="c1"># Calculate temp_doxy</span>
         <span class="n">temp_doxy</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">coeff</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">coeffs</span><span class="p">):</span>
-            <span class="n">temp_doxy</span> <span class="o">+=</span> <span class="n">coeff</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_voltage_name</span><span class="p">]</span> <span class="o">**</span> <span class="n">i</span>
+            <span class="n">temp_doxy</span> <span class="o">+=</span> <span class="n">coeff</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_voltage_name</span><span class="p">]</span> <span class="o">**</span> <span class="n">i</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"TEMP_DOXY"</span><span class="p">]</span> <span class="o">=</span> <span class="n">temp_doxy</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"TEMP_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"units"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"degree_Celsius"</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"TEMP_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"long_name"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"Oxygen optode temperature"</span>
@@ -692,11 +745,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">update_qc</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">({</span><span class="s2">"TEMP_DOXY_QC"</span><span class="p">:</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_voltage_name</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mark_intermediate</span><span class="p">(</span><span class="s2">"TEMP_DOXY"</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
 
 
@@ -709,8 +763,13 @@
 <div class="viewcode-block" id="PhasePressureCorrection">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.PhasePressureCorrection">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">PhasePressureCorrection</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
-
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Phase Pressure Correction"</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY"</span><span class="p">]</span>
+    <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY_PCORR"</span><span class="p">]</span>
+    <span class="n">optional_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span>
+    <span class="n">variable_parameters</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"optode_pressure_name"</span><span class="p">]</span>
+    <span class="n">uses_data_subset</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">"optode_pressure_name"</span><span class="p">:</span> <span class="p">{</span>
@@ -758,11 +817,15 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY"</span><span class="p">]</span>
             <span class="o">+</span> <span class="mf">0.001</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">correction_coefficient</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">optode_pressure_name</span><span class="p">]</span>
         <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY_PCORR"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"units"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-            <span class="s2">"units"</span><span class="p">,</span> <span class="s2">"degree"</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY_PCORR"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"units"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span>
+            <span class="s2">"UNCAL_PHASE_DOXY"</span>
+        <span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">,</span> <span class="s2">"degree"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY_PCORR"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"long_name"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">"Pressure-corrected uncalibrated oxygen optode phase"</span>
         <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY_PCORR"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"long_name"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"Pressure-corrected uncalibrated oxygen optode phase"</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY_PCORR"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"standard_name"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"UNCAL_PHASE_DOXY_PCORR"</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY_PCORR"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"standard_name"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">"UNCAL_PHASE_DOXY_PCORR"</span>
+        <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct_data</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">update_qc</span><span class="p">()</span>
@@ -775,11 +838,12 @@
                 <span class="p">]</span>
             <span class="p">}</span>
         <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mark_intermediate</span><span class="p">(</span><span class="s2">"UNCAL_PHASE_DOXY_PCORR"</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
 
 
@@ -810,8 +874,13 @@
     <span class="n">finite</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">diff</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">pres</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">good</span>
 
     <span class="n">sc</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
-        <span class="n">time</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span> <span class="n">pres</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="n">diff</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span>
-        <span class="n">s</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">MARKER</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">ALPHA</span><span class="p">,</span> <span class="n">rasterized</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">time</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span>
+        <span class="n">pres</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span>
+        <span class="n">c</span><span class="o">=</span><span class="n">diff</span><span class="p">[</span><span class="n">finite</span><span class="p">],</span>
+        <span class="n">cmap</span><span class="o">=</span><span class="s2">"viridis"</span><span class="p">,</span>
+        <span class="n">s</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">MARKER</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">ALPHA</span><span class="p">,</span>
+        <span class="n">rasterized</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">cbar</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">sc</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
     <span class="n">cbar</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">shifted_var</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">raw_var</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">FS_LABEL</span><span class="p">)</span>
@@ -820,7 +889,7 @@
     <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">([],</span> <span class="p">[],</span> <span class="n">ls</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">"lag: </span><span class="si">{</span><span class="n">lag_label</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">FS_LEGEND</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="s2">"upper right"</span><span class="p">,</span> <span class="n">framealpha</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
 
-    <span class="n">fig_spec</span><span class="o">.</span><span class="n">date_axis</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s2">"x"</span><span class="p">)</span>
+    <span class="n">fig_spec</span><span class="o">.</span><span class="n">date_axis</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s2">"x"</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">time</span><span class="p">)</span>
     <span class="n">ylabel</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">axis_label</span><span class="p">(</span><span class="n">pressure_var</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">pressure_var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">))</span>
     <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="n">ylabel</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
@@ -833,8 +902,14 @@
 <div class="viewcode-block" id="ShiftOxygenToCTD">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.ShiftOxygenToCTD">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ShiftOxygenToCTD</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
-
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Shift Oxygen To CTD"</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span>
+    <span class="n">optional_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"TIME"</span><span class="p">,</span> <span class="s2">"PROFILE_GRADIENT"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">]</span>
+    <span class="n">variable_parameters</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"shift_vars"</span><span class="p">,</span> <span class="s2">"pitch_name"</span><span class="p">,</span> <span class="s2">"cast_id_var"</span><span class="p">]</span>
+    <span class="c1"># unused with lag_seconds</span>
+    <span class="n">variable_parameters_optional</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"pitch_name"</span><span class="p">,</span> <span class="s2">"cast_id_var"</span><span class="p">)</span>
+    <span class="n">uses_data_subset</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">"shift_vars"</span><span class="p">:</span> <span class="p">{</span>
@@ -865,9 +940,18 @@
         <span class="p">},</span>
     <span class="p">}</span>
 
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="ShiftOxygenToCTD.output_variables">
+<a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.ShiftOxygenToCTD.output_variables">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">output_variables</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">parameters</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_SHIFTED"</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"shift_vars"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]]</span></div>
+
+
     <span class="k">def</span><span class="w"> </span><span class="nf">_derive_profile_lag</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># Per-profile geometric time lag (s) from mean pitch and dive rate, following Woo &amp; Gourcuff (2023).</span>
-        <span class="n">valid_casts</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"PROFILE_DIRECTION"</span><span class="p">:</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">"SCI_PHASE"</span><span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)}[</span><span class="bp">self</span><span class="o">.</span><span class="n">cast_id_var</span><span class="p">]</span>
+        <span class="n">valid_casts</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"PROFILE_DIRECTION"</span><span class="p">:</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">"SCI_PHASE"</span><span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)}[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cast_id_var</span>
+        <span class="p">]</span>
 
         <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
             <span class="p">{</span>
@@ -879,7 +963,11 @@
         <span class="p">)</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">,</span> <span class="s2">"CAST"</span><span class="p">])</span>
         <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">"CAST"</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">valid_casts</span><span class="p">)]</span>
 
-        <span class="n">per_cast</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">"CAST"</span><span class="p">,</span> <span class="s2">"PROFILE_NUMBER"</span><span class="p">])[[</span><span class="s2">"PITCH"</span><span class="p">,</span> <span class="s2">"GRADIENT"</span><span class="p">]]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+        <span class="n">per_cast</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">"CAST"</span><span class="p">,</span> <span class="s2">"PROFILE_NUMBER"</span><span class="p">])[[</span><span class="s2">"PITCH"</span><span class="p">,</span> <span class="s2">"GRADIENT"</span><span class="p">]]</span>
+            <span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+            <span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+        <span class="p">)</span>
         <span class="n">velocity</span> <span class="o">=</span> <span class="n">per_cast</span><span class="p">[</span><span class="s2">"GRADIENT"</span><span class="p">]</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">per_cast</span><span class="p">[</span><span class="s2">"PITCH"</span><span class="p">])</span>
         <span class="n">per_cast</span><span class="p">[</span><span class="s2">"LAG"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">distance_cm</span> <span class="o">/</span> <span class="mi">100</span><span class="p">)</span> <span class="o">/</span> <span class="n">velocity</span>
 
@@ -889,14 +977,20 @@
             <span class="n">group</span> <span class="o">=</span> <span class="n">group</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">)</span>
             <span class="n">filled</span> <span class="o">=</span> <span class="n">group</span><span class="p">[</span><span class="s2">"LAG"</span><span class="p">]</span><span class="o">.</span><span class="n">ffill</span><span class="p">()</span><span class="o">.</span><span class="n">bfill</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">filled</span><span class="o">.</span><span class="n">notna</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="mi">7</span><span class="p">:</span>
+                <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">butter</span><span class="p">,</span> <span class="n">filtfilt</span>
+
                 <span class="n">b</span><span class="p">,</span> <span class="n">a</span> <span class="o">=</span> <span class="n">butter</span><span class="p">(</span><span class="n">N</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">Wn</span><span class="o">=</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">30</span><span class="p">,</span> <span class="n">btype</span><span class="o">=</span><span class="s2">"low"</span><span class="p">,</span> <span class="n">fs</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-                <span class="n">filled</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">filtfilt</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">filled</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()),</span> <span class="n">index</span><span class="o">=</span><span class="n">filled</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+                <span class="n">filled</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span>
+                    <span class="n">filtfilt</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">filled</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()),</span> <span class="n">index</span><span class="o">=</span><span class="n">filled</span><span class="o">.</span><span class="n">index</span>
+                <span class="p">)</span>
             <span class="n">lag_lookup</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">],</span> <span class="n">filled</span><span class="p">)))</span>
 
         <span class="k">return</span> <span class="n">lag_lookup</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_shift_onto_grid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">lag_lookup</span><span class="p">):</span>
-        <span class="n">epoch_s</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"datetime64[ns]"</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"int64"</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1e9</span>
+        <span class="n">epoch_s</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"datetime64[ns]"</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"int64"</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1e9</span>
+        <span class="p">)</span>
         <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
         <span class="n">valid</span> <span class="o">=</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">epoch_s</span><span class="p">)</span>
 
@@ -912,7 +1006,9 @@
         <span class="k">if</span> <span class="n">lag_lookup</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">lag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lag_seconds</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">lag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">lag_lookup</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">])</span>
+            <span class="n">lag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">lag_lookup</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">]</span>
+            <span class="p">)</span>
 
         <span class="c1"># Value at CTD time t is the optode measurement of the same water parcel, taken 'lag' seconds later.</span>
         <span class="n">query_time</span> <span class="o">=</span> <span class="n">epoch_s</span> <span class="o">+</span> <span class="n">lag</span>
@@ -965,7 +1061,9 @@
             <span class="k">if</span> <span class="n">var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] '</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">' is missing from the data"</span><span class="p">)</span>
         <span class="k">if</span> <span class="s2">"PROFILE_NUMBER"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] PROFILE_NUMBER required but is missing from the data"</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] PROFILE_NUMBER required but is missing from the data"</span>
+            <span class="p">)</span>
 
         <span class="n">lag_lookup</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lag_seconds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -987,26 +1085,39 @@
                     <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] PROFILE_GRADIENT required but is missing from the data"</span>
                 <span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cast_id_var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cast_id_var</span><span class="si">}</span><span class="s2"> required but is missing from the data"</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cast_id_var</span><span class="si">}</span><span class="s2"> required but is missing from the data"</span>
+                <span class="p">)</span>
 
             <span class="n">lag_lookup</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_derive_profile_lag</span><span class="p">()</span>
             <span class="n">mean_lag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">lag_lookup</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span> <span class="k">if</span> <span class="n">lag_lookup</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_lag_label</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"per-profile (mean </span><span class="si">{</span><span class="n">mean_lag</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">s)"</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">mean_lag</span><span class="p">)</span> <span class="k">else</span> <span class="s2">"per-profile"</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_lag_label</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"per-profile (mean </span><span class="si">{</span><span class="n">mean_lag</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">s)"</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">mean_lag</span><span class="p">)</span>
+                <span class="k">else</span> <span class="s2">"per-profile"</span>
+            <span class="p">)</span>
 
         <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift_vars</span><span class="p">:</span>
             <span class="n">out_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_SHIFTED"</span>
             <span class="k">if</span> <span class="n">out_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">out_name</span><span class="si">}</span><span class="s2"> already exists in the data. Overwriting..."</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">out_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">,),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_shift_onto_grid</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">lag_lookup</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">out_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="p">(</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">,),</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_shift_onto_grid</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="n">lag_lookup</span><span class="p">),</span>
+            <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">out_name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"units"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">)</span>
             <span class="n">parent_long_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"long_name"</span><span class="p">,</span> <span class="n">var</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">out_name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"long_name"</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">parent_long_name</span><span class="si">}</span><span class="s2">, geometrically shifted onto the CTD grid"</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">out_name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"long_name"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">parent_long_name</span><span class="si">}</span><span class="s2">, geometrically shifted onto the CTD grid"</span>
+            <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">out_name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"standard_name"</span><span class="p">]</span> <span class="o">=</span> <span class="n">out_name</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct_data</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">update_qc</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">({</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_SHIFTED_QC"</span><span class="p">:</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift_vars</span><span class="p">})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">(</span>
+            <span class="p">{</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_SHIFTED_QC"</span><span class="p">:</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift_vars</span><span class="p">}</span>
+        <span class="p">)</span>
 
         <span class="c1"># The shift evaluates every row via interpolation, so a valid shifted value is</span>
         <span class="c1"># never really its parent's original flag (e.g. still-missing 9) - it's "changed".</span>
@@ -1014,17 +1125,25 @@
             <span class="n">qc_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_SHIFTED_QC"</span>
             <span class="n">has_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_SHIFTED"</span><span class="p">]</span><span class="o">.</span><span class="n">notnull</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">qc_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">has_value</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">qc_name</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mark_intermediate</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_SHIFTED"</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift_vars</span><span class="p">))</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift_vars</span><span class="p">:</span>
-            <span class="n">_plot_shift_diff</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_SHIFTED"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lag_label</span><span class="p">)</span></div>
+            <span class="n">_plot_shift_diff</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+                <span class="n">var</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_SHIFTED"</span><span class="p">,</span>
+                <span class="s2">"PRES"</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_lag_label</span><span class="p">,</span>
+            <span class="p">)</span></div>
 
 
 
@@ -1032,8 +1151,12 @@
 <div class="viewcode-block" id="DeriveCalibratedPhase">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.DeriveCalibratedPhase">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DeriveCalibratedPhase</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
-
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Derive Calibrated Phase"</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"CAL_PHASE_DOXY"</span><span class="p">]</span>
+    <span class="n">optional_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"TIME"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">]</span>
+    <span class="n">variable_parameters</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"uncalibrated_phase_name"</span><span class="p">]</span>
+    <span class="n">uses_data_subset</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">"uncalibrated_phase_name"</span><span class="p">:</span> <span class="p">{</span>
@@ -1090,21 +1213,24 @@
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">coeff</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">coeffs</span><span class="p">):</span>
             <span class="n">cal_phase_doxy</span> <span class="o">+=</span> <span class="n">coeff</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">uncalibrated_phase_name</span><span class="p">]</span> <span class="o">**</span> <span class="n">i</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"CAL_PHASE_DOXY"</span><span class="p">]</span> <span class="o">=</span> <span class="n">cal_phase_doxy</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"CAL_PHASE_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"units"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">uncalibrated_phase_name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-            <span class="s2">"units"</span><span class="p">,</span> <span class="s2">"degree"</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"CAL_PHASE_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"units"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">uncalibrated_phase_name</span>
+        <span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">,</span> <span class="s2">"degree"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"CAL_PHASE_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"long_name"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">"Calibrated oxygen optode phase"</span>
         <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"CAL_PHASE_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"long_name"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"Calibrated oxygen optode phase"</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"CAL_PHASE_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"standard_name"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"CAL_PHASE_DOXY"</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct_data</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">update_qc</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">({</span><span class="s2">"CAL_PHASE_DOXY_QC"</span><span class="p">:</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">uncalibrated_phase_name</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mark_intermediate</span><span class="p">(</span><span class="s2">"CAL_PHASE_DOXY"</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
 
 
@@ -1117,8 +1243,13 @@
 <div class="viewcode-block" id="DeriveOxygenConcentration">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.DeriveOxygenConcentration">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DeriveOxygenConcentration</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
-
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Derive Oxygen Concentration"</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"CAL_PHASE_DOXY"</span><span class="p">]</span>
+    <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"MOLAR_DOXY_ADJUSTED"</span><span class="p">]</span>
+    <span class="n">optional_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"TIME"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">]</span>
+    <span class="n">variable_parameters</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"temperature_name"</span><span class="p">]</span>
+    <span class="n">uses_data_subset</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">"method"</span><span class="p">:</span> <span class="p">{</span>
@@ -1154,21 +1285,13 @@
                 <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] Calib coefficient matrix must be of shape (5, 4) for method 'poly'."</span>
             <span class="p">)</span>
 
-        <span class="c1"># Build the internal coefficient matrix</span>
-        <span class="n">coeffs_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">calib_coefficient_matrix</span><span class="p">):</span>
-            <span class="n">coeffs_matrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">row</span>
-
-        <span class="c1"># Apply the conversion</span>
-        <span class="n">poly_temp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
-            <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">temperature_name</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">**</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)]</span>
-        <span class="p">)[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
-        <span class="n">molar_doxy</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="p">(</span><span class="n">poly_temp</span> <span class="o">*</span> <span class="n">coeffs_matrix</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">])</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-            <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"CAL_PHASE_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">**</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">)])</span>
-        <span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">molar_doxy</span>
+        <span class="c1"># row i, column j multiplies CAL_PHASE_DOXY**i * temperature**j</span>
+        <span class="n">coeffs_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">calib_coefficient_matrix</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">polynomial</span><span class="o">.</span><span class="n">polynomial</span><span class="o">.</span><span class="n">polyval2d</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"CAL_PHASE_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">temperature_name</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="n">coeffs_matrix</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">func_SVU</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">svu_coefficients</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">7</span><span class="p">:</span>
@@ -1208,6 +1331,8 @@
 <span class="sd">        ``method: "poly"`` instead expects ``calib_coefficient_matrix`` (shape</span>
 <span class="sd">        (5, 4)); ``method: "SVU"`` expects ``svu_coefficients``, the 7</span>
 <span class="sd">        manufacturer SVUFoilCoef values (Stern-Volmer-Uchida equation).</span>
+<span class="sd">        Writes ``MOLAR_DOXY_ADJUSTED``, so a ``MOLAR_DOXY`` shipped in the file</span>
+<span class="sd">        is kept unchanged.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1228,35 +1353,46 @@
 
         <span class="c1"># Unpack the method args and functions</span>
         <span class="n">func</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="n">methods</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temperature_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temperature_name</span><span class="p">)</span>
 
         <span class="c1"># Check the config satisfies requirements</span>
         <span class="n">check_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
 
         <span class="c1"># Check if the output already exists</span>
-        <span class="k">if</span> <span class="s2">"MOLAR_DOXY"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span><span class="s2">"MOLAR_DOXY already exists in the data. Overwriting..."</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">"MOLAR_DOXY_ADJUSTED"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span>
+                <span class="s2">"MOLAR_DOXY_ADJUSTED already exists in the data. Overwriting..."</span>
+            <span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY"</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">,),</span> <span class="n">func</span><span class="p">())</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"units"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"micromole/l"</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"long_name"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"Molar dissolved oxygen concentration"</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"standard_name"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"MOLAR_DOXY"</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY_ADJUSTED"</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">,),</span> <span class="n">func</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY_ADJUSTED"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"units"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"micromole/l"</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY_ADJUSTED"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"long_name"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">"Molar dissolved oxygen concentration"</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY_ADJUSTED"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"standard_name"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"MOLAR_DOXY_ADJUSTED"</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct_data</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">update_qc</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">(</span>
-            <span class="p">{</span><span class="s2">"MOLAR_DOXY_QC"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"CAL_PHASE_DOXY_QC"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">temperature_name</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]}</span>
+            <span class="p">{</span>
+                <span class="s2">"MOLAR_DOXY_ADJUSTED_QC"</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="s2">"CAL_PHASE_DOXY_QC"</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">temperature_name</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">,</span>
+                <span class="p">]</span>
+            <span class="p">}</span>
         <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mark_intermediate</span><span class="p">(</span><span class="s2">"MOLAR_DOXY_ADJUSTED"</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">_plot_section</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="s2">"MOLAR_DOXY"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="p">)</span></div>
+        <span class="n">_plot_section</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="s2">"MOLAR_DOXY_ADJUSTED"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="p">)</span></div>
 
 
 
@@ -1264,8 +1400,13 @@
 <div class="viewcode-block" id="MolarDOXYSalinityCorrection">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.MolarDOXYSalinityCorrection">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">MolarDOXYSalinityCorrection</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
-
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Molar DOXY Salinity Correction"</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"MOLAR_DOXY"</span><span class="p">]</span>
+    <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"MOLAR_DOXY_PSAL"</span><span class="p">]</span>
+    <span class="n">optional_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"TIME"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">]</span>
+    <span class="n">variable_parameters</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"salinity_name"</span><span class="p">,</span> <span class="s2">"temperature_name"</span><span class="p">]</span>
+    <span class="n">uses_data_subset</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">"salinity_name"</span><span class="p">:</span> <span class="p">{</span>
@@ -1343,7 +1484,7 @@
 <span class="sd">            - name: "Molar DOXY Salinity Correction"</span>
 <span class="sd">              parameters:</span>
 <span class="sd">                # &lt;MANDATORY&gt;</span>
-<span class="sd">                salinity_name: "PRAC_SALINITY"</span>
+<span class="sd">                salinity_name: "PSAL"</span>
 <span class="sd">                temperature_name: "TEMP"</span>
 <span class="sd">                # &lt;OPTIONAL&gt;</span>
 <span class="sd">                reference_salinity: 0</span>
@@ -1356,9 +1497,13 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">salinity_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">salinity_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temperature_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temperature_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">molar_doxy_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="s2">"MOLAR_DOXY"</span><span class="p">)</span>
+
         <span class="c1"># Check the requred variable names are specified</span>
         <span class="n">check_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">(</span><span class="s2">"salinity_name"</span><span class="p">,</span> <span class="s2">"temperature_name"</span><span class="p">))</span>
-        <span class="k">if</span> <span class="s2">"MOLAR_DOXY"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">molar_doxy_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] MOLAR_DOXY required but is missing from the data"</span>
             <span class="p">)</span>
@@ -1371,14 +1516,16 @@
 
         <span class="n">S_Corr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">oxy_solubility_salinity_correction</span><span class="p">()</span>
 
-        <span class="n">MOLAR_DOXY_PSAL</span> <span class="o">=</span> <span class="p">(</span><span class="n">A</span> <span class="o">/</span> <span class="n">B</span><span class="p">)</span> <span class="o">*</span> <span class="n">S_Corr</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY"</span><span class="p">]</span>
+        <span class="n">MOLAR_DOXY_PSAL</span> <span class="o">=</span> <span class="p">(</span><span class="n">A</span> <span class="o">/</span> <span class="n">B</span><span class="p">)</span> <span class="o">*</span> <span class="n">S_Corr</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">molar_doxy_name</span><span class="p">]</span>
 
         <span class="c1"># Apply the correction</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY_PSAL"</span><span class="p">]</span> <span class="o">=</span> <span class="n">MOLAR_DOXY_PSAL</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY_PSAL"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"units"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-            <span class="s2">"units"</span><span class="p">,</span> <span class="s2">"micromole/l"</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY_PSAL"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"units"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">molar_doxy_name</span>
+        <span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">,</span> <span class="s2">"micromole/l"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY_PSAL"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"long_name"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">"Salinity-corrected molar dissolved oxygen concentration"</span>
         <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY_PSAL"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"long_name"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"Salinity-corrected molar dissolved oxygen concentration"</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY_PSAL"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"standard_name"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"MOLAR_DOXY_PSAL"</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct_data</span><span class="p">()</span>
@@ -1389,20 +1536,23 @@
                 <span class="s2">"MOLAR_DOXY_PSAL_QC"</span><span class="p">:</span> <span class="p">[</span>
                     <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">salinity_name</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">,</span>
                     <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">temperature_name</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">,</span>
-                    <span class="s2">"MOLAR_DOXY_QC"</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">molar_doxy_name</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">,</span>
                 <span class="p">]</span>
             <span class="p">}</span>
         <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mark_intermediate</span><span class="p">(</span><span class="s2">"MOLAR_DOXY_PSAL"</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">_plot_diff</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="s2">"MOLAR_DOXY"</span><span class="p">,</span> <span class="s2">"MOLAR_DOXY_PSAL"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="p">)</span></div>
+        <span class="n">_plot_diff</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">molar_doxy_name</span><span class="p">,</span> <span class="s2">"MOLAR_DOXY_PSAL"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_name</span>
+        <span class="p">)</span></div>
 
 
 
@@ -1410,8 +1560,12 @@
 <div class="viewcode-block" id="MolarDOXYPressureCorrection">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.MolarDOXYPressureCorrection">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">MolarDOXYPressureCorrection</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
-
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Molar DOXY Pressure Correction"</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"MOLAR_DOXY_PSAL_PRES"</span><span class="p">]</span>
+    <span class="n">optional_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span>
+    <span class="n">variable_parameters</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"pressure_name"</span><span class="p">,</span> <span class="s2">"temperature_name"</span><span class="p">,</span> <span class="s2">"molar_doxy_name"</span><span class="p">]</span>
+    <span class="n">uses_data_subset</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">"pressure_name"</span><span class="p">:</span> <span class="p">{</span>
@@ -1460,6 +1614,10 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">pressure_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pressure_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temperature_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temperature_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">molar_doxy_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">molar_doxy_name</span><span class="p">)</span>
+
         <span class="c1"># Check the required variable names are supplied</span>
         <span class="n">check_config</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
@@ -1488,13 +1646,15 @@
 
         <span class="c1"># Apply the correction</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY_PSAL_PRES"</span><span class="p">]</span> <span class="o">=</span> <span class="n">MOLAR_DOXY_PSAL_PRES</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY_PSAL_PRES"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"units"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">molar_doxy_name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-            <span class="s2">"units"</span><span class="p">,</span> <span class="s2">"micromole/l"</span>
-        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY_PSAL_PRES"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"units"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">molar_doxy_name</span>
+        <span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">,</span> <span class="s2">"micromole/l"</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY_PSAL_PRES"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"long_name"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
             <span class="s2">"Salinity- and pressure-corrected molar dissolved oxygen concentration"</span>
         <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY_PSAL_PRES"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"standard_name"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"MOLAR_DOXY_PSAL_PRES"</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"MOLAR_DOXY_PSAL_PRES"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"standard_name"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">"MOLAR_DOXY_PSAL_PRES"</span>
+        <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct_data</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">update_qc</span><span class="p">()</span>
@@ -1508,11 +1668,12 @@
                 <span class="p">]</span>
             <span class="p">}</span>
         <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mark_intermediate</span><span class="p">(</span><span class="s2">"MOLAR_DOXY_PSAL_PRES"</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
 
 
@@ -1524,6 +1685,134 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">pressure_name</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="p">,</span>
         <span class="p">)</span></div>
+
+
+
+<span class="nd">@register_step</span>
+<div class="viewcode-block" id="DeriveDOXY">
+<a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.DeriveDOXY">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DeriveDOXY</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Convert molar oxygen (umol/L) to ``DOXY_ADJUSTED`` (umol/kg), the OG1/Argo ``DOXY`` unit.</span>
+
+<span class="sd">    Follows the Argo DAC oxygen processing (Thierry et al., *Processing Argo oxygen</span>
+<span class="sd">    data at the DAC level*, doi:10.13155/39795): ``DOXY = MOLAR_DOXY * 1000 / rho0``,</span>
+<span class="sd">    with ``rho0`` (kg/m3) the potential density at zero pressure, here TEOS-10</span>
+<span class="sd">    ``gsw.rho(SA, CT, 0)`` from salinity, temperature, pressure and position.</span>
+<span class="sd">    ``DOXY_ADJUSTED_QC`` combines the QC of ``apply_to``, salinity and temperature.</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    .. code-block:: yaml</span>
+
+<span class="sd">        - name: "Derive DOXY"</span>
+<span class="sd">          parameters:</span>
+<span class="sd">            apply_to: "MOLAR_DOXY_PSAL_PRES"  # or MOLAR_DOXY for a shipped value</span>
+<span class="sd">            salinity_name: "PSAL"</span>
+<span class="sd">            temperature_name: "TEMP"</span>
+<span class="sd">            pressure_name: "PRES"</span>
+<span class="sd">          diagnostics: false</span>
+<span class="sd">    """</span>
+
+    <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Derive DOXY"</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"LATITUDE"</span><span class="p">,</span> <span class="s2">"LONGITUDE"</span><span class="p">]</span>
+    <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"DOXY_ADJUSTED"</span><span class="p">]</span>
+    <span class="n">optional_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span>
+    <span class="n">variable_parameters</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">"apply_to"</span><span class="p">,</span>
+        <span class="s2">"salinity_name"</span><span class="p">,</span>
+        <span class="s2">"temperature_name"</span><span class="p">,</span>
+        <span class="s2">"pressure_name"</span><span class="p">,</span>
+    <span class="p">]</span>
+    <span class="n">uses_data_subset</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"apply_to"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="s2">"MOLAR_DOXY_PSAL_PRES"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Molar oxygen variable (umol/L) to convert."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"salinity_name"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="s2">"PSAL"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Name of the practical salinity variable in the dataset."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"temperature_name"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="s2">"TEMP"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Name of the in-situ temperature variable in the dataset."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"pressure_name"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="s2">"PRES"</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Name of the pressure variable in the dataset."</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">salinity_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">salinity_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temperature_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temperature_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pressure_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pressure_name</span><span class="p">)</span>
+        <span class="n">check_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="p">(</span><span class="s2">"salinity_name"</span><span class="p">,</span> <span class="s2">"temperature_name"</span><span class="p">,</span> <span class="s2">"pressure_name"</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="si">}</span><span class="s2"> could not be found in the data"</span>
+            <span class="p">)</span>
+        <span class="n">units</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">"kg"</span> <span class="ow">in</span> <span class="n">units</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="si">}</span><span class="s2"> is labelled '</span><span class="si">{</span><span class="n">units</span><span class="si">}</span><span class="s2">', not umol/L; converting anyway."</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">"DOXY_ADJUSTED"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span><span class="s2">"DOXY_ADJUSTED already exists in the data. Overwriting..."</span><span class="p">)</span>
+
+        <span class="n">pres</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">pressure_name</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">sa</span> <span class="o">=</span> <span class="n">gsw</span><span class="o">.</span><span class="n">SA_from_SP</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">salinity_name</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="n">pres</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"LONGITUDE"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"LATITUDE"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">ct</span> <span class="o">=</span> <span class="n">gsw</span><span class="o">.</span><span class="n">CT_from_t</span><span class="p">(</span><span class="n">sa</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">temperature_name</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">pres</span><span class="p">)</span>
+        <span class="n">rho0</span> <span class="o">=</span> <span class="n">gsw</span><span class="o">.</span><span class="n">rho</span><span class="p">(</span><span class="n">sa</span><span class="p">,</span> <span class="n">ct</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"DOXY_ADJUSTED"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">(</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">,),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">/</span> <span class="n">rho0</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"DOXY_ADJUSTED"</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"units"</span><span class="p">:</span> <span class="s2">"umol/kg"</span><span class="p">,</span>
+            <span class="s2">"long_name"</span><span class="p">:</span> <span class="s2">"Moles of oxygen per unit mass in sea water"</span><span class="p">,</span>
+            <span class="s2">"standard_name"</span><span class="p">:</span> <span class="s2">"moles_of_oxygen_per_unit_mass_in_sea_water"</span><span class="p">,</span>
+            <span class="s2">"comment"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="si">}</span><span class="s2"> divided by potential density at 0 dbar."</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct_data</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_qc</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">"DOXY_ADJUSTED_QC"</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">salinity_name</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">temperature_name</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">,</span>
+                <span class="p">]</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">_plot_section</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="s2">"DOXY_ADJUSTED"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pressure_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="p">)</span></div>
 
 </pre></div>
 

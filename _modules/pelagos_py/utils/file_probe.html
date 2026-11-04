@@ -411,19 +411,27 @@
 <span class="sd">"""Cheap metadata probe of an OG1 NetCDF file for the config builder: variable</span>
 <span class="sd">names, units, which float variables are entirely NaN, and a median for a few</span>
 <span class="sd">variables whose *values* decide how they must be treated (e.g. CNDC unit</span>
-<span class="sd">mislabelling)."""</span>
+<span class="sd">mislabelling), plus the depth of each dive for the deep correction threshold."""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <span class="c1"># Variables whose median is needed to tell a unit/naming problem from real data.</span>
 <span class="n">MEDIAN_VARIABLES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"CNDC"</span><span class="p">,</span> <span class="s2">"BBP700"</span><span class="p">,</span> <span class="s2">"BETA_BACKSCATTERING700"</span><span class="p">)</span>
+<span class="n">DIVE_VARIABLE</span> <span class="o">=</span> <span class="s2">"PRES"</span>
+<span class="c1"># A dive bottom must sit this many dbar below the shallowest point either side of it.</span>
+<span class="n">DIVE_PROMINENCE</span> <span class="o">=</span> <span class="mi">50</span>
+<span class="n">DIVE_BLOCKS</span> <span class="o">=</span> <span class="mi">100_000</span>
+<span class="c1"># Reading every point of a big file takes too long, so at most this many are read.</span>
+<span class="n">DIVE_READ_LIMIT</span> <span class="o">=</span> <span class="mi">4_000_000</span>
+<span class="n">DIVE_WINDOWS</span> <span class="o">=</span> <span class="mi">20</span>
 
 <span class="n">TIMEOUT</span> <span class="o">=</span> <span class="mi">30</span>
 <span class="n">CHUNK</span> <span class="o">=</span> <span class="mi">500_000</span>
@@ -434,8 +442,9 @@
 <a class="viewcode-back" href="../../../api/pelagos_py/utils/file_probe/index.html#pelagos_py.utils.file_probe.probe_file">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">probe_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""``{variable: {"units", "numeric", "all_nan", "median"?}}`` for every</span>
-<span class="sd">    variable in ``file_path``, or ``None`` if it can't be read. Cached on</span>
-<span class="sd">    (path, mtime) so repeated validation of the same file is free."""</span>
+<span class="sd">    variable in ``file_path`` (PRES also gets ``"dive_depths"``), or ``None``</span>
+<span class="sd">    if it can't be read. Cached on (path, mtime) so repeated validation of the</span>
+<span class="sd">    same file is free."""</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">mtime</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_mtime</span>
     <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
@@ -444,7 +453,9 @@
         <span class="k">return</span> <span class="kc">None</span>
     <span class="n">probe</span><span class="p">,</span> <span class="n">error</span> <span class="o">=</span> <span class="n">_probe</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">),</span> <span class="n">mtime</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">error</span> <span class="ow">and</span> <span class="n">logger</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Could not read '</span><span class="si">%s</span><span class="s2">' to inspect its variables: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">file_path</span><span class="p">,</span> <span class="n">error</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">"Could not read '</span><span class="si">%s</span><span class="s2">' to inspect its variables: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">file_path</span><span class="p">,</span> <span class="n">error</span>
+        <span class="p">)</span>
     <span class="k">return</span> <span class="n">probe</span></div>
 
 
@@ -459,7 +470,9 @@
     <span class="n">env</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">,</span> <span class="n">HDF5_USE_FILE_LOCKING</span><span class="o">=</span><span class="s2">"FALSE"</span><span class="p">)</span>
     <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="n">sys</span><span class="o">.</span><span class="n">executable</span><span class="p">,</span> <span class="vm">__file__</span><span class="p">,</span> <span class="n">file_path</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">MEDIAN_VARIABLES</span><span class="p">)]</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">TIMEOUT</span><span class="p">,</span> <span class="n">env</span><span class="o">=</span><span class="n">env</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+            <span class="n">cmd</span><span class="p">,</span> <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">TIMEOUT</span><span class="p">,</span> <span class="n">env</span><span class="o">=</span><span class="n">env</span>
+        <span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
@@ -484,13 +497,21 @@
         <span class="k">yield</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="o">...</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
         <span class="k">return</span>
     <span class="k">for</span> <span class="n">start</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">CHUNK</span><span class="p">):</span>
-        <span class="k">yield</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">start</span> <span class="o">+</span> <span class="n">CHUNK</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+        <span class="k">yield</span> <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="n">start</span> <span class="p">:</span> <span class="n">start</span> <span class="o">+</span> <span class="n">CHUNK</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_summarise</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">want_median</span><span class="p">):</span>
     <span class="n">kind</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="s2">"kind"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
-    <span class="n">info</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"units"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s2">"units"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)),</span> <span class="s2">"numeric"</span><span class="p">:</span> <span class="n">kind</span> <span class="ow">in</span> <span class="s2">"fiu"</span><span class="p">,</span> <span class="s2">"all_nan"</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
-    <span class="n">can_be_nan</span> <span class="o">=</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"f"</span> <span class="ow">or</span> <span class="p">(</span><span class="n">kind</span> <span class="ow">in</span> <span class="s2">"iu"</span> <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span><span class="nb">hasattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">PACKED_ATTRS</span><span class="p">))</span>
+    <span class="n">info</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"units"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s2">"units"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)),</span>
+        <span class="s2">"numeric"</span><span class="p">:</span> <span class="n">kind</span> <span class="ow">in</span> <span class="s2">"fiu"</span><span class="p">,</span>
+        <span class="s2">"all_nan"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="n">can_be_nan</span> <span class="o">=</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"f"</span> <span class="ow">or</span> <span class="p">(</span>
+        <span class="n">kind</span> <span class="ow">in</span> <span class="s2">"iu"</span> <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span><span class="nb">hasattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">PACKED_ATTRS</span><span class="p">)</span>
+    <span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">can_be_nan</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">info</span>
     <span class="n">info</span><span class="p">[</span><span class="s2">"all_nan"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
@@ -508,12 +529,74 @@
     <span class="k">return</span> <span class="n">info</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_read_pres</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">):</span>
+    <span class="c1"># Raw reads are ~5x faster on big files, so fill values and packing are handled by hand.</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">netCDF4</span>
+
+    <span class="n">v</span><span class="o">.</span><span class="n">set_auto_maskandscale</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">pres</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">stop</span><span class="p">]</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">pres</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="o">!=</span> <span class="s2">"f"</span><span class="p">:</span>
+        <span class="n">pres</span> <span class="o">=</span> <span class="n">pres</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">fills</span> <span class="o">=</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"_FillValue"</span><span class="p">,</span> <span class="s2">"missing_value"</span><span class="p">)</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">a</span><span class="p">)]</span>
+    <span class="k">for</span> <span class="n">fill</span> <span class="ow">in</span> <span class="n">fills</span> <span class="ow">or</span> <span class="p">[</span><span class="n">netCDF4</span><span class="o">.</span><span class="n">default_fillvals</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">str</span><span class="p">[</span><span class="mi">1</span><span class="p">:])]:</span>
+        <span class="n">pres</span><span class="p">[</span><span class="n">pres</span> <span class="o">==</span> <span class="n">fill</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="k">return</span> <span class="n">pres</span> <span class="o">*</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s2">"scale_factor"</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">+</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s2">"add_offset"</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_bottoms</span><span class="p">(</span><span class="n">pres</span><span class="p">,</span> <span class="n">blocks</span><span class="p">):</span>
+    <span class="c1"># Block maxima keep every bottom but cap the walk below at `blocks` steps.</span>
+    <span class="n">size</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="o">-</span><span class="n">pres</span><span class="o">.</span><span class="n">size</span> <span class="o">//</span> <span class="n">blocks</span><span class="p">)</span>
+    <span class="n">padded</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">size</span> <span class="o">*</span> <span class="n">blocks</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">pres</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">padded</span><span class="p">[:</span> <span class="n">pres</span><span class="o">.</span><span class="n">size</span><span class="p">]</span> <span class="o">=</span> <span class="n">pres</span>
+    <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="ne">RuntimeWarning</span><span class="p">)</span>  <span class="c1"># all-NaN blocks</span>
+        <span class="n">block_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">padded</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">size</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">block_max</span> <span class="o">=</span> <span class="n">block_max</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">block_max</span><span class="p">)]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+    <span class="n">bottoms</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">deepest</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">shallowest</span> <span class="o">=</span> <span class="n">block_max</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">block_max</span> <span class="k">else</span> <span class="mf">0.0</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">block_max</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">deepest</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">p</span> <span class="o">&gt;=</span> <span class="n">shallowest</span> <span class="o">+</span> <span class="n">DIVE_PROMINENCE</span><span class="p">:</span>
+                <span class="n">deepest</span> <span class="o">=</span> <span class="n">p</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">shallowest</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">shallowest</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">p</span> <span class="o">&gt;</span> <span class="n">deepest</span><span class="p">:</span>
+            <span class="n">deepest</span> <span class="o">=</span> <span class="n">p</span>
+        <span class="k">elif</span> <span class="n">p</span> <span class="o">&lt;=</span> <span class="n">deepest</span> <span class="o">-</span> <span class="n">DIVE_PROMINENCE</span><span class="p">:</span>
+            <span class="n">bottoms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">deepest</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+            <span class="n">deepest</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">shallowest</span> <span class="o">=</span> <span class="n">p</span>
+    <span class="k">return</span> <span class="n">bottoms</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_dive_depths</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+    <span class="c1"># Bottom of every dive and yo; files over DIVE_READ_LIMIT are sampled in evenly spaced slices.</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">windows</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">n</span> <span class="o">&lt;=</span> <span class="n">DIVE_READ_LIMIT</span> <span class="k">else</span> <span class="n">DIVE_WINDOWS</span>
+    <span class="n">length</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">DIVE_READ_LIMIT</span> <span class="o">//</span> <span class="n">windows</span><span class="p">)</span>
+    <span class="n">bottoms</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">start</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span> <span class="o">-</span> <span class="n">length</span><span class="p">,</span> <span class="n">windows</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">):</span>
+        <span class="n">bottoms</span> <span class="o">+=</span> <span class="n">_bottoms</span><span class="p">(</span>
+            <span class="n">_read_pres</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">start</span> <span class="o">+</span> <span class="n">length</span><span class="p">),</span> <span class="n">DIVE_BLOCKS</span> <span class="o">//</span> <span class="n">windows</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">bottoms</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_summarise_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">median_vars</span><span class="p">):</span>
     <span class="c1"># Imported here so the parent process never loads netCDF4.</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">netCDF4</span>
 
     <span class="k">with</span> <span class="n">netCDF4</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">ds</span><span class="p">:</span>
-        <span class="k">return</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">_summarise</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">median_vars</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">variables</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">probe</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">name</span><span class="p">:</span> <span class="n">_summarise</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">median_vars</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">variables</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">DIVE_VARIABLE</span> <span class="ow">in</span> <span class="n">probe</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">probe</span><span class="p">[</span><span class="n">DIVE_VARIABLE</span><span class="p">][</span><span class="s2">"all_nan"</span><span class="p">]:</span>
+            <span class="n">probe</span><span class="p">[</span><span class="n">DIVE_VARIABLE</span><span class="p">][</span><span class="s2">"dive_depths"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_dive_depths</span><span class="p">(</span>
+                <span class="n">ds</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">DIVE_VARIABLE</span><span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">probe</span>
 
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>

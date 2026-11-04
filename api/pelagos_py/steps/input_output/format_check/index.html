@@ -366,7 +366,6 @@
 <li class="toctree-l3"><a class="reference internal" href="../load_data/index.html">pelagos_py.steps.input_output.load_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../prepare_og1/index.html">pelagos_py.steps.input_output.prepare_og1</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../write_report/index.html">pelagos_py.steps.input_output.write_report</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../write_report_python/index.html">pelagos_py.steps.input_output.write_report_python</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../processing/index.html">pelagos_py.steps.processing</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -394,6 +393,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/spike_qc/index.html">pelagos_py.steps.quality_control.spike_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/stuck_value_qc/index.html">pelagos_py.steps.quality_control.stuck_value_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/valid_profile_qc/index.html">pelagos_py.steps.quality_control.valid_profile_qc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../quality_control/visual_qc/index.html">pelagos_py.steps.quality_control.visual_qc</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../templates/index.html">pelagos_py.steps.templates</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -489,25 +489,8 @@
 <span id="pelagos-py-steps-input-output-format-check"></span><h1>pelagos_py.steps.input_output.format_check<a class="headerlink" href="#module-pelagos_py.steps.input_output.format_check" title="Link to this heading">#</a></h1>
 <dl class="py function">
 <dt class="sig sig-object py" id="pelagos_py.steps.input_output.format_check.console_summary">
-<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.input_output.format_check.</span></span><span class="sig-name descname"><span class="pre">console_summary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">checker_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">passed</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/format_check.html#console_summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.format_check.console_summary" title="Link to this definition">#</a></dt>
-<dd><p>Build a compact console summary for one checker’s result.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>checker_name</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – The checker that produced <code class="docutils literal notranslate"><span class="pre">result</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;og&quot;</span></code>).</p></li>
-<li><p><strong>result</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – A single checker’s <code class="xref py py-meth docutils literal notranslate"><span class="pre">CheckSuite.dict_output()</span></code> dict.</p></li>
-<li><p><strong>passed</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Whether the dataset passed this checker at the chosen strictness.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Lines to log. Kept deliberately short: a pass/fail header, the missing
-mandatory global attributes and variables, then a count of everything
-else so the console is not flooded with detail (that goes to the file).</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a> of <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)">str</a></p>
-</dd>
-</dl>
+<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.input_output.format_check.</span></span><span class="sig-name descname"><span class="pre">console_summary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">checker_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">passed</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">top</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/format_check.html#console_summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.format_check.console_summary" title="Link to this definition">#</a></dt>
+<dd><p>One-line summary of a checker’s result: score, issue count and the worst checks.</p>
 </dd></dl>
 
 <dl class="py class">
@@ -515,19 +498,18 @@ else so the console is not flooded with detail (that goes to the file).</p>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.input_output.format_check.</span></span><span class="sig-name descname"><span class="pre">FormatCheck</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/format_check.html#FormatCheck"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.format_check.FormatCheck" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="../../base_step/index.html#pelagos_py.steps.base_step.BaseStep" title="pelagos_py.steps.base_step.BaseStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pelagos_py.steps.base_step.BaseStep</span></code></a></p>
 <p>Run the IOOS file-format compliance checker and report the result.</p>
-<p>Does not run on the in-memory dataset; it re-reads the file from disk
-(its own loading routine). A short pass/fail summary is always printed to
-the console. JSON and/or RST report files are written only when requested
-via <code class="docutils literal notranslate"><span class="pre">output_type</span></code> and an <code class="docutils literal notranslate"><span class="pre">out_directory</span></code> is set.</p>
+<p>Does not run on the in-memory dataset; it re-reads the file from disk.
+A short pass/fail summary is always logged. With <code class="docutils literal notranslate"><span class="pre">diagnostics</span></code> on the
+full report is printed as well; JSON and/or RST report files are written
+when requested via <code class="docutils literal notranslate"><span class="pre">output_type</span></code> and an <code class="docutils literal notranslate"><span class="pre">out_directory</span></code> is set.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>src</strong> (<em>path</em><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><em>optional</em>) – File to check. If omitted, falls back to the file loaded by a preceding
 <code class="docutils literal notranslate"><span class="pre">Load</span> <span class="pre">OG1</span></code> step.</p></li>
 <li><p><strong>standards</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Standards to check, e.g. <code class="docutils literal notranslate"><span class="pre">['cf',</span> <span class="pre">'og']</span></code> (<code class="docutils literal notranslate"><span class="pre">og</span></code> = OG1).</p></li>
-<li><p><strong>output_type</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><em>optional</em>) – Report file(s) to save <em>in addition to</em> the console summary: <code class="docutils literal notranslate"><span class="pre">'json'</span></code>,
-<code class="docutils literal notranslate"><span class="pre">'rst'</span></code>, or a list of both. Omit (default) for console only. Saving
-requires <code class="docutils literal notranslate"><span class="pre">out_directory</span></code> to be set in the pipeline config.</p></li>
+<li><p><strong>output_type</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><em>optional</em>) – Report file(s) to save: <code class="docutils literal notranslate"><span class="pre">'json'</span></code>, <code class="docutils literal notranslate"><span class="pre">'rst'</span></code>, or a list of both. Omit
+(default) to save nothing. Requires <code class="docutils literal notranslate"><span class="pre">out_directory</span></code> in the config.</p></li>
 <li><p><strong>proceed_on_fail</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – If False, halt the pipeline when the file fails the checks.</p></li>
 </ul>
 </dd>

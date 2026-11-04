@@ -420,7 +420,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fig_spec</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fig_spec</span><span class="p">,</span> <span class="n">palettes</span>
 
 <span class="c1"># ---------------------------------------------------------------------------</span>
 <span class="c1"># Constants</span>
@@ -435,16 +435,7 @@
 <span class="n">PROPELLED</span> <span class="o">=</span> <span class="mi">6</span>
 <span class="n">TRANSITION</span> <span class="o">=</span> <span class="mi">7</span>
 
-<span class="n">PHASE_COLOURS</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="n">UNKNOWN</span><span class="p">:</span> <span class="s2">"#9ca3af"</span><span class="p">,</span>
-    <span class="n">ASCENT</span><span class="p">:</span> <span class="s2">"#22c55e"</span><span class="p">,</span>
-    <span class="n">DESCENT</span><span class="p">:</span> <span class="s2">"#3b82f6"</span><span class="p">,</span>
-    <span class="n">SURFACING</span><span class="p">:</span> <span class="s2">"#f97316"</span><span class="p">,</span>
-    <span class="n">PARKING</span><span class="p">:</span> <span class="s2">"#a855f7"</span><span class="p">,</span>
-    <span class="n">INFLECTION</span><span class="p">:</span> <span class="s2">"#06b6d4"</span><span class="p">,</span>
-    <span class="n">PROPELLED</span><span class="p">:</span> <span class="s2">"#ef4444"</span><span class="p">,</span>
-    <span class="n">TRANSITION</span><span class="p">:</span> <span class="s2">"#eab308"</span><span class="p">,</span>
-<span class="p">}</span>
+<span class="n">PHASE_COLOURS</span> <span class="o">=</span> <span class="n">palettes</span><span class="o">.</span><span class="n">CATEGORICAL</span><span class="p">[</span><span class="s2">"SCI_PHASE"</span><span class="p">]</span>
 
 <span class="n">PHASE_NAMES</span> <span class="o">=</span> <span class="p">{</span>
     <span class="n">UNKNOWN</span><span class="p">:</span> <span class="s2">"0 Unknown"</span><span class="p">,</span>
@@ -457,7 +448,13 @@
     <span class="n">TRANSITION</span><span class="p">:</span> <span class="s2">"7 Transition"</span><span class="p">,</span>
 <span class="p">}</span>
 
-<span class="n">DERIVED_COLUMNS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"SCI_PHASE"</span><span class="p">,</span> <span class="s2">"PROFILE_NUMBER"</span><span class="p">,</span> <span class="s2">"PROFILE_DIRECTION"</span><span class="p">,</span> <span class="s2">"CYCLE"</span><span class="p">,</span> <span class="s2">"GRADIENT"</span><span class="p">]</span>
+<span class="n">DERIVED_COLUMNS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"SCI_PHASE"</span><span class="p">,</span>
+    <span class="s2">"PROFILE_NUMBER"</span><span class="p">,</span>
+    <span class="s2">"PROFILE_DIRECTION"</span><span class="p">,</span>
+    <span class="s2">"CYCLE"</span><span class="p">,</span>
+    <span class="s2">"GRADIENT"</span><span class="p">,</span>
+<span class="p">]</span>
 
 <span class="c1"># ---------------------------------------------------------------------------</span>
 <span class="c1"># Core Processing Logic</span>
@@ -467,9 +464,9 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">_compute_chunk_id</span><span class="p">(</span><span class="n">time_seconds</span><span class="p">,</span> <span class="n">gap_threshold_seconds</span><span class="p">):</span>
     <span class="c1"># Real data gaps split the record into disconnected chunks - velocity is</span>
     <span class="c1"># never computed, and no run ever allowed, across one.</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span>
-        <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">time_seconds</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">gap_threshold_seconds</span><span class="p">)</span>
-    <span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
+        <span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">time_seconds</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">gap_threshold_seconds</span><span class="p">))</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_gradient_per_chunk</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">time_seconds</span><span class="p">,</span> <span class="n">chunk_id</span><span class="p">):</span>
@@ -489,7 +486,9 @@
     <span class="c1"># itself (median, to despike) - both rolling passes are time-windowed so</span>
     <span class="c1"># they stay meaningful under irregular sampling.</span>
     <span class="n">depth_series</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">depth</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">(</span><span class="n">time</span><span class="p">))</span>
-    <span class="n">smoothed_depth</span> <span class="o">=</span> <span class="n">depth_series</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="n">window</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">min_periods</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+    <span class="n">smoothed_depth</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">depth_series</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="n">window</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">min_periods</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+    <span class="p">)</span>
     <span class="n">velocity</span> <span class="o">=</span> <span class="n">_gradient_per_chunk</span><span class="p">(</span><span class="n">smoothed_depth</span><span class="p">,</span> <span class="n">time_seconds</span><span class="p">,</span> <span class="n">chunk_id</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">(</span>
         <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">velocity</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">depth_series</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
@@ -515,7 +514,9 @@
             <span class="k">yield</span> <span class="nb">int</span><span class="p">(</span><span class="n">s</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_classify_ascent_descent</span><span class="p">(</span><span class="n">smoothed_velocity</span><span class="p">,</span> <span class="n">time_seconds</span><span class="p">,</span> <span class="n">chunk_id</span><span class="p">,</span> <span class="n">velocity_threshold</span><span class="p">,</span> <span class="n">min_duration_seconds</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_classify_ascent_descent</span><span class="p">(</span>
+    <span class="n">smoothed_velocity</span><span class="p">,</span> <span class="n">time_seconds</span><span class="p">,</span> <span class="n">chunk_id</span><span class="p">,</span> <span class="n">velocity_threshold</span><span class="p">,</span> <span class="n">min_duration_seconds</span>
+<span class="p">):</span>
     <span class="c1"># Threshold velocity into raw ascent/descent, then run-length merge, dropping</span>
     <span class="c1"># runs too short to trust (sensor noise) or that straddle a chunk boundary.</span>
     <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">smoothed_velocity</span><span class="p">)</span>
@@ -532,12 +533,21 @@
     <span class="n">run_durations</span> <span class="o">=</span> <span class="n">time_seconds</span><span class="p">[</span><span class="n">run_ends</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">time_seconds</span><span class="p">[</span><span class="n">run_starts</span><span class="p">]</span>
     <span class="n">keep</span> <span class="o">=</span> <span class="p">(</span><span class="n">run_values</span> <span class="o">!=</span> <span class="n">UNKNOWN</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">run_durations</span> <span class="o">&gt;=</span> <span class="n">min_duration_seconds</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">keep</span><span class="p">,</span> <span class="n">run_values</span><span class="p">,</span> <span class="n">UNKNOWN</span><span class="p">),</span> <span class="n">run_ends</span> <span class="o">-</span> <span class="n">run_starts</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">keep</span><span class="p">,</span> <span class="n">run_values</span><span class="p">,</span> <span class="n">UNKNOWN</span><span class="p">),</span> <span class="n">run_ends</span> <span class="o">-</span> <span class="n">run_starts</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">int8</span>
+    <span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_classify_propelled_surfacing</span><span class="p">(</span><span class="n">phase</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">time_seconds</span><span class="p">,</span> <span class="n">chunk_id</span><span class="p">,</span>
-                                   <span class="n">surfacing_depth_threshold</span><span class="p">,</span> <span class="n">min_duration_seconds</span><span class="p">,</span>
-                                   <span class="n">min_transect_duration_seconds</span><span class="p">,</span> <span class="n">transect_phase</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_classify_propelled_surfacing</span><span class="p">(</span>
+    <span class="n">phase</span><span class="p">,</span>
+    <span class="n">depth</span><span class="p">,</span>
+    <span class="n">time_seconds</span><span class="p">,</span>
+    <span class="n">chunk_id</span><span class="p">,</span>
+    <span class="n">surfacing_depth_threshold</span><span class="p">,</span>
+    <span class="n">min_duration_seconds</span><span class="p">,</span>
+    <span class="n">min_transect_duration_seconds</span><span class="p">,</span>
+    <span class="n">transect_phase</span><span class="p">,</span>
+<span class="p">):</span>
     <span class="c1"># Applied only to what ascent/descent left unknown. A flat, undulating stretch</span>
     <span class="c1"># away from the surface, gated by a much longer minimum duration than surfacing</span>
     <span class="c1"># so a turnaround isn't mistaken for one (a turn also sits near-zero velocity</span>
@@ -570,12 +580,14 @@
         <span class="n">lo</span> <span class="o">=</span> <span class="n">s</span> <span class="k">if</span> <span class="n">start_gap</span> <span class="k">else</span> <span class="n">s</span> <span class="o">-</span> <span class="mi">1</span>
 
         <span class="k">if</span> <span class="n">after</span> <span class="o">==</span> <span class="n">ASCENT</span> <span class="ow">and</span> <span class="n">before</span> <span class="ow">in</span> <span class="p">(</span><span class="n">DESCENT</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
-            <span class="n">idx</span> <span class="o">=</span> <span class="n">lo</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">depth</span><span class="p">[</span><span class="n">lo</span><span class="p">:</span><span class="n">e</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">lo</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">depth</span><span class="p">[</span><span class="n">lo</span> <span class="p">:</span> <span class="n">e</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
         <span class="k">elif</span> <span class="n">after</span> <span class="o">==</span> <span class="n">DESCENT</span> <span class="ow">and</span> <span class="n">before</span> <span class="ow">in</span> <span class="p">(</span><span class="n">ASCENT</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
-            <span class="n">idx</span> <span class="o">=</span> <span class="n">lo</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">depth</span><span class="p">[</span><span class="n">lo</span><span class="p">:</span><span class="n">e</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">lo</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">depth</span><span class="p">[</span><span class="n">lo</span> <span class="p">:</span> <span class="n">e</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">continue</span>
-        <span class="n">phase</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">SURFACING</span> <span class="k">if</span> <span class="n">depth</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">surfacing_depth_threshold</span> <span class="k">else</span> <span class="n">INFLECTION</span>
+        <span class="n">phase</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">SURFACING</span> <span class="k">if</span> <span class="n">depth</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">surfacing_depth_threshold</span> <span class="k">else</span> <span class="n">INFLECTION</span>
+        <span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_classify_transition</span><span class="p">(</span><span class="n">phase</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">chunk_id</span><span class="p">,</span> <span class="n">surfacing_depth_threshold</span><span class="p">):</span>
@@ -594,10 +606,18 @@
         <span class="n">before</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">start_gap</span> <span class="k">else</span> <span class="n">phase</span><span class="p">[</span><span class="n">s</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
         <span class="n">after</span> <span class="o">=</span> <span class="n">phase</span><span class="p">[</span><span class="n">e</span><span class="p">]</span>
         <span class="n">turn_to_core</span> <span class="o">=</span> <span class="n">before</span> <span class="ow">in</span> <span class="p">(</span><span class="n">SURFACING</span><span class="p">,</span> <span class="n">INFLECTION</span><span class="p">)</span> <span class="ow">and</span> <span class="n">after</span> <span class="ow">in</span> <span class="p">(</span><span class="n">ASCENT</span><span class="p">,</span> <span class="n">DESCENT</span><span class="p">)</span>
-        <span class="n">core_to_turn</span> <span class="o">=</span> <span class="n">after</span> <span class="ow">in</span> <span class="p">(</span><span class="n">SURFACING</span><span class="p">,</span> <span class="n">INFLECTION</span><span class="p">)</span> <span class="ow">and</span> <span class="n">before</span> <span class="ow">in</span> <span class="p">(</span><span class="n">ASCENT</span><span class="p">,</span> <span class="n">DESCENT</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">core_to_turn</span> <span class="o">=</span> <span class="n">after</span> <span class="ow">in</span> <span class="p">(</span><span class="n">SURFACING</span><span class="p">,</span> <span class="n">INFLECTION</span><span class="p">)</span> <span class="ow">and</span> <span class="n">before</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="n">ASCENT</span><span class="p">,</span>
+            <span class="n">DESCENT</span><span class="p">,</span>
+            <span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">turn_to_core</span> <span class="ow">or</span> <span class="n">core_to_turn</span><span class="p">):</span>
             <span class="k">continue</span>
-        <span class="n">phase</span><span class="p">[</span><span class="n">s</span><span class="p">:</span><span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="n">SURFACING</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">depth</span><span class="p">[</span><span class="n">s</span><span class="p">:</span><span class="n">e</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="n">surfacing_depth_threshold</span> <span class="k">else</span> <span class="n">TRANSITION</span>
+        <span class="n">phase</span><span class="p">[</span><span class="n">s</span><span class="p">:</span><span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">SURFACING</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">depth</span><span class="p">[</span><span class="n">s</span><span class="p">:</span><span class="n">e</span><span class="p">])</span> <span class="o">&lt;=</span> <span class="n">surfacing_depth_threshold</span>
+            <span class="k">else</span> <span class="n">TRANSITION</span>
+        <span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_assign_profile_and_cycle</span><span class="p">(</span><span class="n">phase</span><span class="p">,</span> <span class="n">chunk_id</span><span class="p">):</span>
@@ -629,9 +649,16 @@
     <span class="n">current_cycle</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">starts</span><span class="p">,</span> <span class="n">ends</span><span class="p">),</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
         <span class="n">lo</span> <span class="o">=</span> <span class="n">s</span>
-        <span class="k">while</span> <span class="n">lo</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">phase</span><span class="p">[</span><span class="n">lo</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">TRANSITION</span> <span class="ow">and</span> <span class="n">chunk_id</span><span class="p">[</span><span class="n">lo</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">chunk_id</span><span class="p">[</span><span class="n">lo</span><span class="p">]:</span>
+        <span class="k">while</span> <span class="p">(</span>
+            <span class="n">lo</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">phase</span><span class="p">[</span><span class="n">lo</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">TRANSITION</span> <span class="ow">and</span> <span class="n">chunk_id</span><span class="p">[</span><span class="n">lo</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">chunk_id</span><span class="p">[</span><span class="n">lo</span><span class="p">]</span>
+        <span class="p">):</span>
             <span class="n">lo</span> <span class="o">-=</span> <span class="mi">1</span>
-        <span class="k">if</span> <span class="n">phase</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">==</span> <span class="n">ASCENT</span> <span class="ow">and</span> <span class="n">lo</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">phase</span><span class="p">[</span><span class="n">lo</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">INFLECTION</span> <span class="ow">and</span> <span class="n">chunk_id</span><span class="p">[</span><span class="n">lo</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">chunk_id</span><span class="p">[</span><span class="n">lo</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">phase</span><span class="p">[</span><span class="n">s</span><span class="p">]</span> <span class="o">==</span> <span class="n">ASCENT</span>
+            <span class="ow">and</span> <span class="n">lo</span> <span class="o">&gt;</span> <span class="mi">0</span>
+            <span class="ow">and</span> <span class="n">phase</span><span class="p">[</span><span class="n">lo</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">INFLECTION</span>
+            <span class="ow">and</span> <span class="n">chunk_id</span><span class="p">[</span><span class="n">lo</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">chunk_id</span><span class="p">[</span><span class="n">lo</span><span class="p">]</span>
+        <span class="p">):</span>
             <span class="n">lo</span> <span class="o">-=</span> <span class="mi">1</span>
 
         <span class="n">hi</span> <span class="o">=</span> <span class="n">e</span>
@@ -647,6 +674,36 @@
         <span class="n">prev_hi</span> <span class="o">=</span> <span class="n">hi</span>
 
     <span class="k">return</span> <span class="n">profile_num</span><span class="p">,</span> <span class="n">cycle</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_fill_from_neighbours</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">classified_index</span><span class="p">):</span>
+    <span class="c1"># Unclassified rows take the labels of their time neighbours where those agree. Returns QC 2/8/9.</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+    <span class="n">order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"stable"</span><span class="p">)</span>
+    <span class="n">time</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"datetime64[ns]"</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"int64"</span><span class="p">)[</span><span class="n">order</span><span class="p">]</span>
+    <span class="n">classified</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">classified_index</span><span class="p">)[</span><span class="n">order</span><span class="p">]</span>
+    <span class="n">has_time</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span><span class="o">.</span><span class="n">notna</span><span class="p">()</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()[</span><span class="n">order</span><span class="p">]</span>
+    <span class="n">label_qc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">classified</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">9</span><span class="p">)</span>
+    <span class="n">pos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">classified</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">pos</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">nxt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n</span><span class="p">),</span> <span class="n">side</span><span class="o">=</span><span class="s2">"left"</span><span class="p">)</span>
+        <span class="n">fill</span> <span class="o">=</span> <span class="o">~</span><span class="n">classified</span> <span class="o">&amp;</span> <span class="n">has_time</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">nxt</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">nxt</span> <span class="o">&lt;</span> <span class="n">pos</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="n">nxt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">nxt</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">pos</span><span class="o">.</span><span class="n">size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">lo</span><span class="p">,</span> <span class="n">hi</span> <span class="o">=</span> <span class="n">pos</span><span class="p">[</span><span class="n">nxt</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span> <span class="n">pos</span><span class="p">[</span><span class="n">nxt</span><span class="p">]</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="p">(</span><span class="n">time</span> <span class="o">-</span> <span class="n">time</span><span class="p">[</span><span class="n">lo</span><span class="p">])</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="n">hi</span><span class="p">]</span> <span class="o">-</span> <span class="n">time</span><span class="p">[</span><span class="n">lo</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">DERIVED_COLUMNS</span><span class="p">:</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)[</span><span class="n">order</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">col</span> <span class="o">==</span> <span class="s2">"GRADIENT"</span><span class="p">:</span>
+                <span class="n">new</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="n">lo</span><span class="p">]</span> <span class="o">+</span> <span class="n">w</span> <span class="o">*</span> <span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="n">hi</span><span class="p">]</span> <span class="o">-</span> <span class="n">v</span><span class="p">[</span><span class="n">lo</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">agree</span> <span class="o">=</span> <span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="n">lo</span><span class="p">]</span> <span class="o">==</span> <span class="n">v</span><span class="p">[</span><span class="n">hi</span><span class="p">])</span> <span class="o">|</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="n">lo</span><span class="p">])</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="n">hi</span><span class="p">]))</span>
+                <span class="n">new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">agree</span><span class="p">,</span> <span class="n">v</span><span class="p">[</span><span class="n">lo</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+            <span class="n">v</span><span class="p">[</span><span class="n">fill</span><span class="p">]</span> <span class="o">=</span> <span class="n">new</span><span class="p">[</span><span class="n">fill</span><span class="p">]</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">order</span><span class="p">,</span> <span class="n">out</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">col</span><span class="p">)]</span> <span class="o">=</span> <span class="n">v</span>
+        <span class="n">label_qc</span><span class="p">[</span><span class="n">fill</span><span class="p">]</span> <span class="o">=</span> <span class="mi">8</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span>
+    <span class="n">result</span><span class="p">[</span><span class="n">order</span><span class="p">]</span> <span class="o">=</span> <span class="n">label_qc</span>
+    <span class="k">return</span> <span class="n">result</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">find_profiles</span><span class="p">(</span>
@@ -668,6 +725,7 @@
         <span class="n">df_raw</span><span class="p">[</span><span class="s2">"PROFILE_DIRECTION"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
         <span class="n">df_raw</span><span class="p">[</span><span class="s2">"CYCLE"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
         <span class="n">df_raw</span><span class="p">[</span><span class="s2">"GRADIENT"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="n">df_raw</span><span class="p">[</span><span class="s2">"LABEL_QC"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">9</span>
         <span class="k">return</span> <span class="n">df_raw</span>
 
     <span class="c1"># astype("int64") on a datetime64 array assumes its native unit; pandas'</span>
@@ -679,15 +737,28 @@
 
     <span class="n">chunk_id</span> <span class="o">=</span> <span class="n">_compute_chunk_id</span><span class="p">(</span><span class="n">time_seconds</span><span class="p">,</span> <span class="n">gap_threshold_minutes</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
     <span class="n">smoothed_velocity</span> <span class="o">=</span> <span class="n">_smoothed_velocity</span><span class="p">(</span>
-        <span class="n">depth</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span> <span class="n">time_seconds</span><span class="p">,</span> <span class="n">chunk_id</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">smoothing_window_seconds</span><span class="si">}</span><span class="s2">s"</span>
+        <span class="n">depth</span><span class="p">,</span>
+        <span class="n">df</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span>
+        <span class="n">time_seconds</span><span class="p">,</span>
+        <span class="n">chunk_id</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">smoothing_window_seconds</span><span class="si">}</span><span class="s2">s"</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="n">phase</span> <span class="o">=</span> <span class="n">_classify_ascent_descent</span><span class="p">(</span>
-        <span class="n">smoothed_velocity</span><span class="p">,</span> <span class="n">time_seconds</span><span class="p">,</span> <span class="n">chunk_id</span><span class="p">,</span> <span class="n">velocity_threshold</span><span class="p">,</span> <span class="n">min_duration_seconds</span>
+        <span class="n">smoothed_velocity</span><span class="p">,</span>
+        <span class="n">time_seconds</span><span class="p">,</span>
+        <span class="n">chunk_id</span><span class="p">,</span>
+        <span class="n">velocity_threshold</span><span class="p">,</span>
+        <span class="n">min_duration_seconds</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">_classify_propelled_surfacing</span><span class="p">(</span>
-        <span class="n">phase</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">time_seconds</span><span class="p">,</span> <span class="n">chunk_id</span><span class="p">,</span>
-        <span class="n">surfacing_depth_threshold</span><span class="p">,</span> <span class="n">min_duration_seconds</span><span class="p">,</span> <span class="n">min_transect_duration_seconds</span><span class="p">,</span>
+        <span class="n">phase</span><span class="p">,</span>
+        <span class="n">depth</span><span class="p">,</span>
+        <span class="n">time_seconds</span><span class="p">,</span>
+        <span class="n">chunk_id</span><span class="p">,</span>
+        <span class="n">surfacing_depth_threshold</span><span class="p">,</span>
+        <span class="n">min_duration_seconds</span><span class="p">,</span>
+        <span class="n">min_transect_duration_seconds</span><span class="p">,</span>
         <span class="n">transect_phase</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">_classify_inflection</span><span class="p">(</span><span class="n">phase</span><span class="p">,</span> <span class="n">depth</span><span class="p">,</span> <span class="n">chunk_id</span><span class="p">,</span> <span class="n">surfacing_depth_threshold</span><span class="p">)</span>
@@ -713,6 +784,7 @@
 
     <span class="n">out</span> <span class="o">=</span> <span class="n">df_raw</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
     <span class="n">out</span><span class="p">[</span><span class="n">DERIVED_COLUMNS</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">out</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+    <span class="n">out</span><span class="p">[</span><span class="s2">"LABEL_QC"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_fill_from_neighbours</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
     <span class="n">out</span><span class="p">[</span><span class="s2">"SCI_PHASE"</span><span class="p">]</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="s2">"SCI_PHASE"</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">UNKNOWN</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
     <span class="n">out</span><span class="p">[</span><span class="s2">"CYCLE"</span><span class="p">]</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="s2">"CYCLE"</span><span class="p">]</span><span class="o">.</span><span class="n">ffill</span><span class="p">()</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">out</span>
@@ -832,7 +904,13 @@
 
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Find Profiles"</span>
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span>
-    <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">,</span> <span class="s2">"PROFILE_DIRECTION"</span><span class="p">,</span> <span class="s2">"PROFILE_GRADIENT"</span><span class="p">,</span> <span class="s2">"CYCLE"</span><span class="p">,</span> <span class="s2">"SCI_PHASE"</span><span class="p">]</span>
+    <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">"PROFILE_NUMBER"</span><span class="p">,</span>
+        <span class="s2">"PROFILE_DIRECTION"</span><span class="p">,</span>
+        <span class="s2">"PROFILE_GRADIENT"</span><span class="p">,</span>
+        <span class="s2">"CYCLE"</span><span class="p">,</span>
+        <span class="s2">"SCI_PHASE"</span><span class="p">,</span>
+    <span class="p">]</span>
     <span class="n">variable_parameters</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"depth_column"</span><span class="p">]</span>
     <span class="n">uses_data_subset</span> <span class="o">=</span> <span class="kc">True</span>
 
@@ -840,63 +918,66 @@
         <span class="s2">"depth_column"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
             <span class="s2">"default"</span><span class="p">:</span> <span class="s2">"PRES"</span><span class="p">,</span>
-            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Depth or pressure column name. Defaults to PRES."</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Depth or pressure column name. Defaults to PRES."</span><span class="p">,</span>
         <span class="p">},</span>
         <span class="s2">"smoothing_window_seconds"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
             <span class="s2">"default"</span><span class="p">:</span> <span class="mi">30</span><span class="p">,</span>
-            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Rolling-mean window (seconds) applied to depth before differentiating."</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Rolling-mean window (seconds) applied to depth before differentiating."</span><span class="p">,</span>
         <span class="p">},</span>
         <span class="s2">"velocity_threshold"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
             <span class="s2">"default"</span><span class="p">:</span> <span class="mf">0.033</span><span class="p">,</span>
-            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Vertical velocity (depth units/s) to trigger ascent/descent classification."</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Vertical velocity (depth units/s) to trigger ascent/descent classification."</span><span class="p">,</span>
         <span class="p">},</span>
         <span class="s2">"min_duration_seconds"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
             <span class="s2">"default"</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
-            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Minimum seconds for an ascent/descent/surfacing run to be trusted."</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Minimum seconds for an ascent/descent/surfacing run to be trusted."</span><span class="p">,</span>
         <span class="p">},</span>
         <span class="s2">"gap_threshold_minutes"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
             <span class="s2">"default"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
-            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Time gap (minutes) that splits the record into disconnected chunks."</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Time gap (minutes) that splits the record into disconnected chunks."</span><span class="p">,</span>
         <span class="p">},</span>
         <span class="s2">"surfacing_depth_threshold"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
             <span class="s2">"default"</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">,</span>
-            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Depth below which a propelled/turn run is classified surfacing instead."</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Depth below which a propelled/turn run is classified surfacing instead."</span><span class="p">,</span>
         <span class="p">},</span>
         <span class="s2">"min_transect_duration_seconds"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
             <span class="s2">"default"</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>
-            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Minimum duration for an unknown run to be classified parking/propelled."</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Minimum duration for an unknown run to be classified parking/propelled."</span><span class="p">,</span>
         <span class="p">},</span>
         <span class="s2">"transect_phase"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
             <span class="s2">"default"</span><span class="p">:</span> <span class="s2">"auto"</span><span class="p">,</span>
             <span class="s2">"options"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"auto"</span><span class="p">,</span> <span class="s2">"parking"</span><span class="p">,</span> <span class="s2">"propelled"</span><span class="p">],</span>
             <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Phase for a long, flat, non-surface unknown stretch. 'auto' detects "</span>
-                            <span class="s2">"'ALR' in the source filename and picks 'propelled', else 'parking'."</span>
+            <span class="s2">"'ALR' in the source filename and picks 'propelled', else 'parking'."</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">"Attempting to designate profile numbers, cycles, directions, and phases"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+            <span class="s2">"Attempting to designate profile numbers, cycles, directions, and phases"</span>
+        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">check_data</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
 
         <span class="c1"># Parameters are resolved from parameter_schema in BaseStep.__init__,</span>
         <span class="c1"># so every declared attribute is guaranteed to be set.</span>
-        <span class="n">depth_col</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth_column</span>
+        <span class="n">depth_col</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">depth_column</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">depth_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Specified depth column '</span><span class="si">{</span><span class="n">depth_col</span><span class="si">}</span><span class="s2">' not found in the dataset."</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Specified depth column '</span><span class="si">{</span><span class="n">depth_col</span><span class="si">}</span><span class="s2">' not found in the dataset."</span>
+            <span class="p">)</span>
 
         <span class="n">cols_to_extract</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"TIME"</span><span class="p">,</span> <span class="n">depth_col</span><span class="p">]</span>
         <span class="n">df_raw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">cols_to_extract</span><span class="p">]</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
 
-        <span class="c1"># Flagged samples must not shape the depth smoothing/velocity, but every</span>
-        <span class="c1"># sample is still labelled: results are merged back on TIME, untouched here.</span>
+        <span class="c1"># Flagged samples must not shape the depth smoothing/velocity; _fill_from_neighbours labels them after.</span>
         <span class="c1"># Interpolated (flag 8) depth is excluded too, on top of the default</span>
         <span class="c1"># calculation_mask (3/4/9): a linearly-interpolated ramp across a real gap</span>
         <span class="c1"># (e.g. surface comms) would otherwise be read as genuine depth movement.</span>
@@ -907,13 +988,18 @@
         <span class="n">df_raw</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="o">~</span><span class="n">calc_mask</span><span class="p">,</span> <span class="n">depth_col</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transect_phase</span> <span class="o">==</span> <span class="s2">"auto"</span><span class="p">:</span>
-            <span class="n">source_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"global_parameters"</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"source_file"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span>
+            <span class="n">source_file</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"global_parameters"</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"source_file"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span>
+            <span class="p">)</span>
             <span class="n">transect_phase</span> <span class="o">=</span> <span class="n">PROPELLED</span> <span class="k">if</span> <span class="s2">"ALR"</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">source_file</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="k">else</span> <span class="n">PARKING</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">transect_phase</span> <span class="o">=</span> <span class="n">PROPELLED</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transect_phase</span> <span class="o">==</span> <span class="s2">"propelled"</span> <span class="k">else</span> <span class="n">PARKING</span>
+            <span class="n">transect_phase</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">PROPELLED</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transect_phase</span> <span class="o">==</span> <span class="s2">"propelled"</span> <span class="k">else</span> <span class="n">PARKING</span>
+            <span class="p">)</span>
 
         <span class="n">df_final</span> <span class="o">=</span> <span class="n">find_profiles</span><span class="p">(</span>
-            <span class="n">df_raw</span><span class="p">,</span> <span class="n">depth_col</span><span class="p">,</span>
+            <span class="n">df_raw</span><span class="p">,</span>
+            <span class="n">depth_col</span><span class="p">,</span>
             <span class="n">smoothing_window_seconds</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">smoothing_window_seconds</span><span class="p">,</span>
             <span class="n">velocity_threshold</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">velocity_threshold</span><span class="p">,</span>
             <span class="n">min_duration_seconds</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">min_duration_seconds</span><span class="p">,</span>
@@ -926,7 +1012,10 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">(</span><span class="n">df_final</span><span class="p">,</span> <span class="n">depth_col</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">,),</span> <span class="n">df_final</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">(</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">,),</span>
+            <span class="n">df_final</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span>
+        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">PROFILE_NUMBER</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">"long_name"</span><span class="p">:</span> <span class="s2">"Derived profile number. NaN indicates no profile."</span><span class="p">,</span>
             <span class="s2">"units"</span><span class="p">:</span> <span class="s2">"None"</span><span class="p">,</span>
@@ -935,7 +1024,10 @@
             <span class="s2">"valid_max"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span>
         <span class="p">}</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_DIRECTION"</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">,),</span> <span class="n">df_final</span><span class="p">[</span><span class="s2">"PROFILE_DIRECTION"</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_DIRECTION"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">(</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">,),</span>
+            <span class="n">df_final</span><span class="p">[</span><span class="s2">"PROFILE_DIRECTION"</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span>
+        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">PROFILE_DIRECTION</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">"long_name"</span><span class="p">:</span> <span class="s2">"Profile direction: -1 ascent, 1 descent, 0 transect (surfacing/propelled), NaN otherwise."</span><span class="p">,</span>
             <span class="s2">"units"</span><span class="p">:</span> <span class="s2">"None"</span><span class="p">,</span>
@@ -944,7 +1036,10 @@
             <span class="s2">"valid_max"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
         <span class="p">}</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_GRADIENT"</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">,),</span> <span class="n">df_final</span><span class="p">[</span><span class="s2">"GRADIENT"</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_GRADIENT"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">(</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">,),</span>
+            <span class="n">df_final</span><span class="p">[</span><span class="s2">"GRADIENT"</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span>
+        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">PROFILE_GRADIENT</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">"long_name"</span><span class="p">:</span> <span class="s2">"Smoothed vertical velocity used for phase classification"</span><span class="p">,</span>
             <span class="s2">"units"</span><span class="p">:</span> <span class="s2">"m/s"</span><span class="p">,</span>
@@ -966,16 +1061,24 @@
             <span class="s2">"valid_min"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
             <span class="s2">"valid_max"</span><span class="p">:</span> <span class="mi">7</span><span class="p">,</span>
             <span class="s2">"flag_values"</span><span class="p">:</span> <span class="s2">"0, 1, 2, 3, 4, 5, 6, 7"</span><span class="p">,</span>
-            <span class="s2">"flag_meanings"</span><span class="p">:</span> <span class="s2">"unknown ascent descent surfacing parking inflection propelled transition"</span>
+            <span class="s2">"flag_meanings"</span><span class="p">:</span> <span class="s2">"unknown ascent descent surfacing parking inflection propelled transition"</span><span class="p">,</span>
         <span class="p">}</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">({</span>
-            <span class="s2">"PROFILE_NUMBER_QC"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"TIME_QC"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">depth_col</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">],</span>
-            <span class="s2">"PROFILE_DIRECTION_QC"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"TIME_QC"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">depth_col</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">],</span>
-            <span class="s2">"PROFILE_GRADIENT_QC"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"TIME_QC"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">depth_col</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">],</span>
-            <span class="s2">"CYCLE_QC"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"TIME_QC"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">depth_col</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">],</span>
-            <span class="s2">"SCI_PHASE_QC"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"TIME_QC"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">depth_col</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]</span>
-        <span class="p">})</span>
+        <span class="c1"># 2 classified from real depth, 8 filled from neighbouring rows, 9 neither.</span>
+        <span class="n">label_qc</span> <span class="o">=</span> <span class="n">df_final</span><span class="p">[</span><span class="s2">"LABEL_QC"</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="p">[</span>
+            <span class="s2">"PROFILE_NUMBER"</span><span class="p">,</span>
+            <span class="s2">"PROFILE_DIRECTION"</span><span class="p">,</span>
+            <span class="s2">"PROFILE_GRADIENT"</span><span class="p">,</span>
+            <span class="s2">"CYCLE"</span><span class="p">,</span>
+            <span class="s2">"SCI_PHASE"</span><span class="p">,</span>
+        <span class="p">]:</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+            <span class="n">missing</span> <span class="o">=</span> <span class="n">values</span> <span class="o">==</span> <span class="n">UNKNOWN</span> <span class="k">if</span> <span class="n">var</span> <span class="o">==</span> <span class="s2">"SCI_PHASE"</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="p">(</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">,),</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">missing</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="n">label_qc</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">),</span>
+            <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
@@ -994,19 +1097,36 @@
             <span class="n">t_data</span> <span class="o">=</span> <span class="n">mapped_df</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">][</span><span class="n">mask</span><span class="p">]</span> <span class="k">if</span> <span class="n">n_points</span> <span class="k">else</span> <span class="p">[]</span>
             <span class="n">depth_data</span> <span class="o">=</span> <span class="n">mapped_df</span><span class="p">[</span><span class="n">depth_col</span><span class="p">][</span><span class="n">mask</span><span class="p">]</span> <span class="k">if</span> <span class="n">n_points</span> <span class="k">else</span> <span class="p">[]</span>
             <span class="n">lbl</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">PHASE_NAMES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">p_val</span><span class="p">,</span><span class="w"> </span><span class="sa">f</span><span class="s1">'Phase </span><span class="si">{</span><span class="n">p_val</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span><span class="si">}</span><span class="s2"> (n=</span><span class="si">{</span><span class="n">n_points</span><span class="si">}</span><span class="s2">)"</span>
-            <span class="n">fig_spec</span><span class="o">.</span><span class="n">points</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">t_data</span><span class="p">,</span> <span class="n">depth_data</span><span class="p">,</span>
-                            <span class="n">color</span><span class="o">=</span><span class="n">PHASE_COLOURS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">p_val</span><span class="p">,</span> <span class="s2">"black"</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="n">lbl</span><span class="p">)</span>
+            <span class="n">fig_spec</span><span class="o">.</span><span class="n">points</span><span class="p">(</span>
+                <span class="n">ax1</span><span class="p">,</span>
+                <span class="n">t_data</span><span class="p">,</span>
+                <span class="n">depth_data</span><span class="p">,</span>
+                <span class="n">color</span><span class="o">=</span><span class="n">PHASE_COLOURS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">p_val</span><span class="p">,</span> <span class="s2">"black"</span><span class="p">),</span>
+                <span class="n">label</span><span class="o">=</span><span class="n">lbl</span><span class="p">,</span>
+            <span class="p">)</span>
 
         <span class="n">ax1</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
-        <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"High Resolution Phase Mapping"</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="s2">"Pressure/Depth"</span><span class="p">)</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span>
+            <span class="n">ax1</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"High Resolution Phase Mapping"</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="s2">"Pressure/Depth"</span>
+        <span class="p">)</span>
         <span class="n">fig_spec</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">ax1</span><span class="p">)</span>
 
         <span class="c1"># Panel 2: derived profile &amp; cycle numbering.</span>
-        <span class="n">fig_spec</span><span class="o">.</span><span class="n">points</span><span class="p">(</span><span class="n">ax2</span><span class="p">,</span> <span class="n">mapped_df</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">],</span> <span class="n">mapped_df</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">],</span>
-                        <span class="n">color</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">CATEGORY</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Profile Number"</span><span class="p">)</span>
-        <span class="n">fig_spec</span><span class="o">.</span><span class="n">points</span><span class="p">(</span><span class="n">ax2</span><span class="p">,</span> <span class="n">mapped_df</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">],</span> <span class="n">mapped_df</span><span class="p">[</span><span class="s2">"CYCLE"</span><span class="p">],</span>
-                        <span class="n">color</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">CATEGORY</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Cycle Number"</span><span class="p">)</span>
-        <span class="n">fig_spec</span><span class="o">.</span><span class="n">date_axis</span><span class="p">(</span><span class="n">ax2</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s2">"x"</span><span class="p">)</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">points</span><span class="p">(</span>
+            <span class="n">ax2</span><span class="p">,</span>
+            <span class="n">mapped_df</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">],</span>
+            <span class="n">mapped_df</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">],</span>
+            <span class="n">color</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">CATEGORY</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">label</span><span class="o">=</span><span class="s2">"Profile Number"</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">points</span><span class="p">(</span>
+            <span class="n">ax2</span><span class="p">,</span>
+            <span class="n">mapped_df</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">],</span>
+            <span class="n">mapped_df</span><span class="p">[</span><span class="s2">"CYCLE"</span><span class="p">],</span>
+            <span class="n">color</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">CATEGORY</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+            <span class="n">label</span><span class="o">=</span><span class="s2">"Cycle Number"</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">date_axis</span><span class="p">(</span><span class="n">ax2</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s2">"x"</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">mapped_df</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
         <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">ax2</span><span class="p">,</span> <span class="n">xlabel</span><span class="o">=</span><span class="s2">"Time"</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="s2">"ID / Cycle"</span><span class="p">)</span>
         <span class="n">fig_spec</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">ax2</span><span class="p">)</span>
 

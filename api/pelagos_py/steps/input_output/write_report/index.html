@@ -56,7 +56,7 @@
     <link rel="icon" href="../../../../../_static/NOC_logo.svg"/>
     <link rel="index" title="Index" href="../../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../../search.html" />
-    <link rel="next" title="pelagos_py.steps.input_output.write_report_python" href="../write_report_python/index.html" />
+    <link rel="next" title="pelagos_py.steps.processing" href="../../processing/index.html" />
     <link rel="prev" title="pelagos_py.steps.input_output.prepare_og1" href="../prepare_og1/index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -366,7 +366,6 @@
 <li class="toctree-l3"><a class="reference internal" href="../load_data/index.html">pelagos_py.steps.input_output.load_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../prepare_og1/index.html">pelagos_py.steps.input_output.prepare_og1</a></li>
 <li class="toctree-l3 current active"><a class="current reference internal" href="#">pelagos_py.steps.input_output.write_report</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../write_report_python/index.html">pelagos_py.steps.input_output.write_report_python</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../processing/index.html">pelagos_py.steps.processing</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -394,6 +393,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/spike_qc/index.html">pelagos_py.steps.quality_control.spike_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/stuck_value_qc/index.html">pelagos_py.steps.quality_control.stuck_value_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/valid_profile_qc/index.html">pelagos_py.steps.quality_control.valid_profile_qc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../quality_control/visual_qc/index.html">pelagos_py.steps.quality_control.visual_qc</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../templates/index.html">pelagos_py.steps.templates</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -488,270 +488,110 @@
   <section id="module-pelagos_py.steps.input_output.write_report">
 <span id="pelagos-py-steps-input-output-write-report"></span><h1>pelagos_py.steps.input_output.write_report<a class="headerlink" href="#module-pelagos_py.steps.input_output.write_report" title="Link to this heading">#</a></h1>
 <dl class="py function">
-<dt class="sig sig-object py" id="pelagos_py.steps.input_output.write_report.current_info">
-<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.input_output.write_report.</span></span><span class="sig-name descname"><span class="pre">current_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><span class="pre">dict</span></a></span></span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/write_report.html#current_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.write_report.current_info" title="Link to this definition">#</a></dt>
-<dd><p>Returns current operator information from when the report is being generated.</p>
+<dt class="sig sig-object py" id="pelagos_py.steps.input_output.write_report.qc_status">
+<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.input_output.write_report.</span></span><span class="sig-name descname"><span class="pre">qc_status</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">flag_counts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><span class="pre">dict</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/write_report.html#qc_status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.write_report.qc_status" title="Link to this definition">#</a></dt>
+<dd><p>Return the stoplight status and whether flag 8 occurred.</p>
+<p>Any variable can include a flag 8 - it’s handy to denote this differently than by color.</p>
+<p>Argo flags 0, 8, and 9 can’t be considered as “good” or “bad” and therefore should be excluded from the % good spectrum.</p>
+<p>This spectrum is (arbitrarily) assigned as follows:
+* Grey - no evaluated points remain after excluding flags 0, 8, and 9.
+* Green - all evaluated points are good or probably good (flags 1, 2).
+* Yellow - up to <cite>yellow_pts</cite> evaluated points are bad or have another non-good flag, with fewer than <cite>orange_per</cite> bad.
+* Orange - more than <cite>yellow_pts</cite> evaluated points are bad or have another non-good flag, with fewer than <cite>orange_per</cite> bad.
+* Red - at least <cite>orange_per</cite> of evaluated points are bad, but not all are bad.
+* Black - all evaluated points are bad (flags 3, 4).</p>
+<p>In the future, these flag tolerances could be an optional kwarg that the user could specify in their configuration yaml.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="pelagos_py.steps.input_output.write_report.write_conf_py">
-<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.input_output.write_report.</span></span><span class="sig-name descname"><span class="pre">write_conf_py</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">project</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Pipeline</span> <span class="pre">Report'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">author</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Unknown'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">master_doc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'index'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subtitle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/write_report.html#write_conf_py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.write_report.write_conf_py" title="Link to this definition">#</a></dt>
-<dd><p>Write a minimal Sphinx conf.py suitable for PDF builds.</p>
-<p>To be passed into Sphinx.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>source_dir</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> or </em><em>Path</em>) – Directory containing the .rst file(s), where this will be saved.</p></li>
-<li><p><strong>project</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Project title.</p></li>
-<li><p><strong>author</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Author name.</p></li>
-<li><p><strong>master_doc</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Root rst file (without .rst).</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pelagos_py.steps.input_output.write_report.run_sphinx">
-<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.input_output.write_report.</span></span><span class="sig-name descname"><span class="pre">run_sphinx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source_dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">build_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/write_report.html#run_sphinx"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.write_report.run_sphinx" title="Link to this definition">#</a></dt>
-<dd><p>Build a PDF from a Sphinx source directory using the latexpdf builder.</p>
-<p>This step requires Sphinx binaries to be installed and usable on the current workstation.
-Requires a conf.py to be located in the source directory.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>source_dir</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> or </em><em>Path</em>) – Directory containing the .rst and conf.py files.</p></li>
-<li><p><strong>build_dir</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> or </em><em>Path</em>) – Directory where Sphinx output can be placed. Defaults to source_dir/_build.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pelagos_py.steps.input_output.write_report.build_qc_dict">
-<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.input_output.write_report.</span></span><span class="sig-name descname"><span class="pre">build_qc_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><span class="pre">dict</span></a></span></span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/write_report.html#build_qc_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.write_report.build_qc_dict" title="Link to this definition">#</a></dt>
-<dd><p>Return a dictionary of all QC variable names and their corresponding QC attributes.</p>
-<p>Can be expanded in the future if additional attributes related to testing are added.
-Tests are ID’d using <cite>_flag_cts</cite> suffix in variable test parameters</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>data</strong> (<em>Xarray DataSet</em>) – The top level data containing all the relevant QC variables.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><ul>
-<li><p><strong>qc_dict</strong> (<em>dict</em>) – Nested dictionaries of QC variables with test names and results.</p>
-<p>Structure:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-    <span class="s2">"VAR_QC"</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">"qc_name"</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">"params"</span><span class="p">:</span> <span class="p">{</span><span class="o">...</span><span class="p">},</span>
-            <span class="s2">"flag_counts"</span><span class="p">:</span> <span class="p">{</span><span class="o">...</span><span class="p">},</span>
-            <span class="s2">"stats"</span><span class="p">:</span> <span class="p">{</span><span class="o">...</span><span class="p">},</span>
-        <span class="p">},</span>
-        <span class="s2">"qc_name_2"</span><span class="p">:</span> <span class="p">{</span>
-            <span class="o">...</span>
-        <span class="p">},</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-</pre></div>
-</div>
-</li>
-<li><p><strong>TODO</strong> (<em>Move to utils? Does it belong here?</em>)</p></li>
-</ul>
-</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pelagos_py.steps.input_output.write_report.flatten_qc_dict">
-<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.input_output.write_report.</span></span><span class="sig-name descname"><span class="pre">flatten_qc_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">qc_dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><span class="pre">dict</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a></span></span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/write_report.html#flatten_qc_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.write_report.flatten_qc_dict" title="Link to this definition">#</a></dt>
-<dd><p>Flatten QC dictionary into list of table rows.</p>
-<p>Intended for use in report metrics (RstCloth).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>qc_dict</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Dictionary of QC results.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><p><strong>rows</strong> –</p>
-<p>A list of rows suitable for tabular display. Each row is a list:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">qc_var</span><span class="p">,</span> <span class="n">qc_name</span><span class="p">,</span> <span class="n">flag</span><span class="p">,</span> <span class="n">formatted_count</span><span class="p">]</span>
-</pre></div>
-</div>
-<ul class="simple">
-<li><p><cite>qc_var</cite> : str, the QC variable name</p></li>
-<li><p><cite>qc_name</cite> : str, the name of the QC test</p></li>
-<li><p><cite>flag</cite> : str, QC flag value</p></li>
-<li><p><cite>formatted_count</cite> : str, count formatted with thousands separator</p></li>
-</ul>
-</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a> of <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)">list</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pelagos_py.steps.input_output.write_report.run_info_page">
-<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.input_output.write_report.</span></span><span class="sig-name descname"><span class="pre">run_info_page</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params_dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><span class="pre">dict</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">glatters</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><span class="pre">dict</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/write_report.html#run_info_page"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.write_report.run_info_page" title="Link to this definition">#</a></dt>
-<dd><p>Writes a page dedicated to pipeline run information.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>rs</strong> (<em>RstCloth</em>) – Active RstCloth stream to which the page is written.</p></li>
-<li><p><strong>params_dict</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Dictionary of global pipeline parameters.</p></li>
-<li><p><strong>glatters</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><em>dict</em></a>) – Dictionary describing the glider and mission. OG1 includes “platform_vocabulary” for consistency.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pelagos_py.steps.input_output.write_report.add_log">
-<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.input_output.write_report.</span></span><span class="sig-name descname"><span class="pre">add_log</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logfile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ncols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/write_report.html#add_log"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.write_report.add_log" title="Link to this definition">#</a></dt>
-<dd><p>Add and format the logfile as a table.</p>
-<p>Note: Requires a designated log_file be initialized in the global pipeline configuration parameters.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pelagos_py.steps.input_output.write_report.add_cc">
-<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.input_output.write_report.</span></span><span class="sig-name descname"><span class="pre">add_cc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ccfile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/write_report.html#add_cc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.write_report.add_cc" title="Link to this definition">#</a></dt>
-<dd><p>Add the text of the compliance checker step from ‘Format Checker’.</p>
+<dt class="sig sig-object py" id="pelagos_py.steps.input_output.write_report.build_qc_stoplight_summary">
+<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.input_output.write_report.</span></span><span class="sig-name descname"><span class="pre">build_qc_stoplight_summary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">qc_dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><span class="pre">dict</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_points</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/write_report.html#build_qc_stoplight_summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.write_report.build_qc_stoplight_summary" title="Link to this definition">#</a></dt>
+<dd><p>Build a flaxible matrix of QC methods and variables</p>
+<p>For each method picked out of the qc_dict, add that to the columns in <cite>tests</cite>.
+For each variable, add that to the rows. Then assess the contents of QC dict for each
+column in the row with qc_status to assign the stoplight for the cell.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="pelagos_py.steps.input_output.write_report.qc_section">
-<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.input_output.write_report.</span></span><span class="sig-name descname"><span class="pre">qc_section</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/write_report.html#qc_section"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.write_report.qc_section" title="Link to this definition">#</a></dt>
-<dd><p>Wrapper for the QC section.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>doc</strong> (<em>RstCloth object</em>) – The active RstCloth stream to be written to</p></li>
-<li><p><strong>data</strong> (<em>xarray.core.dataset.Dataset</em>) – The entire dataset, including attributes</p></li>
-</ul>
-</dd>
-</dl>
+<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.input_output.write_report.</span></span><span class="sig-name descname"><span class="pre">qc_section</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pdf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ReportPDF</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/write_report.html#qc_section"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.write_report.qc_section" title="Link to this definition">#</a></dt>
+<dd><p>Write the Quality Control tables.</p>
+<p>This consists of two tables:
+* A stoplight summary table, highlighting which tests were ran on which QC variables and how many were successful.
+* A row-by-row variable summary, listing the number of each flag that were determined from the individual tests.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="pelagos_py.steps.input_output.write_report.img_rst">
-<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.input_output.write_report.</span></span><span class="sig-name descname"><span class="pre">img_rst</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">fields</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/write_report.html#img_rst"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.write_report.img_rst" title="Link to this definition">#</a></dt>
-<dd><p>Inserts image information into the .rst using <cite>directive</cite>.</p>
-<p>See rst directives for image information (<a class="reference external" href="https://docutils.sourceforge.io/docs/ref/rst/directives.html#images">https://docutils.sourceforge.io/docs/ref/rst/directives.html#images</a>)
-See RstCloth for info about <cite>directive</cite> (<a class="reference external" href="https://rstcloth.readthedocs.io/en/latest/rstcloth.html">https://rstcloth.readthedocs.io/en/latest/rstcloth.html</a>)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>doc</strong> (<em>RstCloth object</em>) – The active RstCloth stream to be written to</p></li>
-<li><p><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – The path or filename</p></li>
-<li><p><strong>fields</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><em>tuple</em></a>) – Image parameters to be written below the directive</p></li>
-</ul>
-</dd>
-</dl>
-<div class="admonition-example admonition">
-<p class="admonition-title">Example</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">img_rst</span><span class="p">(</span><span class="n">doc</span><span class="p">,</span>
-        <span class="s2">"../examples/data/OG1/testing/fig.png"</span><span class="p">,</span>
-        <span class="n">fields</span><span class="o">=</span><span class="p">[(</span><span class="s2">"height"</span><span class="p">,</span><span class="s2">"100px"</span><span class="p">),(</span><span class="s2">"width"</span><span class="p">,</span><span class="s2">"100px"</span><span class="p">)])</span>
-</pre></div>
-</div>
-<p>would write out:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">..</span> <span class="n">image</span><span class="p">::</span> <span class="n">fig</span><span class="o">.*</span>
-   <span class="p">:</span><span class="n">height</span><span class="p">:</span> <span class="mi">100</span><span class="n">px</span>
-   <span class="p">:</span><span class="n">width</span><span class="p">:</span> <span class="mi">100</span><span class="n">px</span>
-</pre></div>
-</div>
-</div>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pelagos_py.steps.input_output.write_report.basic_geo">
-<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.input_output.write_report.</span></span><span class="sig-name descname"><span class="pre">basic_geo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">g_extent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ext</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outdir</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/write_report.html#basic_geo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.write_report.basic_geo" title="Link to this definition">#</a></dt>
-<dd><p>Creates a simple geographic plot using the glider LONGITUDE and LATITUDE.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pelagos_py.steps.input_output.write_report.inset_geo">
-<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.input_output.write_report.</span></span><span class="sig-name descname"><span class="pre">inset_geo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'./'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">g_extent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[7,</span> <span class="pre">25,</span> <span class="pre">54,</span> <span class="pre">65]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'110m'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ext</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'.png'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/write_report.html#inset_geo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.write_report.inset_geo" title="Link to this definition">#</a></dt>
-<dd><p>Creates an inset geographic of two plots for additional positional awareness.</p>
-<p>Unlike basic_geo(), this function will create an inset to make it clearer
-where the glider is operating.</p>
-<p>If the chart looks chunky, consider increasing the resolution in the <cite>scale</cite> arg.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>doc</strong> (<em>RstCloth object</em>) – The active RstCloth stream to be written to</p></li>
-<li><p><strong>data</strong> (<em>xarray.core.dataset.Dataset</em>) – The entire dataset, including attributes</p></li>
-<li><p><strong>outdir</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – The path to return figures to. Defaults to current directory.</p></li>
-<li><p><strong>g_extent</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a>) – Geographic extent for cartopy geographic plot ([lon1, lon2, lat1, lat2]). Defaults to Baltic Sea.</p></li>
-<li><p><strong>scale</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Resolution for cartopy to use when adding elements (“10m”, “50m”, “110m”)</p></li>
-<li><p><strong>ext</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Image filetype extension (.png, .svg, etc.)</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pelagos_py.steps.input_output.write_report.qc_hist">
-<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.input_output.write_report.</span></span><span class="sig-name descname"><span class="pre">qc_hist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">var</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">xlims</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[-0.6,</span> <span class="pre">9.6]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hislim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">range(10)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ext</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.png'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/write_report.html#qc_hist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.write_report.qc_hist" title="Link to this definition">#</a></dt>
-<dd><p>Create quick quality control histogram figure.</p>
-<p>Left axis:  Quick plot of QC variable’s parent
-Right axis: Bins of each flag type, labeled with # of points</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>doc</strong> (<em>RstCloth object</em>) – The active RstCloth stream to be written to</p></li>
-<li><p><strong>data</strong> (<em>xarray.core.dataset.Dataset</em>) – The entire dataset, including attributes</p></li>
-<li><p><strong>var</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – The QC variable as listed in <cite>data</cite></p></li>
-<li><p><strong>ext</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Image filetype extension (.png, .svg, etc.)</p></li>
-<li><p><strong>hislim</strong> (<em>array-like</em>) – All potential flags of the selected schema (default Argo = 0 to 9, 10 total)</p></li>
-<li><p><strong>bins</strong> (<em>array-like</em>) – The sequence of bin edges for collection, matching the dimension of hislim</p></li>
-<li><p><strong>xlims</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a>) – Histogram axis bounds. Defaults to Argo (10 flags) with 0.1 padding on each side</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="pelagos_py.steps.input_output.write_report.make_plots">
-<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.input_output.write_report.</span></span><span class="sig-name descname"><span class="pre">make_plots</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">doc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">extent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[7,</span> <span class="pre">25,</span> <span class="pre">54,</span> <span class="pre">65]</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/write_report.html#make_plots"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.write_report.make_plots" title="Link to this definition">#</a></dt>
-<dd><p>Wrapper for plotting glider QC variables quickly.</p>
-<p>There are millions of points per variable, which xarray can plot very quickly
-in specific ways. Here, geographic and QC histograms are explored.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>doc</strong> (<em>RstCloth object</em>) – The active RstCloth stream to be written to</p></li>
-<li><p><strong>data</strong> (<em>xarray.core.dataset.Dataset</em>) – The entire dataset, including attributes</p></li>
-<li><p><strong>outdir</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – The path to return figures to</p></li>
-<li><p><strong>ext</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Image filetype extension (.png, .svg, etc.)</p></li>
-<li><p><strong>g_extent</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a>) – Geographic extent for cartopy geographic plot. Defaults to Baltic Sea.</p></li>
-<li><p><strong>TODO</strong> (Define long-term storage for this. Is <cite>diagnostics</cite> the right place?)</p></li>
-</ul>
-</dd>
-</dl>
+<dt class="sig sig-object py" id="pelagos_py.steps.input_output.write_report.glidertest_section">
+<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.input_output.write_report.</span></span><span class="sig-name descname"><span class="pre">glidertest_section</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pdf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ReportPDF</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">xarray.Dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">log</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">print</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_warn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">print</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/write_report.html#glidertest_section"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.write_report.glidertest_section" title="Link to this definition">#</a></dt>
+<dd><p>Runs plotting routines from <cite>glidertest</cite> and inserts them into the document.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="pelagos_py.steps.input_output.write_report.WriteDataReport">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.input_output.write_report.</span></span><span class="sig-name descname"><span class="pre">WriteDataReport</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/write_report.html#WriteDataReport"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.write_report.WriteDataReport" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="../../base_step/index.html#pelagos_py.steps.base_step.BaseStep" title="pelagos_py.steps.base_step.BaseStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pelagos_py.steps.base_step.BaseStep</span></code></a></p>
-<p>Writes a report summarizing the generic plots and statistics of the data.</p>
-<p>Base template:
-* Title page (automatically handled by sphinx)
-* Quality control summary
-* Basic plots
-* Run metadata and pipeline parameters
-* Logfile</p>
+<p>Writes a PDF report summarising the data, plots and QC at the end of a pipeline.</p>
+<p>The report is built directly with <a class="reference external" href="https://py-pdf.github.io/fpdf2/">fpdf2</a>, so no
+external toolchain (LaTeX, Sphinx) is required to produce the PDF. It opens with a
+title page (run provenance, pipeline name/description and a glider track map) and
+then writes a sequence of sections, each of which can be toggled off:</p>
+<ul class="simple">
+<li><p><strong>Cross-section plots</strong> — the headline view: PRES vs TIME panels, each coloured by
+a variable (temperature, salinity, density, oxygen, chlorophyll, backscatter).</p></li>
+<li><p><strong>Format Checker results</strong> — compliance-checker findings (only when the Format
+Checker step ran).</p></li>
+<li><p><strong>Configuration</strong> — the run configuration as paste-ready YAML.</p></li>
+<li><p><strong>Step diagnostics</strong> — the diagnostic plot(s) captured for each step.</p></li>
+<li><p><strong>Quality control summary</strong> — a table of QC test flag counts.</p></li>
+<li><p><strong>QC plots</strong> — a histogram per QC variable.</p></li>
+<li><p><strong>Logfile</strong> — the run log, terminal-styled.</p></li>
+<li><p><strong>Index</strong> — contents, QC flag glossary, variable index and glider information.</p></li>
+</ul>
+<p><strong>All parameters are optional.</strong> With no configuration a full report is written,
+named after the input file (see the first example below).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>title</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Name of the report (on title page and filename)</p></li>
-<li><p><strong>output_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Directory to write the report to (must end with a “/”)</p></li>
-<li><p><strong>build</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a>) – Whether to run Sphinx to build the PDF after writing the .rst and conf.py files</p></li>
+<li><p><strong>title</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><em>optional</em>) – Report title, shown on the title page and running header. Defaults to a title
+derived from the input filename.</p></li>
+<li><p><strong>fname</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><em>optional</em>) – Output <code class="docutils literal notranslate"><span class="pre">.pdf</span></code> filename. Defaults to the input filename core; a <code class="docutils literal notranslate"><span class="pre">.pdf</span></code>
+extension is appended if missing.</p></li>
+<li><p><strong>delete_figures</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>optional</em>) – When <code class="docutils literal notranslate"><span class="pre">True</span></code> (default) the plot images are written to a temporary folder and
+removed once the PDF is built. When <code class="docutils literal notranslate"><span class="pre">False</span></code> they are kept in a uniquely named
+folder beside the report so successive runs don’t overwrite each other.</p></li>
+<li><p><strong>show_cross_section_plots</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>optional</em>) – Include the cross-section plots section. Default <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>show_format_check</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>optional</em>) – Include the Format Checker results (when that step ran). Default <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>show_configuration</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>optional</em>) – Include the run configuration (YAML) section. Default <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>show_diagnostic_plots</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>optional</em>) – Include the per-step diagnostic plots section. Default <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>show_qc_summary</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>optional</em>) – Include the quality control summary table. Default <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>show_qc_plots</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>optional</em>) – Include the QC histogram plots section. Default <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>show_logs</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>optional</em>) – Include the logfile section. Default <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>show_index</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>optional</em>) – Include the closing index section. Default <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>logo_path</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><em>optional</em>) – Path to a logo image for the title page. Defaults to the NOC logo.</p></li>
 </ul>
 </dd>
 </dl>
+<div class="admonition-examples admonition">
+<p class="admonition-title">Examples</p>
+<p>The defaults write a full report, so the simplest valid configuration sets no
+parameters at all:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Write Data Report</span>
+</pre></div>
+</div>
+<p>Any subset of parameters may be supplied. The block below names the report, keeps
+the generated figures beside it, and omits the logfile section:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Write Data Report</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s">"SG579</span><span class="nv"> </span><span class="s">Mission</span><span class="nv"> </span><span class="s">Report"</span>
+<span class="w">      </span><span class="nt">fname</span><span class="p">:</span><span class="w"> </span><span class="s">"sg579_report.pdf"</span>
+<span class="w">      </span><span class="nt">delete_figures</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">      </span><span class="nt">show_logs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</pre></div>
+</div>
+</div>
 </dd></dl>
 
 </section>
@@ -779,20 +619,10 @@ in specific ways. Here, geographic and QC histograms are explored.</p>
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.write_report.current_info"><code class="docutils literal notranslate"><span class="pre">current_info()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.write_report.write_conf_py"><code class="docutils literal notranslate"><span class="pre">write_conf_py()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.write_report.run_sphinx"><code class="docutils literal notranslate"><span class="pre">run_sphinx()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.write_report.build_qc_dict"><code class="docutils literal notranslate"><span class="pre">build_qc_dict()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.write_report.flatten_qc_dict"><code class="docutils literal notranslate"><span class="pre">flatten_qc_dict()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.write_report.run_info_page"><code class="docutils literal notranslate"><span class="pre">run_info_page()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.write_report.add_log"><code class="docutils literal notranslate"><span class="pre">add_log()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.write_report.add_cc"><code class="docutils literal notranslate"><span class="pre">add_cc()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.write_report.qc_status"><code class="docutils literal notranslate"><span class="pre">qc_status()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.write_report.build_qc_stoplight_summary"><code class="docutils literal notranslate"><span class="pre">build_qc_stoplight_summary()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.write_report.qc_section"><code class="docutils literal notranslate"><span class="pre">qc_section()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.write_report.img_rst"><code class="docutils literal notranslate"><span class="pre">img_rst()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.write_report.basic_geo"><code class="docutils literal notranslate"><span class="pre">basic_geo()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.write_report.inset_geo"><code class="docutils literal notranslate"><span class="pre">inset_geo()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.write_report.qc_hist"><code class="docutils literal notranslate"><span class="pre">qc_hist()</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.write_report.make_plots"><code class="docutils literal notranslate"><span class="pre">make_plots()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.write_report.glidertest_section"><code class="docutils literal notranslate"><span class="pre">glidertest_section()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.write_report.WriteDataReport"><code class="docutils literal notranslate"><span class="pre">WriteDataReport</span></code></a></li>
 </ul>
   </nav></div>

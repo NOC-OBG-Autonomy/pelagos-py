@@ -50,59 +50,7 @@
   "api/pelagos_py/steps/input_output/index": [],
   "api/pelagos_py/steps/input_output/load_data/index": [],
   "api/pelagos_py/steps/input_output/prepare_og1/index": [],
-  "api/pelagos_py/steps/input_output/write_report/index": [
-    {
-      "source": "{\n    \"VAR_QC\": {\n        \"qc_name\": {\n            \"params\": {...},\n            \"flag_counts\": {...},\n            \"stats\": {...},\n        },\n        \"qc_name_2\": {\n            ...\n        },\n    }\n}",
-      "names": [],
-      "example": {
-        "document": "api/pelagos_py/steps/input_output/write_report/index",
-        "ref_id": "module-pelagos_py.steps.input_output.write_report",
-        "headings": [
-          "pelagos_py.steps.input_output.write_report"
-        ]
-      },
-      "doc_lineno": 107
-    },
-    {
-      "source": "[qc_var, qc_name, flag, formatted_count]",
-      "names": [],
-      "example": {
-        "document": "api/pelagos_py/steps/input_output/write_report/index",
-        "ref_id": "module-pelagos_py.steps.input_output.write_report",
-        "headings": [
-          "pelagos_py.steps.input_output.write_report"
-        ]
-      },
-      "doc_lineno": 152
-    },
-    {
-      "source": "img_rst(doc,\n        \"../examples/data/OG1/testing/fig.png\",\n        fields=[(\"height\",\"100px\"),(\"width\",\"100px\")])",
-      "names": [],
-      "example": {
-        "document": "api/pelagos_py/steps/input_output/write_report/index",
-        "ref_id": "module-pelagos_py.steps.input_output.write_report",
-        "headings": [
-          "pelagos_py.steps.input_output.write_report",
-          "Example"
-        ]
-      },
-      "doc_lineno": 299
-    },
-    {
-      "source": ".. image:: fig.*\n   :height: 100px\n   :width: 100px",
-      "names": [],
-      "example": {
-        "document": "api/pelagos_py/steps/input_output/write_report/index",
-        "ref_id": "module-pelagos_py.steps.input_output.write_report",
-        "headings": [
-          "pelagos_py.steps.input_output.write_report",
-          "Example"
-        ]
-      },
-      "doc_lineno": 305
-    }
-  ],
-  "api/pelagos_py/steps/input_output/write_report_python/index": [],
+  "api/pelagos_py/steps/input_output/write_report/index": [],
   "api/pelagos_py/steps/processing/bbp/index": [
     {
       "source": ".. admonition:: Example\n",
@@ -117,7 +65,7 @@
       "doc_lineno": null
     },
     {
-      "source": "- name: \"BBP from Beta\"\n  parameters:\n    apply_to: \"BBP700\"\n    output_as: \"BBP700\"\n    theta: 124\n    xfactor: 1.076\n  diagnostics: false",
+      "source": "- name: \"BBP from Beta\"\n  parameters:\n    apply_to: \"BETA_BACKSCATTERING700\"\n    output_as: \"BBP700\"\n    theta: 124\n    xfactor: 1.076\n  diagnostics: false",
       "names": [],
       "example": {
         "document": "api/pelagos_py/steps/processing/bbp/index",
@@ -141,7 +89,7 @@
       "doc_lineno": null
     },
     {
-      "source": "- name: \"Isolate BBP Spikes\"\n  parameters:\n    apply_to: \"BBP700\"\n    window_size: 50\n    method: \"median\"\n  diagnostics: false",
+      "source": "- name: \"Isolate BBP Spikes\"\n  parameters:\n    apply_to: \"BBP700\"\n    window_size: 7\n    method: \"median\"\n  diagnostics: false",
       "names": [],
       "example": {
         "document": "api/pelagos_py/steps/processing/bbp/index",
@@ -150,7 +98,7 @@
           "pelagos_py.steps.processing.bbp"
         ]
       },
-      "doc_lineno": 100
+      "doc_lineno": 150
     }
   ],
   "api/pelagos_py/steps/processing/chla_quenching/index": [
@@ -188,7 +136,7 @@
   "api/pelagos_py/steps/processing/index": [],
   "api/pelagos_py/steps/processing/interpolate_data/index": [
     {
-      "source": "- name: \"Interpolate Data\"\n  parameters:\n    max_interp_time: 5.0\n    qc_handling_settings: {\n      flag_filter_settings: {\n        \"PRES\": [3, 4, 9],\n        \"LATITUDE\": [3, 4, 9],\n        \"LONGITUDE\": [3, 4, 9]\n      },\n      reconstruction_behaviour: \"replace\",\n      flag_mapping: { 3: 8, 4: 8, 9: 8 }\n    }\n  diagnostics: false",
+      "source": "- name: \"Interpolate Data\"\n  parameters:\n    variables:  # per variable, the QC flags treated as gaps to fill\n      PRES: [3, 4, 9]\n      LATITUDE: [3, 4, 9]\n      LONGITUDE: [3, 4, 9]\n    max_interp_time: 5.0\n  diagnostics: false",
       "names": [],
       "example": {
         "document": "api/pelagos_py/steps/processing/interpolate_data/index",
@@ -298,7 +246,7 @@
           "pelagos_py.steps.processing.oxygen"
         ]
       },
-      "doc_lineno": 243
+      "doc_lineno": 269
     },
     {
       "source": ".. admonition:: Example\n",
@@ -322,7 +270,7 @@
           "pelagos_py.steps.processing.oxygen"
         ]
       },
-      "doc_lineno": 319
+      "doc_lineno": 345
     },
     {
       "source": ".. admonition:: Example\n",
@@ -346,7 +294,7 @@
           "pelagos_py.steps.processing.oxygen"
         ]
       },
-      "doc_lineno": 377
+      "doc_lineno": 403
     },
     {
       "source": ".. admonition:: Example\n",
@@ -361,7 +309,7 @@
       "doc_lineno": null
     },
     {
-      "source": "- name: \"Molar DOXY Salinity Correction\"\n  parameters:\n    # <MANDATORY>\n    salinity_name: \"PRAC_SALINITY\"\n    temperature_name: \"TEMP\"\n    # <OPTIONAL>\n    reference_salinity: 0\n  diagnostics: false",
+      "source": "- name: \"Molar DOXY Salinity Correction\"\n  parameters:\n    # <MANDATORY>\n    salinity_name: \"PSAL\"\n    temperature_name: \"TEMP\"\n    # <OPTIONAL>\n    reference_salinity: 0\n  diagnostics: false",
       "names": [],
       "example": {
         "document": "api/pelagos_py/steps/processing/oxygen/index",
@@ -370,7 +318,7 @@
           "pelagos_py.steps.processing.oxygen"
         ]
       },
-      "doc_lineno": 443
+      "doc_lineno": 471
     },
     {
       "source": ".. admonition:: Example\n",
@@ -394,7 +342,7 @@
           "pelagos_py.steps.processing.oxygen"
         ]
       },
-      "doc_lineno": 504
+      "doc_lineno": 532
     }
   ],
   "api/pelagos_py/steps/processing/salinity/index": [],
@@ -402,13 +350,26 @@
   "api/pelagos_py/steps/quality_control/flag_full_profile/index": [],
   "api/pelagos_py/steps/quality_control/impossible_date_qc/index": [],
   "api/pelagos_py/steps/quality_control/impossible_location_qc/index": [],
-  "api/pelagos_py/steps/quality_control/impossible_speed_qc/index": [],
+  "api/pelagos_py/steps/quality_control/impossible_speed_qc/index": [
+    {
+      "source": "impossible speed qc:\n  threshold: 3       # m/s\n  min_interval: 60   # s",
+      "names": [],
+      "example": {
+        "document": "api/pelagos_py/steps/quality_control/impossible_speed_qc/index",
+        "ref_id": "module-pelagos_py.steps.quality_control.impossible_speed_qc",
+        "headings": [
+          "pelagos_py.steps.quality_control.impossible_speed_qc"
+        ]
+      },
+      "doc_lineno": 23
+    }
+  ],
   "api/pelagos_py/steps/quality_control/index": [],
   "api/pelagos_py/steps/quality_control/par_irregularity_qc/index": [],
   "api/pelagos_py/steps/quality_control/position_on_land_qc/index": [],
   "api/pelagos_py/steps/quality_control/range_qc/index": [
     {
-      "source": "- name: \"Apply QC\"\n  parameters:\n    qc_settings:\n      range qc:\n        variable_ranges:\n          PRES:\n            3: [-2.4, -5, inside]   # impossible band: flag data INSIDE it\n            4: [-5, -.inf, inside]\n            9: 0.0                  # single scalar -> flag the exact fill value 0.0\n          TEMP:\n            3: [0, 30, outside]     # good band: flag data OUTSIDE it\n            4: [-2.5, 40, outside]\n          CNDC:\n            # one flag, two bands: flag bad both inside [2, 3] and outside [0.1, 10]\n            4: [[2, 3, inside], [0.1, 10, outside]]\n        also_flag:\n          CNDC: [PRES, TEMP]    # CNDC's flags propagate onto PRES & TEMP (worst wins)\n        test_depth_range: [0, 100]    # OPTIONAL: only check this DEPTH window\n  diagnostics: true             # plots every flagged variable, coloured by flag",
+      "source": "- name: \"Apply QC\"\n  parameters:\n    qc_settings:\n      range qc:\n        variable_ranges:\n          PRES:\n            3: [-2.4, -5, inside]   # impossible band: flag data INSIDE it\n            4: [-5, -.inf, inside]\n            9: 0.0                  # single scalar -> flag the exact fill value 0.0\n          TEMP:\n            3: [-1, 30, outside]    # good band: flag data OUTSIDE it\n            4: [-2.5, 40, outside]\n          CNDC:\n            # one flag, two bands: flag bad both inside [2, 3] and outside [0.1, 10]\n            4: [[2, 3, inside], [0.1, 10, outside]]\n        also_flag:\n          CNDC: [PRES, TEMP]    # CNDC's flags propagate onto PRES & TEMP (worst wins)\n        test_depth_range: [0, 100]    # OPTIONAL: only check this DEPTH window\n  diagnostics: true             # plots every flagged variable, coloured by flag",
       "names": [],
       "example": {
         "document": "api/pelagos_py/steps/quality_control/range_qc/index",
@@ -436,7 +397,7 @@
   ],
   "api/pelagos_py/steps/quality_control/spike_qc/index": [
     {
-      "source": "- name: \"Apply QC\"\n  parameters:\n    qc_settings: {\n        \"spike test\": {\n          \"variables\": {\"PRES\": 2, \"LATITUDE\": 1},\n          \"also_flag\": {\"PRES\": [\"CNDC\", \"TEMP\"], \"LATITUDE\": [\"LONGITUDE\"]},\n          \"plot\": [\"PRES\", \"LATITUDE\"]\n          \"window_size\": 10,\n        }\n    }\n  diagnostics: true",
+      "source": "- name: \"Apply QC\"\n  parameters:\n    qc_settings:\n      spike qc:\n        variables: {PRES: 2, LATITUDE: 1}\n        also_flag: {PRES: [CNDC, TEMP], LATITUDE: [LONGITUDE]}\n        plot: [PRES, LATITUDE]\n        window_size: 10\n  diagnostics: true",
       "names": [],
       "example": {
         "document": "api/pelagos_py/steps/quality_control/spike_qc/index",
@@ -446,12 +407,12 @@
           "Example"
         ]
       },
-      "doc_lineno": 22
+      "doc_lineno": 23
     }
   ],
   "api/pelagos_py/steps/quality_control/stuck_value_qc/index": [
     {
-      "source": "- name: \"Apply QC\"\n  parameters:\n    qc_settings: {\n        \"stuck value test\": {\n          \"variables\": {\"PRES\": 4, \"LATITUDE\": 100},\n          \"also_flag\": {\"PRES\": [\"CNDC\", \"TEMP\"], \"LATITUDE\": [\"LONGITUDE\"]},\n          \"plot\": [\"PRES\", \"LATITUDE\"]\n        }\n    }\n  diagnostics: true",
+      "source": "- name: \"Apply QC\"\n  parameters:\n    qc_settings:\n      stuck value qc:\n        variables: {PRES: 4, LATITUDE: 100}\n        also_flag: {PRES: [CNDC, TEMP], LATITUDE: [LONGITUDE]}\n        plot: [PRES, LATITUDE]\n  diagnostics: true",
       "names": [],
       "example": {
         "document": "api/pelagos_py/steps/quality_control/stuck_value_qc/index",
@@ -465,6 +426,21 @@
     }
   ],
   "api/pelagos_py/steps/quality_control/valid_profile_qc/index": [],
+  "api/pelagos_py/steps/quality_control/visual_qc/index": [
+    {
+      "source": "- name: \"Apply QC\"\n  parameters:\n    qc_settings:\n      visual qc:\n        variables: [CHLA, [TEMP, PSAL]]   # CHLA alone, TEMP and PSAL together\n        x_variable: TIME              # axes for boxes that don't name their own\n        y_variable: PRES\n        boxes:\n          - {x: [\"2024-05-02T10:00:00\", \"2024-05-02T14:30:00\"], y: [0, 15], flag: 4, mode: inside, variables: [TEMP, PSAL]}\n          # everything outside, merged so no flag gets better\n          - {x: [\"2024-05-01\", \"2024-05-20\"], y: [0, 1000], flag: 3, mode: outside, override: false}\n          # a point: the nearest sample only\n          - {x: [\"2024-05-03T08:12:30\"], y: [42.5], flag: 4}\n          - x: [\"2024-05-04\", \"2024-05-05\"]\n            y: [10, 12]\n            flag: 3\n            y_variable: TEMP          # drawn on TEMP vs TIME, flags TEMP\n          # only within profile 42\n          - {x: [0.8, 3], y: [0, 20], flag: 4, x_variable: CHLA, y_variable: PRES, variables: [CHLA], profiles: [42]}\n        flag_remaining_good: true     # untouched samples become 1 (good)\n  diagnostics: true",
+      "names": [],
+      "example": {
+        "document": "api/pelagos_py/steps/quality_control/visual_qc/index",
+        "ref_id": "module-pelagos_py.steps.quality_control.visual_qc",
+        "headings": [
+          "pelagos_py.steps.quality_control.visual_qc",
+          "Example"
+        ]
+      },
+      "doc_lineno": 37
+    }
+  ],
   "api/pelagos_py/steps/templates/blank_qc/index": [],
   "api/pelagos_py/steps/templates/blank_step/index": [],
   "api/pelagos_py/steps/templates/index": [],
@@ -492,7 +468,7 @@
           "pelagos_py.utils.demo_data"
         ]
       },
-      "doc_lineno": 14
+      "doc_lineno": 15
     }
   ],
   "api/pelagos_py/utils/diagnostic_capture/index": [],

@@ -366,7 +366,6 @@
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/load_data/index.html">pelagos_py.steps.input_output.load_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/prepare_og1/index.html">pelagos_py.steps.input_output.prepare_og1</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/write_report/index.html">pelagos_py.steps.input_output.write_report</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../input_output/write_report_python/index.html">pelagos_py.steps.input_output.write_report_python</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../processing/index.html">pelagos_py.steps.processing</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -394,6 +393,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../spike_qc/index.html">pelagos_py.steps.quality_control.spike_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../stuck_value_qc/index.html">pelagos_py.steps.quality_control.stuck_value_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../valid_profile_qc/index.html">pelagos_py.steps.quality_control.valid_profile_qc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../visual_qc/index.html">pelagos_py.steps.quality_control.visual_qc</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../templates/index.html">pelagos_py.steps.templates</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -494,7 +494,16 @@
 <p>Target Variable: TIME, LATITUDE, LONGITUDE
 Flag Number: 4 (bad data)
 Variables Flagged: TIME, LATITUDE, LONGITUDE
-Checks that the the gliders horizontal speed stays below 3m/s</p>
+Checks that the horizontal speed between GPS fixes stays below <code class="docutils literal notranslate"><span class="pre">threshold</span></code> (m/s).</p>
+<p>Each fix is compared with the last good fix at least <code class="docutils literal notranslate"><span class="pre">min_interval</span></code> seconds
+earlier, so GPS jitter between close fixes does not trip the test and one bad
+fix does not get the next one flagged too.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">impossible</span> <span class="n">speed</span> <span class="n">qc</span><span class="p">:</span>
+  <span class="n">threshold</span><span class="p">:</span> <span class="mi">3</span>       <span class="c1"># m/s</span>
+  <span class="n">min_interval</span><span class="p">:</span> <span class="mi">60</span>   <span class="c1"># s</span>
+</pre></div>
+</div>
 <dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.quality_control.impossible_speed_qc.impossible_speed_qc.return_qc">
 <span class="sig-name descname"><span class="pre">return_qc</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/quality_control/impossible_speed_qc.html#impossible_speed_qc.return_qc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.quality_control.impossible_speed_qc.impossible_speed_qc.return_qc" title="Link to this definition">#</a></dt>

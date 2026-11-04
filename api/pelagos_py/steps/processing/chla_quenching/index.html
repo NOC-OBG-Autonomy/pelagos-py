@@ -366,7 +366,6 @@
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/load_data/index.html">pelagos_py.steps.input_output.load_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/prepare_og1/index.html">pelagos_py.steps.input_output.prepare_og1</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/write_report/index.html">pelagos_py.steps.input_output.write_report</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../input_output/write_report_python/index.html">pelagos_py.steps.input_output.write_report_python</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="../index.html">pelagos_py.steps.processing</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
@@ -394,6 +393,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/spike_qc/index.html">pelagos_py.steps.quality_control.spike_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/stuck_value_qc/index.html">pelagos_py.steps.quality_control.stuck_value_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/valid_profile_qc/index.html">pelagos_py.steps.quality_control.valid_profile_qc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../quality_control/visual_qc/index.html">pelagos_py.steps.quality_control.visual_qc</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../templates/index.html">pelagos_py.steps.templates</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -488,8 +488,8 @@
   <section id="module-pelagos_py.steps.processing.chla_quenching">
 <span id="pelagos-py-steps-processing-chla-quenching"></span><h1>pelagos_py.steps.processing.chla_quenching<a class="headerlink" href="#module-pelagos_py.steps.processing.chla_quenching" title="Link to this heading">#</a></h1>
 <dl class="py class">
-<dt class="sig sig-object py" id="pelagos_py.steps.processing.chla_quenching.chla_quenching_correction">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.processing.chla_quenching.</span></span><span class="sig-name descname"><span class="pre">chla_quenching_correction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/chla_quenching.html#chla_quenching_correction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.chla_quenching.chla_quenching_correction" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.processing.chla_quenching.</span></span><span class="sig-name descname"><span class="pre">ChlaQuenchingCorrection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/chla_quenching.html#ChlaQuenchingCorrection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="../../base_step/index.html#pelagos_py.steps.base_step.BaseStep" title="pelagos_py.steps.base_step.BaseStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pelagos_py.steps.base_step.BaseStep</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">pelagos_py.utils.qc_handling.QCHandlingMixin</span></code></p>
 <p>Correct non-photochemical quenching of chlorophyll fluorescence.</p>
 <p>Samples whose flags fall in <code class="docutils literal notranslate"><span class="pre">calculation_flag_filter</span></code> (by default probably-bad
@@ -512,8 +512,14 @@ preceding Mixed Layer Depth step.</p>
 </div>
 </div>
 <dl class="py method">
-<dt class="sig sig-object py" id="pelagos_py.steps.processing.chla_quenching.chla_quenching_correction.apply_sackmann2008_quenching_correction">
-<span class="sig-name descname"><span class="pre">apply_sackmann2008_quenching_correction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/chla_quenching.html#chla_quenching_correction.apply_sackmann2008_quenching_correction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.chla_quenching.chla_quenching_correction.apply_sackmann2008_quenching_correction" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection.output_variables">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_variables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/chla_quenching.html#ChlaQuenchingCorrection.output_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection.output_variables" title="Link to this definition">#</a></dt>
+<dd><p>Variables this step writes for the given config <code class="docutils literal notranslate"><span class="pre">parameters</span></code> (read by the config validator).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection.apply_sackmann2008_quenching_correction">
+<span class="sig-name descname"><span class="pre">apply_sackmann2008_quenching_correction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/chla_quenching.html#ChlaQuenchingCorrection.apply_sackmann2008_quenching_correction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection.apply_sackmann2008_quenching_correction" title="Link to this definition">#</a></dt>
 <dd><p>Sackmann et al. (2008, <em>Biogeosciences</em>, 5:2839) NPQ correction.</p>
 <p>Within the mixed layer the maximum fluorescence-to-backscatter ratio
 <code class="docutils literal notranslate"><span class="pre">R_max</span> <span class="pre">=</span> <span class="pre">max(F_Chl</span> <span class="pre">/</span> <span class="pre">b_bp)</span></code> is taken as the non-quenched reference, and
@@ -522,8 +528,8 @@ fluorescence from the surface to the depth of <code class="docutils literal notr
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="pelagos_py.steps.processing.chla_quenching.chla_quenching_correction.apply_xing2012_quenching_correction">
-<span class="sig-name descname"><span class="pre">apply_xing2012_quenching_correction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/chla_quenching.html#chla_quenching_correction.apply_xing2012_quenching_correction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.chla_quenching.chla_quenching_correction.apply_xing2012_quenching_correction" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection.apply_xing2012_quenching_correction">
+<span class="sig-name descname"><span class="pre">apply_xing2012_quenching_correction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/chla_quenching.html#ChlaQuenchingCorrection.apply_xing2012_quenching_correction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection.apply_xing2012_quenching_correction" title="Link to this definition">#</a></dt>
 <dd><p>Xing et al. (2012, <em>JGR–Oceans</em>, 117:C01019) NPQ correction.</p>
 <p>The maximum fluorescence within the mixed-layer depth (MLD) is taken as
 the non-quenched reference; all shallower values are lifted to it.
@@ -531,8 +537,8 @@ Applied only in daytime (needs MLD).</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="pelagos_py.steps.processing.chla_quenching.chla_quenching_correction.apply_biermann2015_quenching_correction">
-<span class="sig-name descname"><span class="pre">apply_biermann2015_quenching_correction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/chla_quenching.html#chla_quenching_correction.apply_biermann2015_quenching_correction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.chla_quenching.chla_quenching_correction.apply_biermann2015_quenching_correction" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection.apply_biermann2015_quenching_correction">
+<span class="sig-name descname"><span class="pre">apply_biermann2015_quenching_correction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/chla_quenching.html#ChlaQuenchingCorrection.apply_biermann2015_quenching_correction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection.apply_biermann2015_quenching_correction" title="Link to this definition">#</a></dt>
 <dd><p>Biermann et al. (2015, <em>Ocean Science</em>, 11:83-91) NPQ correction.</p>
 <p>Like Xing 2012 but the reference is the maximum fluorescence within the
 euphotic zone (surface to ZEU, the 1% light level) rather than the mixed
@@ -540,8 +546,8 @@ layer. Applied only in daytime (needs ZEU).</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="pelagos_py.steps.processing.chla_quenching.chla_quenching_correction.apply_hemsley2015_quenching_correction">
-<span class="sig-name descname"><span class="pre">apply_hemsley2015_quenching_correction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/chla_quenching.html#chla_quenching_correction.apply_hemsley2015_quenching_correction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.chla_quenching.chla_quenching_correction.apply_hemsley2015_quenching_correction" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection.apply_hemsley2015_quenching_correction">
+<span class="sig-name descname"><span class="pre">apply_hemsley2015_quenching_correction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/chla_quenching.html#ChlaQuenchingCorrection.apply_hemsley2015_quenching_correction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection.apply_hemsley2015_quenching_correction" title="Link to this definition">#</a></dt>
 <dd><p>Hemsley et al. (2015, <em>Biogeosciences</em>, 12:7093) NPQ correction.</p>
 <p>One global regression of nighttime fluorescence against backscatter,
 <code class="docutils literal notranslate"><span class="pre">Chl</span> <span class="pre">=</span> <span class="pre">m*bbp</span> <span class="pre">+</span> <span class="pre">c</span></code>, is fit once for the whole deployment, then applied to
@@ -550,8 +556,8 @@ backscatter + ZEU).</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="pelagos_py.steps.processing.chla_quenching.chla_quenching_correction.apply_swart2015_quenching_correction">
-<span class="sig-name descname"><span class="pre">apply_swart2015_quenching_correction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/chla_quenching.html#chla_quenching_correction.apply_swart2015_quenching_correction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.chla_quenching.chla_quenching_correction.apply_swart2015_quenching_correction" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection.apply_swart2015_quenching_correction">
+<span class="sig-name descname"><span class="pre">apply_swart2015_quenching_correction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/chla_quenching.html#ChlaQuenchingCorrection.apply_swart2015_quenching_correction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection.apply_swart2015_quenching_correction" title="Link to this definition">#</a></dt>
 <dd><p>Swart et al. (2015, <em>J. Plankton Res.</em>, 37:635) NPQ correction.</p>
 <p>Same scheme as Sackmann 2008, but the maximum fluorescence-to-backscatter
 ratio is sought within the euphotic zone (surface to ZEU) rather than the
@@ -559,20 +565,21 @@ mixed layer (needs backscatter + ZEU).</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="pelagos_py.steps.processing.chla_quenching.chla_quenching_correction.apply_thomalla2018_quenching_correction">
-<span class="sig-name descname"><span class="pre">apply_thomalla2018_quenching_correction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/chla_quenching.html#chla_quenching_correction.apply_thomalla2018_quenching_correction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.chla_quenching.chla_quenching_correction.apply_thomalla2018_quenching_correction" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection.apply_thomalla2018_quenching_correction">
+<span class="sig-name descname"><span class="pre">apply_thomalla2018_quenching_correction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/chla_quenching.html#ChlaQuenchingCorrection.apply_thomalla2018_quenching_correction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection.apply_thomalla2018_quenching_correction" title="Link to this definition">#</a></dt>
 <dd><p>Thomalla et al. (2018, <em>L&amp;O: Methods</em>, 16:132) NPQ correction.</p>
 <p>Each daytime profile is corrected against its most recent preceding
-night’s mean fl:bbp ratio profile. Above the quenching depth QD,
-fluorescence is reset to <code class="docutils literal notranslate"><span class="pre">(Fl_NT/bbp_NT)</span> <span class="pre">*</span> <span class="pre">bbp_DT</span></code>, kept only where that
-raises it. QD comes from the night-minus-day fluorescence difference
-within the photic layer (shallower than <code class="docutils literal notranslate"><span class="pre">max_photic_depth</span></code>, following
+night’s mean fl:bbp ratio profile, or (<code class="docutils literal notranslate"><span class="pre">night_reference</span></code> <code class="docutils literal notranslate"><span class="pre">'mz'</span></code> /
+<code class="docutils literal notranslate"><span class="pre">'flz'</span></code>, Mitchell et al. 2024) against that reference interpolated in
+time between the bracketing nights. Above the quenching depth QD,
+fluorescence is reset to <code class="docutils literal notranslate"><span class="pre">(Fl_NT/bbp_NT)</span> <span class="pre">*</span> <span class="pre">bbp_DT</span></code>. QD comes from the
+night-minus-day fluorescence difference within the photic layer (shallower than <code class="docutils literal notranslate"><span class="pre">max_photic_depth</span></code>, following
 glidertools; needs backscatter, no PAR).</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="pelagos_py.steps.processing.chla_quenching.chla_quenching_correction.apply_xing2018_quenching_correction">
-<span class="sig-name descname"><span class="pre">apply_xing2018_quenching_correction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/chla_quenching.html#chla_quenching_correction.apply_xing2018_quenching_correction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.chla_quenching.chla_quenching_correction.apply_xing2018_quenching_correction" title="Link to this definition">#</a></dt>
+<dt class="sig sig-object py" id="pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection.apply_xing2018_quenching_correction">
+<span class="sig-name descname"><span class="pre">apply_xing2018_quenching_correction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/chla_quenching.html#ChlaQuenchingCorrection.apply_xing2018_quenching_correction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection.apply_xing2018_quenching_correction" title="Link to this definition">#</a></dt>
 <dd><p>Xing et al. (2018, <em>Optics Express</em>, 26:24734) S08+ NPQ correction,
 optionally extended by the Terrats et al. (2020, <em>GRL</em>) X18_S08 hybrid.</p>
 <p>The mixing regime compares the iPAR=15 isolume depth against the MLD.</p>
@@ -616,14 +623,15 @@ Shallow-mixing profiles instead get the XB18 sigmoid below the MLD and
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.chla_quenching.chla_quenching_correction"><code class="docutils literal notranslate"><span class="pre">chla_quenching_correction</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.chla_quenching.chla_quenching_correction.apply_sackmann2008_quenching_correction"><code class="docutils literal notranslate"><span class="pre">chla_quenching_correction.apply_sackmann2008_quenching_correction()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.chla_quenching.chla_quenching_correction.apply_xing2012_quenching_correction"><code class="docutils literal notranslate"><span class="pre">chla_quenching_correction.apply_xing2012_quenching_correction()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.chla_quenching.chla_quenching_correction.apply_biermann2015_quenching_correction"><code class="docutils literal notranslate"><span class="pre">chla_quenching_correction.apply_biermann2015_quenching_correction()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.chla_quenching.chla_quenching_correction.apply_hemsley2015_quenching_correction"><code class="docutils literal notranslate"><span class="pre">chla_quenching_correction.apply_hemsley2015_quenching_correction()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.chla_quenching.chla_quenching_correction.apply_swart2015_quenching_correction"><code class="docutils literal notranslate"><span class="pre">chla_quenching_correction.apply_swart2015_quenching_correction()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.chla_quenching.chla_quenching_correction.apply_thomalla2018_quenching_correction"><code class="docutils literal notranslate"><span class="pre">chla_quenching_correction.apply_thomalla2018_quenching_correction()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.chla_quenching.chla_quenching_correction.apply_xing2018_quenching_correction"><code class="docutils literal notranslate"><span class="pre">chla_quenching_correction.apply_xing2018_quenching_correction()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection"><code class="docutils literal notranslate"><span class="pre">ChlaQuenchingCorrection</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection.output_variables"><code class="docutils literal notranslate"><span class="pre">ChlaQuenchingCorrection.output_variables()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection.apply_sackmann2008_quenching_correction"><code class="docutils literal notranslate"><span class="pre">ChlaQuenchingCorrection.apply_sackmann2008_quenching_correction()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection.apply_xing2012_quenching_correction"><code class="docutils literal notranslate"><span class="pre">ChlaQuenchingCorrection.apply_xing2012_quenching_correction()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection.apply_biermann2015_quenching_correction"><code class="docutils literal notranslate"><span class="pre">ChlaQuenchingCorrection.apply_biermann2015_quenching_correction()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection.apply_hemsley2015_quenching_correction"><code class="docutils literal notranslate"><span class="pre">ChlaQuenchingCorrection.apply_hemsley2015_quenching_correction()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection.apply_swart2015_quenching_correction"><code class="docutils literal notranslate"><span class="pre">ChlaQuenchingCorrection.apply_swart2015_quenching_correction()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection.apply_thomalla2018_quenching_correction"><code class="docutils literal notranslate"><span class="pre">ChlaQuenchingCorrection.apply_thomalla2018_quenching_correction()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection.apply_xing2018_quenching_correction"><code class="docutils literal notranslate"><span class="pre">ChlaQuenchingCorrection.apply_xing2018_quenching_correction()</span></code></a></li>
 </ul>
 </li>
 </ul>

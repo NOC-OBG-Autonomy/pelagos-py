@@ -366,7 +366,6 @@
 <li class="toctree-l3"><a class="reference internal" href="../load_data/index.html">pelagos_py.steps.input_output.load_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../prepare_og1/index.html">pelagos_py.steps.input_output.prepare_og1</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../write_report/index.html">pelagos_py.steps.input_output.write_report</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../write_report_python/index.html">pelagos_py.steps.input_output.write_report_python</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../processing/index.html">pelagos_py.steps.processing</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -394,6 +393,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/spike_qc/index.html">pelagos_py.steps.quality_control.spike_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/stuck_value_qc/index.html">pelagos_py.steps.quality_control.stuck_value_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/valid_profile_qc/index.html">pelagos_py.steps.quality_control.valid_profile_qc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../quality_control/visual_qc/index.html">pelagos_py.steps.quality_control.visual_qc</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../templates/index.html">pelagos_py.steps.templates</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -503,13 +503,14 @@ S/m -&gt; mS/cm for gsw itself.)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>target_variable</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Name of the variable to correct (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;CNDC&quot;</span></code>).</p></li>
-<li><p><strong>output_as</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>, </em><em>optional</em>) – Name(s) to write the result under. Defaults to <code class="docutils literal notranslate"><span class="pre">target_variable</span></code> (in-place).
-Set it to a new name to copy/rename, e.g. <code class="docutils literal notranslate"><span class="pre">LATITUDE_GPS</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">LATITUDE</span></code>
-with <code class="docutils literal notranslate"><span class="pre">slope:</span> <span class="pre">1</span></code> leaves the values unchanged and just exposes the new name.
-A list writes the same result under several names, e.g.
-<code class="docutils literal notranslate"><span class="pre">[CHLA,</span> <span class="pre">CHLA_MID]</span></code> keeps a mid-processing snapshot in <code class="docutils literal notranslate"><span class="pre">CHLA_MID</span></code> while
-later steps continue working on <code class="docutils literal notranslate"><span class="pre">CHLA</span></code>.</p></li>
+<li><p><strong>target_variable</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a>) – Name of the variable to correct (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;CNDC&quot;</span></code>). Its <code class="docutils literal notranslate"><span class="pre">_ADJUSTED</span></code> version
+is read instead when present, so corrections stack.</p></li>
+<li><p><strong>output_as</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>, </em><em>optional</em>) – Name(s) to write the result under. Defaults to <code class="docutils literal notranslate"><span class="pre">&lt;target_variable&gt;_ADJUSTED</span></code>,
+leaving the raw variable untouched. Set it to a new name to copy/rename, e.g.
+<code class="docutils literal notranslate"><span class="pre">LATITUDE_GPS</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">LATITUDE</span></code> with <code class="docutils literal notranslate"><span class="pre">slope:</span> <span class="pre">1</span></code> leaves the values unchanged
+and just exposes the new name. A list writes the same result under several
+names, e.g. <code class="docutils literal notranslate"><span class="pre">[CHLA_ADJUSTED,</span> <span class="pre">CHLA_MID]</span></code> keeps a mid-processing snapshot in
+<code class="docutils literal notranslate"><span class="pre">CHLA_MID</span></code>. Each output gets a copy of the source’s <code class="docutils literal notranslate"><span class="pre">_QC</span></code>.</p></li>
 <li><p><strong>slope</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Multiplicative factor (default <code class="docutils literal notranslate"><span class="pre">1.0</span></code>). For a x10 unit conversion, set <code class="docutils literal notranslate"><span class="pre">10</span></code>.</p></li>
 <li><p><strong>intercept</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><em>float</em></a><em>, </em><em>optional</em>) – Additive offset applied after scaling (default <code class="docutils literal notranslate"><span class="pre">0.0</span></code>). Use for alignment.</p></li>
 <li><p><strong>expected_range</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a><em>, </em><em>optional</em>) – <code class="docutils literal notranslate"><span class="pre">[min,</span> <span class="pre">max]</span></code> for the <em>corrected</em> variable. The correction is applied only
@@ -527,6 +528,9 @@ comment; <code class="docutils literal notranslate"><span class="pre">overwrite_
 <li><p><strong>overwrite_description</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><em>str</em></a><em>, </em><em>optional</em>) – Note written to the output variable’s <code class="docutils literal notranslate"><span class="pre">comment</span></code> attribute (e.g.
 <code class="docutils literal notranslate"><span class="pre">&quot;Renamed</span> <span class="pre">from</span> <span class="pre">LATITUDE_GPS&quot;</span></code>). <code class="docutils literal notranslate"><span class="pre">append_description</span></code> adds to any existing
 comment; <code class="docutils literal notranslate"><span class="pre">overwrite_description</span></code> replaces it. Set at most one.</p></li>
+<li><p><strong>optional</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><em>bool</em></a><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, skip without an error when <code class="docutils literal notranslate"><span class="pre">target_variable</span></code> is absent,
+e.g. a rename that only applies to some file naming conventions.
+Default <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -544,6 +548,12 @@ comment; <code class="docutils literal notranslate"><span class="pre">overwrite_
 </pre></div>
 </div>
 </div>
+<dl class="py method">
+<dt class="sig sig-object py" id="pelagos_py.steps.input_output.correct_values.CorrectValues.output_variables">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_variables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/correct_values.html#CorrectValues.output_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.correct_values.CorrectValues.output_variables" title="Link to this definition">#</a></dt>
+<dd><p>Variables this step writes for the given config <code class="docutils literal notranslate"><span class="pre">parameters</span></code> (read by the config validator).</p>
+</dd></dl>
+
 </dd></dl>
 
 </section>
@@ -571,7 +581,10 @@ comment; <code class="docutils literal notranslate"><span class="pre">overwrite_
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.correct_values.CorrectValues"><code class="docutils literal notranslate"><span class="pre">CorrectValues</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.correct_values.CorrectValues"><code class="docutils literal notranslate"><span class="pre">CorrectValues</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.correct_values.CorrectValues.output_variables"><code class="docutils literal notranslate"><span class="pre">CorrectValues.output_variables()</span></code></a></li>
+</ul>
+</li>
 </ul>
   </nav></div>
 

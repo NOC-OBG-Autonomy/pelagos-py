@@ -366,7 +366,6 @@
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/load_data/index.html">pelagos_py.steps.input_output.load_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/prepare_og1/index.html">pelagos_py.steps.input_output.prepare_og1</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/write_report/index.html">pelagos_py.steps.input_output.write_report</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../input_output/write_report_python/index.html">pelagos_py.steps.input_output.write_report_python</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="../index.html">pelagos_py.steps.processing</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
@@ -394,6 +393,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/spike_qc/index.html">pelagos_py.steps.quality_control.spike_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/stuck_value_qc/index.html">pelagos_py.steps.quality_control.stuck_value_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/valid_profile_qc/index.html">pelagos_py.steps.quality_control.valid_profile_qc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../quality_control/visual_qc/index.html">pelagos_py.steps.quality_control.visual_qc</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../templates/index.html">pelagos_py.steps.templates</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -498,7 +498,7 @@ Every concrete subclass (registered via &#64;register_step) inherits this.</p>
 <span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/bbp.html#BBPFromBeta.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.bbp.BBPFromBeta.run" title="Link to this definition">#</a></dt>
 <dd><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="s2">"BBP from Beta"</span>
   <span class="n">parameters</span><span class="p">:</span>
-    <span class="n">apply_to</span><span class="p">:</span> <span class="s2">"BBP700"</span>
+    <span class="n">apply_to</span><span class="p">:</span> <span class="s2">"BETA_BACKSCATTERING700"</span>
     <span class="n">output_as</span><span class="p">:</span> <span class="s2">"BBP700"</span>
     <span class="n">theta</span><span class="p">:</span> <span class="mi">124</span>
     <span class="n">xfactor</span><span class="p">:</span> <span class="mf">1.076</span>
@@ -509,6 +509,13 @@ Every concrete subclass (registered via &#64;register_step) inherits this.</p>
 
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="pelagos_py.steps.processing.bbp.despike">
+<span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.processing.bbp.</span></span><span class="sig-name descname"><span class="pre">despike</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spike_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'median'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/bbp.html#despike"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.bbp.despike" title="Link to this definition">#</a></dt>
+<dd><p>Briggs et al. (2011) despike, as glidertools.cleaning.despike. Returns (baseline, spikes).</p>
+<p>Gives the same result without building a (window x N) matrix (~1.6 GB on 2M samples).</p>
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="pelagos_py.steps.processing.bbp.IsolateBBPSpikes">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.processing.bbp.</span></span><span class="sig-name descname"><span class="pre">IsolateBBPSpikes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/bbp.html#IsolateBBPSpikes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.bbp.IsolateBBPSpikes" title="Link to this definition">#</a></dt>
@@ -516,12 +523,18 @@ Every concrete subclass (registered via &#64;register_step) inherits this.</p>
 <p>Base class for pipeline steps with config-mirroring support.
 Every concrete subclass (registered via &#64;register_step) inherits this.</p>
 <dl class="py method">
+<dt class="sig sig-object py" id="pelagos_py.steps.processing.bbp.IsolateBBPSpikes.output_variables">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_variables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/bbp.html#IsolateBBPSpikes.output_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.bbp.IsolateBBPSpikes.output_variables" title="Link to this definition">#</a></dt>
+<dd><p>Variables this step writes for the given config <code class="docutils literal notranslate"><span class="pre">parameters</span></code> (read by the config validator).</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.processing.bbp.IsolateBBPSpikes.run">
 <span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/bbp.html#IsolateBBPSpikes.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.bbp.IsolateBBPSpikes.run" title="Link to this definition">#</a></dt>
 <dd><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="s2">"Isolate BBP Spikes"</span>
   <span class="n">parameters</span><span class="p">:</span>
     <span class="n">apply_to</span><span class="p">:</span> <span class="s2">"BBP700"</span>
-    <span class="n">window_size</span><span class="p">:</span> <span class="mi">50</span>
+    <span class="n">window_size</span><span class="p">:</span> <span class="mi">7</span>
     <span class="n">method</span><span class="p">:</span> <span class="s2">"median"</span>
   <span class="n">diagnostics</span><span class="p">:</span> <span class="n">false</span>
 </pre></div>
@@ -559,7 +572,9 @@ Every concrete subclass (registered via &#64;register_step) inherits this.</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.bbp.BBPFromBeta.run"><code class="docutils literal notranslate"><span class="pre">BBPFromBeta.run()</span></code></a></li>
 </ul>
 </li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.bbp.despike"><code class="docutils literal notranslate"><span class="pre">despike()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.bbp.IsolateBBPSpikes"><code class="docutils literal notranslate"><span class="pre">IsolateBBPSpikes</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.bbp.IsolateBBPSpikes.output_variables"><code class="docutils literal notranslate"><span class="pre">IsolateBBPSpikes.output_variables()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.bbp.IsolateBBPSpikes.run"><code class="docutils literal notranslate"><span class="pre">IsolateBBPSpikes.run()</span></code></a></li>
 </ul>
 </li>

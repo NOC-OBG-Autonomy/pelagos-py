@@ -366,7 +366,6 @@
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/load_data/index.html">pelagos_py.steps.input_output.load_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/prepare_og1/index.html">pelagos_py.steps.input_output.prepare_og1</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/write_report/index.html">pelagos_py.steps.input_output.write_report</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../input_output/write_report_python/index.html">pelagos_py.steps.input_output.write_report_python</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="../index.html">pelagos_py.steps.processing</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
@@ -394,6 +393,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/spike_qc/index.html">pelagos_py.steps.quality_control.spike_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/stuck_value_qc/index.html">pelagos_py.steps.quality_control.stuck_value_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/valid_profile_qc/index.html">pelagos_py.steps.quality_control.valid_profile_qc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../quality_control/visual_qc/index.html">pelagos_py.steps.quality_control.visual_qc</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../templates/index.html">pelagos_py.steps.templates</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -494,18 +494,21 @@
 <p>A processing step class for deriving oceanographic variables from CTD data.</p>
 <p>TEOS-10 implementation provided through Gibbs SeaWater (GSW) Oceanographic Toolbox functions.
 This step requires that “TIME”, “LATITUDE”, “LONGITUDE”, “CNDC”, “PRES” and “TEMP” are present
-in the dataset variables.</p>
+in the dataset variables. Each derived variable is written as <code class="docutils literal notranslate"><span class="pre">&lt;name&gt;_ADJUSTED</span></code> (e.g.
+<code class="docutils literal notranslate"><span class="pre">PSAL_ADJUSTED</span></code>), so raw versions from the input file are kept, and inputs are read from
+their <code class="docutils literal notranslate"><span class="pre">_ADJUSTED</span></code> version where one exists. A <code class="docutils literal notranslate"><span class="pre">PSAL_ADJUSTED</span></code> already made by Salinity
+Adjustment is not overwritten.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>to_derive</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a>) – <p>list of variables to derive
+<dd class="field-odd"><p><strong>to_derive</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a>) – <p>list of variables to derive (written with an <code class="docutils literal notranslate"><span class="pre">_ADJUSTED</span></code> suffix)
 The following variables are supported:</p>
 <blockquote>
 <div><ul class="simple">
 <li><p>”DEPTH”</p></li>
-<li><p>”PRAC_SALINITY” (practical salinity)</p></li>
-<li><p>”ABS_SALINITY” (absolute salinity)</p></li>
+<li><p>”PSAL” (practical salinity)</p></li>
+<li><p>”ASAL” (absolute salinity)</p></li>
 <li><p>”CONS_TEMP” (conservative temperature)</p></li>
-<li><p>”DENSITY</p></li>
+<li><p>”DENSITY”</p></li>
 </ul>
 </div></blockquote>
 </p>
@@ -519,14 +522,20 @@ The following variables are supported:</p>
 <span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">to_derive</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span>
 <span class="w">            </span><span class="nv">DEPTH</span><span class="p p-Indicator">,</span>
-<span class="w">            </span><span class="nv">PRAC_SALINITY</span><span class="p p-Indicator">,</span>
-<span class="w">            </span><span class="nv">ABS_SALINITY</span><span class="p p-Indicator">,</span>
+<span class="w">            </span><span class="nv">PSAL</span><span class="p p-Indicator">,</span>
+<span class="w">            </span><span class="nv">ASAL</span><span class="p p-Indicator">,</span>
 <span class="w">            </span><span class="nv">CONS_TEMP</span><span class="p p-Indicator">,</span>
 <span class="w">            </span><span class="nv">DENSITY</span>
 <span class="w">        </span><span class="p p-Indicator">]</span>
 </pre></div>
 </div>
 </div>
+<dl class="py method">
+<dt class="sig sig-object py" id="pelagos_py.steps.processing.derive_ctd.DeriveCTDVariables.output_variables">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_variables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/derive_ctd.html#DeriveCTDVariables.output_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.derive_ctd.DeriveCTDVariables.output_variables" title="Link to this definition">#</a></dt>
+<dd><p>Variables this step writes for the given config <code class="docutils literal notranslate"><span class="pre">parameters</span></code> (read by the config validator).</p>
+</dd></dl>
+
 </dd></dl>
 
 </section>
@@ -554,7 +563,10 @@ The following variables are supported:</p>
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.derive_ctd.DeriveCTDVariables"><code class="docutils literal notranslate"><span class="pre">DeriveCTDVariables</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.derive_ctd.DeriveCTDVariables"><code class="docutils literal notranslate"><span class="pre">DeriveCTDVariables</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.processing.derive_ctd.DeriveCTDVariables.output_variables"><code class="docutils literal notranslate"><span class="pre">DeriveCTDVariables.output_variables()</span></code></a></li>
+</ul>
+</li>
 </ul>
   </nav></div>
 

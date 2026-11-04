@@ -366,7 +366,6 @@
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/load_data/index.html">pelagos_py.steps.input_output.load_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/prepare_og1/index.html">pelagos_py.steps.input_output.prepare_og1</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../input_output/write_report/index.html">pelagos_py.steps.input_output.write_report</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../input_output/write_report_python/index.html">pelagos_py.steps.input_output.write_report_python</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../processing/index.html">pelagos_py.steps.processing</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -394,6 +393,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../spike_qc/index.html">pelagos_py.steps.quality_control.spike_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../stuck_value_qc/index.html">pelagos_py.steps.quality_control.stuck_value_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../valid_profile_qc/index.html">pelagos_py.steps.quality_control.valid_profile_qc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../visual_qc/index.html">pelagos_py.steps.quality_control.visual_qc</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../templates/index.html">pelagos_py.steps.templates</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -521,7 +521,7 @@ plus any <code class="docutils literal notranslate"><span class="pre">also_flag<
             <span class="mi">4</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="o">-.</span><span class="n">inf</span><span class="p">,</span> <span class="n">inside</span><span class="p">]</span>
             <span class="mi">9</span><span class="p">:</span> <span class="mf">0.0</span>                  <span class="c1"># single scalar -&gt; flag the exact fill value 0.0</span>
           <span class="n">TEMP</span><span class="p">:</span>
-            <span class="mi">3</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">outside</span><span class="p">]</span>     <span class="c1"># good band: flag data OUTSIDE it</span>
+            <span class="mi">3</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">outside</span><span class="p">]</span>    <span class="c1"># good band: flag data OUTSIDE it</span>
             <span class="mi">4</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mf">2.5</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="n">outside</span><span class="p">]</span>
           <span class="n">CNDC</span><span class="p">:</span>
             <span class="c1"># one flag, two bands: flag bad both inside [2, 3] and outside [0.1, 10]</span>

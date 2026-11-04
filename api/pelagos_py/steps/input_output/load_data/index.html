@@ -366,7 +366,6 @@
 <li class="toctree-l3 current active"><a class="current reference internal" href="#">pelagos_py.steps.input_output.load_data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../prepare_og1/index.html">pelagos_py.steps.input_output.prepare_og1</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../write_report/index.html">pelagos_py.steps.input_output.write_report</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../write_report_python/index.html">pelagos_py.steps.input_output.write_report_python</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../processing/index.html">pelagos_py.steps.processing</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -394,6 +393,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/spike_qc/index.html">pelagos_py.steps.quality_control.spike_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/stuck_value_qc/index.html">pelagos_py.steps.quality_control.stuck_value_qc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../quality_control/valid_profile_qc/index.html">pelagos_py.steps.quality_control.valid_profile_qc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../quality_control/visual_qc/index.html">pelagos_py.steps.quality_control.visual_qc</a></li>
 </ul>
 </details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="../../templates/index.html">pelagos_py.steps.templates</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -533,18 +533,6 @@ load rather than having each step guard against float NaN flags. NaN
 means no QC has been applied yet, which is flag 0 (not 9/missing).</p>
 </dd></dl>
 
-<dl class="py method">
-<dt class="sig sig-object py" id="pelagos_py.steps.input_output.load_data.LoadOG1.generate_diagnostics">
-<span class="sig-name descname"><span class="pre">generate_diagnostics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/input_output/load_data.html#LoadOG1.generate_diagnostics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.input_output.load_data.LoadOG1.generate_diagnostics" title="Link to this definition">#</a></dt>
-<dd><p>Print a structural summary of the loaded dataset.</p>
-<p>Called automatically at the end of <code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code> when <code class="docutils literal notranslate"><span class="pre">diagnostics</span></code> is
-enabled. Delegates to
-<a class="reference internal" href="../../../utils/diagnostics/index.html#pelagos_py.utils.diagnostics.generate_info" title="pelagos_py.utils.diagnostics.generate_info"><code class="xref py py-func docutils literal notranslate"><span class="pre">pelagos_py.utils.diagnostics.generate_info()</span></code></a>, which prints the
-dataset’s dimensions, variables and global attributes (via
-<code class="xref py py-meth docutils literal notranslate"><span class="pre">xarray.Dataset.info()</span></code>) to stdout — a quick check that the data
-was loaded as expected.</p>
-</dd></dl>
-
 </dd></dl>
 
 </section>
@@ -574,7 +562,6 @@ was loaded as expected.</p>
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.load_data.LoadOG1"><code class="docutils literal notranslate"><span class="pre">LoadOG1</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.load_data.LoadOG1.normalise_qc_flags"><code class="docutils literal notranslate"><span class="pre">LoadOG1.normalise_qc_flags()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.input_output.load_data.LoadOG1.generate_diagnostics"><code class="docutils literal notranslate"><span class="pre">LoadOG1.generate_diagnostics()</span></code></a></li>
 </ul>
 </li>
 </ul>

@@ -415,8 +415,13 @@
 
 <span class="c1">#### Mandatory imports ####</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">pelagos_py.utils.diagnostics</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">diag</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.processing_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">small_netcdf_chunk_cache</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
 
 
 <span class="nd">@register_step</span>
@@ -424,7 +429,7 @@
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/input_output/export/index.html#pelagos_py.steps.input_output.export.ExportStep">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ExportStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Exports the the data output by the previous step. </span>
+<span class="sd">    Exports the the data output by the previous step.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -434,7 +439,13 @@
 <span class="sd">        Either "netcdf", "csv", "hdf5" or "parquet". Defaults to "netcdf".</span>
 <span class="sd">    compression : int</span>
 <span class="sd">        zlib compression level for netcdf/hdf5 output: 0 turns compression off,</span>
-<span class="sd">        1 (fastest) to 9 (smallest). Defaults to 4. Ignored for csv/parquet.</span>
+<span class="sd">        1 (fastest) to 9 (smallest). Defaults to 2. Ignored for csv/parquet.</span>
+<span class="sd">    include_intermediates : bool</span>
+<span class="sd">        Also write the working variables steps made along the way (and their</span>
+<span class="sd">        ``_QC``). Defaults to False.</span>
+
+<span class="sd">    Every exported variable gets a ``_QC`` companion: one missing it is given</span>
+<span class="sd">    0 (no QC) flags, 9 where the value is missing.</span>
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
@@ -447,7 +458,8 @@
 <span class="sd">            parameters:</span>
 <span class="sd">                output_path: "save/my/data/here.nc"</span>
 <span class="sd">                export_format: "netcdf"</span>
-<span class="sd">                compression: 4</span>
+<span class="sd">                compression: 2</span>
+<span class="sd">                include_intermediates: false</span>
 <span class="sd">    """</span>
 
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Data Export"</span>
@@ -466,16 +478,21 @@
         <span class="p">},</span>
         <span class="s2">"compression"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-            <span class="s2">"default"</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
             <span class="s2">"min"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
             <span class="s2">"max"</span><span class="p">:</span> <span class="mi">9</span><span class="p">,</span>
             <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"zlib level for netcdf/hdf5 (0 = off, 1-9). Ignored for csv/parquet."</span><span class="p">,</span>
+        <span class="p">},</span>
+        <span class="s2">"include_intermediates"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Also write the working variables steps made along the way (and their _QC)."</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">"Exporting data in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">'export_format'</span><span class="p">]</span><span class="si">}</span><span class="s2"> format to </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">'output_path'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+            <span class="sa">f</span><span class="s2">"Exporting </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">'export_format'</span><span class="p">]</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">'output_path'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
 
         <span class="c1"># Check if the data is in the context</span>
@@ -483,8 +500,12 @@
         <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span>
         <span class="c1"># Add exiting notes on QC history if available TODO: Move earlier to individual QC steps on each data variable attribute</span>
         <span class="k">if</span> <span class="s2">"qc_history"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"QC history found in context."</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">"QC history found in context."</span><span class="p">,</span> <span class="n">console</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
             <span class="n">data</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"delayed_qc_history"</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"qc_history"</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">include_intermediates</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_drop_intermediates</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_missing_qc</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
         <span class="n">export_format</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">"export_format"</span><span class="p">]</span>
         <span class="n">output_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">"output_path"</span><span class="p">]</span>
@@ -507,36 +528,109 @@
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">"Unsupported compression level: </span><span class="si">{</span><span class="n">compression</span><span class="si">}</span><span class="s2">. Please specify compression from 0-9."</span>
                 <span class="p">)</span>
-            <span class="n">encoding</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="n">var</span><span class="p">:</span> <span class="p">{</span><span class="s2">"zlib"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">"complevel"</span><span class="p">:</span> <span class="n">compression</span><span class="p">}</span> <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span>
-            <span class="p">}</span>
+            <span class="c1"># Input chunks can be tiny (slow, bigger file); 1-D only, N-D could pass HDF5's 4 GB chunk limit.</span>
+            <span class="n">encoding</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">:</span>
+                <span class="n">encoding</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"zlib"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">"complevel"</span><span class="p">:</span> <span class="n">compression</span><span class="p">}</span>
+                <span class="k">if</span> <span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">encoding</span><span class="p">[</span><span class="n">var</span><span class="p">][</span><span class="s2">"chunksizes"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="mi">1_000_000</span><span class="p">)),</span>
+                    <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">encoding</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="c1"># Export data based on the specified format</span>
-        <span class="k">if</span> <span class="n">export_format</span> <span class="o">==</span> <span class="s2">"csv"</span><span class="p">:</span>
-            <span class="n">data</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">export_format</span> <span class="o">==</span> <span class="s2">"netcdf"</span><span class="p">:</span>
-            <span class="n">data</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s2">"netcdf4"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">export_format</span> <span class="o">==</span> <span class="s2">"hdf5"</span><span class="p">:</span>
-            <span class="n">data</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s2">"h5netcdf"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">export_format</span> <span class="o">==</span> <span class="s2">"parquet"</span><span class="p">:</span>
-            <span class="n">data</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">to_parquet</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unsupported export format: </span><span class="si">{</span><span class="n">export_format</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Data exported successfully to </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">export_format</span> <span class="o">==</span> <span class="s2">"netcdf"</span><span class="p">:</span>
+            <span class="n">small_netcdf_chunk_cache</span><span class="p">()</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">export_format</span> <span class="o">==</span> <span class="s2">"csv"</span><span class="p">:</span>
+                <span class="n">data</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">export_format</span> <span class="o">==</span> <span class="s2">"netcdf"</span><span class="p">:</span>
+                <span class="n">data</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s2">"netcdf4"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">export_format</span> <span class="o">==</span> <span class="s2">"hdf5"</span><span class="p">:</span>
+                <span class="n">data</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s2">"h5netcdf"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">export_format</span> <span class="o">==</span> <span class="s2">"parquet"</span><span class="p">:</span>
+                <span class="n">data</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">to_parquet</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">started</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_write_with_progress</span><span class="p">(</span><span class="n">write</span><span class="p">,</span> <span class="n">output_path</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">nbytes</span><span class="p">)</span>
+        <span class="n">size_mb</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getsize</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span> <span class="o">/</span> <span class="mi">1024</span><span class="o">**</span><span class="mi">2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"Exported </span><span class="si">{</span><span class="n">size_mb</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> MB to </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">started</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">s"</span>
+        <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
 
-<div class="viewcode-block" id="ExportStep.generate_diagnostics">
-<a class="viewcode-back" href="../../../../api/pelagos_py/steps/input_output/export/index.html#pelagos_py.steps.input_output.export.ExportStep.generate_diagnostics">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_drop_intermediates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"intermediate_variables"</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="n">dropped</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">name</span>
+            <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">names</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">dropped</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"Leaving out </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">dropped</span><span class="p">)</span><span class="si">}</span><span class="s2"> intermediate variable(s); "</span>
+            <span class="s2">"set include_intermediates to keep them."</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Left out: </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dropped</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">console</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">drop_vars</span><span class="p">(</span><span class="n">dropped</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_missing_qc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="c1"># TIME/LATITUDE/LONGITUDE may be stored as coordinates rather than data variables</span>
+        <span class="n">candidates</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span>
+            <span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">coords</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">dims</span>
+        <span class="p">]</span>
+        <span class="n">missing</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">var</span>
+            <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">candidates</span>
+            <span class="k">if</span> <span class="n">var</span><span class="o">.</span><span class="n">isupper</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="ow">not</span> <span class="n">var</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">"_QC"</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="n">var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">dims</span>
+            <span class="ow">and</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">variables</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">missing</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">missing</span><span class="p">)</span><span class="si">}</span><span class="s2"> variable(s) have no QC; writing unchecked (0) flags for them."</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unchecked QC added for: </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">missing</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">console</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">flags</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">isnull</span><span class="p">(),</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">missing</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="n">flags</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_write_with_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">write</span><span class="p">,</span> <span class="n">output_path</span><span class="p">,</span> <span class="n">nbytes</span><span class="p">):</span>
+        <span class="c1"># writers report no progress, so watch the file grow against the in-memory size</span>
+        <span class="n">total_mb</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">nbytes</span> <span class="o">/</span> <span class="mi">1024</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+        <span class="n">bar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_progress</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="n">total_mb</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">"Writing"</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">"MB"</span><span class="p">)</span>
+        <span class="n">done</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Event</span><span class="p">()</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">watch</span><span class="p">():</span>
+            <span class="k">while</span> <span class="ow">not</span> <span class="n">done</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="mf">0.25</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">mb</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getsize</span><span class="p">(</span><span class="n">output_path</span><span class="p">)</span> <span class="o">/</span> <span class="mi">1024</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">mb</span> <span class="o">&gt;</span> <span class="n">bar</span><span class="o">.</span><span class="n">n</span><span class="p">:</span>
+                    <span class="n">bar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">mb</span><span class="p">,</span> <span class="n">total_mb</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">bar</span><span class="o">.</span><span class="n">n</span><span class="p">)</span>
+
+        <span class="n">watcher</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">watch</span><span class="p">,</span> <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">watcher</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">write</span><span class="p">()</span>
+            <span class="n">done</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+            <span class="n">watcher</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+            <span class="n">bar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">total_mb</span> <span class="o">-</span> <span class="n">bar</span><span class="o">.</span><span class="n">n</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="n">done</span><span class="o">.</span><span class="n">set</span><span class="p">()</span>
+            <span class="n">bar</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Generate diagnostics for the export step.</span>
-<span class="sd">        """</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Generating diagnostics for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-        <span class="n">diag</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Diagnostics generated successfully."</span><span class="p">)</span></div>
-</div>
+        <span class="c1"># nothing to plot for an export</span>
+        <span class="k">return</span></div>
 
 </pre></div>
 

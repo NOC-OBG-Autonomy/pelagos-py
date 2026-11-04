@@ -415,6 +415,7 @@
 
 <span class="c1">#### Mandatory imports ####</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.processing_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">small_netcdf_chunk_cache</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pelagos_py.utils.diagnostics</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">diag</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
@@ -430,13 +431,13 @@
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/input_output/load_data/index.html#pelagos_py.steps.input_output.load_data.LoadOG1">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">LoadOG1</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Loads NetCDF files from ``file_path``. </span>
-<span class="sd">    </span>
+<span class="sd">    Loads NetCDF files from ``file_path``.</span>
+
 <span class="sd">    If ``filter_bad_times`` is set then measurements made</span>
-<span class="sd">    outside of the time range specified by ``data_start`` and ``data_end`` are removed before </span>
+<span class="sd">    outside of the time range specified by ``data_start`` and ``data_end`` are removed before</span>
 <span class="sd">    further processing.</span>
 
-<span class="sd">    Time values are expected to be stored under the "TIME" variable name in the NetCDF file </span>
+<span class="sd">    Time values are expected to be stored under the "TIME" variable name in the NetCDF file</span>
 <span class="sd">    (corresponding to OG1 format). If "TIME" is not monotonically increasing, or has missing values</span>
 <span class="sd">    (NaT) then this will raise an error.</span>
 
@@ -445,11 +446,11 @@
 <span class="sd">    filter_bad_time : bool, optional</span>
 <span class="sd">        If True (default), removes all timestamps outside the expected time window.</span>
 <span class="sd">    data_start : str or np.datetime64, optional</span>
-<span class="sd">        The minimum valid timestamp for the data. If not provided, the filter defaults </span>
-<span class="sd">        to the DEPLOYMENT_TIME found in the dataset, or 1990-01-01T00:00:00 if no </span>
+<span class="sd">        The minimum valid timestamp for the data. If not provided, the filter defaults</span>
+<span class="sd">        to the DEPLOYMENT_TIME found in the dataset, or 1990-01-01T00:00:00 if no</span>
 <span class="sd">        deployment time is found.</span>
 <span class="sd">    data_end : str or np.datetime64, optional</span>
-<span class="sd">        The maximum valid timestamp for the data. If not provided, it defaults to </span>
+<span class="sd">        The maximum valid timestamp for the data. If not provided, it defaults to</span>
 <span class="sd">        the current system time when the pipeline is run.</span>
 
 <span class="sd">    Examples</span>
@@ -475,35 +476,39 @@
         <span class="s2">"file_path"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
             <span class="s2">"required"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Path to the OG1 data file."</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Path to the OG1 data file."</span><span class="p">,</span>
         <span class="p">},</span>
         <span class="s2">"filter_bad_time"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
             <span class="s2">"default"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"If True, removes all timestamps outside the expected time window."</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"If True, removes all timestamps outside the expected time window."</span><span class="p">,</span>
         <span class="p">},</span>
         <span class="s2">"data_start"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
             <span class="s2">"default"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Minimum valid timestamp (e.g. '2023-05-01T00:00:00'). Defaults to deployment time or 1990."</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Minimum valid timestamp (e.g. '2023-05-01T00:00:00'). Defaults to deployment time or 1990."</span><span class="p">,</span>
         <span class="p">},</span>
         <span class="s2">"data_end"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
             <span class="s2">"default"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Maximum valid timestamp. Defaults to current system time."</span>
-        <span class="p">}</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Maximum valid timestamp. Defaults to current system time."</span><span class="p">,</span>
+        <span class="p">},</span>
     <span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="c1"># Fail cleanly if the file is missing, rather than surfacing a wrapped</span>
-        <span class="c1"># xarray/netCDF4 traceback.</span>
+        <span class="c1"># Empty path = the shipped default config: say so rather than "not a file".</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">halt</span><span class="p">(</span>
+                <span class="s2">"'file_path' is empty — this config does not include a data "</span>
+                <span class="s2">"file. Set 'file_path' to your input NetCDF file before running."</span>
+            <span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">)</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">halt</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">"Could not find data file '</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="si">}</span><span class="s2">'. "</span>
                 <span class="s2">"Check the 'file_path' parameter points to an existing file."</span>
             <span class="p">)</span>
 
-        <span class="c1"># load data from xarray</span>
+        <span class="n">small_netcdf_chunk_cache</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">open_dataset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Loaded data from </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
@@ -543,7 +548,8 @@
                 <span class="n">valid_mask</span> <span class="o">&amp;=</span> <span class="n">time_array</span> <span class="o">&gt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span><span class="p">(</span><span class="n">deploy_time</span><span class="p">)</span>
 
             <span class="n">time_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">time_dim</span><span class="p">:</span> <span class="n">valid_mask</span><span class="o">.</span><span class="n">values</span><span class="p">})</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">bool</span><span class="p">(</span><span class="n">valid_mask</span><span class="o">.</span><span class="n">all</span><span class="p">()):</span>  <span class="c1"># isel copies the whole dataset</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="n">time_dim</span><span class="p">:</span> <span class="n">valid_mask</span><span class="o">.</span><span class="n">values</span><span class="p">})</span>
             <span class="n">new_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">])</span>
 
             <span class="k">if</span> <span class="n">new_len</span> <span class="o">&lt;</span> <span class="n">orig_len</span><span class="p">:</span>
@@ -574,7 +580,7 @@
                 <span class="s2">"'TIME' is not monotonically increasing. This may cause fatal issues in processing. "</span>
                 <span class="s2">"Please check the quality of your input data."</span>
             <span class="p">)</span>
-            
+
         <span class="c1"># Make these available to other steps (e.g. Format Checker, which reads the</span>
         <span class="c1"># original file from disk; the report uses filename_core for naming).</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"global_parameters"</span><span class="p">][</span><span class="s2">"filename_core"</span><span class="p">]</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">)</span><span class="o">.</span><span class="n">stem</span>
@@ -617,22 +623,9 @@
             <span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="LoadOG1.generate_diagnostics">
-<a class="viewcode-back" href="../../../../api/pelagos_py/steps/input_output/load_data/index.html#pelagos_py.steps.input_output.load_data.LoadOG1.generate_diagnostics">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Print a structural summary of the loaded dataset.</span>
-
-<span class="sd">        Called automatically at the end of :meth:`run` when ``diagnostics`` is</span>
-<span class="sd">        enabled. Delegates to</span>
-<span class="sd">        :func:`pelagos_py.utils.diagnostics.generate_info`, which prints the</span>
-<span class="sd">        dataset's dimensions, variables and global attributes (via</span>
-<span class="sd">        :meth:`xarray.Dataset.info`) to stdout — a quick check that the data</span>
-<span class="sd">        was loaded as expected.</span>
-<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log_generating_diagnostics</span><span class="p">()</span>
         <span class="n">diag</span><span class="o">.</span><span class="n">generate_info</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span></div>
-</div>
 
 </pre></div>
 

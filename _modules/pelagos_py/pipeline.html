@@ -655,7 +655,9 @@
         <span class="n">template</span> <span class="o">=</span> <span class="n">config_builder</span><span class="o">.</span><span class="n">DEFAULT_CONFIG</span><span class="o">.</span><span class="n">read_text</span><span class="p">()</span>
         <span class="n">replaced</span> <span class="o">=</span> <span class="n">config_path</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
         <span class="n">config_path</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span>
-            <span class="n">config_builder</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">),</span> <span class="n">probe</span><span class="p">,</span> <span class="n">choices</span><span class="p">)</span>
+            <span class="n">config_builder</span><span class="o">.</span><span class="n">build</span><span class="p">(</span>
+                <span class="n">template</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">),</span> <span class="n">probe</span><span class="p">,</span> <span class="n">choices</span><span class="p">,</span> <span class="n">visual_qc</span><span class="o">=</span><span class="kc">False</span>
+            <span class="p">)</span>
         <span class="p">)</span>
 
         <span class="n">pipeline</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">config_path</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">config_path</span><span class="p">))</span>
@@ -912,9 +914,9 @@
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Runs the entire pipeline.</span>
 <span class="sd">        """</span>
-        <span class="c1"># Pausing needs the dashboard; here it just skips.</span>
-        <span class="n">stop_on_fail</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">resolve_on_step_fail</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"on_step_fail"</span><span class="p">))</span> <span class="o">==</span> <span class="s2">"stop"</span>
+        <span class="c1"># Pausing needs the dashboard; here it stops, so a failed step never goes unnoticed.</span>
+        <span class="n">skip_on_fail</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">resolve_on_step_fail</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"on_step_fail"</span><span class="p">))</span> <span class="o">==</span> <span class="s2">"skip"</span>
         <span class="p">)</span>
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_context</span><span class="p">()</span> <span class="k">as</span> <span class="n">report_present</span><span class="p">:</span>
             <span class="c1"># Headless Agg for the whole run: toggling the backend per step can crash on Windows</span>
@@ -928,7 +930,7 @@
                     <span class="k">try</span><span class="p">:</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">_context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute_step</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_context</span><span class="p">)</span>
                     <span class="k">except</span> <span class="p">(</span><span class="ne">RuntimeError</span><span class="p">,</span> <span class="ne">SystemExit</span><span class="p">):</span>
-                        <span class="k">if</span> <span class="n">stop_on_fail</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">skip_on_fail</span><span class="p">:</span>
                             <span class="k">raise</span>
                         <span class="c1"># execute_step/halt() already logged the underlying</span>
                         <span class="c1"># error; this just marks the step as skipped and moves</span>

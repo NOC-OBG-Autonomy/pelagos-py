@@ -415,7 +415,10 @@
 
 <span class="c1">#### Mandatory imports ####</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_qc</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseQC</span><span class="p">,</span> <span class="n">register_qc</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.processing_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile_indices</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.qc_handling</span><span class="w"> </span><span class="kn">import</span> <span class="n">propagate_flags</span><span class="p">,</span> <span class="n">raw_name</span>
 
 <span class="c1">#### Custom imports ####</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
@@ -432,8 +435,9 @@
 <span class="sd">    Target Variable: Any</span>
 <span class="sd">    Flag Number: 4 (bad)</span>
 <span class="sd">    Variables Flagged: Any</span>
-<span class="sd">    Checks for spiking in the data using rolling median values compared against the</span>
-<span class="sd">    median average deviation (MAD).</span>
+<span class="sd">    Checks for spikes by comparing each value to a rolling median: values whose</span>
+<span class="sd">    residual exceeds the standard deviation of the residuals times the variable's</span>
+<span class="sd">    sensitivity are flagged.</span>
 
 <span class="sd">    EXAMPLE</span>
 <span class="sd">    -------</span>
@@ -441,14 +445,12 @@
 
 <span class="sd">        - name: "Apply QC"</span>
 <span class="sd">          parameters:</span>
-<span class="sd">            qc_settings: {</span>
-<span class="sd">                "spike test": {</span>
-<span class="sd">                  "variables": {"PRES": 2, "LATITUDE": 1},</span>
-<span class="sd">                  "also_flag": {"PRES": ["CNDC", "TEMP"], "LATITUDE": ["LONGITUDE"]},</span>
-<span class="sd">                  "plot": ["PRES", "LATITUDE"]</span>
-<span class="sd">                  "window_size": 10,</span>
-<span class="sd">                }</span>
-<span class="sd">            }</span>
+<span class="sd">            qc_settings:</span>
+<span class="sd">              spike qc:</span>
+<span class="sd">                variables: {PRES: 2, LATITUDE: 1}</span>
+<span class="sd">                also_flag: {PRES: [CNDC, TEMP], LATITUDE: [LONGITUDE]}</span>
+<span class="sd">                plot: [PRES, LATITUDE]</span>
+<span class="sd">                window_size: 10</span>
 <span class="sd">          diagnostics: true</span>
 <span class="sd">    """</span>
 
@@ -475,11 +477,11 @@
         <span class="s2">"plot"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
             <span class="s2">"default"</span><span class="p">:</span> <span class="p">[],</span>
-            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Variables to plot in diagnostics."</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Variables to plot in diagnostics (default: every tested variable)."</span><span class="p">,</span>
         <span class="p">},</span>
         <span class="s2">"window_size"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-            <span class="s2">"default"</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="mi">7</span><span class="p">,</span>
             <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Rolling-median window size used for spike detection."</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">}</span>
@@ -497,45 +499,45 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">return_qc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># Subset the data, keeping any existing _QC so already-bad samples can be</span>
         <span class="c1"># excluded from the baseline below.</span>
-        <span class="n">qc_cols</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">_QC"</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span> <span class="k">if</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">_QC"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span> <span class="o">+</span> <span class="n">qc_cols</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">keep_vars</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">_QC"</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">))]</span>
 
         <span class="c1"># Generate the variable-specific flags</span>
+        <span class="n">groups</span> <span class="o">=</span> <span class="n">profile_indices</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_untested</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">sensitivity</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">spike_qc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]),</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+            <span class="n">qc_flags</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="k">if</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">)</span>
+            <span class="n">untested</span> <span class="o">=</span> <span class="mi">0</span>
 
             <span class="c1"># Apply the checks across individual profiles</span>
-            <span class="n">profile_numbers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">)</span>
-            <span class="p">)</span>
-            <span class="k">for</span> <span class="n">profile_number</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_progress</span><span class="p">(</span>
-                <span class="n">profile_numbers</span><span class="p">,</span>
-                <span class="n">desc</span><span class="o">=</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">]"</span><span class="p">,</span>
-                <span class="n">unit</span><span class="o">=</span><span class="s2">"prof"</span><span class="p">,</span>
+            <span class="k">for</span> <span class="n">indices</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_progress</span><span class="p">(</span>
+                <span class="n">groups</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">desc</span><span class="o">=</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">]"</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">"prof"</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">groups</span><span class="p">)</span>
             <span class="p">):</span>
-                <span class="c1"># Subset the data</span>
-                <span class="n">profile</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span> <span class="o">==</span> <span class="n">profile_number</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span>
-                <span class="p">)</span>
+                <span class="n">profile</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span>
+                <span class="n">missing</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">profile</span><span class="p">)</span>
 
                 <span class="c1"># Usable = not NaN and not already flagged bad/missing; only these</span>
                 <span class="c1"># inform the baseline, so prior-bad spikes can't bias detection.</span>
-                <span class="n">usable</span> <span class="o">=</span> <span class="o">~</span><span class="n">profile</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span>
-                <span class="k">if</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span> <span class="ow">in</span> <span class="n">profile</span><span class="p">:</span>
-                    <span class="n">usable</span> <span class="o">=</span> <span class="n">usable</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">profile</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">IGNORE_FLAGS</span><span class="p">)</span>
+                <span class="n">usable</span> <span class="o">=</span> <span class="o">~</span><span class="n">missing</span>
+                <span class="k">if</span> <span class="n">qc_flags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">usable</span> <span class="o">&amp;=</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">qc_flags</span><span class="p">[</span><span class="n">indices</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">IGNORE_FLAGS</span><span class="p">)</span>
 
-                <span class="n">var_data</span> <span class="o">=</span> <span class="n">profile</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">usable</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="n">var_data</span> <span class="o">=</span> <span class="n">profile</span><span class="p">[</span><span class="n">usable</span><span class="p">]</span>
                 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">var_data</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">:</span>
+                    <span class="n">untested</span> <span class="o">+=</span> <span class="mi">1</span>  <span class="c1"># left 0: Apply QC's merge keeps the existing flag</span>
                     <span class="k">continue</span>
 
                 <span class="c1"># Calculate the residules from the running median of the data</span>
                 <span class="n">rolling_median</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="n">var_data</span><span class="o">.</span><span class="n">to_pandas</span><span class="p">()</span>
+                    <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">var_data</span><span class="p">)</span>
                     <span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="n">window</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
                     <span class="o">.</span><span class="n">median</span><span class="p">()</span>
                     <span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
                 <span class="p">)</span>
-                <span class="n">residules</span> <span class="o">=</span> <span class="n">var_data</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span> <span class="o">-</span> <span class="n">rolling_median</span>
+                <span class="n">residules</span> <span class="o">=</span> <span class="n">var_data</span> <span class="o">-</span> <span class="n">rolling_median</span>
 
                 <span class="c1"># Define the residule threshold</span>
                 <span class="n">threshold</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanstd</span><span class="p">(</span><span class="n">residules</span><span class="p">)</span> <span class="o">*</span> <span class="n">sensitivity</span>
@@ -546,14 +548,16 @@
                 <span class="c1"># NaNs are missing (9); excluded/usable points start good (1).</span>
                 <span class="c1"># Excluded points stay 1 so Apply QC's combinatrix keeps their</span>
                 <span class="c1"># existing (worse) flag; usable points take their spike result.</span>
-                <span class="n">profile_flags</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">profile</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">(),</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-                <span class="n">profile_flags</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">usable</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">())]</span> <span class="o">=</span> <span class="n">spike_flags</span>
+                <span class="n">profile_flags</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">missing</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="n">profile_flags</span><span class="p">[</span><span class="n">usable</span><span class="p">]</span> <span class="o">=</span> <span class="n">spike_flags</span>
+                <span class="n">spike_qc</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span> <span class="o">=</span> <span class="n">profile_flags</span>
 
-                <span class="c1"># Stitch the QC results back into the QC container</span>
-                <span class="n">profile_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span> <span class="o">==</span> <span class="n">profile_number</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_untested</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">untested</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">groups</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">untested</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">untested</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">groups</span><span class="p">)</span><span class="si">}</span><span class="s2"> profiles have fewer than </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">window_size</span><span class="si">}</span><span class="s2"> "</span>
+                    <span class="sa">f</span><span class="s2">"usable </span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2"> points (window_size) and were not tested."</span>
                 <span class="p">)</span>
-                <span class="n">spike_qc</span><span class="p">[</span><span class="n">profile_indices</span><span class="p">]</span> <span class="o">=</span> <span class="n">profile_flags</span>
 
             <span class="c1"># Add the flags to the data</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]</span> <span class="o">=</span> <span class="p">([</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">],</span> <span class="n">spike_qc</span><span class="p">)</span>
@@ -561,7 +565,13 @@
             <span class="c1"># Broadcast the QC found for var into variables specified by "also_flag"</span>
             <span class="k">if</span> <span class="n">extra_vars</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">also_flag</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">var</span><span class="p">):</span>
                 <span class="k">for</span> <span class="n">extra_var</span> <span class="ow">in</span> <span class="n">extra_vars</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">extra_var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]</span>
+                    <span class="n">base</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">extra_var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">])</span>
+                    <span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">extra_var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="p">[</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">],</span>
+                        <span class="n">propagate_flags</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]),</span>
+                    <span class="p">)</span>
 
         <span class="c1"># Select just the flags</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span>
@@ -576,29 +586,32 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">plot_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">"tkagg"</span><span class="p">)</span>
 
-        <span class="c1"># If not plots were specified</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"WARNING: In '</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">qc_name</span><span class="si">}</span><span class="s2">', diagnostics were called but no variables were specified for plotting."</span>
-            <span class="p">)</span>
-            <span class="k">return</span>
+        <span class="n">plot_vars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">)</span>
 
         <span class="c1"># Plot the QC output</span>
-        <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">new_fig</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="p">),</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axes</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="p">):</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">new_fig</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">plot_vars</span><span class="p">),</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">x_time</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axes</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">plot_vars</span><span class="p">):</span>
             <span class="c1"># Check that the user specified var exists in the test set</span>
             <span class="k">if</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">qc_outputs</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">"WARNING: Cannot plot </span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC as it was not included in this test."</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"Cannot plot </span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC as it was not included in this test."</span>
                 <span class="p">)</span>
                 <span class="k">continue</span>
 
-            <span class="n">fig_spec</span><span class="o">.</span><span class="n">flag_points</span><span class="p">(</span>
-                <span class="n">ax</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]</span>
-            <span class="p">)</span>
+            <span class="n">fig_spec</span><span class="o">.</span><span class="n">flag_points</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">])</span>
             <span class="n">ylabel</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">axis_label</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">))</span>
-            <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2"> Spike Test"</span><span class="p">,</span> <span class="n">xlabel</span><span class="o">=</span><span class="s2">"Index"</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="n">ylabel</span><span class="p">)</span>
+            <span class="n">untested</span><span class="p">,</span> <span class="n">total</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_untested</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+            <span class="n">title</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2"> Spike Test"</span>
+            <span class="k">if</span> <span class="n">untested</span><span class="p">:</span>
+                <span class="n">title</span> <span class="o">+=</span> <span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">" — </span><span class="si">{</span><span class="n">untested</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="n">total</span><span class="si">}</span><span class="s2"> profiles untested (&lt; window_size points)"</span>
+                <span class="p">)</span>
+            <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="n">ylabel</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">raw_name</span><span class="p">(</span><span class="n">var</span><span class="p">)</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"PRES"</span><span class="p">,</span> <span class="s2">"DEPTH"</span><span class="p">):</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
             <span class="n">fig_spec</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Flags"</span><span class="p">)</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">x_axis</span><span class="p">(</span><span class="n">axes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="p">)</span>
 
         <span class="n">fig_spec</span><span class="o">.</span><span class="n">finish</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>

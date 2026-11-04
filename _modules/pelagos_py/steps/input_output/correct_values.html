@@ -422,6 +422,7 @@
 
 <span class="c1">#### Mandatory imports ####</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.qc_handling</span><span class="w"> </span><span class="kn">import</span> <span class="n">adjusted_name</span>
 
 <span class="c1">#### Custom imports ####</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -450,14 +451,15 @@
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    target_variable : str</span>
-<span class="sd">        Name of the variable to correct (e.g. ``"CNDC"``).</span>
+<span class="sd">        Name of the variable to correct (e.g. ``"CNDC"``). Its ``_ADJUSTED`` version</span>
+<span class="sd">        is read instead when present, so corrections stack.</span>
 <span class="sd">    output_as : str or list, optional</span>
-<span class="sd">        Name(s) to write the result under. Defaults to ``target_variable`` (in-place).</span>
-<span class="sd">        Set it to a new name to copy/rename, e.g. ``LATITUDE_GPS`` -&gt; ``LATITUDE``</span>
-<span class="sd">        with ``slope: 1`` leaves the values unchanged and just exposes the new name.</span>
-<span class="sd">        A list writes the same result under several names, e.g.</span>
-<span class="sd">        ``[CHLA, CHLA_MID]`` keeps a mid-processing snapshot in ``CHLA_MID`` while</span>
-<span class="sd">        later steps continue working on ``CHLA``.</span>
+<span class="sd">        Name(s) to write the result under. Defaults to ``&lt;target_variable&gt;_ADJUSTED``,</span>
+<span class="sd">        leaving the raw variable untouched. Set it to a new name to copy/rename, e.g.</span>
+<span class="sd">        ``LATITUDE_GPS`` -&gt; ``LATITUDE`` with ``slope: 1`` leaves the values unchanged</span>
+<span class="sd">        and just exposes the new name. A list writes the same result under several</span>
+<span class="sd">        names, e.g. ``[CHLA_ADJUSTED, CHLA_MID]`` keeps a mid-processing snapshot in</span>
+<span class="sd">        ``CHLA_MID``. Each output gets a copy of the source's ``_QC``.</span>
 <span class="sd">    slope : float, optional</span>
 <span class="sd">        Multiplicative factor (default ``1.0``). For a x10 unit conversion, set ``10``.</span>
 <span class="sd">    intercept : float, optional</span>
@@ -476,6 +478,10 @@
 <span class="sd">        Note written to the output variable's ``comment`` attribute (e.g.</span>
 <span class="sd">        ``"Renamed from LATITUDE_GPS"``). ``append_description`` adds to any existing</span>
 <span class="sd">        comment; ``overwrite_description`` replaces it. Set at most one.</span>
+<span class="sd">    optional : bool, optional</span>
+<span class="sd">        If ``True``, skip without an error when ``target_variable`` is absent,</span>
+<span class="sd">        e.g. a rename that only applies to some file naming conventions.</span>
+<span class="sd">        Default ``False``.</span>
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
@@ -496,44 +502,46 @@
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Correct Values"</span>
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">variable_parameters</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"target_variable"</span><span class="p">]</span>
 
     <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">"target_variable"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
             <span class="s2">"required"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Name of the variable to correct (e.g. 'CNDC')."</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Name of the variable to correct (e.g. 'CNDC'); its _ADJUSTED "</span>
+            <span class="s2">"version is read instead when present."</span><span class="p">,</span>
         <span class="p">},</span>
         <span class="s2">"output_as"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
             <span class="s2">"default"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Name(s) to write the result under (default: target_variable, "</span>
-                           <span class="s2">"i.e. in place). A new name copies/renames; a list writes the "</span>
-                           <span class="s2">"same result under several names (e.g. [CHLA, CHLA_MID])."</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Name(s) to write the result under (default: "</span>
+            <span class="s2">"&lt;target_variable&gt;_ADJUSTED). A new name copies/renames; a list writes the "</span>
+            <span class="s2">"same result under several names (e.g. [CHLA_ADJUSTED, CHLA_MID])."</span><span class="p">,</span>
         <span class="p">},</span>
         <span class="s2">"slope"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
             <span class="s2">"default"</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
             <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Multiplicative factor (corrected = slope * value + intercept). "</span>
-                           <span class="s2">"For a simple x10 unit conversion, set 10."</span><span class="p">,</span>
+            <span class="s2">"For a simple x10 unit conversion, set 10."</span><span class="p">,</span>
         <span class="p">},</span>
         <span class="s2">"intercept"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
             <span class="s2">"default"</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
             <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Additive offset applied after scaling (corrected = slope * value + intercept). "</span>
-                           <span class="s2">"Use for sensor alignment."</span><span class="p">,</span>
+            <span class="s2">"Use for sensor alignment."</span><span class="p">,</span>
         <span class="p">},</span>
         <span class="s2">"expected_range"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
             <span class="s2">"default"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
             <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Optional [min, max] for the corrected variable. The correction is applied "</span>
-                           <span class="s2">"only when the data's median falls OUTSIDE this range. If omitted, the "</span>
-                           <span class="s2">"correction is always applied."</span><span class="p">,</span>
+            <span class="s2">"only when the data's median falls OUTSIDE this range. If omitted, the "</span>
+            <span class="s2">"correction is always applied."</span><span class="p">,</span>
         <span class="p">},</span>
         <span class="s2">"corrected_units"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
             <span class="s2">"default"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
             <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Optional units string written to the output variable's attributes "</span>
-                           <span class="s2">"after a correction is applied (e.g. 'mS/cm')."</span><span class="p">,</span>
+            <span class="s2">"after a correction is applied (e.g. 'mS/cm')."</span><span class="p">,</span>
         <span class="p">},</span>
         <span class="s2">"time_start"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -555,31 +563,60 @@
             <span class="s2">"default"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
             <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Optional note that replaces the output variable's 'comment' attribute."</span><span class="p">,</span>
         <span class="p">},</span>
+        <span class="s2">"optional"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"If True, skip silently (no error) when target_variable is absent "</span>
+            <span class="s2">"from the data, e.g. a rename that only applies under one of "</span>
+            <span class="s2">"several file naming conventions."</span><span class="p">,</span>
+        <span class="p">},</span>
     <span class="p">}</span>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="CorrectValues.output_variables">
+<a class="viewcode-back" href="../../../../api/pelagos_py/steps/input_output/correct_values/index.html#pelagos_py.steps.input_output.correct_values.CorrectValues.output_variables">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">output_variables</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">parameters</span><span class="p">):</span>
+        <span class="n">output_as</span> <span class="o">=</span> <span class="n">parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"output_as"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">output_as</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">output_as</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output_as</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="n">output_as</span><span class="p">)</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="n">parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"target_variable"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">adjusted_name</span><span class="p">(</span><span class="n">target</span><span class="p">)]</span> <span class="k">if</span> <span class="n">target</span> <span class="k">else</span> <span class="p">[]</span></div>
+
 
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">check_data</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span>
 
-        <span class="n">var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_variable</span>
+        <span class="n">var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_variable</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_source</span> <span class="o">=</span> <span class="n">var</span>
         <span class="k">if</span> <span class="n">var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">optional</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">' not found in dataset; skipping (optional)."</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">] target_variable '</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">' not found in dataset. "</span>
                 <span class="sa">f</span><span class="s2">"Available variables: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">)</span><span class="si">}</span><span class="s2">."</span>
             <span class="p">)</span>
 
         <span class="n">outs</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_as</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_as</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span>
-            <span class="k">else</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">output_as</span> <span class="ow">or</span> <span class="n">var</span><span class="p">]</span>
+            <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_as</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_as</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span>
+            <span class="k">else</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">output_as</span> <span class="ow">or</span> <span class="n">adjusted_name</span><span class="p">(</span><span class="n">var</span><span class="p">)]</span>
         <span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">append_description</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">overwrite_description</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">append_description</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">overwrite_description</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">] set only one of 'append_description' / 'overwrite_description'."</span>
             <span class="p">)</span>
 
         <span class="n">vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_raw_data</span> <span class="o">=</span> <span class="n">vals</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_outs</span> <span class="o">=</span> <span class="n">outs</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">applied</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_skip_reason</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="n">valid_mask</span> <span class="o">=</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">vals</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">valid_mask</span><span class="p">):</span>
@@ -599,41 +636,47 @@
                 <span class="n">window</span> <span class="o">&amp;=</span> <span class="n">times</span> <span class="o">&gt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_start</span><span class="p">)</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">window</span> <span class="o">&amp;=</span> <span class="n">times</span> <span class="o">&lt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_end</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_window</span> <span class="o">=</span> <span class="n">window</span>
 
         <span class="c1"># Decide whether the correction is needed, judging by the windowed data.</span>
-        <span class="n">do_scale</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">expected_range</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">lo</span><span class="p">,</span> <span class="n">hi</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expected_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expected_range</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
             <span class="n">sample</span> <span class="o">=</span> <span class="n">vals</span><span class="p">[</span><span class="n">valid_mask</span> <span class="o">&amp;</span> <span class="n">window</span><span class="p">]</span>
             <span class="n">median_val</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="n">sample</span><span class="p">))</span> <span class="k">if</span> <span class="n">sample</span><span class="o">.</span><span class="n">size</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
             <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">median_val</span><span class="p">)</span> <span class="ow">and</span> <span class="n">lo</span> <span class="o">&lt;=</span> <span class="n">median_val</span> <span class="o">&lt;=</span> <span class="n">hi</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">' median (</span><span class="si">{</span><span class="n">median_val</span><span class="si">:</span><span class="s2">.4g</span><span class="si">}</span><span class="s2">) is within expected range "</span>
-                    <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">lo</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">hi</span><span class="si">}</span><span class="s2">]; skipping correction."</span>
-                <span class="p">)</span>
-                <span class="n">do_scale</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_skip_reason</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"median (</span><span class="si">{</span><span class="n">median_val</span><span class="si">:</span><span class="s2">.4g</span><span class="si">}</span><span class="s2">) already within expected range [</span><span class="si">{</span><span class="n">lo</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">hi</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2">]"</span>
             <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">median_val</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">' median (</span><span class="si">{</span><span class="n">median_val</span><span class="si">:</span><span class="s2">.4g</span><span class="si">}</span><span class="s2">) is outside expected range "</span>
                     <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">lo</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">hi</span><span class="si">}</span><span class="s2">]; applying correction."</span>
                 <span class="p">)</span>
-
-        <span class="c1"># Nothing changes when there is no scaling, no rename/copy and no comment to set.</span>
-        <span class="n">no_description</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">append_description</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">overwrite_description</span> <span class="ow">is</span> <span class="kc">None</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">do_scale</span> <span class="ow">and</span> <span class="n">outs</span> <span class="o">==</span> <span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="ow">and</span> <span class="n">no_description</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_skip_reason</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">slope</span> <span class="o">==</span> <span class="mf">1.0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">intercept</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_skip_reason</span> <span class="o">=</span> <span class="s2">"slope 1 / intercept 0 is the identity"</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_skip_reason</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">' </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_skip_reason</span><span class="si">}</span><span class="s2">; values unchanged."</span><span class="p">)</span>
 
         <span class="c1"># Apply the affine correction within the window (NaNs propagate harmlessly).</span>
         <span class="n">corrected</span> <span class="o">=</span> <span class="n">vals</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">do_scale</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_skip_reason</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">corrected</span><span class="p">[</span><span class="n">window</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">slope</span> <span class="o">*</span> <span class="n">vals</span><span class="p">[</span><span class="n">window</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">intercept</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">applied</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">plot_diagnostics</span><span class="p">()</span>
+
+        <span class="c1"># Nothing changes when there is no scaling, no rename/copy and no comment to set.</span>
+        <span class="n">no_description</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">append_description</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">overwrite_description</span> <span class="ow">is</span> <span class="kc">None</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">applied</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_as</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">no_description</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
 
         <span class="c1"># Write to each output name (a copy/rename when it differs from target_variable).</span>
         <span class="k">for</span> <span class="n">out</span> <span class="ow">in</span> <span class="n">outs</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">out</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">corrected</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_outs</span> <span class="o">=</span> <span class="n">outs</span>
+            <span class="k">if</span> <span class="n">out</span> <span class="o">!=</span> <span class="n">var</span> <span class="ow">and</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">out</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="n">names</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"'</span><span class="si">{</span><span class="n">o</span><span class="si">}</span><span class="s2">'"</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">outs</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">applied</span><span class="p">:</span>
@@ -644,64 +687,111 @@
         <span class="k">if</span> <span class="n">copies</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Wrote '</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">' to </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">o</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">o</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">copies</span><span class="p">)</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
 
+        <span class="n">new_units</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corrected_units</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">applied</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="k">for</span> <span class="n">out</span> <span class="ow">in</span> <span class="n">outs</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">corrected_units</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">out</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"units"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corrected_units</span>
+            <span class="k">if</span> <span class="n">new_units</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">out</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"units"</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_units</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">overwrite_description</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">out</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"comment"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">overwrite_description</span>
             <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">append_description</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">existing</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">out</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"comment"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">out</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">"comment"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">existing</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">append_description</span><span class="si">}</span><span class="s2">"</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">if</span> <span class="n">existing</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">append_description</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">existing</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">append_description</span><span class="si">}</span><span class="s2">"</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="n">existing</span>
+                    <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">append_description</span>
                 <span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">corrected_units</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Set </span><span class="si">{</span><span class="n">names</span><span class="si">}</span><span class="s2"> units to '</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">corrected_units</span><span class="si">}</span><span class="s2">'."</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">plot_diagnostics</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">new_units</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Set </span><span class="si">{</span><span class="n">names</span><span class="si">}</span><span class="s2"> units to '</span><span class="si">{</span><span class="n">new_units</span><span class="si">}</span><span class="s2">'."</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">plot_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">applied</span><span class="p">:</span>
-            <span class="k">return</span>
-
-        <span class="n">var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_variable</span>
-        <span class="n">corrected</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_outs</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">values</span>
-
-        <span class="c1"># Plot against TIME if available, otherwise against sample index.</span>
-        <span class="k">if</span> <span class="s2">"TIME"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
-            <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-            <span class="n">xlabel</span> <span class="o">=</span> <span class="s2">"Time"</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">corrected</span><span class="p">))</span>
-            <span class="n">xlabel</span> <span class="o">=</span> <span class="s2">"Sample index"</span>
+        <span class="c1"># value + difference panels for a real correction, one panel otherwise</span>
+        <span class="n">var</span><span class="p">,</span> <span class="n">outs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_source</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_outs</span>
+        <span class="n">raw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_raw_data</span>
+        <span class="n">corrected</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">slope</span> <span class="o">*</span> <span class="n">raw</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">intercept</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">applied</span> <span class="k">else</span> <span class="n">raw</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">applied</span><span class="p">:</span>
+            <span class="n">corrected</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_window</span><span class="p">,</span> <span class="n">corrected</span><span class="p">,</span> <span class="n">raw</span><span class="p">)</span>
+        <span class="n">flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="k">if</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">x_time</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
 
         <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">"tkagg"</span><span class="p">)</span>
-        <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">new_fig</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">applied</span><span class="p">:</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">new_fig</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">height_ratios</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">new_fig</span><span class="p">()</span>
         <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
 
-        <span class="n">fig_spec</span><span class="o">.</span><span class="n">points</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_raw_data</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">FLAGGED</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Raw"</span><span class="p">)</span>
-        <span class="n">fig_spec</span><span class="o">.</span><span class="n">points</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">corrected</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">CATEGORY</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Corrected"</span><span class="p">)</span>
-
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">applied</span><span class="p">:</span>
+            <span class="n">fig_spec</span><span class="o">.</span><span class="n">points</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">FLAGGED</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"raw"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_series</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">corrected</span><span class="p">,</span> <span class="n">flags</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">expected_range</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">lo</span><span class="p">,</span> <span class="n">hi</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expected_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expected_range</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">hi</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"black"</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">"--"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Max (</span><span class="si">{</span><span class="n">hi</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">lo</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"black"</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">"--"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Min (</span><span class="si">{</span><span class="n">lo</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span>
+                <span class="n">hi</span><span class="p">,</span>
+                <span class="n">color</span><span class="o">=</span><span class="s2">"black"</span><span class="p">,</span>
+                <span class="n">linestyle</span><span class="o">=</span><span class="s2">"--"</span><span class="p">,</span>
+                <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span>
+                <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">"expected range [</span><span class="si">{</span><span class="n">lo</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">hi</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2">]"</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">lo</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"black"</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">"--"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">bound</span> <span class="ow">in</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_start</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_end</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">bound</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="s2">"TIME"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span><span class="p">(</span><span class="n">bound</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="s2">"black"</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">":"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span>
+                <span class="p">)</span>
+        <span class="n">units</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">corrected_units</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">applied</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span>
+            <span class="n">var</span>
+        <span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">)</span>
+        <span class="n">ylabel</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">axis_label</span><span class="p">(</span><span class="n">outs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">units</span><span class="p">)</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="n">ylabel</span><span class="p">)</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Flags"</span> <span class="k">if</span> <span class="n">flags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">xlabel</span> <span class="o">==</span> <span class="s2">"Time"</span><span class="p">:</span>
-            <span class="n">fig_spec</span><span class="o">.</span><span class="n">date_axis</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span><span class="s2">"x"</span><span class="p">)</span>
-        <span class="n">ylabel</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">axis_label</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">))</span>
-        <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">xlabel</span><span class="o">=</span><span class="n">xlabel</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="n">ylabel</span><span class="p">)</span>
-        <span class="n">fig_spec</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">applied</span><span class="p">:</span>
+            <span class="n">ax2</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_series</span><span class="p">(</span><span class="n">ax2</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">corrected</span> <span class="o">-</span> <span class="n">raw</span><span class="p">,</span> <span class="n">flags</span><span class="p">)</span>
+            <span class="n">ax2</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"black"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span><span class="p">)</span>
+            <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">ax2</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="s2">"corrected - raw"</span><span class="p">)</span>
+            <span class="n">fig_spec</span><span class="o">.</span><span class="n">x_axis</span><span class="p">(</span><span class="n">ax2</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fig_spec</span><span class="o">.</span><span class="n">x_axis</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
 
-        <span class="n">fig_spec</span><span class="o">.</span><span class="n">finish</span><span class="p">(</span>
-            <span class="n">fig</span><span class="p">,</span>
-            <span class="n">suptitle</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Value Correction: </span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
-            <span class="sa">f</span><span class="s2">"(corrected = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">slope</span><span class="si">}</span><span class="s2"> * value + </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">intercept</span><span class="si">}</span><span class="s2">)"</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">finish</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">suptitle</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_title</span><span class="p">())</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_series</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">flags</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">flags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fig_spec</span><span class="o">.</span><span class="n">flag_points</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">flags</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fig_spec</span><span class="o">.</span><span class="n">points</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">fig_spec</span><span class="o">.</span><span class="n">CATEGORY</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">"corrected"</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_title</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">var</span><span class="p">,</span> <span class="n">outs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_source</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_outs</span>
+        <span class="n">head</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Correct Values: </span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">"</span>
+        <span class="n">renamed</span> <span class="o">=</span> <span class="p">[</span><span class="n">o</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">outs</span> <span class="k">if</span> <span class="n">o</span> <span class="o">!=</span> <span class="n">var</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">renamed</span><span class="p">:</span>
+            <span class="n">head</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">" -&gt; </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">renamed</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+        <span class="n">note</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">overwrite_description</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">append_description</span>
+        <span class="k">if</span> <span class="n">note</span><span class="p">:</span>
+            <span class="n">head</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"  -  </span><span class="si">{</span><span class="n">note</span><span class="si">}</span><span class="s2">"</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">applied</span><span class="p">:</span>
+            <span class="n">n_changed</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_window</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_raw_data</span><span class="p">)))</span>
+            <span class="n">n_valid</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_raw_data</span><span class="p">)))</span>
+            <span class="n">what</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"corrected = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">slope</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2"> * value + </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">intercept</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2">"</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_start</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_end</span><span class="p">:</span>
+                <span class="n">what</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"  |  window </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">time_start</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">'...'</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">time_end</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">'...'</span><span class="si">}</span><span class="s2">"</span>
+            <span class="n">what</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"  |  </span><span class="si">{</span><span class="n">n_changed</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="n">n_valid</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> points changed"</span>
+        <span class="k">elif</span> <span class="n">renamed</span><span class="p">:</span>
+            <span class="n">what</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Values unchanged (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_skip_reason</span><span class="si">}</span><span class="s2">); copied to </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">renamed</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">what</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"NOT applied: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_skip_reason</span><span class="si">}</span><span class="s2">"</span>
+            <span class="k">if</span> <span class="s2">"identity"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_skip_reason</span><span class="p">:</span>
+                <span class="n">what</span> <span class="o">+=</span> <span class="s2">"  -  placeholder, values unchanged"</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">head</span><span class="si">}</span><span class="se">\n</span><span class="si">{</span><span class="n">what</span><span class="si">}</span><span class="s2">"</span></div>
 
 </pre></div>
 

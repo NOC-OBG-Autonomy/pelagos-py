@@ -415,7 +415,9 @@
 
 <span class="c1">#### Mandatory imports ####</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_qc</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseQC</span><span class="p">,</span> <span class="n">register_qc</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.qc_handling</span><span class="w"> </span><span class="kn">import</span> <span class="n">propagate_flags</span><span class="p">,</span> <span class="n">raw_name</span>
 
 <span class="c1">#### Custom imports ####</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
@@ -440,13 +442,11 @@
 
 <span class="sd">        - name: "Apply QC"</span>
 <span class="sd">          parameters:</span>
-<span class="sd">            qc_settings: {</span>
-<span class="sd">                "stuck value test": {</span>
-<span class="sd">                  "variables": {"PRES": 4, "LATITUDE": 100},</span>
-<span class="sd">                  "also_flag": {"PRES": ["CNDC", "TEMP"], "LATITUDE": ["LONGITUDE"]},</span>
-<span class="sd">                  "plot": ["PRES", "LATITUDE"]</span>
-<span class="sd">                }</span>
-<span class="sd">            }</span>
+<span class="sd">            qc_settings:</span>
+<span class="sd">              stuck value qc:</span>
+<span class="sd">                variables: {PRES: 4, LATITUDE: 100}</span>
+<span class="sd">                also_flag: {PRES: [CNDC, TEMP], LATITUDE: [LONGITUDE]}</span>
+<span class="sd">                plot: [PRES, LATITUDE]</span>
 <span class="sd">          diagnostics: true</span>
 <span class="sd">    """</span>
 
@@ -469,7 +469,7 @@
         <span class="s2">"plot"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
             <span class="s2">"default"</span><span class="p">:</span> <span class="p">[],</span>
-            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Variables to plot in diagnostics."</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Variables to plot in diagnostics (default: every tested variable)."</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">}</span>
 
@@ -485,40 +485,18 @@
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/quality_control/stuck_value_qc/index.html#pelagos_py.steps.quality_control.stuck_value_qc.stuck_value_qc.return_qc">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">return_qc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># Subset the data</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">keep_vars</span><span class="p">()]</span>
 
         <span class="c1"># Generate the variable-specific flags</span>
         <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">n_stuck</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="c1"># remove nans</span>
             <span class="n">var_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">)</span>
 
-            <span class="c1"># Calculate forward (step=1) and backward (step=-1) differences across the variable</span>
-            <span class="n">backward_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">var_data</span><span class="p">,</span> <span class="n">append</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-            <span class="n">forward_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">var_data</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">append</span><span class="o">=</span><span class="mi">0</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-
-            <span class="c1"># When either diff is 0 at a given index, then the value is stuck</span>
-            <span class="n">stuck_value_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">backward_diff</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">forward_diff</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
-
-            <span class="c1"># Handle edge cases</span>
-            <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
-                <span class="n">stuck_value_mask</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">var_data</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">==</span> <span class="n">var_data</span><span class="p">[</span><span class="n">index</span> <span class="o">+</span> <span class="n">step</span><span class="p">]</span>
-
-            <span class="c1"># The remaining processing has to be in int dtype</span>
-            <span class="n">stuck_value_mask</span> <span class="o">=</span> <span class="n">stuck_value_mask</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-
-            <span class="c1"># Find transitions between stuck and unstuck</span>
-            <span class="n">switching_points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="mi">0</span><span class="p">],</span> <span class="n">stuck_value_mask</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">]]))</span>
-            <span class="n">starts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">switching_points</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="n">ends</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">switching_points</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-
-            <span class="c1"># Replace the value of each element in a group of stuck values with the length of that group</span>
-            <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">starts</span><span class="p">,</span> <span class="n">ends</span><span class="p">):</span>
-                <span class="n">stuck_value_mask</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]</span> <span class="o">=</span> <span class="n">end</span> <span class="o">-</span> <span class="n">start</span>
-
-            <span class="c1"># Convert the stuck values mask into flags</span>
-            <span class="n">bad_values</span> <span class="o">=</span> <span class="n">stuck_value_mask</span> <span class="o">&gt;</span> <span class="n">n_stuck</span>
-            <span class="n">stuck_value_mask</span><span class="p">[</span><span class="n">bad_values</span><span class="p">]</span> <span class="o">=</span> <span class="mi">4</span>
-            <span class="n">stuck_value_mask</span><span class="p">[</span><span class="o">~</span><span class="n">bad_values</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="c1"># each sample gets the length of the run of identical values it is in</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">var_data</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+            <span class="n">run_id</span> <span class="o">=</span> <span class="p">(</span><span class="n">values</span> <span class="o">!=</span> <span class="n">values</span><span class="o">.</span><span class="n">shift</span><span class="p">())</span><span class="o">.</span><span class="n">cumsum</span><span class="p">()</span>
+            <span class="n">run_length</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">run_id</span><span class="p">)</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="s2">"size"</span><span class="p">)</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+            <span class="n">stuck_value_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">run_length</span> <span class="o">&gt;</span> <span class="n">n_stuck</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 
             <span class="c1"># Insert the flags into the QC column</span>
             <span class="n">nan_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">])</span>
@@ -528,7 +506,13 @@
             <span class="c1"># Broadcast the QC found for var into variables specified by "also_flag"</span>
             <span class="k">if</span> <span class="n">extra_vars</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">also_flag</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">var</span><span class="p">):</span>
                 <span class="k">for</span> <span class="n">extra_var</span> <span class="ow">in</span> <span class="n">extra_vars</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">extra_var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]</span>
+                    <span class="n">base</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">extra_var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">])</span>
+                    <span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">extra_var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="p">[</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">],</span>
+                        <span class="n">propagate_flags</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]),</span>
+                    <span class="p">)</span>
 
         <span class="c1"># Select just the flags</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span>
@@ -543,29 +527,26 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">plot_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">"tkagg"</span><span class="p">)</span>
 
-        <span class="c1"># If not plots were specified</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"WARNING: In '</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">qc_name</span><span class="si">}</span><span class="s2">', diagnostics were called but no variables were specified for plotting."</span>
-            <span class="p">)</span>
-            <span class="k">return</span>
+        <span class="n">plot_vars</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">)</span>
 
         <span class="c1"># Plot the QC output</span>
-        <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">new_fig</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="p">),</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axes</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">plot</span><span class="p">):</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">new_fig</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">plot_vars</span><span class="p">),</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">x_time</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">var</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axes</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">plot_vars</span><span class="p">):</span>
             <span class="c1"># Check that the user specified var exists in the test set</span>
             <span class="k">if</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">qc_outputs</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">"WARNING: Cannot plot </span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC as it was not included in this test."</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log_warn</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"Cannot plot </span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC as it was not included in this test."</span>
                 <span class="p">)</span>
                 <span class="k">continue</span>
 
-            <span class="n">fig_spec</span><span class="o">.</span><span class="n">flag_points</span><span class="p">(</span>
-                <span class="n">ax</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]</span>
-            <span class="p">)</span>
+            <span class="n">fig_spec</span><span class="o">.</span><span class="n">flag_points</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">])</span>
             <span class="n">ylabel</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">axis_label</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">))</span>
-            <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2"> Stuck Value Test"</span><span class="p">,</span> <span class="n">xlabel</span><span class="o">=</span><span class="s2">"Index"</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="n">ylabel</span><span class="p">)</span>
+            <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2"> Stuck Value Test"</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="n">ylabel</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">raw_name</span><span class="p">(</span><span class="n">var</span><span class="p">)</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"PRES"</span><span class="p">,</span> <span class="s2">"DEPTH"</span><span class="p">):</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
             <span class="n">fig_spec</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Flags"</span><span class="p">)</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">x_axis</span><span class="p">(</span><span class="n">axes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">x</span><span class="p">)</span>
 
         <span class="n">fig_spec</span><span class="o">.</span><span class="n">finish</span><span class="p">(</span><span class="n">fig</span><span class="p">)</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
