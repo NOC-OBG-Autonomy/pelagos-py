@@ -1,5 +1,12 @@
 # Temperature Processing
 
+```{figure} ../_static/temp/temp_section.png
+:alt: Temperature against pressure and time for the demo deployment
+:width: 100%
+
+Temperature from the pelagos-py demo deployment (one month, June 2024) against pressure and time, with QC-flagged samples removed. The left strip shows the same values against pressure.
+```
+
 ## Overview
 
 Temperature is measured by onboard CTD payload as a glider profiles. The temperature-measuring component is typically a high-accuracy thermistor which has variable resistance under changing thermal environment. The resistance change is predictable, following a curve which can be used to infer the current temperature of the component. Temperature measurements are often some of the most reliable, requiring minimal processing. 

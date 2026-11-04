@@ -1,5 +1,12 @@
 # Particulate Backscattering (b<sub>bp</sub>) Processing
 
+```{figure} ../_static/bbp/bbp_section.png
+:alt: Particulate backscattering (bbp) against pressure and time for the demo deployment
+:width: 100%
+
+Particulate backscattering (b<sub>bp</sub>) from the pelagos-py demo deployment (one month, June 2024) against pressure and time, with QC-flagged samples removed. The left strip shows the same values against pressure.
+```
+
 ## Overview
 
 Optical backscattering (b<sub>b</sub>) is an inherent optical property defined as the limit, as path length approaches zero, of the fraction of light is scattered in a backwards direction, per unit distance traveled through the water. It is a fundamental inherent optical property of seawater, critical to ocean color, and important for visibility and light penetration in the ocean. Particulate optical backscattering (b<sub>bp</sub>), is the backscattering by particulate matter. As measured by autonomous oceanographic platforms, (b<sub>bp</sub>) provides a proxy for particle concentration and size. In the open ocean, at low inorganic particle concentrations, it is a useful proxy for particulate organic carbon (POC) concentration and and is a required optical reference for several of the non-photochemical quenching (NPQ) correction methods used in chlorophyll-*a* processing. Raw backscattering sensors measure the volume scattering function at a single angle and wavelength (beta, in m<sup>-1</sup> sr<sup>-1</sup>), which must be converted to the particulate backscattering coefficient (b<sub>bp</sub>, in m<sup>-1</sup>) and separated from isolated spikes before it can be interpreted or used downstream.

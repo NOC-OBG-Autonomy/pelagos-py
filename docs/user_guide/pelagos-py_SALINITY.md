@@ -1,5 +1,12 @@
 # Salinity Adjustment
 
+```{figure} ../_static/salinity/salinity_section.png
+:alt: Practical salinity against pressure and time for the demo deployment
+:width: 100%
+
+Practical salinity from the pelagos-py demo deployment (one month, June 2024) against pressure and time, with QC-flagged samples removed. The left strip shows the same values against pressure.
+```
+
 ## Overview
 
 Practical salinity is not measured directly by a glider CTD; it is derived from conductivity (CNDC), in-situ temperature (TEMP) and pressure (PRES) using the practical salinity equation. Because conductivity and temperature are measured by physically separate sensors with different response times, and because the conductivity cell itself stores and releases heat, the raw CNDC/TEMP pair is not perfectly synchronised in time or thermally equilibrated. Left uncorrected, this produces characteristic salinity spiking at sharp temperature/conductivity gradients (e.g. at the thermocline) that is a sensor artefact rather than real water-mass structure. Note that this correction should be applied to pumped CTDs; umpuped CTDs still need to be included in the processing.

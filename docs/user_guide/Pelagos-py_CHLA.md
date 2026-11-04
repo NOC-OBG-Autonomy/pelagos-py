@@ -1,5 +1,12 @@
 # Chlorophyll-*a* Processing
 
+```{figure} ../_static/chla/chla_section.png
+:alt: Chlorophyll-a against pressure and time for the demo deployment
+:width: 100%
+
+Chlorophyll-*a* from the pelagos-py demo deployment (one month, June 2024) against pressure and time, with QC-flagged samples removed. The left strip shows the same values against pressure.
+```
+
 ## Overview
 
 Chlorophyll-*a* fluorescence measured by autonomous oceanographic platforms provides a valuable proxy for phytoplankton biomass and is one of the most widely used optical measurements in marine biogeochemistry. However, raw fluorescence observations are affected by several instrument- and environment-specific artefacts that must be addressed before they can be interpreted quantitatively. These include isolated sensor spikes, instrument dark offsets and the daytime suppression of fluorescence caused by non-photochemical quenching (NPQ).

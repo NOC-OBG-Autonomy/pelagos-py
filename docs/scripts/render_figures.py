@@ -17,6 +17,7 @@ import yaml
 from pelagos_py.pipeline import Pipeline
 from pelagos_py.utils.demo_data import get_demo_file
 from pelagos_py.steps import create_step
+from pelagos_py.steps.input_output.write_report import cross_section_figure
 from pelagos_py.utils import diagnostic_capture
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -103,6 +104,17 @@ def main():
         dest = os.path.join(args.out, path)
         os.makedirs(os.path.dirname(dest), exist_ok=True)
         shutil.copyfile(_find(captured, step, figure, index), dest)
+        print("wrote", os.path.relpath(dest, ROOT))
+    sections = {}
+    for path, labels in spec.get("sections", {}).items():
+        section_dir = os.path.join(captured, "sections", os.path.dirname(path))
+        os.makedirs(section_dir, exist_ok=True)
+        sections[path] = cross_section_figure(ds, section_dir, labels=labels)
+    diagnostic_capture.wait_for_saves()
+    for path, image in sections.items():
+        dest = os.path.join(args.out, path)
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        shutil.copyfile(image, dest)
         print("wrote", os.path.relpath(dest, ROOT))
     shutil.rmtree(captured, ignore_errors=True)
 

@@ -1,5 +1,12 @@
 # PAR Processing
 
+```{figure} ../_static/par/par_section.png
+:alt: Downwelling PAR against pressure and time for the demo deployment
+:width: 100%
+
+Downwelling PAR from the pelagos-py demo deployment (one month, June 2024) against pressure and time, with QC-flagged samples removed. The left strip shows the same values against pressure.
+```
+
 ## Overview
 
 Photosynthetically active radiation (PAR) is downwelling irradiance in the 400–700 nm band, in µmol photons m⁻² s⁻¹, sampled continuously by the glider so that every dive and climb yields a vertical irradiance profile. The canonical variable name is `DOWNWELLING_PAR` (OG1 convention); it is configurable everywhere it is used.
