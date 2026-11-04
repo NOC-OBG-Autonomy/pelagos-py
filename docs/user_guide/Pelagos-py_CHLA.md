@@ -24,6 +24,11 @@ The chlorophyll processing workflow consists of six sequential stages:
 
 Each processing stage is described in detail below, including the default Pelagos configuration, the scientific rationale for the selected parameters and guidance on when those defaults should be modified for different deployments.
 
+```{image} ../_static/chla/Pelagos-py_CHLA_Flowchart.png
+:alt: Chlorophyll-a processing flowchart
+:width: 100%
+```
+
 ---
 
 # 1. Initial quality control

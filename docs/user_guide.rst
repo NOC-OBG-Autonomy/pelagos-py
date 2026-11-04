@@ -373,5 +373,4 @@ A template for a static check is provided in
    Salinity <user_guide/pelagos-py_SALINITY>
    PAR <user_guide/Pelagos-py_PAR>
    Chlorophyll-a <user_guide/Pelagos-py_CHLA>
-   Chlorophyll-a flowchart <user_guide/Pelagos-py_CHLA_Flowchart>
    Backscatter <user_guide/Pelagos-py_BBP>
