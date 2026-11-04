@@ -21,7 +21,6 @@ author = "National Oceanography Centre"
 # ``release`` is the full version (e.g. "2.4.1.dev3+gabc1234"); ``version`` is
 # the short X.Y form shown in the docs. Both feed the |release| / |version|
 # substitutions used on the index page.
-
 try:
     release = _get_version("pelagos_py")
 except PackageNotFoundError:
