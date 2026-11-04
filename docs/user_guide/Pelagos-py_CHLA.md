@@ -352,13 +352,13 @@ $$
 - The unquenched fluorescence-to-backscatter ratio is approximately uniform within the mixed layer.
 - At least one acceptable observation within the mixed layer represents the unquenched fluorescence-to-backscatter ratio.
 
-### Figure placeholder
+### Figure
 
 ```{figure} ../_static/chla/npq_sackmann2008.png
-:alt: Placeholder for the Sackmann 2008 correction.
+:alt: The Sackmann 2008 correction.
 :width: 90%
 
-**Placeholder.** Original fluorescence-derived chlorophyll signal, backscatter-scaled reconstruction and corrected signal. The mixed-layer depth and depth of $R_{\max}$ are shown.
+Original fluorescence-derived chlorophyll signal, backscatter-scaled reconstruction and corrected signal. The mixed-layer depth and depth of $R_{\max}$ are shown.
 ```
 
 ---
@@ -406,13 +406,13 @@ $$
 - The maximum acceptable value within the mixed layer is not a residual spike or other artefact.
 - The mixed-layer depth provides an appropriate upper bound on the quenching layer.
 
-### Figure placeholder
+### Figure
 
 ```{figure} ../_static/chla/npq_xing2012.png
-:alt: Placeholder for the Xing 2012 correction.
+:alt: The Xing 2012 correction.
 :width: 90%
 
-**Placeholder.** Original and corrected daytime chlorophyll profiles. Horizontal lines identify the mixed-layer depth and the depth of maximum in-mixed-layer fluorescence-derived chlorophyll.
+Original and corrected daytime chlorophyll profiles. Horizontal lines identify the mixed-layer depth and the depth of maximum in-mixed-layer fluorescence-derived chlorophyll.
 ```
 
 ---
@@ -460,13 +460,13 @@ $$
 - The euphotic depth provides an appropriate upper bound on the quenching layer.
 - A reliable estimate of the euphotic depth is available for every daytime profile.
 
-### Figure placeholder
+### Figure
 
 ```{figure} ../_static/chla/npq_biermann2015.png
-:alt: Placeholder for the Biermann 2015 correction.
+:alt: The Biermann 2015 correction.
 :width: 90%
 
-**Placeholder.** Original and corrected chlorophyll profiles with the euphotic depth and the depth of maximum fluorescence-derived chlorophyll identified.
+Original and corrected chlorophyll profiles with the euphotic depth and the depth of maximum fluorescence-derived chlorophyll identified.
 ```
 
 ---
@@ -570,20 +570,20 @@ Unlike several other NPQ methods implemented in Pelagos, the regression estimate
 - The nighttime backscatter observations span a sufficient range to estimate a stable regression.
 - A reliable estimate of the euphotic depth is available for every daytime profile.
 
-### Figure placeholders
+### Figures
 
 ```{figure} ../_static/chla/npq_hemsley_regression.png
-:alt: Placeholder for the nighttime Hemsley fluorescence-backscatter regression.
+:alt: The nighttime Hemsley fluorescence-backscatter regression.
 :width: 80%
 
-**Placeholder.** Nighttime `CHLA_ADJUSTED` against particulate backscattering for observations shallower than 60 m, together with the fitted deployment-wide linear regression and coefficient of determination ($R^2$).
+Nighttime `CHLA_ADJUSTED` against particulate backscattering for observations shallower than 60 m, together with the fitted deployment-wide linear regression and coefficient of determination ($R^2$).
 ```
 
 ```{figure} ../_static/chla/npq_hemsley_profile.png
-:alt: Placeholder for a daytime Hemsley correction.
+:alt: A daytime Hemsley correction.
 :width: 90%
 
-**Placeholder.** Original daytime `CHLA_ADJUSTED` and the chlorophyll signal reconstructed from the deployment-wide nighttime regression throughout the euphotic zone.
+Original daytime `CHLA_ADJUSTED` and the chlorophyll signal reconstructed from the deployment-wide nighttime regression throughout the euphotic zone.
 ```
 
 ---
@@ -637,13 +637,13 @@ $$
 - The maximum fluorescence-to-backscatter ratio within the euphotic zone approximates the unquenched ratio.
 - The euphotic depth provides an appropriate upper bound on the quenching layer.
 
-### Figure placeholder
+### Figure
 
 ```{figure} ../_static/chla/npq_swart2015.png
-:alt: Placeholder for the Swart 2015 correction.
+:alt: The Swart 2015 correction.
 :width: 90%
 
-**Placeholder.** Original `CHLA_ADJUSTED`, $F/b_{bp}$, and corrected chlorophyll. The euphotic depth and depth of $R_{\max}$ are identified.
+Original `CHLA_ADJUSTED`, $F/b_{bp}$, and corrected chlorophyll. The euphotic depth and depth of $R_{\max}$ are identified.
 ```
 
 ---
@@ -809,27 +809,27 @@ $$
 - Consecutive nighttime profiles provide a stable nighttime reference.
 - The night-day fluorescence difference contains sufficient information to identify the base of the quenched layer.
 
-### Figure placeholders
+### Figures
 
 ```{figure} ../_static/chla/npq_thomalla_night_reference.png
-:alt: Placeholder for a Thomalla nighttime fluorescence-backscatter reference.
+:alt: A Thomalla nighttime fluorescence-backscatter reference.
 :width: 90%
 
-**Placeholder.** Depth-binned nighttime mean `CHLA_ADJUSTED`, mean backscatter and their ratio for one reference night.
+Depth-binned nighttime mean `CHLA_ADJUSTED`, mean backscatter and their ratio for one reference night.
 ```
 
 ```{figure} ../_static/chla/npq_thomalla_quenching_depth.png
-:alt: Placeholder for the Thomalla quenching-depth calculation.
+:alt: The Thomalla quenching-depth calculation.
 :width: 90%
 
-**Placeholder.** Night-minus-day chlorophyll difference, selected anchor point, candidate quenching depths and the final quenching depth.
+Night-minus-day chlorophyll difference, selected anchor point, candidate quenching depths and the final quenching depth.
 ```
 
 ```{figure} ../_static/chla/npq_thomalla_profile.png
-:alt: Placeholder for a Thomalla-corrected daytime profile.
+:alt: A Thomalla-corrected daytime profile.
 :width: 90%
 
-**Placeholder.** Original daytime `CHLA_ADJUSTED`, reconstructed chlorophyll and the final corrected profile above the estimated quenching depth.
+Original daytime `CHLA_ADJUSTED`, reconstructed chlorophyll and the final corrected profile above the estimated quenching depth.
 ```
 
 ---
@@ -925,20 +925,20 @@ $$
 - Consecutive nighttime reference profiles provide sufficient temporal coverage to construct a representative interpolated reference.
 - The assumptions of the Thomalla et al. (2018) method remain valid.
 
-### Figure placeholders
+### Figures
 
 ```{figure} ../_static/chla/npq_mitchell_interpolation.png
-:alt: Placeholder illustrating interpolation between consecutive nighttime reference profiles.
+:alt: Interpolation between consecutive nighttime reference profiles.
 :width: 90%
 
-**Placeholder.** Construction of an interpolated nighttime fluorescence-to-backscatter reference from consecutive nights using the Mean (MZ) and First–Last (FLZ) interpolation approaches.
+Construction of an interpolated nighttime fluorescence-to-backscatter reference from consecutive nights using the Mean (MZ) and First–Last (FLZ) interpolation approaches.
 ```
 
 ```{figure} ../_static/chla/npq_mitchell_profile.png
-:alt: Placeholder for a Mitchell et al. (2024) corrected profile.
+:alt: A Mitchell et al. (2024) corrected profile.
 :width: 90%
 
-**Placeholder.** Original daytime `CHLA_ADJUSTED` together with the interpolated nighttime fluorescence-to-backscatter reference and the final corrected chlorophyll profile.
+Original daytime `CHLA_ADJUSTED` together with the interpolated nighttime fluorescence-to-backscatter reference and the final corrected chlorophyll profile.
 ```
 
 ---
@@ -1000,13 +1000,13 @@ With `hybrid: false`, this S08+ formulation is applied to all daytime profiles.
 - The shallower of the mixed-layer depth and the selected irradiance isolume provides an appropriate estimate of the vertical extent of NPQ.
 - Reliable estimates of both mixed-layer depth and irradiance isolume depth are available for each daytime profile.
 
-### Figure placeholder
+### Figure
 
 ```{figure} ../_static/chla/npq_xing2018.png
-:alt: Placeholder for the Xing 2018 S08+ correction.
+:alt: The Xing 2018 S08+ correction.
 :width: 90%
 
-**Placeholder.** Original and corrected `CHLA_ADJUSTED` with MLD, $Z_{\mathrm{IPAR}}$, the resulting NPQ-layer depth and $R_{\max}$ identified.
+Original and corrected `CHLA_ADJUSTED` with MLD, $Z_{\mathrm{IPAR}}$, the resulting NPQ-layer depth and $R_{\max}$ identified.
 ```
 
 ---
@@ -1169,27 +1169,27 @@ The shallow-mixing correction requires a usable irradiance profile throughout th
 - The unquenched fluorescence-to-backscatter ratio is approximately uniform within the mixed layer.
 - The fluorescence-to-backscatter ratio immediately beneath the mixed-layer depth is representative of the unquenched mixed-layer ratio.
 
-### Figure placeholders
+### Figures
 
 ```{figure} ../_static/chla/npq_terrats_mixing_regimes.png
-:alt: Placeholder comparing deep- and shallow-mixing regimes.
+:alt: Comparison of deep- and shallow-mixing regimes.
 :width: 90%
 
-**Placeholder.** Examples of profiles classified as deep- and shallow-mixing according to the relative depths of the mixed layer and the selected irradiance isolume.
+Examples of profiles classified as deep- and shallow-mixing according to the relative depths of the mixed layer and the selected irradiance isolume.
 ```
 
 ```{figure} ../_static/chla/npq_terrats_sigmoid.png
-:alt: Placeholder for the irradiance-dependent sigmoid correction.
+:alt: The irradiance-dependent sigmoid correction.
 :width: 80%
 
-**Placeholder.** Retained fluorescence fraction, $s(I)$, as a function of irradiance using the Xing et al. (2018) parameterisation.
+Retained fluorescence fraction, $s(I)$, as a function of irradiance using the Xing et al. (2018) parameterisation.
 ```
 
 ```{figure} ../_static/chla/npq_terrats_profile.png
-:alt: Placeholder for an X18_S08 correction.
+:alt: An X18_S08 correction.
 :width: 90%
 
-**Placeholder.** Example shallow-mixing profile showing the Xing et al. (2018) sigmoid correction below the mixed layer, the Sackmann-style fluorescence-to-backscatter reconstruction above the mixed layer, and the final corrected chlorophyll profile.
+Example shallow-mixing profile showing the Xing et al. (2018) sigmoid correction below the mixed layer, the Sackmann-style fluorescence-to-backscatter reconstruction above the mixed layer, and the final corrected chlorophyll profile. The demo deployment logs PAR on upcasts only, so the hybrid is disabled there and this example shows the plain Xing et al. (2018) correction.
 ```
 
 ---
@@ -1270,24 +1270,24 @@ $$
 These diagnostics assess the consistency between daytime `CHLA_ADJUSTED` profiles and nearby nighttime `CHLA_ADJUSTED` profiles. They provide a comparative measure of how effectively the different NPQ methods reproduce the nighttime chlorophyll structure but do not establish that nighttime fluorescence-derived chlorophyll is an unbiased estimate of true chlorophyll concentration.
 
 ```{figure} ../_static/chla/npq_method_comparison.png
-:alt: Placeholder for the Pelagos NPQ method-comparison diagnostics.
+:alt: The Pelagos NPQ method-comparison diagnostics.
 :width: 100%
 
-**Placeholder.** Daytime-versus-nighttime comparison for the pre-NPQ `CHLA_ADJUSTED` baseline and each runnable NPQ correction method, including 1:1 lines, regression fits, RMSE, bias and $R^2$.
+Daytime-versus-nighttime comparison for the pre-NPQ `CHLA_ADJUSTED` baseline and each runnable NPQ correction method, including 1:1 lines, regression fits, RMSE, bias and $R^2$.
 ```
 
 ```{figure} ../_static/chla/npq_timeseries.png
-:alt: Placeholder for pre-NPQ and corrected chlorophyll sections.
+:alt: Pre-NPQ and corrected chlorophyll sections.
 :width: 100%
 
-**Placeholder.** Pre-NPQ and NPQ-corrected `CHLA_ADJUSTED` depth-time sections, with a third panel identifying observations whose values were modified by the configured NPQ correction.
+Pre-NPQ and NPQ-corrected `CHLA_ADJUSTED` depth-time sections, with a third panel identifying observations whose values were modified by the configured NPQ correction.
 ```
 
 ```{figure} ../_static/chla/npq_example_profile.png
-:alt: Placeholder for an example corrected profile.
+:alt: An example corrected profile.
 :width: 85%
 
-**Placeholder.** Example daytime `CHLA_ADJUSTED` profile for the configured method showing unchanged observations, original quenched values and NPQ-corrected values.
+Example daytime `CHLA_ADJUSTED` profile for the configured method showing unchanged observations, original quenched values and NPQ-corrected values.
 ```
 
 ---
