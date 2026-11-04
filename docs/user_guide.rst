@@ -369,12 +369,15 @@ A template for a static check is provided in
    :caption: Variable processing
    :hidden:
 
+   Position and time <user_guide/Pelagos-py_POSITION>
    Pressure <user_guide/Pelagos-py_PRESSURE>
    Profile finding <user_guide/Pelagos-py_PROFILES>
    Temperature <user_guide/Pelagos-py_TEMP>
    Salinity <user_guide/pelagos-py_SALINITY>
+   Derived CTD variables <user_guide/Pelagos-py_DERIVED>
    Mixed layer depth <user_guide/Pelagos-py_MLD>
    Oxygen <user_guide/Pelagos-py_DOXY>
    PAR <user_guide/Pelagos-py_PAR>
    Chlorophyll-a <user_guide/Pelagos-py_CHLA>
    Backscatter <user_guide/Pelagos-py_BBP>
+   Cross-calibration <user_guide/Pelagos-py_CROSSCAL>
