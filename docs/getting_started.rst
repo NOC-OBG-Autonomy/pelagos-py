@@ -1,20 +1,20 @@
 Getting Started
 ===============
 
-Pelagos-py provides a flexible, modular pipeline framework for defining, executing, and visualising multi-step data-processing workflows for oceanographic data.
+pelagos-py provides a modular pipeline framework for defining, running and visualising multi-step processing workflows for oceanographic data.
 
-Each pipeline is composed of a series of steps that are automatically built from a central user-defined YAML configuration file. As Pelagos-py only depends on the config file to construct a pipeline, processing can be easily reproduced by others through sharing of configs.
+Each pipeline is a series of steps built from a single YAML configuration file. Because the pipeline depends only on the config, processing can be reproduced by sharing the config.
 
 Installation
 ------------
 
-The easiest way to install **pelagos-py** is via pip:
+Install **pelagos-py** with pip:
 
 .. code-block:: bash
 
    pip install pelagos-py
 
-Alternatively, you can install directly from the source using git:
+Or install from source:
 
 .. code-block:: bash
 
@@ -22,20 +22,11 @@ Alternatively, you can install directly from the source using git:
    cd pelagos-py
    pip install -e .
 
-Dependencies
-------------
-
-Once you have cloned the repository, navigate into the project folder to install the required dependencies.
-
-**Using pip**
-
-.. code-block:: bash
-
-   pip install -r requirements.txt
+Both install all required dependencies.
 
 **Using Anaconda**
 
-If you prefer using conda, you can create a dedicated environment using the provided ``environment.yaml`` file. This environment includes all packages required to run pelagos_py and the example notebooks.
+If you prefer conda, create an environment from the provided ``environment.yaml``. It includes everything needed to run pelagos-py and the example notebooks.
 
 .. code-block:: bash
 
@@ -44,7 +35,7 @@ If you prefer using conda, you can create a dedicated environment using the prov
 Overview
 --------
 
-The ``Pipeline`` class orchestrates the flow of data through a sequence of modular steps. Each step performs a specific processing task (e.g., data loading, quality control, profile detection, export).
+The ``Pipeline`` class runs data through a sequence of modular steps. Each step performs one processing task (e.g. data loading, quality control, profile detection, export).
 
 .. list-table::
    :header-rows: 1
@@ -54,10 +45,10 @@ The ``Pipeline`` class orchestrates the flow of data through a sequence of modul
      - Description
    * - Configuration-driven
      - Users define the workflow in a YAML file describing each step, its parameters, and diagnostics options.
-   * - In-built Quality Control
-     - Pre-built quality control tests can be specified in the config by the user to flag bad data.
+   * - Built-in quality control
+     - Pre-built quality control tests can be specified in the config to flag bad data.
    * - Diagnostics
-     - Where possible, data can be visualized to see the effect of each component of the pipeline.
+     - Where possible, data can be visualised to see the effect of each step of the pipeline.
 
 How to Run
 ----------
@@ -113,7 +104,7 @@ The entire pipeline configuration can be exported to a YAML file for reproducibi
 Example Configuration
 ---------------------
 
-A minimal YAML configuration for a simple pipeline. See ``examples/notebooks/pipeline_demo.ipynb`` for a full demo.
+A minimal YAML configuration for the demo file. See ``examples/notebooks/pipeline_demo.ipynb`` for a full demo.
 
 .. code-block:: yaml
 
@@ -125,7 +116,7 @@ A minimal YAML configuration for a simple pipeline. See ``examples/notebooks/pip
    steps:
      - name: Load OG1
        parameters:
-         file_path: ../examples/data/OG1/Nelson_646_R.nc
+         file_path: examples/data/OG1/demo_OG1.nc
        diagnostics: false
 
      - name: Derive CTD
@@ -143,7 +134,7 @@ A minimal YAML configuration for a simple pipeline. See ``examples/notebooks/pip
      - name: "Data Export"
        parameters:
          export_format: "netcdf"
-         output_path: "../examples/data/OG1/Nelson_646_R_Processed.nc"
+         output_path: "examples/data/OG1/demo_OG1_Processed.nc"
          include_intermediates: false # true also exports working variables
 
 Example Pipeline
@@ -156,6 +147,6 @@ Both build a fully commented configuration file for the demo data, which serves 
 Documentation and Feedback
 --------------------------
 
-The details of how each step works can be found in the following sections of this documentation. Please note that this is a work in progress. Some steps may be missing or require further formatting.
+The details of how each step works can be found in the :doc:`user_guide` and the :doc:`api_reference`.
 
 If you spot any mistakes or would like specific documentation to be prioritised, please open an issue on the `GitHub issues page <https://github.com/NOC-OBG-Autonomy/pelagos-py/issues>`_.
