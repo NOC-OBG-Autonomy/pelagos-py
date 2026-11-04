@@ -53,3 +53,14 @@ def test_plot_diagnostics(mock_use, mock_show):
 
     mock_use.assert_called_once_with("tkagg")
     mock_show.assert_called_once_with(block=True)
+
+
+@patch("pelagos_py.steps.quality_control.position_on_land_qc.plt.show")
+@patch("pelagos_py.steps.quality_control.position_on_land_qc.matplotlib.use")
+def test_plot_diagnostics_without_positions(mock_use, mock_show):
+    qc_step = position_on_land_qc(
+        create_mock_dataset(lats=[np.nan, np.nan], lons=[np.nan, np.nan])
+    )
+    qc_step.return_qc()
+    qc_step.plot_diagnostics()
+    mock_show.assert_not_called()
