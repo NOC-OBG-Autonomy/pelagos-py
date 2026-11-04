@@ -38,18 +38,14 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
     in the dataset variables. Each derived variable is written as ``<name>_ADJUSTED`` (e.g.
     ``PSAL_ADJUSTED``), so raw versions from the input file are kept, and inputs are read from
     their ``_ADJUSTED`` version where one exists. A ``PSAL_ADJUSTED`` already made by Salinity
-    Adjustment is not overwritten.
+    Adjustment is not overwritten. See :doc:`/user_guide/Pelagos-py_DERIVED`.
 
     Parameters
     ----------
     to_derive : list
-        list of variables to derive (written with an ``_ADJUSTED`` suffix)
-        The following variables are supported:
-            - "DEPTH"
-            - "PSAL" (practical salinity)
-            - "ASAL" (absolute salinity)
-            - "CONS_TEMP" (conservative temperature)
-            - "DENSITY"
+        Variables to derive, each written as ``<name>_ADJUSTED``: ``DEPTH``, ``PSAL``
+        (practical salinity), ``ASAL`` (absolute salinity), ``CONS_TEMP``
+        (conservative temperature) and ``DENSITY``.
 
     Examples
     --------

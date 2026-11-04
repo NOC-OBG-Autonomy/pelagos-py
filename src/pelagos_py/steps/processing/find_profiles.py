@@ -232,14 +232,9 @@ def _assign_profile_and_cycle(phase, chunk_id):
     # whatever comes after them, so a bottom turn is never claimed by both the
     # descent before it and the ascent after.
     #
-    # Cycle: a new one starts as soon as a descent begins (from the same
-    # extended point PROFILE_NUMBER gives it), running up to but not including
-    # the start of the next descent - so it carries through the bottom
-    # inflection, the ascent, its trailing transition, and surfacing, all as one
-    # cycle. An ascent with nothing directly adjacent before its own extended
-    # start (upcast-only) starts a fresh cycle the same way a descent would -
-    # which is also what makes a mostly-propelled platform start a new cycle
-    # each time it actually goes underwater.
+    # Cycle: from leaving the surface to the end of the next surfacing. It only
+    # advances when the platform leaves the surface after having dived, so a
+    # mid-water turn, parking or a data gap stays within one cycle.
     n = len(phase)
     core_mask = (phase == ASCENT) | (phase == DESCENT)
     # Split on any phase change, so a descent turning straight into an ascent (no
@@ -249,9 +244,6 @@ def _assign_profile_and_cycle(phase, chunk_id):
     ends = np.flatnonzero(core_mask & np.concatenate((phase_changes, [True]))) + 1
 
     profile_num = np.full(n, np.nan)
-    cycle = np.ones(n, dtype=np.int32)
-    prev_hi = None
-    current_cycle = 1
     for k, (s, e) in enumerate(zip(starts, ends), start=1):
         lo = s
         while (
@@ -272,11 +264,15 @@ def _assign_profile_and_cycle(phase, chunk_id):
 
         profile_num[lo:hi] = k
 
-        is_new_cycle = prev_hi is None or phase[s] == DESCENT or lo != prev_hi
-        if is_new_cycle and prev_hi is not None:
-            current_cycle += 1
-        cycle[lo:] = current_cycle
-        prev_hi = hi
+    surfacing = phase == SURFACING
+    departures = np.flatnonzero(surfacing[:-1] & ~surfacing[1:]) + 1
+    dived = np.cumsum(~surfacing & (phase != UNKNOWN))
+    previous = np.concatenate(([0], departures[:-1]))
+    dived_before = np.where(previous > 0, dived[previous - 1], 0)
+    new_cycle = dived[departures - 1] > dived_before
+    increments = np.zeros(n, dtype=np.int32)
+    increments[departures[new_cycle]] = 1
+    cycle = 1 + np.cumsum(increments)
 
     return profile_num, cycle
 
@@ -404,7 +400,7 @@ class FindProfilesStep(BaseStep, QCHandlingMixin):
     it, and uses that to label every measurement with a scientific phase. From those
     phases it then derives a continuous ``PROFILE_NUMBER``, a ``PROFILE_DIRECTION``,
     a ``CYCLE`` count, and ``PROFILE_GRADIENT`` (the smoothed vertical velocity used
-    for classification, in depth units/s).
+    for classification, in depth units/s). See :doc:`/user_guide/Pelagos-py_PROFILES`.
 
     **All parameters are optional** — every parameter has a sensible default, so the
     step runs unchanged on a typical OG1 dataset with no configuration at all (see the

@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # tags are needed for the version number
 
       - name: Set Up Python
         uses: actions/setup-python@v5
@@ -26,6 +28,13 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r docs/requirements.txt
+          pip install -e .
+
+      # The user-guide figures are drawn by the steps themselves from the demo file.
+      - name: Render user-guide figures
+        run: |
+          python docs/scripts/render_figures.py
+          python docs/scripts/explainer_figures.py
 
       - name: Clean Python Cache and Docs Artifacts
         run: |

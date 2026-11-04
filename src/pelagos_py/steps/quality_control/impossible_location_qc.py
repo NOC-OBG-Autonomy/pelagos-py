@@ -33,7 +33,7 @@ class impossible_location_qc(BaseQC):
     Target Variable: LATITUDE, LONGITUDE
     Flag Number: 4 (bad data)
     Variables Flagged: LATITUDE, LONGITUDE
-    Checks that the latitude and longitude are valid.
+    Flags latitudes outside ±90° and longitudes outside ±180°, each on its own.
     """
 
     qc_name = "impossible location qc"
