@@ -9,7 +9,7 @@
 
 Chlorophyll-*a* fluorescence measured by autonomous oceanographic platforms provides a valuable proxy for phytoplankton biomass and is one of the most widely used optical measurements in marine biogeochemistry. However, raw fluorescence observations are affected by several instrument- and environment-specific artefacts that must be addressed before they can be interpreted quantitatively. These include isolated sensor spikes, instrument dark offsets and the daytime suppression of fluorescence caused by non-photochemical quenching (NPQ).
 
-Pelagos implements a modular chlorophyll processing workflow that combines generic quality-control algorithms with chlorophyll-specific correction methods to produce a quality-controlled chlorophyll-*a* product suitable for scientific analysis. Generic processing modules, such as Range QC and Spike QC, are shared across multiple variables within Pelagos and are documented separately. This page focuses on how those generic modules are configured for chlorophyll processing and on the chlorophyll-specific corrections that follow.
+pelagos-py implements a modular chlorophyll processing workflow that combines generic quality-control algorithms with chlorophyll-specific correction methods to produce a quality-controlled chlorophyll-*a* product suitable for scientific analysis. Generic processing modules, such as Range QC and Spike QC, are shared across multiple variables within pelagos-py and are documented separately. This page focuses on how those generic modules are configured for chlorophyll processing and on the chlorophyll-specific corrections that follow.
 
 The workflow has been designed to support a wide range of autonomous observing platforms, including ocean gliders, while remaining compatible with processing approaches commonly adopted within the BGC-Argo community. Default processing parameters are therefore intended as robust starting points rather than universally applicable values and should be reviewed for individual deployments, sensor configurations and sampling strategies.
 
@@ -27,7 +27,7 @@ The chlorophyll processing workflow consists of six sequential stages:
 
 6. **Final quality control** — verifies that the fully corrected `CHLA_ADJUSTED` concentrations remain physically plausible and assigns the final quality-control flags.
 
-Each processing stage is described in detail below, including the default Pelagos configuration, the scientific rationale for the selected parameters and guidance on when those defaults should be modified for different deployments.
+Each processing stage is described in detail below, including the default pelagos-py configuration, the scientific rationale for the selected parameters and guidance on when those defaults should be modified for different deployments.
 
 ```{image} ../_static/chla/Pelagos-py_CHLA_Flowchart.png
 :alt: Chlorophyll-a processing flowchart
@@ -38,7 +38,7 @@ Each processing stage is described in detail below, including the default Pelago
 
 # 1. Initial quality control
 
-Prior to correction of the raw fluorescence signal, Pelagos performs an initial global range quality-control test on the manufacturer-calibrated chlorophyll-*a* concentration (`CHLA`). The purpose of this initial test is to identify grossly implausible sensor observations and assign the corresponding quality-control flags before subsequent processing.
+Prior to correction of the raw fluorescence signal, pelagos-py performs an initial global range quality-control test on the manufacturer-calibrated chlorophyll-*a* concentration (`CHLA`). The purpose of this initial test is to identify grossly implausible sensor observations and assign the corresponding quality-control flags before subsequent processing.
 
 `CHLA` is calculated from the raw fluorometer signal (`CHLA_FLUORESCENCE_RAW`, counts) using the manufacturer-supplied dark value (`DARK_CHLA`, counts) and scale factor (`SCALE_CHLA`, mg m<sup>-3</sup> count<sup>-1</sup>):
 
@@ -62,13 +62,13 @@ These limits are intentionally conservative and are designed to identify grossly
 
 Observations assigned QC flag `4` remain in the dataset but are excluded from subsequent correction calculations where the configured calculation QC flags are applied.
 
-The mathematical formulation of the Range QC algorithm is documented separately in the Pelagos Quality Control documentation.
+The mathematical formulation of the Range QC algorithm is documented separately in the pelagos-py Quality Control documentation.
 
 ---
 
 # 2. Spike correction
 
-Following the initial global range test, Pelagos applies the generic **Spike QC** algorithm directly to the raw fluorometer signal (`CHLA_FLUORESCENCE_RAW`, counts). This step separates isolated fluorescence spikes from the underlying fluorescence baseline before the in-situ dark correction is estimated.
+Following the initial global range test, pelagos-py applies the generic **Spike QC** algorithm directly to the raw fluorometer signal (`CHLA_FLUORESCENCE_RAW`, counts). This step separates isolated fluorescence spikes from the underlying fluorescence baseline before the in-situ dark correction is estimated.
 
 Default configuration:
 
@@ -85,7 +85,7 @@ The spike correction produces separate **baseline** and **spike** components. Th
 
 Observations previously assigned QC flag `4` by the initial global range test are excluded from the calculation of the fluorescence baseline where the configured calculation QC flags are applied.
 
-The mathematical description of the Spike QC algorithm, including calculation of the rolling baseline and separation of the baseline and spike components, is documented separately in the Pelagos Quality Control documentation. *(Subject to change based upon spike test discussions.)*
+The mathematical description of the Spike QC algorithm, including calculation of the rolling baseline and separation of the baseline and spike components, is documented separately in the pelagos-py Quality Control documentation. *(Subject to change based upon spike test discussions.)*
 
 ---
 
@@ -99,7 +99,7 @@ The manufacturer calibration defines a factory dark value (`DARK_CHLA`, counts) 
 
 `CHLA = (CHLA_FLUORESCENCE_RAW - DARK_CHLA) × SCALE_CHLA`
 
-Pelagos uses the despiked fluorescence baseline to estimate an improved in-situ dark value. For each suitable profile, a profile-specific dark value (`iDARK_CHLA`, counts) is estimated from the minimum valid fluorescence baseline count below a shallow exclusion depth. Unlike the BGC-Argo implementation, which applies a running-median filter before identifying the minimum, Pelagos does not apply additional smoothing at this stage because anomalous fluorescence spikes have already been separated from the baseline during the preceding spike correction.
+pelagos-py uses the despiked fluorescence baseline to estimate an improved in-situ dark value. For each suitable profile, a profile-specific dark value (`iDARK_CHLA`, counts) is estimated from the minimum valid fluorescence baseline count below a shallow exclusion depth. Unlike the BGC-Argo implementation, which applies a running-median filter before identifying the minimum, pelagos-py does not apply additional smoothing at this stage because anomalous fluorescence spikes have already been separated from the baseline during the preceding spike correction.
 
 An initial deployment-specific dark value (`GLIDER_DARK_CHLA`, counts) is then established from a defined set of suitable profiles collected early in the deployment. This value replaces the manufacturer-supplied `DARK_CHLA` for generation of the adjusted chlorophyll product. The manufacturer `SCALE_CHLA` is retained, giving:
 
@@ -107,9 +107,9 @@ An initial deployment-specific dark value (`GLIDER_DARK_CHLA`, counts) is then e
 
 where `CHLA_ADJUSTED` has units of mg m<sup>-3</sup>.
 
-Pelagos also generates `CHLA_FLUORESCENCE_ADJUSTED` (RFU), representing the despiked fluorescence baseline after application of the in-situ dark correction. This provides a dark-corrected fluorescence variable that is retained separately from the chlorophyll concentration estimate.
+pelagos-py also generates `CHLA_FLUORESCENCE_ADJUSTED` (RFU), representing the despiked fluorescence baseline after application of the in-situ dark correction. This provides a dark-corrected fluorescence variable that is retained separately from the chlorophyll concentration estimate.
 
-Importantly, Pelagos continues to calculate `iDARK_CHLA` throughout the deployment. These subsequent estimates are not used to continually update the applied dark correction. Instead, they provide a diagnostic time series for assessing the stability of the fluorescence baseline and identifying possible sensor drift or biofouling.
+Importantly, pelagos-py continues to calculate `iDARK_CHLA` throughout the deployment. These subsequent estimates are not used to continually update the applied dark correction. Instead, they provide a diagnostic time series for assessing the stability of the fluorescence baseline and identifying possible sensor drift or biofouling.
 
 After the deep correction, the two adjusted variables have different roles in the subsequent processing workflow:
 
@@ -141,7 +141,7 @@ If `dark_value` is supplied by the user, this value is used instead of estimatin
 
 # 4. Surface flagging
 
-Before NPQ correction, Pelagos temporarily flags `CHLA_ADJUSTED` observations within the upper 5 m as **probably bad but correctable** (`3`) using the generic Range QC module configured with `flag_instead`. The flags are applied to `CHLA_ADJUSTED` without modifying the depth variable itself.
+Before NPQ correction, pelagos-py temporarily flags `CHLA_ADJUSTED` observations within the upper 5 m as **probably bad but correctable** (`3`) using the generic Range QC module configured with `flag_instead`. The flags are applied to `CHLA_ADJUSTED` without modifying the depth variable itself.
 
 This step does **not** prevent the near-surface observations from being corrected. Instead, it excludes them from the calculation of the NPQ reference quantities, ensuring that potentially quenched surface fluorescence cannot define the reference used to reconstruct the profile. Once an appropriate reference has been established from unflagged observations deeper in the profile, the resulting correction is applied to all eligible observations, including those within the upper 5 m.
 
@@ -167,7 +167,7 @@ The 5 m threshold is intended to exclude the shallowest observations, where wave
 
 Chlorophyll fluorescence yield decreases under sufficiently high irradiance because phytoplankton dissipate a greater fraction of absorbed energy through regulated non-photochemical pathways. During daylight, the measured fluorescence can therefore decline near the surface even when chlorophyll concentration has not changed.
 
-NPQ primarily affects the illuminated upper ocean. Its magnitude and vertical extent vary with irradiance, mixing, physiological state and community composition. Pelagos provides several published correction approaches because no single method is optimal for every platform or combination of available variables.
+NPQ primarily affects the illuminated upper ocean. Its magnitude and vertical extent vary with irradiance, mixing, physiological state and community composition. pelagos-py provides several published correction approaches because no single method is optimal for every platform or combination of available variables.
 
 The NPQ correction is applied to `CHLA_ADJUSTED`, the chlorophyll-*a* concentration derived from the despiked and dark-corrected fluorescence signal in the preceding processing steps. `CHLA_FLUORESCENCE_ADJUSTED` is retained as the despiked and dark-corrected fluorescence product and does **not** undergo NPQ correction.
 
@@ -203,7 +203,7 @@ Throughout the following descriptions, $F$ denotes `CHLA_ADJUSTED`, the chloroph
 
 ### 5.2.1 Evolution of NPQ correction methods
 
-The NPQ correction methods implemented in Pelagos represent a progression in complexity and in the supporting observations required to estimate the unquenched chlorophyll fluorescence signal.
+The NPQ correction methods implemented in pelagos-py represent a progression in complexity and in the supporting observations required to estimate the unquenched chlorophyll fluorescence signal.
 
 The earliest methods (Xing et al., 2012; Biermann et al., 2015) reconstruct fluorescence using only the measured fluorescence-derived chlorophyll profile together with either the mixed-layer depth or the euphotic depth.
 
@@ -227,7 +227,7 @@ The validity of this assumption depends on the fluorescence and backscatter meas
 
 ### QC filtering during reference calculations
 
-Several NPQ methods estimate a correction reference (e.g. a fluorescence maximum or fluorescence-to-backscatter ratio) from `CHLA_ADJUSTED`. Before these quantities are calculated, Pelagos creates temporary copies of the required variables and replaces observations carrying selected QC flags with `NaN`. By default, observations with QC flags `3`, `4` and `9` are excluded from these reference calculations.
+Several NPQ methods estimate a correction reference (e.g. a fluorescence maximum or fluorescence-to-backscatter ratio) from `CHLA_ADJUSTED`. Before these quantities are calculated, pelagos-py creates temporary copies of the required variables and replaces observations carrying selected QC flags with `NaN`. By default, observations with QC flags `3`, `4` and `9` are excluded from these reference calculations.
 
 For example, if the observed chlorophyll profile entering the NPQ correction is
 
@@ -261,7 +261,7 @@ $$
 
 ### Backscatter selection
 
-Methods requiring backscatter first use the configured `bbp_var`. If it is absent, Pelagos searches for the following variables in order:
+Methods requiring backscatter first use the configured `bbp_var`. If it is absent, pelagos-py searches for the following variables in order:
 
 1. `BBP700_BASELINE`;
 2. `BBP700`;
@@ -272,7 +272,7 @@ A despiked baseline product is preferred because isolated spikes or unrealistica
 
 ### Non-decreasing corrections
 
-Several NPQ methods implemented in Pelagos apply the reconstructed fluorescence-derived chlorophyll signal only where it exceeds the observed daytime value. For the Sackmann et al. (2008), Swart et al. (2015), Thomalla et al. (2018), Mitchell et al. (2024) and Xing et al. (2018) methods, the corrected value is
+Several NPQ methods implemented in pelagos-py apply the reconstructed fluorescence-derived chlorophyll signal only where it exceeds the observed daytime value. For the Sackmann et al. (2008), Swart et al. (2015), Thomalla et al. (2018), Mitchell et al. (2024) and Xing et al. (2018) methods, the corrected value is
 
 $$
 F_{\mathrm{out}}(z)
@@ -480,7 +480,7 @@ Original and corrected chlorophyll profiles with the euphotic depth and the dept
 
 ### Principle
 
-The Hemsley et al. (2015) method assumes that a single relationship exists between fluorescence-derived chlorophyll and particulate backscattering throughout a deployment. Pelagos first fits a deployment-wide linear regression using acceptable nighttime observations collected within the upper 60 m of the water column. The resulting regression is then evaluated for each daytime profile and used to reconstruct `CHLA_ADJUSTED` throughout the euphotic zone.
+The Hemsley et al. (2015) method assumes that a single relationship exists between fluorescence-derived chlorophyll and particulate backscattering throughout a deployment. pelagos-py first fits a deployment-wide linear regression using acceptable nighttime observations collected within the upper 60 m of the water column. The resulting regression is then evaluated for each daytime profile and used to reconstruct `CHLA_ADJUSTED` throughout the euphotic zone.
 
 ### Nighttime regression
 
@@ -492,7 +492,7 @@ $$
 
 which is the default value used by the current implementation.
 
-Pelagos fits the linear model
+pelagos-py fits the linear model
 
 $$
 F_{\mathrm{night}}
@@ -565,7 +565,7 @@ F(z),
 z > Z_{\mathrm{eu}}.
 $$
 
-Unlike several other NPQ methods implemented in Pelagos, the regression estimate replaces the measured daytime value throughout the corrected region. The implementation does not constrain the corrected value to remain greater than or equal to the observed daytime value.
+Unlike several other NPQ methods implemented in pelagos-py, the regression estimate replaces the measured daytime value throughout the corrected region. The implementation does not constrain the corrected value to remain greater than or equal to the observed daytime value.
 
 ### Assumptions
 
@@ -1026,7 +1026,7 @@ The resulting method, referred to as **X18_S08**, therefore combines the Xing et
 
 ### Mixing regime
 
-The modification is applied only to shallow-mixing profiles. Following Xing et al. (2018), Pelagos classifies a profile as shallow mixing when
+The modification is applied only to shallow-mixing profiles. Following Xing et al. (2018), pelagos-py classifies a profile as shallow mixing when
 
 $$
 Z_{\mathrm{IPAR}} > z_{\mathrm{MLD}},
@@ -1101,7 +1101,7 @@ $$
 
 Rather than continuing the sigmoid correction into the mixed layer, Terrats et al. (2020) assumes that the unquenched fluorescence-to-backscatter ratio is vertically uniform within the mixed layer.
 
-Pelagos therefore searches downward from the MLD for the shallowest acceptable observation immediately beneath the mixed layer. At this depth,
+pelagos-py therefore searches downward from the MLD for the shallowest acceptable observation immediately beneath the mixed layer. At this depth,
 
 $$
 R_{\mathrm{MLD}}
@@ -1128,7 +1128,7 @@ z
 z_{\mathrm{MLD}}.
 $$
 
-As with the other ratio-based methods implemented in Pelagos, the correction is constrained to be non-decreasing:
+As with the other ratio-based methods implemented in pelagos-py, the correction is constrained to be non-decreasing:
 
 $$
 F_{\mathrm{corr}}(z)
@@ -1164,7 +1164,7 @@ $$
 
 ### Irradiance requirements
 
-The shallow-mixing correction requires a usable irradiance profile throughout the water column. Pelagos therefore requires at least four finite positive irradiance observations on every daytime profile. If one or more daytime profiles do not satisfy this requirement, the X18_S08 extension is disabled and the standard Xing et al. (2018) correction is applied instead.
+The shallow-mixing correction requires a usable irradiance profile throughout the water column. pelagos-py therefore requires at least four finite positive irradiance observations on every daytime profile. If one or more daytime profiles do not satisfy this requirement, the X18_S08 extension is disabled and the standard Xing et al. (2018) correction is applied instead.
 
 ### Assumptions
 
@@ -1221,7 +1221,7 @@ No single method is universally optimal. Simpler methods require fewer supportin
 
 # 6. NPQ diagnostics
 
-When diagnostics are enabled, Pelagos compares the available NPQ correction methods and displays the correction produced by the configured method.
+When diagnostics are enabled, pelagos-py compares the available NPQ correction methods and displays the correction produced by the configured method.
 
 The method-comparison diagnostics pair daytime profiles with nearby nighttime profiles, bin the observations by depth and score the agreement in the upper 50 m, where the effects of NPQ and differences between correction methods are expected to be greatest.
 
@@ -1275,7 +1275,7 @@ $$
 These diagnostics assess the consistency between daytime `CHLA_ADJUSTED` profiles and nearby nighttime `CHLA_ADJUSTED` profiles. They provide a comparative measure of how effectively the different NPQ methods reproduce the nighttime chlorophyll structure but do not establish that nighttime fluorescence-derived chlorophyll is an unbiased estimate of true chlorophyll concentration.
 
 ```{figure} ../_static/chla/npq_method_comparison.png
-:alt: The Pelagos NPQ method-comparison diagnostics.
+:alt: The pelagos-py NPQ method-comparison diagnostics.
 :width: 100%
 
 Daytime-versus-nighttime comparison for the pre-NPQ `CHLA_ADJUSTED` baseline and each runnable NPQ correction method, including 1:1 lines, regression fits, RMSE, bias and $R^2$.
@@ -1299,11 +1299,11 @@ Example daytime `CHLA_ADJUSTED` profile for the configured method showing unchan
 
 # 7. Final quality control
 
-Following dark-offset and NPQ correction, Pelagos applies the generic **Range QC** algorithm a second time using chlorophyll-specific thresholds. This final screening step verifies that the corrected chlorophyll-*a* concentrations remain physically plausible and highlights observations or profiles that should be inspected before scientific interpretation.
+Following dark-offset and NPQ correction, pelagos-py applies the generic **Range QC** algorithm a second time using chlorophyll-specific thresholds. This final screening step verifies that the corrected chlorophyll-*a* concentrations remain physically plausible and highlights observations or profiles that should be inspected before scientific interpretation.
 
 ## 7.1 Default configuration
 
-Following deep-offset and NPQ correction, Pelagos applies a second Range QC test to the corrected chlorophyll-*a* concentration (`CHLA_ADJUSTED`). Unlike the initial range test, which identifies only grossly implausible observations in the manufacturer-calibrated `CHLA`, this final test provides a broader quality classification of the fully corrected product.
+Following deep-offset and NPQ correction, pelagos-py applies a second Range QC test to the corrected chlorophyll-*a* concentration (`CHLA_ADJUSTED`). Unlike the initial range test, which identifies only grossly implausible observations in the manufacturer-calibrated `CHLA`, this final test provides a broader quality classification of the fully corrected product.
 
 The default configuration is
 
@@ -1315,7 +1315,7 @@ variable_ranges:
     4: [0, 100, outside]
 ```
 
-The overlapping intervals are interpreted using the Pelagos Range QC algorithm together with the QC flag-combination matrix. The resulting effective classification is
+The overlapping intervals are interpreted using the pelagos-py Range QC algorithm together with the QC flag-combination matrix. The resulting effective classification is
 
 | Corrected chlorophyll-*a* concentration (mg m<sup>-3</sup>) | QC flag |
 |:------------------------------------------------------------:|:-------:|
@@ -1373,7 +1373,7 @@ Where applicable, `CHLA_ADJUSTED` and `CHLA_FLUORESCENCE_ADJUSTED` retain releva
 
 # 9. Recommended reporting
 
-A scientific methods section describing chlorophyll processing with Pelagos should report:
+A scientific methods section describing chlorophyll processing with pelagos-py should report:
 
 - the manufacturer calibration coefficients used to convert `CHLA_FLUORESCENCE_RAW` to `CHLA` for the initial global range test;
 

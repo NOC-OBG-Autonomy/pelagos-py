@@ -142,7 +142,7 @@ html_baseurl = "https://noc-obg-autonomy.github.io/pelagos-py/"
 html_static_path = ["_static"]
 html_last_updated_fmt = "%b %d, %Y"
 html_show_sourcelink = False
-html_title = "Pelagos-Py"
+html_title = "pelagos-py"
 html_favicon = "_static/NOC_logo.svg"
 html_css_files = [
     "https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Ubuntu&display=swap",
