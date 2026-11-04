@@ -98,7 +98,8 @@ def test_console_only_run_succeeds():
     assert "cc_file" not in result["global_parameters"]
 
 
-def test_json_output_saved_and_registered(tmp_path):
+@pytest.mark.parametrize("trailing_slash", ["/", ""])
+def test_json_output_saved_and_registered(tmp_path, trailing_slash):
     with (
         patch("pelagos_py.steps.input_output.format_check.CheckSuite") as mock_cs,
         patch(
@@ -108,7 +109,10 @@ def test_json_output_saved_and_registered(tmp_path):
         mock_cs.return_value = _mock_suite(passed=True)
         step = _step(
             {"src": "test_file.nc", "standards": ["og"], "output_type": "json"},
-            {"out_directory": str(tmp_path) + "/", "filename_core": "demo_test"},
+            {
+                "out_directory": str(tmp_path) + trailing_slash,
+                "filename_core": "demo_test",
+            },
         )
         result = step.run()
 
@@ -116,7 +120,7 @@ def test_json_output_saved_and_registered(tmp_path):
     output_filename = mock_json.call_args[0][
         2
     ]  # (cs, score_dict, output_filename, ...)
-    assert output_filename.endswith("demo_test_check.json")
+    assert output_filename == str(tmp_path / "demo_test_check.json")
     assert result["global_parameters"]["cc_file"].endswith("demo_test_check.json")
 
 
