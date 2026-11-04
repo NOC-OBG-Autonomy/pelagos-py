@@ -96,6 +96,7 @@ docs/_static/*/*_section.png
 docs/_static/chla/npq_*.png
 docs/_static/pressure/
 docs/_static/profiles/
+docs/_static/mld/
 celerybeat-schedule
 celerybeat.pid
 

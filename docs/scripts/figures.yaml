@@ -13,6 +13,7 @@ figures:
   chla/npq_method_comparison.png: {step: CHLA Quenching, figure: method_comparison}
   chla/npq_timeseries.png: {step: CHLA Quenching, figure: timeseries}
   chla/npq_example_profile.png: {step: CHLA Quenching, figure: example_profile}
+  mld/mld_demo.png: {step: Mixed Layer Depth, figure: mld}
 
 # sections: the report's cross-section plot of the final dataset, keyed by
 #           output path -> panel labels (see write_report._CROSS_SECTION_PANELS).

@@ -17,7 +17,13 @@ import pandas as pd  # noqa: E402
 import xarray as xr  # noqa: E402
 from matplotlib.ticker import MaxNLocator  # noqa: E402
 
+from types import SimpleNamespace  # noqa: E402
+
 from pelagos_py.steps.processing import find_profiles as fp  # noqa: E402
+from pelagos_py.steps.processing.mixed_layer_depth import (  # noqa: E402
+    REFERENCE_HALF_WINDOW,
+    MixedLayerDepthStep,
+)
 from pelagos_py.utils import fig_spec  # noqa: E402
 from pelagos_py.utils.demo_data import get_demo_file  # noqa: E402
 
@@ -211,13 +217,70 @@ def pressure_track(out):
     plt.close(fig)
 
 
+def mld_method(out):
+    reference_depth = 10
+    depth = np.arange(1.0, 150.0, 1.0)
+    rng = np.random.default_rng(2)
+    # Well-mixed down to 45 m, then a pycnocline/thermocline below it.
+    below = np.clip(depth - 45, 0, None)
+    sigma0 = 26.80 + 0.01 * below - 1e-5 * below**2 + rng.normal(0, 0.004, depth.size)
+    temp = 12.0 - 0.05 * below + 1e-4 * below**2 + rng.normal(0, 0.02, depth.size)
+    step = SimpleNamespace(reference_depth=reference_depth)
+
+    fig, axes = fig_spec.new_fig(ncols=2, sharey=True)
+    panels = (
+        (
+            axes[0][0],
+            sigma0,
+            0.03,
+            False,
+            "SIGMA0 [kg/m3]",
+            "Density: increase of 0.03",
+        ),
+        (axes[0][1], temp, 0.2, True, "TEMP [degC]", "Temperature: change of 0.2"),
+    )
+    for ax, values, threshold, two_sided, xlabel, title in panels:
+        mld = MixedLayerDepthStep._profile_mld(
+            step, depth, values, threshold, two_sided
+        )
+        near = np.abs(depth - reference_depth) <= REFERENCE_HALF_WINDOW
+        reference = np.median(values[near])
+        ax.axhspan(
+            reference_depth - REFERENCE_HALF_WINDOW,
+            reference_depth + REFERENCE_HALF_WINDOW,
+            color=fig_spec.CATEGORY[0],
+            alpha=0.2,
+            lw=0,
+            label="reference window",
+        )
+        fig_spec.points(ax, values, depth, color=fp.PHASE_COLOURS[0], label="profile")
+        ax.axvline(reference, color="black", lw=1, label="reference value")
+        edges = [reference + threshold] + ([reference - threshold] if two_sided else [])
+        for i, edge in enumerate(edges):
+            ax.axvline(
+                edge,
+                color="black",
+                ls="--",
+                lw=1,
+                label="threshold" if i == 0 else None,
+            )
+        ax.axhline(mld, color=fig_spec.CATEGORY[1], lw=2, label=f"MLD = {mld:.0f} m")
+        fig_spec.style_axes(ax, title=title, xlabel=xlabel)
+        ax.legend(fontsize=fig_spec.FS_LEGEND, loc="lower left")
+    axes[0][0].invert_yaxis()
+    axes[0][0].set_ylabel("DEPTH [m]", fontsize=fig_spec.FS_LABEL)
+    fig_spec.finish(fig)
+    fig.savefig(os.path.join(out, "mld", "mld_method.png"))
+    plt.close(fig)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=os.path.join(ROOT, "docs", "_static"))
     args = ap.parse_args()
-    for folder in ("profiles", "pressure"):
+    for folder in ("profiles", "pressure", "mld"):
         os.makedirs(os.path.join(args.out, folder), exist_ok=True)
-    for draw in (method, phases, demo_phases, pressure_track):
+    for draw in (method, phases, demo_phases, pressure_track, mld_method):
         draw(args.out)
         print("drew", draw.__name__)
 

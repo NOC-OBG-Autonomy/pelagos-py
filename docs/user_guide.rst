@@ -370,16 +370,11 @@ A template for a static check is provided in
    :hidden:
 
    Pressure <user_guide/Pelagos-py_PRESSURE>
+   Profile finding <user_guide/Pelagos-py_PROFILES>
    Temperature <user_guide/Pelagos-py_TEMP>
    Salinity <user_guide/pelagos-py_SALINITY>
+   Mixed layer depth <user_guide/Pelagos-py_MLD>
    Oxygen <user_guide/Pelagos-py_DOXY>
    PAR <user_guide/Pelagos-py_PAR>
    Chlorophyll-a <user_guide/Pelagos-py_CHLA>
    Backscatter <user_guide/Pelagos-py_BBP>
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Profiles and mixing
-   :hidden:
-
-   Profile finding <user_guide/Pelagos-py_PROFILES>
