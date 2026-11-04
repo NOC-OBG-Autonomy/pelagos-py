@@ -1967,10 +1967,13 @@ def glidertest_section(
     log("Glidertest section written out.")
 
 
-def cross_section_figure(data: xr.Dataset, outdir: str, ext: str = ".png") -> str:
+def cross_section_figure(
+    data: xr.Dataset, outdir: str, ext: str = ".png", labels=None
+) -> str:
     #   A4-portrait stack of PRES-vs-TIME panels (see _CROSS_SECTION_PANELS), one
     #   per variable, sharing the TIME axis, each with a profile strip and
     #   colourbar. Robust percentile colour limits; returns the saved path or None.
+    #   ``labels`` limits it to those panels (e.g. ["Temperature"]), sized to fit.
     import matplotlib.dates as mdates
     from matplotlib.colors import LinearSegmentedColormap
     from matplotlib.ticker import MaxNLocator
@@ -2000,6 +2003,8 @@ def cross_section_figure(data: xr.Dataset, outdir: str, ext: str = ".png") -> st
     #   available" placeholder - e.g. no salinity derived, or no oxygen sensor.
     resolved_panels = []
     for panel in _CROSS_SECTION_PANELS:
+        if labels is not None and panel["label"] not in labels:
+            continue
         cvar = _first_present(data, panel["candidates"])
         if cvar is None:
             continue
@@ -2026,7 +2031,8 @@ def cross_section_figure(data: xr.Dataset, outdir: str, ext: str = ".png") -> st
     #   A4-portrait proportions, trimmed a little in height so the "Cross Section
     #   Plots" heading and the figure sit together on one page. constrained_layout
     #   lines up every panel with its left profile strip and right colourbar.
-    fig = plt.figure(figsize=(8.27, 10.3), layout="constrained")
+    height = 10.3 if labels is None else 1.0 + 2.4 * len(resolved_panels)
+    fig = plt.figure(figsize=(8.27, height), layout="constrained")
     #   Per row: [narrow profile strip] [main cross-section] [thin colourbar].
     gs = fig.add_gridspec(len(resolved_panels), 3, width_ratios=[0.22, 1.0, 0.045])
 
@@ -2096,6 +2102,7 @@ def cross_section_figure(data: xr.Dataset, outdir: str, ext: str = ".png") -> st
         ax_prof.set_ylabel(_var_label(data, pres_name, pres_name), fontsize=7)
         ax_prof.set_xlabel(panel["label"], fontsize=6)
         ax_prof.xaxis.set_major_locator(MaxNLocator(3))
+        ax_prof.set_xlim(vmin, vmax)
         ax_prof.tick_params(labelsize=6)
         ax_main.tick_params(labelleft=False)
 
@@ -2115,7 +2122,7 @@ def cross_section_figure(data: xr.Dataset, outdir: str, ext: str = ".png") -> st
     for ax in main_axes[:-1]:
         ax.tick_params(labelbottom=False)
     bottom = main_axes[-1]
-    bottom.xaxis.set_major_locator(mdates.AutoDateLocator())
+    bottom.xaxis.set_major_locator(mdates.AutoDateLocator(maxticks=8))
     bottom.xaxis.set_major_formatter(mdates.DateFormatter(_cs_date_format(span_days)))
     bottom.tick_params(axis="x", labelsize=7)
     bottom.set_xlabel(time_name, fontsize=8)
