@@ -109,6 +109,8 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
             "flag_filter_settings": dict(parameters.get("variables") or {})
         }
         super().__init__(name, parameters, diagnostics, context)
+        # consumed by the mixin above; keep it out of saved configs, which would reject it
+        self.parameters.pop("qc_handling_settings")
 
     def run(self):
         self.log("Interpolating variables...")
