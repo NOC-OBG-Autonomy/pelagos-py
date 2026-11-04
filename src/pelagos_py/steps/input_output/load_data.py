@@ -34,13 +34,12 @@ class LoadOG1(BaseStep):
     """
     Loads NetCDF files from ``file_path``.
 
-    If ``filter_bad_times`` is set then measurements made
-    outside of the time range specified by ``data_start`` and ``data_end`` are removed before
-    further processing.
+    If ``filter_bad_time`` is set, measurements outside ``data_start`` to ``data_end``
+    are removed before further processing.
 
-    Time values are expected to be stored under the "TIME" variable name in the NetCDF file
-    (corresponding to OG1 format). If "TIME" is not monotonically increasing, or has missing values
-    (NaT) then this will raise an error.
+    Time values are expected under the "TIME" variable (OG1 format). Missing times (NaT)
+    raise an error; a "TIME" that is not monotonically increasing only logs a warning.
+    See :doc:`/user_guide/Pelagos-py_POSITION`.
 
     Parameters
     ----------

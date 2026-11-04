@@ -51,6 +51,7 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
     must increase by the threshold; temperature may change either way.
     ``PROFILE_NUMBER`` and ``DEPTH`` must already be derived. Inputs are read from
     their ``_ADJUSTED`` version (e.g. ``ASAL_ADJUSTED``) where one exists.
+    See :doc:`/user_guide/Pelagos-py_MLD`.
 
     Two derived variables are written on the ``N_MEASUREMENTS`` dimension: ``MLD``,
     the profile's mixed layer depth (positive down, matching ``DEPTH``; ``NaN`` where

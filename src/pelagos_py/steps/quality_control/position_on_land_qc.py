@@ -34,7 +34,7 @@ class position_on_land_qc(BaseQC):
     Target Variable: LATITUDE, LONGITUDE
     Flag Number: 4 (bad data)
     Variables Flagged: LATITUDE, LONGITUDE
-    Checks that the measurement location is not on land.
+    Flags positions on land, using the Natural Earth 1:110m land polygons.
     """
 
     qc_name = "position on land qc"

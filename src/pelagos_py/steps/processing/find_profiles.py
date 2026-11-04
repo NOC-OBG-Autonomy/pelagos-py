@@ -400,7 +400,7 @@ class FindProfilesStep(BaseStep, QCHandlingMixin):
     it, and uses that to label every measurement with a scientific phase. From those
     phases it then derives a continuous ``PROFILE_NUMBER``, a ``PROFILE_DIRECTION``,
     a ``CYCLE`` count, and ``PROFILE_GRADIENT`` (the smoothed vertical velocity used
-    for classification, in depth units/s).
+    for classification, in depth units/s). See :doc:`/user_guide/Pelagos-py_PROFILES`.
 
     **All parameters are optional** — every parameter has a sensible default, so the
     step runs unchanged on a typical OG1 dataset with no configuration at all (see the

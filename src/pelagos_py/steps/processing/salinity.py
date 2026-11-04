@@ -185,6 +185,7 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
     Samples flagged in ``calculation_flag_filter`` (by default probably-bad (3),
     bad (4), missing (9)) neither inform the lag estimate nor anchor the correction
     interpolants, but both corrections are still evaluated at every sample.
+    See :doc:`/user_guide/pelagos-py_SALINITY`.
 
     Parameters
     ----------
@@ -199,7 +200,7 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
     .. code-block:: yaml
 
         steps:
-          - name: "ADJ: Salinity"
+          - name: Salinity Adjustment
             parameters:
               filter_window_size: 21
             diagnostics: false
