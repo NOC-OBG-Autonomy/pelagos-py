@@ -147,7 +147,7 @@ Diagnostics draw one panel per scalar, depth against time, with computed profile
 - **Why the scalars are what get filled.** Many gliders do not carry PAR on every cast. Logging PAR on upcasts only is very common, and both PAR-carrying example missions in `examples/configs/` do exactly that; other missions have gaps from duty-cycling or dropouts. Reconstructing the missing PAR *field* would mean inventing an irradiance profile, a strong and hard-to-defend assumption. The justification for filling the scalars instead is that euphotic and isolume depths are properties of the water-column optics, varying over hours to days, whereas a missing cast is minutes to a couple of hours from one that has PAR. Interpolating a slowly-varying integrated quantity is far safer than interpolating a rapidly-varying, sun-angle-dependent point measurement.
 - **Diurnal variation is not represented.** `Z_IPAR` genuinely moves with solar elevation, and a linear fill across night smooths that away.
 - **Long PAR outages produce long constant-slope fills**, so check the diagnostic before trusting the filled values.
-- Turning interpolation off (`interpolate_zeu: false`, `interpolate_ipar: false`) is the conservative choice: PAR-less profiles keep `NaN` and the quenching step declines to correct them. Prefer this when every corrected profile must be traceable to a real measurement.
+- Turning interpolation off (`interpolate_zeu: false`, `interpolate_ipar: false`) leaves PAR-less profiles as `NaN`. A quenching method that needs `ZEU` or `Z_IPAR` then **stops the pipeline** if any daytime profile lacks it, so only turn interpolation off when every daytime profile has measured PAR, or use a method that does not need these light depths.
 
 > **Note**
 >
