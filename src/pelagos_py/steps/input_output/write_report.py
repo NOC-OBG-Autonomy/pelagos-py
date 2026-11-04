@@ -1987,6 +1987,13 @@ def cross_section_figure(data: xr.Dataset, outdir: str, ext: str = ".png") -> st
     idx = fig_spec.thin_idx(n, fig_spec.CAPTURE_MAX_POINTS)
     time, pres = time[idx], pres[idx]
 
+    #   A point with flagged pressure is at the wrong depth, so it's left out of every panel.
+    pres_ok = np.ones(pres.size, dtype=bool)
+    pres_qc_name = f"{pres_name}_QC"
+    if pres_qc_name in data.variables:
+        pres_qc = np.asarray(data[pres_qc_name].values, dtype=float).ravel()[:n][idx]
+        pres_ok = np.isin(pres_qc, _CS_ALLOWED_QC_FLAGS)
+
     #   matplotlib date numbers for the shared X axis (NaT -> NaN, ignored).
     x = mdates.date2num(time)
 
@@ -2010,6 +2017,7 @@ def cross_section_figure(data: xr.Dataset, outdir: str, ext: str = ".png") -> st
         if qc_name in data.variables:
             qc = np.asarray(data[qc_name].values, dtype=float).ravel()[:n][idx]
             c = np.where(np.isin(qc, _CS_ALLOWED_QC_FLAGS), c, np.nan)
+        c = np.where(pres_ok, c, np.nan)
 
         if not np.isfinite(c).any():
             continue
