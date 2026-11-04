@@ -492,9 +492,9 @@ class Pipeline(ConfigMirrorMixin):
         """
         Runs the entire pipeline.
         """
-        # Pausing needs the dashboard; here it just skips.
-        stop_on_fail = (
-            resolve_on_step_fail(self.global_parameters.get("on_step_fail")) == "stop"
+        # Pausing needs the dashboard; here it stops, so a failed step never goes unnoticed.
+        skip_on_fail = (
+            resolve_on_step_fail(self.global_parameters.get("on_step_fail")) == "skip"
         )
         with self.run_context() as report_present:
             # Headless Agg for the whole run: toggling the backend per step can crash on Windows
@@ -508,7 +508,7 @@ class Pipeline(ConfigMirrorMixin):
                     try:
                         self._context = self.execute_step(step, self._context)
                     except (RuntimeError, SystemExit):
-                        if stop_on_fail:
+                        if not skip_on_fail:
                             raise
                         # execute_step/halt() already logged the underlying
                         # error; this just marks the step as skipped and moves

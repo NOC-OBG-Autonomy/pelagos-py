@@ -70,3 +70,12 @@ def test_plot_diagnostics(mock_use, mock_show):
     qc.return_qc()
     qc.plot_diagnostics()
     mock_show.assert_called_once_with(block=True)
+
+
+def test_missing_latitude_does_not_mark_longitude_missing():
+    data = create_mock_dataset(
+        lats=[60.0, np.nan, 60.05], lons=[0.0, 0.0, 0.0], times=_hourly(3)
+    )
+    flags = impossible_speed_qc(data).return_qc()
+    assert list(flags["LATITUDE_QC"].values) == [1, 9, 1]
+    assert list(flags["LONGITUDE_QC"].values) == [1, 0, 1]

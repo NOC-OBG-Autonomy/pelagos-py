@@ -87,11 +87,14 @@ class impossible_speed_qc(BaseQC):
         self.absolute_speed = speed  # for plot_diagnostics
 
         qc = np.where(bad, 4, 1)
-        pos_qc = np.where(has_fix, qc, 9)
+        # a coordinate whose partner is missing can't be checked (0); only its own absence is 9
+        pos_qc = np.where(has_fix, qc, 0)
+        lat_qc = np.where(np.isfinite(lat), pos_qc, 9)
+        lon_qc = np.where(np.isfinite(lon), pos_qc, 9)
         self.flags = xr.Dataset(
             data_vars={
-                "LATITUDE_QC": ("N_MEASUREMENTS", pos_qc),
-                "LONGITUDE_QC": ("N_MEASUREMENTS", pos_qc.copy()),
+                "LATITUDE_QC": ("N_MEASUREMENTS", lat_qc),
+                "LONGITUDE_QC": ("N_MEASUREMENTS", lon_qc),
                 "TIME_QC": ("N_MEASUREMENTS", qc),
             },
             coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]},

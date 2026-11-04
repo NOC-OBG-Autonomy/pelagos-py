@@ -232,3 +232,11 @@ def test_output_variables_is_adjusted_apply_to():
         "BBP700_ADJUSTED"
     ]
     assert DeepCorrection.output_variables({}) == ["CHLA_ADJUSTED"]
+
+
+def test_adjusted_apply_to_falls_back_to_raw():
+    ctx = make_context(dark=0.7)
+    step = make_step({"apply_to": "CHLA_ADJUSTED"}, ctx)
+    out = step.run()
+    assert step.dark_value == pytest.approx(0.7, abs=0.1)
+    assert "CHLA_ADJUSTED" in out["data"]

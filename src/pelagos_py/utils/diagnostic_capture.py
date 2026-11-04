@@ -27,6 +27,7 @@ displayed. The saved paths are then embedded by the report writer.
 import atexit
 import contextlib
 import functools
+import logging
 import os
 import pickle
 import subprocess
@@ -38,6 +39,8 @@ import numpy as np
 from matplotlib.collections import PathCollection
 from matplotlib.lines import Line2D
 from pelagos_py.utils import fig_spec
+
+logger = logging.getLogger("pelagos_py.pipeline.diagnostics")
 
 
 def _decimate(fig):
@@ -158,10 +161,21 @@ def wait_for_saves():
             path = pending.pop(0)
             reply = proc.stdout.readline() if proc.poll() is None else ""
             if not reply.startswith("ok") and os.path.exists(path + ".fig"):
-                with open(path + ".fig", "rb") as fh:
-                    fig, kwargs = pickle.load(fh)
-                os.remove(path + ".fig")
-                fig.savefig(path, **kwargs)
+                _retry_save(path)
+
+
+def _retry_save(path):
+    fig = None
+    try:
+        with open(path + ".fig", "rb") as fh:
+            fig, kwargs = pickle.load(fh)
+        os.remove(path + ".fig")
+        fig.savefig(path, **kwargs)
+    except Exception as exc:  # noqa: BLE001 - a lost diagnostic image must never fail the run
+        logger.warning("Could not save diagnostic figure %s: %s", path, exc)
+    finally:
+        if fig is not None:
+            plt.close(fig)
 
 
 @atexit.register

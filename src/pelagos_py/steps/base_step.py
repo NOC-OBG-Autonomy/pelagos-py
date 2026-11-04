@@ -368,5 +368,5 @@ class BaseStep(ConfigMirrorMixin):
         os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
         with open(path, "w") as f:
             yaml.safe_dump(cfg, f, sort_keys=False)
-        print(f"[{self.name}] Step config saved → {path}")
+        self.log(f"Step config saved → {path}")
         return cfg

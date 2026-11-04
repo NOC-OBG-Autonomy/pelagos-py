@@ -1531,7 +1531,7 @@ def glider_track_map(data: xr.Dataset, outdir: str, ext: str = ".png") -> str:
     ax.add_collection(track)
 
     fig.tight_layout(pad=0.3)
-    fname = outdir + "glider_track" + ext
+    fname = os.path.join(outdir, "glider_track" + ext)
     save_figure(fig, fname, dpi=200, facecolor=fig.get_facecolor())
     plt.close(fig)
     return fname
@@ -1620,7 +1620,7 @@ def qc_hist(
     if dataset_label:
         fig.supylabel(dataset_label)
 
-    fname = outdir + var + ext
+    fname = os.path.join(outdir, var + ext)
     save_figure(fig, fname)
     plt.close(fig)
     return fname
@@ -1726,7 +1726,7 @@ def glidertest_section(
     #   Glider track - comparable to `glider_track_map` above
     try:
         fig, __ = gtplots.plot_glider_track(ds=data)
-        fig_name = f"{outdir}glider_track_glidertest.png"
+        fig_name = os.path.join(outdir, "glider_track_glidertest.png")
         fig.savefig(fig_name)
         plt.close(fig)
 
@@ -1739,7 +1739,7 @@ def glidertest_section(
     #   Basic variables: T, S, DO, CHLA
     try:
         fig, __ = gtplots.plot_basic_vars(ds=data)
-        fig_name = f"{outdir}basic_vars.png"
+        fig_name = os.path.join(outdir, "basic_vars.png")
         fig.savefig(fig_name)
         plt.close(fig)
 
@@ -1758,7 +1758,7 @@ def glidertest_section(
         #   TODO: Pull these out as a config option.
         for var in ["TEMP", "CNDC", "DOXY"]:
             fig, __ = gtplots.plot_updown_bias(data, var=var)
-            fig_name = f"{outdir}{var}_updown.png"
+            fig_name = os.path.join(outdir, f"{var}_updown.png")
             fig.savefig(fig_name)
             plt.close(fig)
             pdf.image_fit(
@@ -1773,7 +1773,7 @@ def glidertest_section(
     try:
         #   This step has an output - capture it (eventually) and type it in underneat the figures.
         fig, __ = gtplots.process_optics_assess(ds=data)
-        fig_name = f"{outdir}optics_assess.png"
+        fig_name = os.path.join(outdir, "optics_assess.png")
         fig.savefig(fig_name)
         plt.close(fig)
 
@@ -1790,7 +1790,7 @@ def glidertest_section(
         for var in ["CHLA", "CDOM", "DPAR", "DOXY"]:  #   TODO: Pull these out into yaml
             if var in data.data_vars:
                 fig, __ = gtplots.plot_daynight_avg(ds=data, var=var)
-                fig_name = f"{outdir}daynight_avg_{var}.png"
+                fig_name = os.path.join(outdir, f"daynight_avg_{var}.png")
                 fig.savefig(fig_name)
                 plt.close(fig)
 
@@ -1802,7 +1802,7 @@ def glidertest_section(
     try:
         if "CHLA" in data.data_vars:
             fig, __ = gtplots.plot_quench_assess(ds=data, sel_var="CHLA")
-            fig_name = f"{outdir}chla_quench_assess.png"
+            fig_name = os.path.join(outdir, "chla_quench_assess.png")
             fig.savefig(fig_name)
             plt.close(fig)
 
@@ -1825,7 +1825,7 @@ def glidertest_section(
 
         for var in ["CNDC", "PSAL", "DOXY"]:
             fig, __ = gtplots.check_temporal_drift(ds=data, var=var)
-            fig_name = f"{outdir}{var}_temporal_drift_check.png"
+            fig_name = os.path.join(outdir, f"{var}_temporal_drift_check.png")
             fig.savefig(fig_name)
             plt.close(fig)
 
@@ -1840,7 +1840,7 @@ def glidertest_section(
     #   Grid spacing
     try:
         fig, __ = gtplots.plot_grid_spacing(ds=data)
-        fig_name = f"{outdir}grid_spacing.png"
+        fig_name = os.path.join(outdir, "grid_spacing.png")
         fig.savefig(fig_name)
         plt.close(fig)
 
@@ -1858,7 +1858,7 @@ def glidertest_section(
     #   Sampling period
     try:
         fig, __ = gtplots.plot_sampling_period_all(ds=data)
-        fig_name = f"{outdir}default_sample_period.png"
+        fig_name = os.path.join(outdir, "default_sample_period.png")
         fig.savefig(fig_name)
         plt.close(fig)
 
@@ -1876,7 +1876,7 @@ def glidertest_section(
     #   TS plot with 2D density
     try:
         fig, __ = gtplots.plot_ts(ds=data)
-        fig_name = f"{outdir}ts.png"
+        fig_name = os.path.join(outdir, "ts.png")
         fig.savefig(fig_name)
         plt.close(fig)
 
@@ -1902,7 +1902,7 @@ def glidertest_section(
         ]:  #   TODO: Pull these out into yaml
             if var in data.data_vars:
                 fig, __ = gtplots.plot_hysteresis(ds=data, var=var)
-                fig_name = f"{outdir}hysteresis_{var}.png"
+                fig_name = os.path.join(outdir, f"hysteresis_{var}.png")
                 fig.savefig(fig_name)
                 plt.close(fig)
 
@@ -1928,7 +1928,7 @@ def glidertest_section(
                 fig, __ = gtplots.plot_global_range(
                     ds=data, var=var, min_val=min_val, max_val=max_val
                 )
-                fig_name = f"{outdir}global_range_{var}.png"
+                fig_name = os.path.join(outdir, f"global_range_{var}.png")
                 fig.savefig(fig_name)
                 plt.close(fig)
 
@@ -1945,7 +1945,7 @@ def glidertest_section(
             ds=data,
             bins=20,  #   For shallow profiles - could use bins = max(data["DEPTH"])
         )
-        fig_name = f"{outdir}profile_depths.png"
+        fig_name = os.path.join(outdir, "profile_depths.png")
         fig.savefig(fig_name)
         plt.close(fig)
 
@@ -2116,7 +2116,7 @@ def cross_section_figure(data: xr.Dataset, outdir: str, ext: str = ".png") -> st
     bottom.tick_params(axis="x", labelsize=7)
     bottom.set_xlabel(time_name, fontsize=8)
 
-    fname = outdir + "cross_section" + ext
+    fname = os.path.join(outdir, "cross_section" + ext)
     save_figure(fig, fname, dpi=200)
     plt.close(fig)
     return fname
@@ -2310,7 +2310,7 @@ class WriteDataReport(BaseStep):
             fname = fname_core + ".pdf"
         if not fname.endswith(".pdf"):
             fname += ".pdf"
-        fout = odir + fname
+        fout = os.path.join(odir, fname)
 
         title = self.parameters.get("title")
         if not title:
@@ -2341,7 +2341,6 @@ class WriteDataReport(BaseStep):
             stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
             fig_dir = os.path.join(odir, f"{fname_core}_report_figures_{stamp}")
             os.makedirs(fig_dir, exist_ok=True)
-        fig_dir = fig_dir + os.sep  #   figure paths are built by string concatenation
 
         #   Pipeline name and description (from the pipeline config block) are
         #   shown on the title page.
@@ -2435,7 +2434,9 @@ class WriteDataReport(BaseStep):
                 )
 
             if self.parameters.get("show_logs", True):
-                log_path = odir + self.context["global_parameters"]["log_file"]
+                log_path = os.path.join(
+                    odir, self.context["global_parameters"]["log_file"]
+                )
                 add_log(log_path, pdf)
 
             if self.parameters.get("show_index", True):

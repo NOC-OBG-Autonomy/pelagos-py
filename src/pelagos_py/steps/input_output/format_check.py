@@ -25,6 +25,7 @@ from pelagos_py.steps.base_step import BaseStep, register_step
 
 #### Custom imports ####
 from compliance_checker.runner import ComplianceChecker, CheckSuite, stdout_redirector
+import os
 from pathlib import Path
 
 # The compliance checker's strictness levels map to integer score limits;
@@ -234,7 +235,7 @@ class FormatCheck(BaseStep):
         if not save_formats:
             return {}
 
-        base = out_dir + fname + "_check"
+        base = os.path.join(out_dir, fname + "_check")
         saved = {}
 
         if "json" in save_formats:

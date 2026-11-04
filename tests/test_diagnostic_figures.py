@@ -67,3 +67,11 @@ def test_capture_names_files_by_figure(tmp_path):
         "03_Fig_Step_a.png",
         "03_Fig_Step_b.png",
     ]
+
+
+def test_failed_retry_save_is_not_fatal(tmp_path):
+    path = str(tmp_path / "fig.png")
+    with open(path + ".fig", "wb") as fh:
+        fh.write(b"not a pickle")
+    diagnostic_capture._retry_save(path)
+    assert not (tmp_path / "fig.png").exists()
