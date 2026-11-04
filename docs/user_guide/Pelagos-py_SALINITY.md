@@ -14,7 +14,7 @@ pelagos-py addresses this with the `Salinity Adjustment` step (`AdjustSalinity`)
 1. **Conductivity–temperature lag (C–T lag) correction** — `correct_ct_lag()` — estimates the optimal time shift needed to align the conductivity record with the temperature record, following the profile-based lag-search method of Woo (2019), and applies a single dataset-wide median shift to `CNDC`.
 2. **Thermal-mass (thermal lag) correction** — `correct_thermal_lag()` — reconstructs the in-cell water temperature using the fixed-coefficient recursive filter of Morison et al. (1994), correcting `TEMP` for the conductivity cell's own thermal inertia.
 
-Both corrections modify their target variable **in place** (`CNDC` and `TEMP` respectively); no new variables are added to the dataset. Downstream steps that derive practical salinity (`PSAL`) use the corrected `CNDC`/`TEMP` pair, so this step is normally run early in the pipeline, before salinity derivation and any subsequent QC on `PSAL`.
+Both corrections are applied to working copies of `CNDC` and `TEMP`, and practical salinity is derived from the corrected pair and written to `PSAL_ADJUSTED`. The dataset's `CNDC` and `TEMP` are left unchanged. Derive CTD does not overwrite an existing `PSAL_ADJUSTED`, so this step is normally run early in the pipeline, before the other salinity-dependent derivations and any subsequent QC on salinity.
 
 This document focuses on the two correction methods themselves — their physical rationale, the exact algorithm implemented, and implementation details/limitations that a user should be aware of before applying them to a new deployment or platform.
 
@@ -42,7 +42,7 @@ For each unique `PROFILE_NUMBER` in the dataset:
    - The "cost" of a trial lag is `std(PSAL − running_mean(PSAL))` — i.e. how much high-frequency spikiness remains after smoothing. The lag with the **lowest** cost is taken as that profile's optimal lag.
    - If `diagnostics: true`, the trial-lag cost curve and the raw/smoothed residuals for both the best lag and zero lag are captured **once**, for the first qualifying profile processed — not for every profile.
 5. **Aggregation.** The per-profile optimal lags (up to 100 values) are collected, and `self.ct_lag_median` is set to their **median**. If no profile qualifies, the median defaults to `0.0` (i.e. no shift is applied).
-6. **Applying the correction — dataset-wide, not per profile.** A single interpolant of `CNDC` against elapsed time is built from the *entire* dataset (using only samples where both `CNDC` and the time column are non-null), anchored only at samples that are individually unflagged (`calculation_mask(["CNDC"])`; at least 2 such anchors are required, otherwise the correction is skipped entirely with a logged message). `CNDC` at every valid-time sample — flagged or not — is then replaced by this interpolant evaluated at `elapsed_time + ct_lag_median`. The same single median lag is therefore applied uniformly across the whole time series, even though it was estimated from a sample of individual profiles.
+6. **Applying the correction — dataset-wide, not per profile.** A single interpolant of `CNDC` against elapsed time is built from the *entire* dataset (using only samples where both `CNDC` and the time column are non-null), anchored only at samples that are individually unflagged (`calculation_mask(["CNDC"])`; at least 2 such anchors are required, otherwise the correction is skipped entirely with a logged message). The working copy of `CNDC` at every valid-time sample — flagged or not — is then replaced by this interpolant evaluated at `elapsed_time + ct_lag_median`. The same single median lag is therefore applied uniformly across the whole time series, even though it was estimated from a sample of individual profiles.
 
 
 ## 1.3 Figures
@@ -65,7 +65,7 @@ Optimal C–T lag for each sampled profile (up to 100). The dashed line is the m
 
 ```yaml
 steps:
-  - name: "ADJ: Salinity"
+  - name: Salinity Adjustment
     parameters:
       filter_window_size: 21
     diagnostics: false
@@ -117,7 +117,7 @@ For each unique `PROFILE_NUMBER`, independently:
 5. **Resampling back.** The corrected 1 Hz series is linearly interpolated (again with `fill_value="extrapolate"`) back onto the profile's original (non-1 Hz) sample times, and written into the corrected-temperature array at the original indices identified in step 1.
 6. **Diagnostics sampling.** If `diagnostics: true`, the $dT/dt$ vs. correction-amplitude scatter data is captured once, for the first profile encountered that both spans at least one hour (3600 s) and has a temperature range of at least 1.0 °C over the profile — used to visually verify that larger corrections track faster temperature changes.
 
-After all profiles are processed, `TEMP` is updated in place: samples for which a corrected value was produced replace the original; samples that were skipped at any of steps 1–3 (too few points, too few usable anchors, or the profile did not otherwise qualify) retain their original, uncorrected value rather than being flagged or set to `NaN`.
+After all profiles are processed, the working copy of `TEMP` is updated: samples for which a corrected value was produced replace the original; samples that were skipped at any of steps 1–3 (too few points, too few usable anchors, or the profile did not otherwise qualify) retain their original, uncorrected value rather than being flagged or set to `NaN`.
 
 ## 2.3 Figures
 
@@ -153,15 +153,12 @@ The thermal-mass correction has **no independent parameters of its own** — all
 
 # 3. Outputs
 
-The Salinity Adjustment step modifies existing variables in place; it does not add any new variables to the dataset.
-
 | Variable | Description |
 |---|---|
-| `CNDC` | Conductivity, time-shifted in place by the dataset-wide median C–T lag (§1). |
-| `TEMP` | In-situ temperature, corrected in place for conductivity-cell thermal-mass error using the Morison et al. (1994) recursive filter (§2). |
-| `PRES` | Read as an input to both corrections; never modified. |
+| `PSAL_ADJUSTED` | Practical salinity derived from conductivity time-shifted by the dataset-wide median C–T lag (§1) and temperature corrected for conductivity-cell thermal-mass error with the Morison et al. (1994) recursive filter (§2). |
+| `CNDC`, `TEMP`, `PRES` | Read as inputs; never modified. |
 
-Downstream salinity-derivation steps are configured to run **after** this step, so that `PSAL` is computed from the corrected `CNDC`/`TEMP` pair rather than the raw sensor records.
+Downstream steps read `PSAL_ADJUSTED`, so absolute salinity, density and other salinity-dependent variables use the corrected salinity.
 
 ---
 
