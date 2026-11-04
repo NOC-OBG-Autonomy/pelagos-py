@@ -130,17 +130,17 @@ def _summarise(v, want_median):
 
 
 def _read_pres(v, start, stop):
-    # Unmasked reads are ~5x faster on big files, so fill values are NaN'd by hand.
+    # Raw reads are ~5x faster on big files, so fill values and packing are handled by hand.
     import netCDF4
 
-    v.set_auto_mask(False)
+    v.set_auto_maskandscale(False)
     pres = v[start:stop].ravel()
     if pres.dtype.kind != "f":
         pres = pres.astype(float)
     fills = [getattr(v, a) for a in ("_FillValue", "missing_value") if hasattr(v, a)]
     for fill in fills or [netCDF4.default_fillvals.get(v.dtype.str[1:])]:
         pres[pres == fill] = np.nan
-    return pres
+    return pres * getattr(v, "scale_factor", 1.0) + getattr(v, "add_offset", 0.0)
 
 
 def _bottoms(pres, blocks):
