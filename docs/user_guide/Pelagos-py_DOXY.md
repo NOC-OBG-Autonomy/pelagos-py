@@ -1,8 +1,6 @@
 # Oxygen Processing: Aanderaa Optodes
 
-***
-
-# Overview
+## Overview
 
 Dissolved oxygen in seawater gives us information about ocean ventilation, primary productivity, and remineralisation of organic matter. It is therefore considered a key variable in understanding the marine carbon cycle, the biological carbon pump, and evolution of water masses. Oxygen sensors have been integrated on a range of autonomous platforms, such as floats, gliders, and ALRs. Pelagos-py implements an oxygen processing workflow, including calculations that convert raw sensor signals into oxygen concentrations, corrections, quality control, and standardised unit conversions. The workflow presented here is for Aanderaa oxygen optodes only, and has been designed according to best practice protocols (Bittig et al., 2016) and BGC-Argo protocols (Thierry et al., 2025a) that have been adapted where necessary to support a wide range of autonomous observing platforms and their unique capabilities. Default processing parameters are provided as starting points, but should be critically assessed by the user. This documentation is intended to guide these decisions. 
 
@@ -64,7 +62,7 @@ The workflow for processing dissolved oxygen measurements consists of the follow
 
 Processing dissolved oxygen measurements requires measurements from both the oxygen optode, the CTD, and several optional glider variables.
 
-### Optode variables
+## Optode variables
 
 - `TIME` — measurement time
 - `BPHASE_DOXY` - phase shift measurement due to blue light excitation [$^{\circ}$]
@@ -89,14 +87,14 @@ NRT datasets might contain different optode variables compared to recovered data
 >>>> If only `MOLAR_DOXY` is available, apply steps 1 and 3 and continue with step 6 of the workflow. 
 
 
-### CTD variables
+## CTD variables
 
 - `TIME` — measurement time
 - `TEMP` — CTD temperature [$^{\circ}$C]
 - `PRAC_SALINITY` — practical salinity [psu]
 - `PRES` — pressure [dbar]
 
-### Glider variables
+## Glider variables
 
 The geometric lag correction can be done using a default time value, or it can be estimated for each cast using the following variables: 
 
@@ -104,7 +102,7 @@ The geometric lag correction can be done using a default time value, or it can b
 - `GLIDER_PITCH` - pitch of the platform, e.g. of the glider (optional)
 - `PROFILE_DIRECTION` or `SCI_PHASE` - variable distinguising up- and downcasts
 
-### Calibration coefficients
+## Calibration coefficients
 
 Conversions of raw data into meaningful oxygen concentration values requires calibration values that are provided by the manufacturer. Calibration coefficients are either stored in the data attributes or can be given by the user.
 
