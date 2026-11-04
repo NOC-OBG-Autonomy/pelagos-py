@@ -1,238 +1,313 @@
-Development
-===========
+.. include:: ../CONTRIBUTING.md
+   :parser: myst_parser.sphinx_
 
-We welcome contributions to pelagos_py. All types of contributions are encouraged and valued. To maintain code quality and stability, we use a specific workflow involving pull requests to ``main``.
-
-If you have a bug report, feature request, or question, please open an issue on the `GitHub issues page <https://github.com/NOC-OBG-Autonomy/pelagos-py/issues>`_ — this is also a great way to contribute.
-
-I Have a Question
------------------
-
-Before you ask a question, it is best to search the existing `Issues <https://github.com/NOC-OBG-Autonomy/pelagos-py/issues>`_ that might help you. In case you have found a suitable issue and still need clarification, you can write your question in that issue. It is also advisable to search the internet for answers first.
-
-If you then still feel the need to ask a question, we recommend the following:
-
-1. Open an `Issue <https://github.com/NOC-OBG-Autonomy/pelagos-py/issues/new>`_.
-2. Provide as much context as you can about what you're running into.
-3. Provide the project, Python version and details of your Python environment (pip/conda and versions of dependencies).
-
-We will then take care of the issue as soon as possible.
-
-Development Workflow
+Extending pelagos-py
 --------------------
 
-All new features and bug fixes should be submitted to the ``main`` branch.
+One of the main goals of pelagos-py is to make adding your own processing as
+painless as possible. This section explains how to add new **steps** and **QC
+checks**, including the base-class interfaces and how new functionality is
+registered so the pipeline can discover it.
 
-1. **Fork the repository**: Create your own copy of the project on GitHub.
-2. **Clone your fork**: Download the code to your local machine.
-3. **Create a branch**: Work on a new branch specifically for your changes.
-4. **Submit a Pull Request**: Direct your Pull Request (PR) from your fork to the ``main`` branch of the original repository.
+Templates are provided for both: copy :doc:`blank_step.py <api/pelagos_py/steps/templates/blank_step/index>`
+for a new step, or :doc:`blank_qc.py <api/pelagos_py/steps/templates/blank_qc/index>`
+for a new QC check. It is still recommended that you read the instructions below
+to avoid common implementation issues.
 
-See `Common Commands`_ below for the exact git commands.
+How to add a new step
+~~~~~~~~~~~~~~~~~~~~~~~
 
-Reporting Bugs
---------------
+1. Create a new Python file in the appropriate directory under
+   ``src/pelagos_py/steps/``.
 
-**Before submitting a bug report**
+   .. note::
+      If you are creating a step for specific variables, it should go in the
+      ``variables`` subdirectory.
 
-A good bug report shouldn't leave others needing to chase you up for more information. Therefore, we ask you to investigate carefully, collect information and describe the issue in detail in your report. Please complete the following steps in advance to help us fix any potential bug as fast as possible.
+2. Define a new class for your step, inheriting from ``BaseStep`` and adding the
+   ``@register_step`` decorator. This makes the step discoverable by the
+   Pipeline Manager, while still letting you define other (unregistered) classes
+   in the same file.
 
-* Make sure that you are using the latest version.
-* Determine if your bug is really a bug and not an error on your side, e.g. using incompatible environment components/versions.
-* Check the `bug tracker <https://github.com/NOC-OBG-Autonomy/pelagos-py/issues?q=label%3Abug>`_ to see if other users have already experienced (and potentially solved) the same issue.
-* Collect information about the bug:
+   .. code-block:: python
 
-  * Stack trace (Traceback).
-  * OS, platform and version (Windows, Linux, macOS, x86, ARM).
-  * Version of Python and package manager (conda/pip etc), depending on what seems relevant.
-  * Possibly your input, the output and any error messages you are seeing.
-  * Can you reliably reproduce the issue?
+      from pelagos_py.steps.base_step import BaseStep, register_step
 
-**How do I submit a good bug report?**
+      @register_step
+      class MyNewStep(BaseStep):
+          ...
 
-We use GitHub issues to track bugs and errors. If you run into an issue with the project:
+3. Define the ``step_name`` attribute. This is the name used in the pipeline
+   config file to refer to the step.
 
-* Open an `Issue <https://github.com/NOC-OBG-Autonomy/pelagos-py/issues/new>`_. (Since we can't be sure at this point whether it is a bug or not, we ask you not to talk about a bug yet and not to label the issue.)
-* Explain the behavior you would expect and the actual behavior.
-* Please provide as much context as possible and describe the *reproduction steps* that someone else can follow to recreate the issue on their own. This usually includes your code. For good bug reports you should isolate the problem and create a reduced test case.
-* Provide the information you collected in the previous section.
+   .. code-block:: python
 
-Once it's filed:
+      from pelagos_py.steps.base_step import BaseStep, register_step
 
-* The project team will label the issue accordingly.
-* A team member will try to reproduce the issue with your provided steps. If there are no reproduction steps or no obvious way to reproduce the issue, the team will ask you for those steps. Bugs will not be addressed until they are reproducible.
+      @register_step
+      class MyNewStep(BaseStep):
 
-PyPI
-----
+          step_name = "My New Step"
 
-The workflow automatically updates the version number upon a successful PR to the ``main`` branch. Any manually created release will then automatically be published to PyPI.
+4. Implement the ``run`` method, which contains the logic for your step. It
+   should take no arguments other than ``self`` and should return the
+   ``self.context`` object.
 
-Code Quality and Testing
-------------------------
+   .. code-block:: python
 
-To ensure pelagos_py remains reliable, we enforce the following requirements:
+      from pelagos_py.steps.base_step import BaseStep, register_step
 
-* **Automated Testing**: Once a PR is submitted, automated tests will run. Code must pass these tests to be considered for merging.
-* **Review Process**: A human reviewer must approve the changes before they are merged into ``main``.
+      @register_step
+      class MyNewStep(BaseStep):
+          step_name = "My New Step"
 
-Testing
--------
+          def run(self):
+              # Your processing logic here
+              return self.context
 
-We use `pytest <https://docs.pytest.org/>`_ for testing. The tests live in the
-``tests/`` directory at the root of the repository.
+5. Optionally, implement the ``generate_diagnostics`` method if your step
+   produces any diagnostic plots or outputs.
 
-**Installing the test dependencies**
+   .. code-block:: python
 
-The testing tools (``pytest`` and ``pytest-cov``) are declared as an optional
-dependency group in ``pyproject.toml`` rather than being installed by default.
-To install pelagos_py together with everything needed to run the tests, do an
-*editable* install with the ``test`` extra from the root of the repository:
+      from pelagos_py.steps.base_step import BaseStep, register_step
 
-.. code-block:: bash
+      @register_step
+      class MyNewStep(BaseStep):
+          step_name = "My New Step"
 
-   pip install -e ".[test]"
+          def run(self):
+              # Your processing logic here
+              return self.context
 
-The ``-e`` flag installs the project in editable mode, so changes you make to
-the source are picked up without reinstalling. The ``[test]`` extra pulls in the
-testing dependencies. The quotes around ``".[test]"`` are required by some
-shells (such as ``zsh``) to stop the square brackets being interpreted as a
-glob pattern.
+          def generate_diagnostics(self):
+              # Your diagnostics logic here
+              pass
 
-**Running the full test suite**
+   There are already default methods for generating common diagnostics, such as
+   time series and scatter plots. See the
+   :doc:`diagnostics documentation <api/pelagos_py/utils/diagnostics/index>`
+   for more information.
 
-From the root of the repository, simply run:
+6. Add the step to your pipeline config file, using the ``step_name`` you defined
+   in step 3.
 
-.. code-block:: bash
+   .. code-block:: yaml
 
-   pytest
+      # Pipeline configuration — only needed once at the top of the file
+      pipeline:
+        name: "My Pipeline"
+        description: "A pipeline for demonstration purposes"
 
-pytest discovers the configuration in ``pyproject.toml`` and collects every test
-under ``tests/`` automatically. You should see output similar to:
+      # Steps in the pipeline
+      steps:
+        - name: "My New Step"
+          parameters:
+            param1: value1
+            param2: value2
 
-.. code-block:: text
+7. Any parameters defined in the ``parameters`` section of the config file are
+   passed to your step as attributes. You can access them in your ``run`` method
+   as ``self.param1``, ``self.param2``, and so on.
 
-   ========================= test session starts =========================
-   platform darwin -- Python 3.14.3, pytest-9.0.3, pluggy-1.6.0
-   rootdir: /path/to/pelagos-py
-   configfile: pyproject.toml
-   collected 41 items
+   .. note::
+      This is handled automatically by the ``BaseStep`` class. More information
+      can be found in the
+      :doc:`BaseStep documentation <api/pelagos_py/steps/base_step/index>`.
 
-   .........................................                       [100%]
+Adding QC handling to a step
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-   ========================= 41 passed in 5.87s ==========================
+Some users may want to filter out bad data before a processing step runs. This
+is implemented through the ``QCHandlingMixin`` (see
+:doc:`qc_handling.py <api/pelagos_py/utils/qc_handling/index>`). The pipeline
+preserves the original dataset dimensions, so filtered data is either replaced
+or reinserted once the step completes.
 
-**Running a specific test**
-
-To run a single test file, pass its path to pytest:
-
-.. code-block:: bash
-
-   pytest tests/test_impossible_date_qc.py
-
-You can narrow it down further to a single test function (or a single
-parametrised case) using the ``::`` separator, and add ``-v`` for verbose
-output that lists each test by name:
-
-.. code-block:: bash
-
-   pytest tests/test_impossible_date_qc.py::test_dates -v
-
-For example:
-
-.. code-block:: text
-
-   ========================= test session starts =========================
-   collected 3 items
-
-   tests/test_impossible_date_qc.py::test_dates[times0-expected_flags0] PASSED [ 33%]
-   tests/test_impossible_date_qc.py::test_dates[times1-expected_flags1] PASSED [ 66%]
-   tests/test_impossible_date_qc.py::test_dates[times2-expected_flags2] PASSED [100%]
-
-   ========================== 3 passed in 4.48s ==========================
-
-**Measuring coverage**
-
-Because ``pytest-cov`` is installed with the ``test`` extra, you can also produce
-a coverage report for the ``pelagos_py`` package:
-
-.. code-block:: bash
-
-   pytest --cov=pelagos_py
-
-Documentation
--------------
-
-The API reference is generated automatically from the source by
-`sphinx-autoapi <https://sphinx-autoapi.readthedocs.io/>`_, which reads the
-code statically (it never imports the package). The rule for what appears is
-simple:
-
-* **Has a docstring → it is shown.** Any class, method or function with a
-  docstring is added to the API reference.
-* **No docstring → it is hidden.** Undocumented members (and imported names,
-  ``__init__``, etc.) are left out automatically, keeping the pages clean.
-
-So to document something, write a docstring; to keep something out of the docs,
-leave its docstring off. We use NumPy-style docstrings (Parameters, Returns,
-Examples sections).
-
-If a member *has* a docstring but you still want to hide it from the docs, add
-``:meta private:`` anywhere in that docstring:
+To give your step QC handling, add ``QCHandlingMixin`` to the class inheritance
+and call ``self.filter_qc()``, ``self.reconstruct_data()``, ``self.update_qc()``
+and — if you add new variables — ``self.generate_qc({<QC_child>: [*<QC_parents>]})``:
 
 .. code-block:: python
 
-   def helper(self):
-       """Do the thing.
+   from pelagos_py.steps.base_step import BaseStep, register_step
+   from pelagos_py.utils.qc_handling import QCHandlingMixin
 
-       :meta private:
-       """
+   @register_step
+   class MyNewStep(BaseStep, QCHandlingMixin):
+       step_name = "My New Step"
 
-.. note::
+       def run(self):
+           # Filter the specified QC out of this step's instance of self.data
+           # and store it separately.
+           self.filter_qc()
 
-   A runtime marker such as a ``@nodoc`` decorator will **not** work, because
-   sphinx-autoapi parses the source without running it and never sees
-   attributes set at runtime. Use the docstring rule (or ``:meta private:``)
-   instead.
+           # Your processing logic here. Always use self.data to access your
+           # processing inputs, as this is what has been filtered.
+           # --------- EXAMPLE ---------
+           self.data["C"] = self.data["A"] * self.data["B"]
+           # ---------------------------
 
-Common Commands
----------------
+           # Add the filtered-out data back in, or retain its replacement
+           # depending on the user config.
+           self.reconstruct_data()
+           # Update the flags of the filtered data.
+           self.update_qc()
 
-**Clone the repository**
+           # If a new variable was added, give it its own QC column derived from
+           # its parents' QC. Not necessary if no new variables were added.
+           # --------- EXAMPLE ---------
+           self.generate_qc({"C_QC": ["A_QC", "B_QC"]})
+           # ---------------------------
 
-.. code-block:: bash
+           self.context["data"] = self.data
+           return self.context
 
-   git clone https://github.com/NOC-OBG-Autonomy/pelagos-py.git
+       def generate_diagnostics(self):
+           # Your diagnostics logic here
+           pass
 
-**Create a feature branch**
+To use QC filtering, the step config must specify ``qc_handling_settings``:
 
-Always create a new branch for your work to keep your fork organised:
+.. code-block:: yaml
 
-.. code-block:: bash
+   # Steps in the pipeline
+   steps:
+     - name: "My New Step"
+       parameters:
+         param1: value1
+         param2: value2
+         # [qc_handling_settings]:
+         #   Can be specified in any step that has the QC filtering functionality.
+         qc_handling_settings:
+           # [flag_filter_settings]:
+           #   {variable: flags to filter} pairs. Data flagged with any of the
+           #   specified flags is replaced with a nan internally. All steps
+           #   should be designed to operate with nans.
+           flag_filter_settings:
+             PRES: [3, 4]
+           # [reconstruction_behaviour]:
+           #   How data is reconstructed after processing (defaults to reinsert):
+           #   "replace":  Filtered indices keep their post-processing value and
+           #               the original "bad data" is deleted.
+           #   "reinsert": The filtered "bad data" is reinserted into the
+           #               post-processed data.
+           reconstruction_behaviour: "replace"
+           # [flag_mapping]:
+           #   How flags should change for "bad data" indices when the pre- and
+           #   post-processing data differ. E.g. interpolation replaces bad and
+           #   missing values (3, 4, 9) with interpolated values (8).
+           flag_mapping:
+             3: 8
+             4: 8
+             9: 8
+           # [calculation_flag_filter]:
+           #   Flags a step's calculations ignore (defaults to [3, 4, 9]). Unlike
+           #   flag_filter_settings this does not remove the data: the samples are
+           #   still corrected, they just do not inform the correction. E.g. Deep
+           #   Correction leaves bad values out of the dark-value estimate but
+           #   still subtracts the dark value from them. Set to [] to opt out.
+           #   Steps opt in by calling self.calculation_mask([...]) with the
+           #   variables whose flags should gate the calculation.
+           calculation_flag_filter: [3, 4, 9]
 
-   git checkout -b my-new-feature
+How to add a new QC check
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Stay updated with main**
+QC checks operate exclusively on the QC flags of the data variables. This is
+useful for researchers post-pipeline who want to remove bad or suspicious data,
+or to exclude bad data from specific processing steps (see
+`Adding QC handling to a step`_ above). All checks are run through the
+:doc:`Apply QC <api/pelagos_py/steps/quality_control/apply_qc/index>` step, which
+transfers the individual results onto the existing QC columns.
 
-Before submitting a PR, ensure your local code is up to date with the latest changes from the official ``main`` branch:
+As described on the :doc:`Quality Control <quality_control>` page, there are two types of
+check:
 
-.. code-block:: bash
+* **Static** checks always operate on the same variable(s) and produce the same
+  QC outputs.
+* **Dynamic** checks let the user specify which variables they apply to, so the
+  QC output is not pre-determined.
 
-   git fetch upstream
-   git merge upstream/main
+A standard structure for dynamic checks is yet to be settled, so this section
+covers only the implementation of static checks. Examples of dynamic checks can
+be found in
+:doc:`stuck_value_qc.py <api/pelagos_py/steps/quality_control/stuck_value_qc/index>`
+and
+:doc:`range_qc.py <api/pelagos_py/steps/quality_control/range_qc/index>`.
+A template for a static check is provided in
+:doc:`blank_qc.py <api/pelagos_py/steps/templates/blank_qc/index>`.
 
-**Submitting changes**
+1. Create your QC file in ``src/pelagos_py/steps/quality_control/``.
 
-Push your changes to your fork and then use the GitHub web interface to open a Pull Request. Ensure the **base branch** is set to ``main``.
+2. Import the parent class and define your QC class. It must inherit from
+   ``BaseQC`` and carry the ``@register_qc`` decorator so the pipeline can find
+   and register it.
 
-.. code-block:: bash
+   .. code-block:: python
 
-   git add .
-   git commit -m "Brief description of changes"
-   git push origin my-new-feature
+      from pelagos_py.steps.base_qc import BaseQC, register_qc, flag_cols
 
-Legal Notice & Attribution
---------------------------
+      @register_qc
+      class MyNewCheck(BaseQC):
+          ...
 
-When contributing to this project, you must agree that you have authored 100% of the content, that you have the necessary rights to the content and that the content you contribute will be provided under the project's Apache-2.0 license.
+3. Specify the following attributes:
 
-This guide is based on `contributing.md <https://contributing.md/generator>`_.
+   .. code-block:: python
+
+      from pelagos_py.steps.base_qc import BaseQC, register_qc, flag_cols
+
+      @register_qc
+      class MyNewCheck(BaseQC):
+          qc_name = "my new check"  # How you refer to the check in config (see below)
+          parameter_schema = {'A_cutoff': {'type': float, 'default': 1}}  # Parameters the user may supply, with type and default
+          required_variables = ['A']  # Variables required for execution; cross-referenced against the data vars in context
+          provided_variables = []  # Variables this check itself provides, if any
+          qc_outputs = ['A_QC']  # QC outputs; references that help "Apply QC" update existing QC in the data
+
+4. Add the ``return_qc`` method, which implements your check algorithm.
+   Optionally add ``plot_diagnostics`` if the check should generate plots when
+   ``diagnostics`` is true in the config.
+
+   .. code-block:: python
+
+      from pelagos_py.steps.base_qc import BaseQC, register_qc, flag_cols
+
+      @register_qc
+      class MyNewCheck(BaseQC):
+          qc_name = "my new check"
+          parameter_schema = {'A_cutoff': {'type': float, 'default': 1}}
+          required_variables = ['A']
+          provided_variables = []
+          qc_outputs = ['A_QC']
+
+          def return_qc(self):
+              # IMPORTANT: access the data with self.data.
+              # self.flags should be an xarray Dataset whose data_vars hold the
+              # "{variable}_QC" columns produced by the check.
+              return self.flags
+
+          def plot_diagnostics(self):
+              # Add your diagnostic plotting here
+              ...
+
+   Access the data using ``self.data`` (an xarray ``Dataset``). The method must
+   return an xarray ``Dataset`` (``self.flags``), which can contain any number
+   of data variables — but those with the ``_QC`` suffix must be listed in the
+   ``qc_outputs`` attribute.
+
+5. Finally, add your new check to the config.
+
+   .. code-block:: yaml
+
+      - name: "Apply QC"
+        parameters:
+          # qc_settings can list multiple checks
+          qc_settings:
+            # The qc_name
+            my new check:
+              # Specify the A_cutoff setting
+              A_cutoff: 100
+          # If you want plotting:
+          diagnostics: true
