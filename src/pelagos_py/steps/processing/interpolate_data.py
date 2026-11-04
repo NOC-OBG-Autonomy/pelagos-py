@@ -43,7 +43,7 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
     variables : dict
         Variable name -> list of QC flags whose samples are treated as gaps.
     max_interp_time : float, optional
-        Largest gap (minutes from the nearest real value) that is filled.
+        Largest gap (minutes between the surrounding real values) that is filled.
         ``0``/``False``/``"off"`` fills gaps of any size. Default ``5.0``.
 
     Examples
