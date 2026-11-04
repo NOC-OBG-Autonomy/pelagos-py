@@ -371,6 +371,7 @@ A template for a static check is provided in
 
    Temperature <user_guide/Pelagos-py_TEMP>
    Salinity <user_guide/pelagos-py_SALINITY>
+   Oxygen <user_guide/Pelagos-py_DOXY>
    PAR <user_guide/Pelagos-py_PAR>
    Chlorophyll-a <user_guide/Pelagos-py_CHLA>
    Backscatter <user_guide/Pelagos-py_BBP>
