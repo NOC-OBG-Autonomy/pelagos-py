@@ -1,10 +1,13 @@
 # Pressure Processing
 
+```{image} ../_static/pressure/pressure_track.png
+:alt: Pressure against time for three days of the demo deployment
+:width: 100%
+```
+
 ## Overview
 
-Pressure (`PRES`, dbar) is measured directly by the CTD. It is used to find profiles, to derive `DEPTH`, and in the salinity and density calculations, so it is quality controlled early in the pipeline.
-
-pelagos-py applies no physical correction to pressure (no calibration, offset or drift correction). Processing is limited to:
+Pressure (`PRES`, dbar) is measured directly by the CTD. It is used to find profiles, to derive `DEPTH`, and in the salinity and density calculations, so it is quality controlled early in the pipeline. Processing consists of:
 
 1. **Quality control** — range and stuck-value tests, with flags shared across the CTD triad (`PRES`, `TEMP`, `CNDC`).
 2. **Interpolation** — flagged and missing pressure values are filled by linear interpolation in time.
@@ -13,7 +16,7 @@ pelagos-py applies no physical correction to pressure (no calibration, offset or
 
 # 1. Quality control
 
-Pressure QC uses the generic **Range QC** and **Stuck Value QC** steps (see the **Quality Control** documentation for the algorithms). Default configuration:
+Pressure QC uses {doc}`Range QC </api/pelagos_py/steps/quality_control/range_qc/index>` and {doc}`Stuck Value QC </api/pelagos_py/steps/quality_control/stuck_value_qc/index>`. Default configuration:
 
 ```yaml
 qc_settings:
@@ -39,7 +42,7 @@ No spike test is applied: pressure changes smoothly with the platform's vertical
 
 # 2. Interpolation
 
-After QC, the **Interpolate Data** step fills pressure values flagged probably bad (`3`), bad (`4`) or missing (`9`) by linear interpolation in time, and re-flags them as interpolated (`8`). This gives every sample a usable pressure for `DEPTH` and profile finding.
+After QC, the {doc}`Interpolate Data </api/pelagos_py/steps/processing/interpolate_data/index>` step fills pressure values flagged probably bad (`3`), bad (`4`) or missing (`9`) by linear interpolation in time, and re-flags them as interpolated (`8`). This gives every sample a usable pressure for `DEPTH` and profile finding.
 
 ```yaml
 - name: Interpolate Data
