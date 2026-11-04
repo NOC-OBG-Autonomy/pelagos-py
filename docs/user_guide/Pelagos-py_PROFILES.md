@@ -85,7 +85,7 @@ A simulated record with a dive, a mid-water turn, a parking stretch and a data g
 
 - **`PROFILE_NUMBER`.** Each ascent or descent is its own profile; an ascent does not need a matching descent (though there should almost always be one). A profile also includes the transition samples next to it, and the bottom inflection where it starts. Surfacing, parking and propelled samples belong to no profile.
 - **`PROFILE_DIRECTION`.** Follows the phase: `1` for descent, `-1` for ascent, `0` for surfacing, parking and propelled. Inflection, transition and unknown samples are NaN.
-- **`CYCLE`.** A new cycle starts at each descent and runs through the turn, the ascent and the surfacing that follow.
+- **`CYCLE`.** A cycle runs from leaving the surface to the end of the next surfacing. It only advances when the platform leaves the surface after having dived, so mid-water turns, parking and data gaps stay within one cycle. The figure above has three cycles.
 
 ---
 

@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 import xarray as xr  # noqa: E402
+from matplotlib.ticker import MaxNLocator  # noqa: E402
 
 from pelagos_py.steps.processing import find_profiles as fp  # noqa: E402
 from pelagos_py.utils import fig_spec  # noqa: E402
@@ -58,6 +59,15 @@ def _phase_points(ax, x, depth, phase):
             )
     if not ax.yaxis_inverted():
         ax.invert_yaxis()
+
+
+def _flat_steps(ax, x, y):
+    # One horizontal segment per run of equal values, with no vertical joins.
+    y = np.asarray(y, dtype=float)
+    change = np.flatnonzero(np.diff(y) != 0) + 1
+    starts = np.concatenate(([0], change))
+    ends = np.concatenate((change, [len(y)])) - 1
+    ax.hlines(y[starts], x[starts], x[ends], color="black", lw=2)
 
 
 def method(out):
@@ -151,7 +161,8 @@ def phases(out):
         (ax_direction, "PROFILE_DIRECTION"),
         (ax_cycle, "CYCLE"),
     ):
-        ax.plot(minutes, result[var], color="black", lw=1.5)
+        _flat_steps(ax, minutes, result[var])
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
         fig_spec.style_axes(ax, title=var)
     ax_direction.set_yticks([-1, 0, 1])
     ax_cycle.set_xlabel("Minutes", fontsize=fig_spec.FS_LABEL)
