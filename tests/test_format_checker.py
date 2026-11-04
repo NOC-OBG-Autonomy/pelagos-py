@@ -4,6 +4,7 @@
 from pelagos_py.steps.input_output import format_check
 
 import pytest
+from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 FormatCheck = format_check.FormatCheck
@@ -120,7 +121,7 @@ def test_json_output_saved_and_registered(tmp_path, trailing_slash):
     output_filename = mock_json.call_args[0][
         2
     ]  # (cs, score_dict, output_filename, ...)
-    assert output_filename == str(tmp_path / "demo_test_check.json")
+    assert Path(output_filename) == tmp_path / "demo_test_check.json"
     assert result["global_parameters"]["cc_file"].endswith("demo_test_check.json")
 
 
