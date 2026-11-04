@@ -65,7 +65,7 @@ steps:
 
   - name: Derive CTD
     parameters:
-      to_derive: [PSAL, ASAL, CONS_TEMP]
+      to_derive: [PSAL, ASAL, CONS_TEMP, DENSITY]
 
   - name: Mixed Layer Depth
     diagnostics: [temp]

@@ -98,6 +98,7 @@ docs/_static/pressure/
 docs/_static/profiles/
 docs/_static/mld/
 docs/_static/salinity/
+docs/_static/position/
 celerybeat-schedule
 celerybeat.pid
 

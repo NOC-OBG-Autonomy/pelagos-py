@@ -28,6 +28,7 @@ sections:
   par/par_section.png: [Downwelling PAR]
   chla/chla_section.png: [Chlorophyll]
   bbp/bbp_section.png: [Backscatter]
+  derived/derived_section.png: [Density]
 
 # PROFILE is the shared example day profile, picked by render_figures.py.
 variants:

@@ -219,6 +219,22 @@ def pressure_track(out):
     plt.close(fig)
 
 
+def position_track(out):
+    with xr.open_dataset(get_demo_file()) as ds:
+        df = ds[["TIME", "LONGITUDE", "LATITUDE"]].to_dataframe().dropna()
+    df = df.iloc[fig_spec.thin_idx(len(df), 20_000)]
+    fig, axes = fig_spec.new_fig()
+    fig.set_size_inches(fig_spec.FIG_W, fig_spec.BANNER_H)
+    ax = axes[0][0]
+    days = (df["TIME"] - df["TIME"].iloc[0]) / pd.Timedelta(days=1)
+    track = ax.scatter(df["LONGITUDE"], df["LATITUDE"], c=days, s=4, cmap="viridis")
+    fig.colorbar(track, ax=ax, label="Days since start")
+    fig_spec.style_axes(ax, xlabel="LONGITUDE", ylabel="LATITUDE")
+    fig_spec.finish(fig)
+    fig.savefig(os.path.join(out, "position", "position_track.png"))
+    plt.close(fig)
+
+
 def mld_method(out):
     reference_depth = 10
     depth = np.arange(1.0, 150.0, 1.0)
@@ -280,9 +296,16 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=os.path.join(ROOT, "docs", "_static"))
     args = ap.parse_args()
-    for folder in ("profiles", "pressure", "mld"):
+    for folder in ("profiles", "pressure", "mld", "position"):
         os.makedirs(os.path.join(args.out, folder), exist_ok=True)
-    for draw in (method, phases, demo_phases, pressure_track, mld_method):
+    for draw in (
+        method,
+        phases,
+        demo_phases,
+        pressure_track,
+        mld_method,
+        position_track,
+    ):
         draw(args.out)
         print("drew", draw.__name__)
 
