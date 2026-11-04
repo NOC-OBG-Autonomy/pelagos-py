@@ -75,10 +75,10 @@ Recommended configuration:
 qc_settings:
   stuck value qc:
     variables:
-      TEMP: 3  # Three or more consecutive same values
+      TEMP: 3  # Four or more equal values in a row
 ```
 
-A frozen reading (three or more identical consecutive values) indicates a potential sensor error. All involved values are flagged as probably bad (`3`).
+A frozen reading (four or more identical consecutive values) indicates a potential sensor error. All involved values are flagged as bad (`4`).
 
 ## 1.4 Spike test
 
@@ -102,17 +102,17 @@ Recommended configuration:
 - name: "Derive CTD"
   parameters:
     to_derive: [
-      # PRAC_SALINITY,
-      # ABS_SALINITY,
+      # PSAL,
+      # ASAL,
       CONS_TEMP  # Conservative temperature
     ]
 ```
 
 pelagos-py implements the conservative temperature conversion using GSW-python which requires the input variables:
-- Absolute salinity (ABS_SALINITY)
+- Absolute salinity (ASAL)
 - Temperature (TEMP)
 - Pressure (PRES)
-These must be present in the dataset under their variable names shown in brackets. Absolute salinity is not typically present in raw datasets. We therefore provide its derivation through the same Derive CTD step. Uncomment the "PRAC_SALINITY" and "ABS_SALINITY" lines to allow this (ABS_SALINITY requires PRAC_SALINITY).
+These must be present in the dataset under their variable names shown in brackets. Absolute salinity is not typically present in raw datasets. We therefore provide its derivation through the same Derive CTD step. Uncomment the "PSAL" and "ASAL" lines to allow this (ASAL requires PSAL). Inputs are read from their `_ADJUSTED` versions where they exist.
 
 ---
 
