@@ -14,17 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import xarray as xr
 import pandas as pd
 import numpy as np
 import warnings
 import os
-import datetime as _dt
 
 from scipy.stats import pearsonr
 from geopy.distance import geodesic
 from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
+
+logger = logging.getLogger("pelagos_py.pipeline.alignment")
 
 
 def interpolate_DEPTH(
@@ -94,7 +96,9 @@ def interpolate_DEPTH(
     if "PROFILE_NUMBER" not in ds.coords:
         ds = ds.set_coords("PROFILE_NUMBER")
 
-    print("[Pipeline Manager] Interpolating missing DEPTH values by PROFILE_NUMBER...")
+    logger.info(
+        "[Pipeline Manager] Interpolating missing DEPTH values by PROFILE_NUMBER..."
+    )
 
     # Interpolate DEPTH within each profile along N_MEASUREMENTS
     DEPTH_interp = (
@@ -154,19 +158,23 @@ def interpolate_DEPTH(
                 fig.tight_layout()
                 if save_path:
                     plt.savefig(save_path, dpi=300)
-                    print(f"[Diagnostics] Saved depth-bin histogram to: {save_path}")
+                    logger.info(
+                        f"[Diagnostics] Saved depth-bin histogram to: {save_path}"
+                    )
                 if show:
                     plt.show()
                 else:
                     plt.close(fig)
             else:
-                print("[Diagnostics] No finite DEPTH_bin values to plot (hist).")
+                logger.warning(
+                    "[Diagnostics] No finite DEPTH_bin values to plot (hist)."
+                )
 
         elif plot_kind == "heatmap":
             # Per-profile × depth-bin coverage (counts), limited to first N profiles
             profs = np.unique(ds["PROFILE_NUMBER"].values)
             if profs.size == 0:
-                print("[Diagnostics] No profiles available for heatmap.")
+                logger.warning("[Diagnostics] No profiles available for heatmap.")
             else:
                 profs = profs[:max_profiles_heatmap]
                 # Build a small 2D grid of counts
@@ -185,7 +193,9 @@ def interpolate_DEPTH(
                 )
                 df = df[df["PROFILE_NUMBER"].isin(profs)]
                 if df.empty:
-                    print("[Diagnostics] No data to plot in heatmap (after filter).")
+                    logger.warning(
+                        "[Diagnostics] No data to plot in heatmap (after filter)."
+                    )
                 else:
                     # pivot: rows=profile, cols=depth_bin, values=count
                     pivot = (
@@ -217,13 +227,17 @@ def interpolate_DEPTH(
                     fig.tight_layout()
                     if save_path:
                         plt.savefig(save_path, dpi=300)
-                        print(f"[Diagnostics] Saved depth-bin heatmap to: {save_path}")
+                        logger.info(
+                            f"[Diagnostics] Saved depth-bin heatmap to: {save_path}"
+                        )
                     if show:
                         plt.show()
                     else:
                         plt.close(fig)
         else:
-            print(f"[Diagnostics] Unknown plot_kind='{plot_kind}'. Skipping plot.")
+            logger.warning(
+                f"[Diagnostics] Unknown plot_kind='{plot_kind}'. Skipping plot."
+            )
 
     return ds
 
@@ -266,7 +280,7 @@ def aggregate_vars(
     out_vars = {}
     for var in vars_to_aggregate:
         if var not in ds:
-            print(f"[aggregate_vars] Skipping missing variable: {var}")
+            logger.warning(f"[aggregate_vars] Skipping missing variable: {var}")
             continue
 
         da = ds[var]
@@ -346,7 +360,7 @@ def filter_xarray_by_profile_ids(
 
     # Keep only IDs that actually exist (prevents KeyError on .sel)
     present = np.intersect1d(ds[profile_id_var].values, ids)
-    print(
+    logger.info(
         f"[Filter] Aggregated case: {len(ds[profile_id_var])} → {len(present)} profiles retained."
     )
 
@@ -356,7 +370,7 @@ def filter_xarray_by_profile_ids(
 
     # Select profiles (order follows `present`;
     filtered = ds.sel({profile_id_var: present})
-    print(f"[Filter] Resulting dims: {filtered.dims}")
+    logger.debug(f"[Filter] Resulting dims: {filtered.dims}")
     return filtered
 
 
@@ -618,7 +632,7 @@ def compute_r2_for_merged_profiles_xr(
         anc_var = f"median_{var}_{ancillary_name}"
 
         if target_var not in ds or anc_var not in ds:
-            print(f"[R²] Skipping variable '{var}' — missing data.")
+            logger.warning(f"[R²] Skipping variable '{var}' — missing data.")
             continue
 
         r2_values = []
@@ -671,7 +685,9 @@ def plot_r2_heatmaps_per_pair(
 
     for ancillary_name, ds in r2_datasets.items():
         if not isinstance(ds, xr.Dataset):
-            print(f"[Plot] Skipping '{ancillary_name}': not an xarray Dataset.")
+            logger.warning(
+                f"[Plot] Skipping '{ancillary_name}': not an xarray Dataset."
+            )
             continue
 
         # Build a dataframe with the needed columns
@@ -681,7 +697,7 @@ def plot_r2_heatmaps_per_pair(
             if c in ds:
                 needed.append(c)
             else:
-                print(f"[Plot] Warning: missing {c} in dataset for {ancillary_name}")
+                logger.warning(f"[Plot] Missing {c} in dataset for {ancillary_name}")
 
         # We’ll also try to include the ancillary profile id + optional filters
         anc_prof_col = f"{ancillary_name}_PROFILE_NUMBER"
@@ -689,8 +705,8 @@ def plot_r2_heatmaps_per_pair(
         if anc_prof_col in ds:
             extra.append(anc_prof_col)
         else:
-            print(
-                f"[Plot] Warning: missing {anc_prof_col} in dataset for {ancillary_name}"
+            logger.warning(
+                f"[Plot] Missing {anc_prof_col} in dataset for {ancillary_name}"
             )
 
         for meta in ["time_diff_hr", "dist_km"]:
@@ -698,7 +714,9 @@ def plot_r2_heatmaps_per_pair(
                 extra.append(meta)
 
         if not needed:
-            print(f"[Plot] No R² columns present for '{ancillary_name}'. Skipping.")
+            logger.warning(
+                f"[Plot] No R² columns present for '{ancillary_name}'. Skipping."
+            )
             continue
 
         df = ds[needed + extra].to_dataframe().reset_index()
@@ -781,7 +799,7 @@ def plot_r2_heatmaps_per_pair(
             fname = f"r2_heatmap_{title_target}_vs_{ancillary_name}.png"
             path = os.path.join(output_path, fname)
             plt.savefig(path, dpi=300)
-            print(f"[Plot] Saved: {path}")
+            logger.info(f"[Plot] Saved: {path}")
 
         if show_plots:
             plt.show()

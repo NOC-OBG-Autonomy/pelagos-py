@@ -200,14 +200,13 @@ def test_on_step_fail_skip_skips_failing_step(tmp_path, synthetic_nc):
 
 
 @pytest.mark.filterwarnings("ignore:.*monotonically increasing.*")
-def test_on_step_fail_defaults_to_pause_which_skips_outside_dashboard(
+def test_on_step_fail_defaults_to_pause_which_stops_outside_dashboard(
     tmp_path, synthetic_nc
 ):
     p, output_nc = _build_failing_step_pipeline(tmp_path, synthetic_nc)
-    p.run()
-    assert output_nc.exists(), (
-        "the default (pause) should skip on fail outside the dashboard."
-    )
+    with pytest.raises(RuntimeError):
+        p.run()
+    assert not output_nc.exists()
 
 
 def test_make_config_saves_yaml_next_to_file(tmp_path, synthetic_nc):

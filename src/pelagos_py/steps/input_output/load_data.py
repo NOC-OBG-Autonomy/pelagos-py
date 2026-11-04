@@ -18,6 +18,7 @@
 
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
+from pelagos_py.utils.processing_utils import small_netcdf_chunk_cache
 import pelagos_py.utils.diagnostics as diag
 
 import xarray as xr
@@ -31,13 +32,13 @@ MIN_YEAR_FILTER = "1990-01-01"
 @register_step
 class LoadOG1(BaseStep):
     """
-    Loads NetCDF files from ``file_path``. 
-    
+    Loads NetCDF files from ``file_path``.
+
     If ``filter_bad_times`` is set then measurements made
-    outside of the time range specified by ``data_start`` and ``data_end`` are removed before 
+    outside of the time range specified by ``data_start`` and ``data_end`` are removed before
     further processing.
 
-    Time values are expected to be stored under the "TIME" variable name in the NetCDF file 
+    Time values are expected to be stored under the "TIME" variable name in the NetCDF file
     (corresponding to OG1 format). If "TIME" is not monotonically increasing, or has missing values
     (NaT) then this will raise an error.
 
@@ -46,11 +47,11 @@ class LoadOG1(BaseStep):
     filter_bad_time : bool, optional
         If True (default), removes all timestamps outside the expected time window.
     data_start : str or np.datetime64, optional
-        The minimum valid timestamp for the data. If not provided, the filter defaults 
-        to the DEPLOYMENT_TIME found in the dataset, or 1990-01-01T00:00:00 if no 
+        The minimum valid timestamp for the data. If not provided, the filter defaults
+        to the DEPLOYMENT_TIME found in the dataset, or 1990-01-01T00:00:00 if no
         deployment time is found.
     data_end : str or np.datetime64, optional
-        The maximum valid timestamp for the data. If not provided, it defaults to 
+        The maximum valid timestamp for the data. If not provided, it defaults to
         the current system time when the pipeline is run.
 
     Examples
@@ -76,35 +77,39 @@ class LoadOG1(BaseStep):
         "file_path": {
             "type": str,
             "required": True,
-            "description": "Path to the OG1 data file."
+            "description": "Path to the OG1 data file.",
         },
         "filter_bad_time": {
             "type": bool,
             "default": True,
-            "description": "If True, removes all timestamps outside the expected time window."
+            "description": "If True, removes all timestamps outside the expected time window.",
         },
         "data_start": {
             "type": str,
             "default": None,
-            "description": "Minimum valid timestamp (e.g. '2023-05-01T00:00:00'). Defaults to deployment time or 1990."
+            "description": "Minimum valid timestamp (e.g. '2023-05-01T00:00:00'). Defaults to deployment time or 1990.",
         },
         "data_end": {
             "type": str,
             "default": None,
-            "description": "Maximum valid timestamp. Defaults to current system time."
-        }
+            "description": "Maximum valid timestamp. Defaults to current system time.",
+        },
     }
 
     def run(self):
-        # Fail cleanly if the file is missing, rather than surfacing a wrapped
-        # xarray/netCDF4 traceback.
+        # Empty path = the shipped default config: say so rather than "not a file".
+        if not str(self.file_path).strip():
+            self.halt(
+                "'file_path' is empty — this config does not include a data "
+                "file. Set 'file_path' to your input NetCDF file before running."
+            )
         if not Path(self.file_path).is_file():
             self.halt(
                 f"Could not find data file '{self.file_path}'. "
                 "Check the 'file_path' parameter points to an existing file."
             )
 
-        # load data from xarray
+        small_netcdf_chunk_cache()
         self.data = xr.open_dataset(self.file_path)
         self.log(f"Loaded data from {self.file_path}")
 
@@ -144,7 +149,8 @@ class LoadOG1(BaseStep):
                 valid_mask &= time_array >= np.datetime64(deploy_time)
 
             time_dim = self.data["TIME"].dims[0]
-            self.data = self.data.isel({time_dim: valid_mask.values})
+            if not bool(valid_mask.all()):  # isel copies the whole dataset
+                self.data = self.data.isel({time_dim: valid_mask.values})
             new_len = len(self.data["TIME"])
 
             if new_len < orig_len:
@@ -175,7 +181,7 @@ class LoadOG1(BaseStep):
                 "'TIME' is not monotonically increasing. This may cause fatal issues in processing. "
                 "Please check the quality of your input data."
             )
-            
+
         # Make these available to other steps (e.g. Format Checker, which reads the
         # original file from disk; the report uses filename_core for naming).
         self.context["global_parameters"]["filename_core"] = Path(self.file_path).stem
@@ -216,15 +222,5 @@ class LoadOG1(BaseStep):
             )
 
     def generate_diagnostics(self):
-        """
-        Print a structural summary of the loaded dataset.
-
-        Called automatically at the end of :meth:`run` when ``diagnostics`` is
-        enabled. Delegates to
-        :func:`pelagos_py.utils.diagnostics.generate_info`, which prints the
-        dataset's dimensions, variables and global attributes (via
-        :meth:`xarray.Dataset.info`) to stdout — a quick check that the data
-        was loaded as expected.
-        """
         self.log_generating_diagnostics()
         diag.generate_info(self.data)

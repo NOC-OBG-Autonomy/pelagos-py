@@ -6,12 +6,19 @@ import numpy as np
 import xarray as xr
 import pytest
 
-Quenching = chla_quenching.chla_quenching_correction
+Quenching = chla_quenching.ChlaQuenchingCorrection
 
 
 def make_profile(
-    chlf, depth, bbp=None, ipar=None, mld=None, zeu=None, z_ipar=None,
-    profile_number=101.0, calc_mask=None,
+    chlf,
+    depth,
+    bbp=None,
+    ipar=None,
+    mld=None,
+    zeu=None,
+    z_ipar=None,
+    profile_number=101.0,
+    calc_mask=None,
 ):
     # Single-profile dataset in positive-down DEPTH convention. calc_mask marks
     # samples usable for calculation (default all), driving the *__FOR_CALC copies
@@ -22,7 +29,10 @@ def make_profile(
         "DEPTH": ("N_MEASUREMENTS", np.asarray(depth, dtype=float)),
         "CHLA": ("N_MEASUREMENTS", np.asarray(chlf, dtype=float)),
         "ZEU": ("N_MEASUREMENTS", np.full(n, np.nan if zeu is None else float(zeu))),
-        "Z_IPAR": ("N_MEASUREMENTS", np.full(n, np.nan if z_ipar is None else float(z_ipar))),
+        "Z_IPAR": (
+            "N_MEASUREMENTS",
+            np.full(n, np.nan if z_ipar is None else float(z_ipar)),
+        ),
     }
     if bbp is not None:
         data["BBP700"] = ("N_MEASUREMENTS", np.asarray(bbp, dtype=float))
@@ -31,7 +41,11 @@ def make_profile(
     if mld is not None:
         data["MLD"] = ("N_MEASUREMENTS", np.full(n, float(mld)))
 
-    usable = np.ones(n, dtype=bool) if calc_mask is None else np.asarray(calc_mask, dtype=bool)
+    usable = (
+        np.ones(n, dtype=bool)
+        if calc_mask is None
+        else np.asarray(calc_mask, dtype=bool)
+    )
     for var in ("CHLA", "BBP700", "DOWNWELLING_PAR"):
         if var in data:
             values = np.asarray(data[var][1], dtype=float)
@@ -44,9 +58,11 @@ def make_profile(
 
 def make_step(sun_angle=40.0, hybrid=True):
     step = Quenching.__new__(Quenching)
+    step.night_reference = "preceding"
     step.apply_to = "CHLA"
     step.bbp_var = "BBP700"
     step.par_var = "DOWNWELLING_PAR"
+    step.depth_var = "DEPTH"
     step.hybrid = hybrid
     step.max_photic_depth = 100.0
     step.day_min_elevation = 0.0
@@ -220,7 +236,9 @@ def test_quenching_depth_picks_steepest_gradient_point():
     z = np.array([2, 6, 10, 15, 20, 30.0])
     fl_day = np.array([0.4, 0.5, 0.7, 0.9, 1.0, 0.75])
     fl_night = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 0.75])  # D returns to 0 by depth
-    qd, reason = Quenching._quenching_depth(z, fl_day, fl_night, max_photic_depth=38.0)
+    qd, reason, _ = Quenching._quenching_depth(
+        z, fl_day, fl_night, max_photic_depth=38.0
+    )
     assert qd == 15.0
     assert reason == "ok"
 
@@ -232,7 +250,9 @@ def test_thomalla_corrects_above_quenching_depth_and_only_raises():
 
     step = make_step()
     # Night reference: constant fl:bbp ratio so corrected = 500*bbp (=1.0 at surface), night fl unquenched near surface.
-    step._night_refs = [{"z": z_pos, "fl": 500.0 * bbp, "ratio": np.full(z_pos.size, 500.0)}]
+    step._night_refs = [
+        {"z": z_pos, "fl": 500.0 * bbp, "ratio": np.full(z_pos.size, 500.0)}
+    ]
     step._thomalla_day_night = {101: 0}
 
     out = step.apply_thomalla2018_quenching_correction(prof)
@@ -248,7 +268,9 @@ def test_thomalla_corrects_without_zeu_par():
     prof = make_profile(chlf, z_pos, bbp=bbp, zeu=None)  # ZEU absent (NaN)
 
     step = make_step()
-    step._night_refs = [{"z": z_pos, "fl": 500.0 * bbp, "ratio": np.full(z_pos.size, 500.0)}]
+    step._night_refs = [
+        {"z": z_pos, "fl": 500.0 * bbp, "ratio": np.full(z_pos.size, 500.0)}
+    ]
     step._thomalla_day_night = {101: 0}
 
     out = step.apply_thomalla2018_quenching_correction(prof)
@@ -324,6 +346,7 @@ _PAR = np.array([100, 50, 25, 12, np.nan, np.nan, np.nan, np.nan, 200, 100, 50, 
 def _disable_step(scalar_name=None, scalar_values=None):
     step = Quenching.__new__(Quenching)
     step.par_var = "DOWNWELLING_PAR"
+    step.depth_var = "DEPTH"
     step.method = "biermann2015"
     data = {
         "DOWNWELLING_PAR": ("N_MEASUREMENTS", _PAR),
@@ -357,3 +380,95 @@ def test_require_scalar_on_days_halts_when_a_daytime_profile_lacks_the_scalar():
         step._require_scalar_on_days("ZEU", "interpolate_zeu", [1, 2, 3])
     # ...but not when the gap is a night profile that no method corrects.
     step._require_scalar_on_days("ZEU", "interpolate_zeu", [1, 3])
+
+
+# --- Thomalla 2018 with Mitchell 2024 night_reference -----------------------
+def _night(time_ns, ratio, first=None, last=None):
+    z = np.array([2, 6, 10, 15, 20, 30, 45, 60, 80.0])
+    ref = {
+        "z": z,
+        "fl": np.full(9, 1.0),
+        "ratio": np.full(9, float(ratio)),
+        "time": float(time_ns),
+    }
+    ref["first"] = first and _night(time_ns, first)
+    ref["last"] = last and _night(time_ns, last)
+    return ref
+
+
+def _bracketed_step(mode, day_time_ns=3):
+    import pandas as pd
+
+    step = make_step()
+    step.night_reference = mode
+    step._night_refs = [
+        _night(0, 100.0, first=50.0, last=200.0),
+        _night(4, 300.0, first=400.0, last=500.0),
+    ]
+    step._thomalla_day_night = {101: 0}
+    step.sun_args = pd.DataFrame({"TIME": [pd.Timestamp(day_time_ns)]}, index=[101])
+    return step
+
+
+def _recon(step):
+    prof = make_profile(
+        np.full(9, 0.1),
+        np.array([2, 6, 10, 15, 20, 30, 45, 60, 80.0]),
+        bbp=np.full(9, 1e-3),
+    )
+    return step._thomalla2018(prof)[1]["recon"][0][1]
+
+
+def test_night_reference_mz_interpolates_the_bracketing_night_means():
+    # alpha = 3/4 between ratios 100 and 300 -> 250 -> 0.25 at bbp 1e-3
+    assert _recon(_bracketed_step("mz")) == pytest.approx(0.25)
+
+
+def test_night_reference_flz_uses_last_and_first_profiles():
+    # 200 -> 400 at alpha 3/4
+    assert _recon(_bracketed_step("flz")) == pytest.approx(0.35)
+
+
+def test_night_reference_falls_back_to_preceding_when_not_bracketed():
+    # preceding night alone
+    assert _recon(_bracketed_step("mz", day_time_ns=9)) == pytest.approx(0.1)
+
+
+def test_run_writes_adjusted_leaving_raw_and_reads_depth_adjusted():
+    n = 50
+    depth = np.tile(np.linspace(0, 100, 25), 2)
+    data = xr.Dataset(
+        {
+            "PROFILE_NUMBER": ("N_MEASUREMENTS", np.repeat([1.0, 2.0], 25)),
+            "TIME": (
+                "N_MEASUREMENTS",
+                np.datetime64("2024-06-21T12:30", "ns")
+                + np.arange(n) * np.timedelta64(1, "m"),
+            ),
+            "DEPTH_ADJUSTED": ("N_MEASUREMENTS", depth),
+            "LATITUDE": ("N_MEASUREMENTS", np.full(n, 50.0)),
+            "LONGITUDE": ("N_MEASUREMENTS", np.full(n, -10.0)),
+            "CHLA": ("N_MEASUREMENTS", np.where(depth < 20, 0.5, 1.0)),
+            "CHLA_QC": ("N_MEASUREMENTS", np.zeros(n, dtype=np.int8)),
+            "BBP700": ("N_MEASUREMENTS", np.full(n, 1e-3)),
+            "MLD": ("N_MEASUREMENTS", np.full(n, 40.0)),
+        }
+    )
+    step = Quenching(
+        name="CHLA Quenching",
+        parameters={"method": "sackmann2008", "apply_to": "CHLA"},
+        diagnostics=False,
+        context={"data": data, "global_parameters": {}},
+    )
+
+    out = step.run()["data"]
+
+    assert np.allclose(out["CHLA"].values[depth < 20], 0.5)
+    assert np.allclose(out["CHLA_ADJUSTED"].values, 1.0)
+    assert "CHLA_QC" in out and "CHLA_ADJUSTED_QC" in out
+
+
+def test_output_variables_is_adjusted_apply_to():
+    assert Quenching.output_variables({"apply_to": "CHLA_FLUORESCENCE"}) == [
+        "CHLA_FLUORESCENCE_ADJUSTED"
+    ]

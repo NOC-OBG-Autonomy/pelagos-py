@@ -18,11 +18,9 @@
 
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
-from pelagos_py.utils.qc_handling import QCHandlingMixin
-import pelagos_py.utils.diagnostics as diag
+from pelagos_py.utils.qc_handling import QCHandlingMixin, adjusted_name, raw_name
 
 #### Custom imports ####
-import numpy as np
 import gsw
 import matplotlib
 import matplotlib.pyplot as plt
@@ -36,19 +34,22 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
     A processing step class for deriving oceanographic variables from CTD data.
 
     TEOS-10 implementation provided through Gibbs SeaWater (GSW) Oceanographic Toolbox functions.
-    This step requires that "TIME", "LATITUDE", "LONGITUDE", "CNDC", "PRES" and "TEMP" are present 
-    in the dataset variables.
+    This step requires that "TIME", "LATITUDE", "LONGITUDE", "CNDC", "PRES" and "TEMP" are present
+    in the dataset variables. Each derived variable is written as ``<name>_ADJUSTED`` (e.g.
+    ``PSAL_ADJUSTED``), so raw versions from the input file are kept, and inputs are read from
+    their ``_ADJUSTED`` version where one exists. A ``PSAL_ADJUSTED`` already made by Salinity
+    Adjustment is not overwritten.
 
     Parameters
     ----------
     to_derive : list
-        list of variables to derive
+        list of variables to derive (written with an ``_ADJUSTED`` suffix)
         The following variables are supported:
             - "DEPTH"
-            - "PRAC_SALINITY" (practical salinity)
-            - "ABS_SALINITY" (absolute salinity)
+            - "PSAL" (practical salinity)
+            - "ASAL" (absolute salinity)
             - "CONS_TEMP" (conservative temperature)
-            - "DENSITY
+            - "DENSITY"
 
     Examples
     --------
@@ -61,8 +62,8 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
             parameters:
                 to_derive: [
                     DEPTH,
-                    PRAC_SALINITY,
-                    ABS_SALINITY,
+                    PSAL,
+                    ASAL,
                     CONS_TEMP,
                     DENSITY
                 ]
@@ -71,12 +72,14 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
     step_name = "Derive CTD"
     required_variables = ["TIME", "LATITUDE", "LONGITUDE", "CNDC", "PRES", "TEMP"]
     provided_variables = [
-        "DEPTH",
-        "PRAC_SALINITY",
-        "ABS_SALINITY",
-        "CONS_TEMP",
-        "DENSITY",
+        "DEPTH_ADJUSTED",
+        "PSAL_ADJUSTED",
+        "ASAL_ADJUSTED",
+        "CONS_TEMP_ADJUSTED",
+        "DENSITY_ADJUSTED",
     ]
+    # Raw PSAL/ASAL/CONS_TEMP from the input file feed later derivations if not derived here.
+    optional_variables = ["PSAL", "ASAL", "CONS_TEMP"]
     uses_data_subset = True
 
     parameter_schema = {
@@ -85,8 +88,8 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
             "required": True,
             "options": [
                 "DEPTH",
-                "PRAC_SALINITY",
-                "ABS_SALINITY",
+                "PSAL",
+                "ASAL",
                 "CONS_TEMP",
                 "DENSITY",
             ],
@@ -94,14 +97,19 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
         },
     }
 
+    @classmethod
+    def output_variables(cls, parameters):
+        return [adjusted_name(var) for var in parameters.get("to_derive") or []]
+
     def run(self):
-        self.log(f"Processing CTD...")
+        self.log("Processing CTD...")
 
         self.filter_qc()
 
-
         # gsw wants conductivity in mS/cm; scale from the units attribute (S/m assumed if unset)
-        cndc_factor = cndc_scale_factor(self.data["CNDC"].attrs.get("units"))
+        cndc_factor = cndc_scale_factor(
+            self.data[self.resolve("CNDC")].attrs.get("units")
+        )
 
         # Define GSW (Gibbs SeaWater) function calls for deriving oceanographic variables
         # Each tuple contains: (output_variable_name, gsw_function, [required_input_variables])
@@ -109,17 +117,17 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
             # gsw.z_from_p returns TEOS-10 height (negative down); negate for OG1 positive-down depth
             ("DEPTH", lambda p, lat: -gsw.z_from_p(p, lat), ["PRES", "LATITUDE"]),
             (
-                "PRAC_SALINITY",
+                "PSAL",
                 lambda c, t, p: gsw.SP_from_C(c * cndc_factor, t, p),
                 ["CNDC", "TEMP", "PRES"],
             ),
             (
-                "ABS_SALINITY",
+                "ASAL",
                 gsw.SA_from_SP,
-                ["PRAC_SALINITY", "PRES", "LONGITUDE", "LATITUDE"],
+                ["PSAL", "PRES", "LONGITUDE", "LATITUDE"],
             ),
-            ("CONS_TEMP", gsw.CT_from_t, ["ABS_SALINITY", "TEMP", "PRES"]),
-            ("DENSITY", gsw.rho, ["ABS_SALINITY", "CONS_TEMP", "PRES"]),
+            ("CONS_TEMP", gsw.CT_from_t, ["ASAL", "TEMP", "PRES"]),
+            ("DENSITY", gsw.rho, ["ASAL", "CONS_TEMP", "PRES"]),
         )
 
         # Define metadata for each derived variable following CF conventions
@@ -134,34 +142,34 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
                 "valid_min": 0.0,
                 "valid_max": 10000.0,
                 "positive": "down",
-                "ancillary_variables": "DEPTH_QC",
+                "ancillary_variables": "DEPTH_ADJUSTED_QC",
                 "depth_vocabulary": "https://vocab.nerc.ac.uk/collection/OG1/current/DEPTH/",
             },
-            "PRAC_SALINITY": {
+            "PSAL": {
                 "long_name": "Practical salinity",
                 "units": "1",
-                "standard_name": "PRAC_SALINITY",
+                "standard_name": "sea_water_practical_salinity",
                 "valid_min": 2,  # Extremely fresh water
                 "valid_max": 42,  # Hypersaline conditions
             },
-            "ABS_SALINITY": {
+            "ASAL": {
                 "long_name": "Absolute salinity",
                 "units": "g/kg",
-                "standard_name": "ABS_SALINITY",
+                "standard_name": "sea_water_absolute_salinity",
                 "valid_min": 0,  # Pure water
                 "valid_max": 1000,  # Pure salt (theoretical maximum)
             },
             "CONS_TEMP": {
                 "long_name": "Conservative temperature",
                 "units": "degC",
-                "standard_name": "CONS_TEMP",
+                "standard_name": "sea_water_conservative_temperature",
                 "valid_min": -2,  # Freezing point of seawater
                 "valid_max": 102,  # Boiling point of seawater
             },
             "DENSITY": {
                 "long_name": "Density",
                 "units": "kg/m3",
-                "standard_name": "DENSITY",
+                "standard_name": "sea_water_density",
                 "valid_min": 900,  # Warm, low salinity surface water
                 "valid_max": 1100,  # Cold, high salinity bottom water
             },
@@ -172,14 +180,23 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
             if var_name not in self.to_derive:
                 continue
 
-            self.log(f"Deriving {var_name}...")
+            output_name = adjusted_name(var_name)
+            if var_name == "PSAL" and output_name in self.data:
+                self.log(
+                    f"Warning: {output_name} already exists (e.g. from Salinity Adjustment). "
+                    "Not overwriting it."
+                )
+                continue
+
+            self.log(f"Deriving {output_name}...")
 
             # Validate that all required inputs exist for this specific calculation
-            # (e.g. an intermediate like PRAC_SALINITY may not have been derived)
+            # (e.g. an intermediate like PSAL may not have been derived)
+            args = [self.resolve(arg) for arg in args]
             missing_args = [arg for arg in args if arg not in self.data]
             if missing_args:
                 self.log(
-                    f"Warning: Missing required variables {missing_args} for {var_name}. Skipping."
+                    f"Warning: Missing required variables {missing_args} for {output_name}. Skipping."
                 )
                 continue
 
@@ -188,13 +205,13 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
             derived_values = func(*input_arrays)
 
             # Add the derived variable to the xarray Dataset with CF-compliant metadata
-            self.data[var_name] = (("N_MEASUREMENTS",), derived_values)
-            self.data[var_name].attrs = variable_metadata[var_name]
+            self.data[output_name] = (("N_MEASUREMENTS",), derived_values)
+            self.data[output_name].attrs = variable_metadata[var_name]
 
             # Safely generate QC by only passing source columns that actually exist
             source_qcs = [f"{arg}_QC" for arg in args if f"{arg}_QC" in self.data]
             if source_qcs:
-                self.generate_qc({f"{var_name}_QC": source_qcs})
+                self.generate_qc({f"{output_name}_QC": source_qcs})
 
         # Show diagnostic plots if diagnostics are enabled
         if self.diagnostics:
@@ -211,9 +228,11 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
         if "TIME" not in self.data:
             return
 
-        # Combine physical inputs and derived outputs, filtering for what actually exists
-        target_variables = ["PRES", "CNDC", "TEMP"] + self.provided_variables
-        plot_vars = [var for var in target_variables if var in self.data]
+        plot_vars = [
+            var
+            for var in self.provided_variables
+            if raw_name(var) in self.to_derive and var in self.data
+        ]
 
         if not plot_vars:
             return
@@ -233,13 +252,15 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
             else:
                 fig_spec.points(ax, time_data, data_vals, color=fig_spec.CATEGORY[0])
 
-            fig_spec.date_axis(ax, which="x")
-            ylabel = fig_spec.axis_label(var_name, self.data[var_name].attrs.get("units"))
+            fig_spec.date_axis(ax, which="x", index=time_data)
+            ylabel = fig_spec.axis_label(
+                var_name, self.data[var_name].attrs.get("units")
+            )
             xlabel = "Time" if i == len(plot_vars) - 1 else None
             fig_spec.style_axes(ax, xlabel=xlabel, ylabel=ylabel)
 
             # Invert y-axis for pressure/depth so the ocean surface is at the top of the plot
-            if var_name in ("PRES", "DEPTH"):
+            if var_name == "DEPTH_ADJUSTED":
                 ax.invert_yaxis()
 
         fig_spec.finish(fig, suptitle=f"{self.step_name} Diagnostics")

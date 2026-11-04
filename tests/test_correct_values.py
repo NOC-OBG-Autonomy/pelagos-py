@@ -28,14 +28,19 @@ def test_scales_when_outside_expected_range():
     """CNDC in S/m (median ~3.5) is outside [20, 45], so the x10 correction is applied."""
     ctx = make_context(np.full(20, 3.5), units="S/m")
     step = make_step(
-        {"target_variable": "CNDC", "slope": 10.0, "expected_range": [20, 45], "corrected_units": "mS/cm"},
+        {
+            "target_variable": "CNDC",
+            "slope": 10.0,
+            "expected_range": [20, 45],
+            "corrected_units": "mS/cm",
+        },
         ctx,
     )
 
     out = step.run()
 
-    assert np.allclose(out["data"]["CNDC"].values, 35.0)
-    assert out["data"]["CNDC"].attrs["units"] == "mS/cm"
+    assert np.allclose(out["data"]["CNDC_ADJUSTED"].values, 35.0)
+    assert out["data"]["CNDC_ADJUSTED"].attrs["units"] == "mS/cm"
     assert step.applied is True
 
 
@@ -43,7 +48,12 @@ def test_skips_when_inside_expected_range():
     """Data already in mS/cm (median 35, inside [20, 45]) is left untouched."""
     ctx = make_context(np.full(20, 35.0), units="mS/cm")
     step = make_step(
-        {"target_variable": "CNDC", "slope": 10.0, "expected_range": [20, 45], "corrected_units": "mS/cm"},
+        {
+            "target_variable": "CNDC",
+            "slope": 10.0,
+            "expected_range": [20, 45],
+            "corrected_units": "mS/cm",
+        },
         ctx,
     )
 
@@ -60,7 +70,7 @@ def test_always_applies_without_expected_range():
 
     out = step.run()
 
-    assert np.allclose(out["data"]["X"].values, 5.0)  # 2*2 + 1
+    assert np.allclose(out["data"]["X_ADJUSTED"].values, 5.0)  # 2*2 + 1
     assert step.applied is True
 
 
@@ -81,10 +91,47 @@ def test_nans_are_preserved():
     step = make_step({"target_variable": "CNDC", "slope": 10.0}, ctx)
 
     out = step.run()
-    result = out["data"]["CNDC"].values
+    result = out["data"]["CNDC_ADJUSTED"].values
 
     assert np.isnan(result[1])
     assert np.allclose(result[[0, 2, 3]], 35.0)
+
+
+def test_default_writes_adjusted_leaving_raw_and_copying_qc():
+    ctx = make_context(np.full(4, 3.5))
+    ctx["data"]["CNDC_QC"] = ("N_MEASUREMENTS", np.array([1, 1, 4, 1], dtype=np.int8))
+    step = make_step({"target_variable": "CNDC", "slope": 10.0}, ctx)
+
+    out = step.run()["data"]
+
+    assert np.allclose(out["CNDC"].values, 3.5)
+    assert np.allclose(out["CNDC_ADJUSTED"].values, 35.0)
+    assert out["CNDC_ADJUSTED_QC"].values.tolist() == [1, 1, 4, 1]
+
+
+def test_second_correction_stacks_on_adjusted():
+    ctx = make_context(np.full(4, 2.0), var="X")
+    make_step({"target_variable": "X", "slope": 2.0}, ctx).run()
+    out = make_step({"target_variable": "X", "intercept": 1.0}, ctx).run()["data"]
+
+    assert np.allclose(out["X"].values, 2.0)
+    assert np.allclose(out["X_ADJUSTED"].values, 5.0)
+
+
+def test_identity_correction_writes_nothing():
+    ctx = make_context(np.full(4, 2.0), var="X")
+    out = make_step({"target_variable": "X"}, ctx).run()["data"]
+
+    assert "X_ADJUSTED" not in out
+
+
+def test_output_variables_follow_output_as():
+    assert CorrectValues.output_variables({"target_variable": "CNDC"}) == [
+        "CNDC_ADJUSTED"
+    ]
+    assert CorrectValues.output_variables(
+        {"target_variable": "LATITUDE_GPS", "output_as": "LATITUDE"}
+    ) == ["LATITUDE"]
 
 
 def test_missing_target_variable_raises():
@@ -98,7 +145,9 @@ def test_missing_target_variable_raises():
 
 def test_output_as_renames_leaving_source_intact():
     ctx = make_context(np.full(5, 51.2), var="LATITUDE_GPS")
-    step = make_step({"target_variable": "LATITUDE_GPS", "output_as": "LATITUDE", "slope": 1.0}, ctx)
+    step = make_step(
+        {"target_variable": "LATITUDE_GPS", "output_as": "LATITUDE", "slope": 1.0}, ctx
+    )
 
     out = step.run()
 
@@ -108,7 +157,9 @@ def test_output_as_renames_leaving_source_intact():
 
 def test_output_as_scales_into_new_variable():
     ctx = make_context(np.full(5, 3.5), var="CNDC")
-    step = make_step({"target_variable": "CNDC", "output_as": "CNDC_SCALED", "slope": 10.0}, ctx)
+    step = make_step(
+        {"target_variable": "CNDC", "output_as": "CNDC_SCALED", "slope": 10.0}, ctx
+    )
 
     out = step.run()
 
@@ -118,7 +169,10 @@ def test_output_as_scales_into_new_variable():
 
 def test_output_as_list_writes_all_names():
     ctx = make_context(np.full(5, 3.5), var="CHLA")
-    step = make_step({"target_variable": "CHLA", "output_as": ["CHLA", "CHLA_MID"], "slope": 2.0}, ctx)
+    step = make_step(
+        {"target_variable": "CHLA", "output_as": ["CHLA", "CHLA_MID"], "slope": 2.0},
+        ctx,
+    )
 
     out = step.run()
 
@@ -129,7 +183,9 @@ def test_output_as_list_writes_all_names():
 def test_output_as_list_copy_without_scaling():
     # identity copy: snapshot CHLA into CHLA_MID mid-pipeline, CHLA untouched
     ctx = make_context(np.full(5, 3.5), var="CHLA")
-    step = make_step({"target_variable": "CHLA", "output_as": ["CHLA", "CHLA_MID"]}, ctx)
+    step = make_step(
+        {"target_variable": "CHLA", "output_as": ["CHLA", "CHLA_MID"]}, ctx
+    )
 
     out = step.run()
 
@@ -138,43 +194,55 @@ def test_output_as_list_copy_without_scaling():
 
 
 def test_time_window_limits_correction():
-    times = np.array(["2024-08-01", "2024-08-02", "2024-08-03", "2024-08-04"], dtype="datetime64[ns]")
+    times = np.array(
+        ["2024-08-01", "2024-08-02", "2024-08-03", "2024-08-04"], dtype="datetime64[ns]"
+    )
     ctx = make_context(np.full(4, 2.0), var="X", times=times)
     step = make_step(
         {"target_variable": "X", "slope": 10.0, "time_start": "2024-08-03"}, ctx
     )
 
     out = step.run()
-    result = out["data"]["X"].values
+    result = out["data"]["X_ADJUSTED"].values
 
-    assert np.allclose(result[:2], 2.0)   # before window: untouched
+    assert np.allclose(result[:2], 2.0)  # before window: untouched
     assert np.allclose(result[2:], 20.0)  # in window: scaled
 
 
 def test_append_description_adds_to_existing_comment():
     ctx = make_context(np.full(3, 1.0), var="X")
     ctx["data"]["X"].attrs["comment"] = "original"
-    step = make_step({"target_variable": "X", "append_description": "rescaled x10", "slope": 10.0}, ctx)
+    step = make_step(
+        {"target_variable": "X", "append_description": "rescaled x10", "slope": 10.0},
+        ctx,
+    )
 
     out = step.run()
 
-    assert out["data"]["X"].attrs["comment"] == "original rescaled x10"
+    assert out["data"]["X_ADJUSTED"].attrs["comment"] == "original rescaled x10"
 
 
 def test_overwrite_description_replaces_comment():
     ctx = make_context(np.full(3, 1.0), var="X")
     ctx["data"]["X"].attrs["comment"] = "original"
-    step = make_step({"target_variable": "X", "overwrite_description": "new note", "slope": 1.0}, ctx)
+    step = make_step(
+        {"target_variable": "X", "overwrite_description": "new note", "slope": 1.0}, ctx
+    )
 
     out = step.run()
 
-    assert out["data"]["X"].attrs["comment"] == "new note"
+    assert out["data"]["X_ADJUSTED"].attrs["comment"] == "new note"
 
 
 def test_both_descriptions_raises():
     ctx = make_context(np.full(3, 1.0), var="X")
     step = make_step(
-        {"target_variable": "X", "append_description": "a", "overwrite_description": "b"}, ctx
+        {
+            "target_variable": "X",
+            "append_description": "a",
+            "overwrite_description": "b",
+        },
+        ctx,
     )
 
     with pytest.raises(ValueError, match="only one of"):

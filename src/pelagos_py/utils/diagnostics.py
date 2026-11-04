@@ -18,6 +18,7 @@
 A module for diagnostic plotting and data summarization.
 """
 
+import logging
 import matplotlib.pyplot as plt
 import xarray as xr
 import pandas as pd
@@ -25,21 +26,25 @@ import numpy as np
 from pelagos_py.utils.time import safe_median_datetime, add_datetime_secondary_xaxis
 from typing import Dict, Optional
 
+logger = logging.getLogger("pelagos_py.pipeline.diagnostics")
+
 
 def generate_info(data):
-    """Print one line per variable: name, dtype, units, and whether a QC companion exists."""
+    """Log one line per variable: name, dtype, units, and whether a QC companion exists."""
     if not isinstance(data, xr.Dataset):
-        print("Data Info only supported for xarray Dataset ")
+        logger.warning("Data Info only supported for xarray Dataset")
         return
     names = sorted(v for v in data.variables if not str(v).endswith("_QC"))
     n_qc = sum(f"{v}_QC" in data.variables for v in names)
-    print("Dimensions: " + ", ".join(f"{k}={v}" for k, v in data.sizes.items()))
-    print(f"Variables: {len(names)} ({n_qc} with QC flags)")
+    logger.info("Dimensions: " + ", ".join(f"{k}={v}" for k, v in data.sizes.items()))
+    logger.info(f"Variables: {len(names)} ({n_qc} with QC flags)")
     width = min(max((len(str(v)) for v in names), default=0), 24)
     for v in names:
         units = str(data[v].attrs.get("units", ""))
         qc = "QC" if f"{v}_QC" in data.variables else ""
-        print(f"  {str(v):<{width}} {str(data[v].dtype):<14} {units:<12} {qc}".rstrip())
+        logger.info(
+            f"  {str(v):<{width}} {str(data[v].dtype):<14} {units:<12} {qc}".rstrip()
+        )
 
 
 #### General Diagnostics Functions ####
@@ -241,7 +246,7 @@ def plot_distance_time_grid(
 
     if output_path:
         plt.savefig(output_path)
-        print(f"[Diagnostics] Saved glider distance grid to: {output_path}")
+        logger.info(f"[Diagnostics] Saved glider distance grid to: {output_path}")
     elif show:
         plt.show()
     else:
@@ -456,7 +461,7 @@ def plot_glider_pair_heatmap_grid(
     fig.tight_layout(rect=[0, 0, 1, 0.95])
     if output_path:
         plt.savefig(output_path)
-        print(f"[Diagnostics] Saved glider heatmap grid to: {output_path}")
+        logger.info(f"[Diagnostics] Saved glider heatmap grid to: {output_path}")
     elif show:
         plt.show()
     else:

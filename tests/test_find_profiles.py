@@ -26,7 +26,12 @@ def _make_leg(min_depth, max_depth, n, descending):
 
 
 def make_dive_dataframe(
-    n_cycles=3, leg_minutes=10, sample_seconds=10, min_depth=1.0, max_depth=120.0, start=None
+    n_cycles=3,
+    leg_minutes=10,
+    sample_seconds=10,
+    min_depth=1.0,
+    max_depth=120.0,
+    start=None,
 ):
     """Build a clean dive record (descent/ascent legs) for profiling.
 
@@ -45,9 +50,7 @@ def make_dive_dataframe(
     offsets = (np.arange(n) * sample_seconds * 1_000_000_000).astype("timedelta64[ns]")
     times = (start or np.datetime64("2024-01-01T00:00:00", "ns")) + offsets
 
-    return pd.DataFrame(
-        {"N_MEASUREMENTS": np.arange(n), "TIME": times, "PRES": depth}
-    )
+    return pd.DataFrame({"N_MEASUREMENTS": np.arange(n), "TIME": times, "PRES": depth})
 
 
 def run(df, **overrides):
@@ -94,7 +97,13 @@ def test_empty_input_returns_defaults():
     empty = pd.DataFrame({"N_MEASUREMENTS": [], "TIME": [], "PRES": []})
     result = run(empty)
 
-    for col in ("PROFILE_NUMBER", "PROFILE_DIRECTION", "GRADIENT", "CYCLE", "SCI_PHASE"):
+    for col in (
+        "PROFILE_NUMBER",
+        "PROFILE_DIRECTION",
+        "GRADIENT",
+        "CYCLE",
+        "SCI_PHASE",
+    ):
         assert col in result.columns
 
 
@@ -124,3 +133,30 @@ def test_gap_ending_before_surface_stays_ascent():
     profile_numbers = result["PROFILE_NUMBER"].dropna()
     assert profile_numbers.nunique() >= 2
     assert result["CYCLE"].nunique() >= 2
+
+
+def test_excluded_rows_labelled_from_neighbours():
+    # Rows with no usable depth (e.g. on another sensor's timebase) inherit neighbours' labels.
+    df = make_dive_dataframe(n_cycles=1)
+    extra = df.iloc[10:-10].copy()
+    extra["TIME"] += pd.Timedelta(seconds=5)
+    extra["PRES"] = np.nan
+    extra["N_MEASUREMENTS"] += len(df)
+    result = run(pd.concat([df, extra], ignore_index=True))
+
+    filled = result[result["PRES"].isna()]
+    assert (filled["LABEL_QC"] == 8).all()
+    assert (result[result["PRES"].notna()]["LABEL_QC"] == 2).all()
+    assert filled["PROFILE_NUMBER"].notna().sum() > 0
+    assert set(filled["PROFILE_NUMBER"].dropna()) <= set(
+        result["PROFILE_NUMBER"].dropna()
+    )
+    assert filled["GRADIENT"].notna().all()
+
+    # An unlabelled row after the last classified one cannot be bracketed.
+    tail = df.iloc[[-1]].copy()
+    tail["TIME"] += pd.Timedelta(minutes=1)
+    tail["PRES"] = np.nan
+    result = run(pd.concat([df, tail], ignore_index=True))
+    assert result["LABEL_QC"].iloc[-1] == 9
+    assert np.isnan(result["PROFILE_NUMBER"].iloc[-1])

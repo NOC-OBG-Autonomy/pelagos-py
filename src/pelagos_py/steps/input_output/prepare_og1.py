@@ -30,7 +30,6 @@ import numpy as np
 RENAMES = {
     "LATITUDE": ["LATITUDE_GPS", "ALATPT01"],
     "LONGITUDE": ["LONGITUDE_GPS", "ALONPT01"],
-    "MOLAR_DOXY": ["DOXY"],
     "TEMP_DOXY": ["TEMPDOXY"],
 }
 
@@ -54,8 +53,8 @@ class PrepareOG1(BaseStep):
     file needs, logging each one (CNDC fixes also raise a warning):
 
     - Missing ``LATITUDE``/``LONGITUDE`` are renamed from ``LATITUDE_GPS`` or
-      ``ALATPT01``/``ALONPT01`` if found instead; ``DOXY`` -> ``MOLAR_DOXY``,
-      ``TEMPDOXY`` -> ``TEMP_DOXY``. QC flag variables are renamed alongside.
+      ``ALATPT01``/``ALONPT01`` if found instead; ``TEMPDOXY`` -> ``TEMP_DOXY``. QC
+      flag variables are renamed alongside.
     - ``CNDC`` labelled S/m but holding mS/cm values (median > 8) is scaled x0.1 to
       S/m and relabelled.
     - When ``BBP700`` is found with no ``BETA_BACKSCATTERING700`` alongside, it can be
@@ -85,13 +84,13 @@ class PrepareOG1(BaseStep):
             "type": bool,
             "default": True,
             "description": "Treat a BBP700 with no BETA_BACKSCATTERING700 alongside as raw "
-                           "beta and rename it, so later steps can use it.",
+            "beta and rename it, so later steps can use it.",
         },
         "renames": {
             "type": dict,
             "default": {},
             "description": "Expected name -> the file's name for it (e.g. "
-                           "{DOWNWELLING_PAR: PAR}); renamed only when the expected one is absent.",
+            "{DOWNWELLING_PAR: PAR}); renamed only when the expected one is absent.",
         },
     }
 
@@ -117,10 +116,14 @@ class PrepareOG1(BaseStep):
 
         # All-NaN placeholders don't count as present (e.g. an empty LATITUDE_GPS).
         present = {
-            v for v in self.data.data_vars
-            if self.data[v].dtype.kind != "f" or bool(np.isfinite(self.data[v].values).any())
+            v
+            for v in self.data.data_vars
+            if self.data[v].dtype.kind != "f"
+            or bool(np.isfinite(self.data[v].values).any())
         }
-        for src, dst in self.renames_for(present, self.renames, self.bbp700_is_beta).items():
+        for src, dst in self.renames_for(
+            present, self.renames, self.bbp700_is_beta
+        ).items():
             # `dst` can only exist here as an all-NaN placeholder, which would block the rename.
             self.data = self.data.drop_vars([dst, f"{dst}_QC"], errors="ignore")
             mapping = {src: dst}

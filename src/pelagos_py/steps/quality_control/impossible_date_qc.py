@@ -64,7 +64,9 @@ class impossible_date_qc(BaseQC):
         time = self.data["TIME"].values
         fig, axes = fig_spec.new_fig()
         ax = axes[0][0]
-        fig_spec.flag_points(ax, np.arange(time.size), time, self.flags["TIME_QC"].values)
+        fig_spec.flag_points(
+            ax, np.arange(time.size), time, self.flags["TIME_QC"].values
+        )
         fig_spec.date_axis(ax, which="y")
         fig_spec.style_axes(ax, xlabel="Index", ylabel="TIME")
         fig_spec.legend(ax, title="Flags")

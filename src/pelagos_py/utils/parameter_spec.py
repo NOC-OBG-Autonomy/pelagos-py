@@ -219,7 +219,9 @@ def resolve(
 
     # Coerce numeric strings (e.g. "3e-2" from a hand-parsed/plain-YAML config)
     # to their declared numeric type before any type checking.
-    supplied = {name: coerce(schema[name], params[name]) for name in params if name in schema}
+    supplied = {
+        name: coerce(schema[name], params[name]) for name in params if name in schema
+    }
 
     resolved = {}
     missing = []
@@ -238,9 +240,7 @@ def resolve(
 
     bad_types = type_errors(schema, supplied)
     if bad_types:
-        raise ValueError(
-            f"[{label}] invalid parameter type(s): {'; '.join(bad_types)}"
-        )
+        raise ValueError(f"[{label}] invalid parameter type(s): {'; '.join(bad_types)}")
 
     bad_options = option_errors(schema, supplied)
     if bad_options:
