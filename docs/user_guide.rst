@@ -373,7 +373,7 @@ A template for a static check is provided in
    Pressure <user_guide/Pelagos-py_PRESSURE>
    Profile finding <user_guide/Pelagos-py_PROFILES>
    Temperature <user_guide/Pelagos-py_TEMP>
-   Salinity <user_guide/pelagos-py_SALINITY>
+   Salinity <user_guide/Pelagos-py_SALINITY>
    Derived CTD variables <user_guide/Pelagos-py_DERIVED>
    Mixed layer depth <user_guide/Pelagos-py_MLD>
    Oxygen <user_guide/Pelagos-py_DOXY>

@@ -151,7 +151,7 @@ The thermal-mass correction has **no independent parameters of its own** — all
 
 ---
 
-# 4. Outputs
+# 3. Outputs
 
 The Salinity Adjustment step modifies existing variables in place; it does not add any new variables to the dataset.
 
@@ -165,7 +165,7 @@ Downstream salinity-derivation steps are configured to run **after** this step, 
 
 ---
 
-# 5. Recommended reporting
+# 4. Recommended reporting
 
 A scientific methods section describing salinity adjustment with pelagos-py should report:
 

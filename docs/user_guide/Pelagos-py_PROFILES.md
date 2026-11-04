@@ -57,6 +57,8 @@ Anything left after this stays unknown (`0`).
 
 Samples whose pressure is flagged probably bad (`3`), bad (`4`), missing (`9`) or interpolated (`8`) are left out of the calculations. Afterwards they take the labels of the samples either side when those agree.
 
+---
+
 # 2. OG1 phases
 
 `SCI_PHASE` uses the OceanGliders OG1 phase vocabulary, adapted for the toolbox:

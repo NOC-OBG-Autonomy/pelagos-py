@@ -201,7 +201,7 @@ Throughout the following descriptions, $F$ denotes `CHLA_ADJUSTED`, the chloroph
 | `xing2018` | Xing et al. (2018) | Maximum fluorescence-to-backscatter ratio within the NPQ layer | MLD, $Z_{\mathrm{IPAR}}$, $b_{bp}$ |
 | `xing2018`, `hybrid: true` | Terrats et al. (2020) extension | Xing et al. (2018) shallow-mixing correction with Sackmann-style mixed-layer reconstruction | MLD, $Z_{\mathrm{IPAR}}$, $b_{bp}$, and full irradiance profiles for the shallow-mixing branch |
 
-## 5.2.1 Evolution of NPQ correction methods
+### 5.2.1 Evolution of NPQ correction methods
 
 The NPQ correction methods implemented in Pelagos represent a progression in complexity and in the supporting observations required to estimate the unquenched chlorophyll fluorescence signal.
 
@@ -215,7 +215,7 @@ Thomalla et al. (2018) replaced the deployment-wide relationship with depth-reso
 
 Xing et al. (2018) introduced a profile-specific correction based on the estimated NPQ layer, while the Terrats et al. (2020) X18_S08 extension modifies the shallow-mixing branch of the Xing et al. (2018) algorithm by replacing the mixed-layer sigmoid correction with a Sackmann et al. (2008)-style fluorescence-to-backscatter reconstruction.
 
-## Common assumptions
+### 5.2.2 Common assumptions
 
 Several of the implemented NPQ correction methods (Sackmann et al., 2008; Swart et al., 2015; Hemsley et al., 2015; Thomalla et al., 2018; Mitchell et al., 2024; Xing et al., 2018; and Terrats et al., 2020) use particulate optical backscattering as a conservative optical reference.
 

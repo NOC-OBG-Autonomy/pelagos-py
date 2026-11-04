@@ -24,7 +24,7 @@ The threshold method on simulated profiles, using the default parameters.
 
 For each profile:
 
-1. **Reference value.** The median of the samples within 2.5 m of `reference_depth` (10 m). 
+1. **Reference value.** The median of the samples within 2.5 m of `reference_depth` (10 m).
 2. **Threshold crossing.** Moving down from `reference_depth`, the MLD is the first depth where the value departs from the reference by the threshold:
    - **Density:** potential density (σ<sub>0</sub>) **increases** by `density_threshold` (0.03 kg/m<sup>3</sup>).
    - **Temperature:** temperature **changes in either direction** by `temp_threshold` (0.2 °C).
