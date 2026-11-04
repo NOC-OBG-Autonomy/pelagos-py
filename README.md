@@ -66,11 +66,11 @@ pipeline = Pipeline.make_config("glider.nc", ask=True)
 pipeline = Pipeline.load_config("my_pipeline.yaml")
 ```
 
-To try it without your own data, `get_demo_file` downloads a demo OG1 file into `examples/data/OG1` (only the first time) and returns its path; `get_demo_file()` lists the demos. `examples/python/run_demo.py` does this end to end.
+To try it without your own data, `get_demo_file` downloads a demo OG1 file (a month of NOC glider data from the North Atlantic, ~15 MB) into `examples/data/OG1` (only the first time) and returns its path. `examples/python/run_demo.py` does this end to end.
 ```python
 from pelagos_py import Pipeline, get_demo_file
 
-pipeline = Pipeline.make_config(get_demo_file("nelson_646_r"))
+pipeline = Pipeline.make_config(get_demo_file())
 ```
 
 
