@@ -12,7 +12,7 @@ make_config saves the config next to the data file (e.g. demo_OG1.yaml), so you 
 edit it and rerun it with load_config.
 
 The demo file (a month of NOC glider data from the North Atlantic, ~15 MB) is downloaded into
-~/Documents/pelagos-py/demo_data the first time.
+examples/data/OG1 the first time.
 """
 
 from pelagos_py import Pipeline, get_demo_file

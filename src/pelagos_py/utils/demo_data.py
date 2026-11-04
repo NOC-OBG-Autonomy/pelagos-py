@@ -26,14 +26,19 @@ DEMO_URL = (
     "demo-data-v1/demo_OG1.nc"
 )
 WORKSPACE_DIR = Path.home() / "Documents" / "pelagos-py"
-DEMO_DATA_DIR = WORKSPACE_DIR / "demo_data"
+_REPO_EXAMPLES = Path(__file__).resolve().parents[3] / "examples"
+# A source checkout keeps the demo with the examples; a pip install has no examples folder.
+if _REPO_EXAMPLES.is_dir():
+    DEMO_DATA_DIR = _REPO_EXAMPLES / "data" / "OG1"
+else:
+    DEMO_DATA_DIR = WORKSPACE_DIR / "demo_data"
 DEMO_FILE = DEMO_DATA_DIR / "demo_OG1.nc"
 
 
 def get_demo_file(on_progress=None):
     """
-    Download the demo OG1 file into ``~/Documents/pelagos-py/demo_data`` (only the first
-    time) and return its path.
+    Download the demo OG1 file into ``examples/data/OG1`` (``~/Documents/pelagos-py/demo_data``
+    for a pip install), only the first time, and return its path.
 
     The demo is one month of NOC glider data from the North Atlantic in OG1 format,
     thinned to one reading per sensor every 2 m of depth.
