@@ -382,7 +382,11 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
                         optimal_lag, cost_data = compute_optimal_lag(
                             profile, filter_size, self.time_col, return_cost_data=True
                         )
-                        self._ct_cost_data = {**cost_data, "profile": profile_number}
+                        if cost_data is not None:
+                            self._ct_cost_data = {
+                                **cost_data,
+                                "profile": profile_number,
+                            }
                     else:
                         optimal_lag = compute_optimal_lag(
                             profile, filter_size, self.time_col
