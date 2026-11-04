@@ -14,6 +14,10 @@ figures:
   chla/npq_timeseries.png: {step: CHLA Quenching, figure: timeseries}
   chla/npq_example_profile.png: {step: CHLA Quenching, figure: example_profile}
   mld/mld_demo.png: {step: Mixed Layer Depth, figure: temp}
+  salinity/salinity_lag_search.png: {step: Salinity Adjustment, figure: lag_search}
+  salinity/salinity_lag_per_profile.png: {step: Salinity Adjustment, figure: lag_per_profile}
+  salinity/salinity_thermal_mass.png: {step: Salinity Adjustment, figure: thermal_mass}
+  salinity/salinity_profiles.png: {step: Salinity Adjustment, figure: profiles}
 
 # sections: the report's cross-section plot of the final dataset, keyed by
 #           output path -> panel labels (see write_report._CROSS_SECTION_PANELS).

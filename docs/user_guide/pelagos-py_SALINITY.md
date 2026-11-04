@@ -45,7 +45,21 @@ For each unique `PROFILE_NUMBER` in the dataset:
 6. **Applying the correction — dataset-wide, not per profile.** A single interpolant of `CNDC` against elapsed time is built from the *entire* dataset (using only samples where both `CNDC` and the time column are non-null), anchored only at samples that are individually unflagged (`calculation_mask(["CNDC"])`; at least 2 such anchors are required, otherwise the correction is skipped entirely with a logged message). `CNDC` at every valid-time sample — flagged or not — is then replaced by this interpolant evaluated at `elapsed_time + ct_lag_median`. The same single median lag is therefore applied uniformly across the whole time series, even though it was estimated from a sample of individual profiles.
 
 
-## 1.3 Figure placeholder
+## 1.3 Figures
+
+```{figure} ../_static/salinity/salinity_lag_search.png
+:alt: C-T lag search cost curve for one profile
+:width: 90%
+
+C–T lag search for one profile: salinity spikiness, std(PSAL − running mean), for each trial lag from −2 to +2 s. The dashed line marks the lag with the lowest cost.
+```
+
+```{figure} ../_static/salinity/salinity_lag_per_profile.png
+:alt: Optimal C-T lag for each sampled profile
+:width: 90%
+
+Optimal C–T lag for each sampled profile (up to 100). The dashed line is the median lag, which is applied to the whole dataset.
+```
 
 ## 1.4 Default configuration
 
@@ -105,7 +119,21 @@ For each unique `PROFILE_NUMBER`, independently:
 
 After all profiles are processed, `TEMP` is updated in place: samples for which a corrected value was produced replace the original; samples that were skipped at any of steps 1–3 (too few points, too few usable anchors, or the profile did not otherwise qualify) retain their original, uncorrected value rather than being flagged or set to `NaN`.
 
-## 2.3 Figure placeholder
+## 2.3 Figures
+
+```{figure} ../_static/salinity/salinity_thermal_mass.png
+:alt: Thermal-mass correction against the rate of temperature change
+:width: 90%
+
+Thermal-mass correction against the rate of temperature change, dT/dt, for one profile. Corrections grow with dT/dt, so the filter acts mainly at sharp gradients.
+```
+
+```{figure} ../_static/salinity/salinity_profiles.png
+:alt: Salinity profiles before and after adjustment
+:width: 90%
+
+Practical salinity for about 20 mid-deployment profiles before (left) and after (right) QC and both corrections, with down- and upcasts in different colours. After correction the two should agree more closely; on the demo deployment the change is small (median 0.0002).
+```
 
 ## 2.4 Default configuration
 

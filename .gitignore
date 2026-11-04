@@ -97,6 +97,7 @@ docs/_static/chla/npq_*.png
 docs/_static/pressure/
 docs/_static/profiles/
 docs/_static/mld/
+docs/_static/salinity/
 celerybeat-schedule
 celerybeat.pid
 

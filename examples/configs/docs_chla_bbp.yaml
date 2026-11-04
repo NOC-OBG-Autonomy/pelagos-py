@@ -51,6 +51,18 @@ steps:
 
   - name: Find Profiles
 
+  - name: Salinity Adjustment
+    parameters:
+      qc_handling_settings:
+        flag_filter_settings:
+          CNDC: [3, 4, 9]
+          TEMP: [3, 4, 9]
+          PROFILE_NUMBER: [3, 4, 9]
+        reconstruction_behaviour: reinsert
+        flag_mapping: {0: 5, 1: 5, 2: 5}
+      filter_window_size: 21
+    diagnostics: [lag_search, lag_per_profile, thermal_mass, profiles]
+
   - name: Derive CTD
     parameters:
       to_derive: [PSAL, ASAL, CONS_TEMP]
