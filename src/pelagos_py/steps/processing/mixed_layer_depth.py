@@ -317,7 +317,10 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
             spans.append((indices, [np.min(span_x), np.max(span_x)]))
         return spans
 
-    diagnostic_figures = {"mld": ("MLD over the top 200 m, per method", True)}
+    diagnostic_figures = {
+        "mld": ("MLD over the top 200 m, per method", True),
+        "temp": ("MLD over the top 200 m, temperature panel only", None),
+    }
 
     def draw_figure(self, name):
         profile_number = self.data["PROFILE_NUMBER"].values
@@ -345,15 +348,18 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
             )
             mlds.append((f"MLD from {method}", colour, mld))
 
+        panels = methods if name == "mld" else [m for m in methods if m[0] == name]
+        if not panels:
+            return None
         fig, axes = plt.subplots(
-            len(methods),
+            len(panels),
             1,
-            figsize=(14, 4 * len(methods)),
-            dpi=150,
+            figsize=(fig_spec.FIG_W, fig_spec.BANNER_H * len(panels)),
+            dpi=fig_spec.DPI,
             sharex=True,
             squeeze=False,
         )
-        for ax, (method, _) in zip(axes[:, 0], methods):
+        for ax, (method, _) in zip(axes[:, 0], panels):
             panel_label = METHOD_LABELS[method]
             values = self._method_values(method)
 

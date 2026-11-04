@@ -56,7 +56,7 @@ steps:
       to_derive: [PSAL, ASAL, CONS_TEMP]
 
   - name: Mixed Layer Depth
-    diagnostics: [mld]
+    diagnostics: [temp]
 
   - name: Interpolate PAR
 
