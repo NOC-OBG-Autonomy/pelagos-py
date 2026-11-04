@@ -32,7 +32,9 @@ jobs:
 
       # The user-guide figures are drawn by the steps themselves from the demo file.
       - name: Render user-guide figures
-        run: python docs/scripts/render_figures.py
+        run: |
+          python docs/scripts/render_figures.py
+          python docs/scripts/explainer_figures.py
 
       - name: Clean Python Cache and Docs Artifacts
         run: |

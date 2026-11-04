@@ -376,3 +376,10 @@ A template for a static check is provided in
    PAR <user_guide/Pelagos-py_PAR>
    Chlorophyll-a <user_guide/Pelagos-py_CHLA>
    Backscatter <user_guide/Pelagos-py_BBP>
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Profiles and mixing
+   :hidden:
+
+   Profile finding <user_guide/Pelagos-py_PROFILES>

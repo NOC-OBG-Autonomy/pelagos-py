@@ -16,6 +16,7 @@ help:
 # file. Not part of "make html".
 figures:
 	python scripts/render_figures.py
+	python scripts/explainer_figures.py
 
 .PHONY: help figures Makefile
 
