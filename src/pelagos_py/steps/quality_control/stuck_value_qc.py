@@ -131,8 +131,8 @@ class stuck_value_qc(BaseQC):
         for ax, var in zip(axes[:, 0], plot_vars):
             # Check that the user specified var exists in the test set
             if f"{var}_QC" not in self.qc_outputs:
-                print(
-                    f"WARNING: Cannot plot {var}_QC as it was not included in this test."
+                self.log_warn(
+                    f"Cannot plot {var}_QC as it was not included in this test."
                 )
                 continue
 
