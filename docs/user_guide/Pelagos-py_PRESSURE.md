@@ -23,13 +23,13 @@ qc_settings:
   range qc:
     variable_ranges:
       PRES:
-        3: [-2.4, -5, inside]   # probably bad between -2.4 and -5 dbar
-        4: [-5, -.inf, inside]  # bad below -5 dbar
+        3: [-2.4, -5, inside]   # probably bad
+        4: [-5, -.inf, inside]  # bad
     also_flag:
       PRES: [CNDC, TEMP]
   stuck value qc:
     variables:
-      PRES: 2                   # more than 2 identical consecutive values are bad
+      PRES: 2                   # max repeats
     also_flag:
       PRES: [CNDC, TEMP]
 ```
