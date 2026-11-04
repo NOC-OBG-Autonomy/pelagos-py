@@ -179,13 +179,17 @@ class ExportStep(BaseStep):
         return data.drop_vars(dropped)
 
     def _add_missing_qc(self, data):
+        # TIME/LATITUDE/LONGITUDE may be stored as coordinates rather than data variables
+        candidates = list(data.data_vars) + [
+            c for c in data.coords if c not in data.dims
+        ]
         missing = [
             var
-            for var in data.data_vars
+            for var in candidates
             if var.isupper()
             and not var.endswith("_QC")
             and var not in data.dims
-            and f"{var}_QC" not in data.data_vars
+            and f"{var}_QC" not in data.variables
         ]
         if not missing:
             return data
@@ -193,8 +197,11 @@ class ExportStep(BaseStep):
             f"{len(missing)} variable(s) have no QC; writing unchecked (0) flags for them."
         )
         self.log(f"Unchecked QC added for: {', '.join(missing)}", console=False)
-        flags = xr.where(data[missing].isnull(), 9, 0).astype(np.int8)
-        return data.assign(flags.rename({var: f"{var}_QC" for var in missing}))
+        flags = {
+            f"{var}_QC": xr.where(data[var].isnull(), 9, 0).astype(np.int8)
+            for var in missing
+        }
+        return data.assign(flags)
 
     def _write_with_progress(self, write, output_path, nbytes):
         # writers report no progress, so watch the file grow against the in-memory size
