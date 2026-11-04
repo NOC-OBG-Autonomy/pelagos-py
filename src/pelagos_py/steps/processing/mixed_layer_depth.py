@@ -26,7 +26,6 @@ from pelagos_py.utils import fig_spec
 #### Custom imports ####
 import gsw
 import numpy as np
-import matplotlib
 import matplotlib.pyplot as plt
 
 # Dataset variables each method reads; density is derived here as potential density.
@@ -318,9 +317,9 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
             spans.append((indices, [np.min(span_x), np.max(span_x)]))
         return spans
 
-    def generate_diagnostics(self):
-        matplotlib.use("tkagg")
+    diagnostic_figures = {"mld": ("MLD over the top 200 m, per method", True)}
 
+    def draw_figure(self, name):
         profile_number = self.data["PROFILE_NUMBER"].values
         depth = self.data[self.depth_var].values
         # TIME is not required by this step; fall back to measurement index.
@@ -367,8 +366,20 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
                 & (depth <= self.DIAGNOSTIC_MAX_DEPTH)
             )
             cmap = palettes.cmap_for_variable(panel_label, default="viridis")
+            # Percentile limits so a few bad values can't flatten the colour scale.
+            vmin, vmax = (
+                np.nanpercentile(values[valid], [1, 99])
+                if valid.any()
+                else (None, None)
+            )
             scatter = ax.scatter(
-                x[valid], depth[valid], c=values[valid], s=2, cmap=cmap
+                x[valid],
+                depth[valid],
+                c=values[valid],
+                s=2,
+                cmap=cmap,
+                vmin=vmin,
+                vmax=vmax,
             )
             colourbar = fig.colorbar(scatter, ax=ax)
             colourbar.set_label(panel_label)
@@ -399,4 +410,4 @@ class MixedLayerDepthStep(BaseStep, QCHandlingMixin):
 
         fig_spec.x_axis(axes[-1, 0], x)
         fig.tight_layout()
-        plt.show(block=True)
+        return fig
