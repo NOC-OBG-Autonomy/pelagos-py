@@ -39,7 +39,7 @@ class valid_profile_qc(BaseQC):
     | **Flags applied:** ``flag`` (default 4, bad)
 
     Every row of a profile (rows sharing a ``PROFILE_NUMBER`` from
-    :doc:`Find Profiles <../processing/find_profiles/index>`) gets ``flag`` when the
+    :class:`Find Profiles <pelagos_py.steps.processing.find_profiles.FindProfilesStep>`) gets ``flag`` when the
     profile has fewer than ``min_length`` rows or, if ``depth_range`` is set, no
     ``depth_var`` sample inside it. Passing profiles are flagged 1; rows without a
     profile are left unchecked (0), so their existing flag is kept.
