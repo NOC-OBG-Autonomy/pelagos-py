@@ -75,10 +75,13 @@ def main():
         pipe.run()
         ds = pipe.get_data()
 
+        variants = spec.get("variants", [])
+        if variants:
+            base = _data_before(config, variants[0]["step"])
         profile = args.profile
-        for i, variant in enumerate(spec.get("variants", [])):
+        for i, variant in enumerate(variants):
             if profile is None:
-                profile = _example_profile(ds)
+                profile = _example_profile(base)
             variant = _fill_profile(variant, profile)
             step_config = {
                 "name": variant["step"],
@@ -89,7 +92,7 @@ def main():
                 captured, variant["step"], 100 + i, []
             ):
                 create_step(
-                    step_config, {"data": ds.copy(), "global_parameters": {}}
+                    step_config, {"data": base.copy(), "global_parameters": {}}
                 ).run()
         diagnostic_capture.wait_for_saves()
 
@@ -117,6 +120,16 @@ def main():
         shutil.copyfile(image, dest)
         print("wrote", os.path.relpath(dest, ROOT))
     shutil.rmtree(captured, ignore_errors=True)
+
+
+def _data_before(config, step_name):
+    # Variants must correct the input the pipeline's own step saw, not its output.
+    last = max(i for i, s in enumerate(config["steps"]) if s["name"] == step_name)
+    steps = [{**s, "diagnostics": False} for s in config["steps"][:last]]
+    pipe = Pipeline(config={**config, "steps": steps})
+    pipe.headless = True
+    pipe.run()
+    return pipe.get_data()
 
 
 def _example_profile(ds):
