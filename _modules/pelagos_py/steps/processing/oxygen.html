@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 
 
@@ -7,7 +6,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>pelagos_py.steps.processing.oxygen &#8212; Pelagos-Py</title>
+    <title>pelagos_py.steps.processing.oxygen &#8212; pelagos-py</title>
   
   
   
@@ -26,25 +25,26 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../../_static/styles/theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
-<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+  <link href="../../../../_static/styles/theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d75fae25" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-codeautolink.css?v=b2176991" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-design.min.css?v=95c83b7e" />
-    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=1376b26a" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Ubuntu&display=swap" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=a20de4af" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../../_static/scripts/fontawesome.js?digest=a95f357e85573c9b56d5"></script>
+  <script defer src="../../../../_static/scripts/fontawesome.js?digest=75c7c72ae941e8b558d8"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5" />
-<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5" />
+  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
+<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../../_static/documentation_options.js?v=0b8c961e"></script>
-    <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/documentation_options.js?v=f9910351"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../../../_static/copybutton.js?v=df1a032d"></script>
     <script src="../../../../_static/design-tabs.js?v=f930bc37"></script>
@@ -56,6 +56,7 @@
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="0.0" />
   
@@ -105,7 +106,7 @@
   
     <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
 <div class="bd-header__inner bd-page-width">
-  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation" aria-expanded="false" aria-controls="pst-primary-sidebar-modal">
     <span class="fa-solid fa-bars"></span>
   </button>
   
@@ -113,26 +114,15 @@
   <div class="col-lg-3 navbar-header-items__start">
     
       <div class="navbar-item">
-
-  
-    
-  
-
 <a class="navbar-brand logo" href="../../../../index.html">
-  
-  
-  
-  
-  
-    
-    
-      
-    
-    
-    <img src="../../../../_static/pelagos-py-text-logo.png" class="logo__image only-light" alt="Pelagos-Py - Home"/>
-    <img src="../../../../_static/pelagos-py-text-logo.png" class="logo__image only-dark pst-js-only" alt="Pelagos-Py - Home"/>
-  
-  
+  <svg class="logo__image pelagos-logo" viewBox="0 0 420 100" width="420" height="100"
+       role="img" aria-label="pelagos-py - Home" xmlns="http://www.w3.org/2000/svg">
+    <rect class="pl-frame" x="0" y="0" width="100" height="100" rx="2.3"/>
+    <rect fill="#fff" x="4.15" y="4.15" width="91.7" height="27.5"/>
+    <rect fill="#00b4ff" x="4.15" y="31.66" width="91.7" height="64.19"/>
+    <text class="pl-title" x="117" y="64" textLength="300" lengthAdjust="spacingAndGlyphs">PELAGOS-PY</text>
+    <text class="pl-sub" x="117" y="93.2" textLength="300" lengthAdjust="spacingAndGlyphs">National Oceanography Centre</text>
+  </svg>
 </a></div>
     
   </div>
@@ -183,7 +173,7 @@
         <div class="navbar-item navbar-persistent--container">
           
 
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
  <i class="fa-solid fa-magnifying-glass"></i>
  <span class="search-button__default-text">Search</span>
  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
@@ -194,15 +184,15 @@
         <div class="navbar-item">
 
 <div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
-  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
-    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
-    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
-    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
   </button>
   <ul class="dropdown-menu dropdown-menu-end">
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
   </ul>
 </div></div>
       
@@ -228,7 +218,7 @@
   
     <div class="navbar-persistent--mobile">
 
-<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
  <i class="fa-solid fa-magnifying-glass"></i>
  <span class="search-button__default-text">Search</span>
  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
@@ -249,7 +239,7 @@
       
         
       
-      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <dialog id="pst-primary-sidebar-modal" tabindex="-1"></dialog>
       <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
         
 
@@ -305,15 +295,15 @@
           <div class="navbar-item">
 
 <div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
-  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
-    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
-    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
-    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
   </button>
   <ul class="dropdown-menu dropdown-menu-end">
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
-    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
   </ul>
 </div></div>
         
@@ -368,7 +358,7 @@
     
     <li class="breadcrumb-item breadcrumb-home">
       <a href="../../../../index.html" class="nav-link" aria-label="Home">
-        <i class="fa-solid fa-home"></i>
+        <i class="fa-solid fa-house"></i>
       </a>
     </li>
     
@@ -583,6 +573,25 @@
 <div class="viewcode-block" id="DeriveUncalibratedPhase">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.DeriveUncalibratedPhase">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DeriveUncalibratedPhase</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Derives the optode's uncalibrated phase, ``UNCAL_PHASE_DOXY``, from the blue phase,</span>
+<span class="sd">    minus the red phase when given.</span>
+
+<span class="sd">    See :doc:`/user_guide/Pelagos-py_DOXY`.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    .. code-block:: yaml</span>
+
+<span class="sd">        - name: "Derive Uncalibrated Phase"</span>
+<span class="sd">          parameters:</span>
+<span class="sd">            #  &lt;MANDATORY&gt;</span>
+<span class="sd">            blue_phase_name: "BPHASE_DOXY"</span>
+<span class="sd">            # &lt;OPTIONAL&gt;</span>
+<span class="sd">            red_phase_name: "RPHASE_DOXY"</span>
+<span class="sd">          diagnostics: false</span>
+<span class="sd">    """</span>
+
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Derive Uncalibrated Phase"</span>
     <span class="n">beta</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY"</span><span class="p">]</span>
@@ -603,26 +612,7 @@
         <span class="p">},</span>
     <span class="p">}</span>
 
-<div class="viewcode-block" id="DeriveUncalibratedPhase.run">
-<a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.DeriveUncalibratedPhase.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Example</span>
-<span class="sd">        -------</span>
-<span class="sd">        ::</span>
-
-<span class="sd">            - name: "Derive Uncalibrated Phase"</span>
-<span class="sd">              parameters:</span>
-<span class="sd">                #  &lt;MANDATORY&gt;</span>
-<span class="sd">                blue_phase_name: "BPHASE_DOXY"</span>
-<span class="sd">                # &lt;OPTIONAL&gt;</span>
-<span class="sd">                red_phase_name: "RPHASE_DOXY"</span>
-<span class="sd">              diagnostics: false</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-
-<span class="sd">        """</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
 
@@ -662,8 +652,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
-
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">_plot_section</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="s2">"UNCAL_PHASE_DOXY"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="p">)</span></div>
@@ -674,6 +663,23 @@
 <div class="viewcode-block" id="DeriveOptodeTemperature">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.DeriveOptodeTemperature">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DeriveOptodeTemperature</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Derives optode temperature, ``TEMP_DOXY``, from its temperature voltage with a</span>
+<span class="sd">    calibration polynomial.</span>
+
+<span class="sd">    See :doc:`/user_guide/Pelagos-py_DOXY`.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    .. code-block:: yaml</span>
+
+<span class="sd">        - name: "Derive Optode Temperature"</span>
+<span class="sd">          parameters:</span>
+<span class="sd">            temp_voltage_name: "TEMP_VOLTAGE_DOXY"</span>
+<span class="sd">            calib_coefficients: [0, 1, 0, 0, 0, 0]</span>
+<span class="sd">          diagnostics: false</span>
+<span class="sd">    """</span>
+
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Derive Optode Temperature"</span>
     <span class="n">beta</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"TEMP_DOXY"</span><span class="p">]</span>
@@ -694,24 +700,7 @@
         <span class="p">},</span>
     <span class="p">}</span>
 
-<div class="viewcode-block" id="DeriveOptodeTemperature.run">
-<a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.DeriveOptodeTemperature.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Example</span>
-<span class="sd">        -------</span>
-<span class="sd">        ::</span>
-
-<span class="sd">            - name: "Derive Optode Temperature"</span>
-<span class="sd">              parameters:</span>
-<span class="sd">                temp_voltage_name: "TEMP_VOLTAGE_DOXY"</span>
-<span class="sd">                calib_coefficients: [0, 1, 0, 0, 0, 0]</span>
-<span class="sd">              diagnostics: false</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-
-<span class="sd">        """</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
 
@@ -751,8 +740,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
-
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">_plot_section</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="s2">"TEMP_DOXY"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="p">)</span></div>
@@ -763,6 +751,22 @@
 <div class="viewcode-block" id="PhasePressureCorrection">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.PhasePressureCorrection">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">PhasePressureCorrection</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Corrects the uncalibrated phase for pressure, writing ``UNCAL_PHASE_DOXY_PCORR``.</span>
+
+<span class="sd">    See :doc:`/user_guide/Pelagos-py_DOXY`.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    .. code-block:: yaml</span>
+
+<span class="sd">        - name: "Phase Pressure Correction"</span>
+<span class="sd">          parameters:</span>
+<span class="sd">            optode_pressure_name: "PRES"</span>
+<span class="sd">            correction_coefficient: 0.1</span>
+<span class="sd">          diagnostics: false</span>
+<span class="sd">    """</span>
+
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Phase Pressure Correction"</span>
     <span class="n">beta</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"UNCAL_PHASE_DOXY"</span><span class="p">]</span>
@@ -784,24 +788,7 @@
         <span class="p">},</span>
     <span class="p">}</span>
 
-<div class="viewcode-block" id="PhasePressureCorrection.run">
-<a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.PhasePressureCorrection.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Example</span>
-<span class="sd">        -------</span>
-<span class="sd">        ::</span>
-
-<span class="sd">            - name: "Phase Pressure Correction"</span>
-<span class="sd">              parameters:</span>
-<span class="sd">                optode_pressure_name: "PRES"</span>
-<span class="sd">                correction_coefficient: 0.1</span>
-<span class="sd">              diagnostics: false</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-
-<span class="sd">        """</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
 
@@ -844,8 +831,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
-
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">_plot_diff</span><span class="p">(</span>
@@ -902,6 +888,36 @@
 <div class="viewcode-block" id="ShiftOxygenToCTD">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.ShiftOxygenToCTD">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ShiftOxygenToCTD</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Geometrically time-shifts optode measurements (e.g. phase, optode temperature) onto</span>
+<span class="sd">    the CTD's dense sampling grid, correcting for the water travel time between the two</span>
+<span class="sd">    sensors' positions on the glider (Woo &amp; Gourcuff, 2023). This is the reverse of the</span>
+<span class="sd">    more common approach of cloning CTD data onto the sparse optode grid: it produces</span>
+<span class="sd">    one shifted oxygen value per ``N_MEASUREMENTS`` row, named ``&lt;variable&gt;_SHIFTED``.</span>
+
+<span class="sd">    If ``lag_seconds`` is not set, the lag is instead derived per profile from mean</span>
+<span class="sd">    pitch and dive rate. If ``pitch_name`` cannot be found (or is empty), a warning is</span>
+<span class="sd">    logged and the step fails, since no lag is then available; set ``lag_seconds`` for a</span>
+<span class="sd">    constant lag instead.</span>
+
+<span class="sd">    See :doc:`/user_guide/Pelagos-py_DOXY`.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    .. code-block:: yaml</span>
+
+<span class="sd">        - name: "Shift Oxygen To CTD"</span>
+<span class="sd">          parameters:</span>
+<span class="sd">            # &lt;MANDATORY&gt;</span>
+<span class="sd">            shift_vars: ["UNCAL_PHASE_DOXY", "TEMP_DOXY"]</span>
+<span class="sd">            # &lt;OPTIONAL&gt;</span>
+<span class="sd">            lag_seconds: null</span>
+<span class="sd">            pitch_name: "GLIDER_PITCH"</span>
+<span class="sd">            distance_cm: 90</span>
+<span class="sd">            cast_id_var: "PROFILE_DIRECTION"</span>
+<span class="sd">          diagnostics: false</span>
+<span class="sd">    """</span>
+
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Shift Oxygen To CTD"</span>
     <span class="n">beta</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span>
@@ -1017,42 +1033,7 @@
 
         <span class="k">return</span> <span class="n">shifted</span>
 
-<div class="viewcode-block" id="ShiftOxygenToCTD.run">
-<a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.ShiftOxygenToCTD.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Example</span>
-<span class="sd">        -------</span>
-<span class="sd">        ::</span>
-
-<span class="sd">            - name: "Shift Oxygen To CTD"</span>
-<span class="sd">              parameters:</span>
-<span class="sd">                # &lt;MANDATORY&gt;</span>
-<span class="sd">                shift_vars: ["UNCAL_PHASE_DOXY", "TEMP_DOXY"]</span>
-<span class="sd">                # &lt;OPTIONAL&gt;</span>
-<span class="sd">                lag_seconds: null</span>
-<span class="sd">                pitch_name: "GLIDER_PITCH"</span>
-<span class="sd">                distance_cm: 90</span>
-<span class="sd">                cast_id_var: "PROFILE_DIRECTION"</span>
-<span class="sd">              diagnostics: false</span>
-
-<span class="sd">        Geometrically time-shifts optode measurements (e.g. phase, optode</span>
-<span class="sd">        temperature) onto the CTD's dense sampling grid, correcting for the</span>
-<span class="sd">        water travel time between the two sensors' positions on the glider</span>
-<span class="sd">        (Woo &amp; Gourcuff, 2023). This is the reverse of the more common</span>
-<span class="sd">        approach of cloning CTD data onto the sparse optode grid: it produces</span>
-<span class="sd">        one shifted oxygen value per ``N_MEASUREMENTS`` row, named</span>
-<span class="sd">        ``&lt;variable&gt;_SHIFTED``.</span>
-
-<span class="sd">        If ``lag_seconds`` is not set, the lag is instead derived per profile</span>
-<span class="sd">        from mean pitch and dive rate. If ``pitch_name`` cannot be found (or</span>
-<span class="sd">        is empty), a warning is logged and the step fails, since no lag is</span>
-<span class="sd">        then available; set ``lag_seconds`` for a constant lag instead.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-
-<span class="sd">        """</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
 
@@ -1131,8 +1112,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
-
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">shift_vars</span><span class="p">:</span>
@@ -1151,6 +1131,23 @@
 <div class="viewcode-block" id="DeriveCalibratedPhase">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.DeriveCalibratedPhase">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DeriveCalibratedPhase</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Derives the calibrated phase, ``CAL_PHASE_DOXY``, from the uncalibrated phase with a</span>
+<span class="sd">    calibration polynomial.</span>
+
+<span class="sd">    See :doc:`/user_guide/Pelagos-py_DOXY`.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    .. code-block:: yaml</span>
+
+<span class="sd">        - name: "Derive Calibrated Phase"</span>
+<span class="sd">          parameters:</span>
+<span class="sd">            uncalibrated_phase_name: "UNCAL_PHASE_DOXY"</span>
+<span class="sd">            calib_coefficients: [0, 1, 0, 0]</span>
+<span class="sd">          diagnostics: false</span>
+<span class="sd">    """</span>
+
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Derive Calibrated Phase"</span>
     <span class="n">beta</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"CAL_PHASE_DOXY"</span><span class="p">]</span>
@@ -1171,24 +1168,7 @@
         <span class="p">},</span>
     <span class="p">}</span>
 
-<div class="viewcode-block" id="DeriveCalibratedPhase.run">
-<a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.DeriveCalibratedPhase.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Example</span>
-<span class="sd">        -------</span>
-<span class="sd">        ::</span>
-
-<span class="sd">            - name: "Derive Calibrated Phase"</span>
-<span class="sd">              parameters:</span>
-<span class="sd">                uncalibrated_phase_name: "UNCAL_PHASE_DOXY"</span>
-<span class="sd">                calib_coefficients: [0, 1, 0, 0]</span>
-<span class="sd">              diagnostics: false</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-
-<span class="sd">        """</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
 
@@ -1231,8 +1211,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
-
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">_plot_section</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="s2">"CAL_PHASE_DOXY"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="p">)</span></div>
@@ -1243,6 +1222,32 @@
 <div class="viewcode-block" id="DeriveOxygenConcentration">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.DeriveOxygenConcentration">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">DeriveOxygenConcentration</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Converts the calibrated phase to molar oxygen concentration,</span>
+<span class="sd">    ``MOLAR_DOXY_ADJUSTED``.</span>
+
+<span class="sd">    ``method: "poly"`` instead expects ``calib_coefficient_matrix`` (shape (5, 4));</span>
+<span class="sd">    ``method: "SVU"`` expects ``svu_coefficients``, the 7 manufacturer SVUFoilCoef</span>
+<span class="sd">    values (Stern-Volmer-Uchida equation). Writes ``MOLAR_DOXY_ADJUSTED``, so a</span>
+<span class="sd">    ``MOLAR_DOXY`` shipped in the file is kept unchanged.</span>
+
+<span class="sd">    See :doc:`/user_guide/Pelagos-py_DOXY`.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    .. code-block:: yaml</span>
+
+<span class="sd">        - name: "Derive Oxygen Concentration"</span>
+<span class="sd">          parameters:</span>
+<span class="sd">            # &lt;MANDATORY&gt;</span>
+<span class="sd">            method: "SVU"</span>
+<span class="sd">            # &lt;METHOD DEPENDENT&gt;</span>
+<span class="sd">            # The following params are for "SVU" method</span>
+<span class="sd">            temperature_name: "TEMP_DOXY"</span>
+<span class="sd">            svu_coefficients: [c0, c1, c2, c3, c4, c5, c6]  # manufacturer SVUFoilCoef0-6</span>
+<span class="sd">          diagnostics: false</span>
+<span class="sd">    """</span>
+
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Derive Oxygen Concentration"</span>
     <span class="n">beta</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"CAL_PHASE_DOXY"</span><span class="p">]</span>
@@ -1310,34 +1315,7 @@
 
         <span class="k">return</span> <span class="p">(</span><span class="n">P0</span> <span class="o">/</span> <span class="n">Pc</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">/</span> <span class="n">K_SV</span>
 
-<div class="viewcode-block" id="DeriveOxygenConcentration.run">
-<a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.DeriveOxygenConcentration.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Example</span>
-<span class="sd">        -------</span>
-<span class="sd">        ::</span>
-
-<span class="sd">            - name: "Derive Oxygen Concentration"</span>
-<span class="sd">              parameters:</span>
-<span class="sd">                # &lt;MANDATORY&gt;</span>
-<span class="sd">                method: "SVU"</span>
-<span class="sd">                # &lt;METHOD DEPENDENT&gt;</span>
-<span class="sd">                # The following params are for "SVU" method</span>
-<span class="sd">                temperature_name: "TEMP_DOXY"</span>
-<span class="sd">                svu_coefficients: [c0, c1, c2, c3, c4, c5, c6]  # manufacturer SVUFoilCoef0-6</span>
-<span class="sd">              diagnostics: false</span>
-
-<span class="sd">        ``method: "poly"`` instead expects ``calib_coefficient_matrix`` (shape</span>
-<span class="sd">        (5, 4)); ``method: "SVU"`` expects ``svu_coefficients``, the 7</span>
-<span class="sd">        manufacturer SVUFoilCoef values (Stern-Volmer-Uchida equation).</span>
-<span class="sd">        Writes ``MOLAR_DOXY_ADJUSTED``, so a ``MOLAR_DOXY`` shipped in the file</span>
-<span class="sd">        is kept unchanged.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-
-<span class="sd">        """</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
 
@@ -1388,8 +1366,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
-
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">_plot_section</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="s2">"MOLAR_DOXY_ADJUSTED"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_name</span><span class="p">)</span></div>
@@ -1400,6 +1377,26 @@
 <div class="viewcode-block" id="MolarDOXYSalinityCorrection">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.MolarDOXYSalinityCorrection">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">MolarDOXYSalinityCorrection</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Corrects molar oxygen for salinity relative to ``reference_salinity``, writing</span>
+<span class="sd">    ``MOLAR_DOXY_PSAL``.</span>
+
+<span class="sd">    See :doc:`/user_guide/Pelagos-py_DOXY`.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    .. code-block:: yaml</span>
+
+<span class="sd">        - name: "Molar DOXY Salinity Correction"</span>
+<span class="sd">          parameters:</span>
+<span class="sd">            # &lt;MANDATORY&gt;</span>
+<span class="sd">            salinity_name: "PSAL"</span>
+<span class="sd">            temperature_name: "TEMP"</span>
+<span class="sd">            # &lt;OPTIONAL&gt;</span>
+<span class="sd">            reference_salinity: 0</span>
+<span class="sd">          diagnostics: false</span>
+<span class="sd">    """</span>
+
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Molar DOXY Salinity Correction"</span>
     <span class="n">beta</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"MOLAR_DOXY"</span><span class="p">]</span>
@@ -1473,27 +1470,7 @@
 
         <span class="k">return</span> <span class="n">vapour_partial_pressure</span>
 
-<div class="viewcode-block" id="MolarDOXYSalinityCorrection.run">
-<a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.MolarDOXYSalinityCorrection.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Example</span>
-<span class="sd">        -------</span>
-<span class="sd">        ::</span>
-
-<span class="sd">            - name: "Molar DOXY Salinity Correction"</span>
-<span class="sd">              parameters:</span>
-<span class="sd">                # &lt;MANDATORY&gt;</span>
-<span class="sd">                salinity_name: "PSAL"</span>
-<span class="sd">                temperature_name: "TEMP"</span>
-<span class="sd">                # &lt;OPTIONAL&gt;</span>
-<span class="sd">                reference_salinity: 0</span>
-<span class="sd">              diagnostics: false</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-
-<span class="sd">        """</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
 
@@ -1546,8 +1523,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
-
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">_plot_diff</span><span class="p">(</span>
@@ -1560,6 +1536,25 @@
 <div class="viewcode-block" id="MolarDOXYPressureCorrection">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.MolarDOXYPressureCorrection">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">MolarDOXYPressureCorrection</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Corrects molar oxygen for pressure, writing ``MOLAR_DOXY_PSAL_PRES``.</span>
+
+<span class="sd">    See :doc:`/user_guide/Pelagos-py_DOXY`.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    .. code-block:: yaml</span>
+
+<span class="sd">        - name: "Molar DOXY Pressure Correction"</span>
+<span class="sd">          parameters:</span>
+<span class="sd">            # &lt;MANDATORY&gt;</span>
+<span class="sd">            pressure_name: "PRES"</span>
+<span class="sd">            temperature_name: "TEMP"</span>
+<span class="sd">            molar_doxy_name: "MOLAR_DOXY_PSAL"</span>
+<span class="sd">            uncalibrated_phase_correction_applied: true</span>
+<span class="sd">          diagnostics: false</span>
+<span class="sd">    """</span>
+
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Molar DOXY Pressure Correction"</span>
     <span class="n">beta</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"MOLAR_DOXY_PSAL_PRES"</span><span class="p">]</span>
@@ -1590,27 +1585,7 @@
         <span class="p">},</span>
     <span class="p">}</span>
 
-<div class="viewcode-block" id="MolarDOXYPressureCorrection.run">
-<a class="viewcode-back" href="../../../../api/pelagos_py/steps/processing/oxygen/index.html#pelagos_py.steps.processing.oxygen.MolarDOXYPressureCorrection.run">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        Example</span>
-<span class="sd">        -------</span>
-<span class="sd">        ::</span>
-
-<span class="sd">            - name: "Molar DOXY Pressure Correction"</span>
-<span class="sd">              parameters:</span>
-<span class="sd">                # &lt;MANDATORY&gt;</span>
-<span class="sd">                pressure_name: "PRES"</span>
-<span class="sd">                temperature_name: "TEMP"</span>
-<span class="sd">                molar_doxy_name: "MOLAR_DOXY_PSAL"</span>
-<span class="sd">                uncalibrated_phase_correction_applied: true</span>
-<span class="sd">              diagnostics: false</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-
-<span class="sd">        """</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">filter_qc</span><span class="p">()</span>
 
@@ -1674,8 +1649,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span></div>
-
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">_plot_diff</span><span class="p">(</span>
@@ -1837,8 +1811,8 @@
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5"></script>
-<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5"></script>
+  <script defer src="../../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8"></script>
+<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -1858,8 +1832,7 @@
         <div class="footer-item">
 
   <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
-    <br/>
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.1.
   </p>
 </div>
       
@@ -1872,7 +1845,7 @@
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.19.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.24.0.
 </p></div>
       
     </div>

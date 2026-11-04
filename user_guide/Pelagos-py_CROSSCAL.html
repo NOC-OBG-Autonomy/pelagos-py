@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+
+<html data-content_root="../" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="width=device-width, initial-scale=1" name="viewport"/>
+<meta content="2026-11-04T20:18:56+00:00" property="article:modified_time"/>
+<title>Cross-Calibration — pelagos-py</title>
+<script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+<!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+<noscript>
+<style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+</noscript>
+<!-- Loaded before other Sphinx assets -->
+<link href="../_static/styles/theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet"/>
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet"/>
+<link href="../_static/pygments.css?v=d75fae25" rel="stylesheet" type="text/css"/>
+<link href="../_static/copybutton.css?v=76b2166b" rel="stylesheet" type="text/css"/>
+<link href="../_static/graphviz.css?v=4ae1632d" rel="stylesheet" type="text/css"/>
+<link href="../_static/sphinx-codeautolink.css?v=b2176991" rel="stylesheet" type="text/css"/>
+<link href="../_static/sphinx-design.min.css?v=95c83b7e" rel="stylesheet" type="text/css"/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&amp;family=Ubuntu&amp;display=swap" rel="stylesheet" type="text/css"/>
+<link href="../_static/custom.css?v=a20de4af" rel="stylesheet" type="text/css"/>
+<!-- So that users can add custom icons -->
+<script defer="" src="../_static/scripts/fontawesome.js?digest=75c7c72ae941e8b558d8"></script>
+<!-- Pre-loaded scripts that we'll load fully later -->
+<link as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" rel="preload"/>
+<link as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" rel="preload"/>
+<script src="../_static/documentation_options.js?v=f9910351"></script>
+<script src="../_static/doctools.js?v=fd6eb6e6"></script>
+<script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+<script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+<script src="../_static/copybutton.js?v=df1a032d"></script>
+<script src="../_static/design-tabs.js?v=f930bc37"></script>
+<script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+<script>DOCUMENTATION_OPTIONS.pagename = 'user_guide/Pelagos-py_CROSSCAL';</script>
+<script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+<link href="https://noc-obg-autonomy.github.io/pelagos-py/user_guide/Pelagos-py_CROSSCAL.html" rel="canonical"/>
+<link href="../_static/NOC_logo.svg" rel="icon"/>
+<link href="../genindex.html" rel="index" title="Index"/>
+<link href="../search.html" rel="search" title="Search"/>
+<link href="../api_reference.html" rel="next" title="API Reference"/>
+<link href="Pelagos-py_BBP.html" rel="prev" title="Particulate Backscattering (bbp) Processing"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<meta content="light dark" name="color-scheme"/>
+<meta content="en" name="docsearch:language"/>
+<meta content="0.0" name="docsearch:version"/>
+<meta content="Nov 04, 2026" name="docbuild:last-update"/>
+<script src="../_static/searchtools.js"></script>
+<script src="../_static/language_data.js"></script>
+<script src="../searchindex.js"></script>
+</head>
+<body data-default-mode="">
+<div class="skip-link d-print-none" id="pst-skip-link"><a href="#main-content">Skip to main content</a></div>
+<div id="pst-scroll-pixel-helper"></div>
+<button class="btn rounded-pill" id="pst-back-to-top" type="button">
+<i class="fa-solid fa-arrow-up"></i>Back to top</button>
+<dialog id="pst-search-dialog">
+<form action="../search.html" class="bd-search d-flex align-items-center" method="get">
+<i class="fa-solid fa-magnifying-glass"></i>
+<input aria-label="Search the docs ..." autocapitalize="off" autocomplete="off" autocorrect="off" class="form-control" name="q" placeholder="Search the docs ..." spellcheck="false" type="search"/>
+<span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+</dialog>
+<div class="pst-async-banner-revealer d-none">
+<aside aria-label="Version warning" class="d-none d-print-none" id="bd-header-version-warning"></aside>
+</div>
+<header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none" id="pst-header">
+<div class="bd-header__inner bd-page-width">
+<button aria-controls="pst-primary-sidebar-modal" aria-expanded="false" aria-label="Site navigation" class="pst-navbar-icon sidebar-toggle primary-toggle" type="button">
+<span class="fa-solid fa-bars"></span>
+</button>
+<div class="col-lg-3 navbar-header-items__start">
+<div class="navbar-item">
+<a class="navbar-brand logo" href="../index.html">
+<svg aria-label="pelagos-py - Home" class="logo__image pelagos-logo" height="100" role="img" viewbox="0 0 420 100" width="420" xmlns="http://www.w3.org/2000/svg">
+<rect class="pl-frame" height="100" rx="2.3" width="100" x="0" y="0"></rect>
+<rect fill="#fff" height="27.5" width="91.7" x="4.15" y="4.15"></rect>
+<rect fill="#00b4ff" height="64.19" width="91.7" x="4.15" y="31.66"></rect>
+<text class="pl-title" lengthadjust="spacingAndGlyphs" textlength="300" x="117" y="64">PELAGOS-PY</text>
+<text class="pl-sub" lengthadjust="spacingAndGlyphs" textlength="300" x="117" y="93.2">National Oceanography Centre</text>
+</svg>
+</a></div>
+</div>
+<div class="col-lg-9 navbar-header-items">
+<div class="me-auto navbar-header-items__center">
+<div class="navbar-item">
+<nav>
+<ul class="bd-navbar-elements navbar-nav">
+<li class="nav-item">
+<a class="nav-link nav-internal" href="../getting_started.html">
+    Getting Started
+  </a>
+</li>
+<li class="nav-item current active">
+<a class="nav-link nav-internal" href="../user_guide.html">
+    User Guide
+  </a>
+</li>
+<li class="nav-item">
+<a class="nav-link nav-internal" href="../api_reference.html">
+    API Reference
+  </a>
+</li>
+<li class="nav-item">
+<a class="nav-link nav-internal" href="../development.html">
+    Development
+  </a>
+</li>
+</ul>
+</nav></div>
+</div>
+<div class="navbar-header-items__end">
+<div class="navbar-item navbar-persistent--container">
+<button aria-label="Search" class="btn search-button-field search-button__button pst-js-only" data-bs-placement="bottom" data-bs-toggle="tooltip" title="Search" type="button">
+<i class="fa-solid fa-magnifying-glass"></i>
+<span class="search-button__default-text">Search</span>
+<span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+</div>
+<div class="navbar-item">
+<div class="theme-switch-container dropdown pst-js-only" data-bs-placement="bottom" data-bs-toggle="tooltip" title="Color mode">
+<button aria-label="Color mode" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" data-bs-toggle="dropdown" type="button">
+<i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+<i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+<i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
+</button>
+<ul class="dropdown-menu dropdown-menu-end">
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto" type="button"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light" type="button"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark" type="button"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
+</ul>
+</div></div>
+<div class="navbar-item"><ul aria-label="Icon Links" class="navbar-icon-links">
+<li class="nav-item">
+<a class="nav-link pst-navbar-icon" data-bs-placement="bottom" data-bs-toggle="tooltip" href="https://github.com/NOC-OBG-Autonomy/pelagos-py" rel="noopener" target="_blank" title="GitHub"><i aria-hidden="true" class="fa-brands fa-github fa-lg"></i><span class="visually-hidden">GitHub</span></a>
+</li>
+</ul></div>
+</div>
+</div>
+<div class="navbar-persistent--mobile">
+<button aria-label="Search" class="btn search-button-field search-button__button pst-js-only" data-bs-placement="bottom" data-bs-toggle="tooltip" title="Search" type="button">
+<i class="fa-solid fa-magnifying-glass"></i>
+<span class="search-button__default-text">Search</span>
+<span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+</div>
+<button aria-controls="pst-secondary-sidebar-modal" aria-expanded="false" aria-label="On this page" class="pst-navbar-icon sidebar-toggle secondary-toggle" type="button">
+<span class="fa-solid fa-outdent"></span>
+</button>
+</div>
+</header>
+<div class="bd-container">
+<div class="bd-container__inner bd-page-width">
+<dialog id="pst-primary-sidebar-modal" tabindex="-1"></dialog>
+<div class="bd-sidebar-primary bd-sidebar" id="pst-primary-sidebar">
+<div class="sidebar-header-items sidebar-primary__section">
+<div class="sidebar-header-items__center">
+<div class="navbar-item">
+<nav>
+<ul class="bd-navbar-elements navbar-nav">
+<li class="nav-item">
+<a class="nav-link nav-internal" href="../getting_started.html">
+    Getting Started
+  </a>
+</li>
+<li class="nav-item current active">
+<a class="nav-link nav-internal" href="../user_guide.html">
+    User Guide
+  </a>
+</li>
+<li class="nav-item">
+<a class="nav-link nav-internal" href="../api_reference.html">
+    API Reference
+  </a>
+</li>
+<li class="nav-item">
+<a class="nav-link nav-internal" href="../development.html">
+    Development
+  </a>
+</li>
+</ul>
+</nav></div>
+</div>
+<div class="sidebar-header-items__end">
+<div class="navbar-item">
+<div class="theme-switch-container dropdown pst-js-only" data-bs-placement="bottom" data-bs-toggle="tooltip" title="Color mode">
+<button aria-label="Color mode" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" data-bs-toggle="dropdown" type="button">
+<i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+<i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+<i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
+</button>
+<ul class="dropdown-menu dropdown-menu-end">
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto" type="button"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light" type="button"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark" type="button"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
+</ul>
+</div></div>
+<div class="navbar-item"><ul aria-label="Icon Links" class="navbar-icon-links">
+<li class="nav-item">
+<a class="nav-link pst-navbar-icon" data-bs-placement="bottom" data-bs-toggle="tooltip" href="https://github.com/NOC-OBG-Autonomy/pelagos-py" rel="noopener" target="_blank" title="GitHub"><i aria-hidden="true" class="fa-brands fa-github fa-lg"></i><span class="visually-hidden">GitHub</span></a>
+</li>
+</ul></div>
+</div>
+</div>
+<div class="sidebar-primary-items__start sidebar-primary__section">
+<div class="sidebar-primary-item pst-sidebar-collapse"><button aria-controls="pst-primary-sidebar" aria-expanded="true" id="pst-collapse-sidebar-button" type="button">
+<svg aria-hidden="true" class="pst-icon" focusable="false" role="img" viewbox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+<path d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z" fill="currentColor"></path>
+</svg>
+<span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+<span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+<div class="sidebar-primary-item">
+<nav aria-label="Section Navigation" class="bd-docs-nav bd-links">
+<p aria-level="1" class="bd-links__title" role="heading">Section Navigation</p>
+<div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../steps.html">Steps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality_control.html">Quality Control</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Variable processing</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_POSITION.html">Position and Time Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_PRESSURE.html">Pressure Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_PROFILES.html">Profile Finding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_TEMP.html">Temperature Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_SALINITY.html">Salinity Adjustment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_DERIVED.html">Derived CTD Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_MLD.html">Mixed Layer Depth</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_DOXY.html">Oxygen Processing: Aanderaa Optodes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_PAR.html">PAR Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_CHLA.html">Chlorophyll-<em>a</em> Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_BBP.html">Particulate Backscattering (b<sub>bp</sub>) Processing</a></li>
+<li class="toctree-l1 current active"><a aria-current="page" class="current reference internal" href="#">Cross-Calibration</a></li>
+</ul>
+</div>
+</nav></div>
+</div>
+<div class="sidebar-primary-items__end sidebar-primary__section">
+<div class="sidebar-primary-item">
+<div class="flat" data-ea-manual="true" data-ea-publisher="readthedocs" data-ea-type="readthedocs-sidebar" id="ethical-ad-placement">
+</div></div>
+</div>
+</div>
+<main class="bd-main" id="main-content" role="main">
+<div class="bd-content">
+<div class="bd-article-container">
+<div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+<div class="header-article-items__start">
+<div class="header-article-item">
+<nav aria-label="Breadcrumb" class="d-print-none">
+<ul class="bd-breadcrumbs">
+<li class="breadcrumb-item breadcrumb-home">
+<a aria-label="Home" class="nav-link" href="../index.html">
+<i class="fa-solid fa-house"></i>
+</a>
+</li>
+<li class="breadcrumb-item"><a class="nav-link" href="../user_guide.html">User Guide</a></li>
+<li aria-current="page" class="breadcrumb-item active"><span class="ellipsis">Cross-Calibration</span></li>
+</ul>
+</nav>
+</div>
+</div>
+</div>
+</div>
+<div id="searchbox"></div>
+<article class="bd-article">
+<section class="tex2jax_ignore mathjax_ignore" id="cross-calibration">
+<h1>Cross-Calibration<a class="headerlink" href="#cross-calibration" title="Link to this heading">#</a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">#</a></h2>
+<p>Two sensors measuring the same water rarely agree exactly. Cross-calibration adjusts one sensor to match a reference, such as another glider, a ship CTD cast or a lab sample.</p>
+<p>pelagos-py applies a cross-calibration with the <a class="reference internal" href="../api/pelagos_py/steps/input_output/correct_values/index.html"><span class="doc">Correct Values</span></a> step. The step does not compare against the reference itself. For now you work out the correction from your own comparison and enter it as a slope and an intercept.</p>
+<p>The default pipeline runs it twice (for <code class="docutils literal notranslate"><span class="pre">TEMP</span></code> and <code class="docutils literal notranslate"><span class="pre">PSAL_ADJUSTED</span></code>) as placeholders that change nothing until real values are entered.</p>
+</section>
+</section>
+<hr class="docutils"/>
+<section class="tex2jax_ignore mathjax_ignore" id="how-the-correction-works">
+<h1>1. How the correction works<a class="headerlink" href="#how-the-correction-works" title="Link to this heading">#</a></h1>
+<p>Each value is corrected as</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">corrected</span> <span class="o">=</span> <span class="n">slope</span> <span class="o">*</span> <span class="n">value</span> <span class="o">+</span> <span class="n">intercept</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>Input.</strong> If <code class="docutils literal notranslate"><span class="pre">X_ADJUSTED</span></code> already exists it is corrected instead of <code class="docutils literal notranslate"><span class="pre">X</span></code>, so corrections build on each other.</p></li>
+<li><p><strong>Time window.</strong> With <code class="docutils literal notranslate"><span class="pre">time_start</span></code> and/or <code class="docutils literal notranslate"><span class="pre">time_end</span></code>, only samples in that window (bounds included) are corrected; the rest keep their value. Use this when a sensor drifts or is swapped part-way through a deployment.</p></li>
+<li><p><strong>Expected range check.</strong> With <code class="docutils literal notranslate"><span class="pre">expected_range:</span> <span class="pre">[min,</span> <span class="pre">max]</span></code>, the step first takes the median of the input (within the time window). If the median is already inside the range, the data is assumed correct and nothing is changed. Without <code class="docutils literal notranslate"><span class="pre">expected_range</span></code> the correction is always applied. This is an advanced use case to automatically apply corrections to data with known errors.</p></li>
+<li><p><strong>No-op.</strong> <code class="docutils literal notranslate"><span class="pre">slope:</span> <span class="pre">1</span></code> and <code class="docutils literal notranslate"><span class="pre">intercept:</span> <span class="pre">0</span></code> change nothing, so the step skips.</p></li>
+</ul>
+<p>All samples are corrected, including flagged ones, and their QC flags are not changed.</p>
+</section>
+<hr class="docutils"/>
+<section class="tex2jax_ignore mathjax_ignore" id="configuration">
+<h1>2. Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h1>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">target_variable</span></code></p></td>
+<td><p>(required)</p></td>
+<td><p>Variable to correct, e.g. <code class="docutils literal notranslate"><span class="pre">TEMP</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">slope</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1.0</span></code></p></td>
+<td><p>Multiplies each value</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">intercept</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0.0</span></code></p></td>
+<td><p>Added after scaling</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">output_as</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">X_ADJUSTED</span></code></p></td>
+<td><p>Name, or list of names, to write the result to</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">time_start</span></code>, <code class="docutils literal notranslate"><span class="pre">time_end</span></code></p></td>
+<td><p>none</p></td>
+<td><p>Only correct samples in this time window</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">expected_range</span></code></p></td>
+<td><p>none</p></td>
+<td><p>Skip when the median is already inside <code class="docutils literal notranslate"><span class="pre">[min,</span> <span class="pre">max]</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">corrected_units</span></code></p></td>
+<td><p>none</p></td>
+<td><p>New <code class="docutils literal notranslate"><span class="pre">units</span></code> attribute, set only when corrected</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">append_description</span></code></p></td>
+<td><p>none</p></td>
+<td><p>Text added to the <code class="docutils literal notranslate"><span class="pre">comment</span></code> attribute</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">overwrite_description</span></code></p></td>
+<td><p>none</p></td>
+<td><p>Text replacing the <code class="docutils literal notranslate"><span class="pre">comment</span></code> attribute</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">optional</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
+<td><p>Skip, rather than stop, if the variable is missing</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>A temperature offset against a reference:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Correct Values</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">target_variable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TEMP</span>
+<span class="w">    </span><span class="nt">slope</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+<span class="w">    </span><span class="nt">intercept</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-0.012</span>
+<span class="w">    </span><span class="nt">append_description</span><span class="p">:</span><span class="w"> </span><span class="s">"Offset</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">ship</span><span class="nv"> </span><span class="s">CTD"</span>
+</pre></div>
+</div>
+<p>A salinity correction for part of a deployment only:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Correct Values</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">target_variable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PSAL_ADJUSTED</span>
+<span class="w">    </span><span class="nt">slope</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0</span>
+<span class="w">    </span><span class="nt">intercept</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.008</span>
+<span class="w">    </span><span class="nt">time_start</span><span class="p">:</span><span class="w"> </span><span class="s">"2024-06-15T00:00:00"</span>
+</pre></div>
+</div>
+<p>With <code class="docutils literal notranslate"><span class="pre">diagnostics:</span> <span class="pre">true</span></code> the step plots the raw and corrected values, and their difference.</p>
+</section>
+<hr class="docutils"/>
+<section class="tex2jax_ignore mathjax_ignore" id="outputs">
+<h1>3. Outputs<a class="headerlink" href="#outputs" title="Link to this heading">#</a></h1>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Output</p></th>
+<th class="head"><p>Change</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">X_ADJUSTED</span></code> (or <code class="docutils literal notranslate"><span class="pre">output_as</span></code>)</p></td>
+<td><p>Corrected values; the raw <code class="docutils literal notranslate"><span class="pre">X</span></code> is never changed</p></td>
+</tr>
+<tr class="row-odd"><td><p>its <code class="docutils literal notranslate"><span class="pre">_QC</span></code></p></td>
+<td><p>A copy of the input’s QC flags, when a new variable is written</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">units</span></code> attribute</p></td>
+<td><p>Set to <code class="docutils literal notranslate"><span class="pre">corrected_units</span></code>, if given and a correction ran</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">comment</span></code> attribute</p></td>
+<td><p>Updated by <code class="docutils literal notranslate"><span class="pre">append_description</span></code> or <code class="docutils literal notranslate"><span class="pre">overwrite_description</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>If the correction is skipped (expected range or no-op) and no <code class="docutils literal notranslate"><span class="pre">output_as</span></code> or description is set, the dataset is left unchanged.</p>
+</section>
+</article>
+</div>
+<dialog id="pst-secondary-sidebar-modal" tabindex="-1"></dialog>
+<div class="bd-sidebar-secondary bd-toc" id="pst-secondary-sidebar"><div class="sidebar-secondary-items sidebar-secondary__inner">
+<div class="sidebar-secondary-item">
+<div class="page-toc tocsection onthispage" id="pst-page-navigation-heading-2">
+<i class="fa-solid fa-list"></i> On this page
+  </div>
+<nav aria-labelledby="pst-page-navigation-heading-2" class="page-toc" id="pst-page-toc-nav">
+<ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Cross-Calibration</a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overview">Overview</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#how-the-correction-works">1. How the correction works</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#configuration">2. Configuration</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#outputs">3. Outputs</a></li>
+</ul>
+</nav></div>
+</div></div>
+</div>
+<footer class="bd-footer-content">
+</footer>
+</main>
+</div>
+</div>
+<!-- Scripts loaded after <body> so the DOM is not blocked -->
+<script defer="" src="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8"></script>
+<script defer="" src="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8"></script>
+<footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+<div class="footer-items__start">
+<div class="footer-item">
+<p class="copyright">
+    
+      © Copyright 2025, National Oceanography Centre.
+      <br/>
+</p>
+</div>
+<div class="footer-item">
+<p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.1.
+  </p>
+</div>
+</div>
+<div class="footer-items__end">
+<div class="footer-item">
+<p class="theme-version">
+<!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.24.0.
+</p></div>
+</div>
+</div>
+</footer>
+</body>
+</html>

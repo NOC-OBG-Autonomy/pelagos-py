@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <meta property="article:modified_time" content="2026-11-04T20:18:56+00:00" />
+    <title>Salinity Adjustment &#8212; pelagos-py</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-codeautolink.css?v=b2176991" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Ubuntu&display=swap" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=a20de4af" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../_static/scripts/fontawesome.js?digest=75c7c72ae941e8b558d8"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
+
+    <script src="../_static/documentation_options.js?v=f9910351"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=df1a032d"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'user_guide/Pelagos-py_SALINITY';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="canonical" href="https://noc-obg-autonomy.github.io/pelagos-py/user_guide/Pelagos-py_SALINITY.html" />
+    <link rel="icon" href="../_static/NOC_logo.svg"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Derived CTD Variables" href="Pelagos-py_DERIVED.html" />
+    <link rel="prev" title="Temperature Processing" href="Pelagos-py_TEMP.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0" />
+    <meta name="docbuild:last-update" content="Nov 04, 2026"/>
+  
+    
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation" aria-expanded="false" aria-controls="pst-primary-sidebar-modal">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+<a class="navbar-brand logo" href="../index.html">
+  <svg class="logo__image pelagos-logo" viewBox="0 0 420 100" width="420" height="100"
+       role="img" aria-label="pelagos-py - Home" xmlns="http://www.w3.org/2000/svg">
+    <rect class="pl-frame" x="0" y="0" width="100" height="100" rx="2.3"/>
+    <rect fill="#fff" x="4.15" y="4.15" width="91.7" height="27.5"/>
+    <rect fill="#00b4ff" x="4.15" y="31.66" width="91.7" height="64.19"/>
+    <text class="pl-title" x="117" y="64" textLength="300" lengthAdjust="spacingAndGlyphs">PELAGOS-PY</text>
+    <text class="pl-sub" x="117" y="93.2" textLength="300" lengthAdjust="spacingAndGlyphs">National Oceanography Centre</text>
+  </svg>
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../user_guide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api_reference.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../development.html">
+    Development
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NOC-OBG-Autonomy/pelagos-py" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page" aria-expanded="false" aria-controls="pst-secondary-sidebar-modal">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal" tabindex="-1"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../user_guide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api_reference.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../development.html">
+    Development
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NOC-OBG-Autonomy/pelagos-py" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button type="button" id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar">
+  <svg class="pst-icon" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../steps.html">Steps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality_control.html">Quality Control</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Variable processing</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_POSITION.html">Position and Time Processing</a></li>
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_PRESSURE.html">Pressure Processing</a></li>
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_PROFILES.html">Profile Finding</a></li>
+
+
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_TEMP.html">Temperature Processing</a></li>
+
+
+
+<li class="toctree-l1 current active"><a aria-current="page" class="current reference internal" href="#">Salinity Adjustment</a></li>
+
+
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_DERIVED.html">Derived CTD Variables</a></li>
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_MLD.html">Mixed Layer Depth</a></li>
+
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_DOXY.html">Oxygen Processing: Aanderaa Optodes</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_PAR.html">PAR Processing</a></li>
+
+
+
+
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_CHLA.html">Chlorophyll-<em>a</em> Processing</a></li>
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_BBP.html">Particulate Backscattering (b<sub>bp</sub>) Processing</a></li>
+
+
+
+
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_CROSSCAL.html">Cross-Calibration</a></li>
+
+
+
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-house"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../user_guide.html" class="nav-link">User Guide</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Salinity Adjustment</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="salinity-adjustment">
+<h1>Salinity Adjustment<a class="headerlink" href="#salinity-adjustment" title="Link to this heading">#</a></h1>
+<a class="reference internal image-reference" href="../_images/salinity_section.png"><img alt="Practical salinity against pressure and time for the demo deployment" src="../_images/salinity_section.png" style="width: 100%;" />
+</a>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">#</a></h2>
+<p>Practical salinity is not measured directly by a glider CTD; it is derived from conductivity (CNDC), in-situ temperature (TEMP) and pressure (PRES) using the practical salinity equation. Because conductivity and temperature are measured by physically separate sensors with different response times, and because the conductivity cell itself stores and releases heat, the raw CNDC/TEMP pair is not perfectly synchronised in time or thermally equilibrated. Left uncorrected, this produces characteristic salinity spiking at sharp temperature/conductivity gradients (e.g. at the thermocline) that is a sensor artefact rather than real water-mass structure. Note that this correction should be applied to pumped CTDs; umpuped CTDs still need to be included in the processing.</p>
+<p>pelagos-py addresses this with the <code class="docutils literal notranslate"><span class="pre">Salinity</span> <span class="pre">Adjustment</span></code> step (<code class="docutils literal notranslate"><span class="pre">AdjustSalinity</span></code>), which applies two sequential corrections directly to the raw sensor records, ahead of practical salinity being derived:</p>
+<ol class="arabic simple">
+<li><p><strong>Conductivity–temperature lag (C–T lag) correction</strong> — <code class="docutils literal notranslate"><span class="pre">correct_ct_lag()</span></code> — estimates the optimal time shift needed to align the conductivity record with the temperature record, following the profile-based lag-search method of Woo (2019), and applies a single dataset-wide median shift to <code class="docutils literal notranslate"><span class="pre">CNDC</span></code>.</p></li>
+<li><p><strong>Thermal-mass (thermal lag) correction</strong> — <code class="docutils literal notranslate"><span class="pre">correct_thermal_lag()</span></code> — reconstructs the in-cell water temperature using the fixed-coefficient recursive filter of Morison et al. (1994), correcting <code class="docutils literal notranslate"><span class="pre">TEMP</span></code> for the conductivity cell’s own thermal inertia.</p></li>
+</ol>
+<p>Both corrections are applied to working copies of <code class="docutils literal notranslate"><span class="pre">CNDC</span></code> and <code class="docutils literal notranslate"><span class="pre">TEMP</span></code>, and practical salinity is derived from the corrected pair and written to <code class="docutils literal notranslate"><span class="pre">PSAL_ADJUSTED</span></code>. The dataset’s <code class="docutils literal notranslate"><span class="pre">CNDC</span></code> and <code class="docutils literal notranslate"><span class="pre">TEMP</span></code> are left unchanged. Derive CTD does not overwrite an existing <code class="docutils literal notranslate"><span class="pre">PSAL_ADJUSTED</span></code>, so this step is normally run early in the pipeline, before the other salinity-dependent derivations and any subsequent QC on salinity.</p>
+<p>This document focuses on the two correction methods themselves — their physical rationale, the exact algorithm implemented, and implementation details/limitations that a user should be aware of before applying them to a new deployment or platform.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section class="tex2jax_ignore mathjax_ignore" id="conductivitytemperature-ct-lag-correction">
+<h1>1. Conductivity–Temperature (C–T) Lag Correction<a class="headerlink" href="#conductivitytemperature-ct-lag-correction" title="Link to this heading">#</a></h1>
+<section id="physical-basis">
+<h2>1.1 Physical basis<a class="headerlink" href="#physical-basis" title="Link to this heading">#</a></h2>
+<p>CNDC and TEMP are sampled by separate sensor elements with different response times. At a sharp vertical gradient this time mismatch means the CNDC value used to compute salinity at a given instant corresponds to slightly different water than the simultaneously-recorded TEMP value, producing spurious salinity spikes that track the gradient rather than any real feature.</p>
+<p><code class="docutils literal notranslate"><span class="pre">correct_ct_lag()</span></code> corrects this by shifting the conductivity time series relative to temperature/pressure by a fixed number of seconds, chosen to minimise the spikiness of the resulting salinity record. The underlying assumption is that the <em>correctly</em> time-aligned CNDC/TEMP pair produces the smoothest plausible salinity profile; spikiness is used as a proxy for misalignment, following the method described by Woo (2019).</p>
+</section>
+<section id="algorithm-as-implemented">
+<h2>1.2 Algorithm as implemented<a class="headerlink" href="#algorithm-as-implemented" title="Link to this heading">#</a></h2>
+<p>For each unique <code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER</span></code> in the dataset:</p>
+<ol class="arabic simple">
+<li><p><strong>Qualification.</strong> A profile is only used to estimate a lag if it spans more than one hour and contains more than <code class="docutils literal notranslate"><span class="pre">3</span> <span class="pre">×</span> <span class="pre">filter_window_size</span></code> samples.</p></li>
+<li><p><strong>Sampling.</strong> Profile numbers are visited in a random order, and processing stops once <strong>100 qualifying profiles</strong> have been processed, regardless of how many qualify in total. For deployments with more than 100 qualifying profiles, this means only a random subset actually informs the lag estimate.</p></li>
+<li><p><strong>Per-profile masking.</strong> Within the sampled profile, <code class="docutils literal notranslate"><span class="pre">CNDC</span></code>, <code class="docutils literal notranslate"><span class="pre">TEMP</span></code> and <code class="docutils literal notranslate"><span class="pre">PRES</span></code> are set to <code class="docutils literal notranslate"><span class="pre">NaN</span></code> wherever any of the three carries a QC flag in <code class="docutils literal notranslate"><span class="pre">calculation_flag_filter</span></code> (default: probably bad <code class="docutils literal notranslate"><span class="pre">3</span></code>, bad <code class="docutils literal notranslate"><span class="pre">4</span></code>, missing <code class="docutils literal notranslate"><span class="pre">9</span></code>) — i.e. a sample flagged on <em>any</em> of the three inputs is excluded from <em>all three</em> for this step.</p></li>
+<li><p><strong>Optimal lag search</strong> (<code class="docutils literal notranslate"><span class="pre">compute_optimal_lag</span></code>), for each qualifying profile:</p>
+<ul class="simple">
+<li><p>Conductivity is scaled to the units <code class="docutils literal notranslate"><span class="pre">gsw</span></code> expects (mS/cm), inferred from the <code class="docutils literal notranslate"><span class="pre">CNDC</span></code> variable’s <code class="docutils literal notranslate"><span class="pre">units</span></code> attribute (assumed S/m if unset).</p></li>
+<li><p>A linear interpolant of <code class="docutils literal notranslate"><span class="pre">CNDC</span></code> against elapsed time is built (this interpolant returns <code class="docutils literal notranslate"><span class="pre">NaN</span></code> outside the profile’s own time range).</p></li>
+<li><p>41 trial lags are evaluated, evenly spaced from <strong>−2.0 s to +2.0 s in 0.1 s steps</strong>. For each trial lag, conductivity is resampled at <code class="docutils literal notranslate"><span class="pre">elapsed_time</span> <span class="pre">+</span> <span class="pre">lag</span></code>, practical salinity is computed via <code class="docutils literal notranslate"><span class="pre">gsw.conversions.SP_from_C</span></code>, and a symmetric NaN-aware running-mean of that salinity is computed with window <code class="docutils literal notranslate"><span class="pre">filter_window_size</span></code> (must be odd; see §1.4).</p></li>
+<li><p>The “cost” of a trial lag is <code class="docutils literal notranslate"><span class="pre">std(PSAL</span> <span class="pre">−</span> <span class="pre">running_mean(PSAL))</span></code> — i.e. how much high-frequency spikiness remains after smoothing. The lag with the <strong>lowest</strong> cost is taken as that profile’s optimal lag.</p></li>
+<li><p>If <code class="docutils literal notranslate"><span class="pre">diagnostics:</span> <span class="pre">true</span></code>, the trial-lag cost curve and the raw/smoothed residuals for both the best lag and zero lag are captured <strong>once</strong>, for the first qualifying profile processed — not for every profile.</p></li>
+</ul>
+</li>
+<li><p><strong>Aggregation.</strong> The per-profile optimal lags (up to 100 values) are collected, and <code class="docutils literal notranslate"><span class="pre">self.ct_lag_median</span></code> is set to their <strong>median</strong>. If no profile qualifies, the median defaults to <code class="docutils literal notranslate"><span class="pre">0.0</span></code> (i.e. no shift is applied).</p></li>
+<li><p><strong>Applying the correction — dataset-wide, not per profile.</strong> A single interpolant of <code class="docutils literal notranslate"><span class="pre">CNDC</span></code> against elapsed time is built from the <em>entire</em> dataset (using only samples where both <code class="docutils literal notranslate"><span class="pre">CNDC</span></code> and the time column are non-null), anchored only at samples that are individually unflagged (<code class="docutils literal notranslate"><span class="pre">calculation_mask([&quot;CNDC&quot;])</span></code>; at least 2 such anchors are required, otherwise the correction is skipped entirely with a logged message). The working copy of <code class="docutils literal notranslate"><span class="pre">CNDC</span></code> at every valid-time sample — flagged or not — is then replaced by this interpolant evaluated at <code class="docutils literal notranslate"><span class="pre">elapsed_time</span> <span class="pre">+</span> <span class="pre">ct_lag_median</span></code>. The same single median lag is therefore applied uniformly across the whole time series, even though it was estimated from a sample of individual profiles.</p></li>
+</ol>
+</section>
+<section id="figures">
+<h2>1.3 Figures<a class="headerlink" href="#figures" title="Link to this heading">#</a></h2>
+<figure class="align-default" id="id6">
+<a class="reference internal image-reference" href="../_images/salinity_lag_search.png"><img alt="C-T lag search cost curve for one profile" src="../_images/salinity_lag_search.png" style="width: 90%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">C–T lag search for one profile: salinity spikiness, std(PSAL − running mean), for each trial lag from −2 to +2 s. The dashed line marks the lag with the lowest cost.</span><a class="headerlink" href="#id6" title="Link to this image">#</a></p>
+</figcaption>
+</figure>
+<figure class="align-default" id="id7">
+<a class="reference internal image-reference" href="../_images/salinity_lag_per_profile.png"><img alt="Optimal C-T lag for each sampled profile" src="../_images/salinity_lag_per_profile.png" style="width: 90%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Optimal C–T lag for each sampled profile (up to 100). The dashed line is the median lag, which is applied to the whole dataset.</span><a class="headerlink" href="#id7" title="Link to this image">#</a></p>
+</figcaption>
+</figure>
+</section>
+<section id="default-configuration">
+<h2>1.4 Default configuration<a class="headerlink" href="#default-configuration" title="Link to this heading">#</a></h2>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Salinity Adjustment</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">filter_window_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">21</span>
+<span class="w">    </span><span class="nt">diagnostics</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">filter_window_size</span></code> (default <code class="docutils literal notranslate"><span class="pre">21</span></code>, must be odd) controls only the running-mean smoothing window used inside the <em>lag search</em> (§1.2, step 4); it does not affect the thermal-mass correction (§2).</p>
+</section>
+<section id="implementation-notes-and-known-limitations">
+<h2>1.5 Implementation notes and known limitations<a class="headerlink" href="#implementation-notes-and-known-limitations" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><strong>Required inputs</strong>: <code class="docutils literal notranslate"><span class="pre">TIME</span></code> (or <code class="docutils literal notranslate"><span class="pre">TIME_CTD</span></code> if present — see §1.5), <code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER</span></code>, <code class="docutils literal notranslate"><span class="pre">CNDC</span></code>, <code class="docutils literal notranslate"><span class="pre">TEMP</span></code>, <code class="docutils literal notranslate"><span class="pre">PRES</span></code>. <code class="docutils literal notranslate"><span class="pre">PROFILE_DIRECTION</span></code> and <code class="docutils literal notranslate"><span class="pre">DEPTH</span></code> are optional and are only used to build the diagnostics QC mask, not the correction itself.</p></li>
+<li><p><strong>Flags inform the estimate but do not stop the correction.</strong> As with the thermal-mass step, samples flagged <code class="docutils literal notranslate"><span class="pre">3</span></code>/<code class="docutils literal notranslate"><span class="pre">4</span></code>/<code class="docutils literal notranslate"><span class="pre">9</span></code> are excluded from the lag search and from anchoring the correction interpolant, but the shift is still evaluated and applied at every valid-time sample, flagged or not.</p></li>
+</ul>
+</section>
+<section id="time-ctd-fallback">
+<h2>1.6 <code class="docutils literal notranslate"><span class="pre">TIME_CTD</span></code> fallback<a class="headerlink" href="#time-ctd-fallback" title="Link to this heading">#</a></h2>
+<p>If a <code class="docutils literal notranslate"><span class="pre">TIME_CTD</span></code> variable is present, it is used in preference to <code class="docutils literal notranslate"><span class="pre">TIME</span></code> throughout both corrections; otherwise the step falls back to <code class="docutils literal notranslate"><span class="pre">TIME</span></code> and logs that it has done so.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section class="tex2jax_ignore mathjax_ignore" id="thermal-mass-thermal-lag-correction">
+<h1>2. Thermal-Mass (Thermal Lag) Correction<a class="headerlink" href="#thermal-mass-thermal-lag-correction" title="Link to this heading">#</a></h1>
+<section id="id1">
+<h2>2.1 Physical basis<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
+<p>The conductivity cell itself has thermal mass: it absorbs and releases heat as the glider moves through water of changing temperature, so the water temperature <em>inside the cell</em> briefly lags the ambient temperature recorded by the separate temperature sensor. This is a distinct error from the C–T timing lag corrected in §1 — it is a thermal equilibration effect, not a sensor-response timing offset — and it likewise manifests as salinity spiking correlated with the rate of temperature change, particularly across strong thermoclines.</p>
+<p><code class="docutils literal notranslate"><span class="pre">correct_thermal_lag()</span></code> corrects this using the recursive digital filter of Morison et al. (1994) (their eq. 5), which reconstructs the in-cell temperature from the ambient temperature record and a pair of fixed empirical coefficients (<code class="docutils literal notranslate"><span class="pre">alpha</span></code>, <code class="docutils literal notranslate"><span class="pre">tau</span></code>) that describe the amplitude and time constant of the thermal error for a given flow rate through the cell.</p>
+</section>
+<section id="id2">
+<h2>2.2 Algorithm as implemented<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
+<p>For each unique <code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER</span></code>, independently:</p>
+<ol class="arabic simple">
+<li><p><strong>Extraction and gap handling.</strong> The profile’s <code class="docutils literal notranslate"><span class="pre">TEMP</span></code>/<code class="docutils literal notranslate"><span class="pre">PRES</span></code>/time columns are sliced out and rows with <code class="docutils literal notranslate"><span class="pre">NaN</span></code> <code class="docutils literal notranslate"><span class="pre">TEMP</span></code> are dropped, retaining a mapping back to their original indices in the full dataset. Profiles with fewer than 5 remaining timestamped <code class="docutils literal notranslate"><span class="pre">TEMP</span></code> samples are skipped (left uncorrected).</p></li>
+<li><p><strong>Usable-sample check.</strong> Of the retained samples, at least 2 must be individually unflagged (<code class="docutils literal notranslate"><span class="pre">calculation_mask([&quot;TEMP&quot;])</span></code>); otherwise the profile is skipped. These unflagged samples alone anchor the interpolant built in the next step, though — as in §1 — the correction is still computed and applied at flagged samples within the profile.</p></li>
+<li><p><strong>Interpolation and 1 Hz resampling.</strong> A linear interpolant of <code class="docutils literal notranslate"><span class="pre">TEMP</span></code> against elapsed time is built from the unflagged anchors, this time with <strong><code class="docutils literal notranslate"><span class="pre">fill_value=&quot;extrapolate&quot;</span></code></strong> (unlike the C–T lag interpolants in §1, which return <code class="docutils literal notranslate"><span class="pre">NaN</span></code> outside their domain). <code class="docutils literal notranslate"><span class="pre">TEMP</span></code> is then resampled onto a regular <strong>1 Hz</strong> elapsed-time grid spanning the profile; profiles yielding fewer than 2 such 1 Hz samples are skipped.</p></li>
+<li><p><strong>Recursive filter.</strong> Using fixed Morison et al. (1994) coefficients,
+$<span class="math notranslate nohighlight">\(
+\tau = \tau_{\text{offset}} + \frac{\tau_{\text{slope}}}{\sqrt{U}}, \qquad
+\alpha = \alpha_{\text{offset}} + \frac{\alpha_{\text{slope}}}{U},
+\)</span><span class="math notranslate nohighlight">\(
+with \)</span>\alpha_{\text{offset}}=0.0135<span class="math notranslate nohighlight">\(, \)</span>\alpha_{\text{slope}}=0.0264<span class="math notranslate nohighlight">\(, \)</span>\tau_{\text{offset}}=7.1499\ \text{s}<span class="math notranslate nohighlight">\(, \)</span>\tau_{\text{slope}}=2.7858<span class="math notranslate nohighlight">\(, and a fixed flow rate \)</span>U = 0.4867<span class="math notranslate nohighlight">\( (from Woo, 2019), the filter coefficients for 1 Hz sampling (Nyquist frequency \)</span>f_N = 0.5<span class="math notranslate nohighlight">\( Hz) are
+\)</span><span class="math notranslate nohighlight">\(
+a = \frac{4 f_N \alpha \tau}{1 + 4 f_N \tau}, \qquad b = 1 - \frac{2a}{\alpha}.
+\)</span><span class="math notranslate nohighlight">\(
+The thermal-mass temperature error is then reconstructed recursively over the 1 Hz series,
+\)</span><span class="math notranslate nohighlight">\(
+\Delta T_i = -b\,\Delta T_{i-1} + a\left(T_i - T_{i-1}\right), \qquad \Delta T_0 = 0,
+\)</span><span class="math notranslate nohighlight">\(
+and the corrected in-cell temperature is \)</span>T_i^{\text{corr}} = T_i - \Delta T_i<span class="math notranslate nohighlight">\(. Because the recursion is reset to \)</span>\Delta T_0 = 0$ at the start of every profile, there is a brief filter warm-up transient at the beginning of each profile during which the correction has not yet converged; the filter carries no memory across profile boundaries.</p></li>
+<li><p><strong>Resampling back.</strong> The corrected 1 Hz series is linearly interpolated (again with <code class="docutils literal notranslate"><span class="pre">fill_value=&quot;extrapolate&quot;</span></code>) back onto the profile’s original (non-1 Hz) sample times, and written into the corrected-temperature array at the original indices identified in step 1.</p></li>
+<li><p><strong>Diagnostics sampling.</strong> If <code class="docutils literal notranslate"><span class="pre">diagnostics:</span> <span class="pre">true</span></code>, the <span class="math notranslate nohighlight">\(dT/dt\)</span> vs. correction-amplitude scatter data is captured once, for the first profile encountered that both spans at least one hour (3600 s) and has a temperature range of at least 1.0 °C over the profile — used to visually verify that larger corrections track faster temperature changes.</p></li>
+</ol>
+<p>After all profiles are processed, the working copy of <code class="docutils literal notranslate"><span class="pre">TEMP</span></code> is updated: samples for which a corrected value was produced replace the original; samples that were skipped at any of steps 1–3 (too few points, too few usable anchors, or the profile did not otherwise qualify) retain their original, uncorrected value rather than being flagged or set to <code class="docutils literal notranslate"><span class="pre">NaN</span></code>.</p>
+</section>
+<section id="id3">
+<h2>2.3 Figures<a class="headerlink" href="#id3" title="Link to this heading">#</a></h2>
+<figure class="align-default" id="id8">
+<a class="reference internal image-reference" href="../_images/salinity_thermal_mass.png"><img alt="Thermal-mass correction against the rate of temperature change" src="../_images/salinity_thermal_mass.png" style="width: 90%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Thermal-mass correction against the rate of temperature change, dT/dt, for one profile. Corrections grow with dT/dt, so the filter acts mainly at sharp gradients.</span><a class="headerlink" href="#id8" title="Link to this image">#</a></p>
+</figcaption>
+</figure>
+<figure class="align-default" id="id9">
+<a class="reference internal image-reference" href="../_images/salinity_profiles.png"><img alt="Salinity profiles before and after adjustment" src="../_images/salinity_profiles.png" style="width: 90%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Practical salinity for about 20 mid-deployment profiles before (left) and after (right) QC and both corrections, with down- and upcasts in different colours. After correction the two should agree more closely; on the demo deployment the change is small (median 0.0002).</span><a class="headerlink" href="#id9" title="Link to this image">#</a></p>
+</figcaption>
+</figure>
+</section>
+<section id="id4">
+<h2>2.4 Default configuration<a class="headerlink" href="#id4" title="Link to this heading">#</a></h2>
+<p>The thermal-mass correction has <strong>no independent parameters of its own</strong> — all of <code class="docutils literal notranslate"><span class="pre">alpha_offset</span></code>, <code class="docutils literal notranslate"><span class="pre">alpha_slope</span></code>, <code class="docutils literal notranslate"><span class="pre">tau_offset</span></code>, <code class="docutils literal notranslate"><span class="pre">tau_slope</span></code> and the flow rate <code class="docutils literal notranslate"><span class="pre">U</span> <span class="pre">=</span> <span class="pre">0.4867</span></code> are hard-coded constants in <code class="docutils literal notranslate"><span class="pre">correct_thermal_lag()</span></code>. The only user-facing parameter for the whole <code class="docutils literal notranslate"><span class="pre">Salinity</span> <span class="pre">Adjustment</span></code> step is <code class="docutils literal notranslate"><span class="pre">filter_window_size</span></code> (§1.3), which affects the C–T lag search only.</p>
+</section>
+<section id="id5">
+<h2>2.5 Implementation notes and known limitations<a class="headerlink" href="#id5" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>The coefficients are used exactly as published by Morison et al. (1994) and are <strong>not re-optimised in T/S space</strong> for the specific platform or deployment (contrast with the approach of Garau et al., 2011, which re-tunes thermal-lag coefficients against measured T/S structure); they are treated as fixed physical constants of the recursive filter, not as fitted parameters.</p></li>
+<li><p>The correction operates entirely per-profile: it resamples to 1 Hz, filters, and resamples back within each profile independently, so the filter’s memory does not carry across profile boundaries (see step 4 above).</p></li>
+</ul>
+<blockquote>
+<div><p><strong>Note</strong></p>
+<p>The flow rate <code class="docutils literal notranslate"><span class="pre">U</span> <span class="pre">=</span> <span class="pre">0.4867</span></code> is a single fixed constant applied to every sample of every profile in the dataset. Unpumped CTDs would need the flow rate derived from the glider’s velocity through the water, which is not implemented yet: no per-profile or per-sample flow rate derived from glider speed, <code class="docutils literal notranslate"><span class="pre">PROFILE_DIRECTION</span></code>, or <code class="docutils literal notranslate"><span class="pre">DEPTH</span></code> change is computed or used. Users of an unpumped sensor, or on a platform with substantially variable flow speed, should treat the fixed-<code class="docutils literal notranslate"><span class="pre">U</span></code> assumption as a simplification rather than a flow-rate-adaptive correction.</p>
+</div></blockquote>
+</section>
+</section>
+<hr class="docutils" />
+<section class="tex2jax_ignore mathjax_ignore" id="outputs">
+<h1>3. Outputs<a class="headerlink" href="#outputs" title="Link to this heading">#</a></h1>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Variable</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">PSAL_ADJUSTED</span></code></p></td>
+<td><p>Practical salinity derived from conductivity time-shifted by the dataset-wide median C–T lag (§1) and temperature corrected for conductivity-cell thermal-mass error with the Morison et al. (1994) recursive filter (§2).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CNDC</span></code>, <code class="docutils literal notranslate"><span class="pre">TEMP</span></code>, <code class="docutils literal notranslate"><span class="pre">PRES</span></code></p></td>
+<td><p>Read as inputs; never modified.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Downstream steps read <code class="docutils literal notranslate"><span class="pre">PSAL_ADJUSTED</span></code>, so absolute salinity, density and other salinity-dependent variables use the corrected salinity.</p>
+</section>
+<hr class="docutils" />
+<section class="tex2jax_ignore mathjax_ignore" id="recommended-reporting">
+<h1>4. Recommended reporting<a class="headerlink" href="#recommended-reporting" title="Link to this heading">#</a></h1>
+<p>A scientific methods section describing salinity adjustment with pelagos-py should report:</p>
+<ul class="simple">
+<li><p>that a conductivity–temperature (C–T) lag correction was applied, the method used to estimate it (profile-based minimisation of post-smoothing salinity spikiness, following Woo, 2019), and — since the applied correction is a single dataset-wide shift — the resulting median lag value;</p></li>
+<li><p>that a thermal-mass (thermal lag) correction was applied using the fixed-coefficient recursive filter of Morison et al. (1994), stating explicitly whether the CTD/pumping configuration is pumped or unpumped and confirming this matches the flow-rate assumption used, given the discrepancy noted in §2.4;</p></li>
+<li><p>which QC flags were used to exclude samples from informing (but not from receiving) both corrections.</p></li>
+</ul>
+<p>An example methods description is given below.</p>
+<blockquote>
+<div><p>Conductivity was time-aligned to temperature using a profile-based lag-search method (Woo, 2019), in which a smoothed (21-point running-mean) practical salinity record was computed for each of a sample of qualifying profiles across 41 trial lags spanning −2.0 to +2.0 s, and the lag minimising residual spikiness selected per profile. The median optimal lag across sampled profiles was applied as a single time shift to the conductivity record for the whole deployment.</p>
+<p>Temperature was subsequently corrected for conductivity-cell thermal-mass error using the recursive filter of Morison et al. (1994), applied per profile with fixed coefficients (not re-optimised for this deployment) and a flow rate of 0.487 following Woo (2019). Samples flagged probably bad, bad, or missing did not inform either correction but were themselves corrected using the surrounding unflagged data.</p>
+</div></blockquote>
+</section>
+<hr class="docutils" />
+<section class="tex2jax_ignore mathjax_ignore" id="references">
+<h1>References<a class="headerlink" href="#references" title="Link to this heading">#</a></h1>
+<ul class="simple">
+<li><p>Morison, J., Andersen, R., Larson, N., D’Asaro, E., &amp; Boyd, T. (1994). The correction for thermal-lag effects in Sea-Bird CTD data. <em>Journal of Atmospheric and Oceanic Technology</em>, <strong>11</strong>(4), 1151–1164.</p></li>
+<li><p>Garau, B., Ruiz, S., Zhang, W. G., Pascual, A., Heslop, E., Kerfoot, J., &amp; Tintoré, J. (2011). Thermal lag correction on Slocum CTD glider data. <em>Journal of Atmospheric and Oceanic Technology</em>, <strong>28</strong>(9), 1065–1071.</p></li>
+<li><p>Woo, L. M. (2019). <em>Delayed Mode QA/QC Best Practice Manual Version 2.0</em>. Integrated Marine Observing System. <a class="reference external" href="https://doi.org/10.26198/5c997b5fdc9bd">https://doi.org/10.26198/5c997b5fdc9bd</a></p></li>
+</ul>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal" tabindex="-1"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Salinity Adjustment</a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overview">Overview</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#conductivitytemperature-ct-lag-correction">1. Conductivity–Temperature (C–T) Lag Correction</a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#physical-basis">1.1 Physical basis</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#algorithm-as-implemented">1.2 Algorithm as implemented</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#figures">1.3 Figures</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#default-configuration">1.4 Default configuration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation-notes-and-known-limitations">1.5 Implementation notes and known limitations</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#time-ctd-fallback">1.6 <code class="docutils literal notranslate"><span class="pre">TIME_CTD</span></code> fallback</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#thermal-mass-thermal-lag-correction">2. Thermal-Mass (Thermal Lag) Correction</a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">2.1 Physical basis</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">2.2 Algorithm as implemented</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">2.3 Figures</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id4">2.4 Default configuration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id5">2.5 Implementation notes and known limitations</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#outputs">3. Outputs</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#recommended-reporting">4. Recommended reporting</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#references">References</a></li>
+</ul>
+
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, National Oceanography Centre.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.1.
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.24.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

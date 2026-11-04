@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+
+<html data-content_root="../" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="width=device-width, initial-scale=1" name="viewport"/>
+<meta content="2026-11-04T20:18:56+00:00" property="article:modified_time"/>
+<title>PAR Processing — pelagos-py</title>
+<script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+<!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+<noscript>
+<style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+</noscript>
+<!-- Loaded before other Sphinx assets -->
+<link href="../_static/styles/theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet"/>
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet"/>
+<link href="../_static/pygments.css?v=d75fae25" rel="stylesheet" type="text/css"/>
+<link href="../_static/copybutton.css?v=76b2166b" rel="stylesheet" type="text/css"/>
+<link href="../_static/graphviz.css?v=4ae1632d" rel="stylesheet" type="text/css"/>
+<link href="../_static/sphinx-codeautolink.css?v=b2176991" rel="stylesheet" type="text/css"/>
+<link href="../_static/sphinx-design.min.css?v=95c83b7e" rel="stylesheet" type="text/css"/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&amp;family=Ubuntu&amp;display=swap" rel="stylesheet" type="text/css"/>
+<link href="../_static/custom.css?v=a20de4af" rel="stylesheet" type="text/css"/>
+<!-- So that users can add custom icons -->
+<script defer="" src="../_static/scripts/fontawesome.js?digest=75c7c72ae941e8b558d8"></script>
+<!-- Pre-loaded scripts that we'll load fully later -->
+<link as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" rel="preload"/>
+<link as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" rel="preload"/>
+<script src="../_static/documentation_options.js?v=f9910351"></script>
+<script src="../_static/doctools.js?v=fd6eb6e6"></script>
+<script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+<script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+<script src="../_static/copybutton.js?v=df1a032d"></script>
+<script src="../_static/design-tabs.js?v=f930bc37"></script>
+<script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+<script>DOCUMENTATION_OPTIONS.pagename = 'user_guide/Pelagos-py_PAR';</script>
+<script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+<link href="https://noc-obg-autonomy.github.io/pelagos-py/user_guide/Pelagos-py_PAR.html" rel="canonical"/>
+<link href="../_static/NOC_logo.svg" rel="icon"/>
+<link href="../genindex.html" rel="index" title="Index"/>
+<link href="../search.html" rel="search" title="Search"/>
+<link href="Pelagos-py_CHLA.html" rel="next" title="Chlorophyll-a Processing"/>
+<link href="Pelagos-py_DOXY.html" rel="prev" title="Oxygen Processing: Aanderaa Optodes"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<meta content="light dark" name="color-scheme"/>
+<meta content="en" name="docsearch:language"/>
+<meta content="0.0" name="docsearch:version"/>
+<meta content="Nov 04, 2026" name="docbuild:last-update"/>
+<script src="../_static/searchtools.js"></script>
+<script src="../_static/language_data.js"></script>
+<script src="../searchindex.js"></script>
+</head>
+<body data-default-mode="">
+<div class="skip-link d-print-none" id="pst-skip-link"><a href="#main-content">Skip to main content</a></div>
+<div id="pst-scroll-pixel-helper"></div>
+<button class="btn rounded-pill" id="pst-back-to-top" type="button">
+<i class="fa-solid fa-arrow-up"></i>Back to top</button>
+<dialog id="pst-search-dialog">
+<form action="../search.html" class="bd-search d-flex align-items-center" method="get">
+<i class="fa-solid fa-magnifying-glass"></i>
+<input aria-label="Search the docs ..." autocapitalize="off" autocomplete="off" autocorrect="off" class="form-control" name="q" placeholder="Search the docs ..." spellcheck="false" type="search"/>
+<span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+</dialog>
+<div class="pst-async-banner-revealer d-none">
+<aside aria-label="Version warning" class="d-none d-print-none" id="bd-header-version-warning"></aside>
+</div>
+<header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none" id="pst-header">
+<div class="bd-header__inner bd-page-width">
+<button aria-controls="pst-primary-sidebar-modal" aria-expanded="false" aria-label="Site navigation" class="pst-navbar-icon sidebar-toggle primary-toggle" type="button">
+<span class="fa-solid fa-bars"></span>
+</button>
+<div class="col-lg-3 navbar-header-items__start">
+<div class="navbar-item">
+<a class="navbar-brand logo" href="../index.html">
+<svg aria-label="pelagos-py - Home" class="logo__image pelagos-logo" height="100" role="img" viewbox="0 0 420 100" width="420" xmlns="http://www.w3.org/2000/svg">
+<rect class="pl-frame" height="100" rx="2.3" width="100" x="0" y="0"></rect>
+<rect fill="#fff" height="27.5" width="91.7" x="4.15" y="4.15"></rect>
+<rect fill="#00b4ff" height="64.19" width="91.7" x="4.15" y="31.66"></rect>
+<text class="pl-title" lengthadjust="spacingAndGlyphs" textlength="300" x="117" y="64">PELAGOS-PY</text>
+<text class="pl-sub" lengthadjust="spacingAndGlyphs" textlength="300" x="117" y="93.2">National Oceanography Centre</text>
+</svg>
+</a></div>
+</div>
+<div class="col-lg-9 navbar-header-items">
+<div class="me-auto navbar-header-items__center">
+<div class="navbar-item">
+<nav>
+<ul class="bd-navbar-elements navbar-nav">
+<li class="nav-item">
+<a class="nav-link nav-internal" href="../getting_started.html">
+    Getting Started
+  </a>
+</li>
+<li class="nav-item current active">
+<a class="nav-link nav-internal" href="../user_guide.html">
+    User Guide
+  </a>
+</li>
+<li class="nav-item">
+<a class="nav-link nav-internal" href="../api_reference.html">
+    API Reference
+  </a>
+</li>
+<li class="nav-item">
+<a class="nav-link nav-internal" href="../development.html">
+    Development
+  </a>
+</li>
+</ul>
+</nav></div>
+</div>
+<div class="navbar-header-items__end">
+<div class="navbar-item navbar-persistent--container">
+<button aria-label="Search" class="btn search-button-field search-button__button pst-js-only" data-bs-placement="bottom" data-bs-toggle="tooltip" title="Search" type="button">
+<i class="fa-solid fa-magnifying-glass"></i>
+<span class="search-button__default-text">Search</span>
+<span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+</div>
+<div class="navbar-item">
+<div class="theme-switch-container dropdown pst-js-only" data-bs-placement="bottom" data-bs-toggle="tooltip" title="Color mode">
+<button aria-label="Color mode" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" data-bs-toggle="dropdown" type="button">
+<i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+<i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+<i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
+</button>
+<ul class="dropdown-menu dropdown-menu-end">
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto" type="button"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light" type="button"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark" type="button"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
+</ul>
+</div></div>
+<div class="navbar-item"><ul aria-label="Icon Links" class="navbar-icon-links">
+<li class="nav-item">
+<a class="nav-link pst-navbar-icon" data-bs-placement="bottom" data-bs-toggle="tooltip" href="https://github.com/NOC-OBG-Autonomy/pelagos-py" rel="noopener" target="_blank" title="GitHub"><i aria-hidden="true" class="fa-brands fa-github fa-lg"></i><span class="visually-hidden">GitHub</span></a>
+</li>
+</ul></div>
+</div>
+</div>
+<div class="navbar-persistent--mobile">
+<button aria-label="Search" class="btn search-button-field search-button__button pst-js-only" data-bs-placement="bottom" data-bs-toggle="tooltip" title="Search" type="button">
+<i class="fa-solid fa-magnifying-glass"></i>
+<span class="search-button__default-text">Search</span>
+<span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+</div>
+<button aria-controls="pst-secondary-sidebar-modal" aria-expanded="false" aria-label="On this page" class="pst-navbar-icon sidebar-toggle secondary-toggle" type="button">
+<span class="fa-solid fa-outdent"></span>
+</button>
+</div>
+</header>
+<div class="bd-container">
+<div class="bd-container__inner bd-page-width">
+<dialog id="pst-primary-sidebar-modal" tabindex="-1"></dialog>
+<div class="bd-sidebar-primary bd-sidebar" id="pst-primary-sidebar">
+<div class="sidebar-header-items sidebar-primary__section">
+<div class="sidebar-header-items__center">
+<div class="navbar-item">
+<nav>
+<ul class="bd-navbar-elements navbar-nav">
+<li class="nav-item">
+<a class="nav-link nav-internal" href="../getting_started.html">
+    Getting Started
+  </a>
+</li>
+<li class="nav-item current active">
+<a class="nav-link nav-internal" href="../user_guide.html">
+    User Guide
+  </a>
+</li>
+<li class="nav-item">
+<a class="nav-link nav-internal" href="../api_reference.html">
+    API Reference
+  </a>
+</li>
+<li class="nav-item">
+<a class="nav-link nav-internal" href="../development.html">
+    Development
+  </a>
+</li>
+</ul>
+</nav></div>
+</div>
+<div class="sidebar-header-items__end">
+<div class="navbar-item">
+<div class="theme-switch-container dropdown pst-js-only" data-bs-placement="bottom" data-bs-toggle="tooltip" title="Color mode">
+<button aria-label="Color mode" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" data-bs-toggle="dropdown" type="button">
+<i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+<i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+<i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
+</button>
+<ul class="dropdown-menu dropdown-menu-end">
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto" type="button"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light" type="button"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark" type="button"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
+</ul>
+</div></div>
+<div class="navbar-item"><ul aria-label="Icon Links" class="navbar-icon-links">
+<li class="nav-item">
+<a class="nav-link pst-navbar-icon" data-bs-placement="bottom" data-bs-toggle="tooltip" href="https://github.com/NOC-OBG-Autonomy/pelagos-py" rel="noopener" target="_blank" title="GitHub"><i aria-hidden="true" class="fa-brands fa-github fa-lg"></i><span class="visually-hidden">GitHub</span></a>
+</li>
+</ul></div>
+</div>
+</div>
+<div class="sidebar-primary-items__start sidebar-primary__section">
+<div class="sidebar-primary-item pst-sidebar-collapse"><button aria-controls="pst-primary-sidebar" aria-expanded="true" id="pst-collapse-sidebar-button" type="button">
+<svg aria-hidden="true" class="pst-icon" focusable="false" role="img" viewbox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+<path d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z" fill="currentColor"></path>
+</svg>
+<span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+<span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+<div class="sidebar-primary-item">
+<nav aria-label="Section Navigation" class="bd-docs-nav bd-links">
+<p aria-level="1" class="bd-links__title" role="heading">Section Navigation</p>
+<div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../steps.html">Steps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality_control.html">Quality Control</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Variable processing</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_POSITION.html">Position and Time Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_PRESSURE.html">Pressure Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_PROFILES.html">Profile Finding</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_TEMP.html">Temperature Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_SALINITY.html">Salinity Adjustment</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_DERIVED.html">Derived CTD Variables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_MLD.html">Mixed Layer Depth</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_DOXY.html">Oxygen Processing: Aanderaa Optodes</a></li>
+<li class="toctree-l1 current active"><a aria-current="page" class="current reference internal" href="#">PAR Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_CHLA.html">Chlorophyll-<em>a</em> Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_BBP.html">Particulate Backscattering (b<sub>bp</sub>) Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_CROSSCAL.html">Cross-Calibration</a></li>
+</ul>
+</div>
+</nav></div>
+</div>
+<div class="sidebar-primary-items__end sidebar-primary__section">
+<div class="sidebar-primary-item">
+<div class="flat" data-ea-manual="true" data-ea-publisher="readthedocs" data-ea-type="readthedocs-sidebar" id="ethical-ad-placement">
+</div></div>
+</div>
+</div>
+<main class="bd-main" id="main-content" role="main">
+<div class="bd-content">
+<div class="bd-article-container">
+<div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+<div class="header-article-items__start">
+<div class="header-article-item">
+<nav aria-label="Breadcrumb" class="d-print-none">
+<ul class="bd-breadcrumbs">
+<li class="breadcrumb-item breadcrumb-home">
+<a aria-label="Home" class="nav-link" href="../index.html">
+<i class="fa-solid fa-house"></i>
+</a>
+</li>
+<li class="breadcrumb-item"><a class="nav-link" href="../user_guide.html">User Guide</a></li>
+<li aria-current="page" class="breadcrumb-item active"><span class="ellipsis">PAR Processing</span></li>
+</ul>
+</nav>
+</div>
+</div>
+</div>
+</div>
+<div id="searchbox"></div>
+<article class="bd-article">
+<section class="tex2jax_ignore mathjax_ignore" id="par-processing">
+<h1>PAR Processing<a class="headerlink" href="#par-processing" title="Link to this heading">#</a></h1>
+<a class="reference internal image-reference" href="../_images/par_section.png"><img alt="Downwelling PAR against pressure and time for the demo deployment" src="../_images/par_section.png" style="width: 100%;"/>
+</a>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">#</a></h2>
+<p>Photosynthetically active radiation (PAR) is downwelling irradiance in the 400–700 nm band, in µmol photons m⁻² s⁻¹, sampled continuously by the glider so that every dive and climb yields a vertical irradiance profile. The canonical variable name is <code class="docutils literal notranslate"><span class="pre">DOWNWELLING_PAR</span></code> (OG1 convention); it is configurable everywhere it is used.</p>
+<p>pelagos-py does not publish PAR as a product of its own. It quality controls PAR, then condenses it into two per-profile light depths that one downstream correction needs: the non-photochemical quenching (NPQ) correction in the chlorophyll-<em>a</em> fluorescence chain, which has to know how deep sunlight reaches on each cast. Everything else in the pipeline (CTD, oxygen, backscatter) is independent of PAR.</p>
+<p>pelagos-py handles PAR in three stages, each implemented by a different step:</p>
+<ol class="arabic simple">
+<li><p><strong>Quality control</strong>: <code class="docutils literal notranslate"><span class="pre">range</span> <span class="pre">qc</span></code>, <code class="docutils literal notranslate"><span class="pre">stuck</span> <span class="pre">value</span> <span class="pre">qc</span></code> and <code class="docutils literal notranslate"><span class="pre">PAR</span> <span class="pre">irregularity</span> <span class="pre">qc</span></code> run inside <code class="docutils literal notranslate"><span class="pre">Apply</span> <span class="pre">QC</span></code> steps and write Argo flags to <code class="docutils literal notranslate"><span class="pre">DOWNWELLING_PAR_QC</span></code> (§1).</p></li>
+<li><p><strong>Derived light depths</strong>: <code class="docutils literal notranslate"><span class="pre">Interpolate</span> <span class="pre">PAR</span></code> computes the euphotic depth <code class="docutils literal notranslate"><span class="pre">ZEU</span></code> and the isolume depth <code class="docutils literal notranslate"><span class="pre">Z_IPAR</span></code> per profile and gap-fills them in time (§2).</p></li>
+<li><p><strong>Consumption</strong>: <code class="docutils literal notranslate"><span class="pre">CHLA</span> <span class="pre">Quenching</span></code> is the only step in the pipeline that reads those light depths (§3).</p></li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>raw DOWNWELLING_PAR
+  └─ Stage 1  Quality control      → DOWNWELLING_PAR_QC (Argo flags 1/2/3/4/9)
+       range · stuck value · PAR irregularity
+  └─ Stage 2  Interpolate PAR      → ZEU, Z_IPAR (per-profile scalars, gap-filled in time)
+  └─ Stage 3  CHLA Quenching       the only consumer
+</pre></div>
+</div>
+<p>Order matters throughout. The sequence below is the one used in the default template (<code class="docutils literal notranslate"><span class="pre">src/pelagos_py/default_config.yaml</span></code>), which <code class="docutils literal notranslate"><span class="pre">Pipeline.make_config</span></code> adapts to each file; <code class="docutils literal notranslate"><span class="pre">examples/configs/all_step_configs.yaml</span></code> is the fully annotated reference config, listing every parameter of every step.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Load OG1</span><span class="w">            </span><span class="c1"># DOWNWELLING_PAR arrives from the OG1 file</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Format Checker</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Apply QC</span><span class="w">            </span><span class="c1"># value-only PAR tests: range, stuck value</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Find Profiles</span><span class="w">       </span><span class="c1"># required before anything per-profile</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Apply QC</span><span class="w">            </span><span class="c1"># PAR irregularity qc (needs PROFILE_NUMBER)</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Interpolate PAR</span><span class="w">     </span><span class="c1"># -&gt; ZEU, Z_IPAR</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Mixed Layer Depth</span><span class="w">   </span><span class="c1"># -&gt; MLD (needed alongside Z_IPAR)</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deep Correction</span><span class="w">     </span><span class="c1"># CHLA dark-offset correction</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CHLA Quenching</span><span class="w">      </span><span class="c1"># consumes ZEU / Z_IPAR / MLD / bbp</span>
+<span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Data Export</span>
+</pre></div>
+</div>
+<p>If your platform has no PAR (e.g. the ALR gliders, which carry no radiometer), <code class="docutils literal notranslate"><span class="pre">Pipeline.make_config</span></code> omits the PAR QC and <code class="docutils literal notranslate"><span class="pre">Interpolate</span> <span class="pre">PAR</span></code> steps and the quenching method is <code class="docutils literal notranslate"><span class="pre">thomalla2018</span></code> (or an MLD-based method), which needs no light input. Nothing else changes, because the pipeline is configuration-driven: removing PAR means deleting steps, not editing code.</p>
+<p><strong>Where things live</strong> (under <code class="docutils literal notranslate"><span class="pre">src/pelagos_py/steps/</span></code>): PAR shape QC <code class="docutils literal notranslate"><span class="pre">quality_control/par_irregularity_qc.py</span></code>; ZEU and <code class="docutils literal notranslate"><span class="pre">Z_IPAR</span></code> <code class="docutils literal notranslate"><span class="pre">processing/interpolate_par.py</span></code>; consumption <code class="docutils literal notranslate"><span class="pre">processing/chla_quenching.py</span></code>.</p>
+</section>
+</section>
+<hr class="docutils"/>
+<section class="tex2jax_ignore mathjax_ignore" id="par-quality-control">
+<h1>1. PAR Quality Control<a class="headerlink" href="#par-quality-control" title="Link to this heading">#</a></h1>
+<section id="physical-basis">
+<h2>1.1 Physical basis<a class="headerlink" href="#physical-basis" title="Link to this heading">#</a></h2>
+<p>A clean daytime irradiance profile has a characteristic vertical shape: an exponentially decaying lit region near the surface, a transition region, then a deep region of pure sensor noise. That shape is what the QC exploits. Sensor noise is approximately normally distributed and a real light signal is not, so the boundary between signal and noise can be found statistically, without knowing the water type in advance.</p>
+<p>Two consequences follow for the simpler value-based tests. First, small negative PAR values are expected rather than erroneous. On a typical mission more than half the PAR record is small and negative: night, and depth below the light field, where the sensor reads its own dark offset and noise. Second, only a physically impossible high value (clear-sky surface PAR peaks near 2000–2500 µmol m⁻² s⁻¹) or a large negative excursion represents a genuine sensor failure.</p>
+</section>
+<section id="algorithm-as-implemented">
+<h2>1.2 Algorithm as implemented<a class="headerlink" href="#algorithm-as-implemented" title="Link to this heading">#</a></h2>
+<p>PAR QC runs inside <code class="docutils literal notranslate"><span class="pre">Apply</span> <span class="pre">QC</span></code> steps like every other test. Flags follow the Argo convention (1 good, 2 probably good, 3 probably bad, 4 bad, 9 missing), and repeated <code class="docutils literal notranslate"><span class="pre">Apply</span> <span class="pre">QC</span></code> calls merge into the same <code class="docutils literal notranslate"><span class="pre">_QC</span></code> variable, most severe flag winning.</p>
+<p><strong>Range test.</strong> A value-only test flagging samples outside a configured interval, e.g. <code class="docutils literal notranslate"><span class="pre">range</span> <span class="pre">qc:</span> <span class="pre">variable_ranges:</span> <span class="pre">DOWNWELLING_PAR:</span> <span class="pre">{4:</span> <span class="pre">[-5,</span> <span class="pre">2500,</span> <span class="pre">outside]}</span></code>.</p>
+<p><strong>Stuck-value test.</strong> <code class="docutils literal notranslate"><span class="pre">stuck</span> <span class="pre">value</span> <span class="pre">qc:</span> <span class="pre">variables:</span> <span class="pre">{DOWNWELLING_PAR:</span> <span class="pre">5}</span></code> flags N identical consecutive readings. A radiometer returning the same number while the glider crosses a light gradient is dead or saturated. This is a hardware check rather than an optics check.</p>
+<p><strong>PAR irregularity test.</strong> <code class="docutils literal notranslate"><span class="pre">PAR</span> <span class="pre">irregularity</span> <span class="pre">qc</span></code> implements the real-time radiometric QC of La Forgia &amp; Organelli (2025), developed for BGC-Argo and applied here per glider profile. For each profile:</p>
+<ol class="arabic simple">
+<li><p><strong>Screening.</strong> Missing → 9; below the negative of the noise-equivalent irradiance (NEI) → 3; below 0 or above 2500 → 4.</p></li>
+<li><p><strong>Day or night</strong> is determined from the solar elevation angle, computed from the profile’s latitude, longitude and timestamp (elevation &gt; 0° = day).</p></li>
+<li><p><strong>Regularisation</strong> onto a 0.1 dbar pressure grid (coarsened automatically for very long or deep profiles), so irregular glider sampling does not bias the statistics.</p></li>
+<li><p><strong>Shapiro–Wilk sweep.</strong> Walking down the profile, a normality test is applied to the remaining tail. While the tail still contains real light structure the test rejects normality (p ≈ 0); once the tail is pure noise it stops rejecting. The deepest depth at which normality is still rejected is <strong>P_A</strong>, the lit/transition boundary.</p></li>
+<li><p><strong>Daytime verdict.</strong> Above P_A → 1. Below P_A a 4th-order polynomial is fitted; its first relative minimum, <strong>P_C</strong>, marks where the profile stops decaying and starts being noise. Between P_A and P_C → 2; below P_C → 3.</p></li>
+<li><p><strong>Nighttime verdict.</strong> A night profile should be normal everywhere (noise only); if it is, the whole profile is flagged 2. If not, mean PAR above and below P_A are compared: a brighter upper layer is plausible residual twilight or moonlight (2), the reverse is unphysical (3).</p></li>
+<li><p><strong>Profile-level summary flag</strong> is derived from the mix of point flags.</p></li>
+</ol>
+</section>
+<section id="default-configuration">
+<h2>1.3 Default configuration<a class="headerlink" href="#default-configuration" title="Link to this heading">#</a></h2>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">range qc</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">variable_ranges</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">DOWNWELLING_PAR</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">4</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">-5</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">2500</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">outside</span><span class="p p-Indicator">]}</span>
+
+<span class="nt">stuck value qc</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">variables</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">DOWNWELLING_PAR</span><span class="p">:</span><span class="w"> </span><span class="nv">5</span><span class="p p-Indicator">}</span>
+
+<span class="nt">PAR irregularity qc</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">noise_equivalent_estimate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3e-2</span><span class="w">   </span><span class="c1"># NEI, µmol m⁻² s⁻¹ (Jutard et al. 2021 default)</span>
+<span class="w">  </span><span class="nt">plot_profiles</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">100</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">200</span><span class="p p-Indicator">]</span><span class="w">         </span><span class="c1"># profile numbers to draw in diagnostics</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">noise_equivalent_estimate</span></code> is the sensor’s noise floor, a property of the instrument and not of the water. Use a manufacturer NEI if you have one; otherwise the BGC-Argo default of 3 × 10⁻² is reasonable.</p>
+<p>With <code class="docutils literal notranslate"><span class="pre">diagnostics:</span> <span class="pre">true</span></code>, <code class="docutils literal notranslate"><span class="pre">plot_profiles</span></code> draws those profiles against pressure coloured by flag, which is the quickest way to check that P_A and P_C land where your eye would put them.</p>
+</section>
+<section id="implementation-notes-and-known-limitations">
+<h2>1.4 Implementation notes and known limitations<a class="headerlink" href="#implementation-notes-and-known-limitations" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><strong>Required inputs</strong>: <code class="docutils literal notranslate"><span class="pre">DOWNWELLING_PAR</span></code>, plus each profile’s latitude, longitude and timestamp for the solar elevation calculation, and <code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER</span></code> for the irregularity test. Solar-elevation calculations use <code class="docutils literal notranslate"><span class="pre">pvlib</span></code>, following Ryan-Keogh.</p></li>
+<li><p><strong>Ordering.</strong> The irregularity test needs <code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER</span></code>, so its <code class="docutils literal notranslate"><span class="pre">Apply</span> <span class="pre">QC</span></code> step must sit after <code class="docutils literal notranslate"><span class="pre">Find</span> <span class="pre">Profiles</span></code>. The value-only tests can run earlier, so the PAR chain normally uses two separate <code class="docutils literal notranslate"><span class="pre">Apply</span> <span class="pre">QC</span></code> calls. That is fine: <code class="docutils literal notranslate"><span class="pre">Apply</span> <span class="pre">QC</span></code> may be invoked as often as you like.</p></li>
+<li><p><strong>The irregularity test is per-profile and self-calibrating</strong>; it needs no prior knowledge of water type, but it does need the profile to be long enough for the Shapiro–Wilk sweep to reach a noise-only tail.</p></li>
+</ul>
+<blockquote>
+<div><p><strong>Note</strong></p>
+<p>The most common mistake in configuring PAR QC is a range-test lower bound near zero. Negative PAR is real data: it is night, and depth below the light field. Flagging it away breaks the night-referenced quenching methods in §3, which build their reference from nighttime profiles, and nothing downstream reports the loss.</p>
+</div></blockquote>
+</section>
+</section>
+<hr class="docutils"/>
+<section class="tex2jax_ignore mathjax_ignore" id="derived-light-depths-interpolate-par">
+<h1>2. Derived Light Depths (<code class="docutils literal notranslate"><span class="pre">Interpolate</span> <span class="pre">PAR</span></code>)<a class="headerlink" href="#derived-light-depths-interpolate-par" title="Link to this heading">#</a></h1>
+<section id="id1">
+<h2>2.1 Physical basis<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
+<p>Despite the name, this step does not interpolate the PAR field. It derives two per-profile scalars from PAR and interpolates <em>those</em> in time; §2.5 explains why the scalars are what get filled.</p>
+<p><strong><code class="docutils literal notranslate"><span class="pre">ZEU</span></code>, the euphotic depth</strong>, is the 1% surface-light level, the conventional base of the euphotic zone. PAR is assumed to decay exponentially with depth (Beer–Lambert), so the diffuse attenuation coefficient K_d can be recovered from a linear regression of log(PAR) against depth.</p>
+<p><strong><code class="docutils literal notranslate"><span class="pre">Z_IPAR</span></code>, the isolume depth</strong>, is the depth at which downwelling PAR crosses a chosen level, by default 15 µmol m⁻² s⁻¹. Physically an isolume is a surface of constant light; iPAR = 15 is used in the NPQ literature as the depth above which photo-physiological quenching is meaningfully active. Comparing it to the mixed layer depth gives the <strong>mixing regime</strong>. When <code class="docutils literal notranslate"><span class="pre">Z_IPAR</span></code> ≤ MLD the mixed layer extends into the dark, so cells are circulated between lit and unlit depths faster than they can photo-acclimate (<em>deep mixing</em>). When <code class="docutils literal notranslate"><span class="pre">Z_IPAR</span></code> &gt; MLD light penetrates below the mixed layer and cells stay lit (<em>shallow mixing</em>), so quenching has a different vertical structure. That single comparison selects the branch of the Terrats et al. (2020) hybrid in §3.</p>
+</section>
+<section id="id2">
+<h2>2.2 Algorithm as implemented<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
+<p>For each unique <code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER</span></code> in the dataset:</p>
+<ol class="arabic simple">
+<li><p><strong>Sample filtering.</strong> Only usable samples feed either calculation: anything whose flag falls in <code class="docutils literal notranslate"><span class="pre">calculation_flag_filter</span></code> (default probably bad <code class="docutils literal notranslate"><span class="pre">3</span></code>, bad <code class="docutils literal notranslate"><span class="pre">4</span></code>, missing <code class="docutils literal notranslate"><span class="pre">9</span></code>) is excluded, so Stage 1 QC propagates directly into the quality of both scalars.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">ZEU</span></code> computation.</strong> log(PAR) is regressed linearly against depth; the slope gives K_d, and Z_eu = ln(100)/K_d ≈ 4.605/K_d. The fit is rejected, leaving <code class="docutils literal notranslate"><span class="pre">ZEU</span></code> as <code class="docutils literal notranslate"><span class="pre">NaN</span></code> for that profile, when there are fewer than 4 finite, strictly positive samples (not enough signal to fit a slope); when K_d &lt; 0.005 m⁻¹ (implausibly clear water); when K_d &gt; 1.0 m⁻¹ (implausibly turbid, or not a light profile at all); or when Z_eu &gt; 186 m (beyond the clear-water optical limit).</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">Z_IPAR</span></code> computation.</strong> Unlike <code class="docutils literal notranslate"><span class="pre">ZEU</span></code> this is not a fit: the crossing of <code class="docutils literal notranslate"><span class="pre">ipar_level</span></code> is read off the observed profile by interpolation, clamped at both ends. If the whole profile is brighter than the level the deepest sample is returned; if the whole profile is darker, 0 m.</p></li>
+<li><p><strong>Time interpolation onto PAR-less casts.</strong> <code class="docutils literal notranslate"><span class="pre">ZEU</span></code> and <code class="docutils literal notranslate"><span class="pre">Z_IPAR</span></code> are each linearly interpolated in time, against each profile’s median timestamp, onto the casts that carry no PAR. Outside the span bracketed by computed profiles the nearest computed value is held constant; with fewer than two computed profiles no interpolation is attempted.</p></li>
+<li><p><strong>Broadcast.</strong> Both scalars are positive-down metres, computed once per profile and broadcast across all measurements of that profile.</p></li>
+</ol>
+</section>
+<section id="id3">
+<h2>2.3 Default configuration<a class="headerlink" href="#id3" title="Link to this heading">#</a></h2>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Interpolate PAR</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">par_var</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DOWNWELLING_PAR</span><span class="w">   </span><span class="c1"># source variable</span>
+<span class="w">    </span><span class="nt">depth_variable</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DEPTH</span><span class="w">      </span><span class="c1"># metres, positive down</span>
+<span class="w">    </span><span class="nt">ipar_level</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15.0</span><span class="w">           </span><span class="c1"># isolume level -&gt; Z_IPAR</span>
+<span class="w">    </span><span class="nt">compute_zeu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">compute_ipar</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">interpolate_zeu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">      </span><span class="c1"># fill onto PAR-less casts</span>
+<span class="w">    </span><span class="nt">interpolate_ipar</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">diagnostics</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</pre></div>
+</div>
+<p>Diagnostics draw one panel per scalar, depth against time, with computed profiles and interpolated fills in different colours. Look for a plausible range for the region and season (tens of metres, not hundreds), no long stretches that are entirely interpolated, and no step changes at the edges of PAR outages.</p>
+</section>
+<section id="id4">
+<h2>2.4 Implementation notes and known limitations<a class="headerlink" href="#id4" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><strong>Ordering.</strong> After <code class="docutils literal notranslate"><span class="pre">Find</span> <span class="pre">Profiles</span></code> (the step works per profile) and after the PAR QC (so flagged samples are excluded), before <code class="docutils literal notranslate"><span class="pre">CHLA</span> <span class="pre">Quenching</span></code>.</p></li>
+<li><p><strong>Why the scalars are what get filled.</strong> Many gliders do not carry PAR on every cast. Logging PAR on upcasts only is very common, and both PAR-carrying example missions in <code class="docutils literal notranslate"><span class="pre">examples/configs/</span></code> do exactly that; other missions have gaps from duty-cycling or dropouts. Reconstructing the missing PAR <em>field</em> would mean inventing an irradiance profile, a strong and hard-to-defend assumption. The justification for filling the scalars instead is that euphotic and isolume depths are properties of the water-column optics, varying over hours to days, whereas a missing cast is minutes to a couple of hours from one that has PAR. Interpolating a slowly-varying integrated quantity is far safer than interpolating a rapidly-varying, sun-angle-dependent point measurement.</p></li>
+<li><p><strong>Diurnal variation is not represented.</strong> <code class="docutils literal notranslate"><span class="pre">Z_IPAR</span></code> genuinely moves with solar elevation, and a linear fill across night smooths that away.</p></li>
+<li><p><strong>Long PAR outages produce long constant-slope fills</strong>, so check the diagnostic before trusting the filled values.</p></li>
+<li><p>Turning interpolation off (<code class="docutils literal notranslate"><span class="pre">interpolate_zeu:</span> <span class="pre">false</span></code>, <code class="docutils literal notranslate"><span class="pre">interpolate_ipar:</span> <span class="pre">false</span></code>) leaves PAR-less profiles as <code class="docutils literal notranslate"><span class="pre">NaN</span></code>. A quenching method that needs <code class="docutils literal notranslate"><span class="pre">ZEU</span></code> or <code class="docutils literal notranslate"><span class="pre">Z_IPAR</span></code> then <strong>stops the pipeline</strong> if any daytime profile lacks it, so only turn interpolation off when every daytime profile has measured PAR, or use a method that does not need these light depths.</p></li>
+</ul>
+<blockquote>
+<div><p><strong>Note</strong></p>
+<p>Interpolated <code class="docutils literal notranslate"><span class="pre">ZEU</span></code> and <code class="docutils literal notranslate"><span class="pre">Z_IPAR</span></code> are estimates, not observations. Data users should treat filled profiles differently from computed ones, and the diagnostic panels distinguish the two by colour for exactly this reason.</p>
+</div></blockquote>
+</section>
+</section>
+<hr class="docutils"/>
+<section class="tex2jax_ignore mathjax_ignore" id="use-in-the-chlorophyll-quenching-correction">
+<h1>3. Use in the Chlorophyll Quenching Correction<a class="headerlink" href="#use-in-the-chlorophyll-quenching-correction" title="Link to this heading">#</a></h1>
+<section id="id5">
+<h2>3.1 Physical basis<a class="headerlink" href="#id5" title="Link to this heading">#</a></h2>
+<p>The only consumer of the derived light depths is <code class="docutils literal notranslate"><span class="pre">CHLA</span> <span class="pre">Quenching</span></code>. NPQ is photo-protective: in bright near-surface light, phytoplankton dissipate absorbed energy as heat rather than fluorescence, so a fluorometer under-reads chlorophyll during the day. Every quenching method reconstructs what daytime fluorescence should have been; they differ in the reference used and the depth range it is applied over. That range is where PAR enters.</p>
+</section>
+<section id="id6">
+<h2>3.2 Algorithm as implemented<a class="headerlink" href="#id6" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Reference used</p></th>
+<th class="head"><p>Depth window</p></th>
+<th class="head"><p>PAR inputs</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">sackmann2008</span></code></p></td>
+<td><p>max fluorescence:backscatter ratio</p></td>
+<td><p>0 → MLD</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">xing2012</span></code></p></td>
+<td><p>max fluorescence</p></td>
+<td><p>0 → MLD</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">biermann2015</span></code></p></td>
+<td><p>max fluorescence</p></td>
+<td><p>0 → <strong>ZEU</strong></p></td>
+<td><p>ZEU</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hemsley2015</span></code></p></td>
+<td><p>one global night Chl-vs-bbp regression for the whole deployment</p></td>
+<td><p>0 → <strong>ZEU</strong></p></td>
+<td><p>ZEU</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">swart2015</span></code></p></td>
+<td><p>max fluorescence:backscatter ratio</p></td>
+<td><p>0 → <strong>ZEU</strong></p></td>
+<td><p>ZEU</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">thomalla2018</span></code></p></td>
+<td><p>previous night’s binned fl:bbp ratio profile</p></td>
+<td><p>0 → quenching depth, searched within <code class="docutils literal notranslate"><span class="pre">max_photic_depth</span></code></p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">xing2018</span></code> (+ Terrats hybrid)</p></td>
+<td><p>max fl:bbp ratio, or a light-driven sigmoid</p></td>
+<td><p>0 → min(MLD, <strong>Z_IPAR</strong>)</p></td>
+<td><p>Z_IPAR, plus raw PAR</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>MLD-based methods</strong> (Sackmann, Xing 2012) assume quenching is confined to the mixed layer: cheap and PAR-free, but wrong whenever light penetrates below it. <strong>ZEU-based methods</strong> (Biermann, Hemsley, Swart) replace “mixed layer” with “euphotic zone”, giving a light-defined window rather than a density-defined one. That is why <code class="docutils literal notranslate"><span class="pre">ZEU</span></code> is computed.</p>
+<p><strong>Xing 2018 with the Terrats 2020 hybrid</strong> is the most light-aware. It compares <code class="docutils literal notranslate"><span class="pre">Z_IPAR</span></code> against MLD to classify the mixing regime, then branches:</p>
+<ul class="simple">
+<li><p>Under <strong>deep mixing</strong> (<code class="docutils literal notranslate"><span class="pre">Z_IPAR</span></code> ≤ MLD) it applies the “S08+” scheme: within the NPQ layer (the shallower of MLD and the isolume depth) the fluorescence:backscatter ratio is maximised and fluorescence reset to <code class="docutils literal notranslate"><span class="pre">bbp</span> <span class="pre">×</span> <span class="pre">R_max</span></code>.</p></li>
+<li><p>Under <strong>shallow mixing</strong> (<code class="docutils literal notranslate"><span class="pre">Z_IPAR</span></code> &gt; MLD), a sigmoid in iPAR de-quenches each sample below the MLD using the raw PAR value at that depth; above the MLD a uniform <code class="docutils literal notranslate"><span class="pre">bbp</span> <span class="pre">×</span> <span class="pre">R_MLD</span></code> is applied. This is the only place in the pipeline where the PAR profile itself, rather than a derived scalar, is used pointwise.</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">hybrid:</span> <span class="pre">false</span></code> forces S08+ everywhere regardless of regime.</p>
+<p><strong>Day/night gating</strong> applies to every method. The quenching step recomputes solar elevation per profile and corrects only profiles above <code class="docutils literal notranslate"><span class="pre">day_min_elevation</span></code>; night references are built only from profiles below <code class="docutils literal notranslate"><span class="pre">night_max_elevation</span></code>. Twilight profiles between the two are neither corrected nor used as references.</p>
+</section>
+<section id="id7">
+<h2>3.3 Default configuration<a class="headerlink" href="#id7" title="Link to this heading">#</a></h2>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CHLA Quenching</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">method</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">xing2018</span><span class="w">           </span><span class="c1"># no default; choose from the table in §3.2</span>
+<span class="w">    </span><span class="nt">hybrid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">               </span><span class="c1"># xing2018 only; false forces S08+ everywhere</span>
+<span class="w">    </span><span class="nt">day_min_elevation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0</span><span class="w">     </span><span class="c1"># degrees; profiles above this are corrected</span>
+<span class="w">    </span><span class="nt">night_max_elevation</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0</span><span class="w">   </span><span class="c1"># degrees; profiles below this build the reference</span>
+<span class="w">    </span><span class="nt">max_photic_depth</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100.0</span><span class="w">    </span><span class="c1"># metres; thomalla2018 only</span>
+</pre></div>
+</div>
+</section>
+<section id="id8">
+<h2>3.4 Implementation notes and known limitations<a class="headerlink" href="#id8" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><strong>The hybrid needs a full PAR profile on every daytime cast.</strong> Because the shallow-mixing sigmoid reads PAR pointwise, the hybrid is automatically disabled on missions with incomplete PAR, falling back to pure Xing 2018. Interpolated scalars cannot substitute for a pointwise PAR field.</p></li>
+<li><p><strong>Thomalla 2018 deliberately needs no PAR</strong>, bounding its quenching-depth search with a fixed <code class="docutils literal notranslate"><span class="pre">max_photic_depth</span></code> (default 100 m) instead of <code class="docutils literal notranslate"><span class="pre">ZEU</span></code>. That makes it the natural choice for platforms with no radiometer. It does still need nighttime profiles, which is why over-aggressive PAR range QC (§1.5) can break it indirectly.</p></li>
+<li><p><strong>Widen the twilight band</strong> by separating <code class="docutils literal notranslate"><span class="pre">day_min_elevation</span></code> and <code class="docutils literal notranslate"><span class="pre">night_max_elevation</span></code> if low-sun casts contaminate the night references.</p></li>
+<li><p><strong>Method choice should follow the data actually available</strong>, not recency: Xing 2018 with the Terrats hybrid when PAR is on every cast alongside backscatter and MLD; a ZEU-based method if PAR coverage is partial but reliable; Thomalla 2018 if there is no PAR at all.</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils"/>
+<section class="tex2jax_ignore mathjax_ignore" id="outputs">
+<h1>4. Outputs<a class="headerlink" href="#outputs" title="Link to this heading">#</a></h1>
+<p>PAR quality control writes flags without modifying the measured values. <code class="docutils literal notranslate"><span class="pre">Interpolate</span> <span class="pre">PAR</span></code> adds two new per-profile variables.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Variable</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DOWNWELLING_PAR</span></code></p></td>
+<td><p>Downwelling PAR, µmol photons m⁻² s⁻¹. Read as an input to all three stages; never modified.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DOWNWELLING_PAR_QC</span></code></p></td>
+<td><p>Argo quality flags (1/2/3/4/9) merged across the range, stuck-value and irregularity tests, most severe flag winning (§1).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ZEU</span></code></p></td>
+<td><p>Euphotic depth, positive-down metres, computed once per profile and broadcast across that profile’s samples; <code class="docutils literal notranslate"><span class="pre">NaN</span></code> where the K_d fit was rejected and interpolation is disabled (§2).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Z_IPAR</span></code></p></td>
+<td><p>Isolume depth at <code class="docutils literal notranslate"><span class="pre">ipar_level</span></code>, positive-down metres, per profile and broadcast as above (§2).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">CHLA</span> <span class="pre">Quenching</span></code> consumes <code class="docutils literal notranslate"><span class="pre">ZEU</span></code>, <code class="docutils literal notranslate"><span class="pre">Z_IPAR</span></code>, MLD and backscatter to correct the chlorophyll fluorescence record; it is configured to run after <code class="docutils literal notranslate"><span class="pre">Interpolate</span> <span class="pre">PAR</span></code> and after <code class="docutils literal notranslate"><span class="pre">Mixed</span> <span class="pre">Layer</span> <span class="pre">Depth</span></code> so that all three inputs are present.</p>
+</section>
+<hr class="docutils"/>
+<section class="tex2jax_ignore mathjax_ignore" id="practical-checklist">
+<h1>5. Practical checklist<a class="headerlink" href="#practical-checklist" title="Link to this heading">#</a></h1>
+<ol class="arabic simple">
+<li><p><strong>Does the mission carry PAR at all, and on which casts?</strong> Upcast-only logging is common and drives the whole interpolation design.</p></li>
+<li><p><strong>Set the range QC without a tight lower bound.</strong> Negative PAR is night and depth below the light field; flagging it away breaks the night-referenced quenching methods (§1.5).</p></li>
+<li><p><strong>Check the NEI</strong> against the actual radiometer if you can.</p></li>
+<li><p><strong>Put the irregularity test after <code class="docutils literal notranslate"><span class="pre">Find</span> <span class="pre">Profiles</span></code></strong>, in its own <code class="docutils literal notranslate"><span class="pre">Apply</span> <span class="pre">QC</span></code> call.</p></li>
+<li><p><strong>Look at the <code class="docutils literal notranslate"><span class="pre">Interpolate</span> <span class="pre">PAR</span></code> diagnostic</strong> before trusting <code class="docutils literal notranslate"><span class="pre">ZEU</span></code> and <code class="docutils literal notranslate"><span class="pre">Z_IPAR</span></code>. Check the computed-to-interpolated ratio, and whether the values are physically plausible.</p></li>
+<li><p><strong>Choose the quenching method from what you actually have</strong>, not from what is newest.</p></li>
+<li><p><strong>Sanity-check the sign of the outcome.</strong> NPQ corrections should only ever raise daytime near-surface fluorescence, never lower it, and corrected day profiles should resemble adjacent night profiles.</p></li>
+</ol>
+</section>
+<hr class="docutils"/>
+<section class="tex2jax_ignore mathjax_ignore" id="recommended-reporting">
+<h1>6. Recommended reporting<a class="headerlink" href="#recommended-reporting" title="Link to this heading">#</a></h1>
+<p>A scientific methods section describing PAR processing with pelagos-py should report:</p>
+<ul class="simple">
+<li><p>which PAR quality control tests were applied, and in particular the range-test bounds used, since a lower bound above the sensor’s dark offset removes the nighttime data that night-referenced quenching methods depend on;</p></li>
+<li><p>that the profile-shape test of La Forgia &amp; Organelli (2025) was applied per profile, and the noise-equivalent irradiance used, stating whether it came from the manufacturer or from the BGC-Argo default;</p></li>
+<li><p>how the light depths were derived (the 1% level from a Beer–Lambert K_d fit for <code class="docutils literal notranslate"><span class="pre">ZEU</span></code>, the observed crossing of the isolume level for <code class="docutils literal notranslate"><span class="pre">Z_IPAR</span></code>), and the isolume level chosen;</p></li>
+<li><p>whether the derived scalars were interpolated in time onto PAR-less casts, and if so what fraction of profiles carry interpolated rather than computed values;</p></li>
+<li><p>the quenching method selected, the light depth it uses as its depth window, and for <code class="docutils literal notranslate"><span class="pre">xing2018</span></code> whether the Terrats hybrid was active or was automatically disabled by incomplete PAR coverage.</p></li>
+</ul>
+<p>An example methods description is given below.</p>
+<blockquote>
+<div><p>Downwelling PAR was quality controlled with a range test (values outside −5 to 2500 µmol photons m⁻² s⁻¹ flagged bad), a stuck-value test over 5 consecutive identical readings, and the profile-shape irregularity test of La Forgia &amp; Organelli (2025), applied per profile with a noise-equivalent irradiance of 3 × 10⁻² µmol photons m⁻² s⁻¹ (Jutard et al., 2021). The lower range bound was set below zero deliberately, so that nighttime and sub-euphotic records were retained for use as quenching references. Flags follow the Argo convention (Wong et al., 2025).</p>
+<p>Two light depths were derived per profile. The euphotic depth was taken as the 1% surface-light level, obtained by linear regression of log(PAR) against depth to give the diffuse attenuation coefficient K_d, with fits rejected for fewer than four valid samples, K_d outside 0.005–1.0 m⁻¹, or Z_eu exceeding 186 m. The isolume depth was read off the observed profile at 15 µmol photons m⁻² s⁻¹. Because PAR was logged on upcasts only, both scalars were linearly interpolated in time onto the casts carrying no PAR; the underlying PAR field was not reconstructed.</p>
+<p>Non-photochemical quenching was corrected using the method of Xing et al. (2018) with the mixing-regime hybrid of Terrats et al. (2020), which compares the isolume depth against the mixed layer depth and applies either a maximum fluorescence:backscatter reset (deep mixing) or a light-driven sigmoid in iPAR (shallow mixing). Only profiles with a solar elevation above 0° were corrected, and night references were built from profiles below 0°.</p>
+</div></blockquote>
+</section>
+<hr class="docutils"/>
+<section class="tex2jax_ignore mathjax_ignore" id="references">
+<h1>References<a class="headerlink" href="#references" title="Link to this heading">#</a></h1>
+<p>Entries below carry the metadata available in the source material; titles and author initials are still to be completed before publication.</p>
+<ul class="simple">
+<li><p>Biermann et al. (2015). <em>Ocean Science</em>, <strong>11</strong>, 83–91.</p></li>
+<li><p>Hemsley et al. (2015). <em>Biogeosciences</em>, <strong>12</strong>, 7093.</p></li>
+<li><p>Jutard et al. (2021). Source of the default noise-equivalent irradiance.</p></li>
+<li><p>La Forgia &amp; Organelli (2025). <em>Limnology and Oceanography: Methods</em>, <strong>23</strong>, 526–542. <a class="reference external" href="https://doi.org/10.1002/lom3.10701">doi:10.1002/lom3.10701</a>. The profile-shape irregularity test.</p></li>
+<li><p>Sackmann et al. (2008).</p></li>
+<li><p>Swart et al. (2015). <em>Journal of Plankton Research</em>, <strong>37</strong>, 635.</p></li>
+<li><p>Terrats et al. (2020). <em>Geophysical Research Letters</em>.</p></li>
+<li><p>Thomalla et al. (2018). <em>Limnology and Oceanography: Methods</em>, <strong>16</strong>, 132.</p></li>
+<li><p>Wong et al. (2025). <em>Argo Quality Control Manual</em>. <a class="reference external" href="http://dx.doi.org/10.13155/33951">doi:10.13155/33951</a>. The flag convention.</p></li>
+<li><p>Xing et al. (2012). <em>Limnology and Oceanography: Methods</em>.</p></li>
+<li><p>Xing et al. (2018). <em>Optics Express</em>, <strong>26</strong>, 24734.</p></li>
+</ul>
+</section>
+</article>
+</div>
+<dialog id="pst-secondary-sidebar-modal" tabindex="-1"></dialog>
+<div class="bd-sidebar-secondary bd-toc" id="pst-secondary-sidebar"><div class="sidebar-secondary-items sidebar-secondary__inner">
+<div class="sidebar-secondary-item">
+<div class="page-toc tocsection onthispage" id="pst-page-navigation-heading-2">
+<i class="fa-solid fa-list"></i> On this page
+  </div>
+<nav aria-labelledby="pst-page-navigation-heading-2" class="page-toc" id="pst-page-toc-nav">
+<ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">PAR Processing</a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overview">Overview</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#par-quality-control">1. PAR Quality Control</a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#physical-basis">1.1 Physical basis</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#algorithm-as-implemented">1.2 Algorithm as implemented</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#default-configuration">1.3 Default configuration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation-notes-and-known-limitations">1.4 Implementation notes and known limitations</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#derived-light-depths-interpolate-par">2. Derived Light Depths (<code class="docutils literal notranslate"><span class="pre">Interpolate</span> <span class="pre">PAR</span></code>)</a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">2.1 Physical basis</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">2.2 Algorithm as implemented</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">2.3 Default configuration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id4">2.4 Implementation notes and known limitations</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#use-in-the-chlorophyll-quenching-correction">3. Use in the Chlorophyll Quenching Correction</a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id5">3.1 Physical basis</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id6">3.2 Algorithm as implemented</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id7">3.3 Default configuration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id8">3.4 Implementation notes and known limitations</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#outputs">4. Outputs</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#practical-checklist">5. Practical checklist</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#recommended-reporting">6. Recommended reporting</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#references">References</a></li>
+</ul>
+</nav></div>
+</div></div>
+</div>
+<footer class="bd-footer-content">
+</footer>
+</main>
+</div>
+</div>
+<!-- Scripts loaded after <body> so the DOM is not blocked -->
+<script defer="" src="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8"></script>
+<script defer="" src="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8"></script>
+<footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+<div class="footer-items__start">
+<div class="footer-item">
+<p class="copyright">
+    
+      © Copyright 2025, National Oceanography Centre.
+      <br/>
+</p>
+</div>
+<div class="footer-item">
+<p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.1.
+  </p>
+</div>
+</div>
+<div class="footer-items__end">
+<div class="footer-item">
+<p class="theme-version">
+<!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.24.0.
+</p></div>
+</div>
+</div>
+</footer>
+</body>
+</html>

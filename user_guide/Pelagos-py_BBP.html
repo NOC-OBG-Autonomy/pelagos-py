@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <meta property="article:modified_time" content="2026-11-04T20:18:56+00:00" />
+    <title>Particulate Backscattering (bbp) Processing &#8212; pelagos-py</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-codeautolink.css?v=b2176991" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Ubuntu&display=swap" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=a20de4af" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../_static/scripts/fontawesome.js?digest=75c7c72ae941e8b558d8"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
+
+    <script src="../_static/documentation_options.js?v=f9910351"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=df1a032d"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'user_guide/Pelagos-py_BBP';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="canonical" href="https://noc-obg-autonomy.github.io/pelagos-py/user_guide/Pelagos-py_BBP.html" />
+    <link rel="icon" href="../_static/NOC_logo.svg"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Cross-Calibration" href="Pelagos-py_CROSSCAL.html" />
+    <link rel="prev" title="Chlorophyll-a Processing" href="Pelagos-py_CHLA.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0" />
+    <meta name="docbuild:last-update" content="Nov 04, 2026"/>
+  
+    
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation" aria-expanded="false" aria-controls="pst-primary-sidebar-modal">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+<a class="navbar-brand logo" href="../index.html">
+  <svg class="logo__image pelagos-logo" viewBox="0 0 420 100" width="420" height="100"
+       role="img" aria-label="pelagos-py - Home" xmlns="http://www.w3.org/2000/svg">
+    <rect class="pl-frame" x="0" y="0" width="100" height="100" rx="2.3"/>
+    <rect fill="#fff" x="4.15" y="4.15" width="91.7" height="27.5"/>
+    <rect fill="#00b4ff" x="4.15" y="31.66" width="91.7" height="64.19"/>
+    <text class="pl-title" x="117" y="64" textLength="300" lengthAdjust="spacingAndGlyphs">PELAGOS-PY</text>
+    <text class="pl-sub" x="117" y="93.2" textLength="300" lengthAdjust="spacingAndGlyphs">National Oceanography Centre</text>
+  </svg>
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../user_guide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api_reference.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../development.html">
+    Development
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NOC-OBG-Autonomy/pelagos-py" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page" aria-expanded="false" aria-controls="pst-secondary-sidebar-modal">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal" tabindex="-1"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../getting_started.html">
+    Getting Started
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../user_guide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api_reference.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../development.html">
+    Development
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NOC-OBG-Autonomy/pelagos-py" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button type="button" id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar">
+  <svg class="pst-icon" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../steps.html">Steps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality_control.html">Quality Control</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Variable processing</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_POSITION.html">Position and Time Processing</a></li>
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_PRESSURE.html">Pressure Processing</a></li>
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_PROFILES.html">Profile Finding</a></li>
+
+
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_TEMP.html">Temperature Processing</a></li>
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_SALINITY.html">Salinity Adjustment</a></li>
+
+
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_DERIVED.html">Derived CTD Variables</a></li>
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_MLD.html">Mixed Layer Depth</a></li>
+
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_DOXY.html">Oxygen Processing: Aanderaa Optodes</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_PAR.html">PAR Processing</a></li>
+
+
+
+
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_CHLA.html">Chlorophyll-<em>a</em> Processing</a></li>
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l1 current active"><a aria-current="page" class="current reference internal" href="#">Particulate Backscattering (b<sub>bp</sub>) Processing</a></li>
+
+
+
+
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="Pelagos-py_CROSSCAL.html">Cross-Calibration</a></li>
+
+
+
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-house"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../user_guide.html" class="nav-link">User Guide</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Particulate Backscattering (b<sub>bp</sub>) Processing</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="particulate-backscattering-bbp-processing">
+<h1>Particulate Backscattering (b<sub>bp</sub>) Processing<a class="headerlink" href="#particulate-backscattering-bbp-processing" title="Link to this heading">#</a></h1>
+<a class="reference internal image-reference" href="../_images/bbp_section.png"><img alt="Particulate backscattering (bbp) against pressure and time for the demo deployment" src="../_images/bbp_section.png" style="width: 100%;" />
+</a>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">#</a></h2>
+<p>Optical backscattering (b<sub>b</sub>) is an inherent optical property defined as the limit, as path length approaches zero, of the fraction of light is scattered in a backwards direction, per unit distance traveled through the water. It is a fundamental inherent optical property of seawater, critical to ocean color, and important for visibility and light penetration in the ocean. Particulate optical backscattering (b<sub>bp</sub>), is the backscattering by particulate matter. As measured by autonomous oceanographic platforms, (b<sub>bp</sub>) provides a proxy for particle concentration and size. In the open ocean, at low inorganic particle concentrations, it is a useful proxy for particulate organic carbon (POC) concentration and and is a required optical reference for several of the non-photochemical quenching (NPQ) correction methods used in chlorophyll-<em>a</em> processing. Raw backscattering sensors measure the volume scattering function at a single angle and wavelength (beta, in m<sup>-1</sup> sr<sup>-1</sup>), which must be converted to the particulate backscattering coefficient (b<sub>bp</sub>, in m<sup>-1</sup>) and separated from isolated spikes before it can be interpreted or used downstream.</p>
+<p>pelagos-py implements a short, focused backscatter processing workflow that combines generic quality-control algorithms with a variable-specific physical conversion and despiking step. Unlike chlorophyll, backscatter cannot be dark corrected in situ, so factory dark values are used by default without adjustment. b<sub>bp</sub> is processed once, early in the pipeline, and its despiked baseline is then consumed as an input by several chlorophyll NPQ correction methods (see <a class="reference internal" href="#use-in-chlorophyll-npq-correction"><span class="std std-ref">4. Use in chlorophyll NPQ correction</span></a> and the <strong>Chlorophyll-<em>a</em> Processing</strong> documentation).</p>
+<p>The backscatter processing workflow consists of three sequential stages:</p>
+<ol class="arabic simple">
+<li><p><strong>Initial quality control</strong> — applies the generic Range QC and Stuck Value QC modules to the raw sensor signal to identify grossly implausible or frozen readings. Deliberately, no spike test is applied at this stage: backscatter spikes correspond to real particles or aggregates rather than sensor artefacts, and are separated out (not discarded) in stage 3.</p></li>
+<li><p><strong>BBP from Beta</strong> — converts the raw volume scattering function (beta, m<sup>-1</sup> sr<sup>-1</sup>) to the particulate backscattering coefficient (b<sub>bp</sub>, m<sup>-1</sup>) using the pure-seawater scattering model of Zhang et al. (2009) and the chi-factor scaling of Sullivan et al. (2013). Note that Zhang et al. (2009) has been superceded by Hu et al. (2019), which adds a small pressure effect, so this should eventually be changed.</p></li>
+<li><p><strong>Isolate BBP Spikes</strong> — applies a despiking routine (following Briggs et al., 2011) directly to b<sub>bp</sub> to separate a smooth baseline from isolated spikes, producing <code class="docutils literal notranslate"><span class="pre">&lt;var&gt;_BASELINE</span></code> and <code class="docutils literal notranslate"><span class="pre">&lt;var&gt;_SPIKES</span></code>. The baseline is the variable subsequently used as the optical reference by chlorophyll NPQ correction methods.</p></li>
+</ol>
+<p>Each processing stage is described in detail below, including the default pelagos-py configuration, the physical/scientific rationale, and implementation details that depart from the equivalent chlorophyll processing steps.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section class="tex2jax_ignore mathjax_ignore" id="initial-quality-control">
+<h1>1. Initial quality control<a class="headerlink" href="#initial-quality-control" title="Link to this heading">#</a></h1>
+<p>Backscatter QC is performed with the same generic <strong>Range QC</strong> and <strong>Stuck Value QC</strong> modules used elsewhere in pelagos-py (see the <strong>Quality Control</strong> documentation for the full algorithm descriptions). Unlike the chlorophyll initial range test, these QC steps have no code-level defaults of their own — the values below are drawn from pelagos-py’s reference deployment configurations (Churchill, Nelson, ALR) as a documented starting point.</p>
+<section id="range-test">
+<h2>1.1 Range test<a class="headerlink" href="#range-test" title="Link to this heading">#</a></h2>
+<p>Recommended configuration for open ocean:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">qc_settings</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">range qc</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">variable_ranges</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">BETA_BACKSCATTERING700</span><span class="p">:</span><span class="w">      </span><span class="c1"># or BBP700, if the platform already reports beta under that name</span>
+<span class="w">        </span><span class="nt">3</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.01</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">outside</span><span class="p p-Indicator">]</span><span class="w">        </span><span class="c1"># Negative = dark-offset noise, high = suspect</span>
+<span class="w">        </span><span class="nt">4</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">-1.0e-4</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.05</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">outside</span><span class="p p-Indicator">]</span><span class="w">  </span><span class="c1"># Physically absurd / sensor rail</span>
+</pre></div>
+</div>
+<p>Backscatter cannot physically be negative, but a small negative reading is typically dark-offset noise in clear water rather than a hardware fault, so values just below zero are only flagged probably bad (<code class="docutils literal notranslate"><span class="pre">3</span></code>). The wider band (<code class="docutils literal notranslate"><span class="pre">4</span></code>) catches values far enough out to be physically absurd or indicative of a sensor rail. Some platforms (e.g. Nelson) report beta directly under the <code class="docutils literal notranslate"><span class="pre">BBP700</span></code> name rather than a separate <code class="docutils literal notranslate"><span class="pre">BETA_BACKSCATTERING700</span></code> variable; the range test is applied to whichever variable holds the raw signal, and the BBP from Beta step (Section 2) carries the resulting flags across to the converted variable.</p>
+</section>
+<section id="stuck-value-test">
+<h2>1.2 Stuck value test<a class="headerlink" href="#stuck-value-test" title="Link to this heading">#</a></h2>
+<p>Recommended configuration:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">qc_settings</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">stuck value qc</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">variables</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">BETA_BACKSCATTERING700</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+</pre></div>
+</div>
+<p>A frozen reading (four or more identical consecutive values, using the recommended threshold of 3) indicates a dead or fouled sensor and is flagged bad (<code class="docutils literal notranslate"><span class="pre">4</span></code>).</p>
+</section>
+<section id="no-spike-test">
+<h2>1.3 No spike test<a class="headerlink" href="#no-spike-test" title="Link to this heading">#</a></h2>
+<p>Deliberately, <strong>no Spike QC test is applied</strong> to the raw backscatter signal. Large isolated spikes in b<sub>bp</sub> typically correspond to individual particles or aggregates passing through the sensor’s sample volume — genuine signal rather than sensor noise. Discarding them via a generic spike test would remove real information; instead, the Isolate BBP Spikes step (Section 3) separates the spike component from the baseline so that both are retained as independent variables.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section class="tex2jax_ignore mathjax_ignore" id="bbp-from-beta">
+<h1>2. BBP from Beta<a class="headerlink" href="#bbp-from-beta" title="Link to this heading">#</a></h1>
+<section id="physical-basis">
+<h2>2.1 Physical basis<a class="headerlink" href="#physical-basis" title="Link to this heading">#</a></h2>
+<p>The conversion follows the BGC-Argo definition of particulate backscattering, using Zhang et al. (2009) for the pure-seawater scattering contribution (via <code class="docutils literal notranslate"><span class="pre">glidertools.flo_functions.flo_zhang_scatter_coeffs</span></code>) and Sullivan et al. (2013) for the particulate chi-factor scaling.</p>
+<p>The raw sensor measures the volume scattering function at the instrument’s effective scattering angle <span class="math notranslate nohighlight">\(\theta\)</span> and wavelength <span class="math notranslate nohighlight">\(\lambda\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[
+\beta(\theta,\lambda) = \beta_{sw}(\theta,\lambda) + \beta_{p}(\theta,\lambda),
+\]</div>
+<p>the sum of a theoretical seawater-only contribution <span class="math notranslate nohighlight">\(\beta_{sw}\)</span> and the contribution of particles <span class="math notranslate nohighlight">\(\beta_p\)</span>.</p>
+<p><strong>Seawater scattering.</strong> <span class="math notranslate nohighlight">\(\beta_{sw}(\theta,\lambda)\)</span> and the total (forward + backward) seawater scattering coefficient <span class="math notranslate nohighlight">\(b_{sw}(\lambda)\)</span> are computed from in-situ temperature and practical salinity following the Zhang et al. (2009) pure-seawater model, which combines scattering due to density fluctuations and due to salt-concentration fluctuations, each weighted by a depolarisation-ratio correction (<span class="math notranslate nohighlight">\(\delta = 0.039\)</span>).</p>
+<p><strong>Particulate scattering.</strong> The particulate contribution at the measurement angle is obtained by subtraction,</p>
+<div class="math notranslate nohighlight">
+\[
+\beta_p(\theta,\lambda) = \beta(\theta,\lambda) - \beta_{sw}(\theta,\lambda),
+\]</div>
+<p>and scaled to the particulate backscattering coefficient (integrated over all backward angles) using the chi factor <span class="math notranslate nohighlight">\(\chi\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[
+b_{bp}(\lambda) = \chi \cdot 2\pi \cdot \beta_p(\theta,\lambda).
+\]</div>
+<p><strong>Output.</strong> The value written to the dataset is the particulate backscattering coefficient <span class="math notranslate nohighlight">\(b_{bp}(\lambda)\)</span> above, with units of m<sup>-1</sup>.</p>
+</section>
+<section id="default-configuration">
+<h2>2.2 Default configuration<a class="headerlink" href="#default-configuration" title="Link to this heading">#</a></h2>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">"BBP</span><span class="nv"> </span><span class="s">from</span><span class="nv"> </span><span class="s">Beta"</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">apply_to</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BETA_BACKSCATTERING700</span>
+<span class="w">    </span><span class="nt">output_as</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BBP700</span>
+<span class="w">    </span><span class="nt">theta</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">124</span>
+<span class="w">    </span><span class="nt">xfactor</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.076</span>
+<span class="w">  </span><span class="nt">diagnostics</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">theta</span></code> (124°) and <code class="docutils literal notranslate"><span class="pre">xfactor</span></code> (1.076) are the effective scattering angle and chi factor for a three-channel WET Labs ECO-BB3-type instrument (Sullivan et al., 2013, Table 6.2b). Two-channel ECO instruments (e.g. FLBB, FLNTU) use a different geometry — an effective angle of 140° and a chi factor of 1.096 — and <code class="docutils literal notranslate"><span class="pre">theta</span></code>/<code class="docutils literal notranslate"><span class="pre">xfactor</span></code> should be adjusted accordingly for those sensors.</p>
+<p><code class="docutils literal notranslate"><span class="pre">apply_to</span></code> defaults to <code class="docutils literal notranslate"><span class="pre">BETA_BACKSCATTERING700</span></code> and <code class="docutils literal notranslate"><span class="pre">output_as</span></code> to <code class="docutils literal notranslate"><span class="pre">BBP700</span></code>, so the step writes a new variable. Platforms that report beta under the <code class="docutils literal notranslate"><span class="pre">BBP700</span></code> name can set both to <code class="docutils literal notranslate"><span class="pre">BBP700</span></code>, in which case the step overwrites its input in place — see the implementation note below.</p>
+<blockquote>
+<div><p><strong>Note — wavelength is not a configurable parameter</strong></p>
+<p>Although the step is named for the 700 nm channel and the default output is <code class="docutils literal notranslate"><span class="pre">BBP700</span></code>, the wavelength passed into the underlying seawater-scattering calculation is hard-coded to 700 nm in the current implementation, independent of the <code class="docutils literal notranslate"><span class="pre">apply_to</span></code>/<code class="docutils literal notranslate"><span class="pre">output_as</span></code> variable names. Using this step to derive a variable at a different wavelength (e.g. a 532 nm channel) would apply the 700 nm seawater-scattering correction rather than one calculated for that channel’s actual wavelength.</p>
+</div></blockquote>
+</section>
+<section id="implementation-notes">
+<h2>2.3 Implementation notes<a class="headerlink" href="#implementation-notes" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><strong>Required inputs</strong>: <code class="docutils literal notranslate"><span class="pre">TIME</span></code>, <code class="docutils literal notranslate"><span class="pre">TEMP</span></code>, <code class="docutils literal notranslate"><span class="pre">PSAL</span></code>, <code class="docutils literal notranslate"><span class="pre">DEPTH</span></code> and the beta variable named by <code class="docutils literal notranslate"><span class="pre">apply_to</span></code>; <code class="docutils literal notranslate"><span class="pre">_ADJUSTED</span></code> versions are used where available. Gaps in temperature or salinity are left as <code class="docutils literal notranslate"><span class="pre">NaN</span></code> — the step does not gap-fill its inputs — so b<sub>bp</sub> is not derived at those samples and the corresponding output is flagged missing (<code class="docutils literal notranslate"><span class="pre">9</span></code>). An <strong>Interpolate Data</strong> step run beforehand on <code class="docutils literal notranslate"><span class="pre">TEMP</span></code>/<code class="docutils literal notranslate"><span class="pre">PSAL</span></code> fills eligible gaps.</p></li>
+<li><p><strong>QC flag filtering</strong>: unlike the Isolate BBP Spikes step (Section 3) and the generic <code class="docutils literal notranslate"><span class="pre">deep_correction</span></code> step, BBP from Beta does <strong>not</strong> automatically exclude samples carrying bad/probably-bad/missing QC flags (<code class="docutils literal notranslate"><span class="pre">3</span></code>, <code class="docutils literal notranslate"><span class="pre">4</span></code>, <code class="docutils literal notranslate"><span class="pre">9</span></code>) from the conversion — every finite <code class="docutils literal notranslate"><span class="pre">apply_to</span></code> value is converted regardless of its QC flag, unless the user explicitly configures <code class="docutils literal notranslate"><span class="pre">qc_handling_settings</span></code> to NaN-out flagged beta first. Flags on the input are still carried across to the output’s QC via <code class="docutils literal notranslate"><span class="pre">generate_qc</span></code>, so a flagged input value converts to a flagged output value; the flag simply does not prevent the arithmetic conversion itself.</p></li>
+<li><p><strong>In-place overwrite</strong>: if <code class="docutils literal notranslate"><span class="pre">apply_to</span></code> and <code class="docutils literal notranslate"><span class="pre">output_as</span></code> are the same, the QC for the output variable is <strong>not</strong> regenerated — the pre-existing <code class="docutils literal notranslate"><span class="pre">_QC</span></code> array is left untouched and a warning is logged. This means that, for platforms using an in-place configuration, any new missing (<code class="docutils literal notranslate"><span class="pre">9</span></code>) flags arising from <code class="docutils literal notranslate"><span class="pre">TEMP</span></code>/<code class="docutils literal notranslate"><span class="pre">PSAL</span></code> gaps during the conversion are not automatically reflected in <code class="docutils literal notranslate"><span class="pre">BBP700_QC</span></code> unless <code class="docutils literal notranslate"><span class="pre">output_as</span></code> is set to a distinct variable name.</p></li>
+<li><p><strong>DEPTH is never modified</strong> by this step, consistent with its treatment throughout the pipeline.</p></li>
+</ul>
+</section>
+<section id="figure">
+<h2>2.4 Figure<a class="headerlink" href="#figure" title="Link to this heading">#</a></h2>
+<figure class="align-default" id="id3">
+<a class="reference internal image-reference" href="../_images/bbp_from_beta_boxplot.png"><img alt="The beta vs bbp diagnostic box plot." src="../_images/bbp_from_beta_boxplot.png" style="width: 70%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Box plot comparing the value distribution of the raw beta input and the converted b<sub>bp</sub> output.</span><a class="headerlink" href="#id3" title="Link to this image">#</a></p>
+</figcaption>
+</figure>
+</section>
+</section>
+<hr class="docutils" />
+<section class="tex2jax_ignore mathjax_ignore" id="isolate-bbp-spikes">
+<h1>3. Isolate BBP Spikes<a class="headerlink" href="#isolate-bbp-spikes" title="Link to this heading">#</a></h1>
+<section id="principle">
+<h2>3.1 Principle<a class="headerlink" href="#principle" title="Link to this heading">#</a></h2>
+<p>Following conversion, pelagos-py separates each b<sub>bp</sub> record into a smooth baseline and an isolated-spike component using a rolling-window filter. The implementation (<code class="docutils literal notranslate"><span class="pre">glidertools.cleaning.despike</span></code>) follows Briggs et al. (2011), and offers two filter methods:</p>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">median</span></code></strong> (default) — a rolling median is applied directly to the record; this forms the baseline, and the spike component is the residual (measurement − baseline), which can be positive or negative.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">minmax</span></code></strong> — a rolling minimum is applied first, followed by a rolling maximum of that result, forming a baseline that tracks the lower envelope of the signal; spikes under this method are strictly positive or zero, consistent with backscatter spikes being interpreted as discrete particles adding to a background baseline, but instrument noise will add a positive bias to the spike signal.</p></li>
+</ul>
+<div class="math notranslate nohighlight">
+\[
+\text{baseline}(t) = \operatorname{filter}\left[b_{b}(t);\ \text{window\_size}\right],
+\qquad
+\text{spikes}(t) = b_{b}(t) - \text{baseline}(t).
+\]</div>
+<p>Both the baseline and spike components are retained as independent output variables; neither is discarded.</p>
+</section>
+<section id="id1">
+<h2>3.2 Default configuration<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">"Isolate</span><span class="nv"> </span><span class="s">BBP</span><span class="nv"> </span><span class="s">Spikes"</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">apply_to</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BBP700</span>
+<span class="w">    </span><span class="nt">window_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">7</span>
+<span class="w">    </span><span class="nt">method</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">median</span>
+<span class="w">  </span><span class="nt">diagnostics</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">window_size:</span> <span class="pre">7</span></code> follows the 7-point rolling filter of Briggs et al. (2011), counted over valid (non-flagged) points. A larger window is a deliberate tuning choice, depending on the sensor’s sampling rate and the platform’s vertical speed.</p>
+</section>
+<section id="qc-filtering-and-missing-value-propagation">
+<h2>3.3 QC filtering and missing-value propagation<a class="headerlink" href="#qc-filtering-and-missing-value-propagation" title="Link to this heading">#</a></h2>
+<p>Unlike BBP from Beta (Section 2.3), Isolate BBP Spikes <strong>does</strong> exclude flagged samples from the despike calculation by default: samples carrying QC flags <code class="docutils literal notranslate"><span class="pre">3</span></code>, <code class="docutils literal notranslate"><span class="pre">4</span></code> or <code class="docutils literal notranslate"><span class="pre">9</span></code> on <code class="docutils literal notranslate"><span class="pre">apply_to</span></code> are masked to <code class="docutils literal notranslate"><span class="pre">NaN</span></code> before the rolling filter is applied, so a flagged (e.g. biofouled) stretch cannot drag down the rolling baseline computed for an isolated good sample nearby. Samples excluded this way receive <strong>no</strong> baseline or spike value at all (both <code class="docutils literal notranslate"><span class="pre">NaN</span></code>), and are flagged missing (<code class="docutils literal notranslate"><span class="pre">9</span></code>) in the corresponding <code class="docutils literal notranslate"><span class="pre">_BASELINE_QC</span></code>/<code class="docutils literal notranslate"><span class="pre">_SPIKES_QC</span></code> outputs — this differs from steps such as <code class="docutils literal notranslate"><span class="pre">deep_correction</span></code>, where excluded samples are still corrected even though they do not inform the correction. A gap left this way in the baseline is not filled by this step; an <strong>Interpolate Data</strong> step run afterward on <code class="docutils literal notranslate"><span class="pre">&lt;var&gt;_BASELINE</span></code> produces a gap-free baseline for downstream use (e.g. by the chlorophyll NPQ methods that require a continuous backscatter reference).</p>
+</section>
+<section id="id2">
+<h2>3.4 Figure<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
+<figure class="align-default" id="id4">
+<a class="reference internal image-reference" href="../_images/bbp_baseline_spikes_timeseries.png"><img alt="The bbp baseline and spikes diagnostic time series." src="../_images/bbp_baseline_spikes_timeseries.png" style="width: 90%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Raw b<sub>bp</sub> time series with the despiked baseline overlaid (top panel), and the isolated spike component (bottom panel).</span><a class="headerlink" href="#id4" title="Link to this image">#</a></p>
+</figcaption>
+</figure>
+</section>
+</section>
+<hr class="docutils" />
+<section class="tex2jax_ignore mathjax_ignore" id="use-in-chlorophyll-npq-correction">
+<h1>4. Use in chlorophyll NPQ correction<a class="headerlink" href="#use-in-chlorophyll-npq-correction" title="Link to this heading">#</a></h1>
+<p>b<sub>bp</sub> does not receive a dedicated correction analogous to chlorophyll’s deep-offset or NPQ corrections. Instead, the despiked baseline produced in Section 3 is consumed as the optical reference by several of the chlorophyll NPQ correction methods (Sackmann et al., 2008; Swart et al., 2015; Hemsley et al., 2015; Thomalla et al., 2018; Mitchell et al., 2024; Xing et al., 2018; Terrats et al., 2020), under the assumption that non-photochemical quenching alters chlorophyll fluorescence yield without substantially affecting particulate backscattering.</p>
+<p>When a backscatter-based NPQ method is configured without an explicit <code class="docutils literal notranslate"><span class="pre">bbp_var</span></code>, pelagos-py searches for a usable backscatter variable in the following order:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">BBP700_BASELINE</span></code>;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">BBP700</span></code>;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">BBP532_BASELINE</span></code>; and</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">BBP532</span></code>.</p></li>
+</ol>
+<p>A despiked baseline product (<code class="docutils literal notranslate"><span class="pre">_BASELINE</span></code>) is preferred over the raw/undespiked variable because isolated spikes or unrealistically small backscatter values can produce artificially large fluorescence-to-backscatter ratios and consequently overestimate the reconstructed chlorophyll fluorescence.</p>
+<p>Full descriptions of the individual NPQ correction methods, their assumptions, and the shared implementation rules governing how backscatter is used within them, are documented in the <strong>Chlorophyll-<em>a</em> Processing</strong> documentation (<code class="docutils literal notranslate"><span class="pre">pelagos-py_CHLA.md</span></code>), Section 5.</p>
+</section>
+<hr class="docutils" />
+<section class="tex2jax_ignore mathjax_ignore" id="outputs">
+<h1>5. Outputs<a class="headerlink" href="#outputs" title="Link to this heading">#</a></h1>
+<p>The backscatter processing workflow produces or updates the following variables:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Variable</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BETA_BACKSCATTERING700</span></code> (or platform-specific equivalent)</p></td>
+<td><p>Raw volume scattering function in m<sup>-1</sup> sr<sup>-1</sup>, measured at the sensor’s effective angle and wavelength. This is the native measurement used as the input to the BBP from Beta conversion.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">&lt;apply_to&gt;_QC</span></code></p></td>
+<td><p>Quality-control flags associated with the raw signal, including the results of the initial range and stuck-value tests.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BBP700</span></code> (or configured <code class="docutils literal notranslate"><span class="pre">output_as</span></code>)</p></td>
+<td><p>Particulate backscattering coefficient in m<sup>-1</sup>, derived from the raw signal using the Zhang et al. (2009) seawater-scattering model and the Sullivan et al. (2013) chi-factor scaling. See the note in Section 2.1 regarding the seawater contribution retained in this value.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">BBP700_QC</span></code></p></td>
+<td><p>Quality-control flags associated with <code class="docutils literal notranslate"><span class="pre">BBP700</span></code>. Inherited from the input’s QC when <code class="docutils literal notranslate"><span class="pre">output_as</span></code> differs from <code class="docutils literal notranslate"><span class="pre">apply_to</span></code>; left unmodified (with a logged warning) when the conversion is applied in place.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BBP700_BASELINE</span></code></p></td>
+<td><p>Despiked baseline backscatter signal, produced by the Isolate BBP Spikes step. This is the variable most commonly consumed by the backscatter-based chlorophyll NPQ correction methods.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">BBP700_SPIKES</span></code></p></td>
+<td><p>Backscatter spike component separated from the baseline, retained independently as it represents discrete particle/aggregate signal rather than an artefact.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BBP700_BASELINE_QC</span></code>, <code class="docutils literal notranslate"><span class="pre">BBP700_SPIKES_QC</span></code></p></td>
+<td><p>Quality-control flags associated with the baseline and spike products, inherited from <code class="docutils literal notranslate"><span class="pre">BBP700_QC</span></code> with any resulting <code class="docutils literal notranslate"><span class="pre">NaN</span></code> automatically flagged missing (<code class="docutils literal notranslate"><span class="pre">9</span></code>).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<hr class="docutils" />
+<section class="tex2jax_ignore mathjax_ignore" id="recommended-reporting">
+<h1>6. Recommended reporting<a class="headerlink" href="#recommended-reporting" title="Link to this heading">#</a></h1>
+<p>A scientific methods section describing backscatter processing with pelagos-py should report:</p>
+<ul class="simple">
+<li><p>the raw signal variable and its initial range- and stuck-value-test thresholds;</p></li>
+<li><p>that no spike test was applied to the raw signal, and why (spikes are treated as real particulate signal);</p></li>
+<li><p>the effective scattering angle (<code class="docutils literal notranslate"><span class="pre">theta</span></code>) and chi factor (<code class="docutils literal notranslate"><span class="pre">xfactor</span></code>) used for the beta-to-b<sub>bp</sub> conversion, and the sensor model/geometry they correspond to;</p></li>
+<li><p>the despiking window size and method (median or minmax) used to separate the baseline and spike components; and</p></li>
+<li><p>which backscatter variable (raw, or despiked baseline) was used as the optical reference for any chlorophyll NPQ correction applied.</p></li>
+</ul>
+<p>An example methods description is given below.</p>
+<blockquote>
+<div><p>Particulate backscattering was processed using pelagos-py. The raw volume scattering function (<code class="docutils literal notranslate"><span class="pre">BETA_BACKSCATTERING700</span></code>, m<sup>-1</sup> sr<sup>-1</sup>) was screened using a range test, with values outside 0 to 0.01 m<sup>-1</sup> sr<sup>-1</sup> flagged probably bad and values outside -1.0 × 10<sup>-4</sup> to 0.05 m<sup>-1</sup> sr<sup>-1</sup> flagged bad, together with a stuck-value test flagging four or more identical consecutive readings as bad. No spike test was applied to the raw signal, as backscatter spikes were considered to represent genuine particulate/aggregate signal rather than sensor artefacts.</p>
+<p>The raw signal was converted to the particulate backscattering coefficient at 700 nm (<code class="docutils literal notranslate"><span class="pre">BBP700</span></code>, m<sup>-1</sup>) following the pure-seawater scattering model of Zhang et al. (2009) and the chi-factor scaling of Sullivan et al. (2013), using an effective scattering angle of 124° and a chi factor of 1.076, appropriate for a three-channel WET Labs ECO-type instrument. The converted signal was subsequently despiked using a centred rolling-median filter of 7 observations following Briggs et al. (2011), producing a despiked baseline (<code class="docutils literal notranslate"><span class="pre">BBP700_BASELINE</span></code>) and an isolated spike component (<code class="docutils literal notranslate"><span class="pre">BBP700_SPIKES</span></code>). The despiked baseline was used as the optical reference for chlorophyll non-photochemical quenching correction.</p>
+</div></blockquote>
+</section>
+<hr class="docutils" />
+<section class="tex2jax_ignore mathjax_ignore" id="references">
+<h1>References<a class="headerlink" href="#references" title="Link to this heading">#</a></h1>
+<ul class="simple">
+<li><p>Briggs, N., Perry, M. J., Cetinić, I., Lee, C., D’Asaro, E., Gray, A. M., &amp; Rehm, E. (2011). High-resolution observations of aggregate flux during a sub-polar North Atlantic spring bloom. <em>Deep-Sea Research Part I</em>, <strong>58</strong>(10), 1031–1039. <a class="reference external" href="https://doi.org/10.1016/j.dsr.2011.07.007">https://doi.org/10.1016/j.dsr.2011.07.007</a></p></li>
+<li><p>Sullivan, J.M., Twardowski, M.S., Zaneveld, J.R.V., &amp; Moore, C.C. (2013). Measuring optical backscattering in water. Chapter 6 in <em>Light Scattering Reviews 7: Radiative Transfer and Optical Properties of Atmosphere and Underlying Surface</em>, pp 189–224.</p></li>
+<li><p>Zhang, X., Hu, L., &amp; He, M.-X. (2009). Scattering by pure seawater: Effect of salinity. <em>Optics Express</em>, <strong>17</strong>(7), 5698–5710. <a class="reference external" href="https://doi.org/10.1364/OE.17.005698">https://doi.org/10.1364/OE.17.005698</a></p></li>
+<li><p>OOI (2012). <em>Data Product Specification for Optical Backscatter (Red Wavelengths)</em>. Document Control Number 1341-00540 (version 1-05).</p></li>
+</ul>
+<p>Full references for the chlorophyll NPQ correction methods that consume b<sub>bp</sub> as an optical reference (Sackmann et al., 2008; Swart et al., 2015; Hemsley et al., 2015; Thomalla et al., 2018; Mitchell et al., 2024; Xing et al., 2018; Terrats et al., 2020) are listed in the <strong>Chlorophyll-<em>a</em> Processing</strong> documentation.</p>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal" tabindex="-1"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Particulate Backscattering (b<sub>bp</sub>) Processing</a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overview">Overview</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#initial-quality-control">1. Initial quality control</a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#range-test">1.1 Range test</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#stuck-value-test">1.2 Stuck value test</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#no-spike-test">1.3 No spike test</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#bbp-from-beta">2. BBP from Beta</a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#physical-basis">2.1 Physical basis</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#default-configuration">2.2 Default configuration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation-notes">2.3 Implementation notes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#figure">2.4 Figure</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#isolate-bbp-spikes">3. Isolate BBP Spikes</a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#principle">3.1 Principle</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">3.2 Default configuration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#qc-filtering-and-missing-value-propagation">3.3 QC filtering and missing-value propagation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">3.4 Figure</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#use-in-chlorophyll-npq-correction">4. Use in chlorophyll NPQ correction</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#outputs">5. Outputs</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#recommended-reporting">6. Recommended reporting</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#references">References</a></li>
+</ul>
+
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2025, National Oceanography Centre.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.1.
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.24.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

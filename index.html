@@ -1,11 +1,11 @@
-
 <!DOCTYPE html>
 
 <html data-content_root="./" lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>Pelagos-Py documentation — Pelagos-Py</title>
+<meta content="2026-11-04T20:18:56+00:00" property="article:modified_time"/>
+<title>pelagos-py documentation — pelagos-py</title>
 <script data-cfasync="false">
     document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
     document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
@@ -20,22 +20,23 @@
     </style>
 </noscript>
 <!-- Loaded before other Sphinx assets -->
-<link href="_static/styles/theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet"/>
-<link href="_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet"/>
+<link href="_static/styles/theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet"/>
+<link href="_static/styles/pydata-sphinx-theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet"/>
 <link href="_static/pygments.css?v=d75fae25" rel="stylesheet" type="text/css"/>
 <link href="_static/copybutton.css?v=76b2166b" rel="stylesheet" type="text/css"/>
 <link href="_static/graphviz.css?v=4ae1632d" rel="stylesheet" type="text/css"/>
 <link href="_static/sphinx-codeautolink.css?v=b2176991" rel="stylesheet" type="text/css"/>
 <link href="_static/sphinx-design.min.css?v=95c83b7e" rel="stylesheet" type="text/css"/>
-<link href="_static/custom.css?v=1376b26a" rel="stylesheet" type="text/css"/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&amp;family=Ubuntu&amp;display=swap" rel="stylesheet" type="text/css"/>
+<link href="_static/custom.css?v=a20de4af" rel="stylesheet" type="text/css"/>
 <!-- So that users can add custom icons -->
-<script defer="" src="_static/scripts/fontawesome.js?digest=a95f357e85573c9b56d5"></script>
+<script defer="" src="_static/scripts/fontawesome.js?digest=75c7c72ae941e8b558d8"></script>
 <!-- Pre-loaded scripts that we'll load fully later -->
-<link as="script" href="_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5" rel="preload"/>
-<link as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5" rel="preload"/>
-<script src="_static/documentation_options.js?v=0b8c961e"></script>
-<script src="_static/doctools.js?v=9bcbadda"></script>
-<script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+<link as="script" href="_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" rel="preload"/>
+<link as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" rel="preload"/>
+<script src="_static/documentation_options.js?v=f9910351"></script>
+<script src="_static/doctools.js?v=fd6eb6e6"></script>
+<script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
 <script src="_static/clipboard.min.js?v=a7894cd8"></script>
 <script src="_static/copybutton.js?v=df1a032d"></script>
 <script src="_static/design-tabs.js?v=f930bc37"></script>
@@ -48,8 +49,10 @@
 <link href="search.html" rel="search" title="Search"/>
 <link href="getting_started.html" rel="next" title="Getting Started"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
+<meta content="light dark" name="color-scheme"/>
 <meta content="en" name="docsearch:language"/>
 <meta content="0.0" name="docsearch:version"/>
+<meta content="Nov 04, 2026" name="docbuild:last-update"/>
 <script src="_static/searchtools.js"></script>
 <script src="_static/language_data.js"></script>
 <script src="searchindex.js"></script>
@@ -71,14 +74,19 @@
 </div>
 <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none" id="pst-header">
 <div class="bd-header__inner bd-page-width">
-<button aria-label="Site navigation" class="pst-navbar-icon sidebar-toggle primary-toggle">
+<button aria-controls="pst-primary-sidebar-modal" aria-expanded="false" aria-label="Site navigation" class="pst-navbar-icon sidebar-toggle primary-toggle" type="button">
 <span class="fa-solid fa-bars"></span>
 </button>
 <div class="col-lg-3 navbar-header-items__start">
 <div class="navbar-item">
 <a class="navbar-brand logo" href="#">
-<img alt="Pelagos-Py - Home" class="logo__image only-light" src="_static/pelagos-py-text-logo.png"/>
-<img alt="Pelagos-Py - Home" class="logo__image only-dark pst-js-only" src="_static/pelagos-py-text-logo.png"/>
+<svg aria-label="pelagos-py - Home" class="logo__image pelagos-logo" height="100" role="img" viewbox="0 0 420 100" width="420" xmlns="http://www.w3.org/2000/svg">
+<rect class="pl-frame" height="100" rx="2.3" width="100" x="0" y="0"></rect>
+<rect fill="#fff" height="27.5" width="91.7" x="4.15" y="4.15"></rect>
+<rect fill="#00b4ff" height="64.19" width="91.7" x="4.15" y="31.66"></rect>
+<text class="pl-title" lengthadjust="spacingAndGlyphs" textlength="300" x="117" y="64">PELAGOS-PY</text>
+<text class="pl-sub" lengthadjust="spacingAndGlyphs" textlength="300" x="117" y="93.2">National Oceanography Centre</text>
+</svg>
 </a></div>
 </div>
 <div class="col-lg-9 navbar-header-items">
@@ -111,7 +119,7 @@
 </div>
 <div class="navbar-header-items__end">
 <div class="navbar-item navbar-persistent--container">
-<button aria-label="Search" class="btn search-button-field search-button__button pst-js-only" data-bs-placement="bottom" data-bs-toggle="tooltip" title="Search">
+<button aria-label="Search" class="btn search-button-field search-button__button pst-js-only" data-bs-placement="bottom" data-bs-toggle="tooltip" title="Search" type="button">
 <i class="fa-solid fa-magnifying-glass"></i>
 <span class="search-button__default-text">Search</span>
 <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
@@ -119,15 +127,15 @@
 </div>
 <div class="navbar-item">
 <div class="theme-switch-container dropdown pst-js-only" data-bs-placement="bottom" data-bs-toggle="tooltip" title="Color mode">
-<button aria-label="Color mode" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" data-bs-toggle="dropdown">
-<i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
-<i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
-<i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+<button aria-label="Color mode" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" data-bs-toggle="dropdown" type="button">
+<i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+<i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+<i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
 </button>
 <ul class="dropdown-menu dropdown-menu-end">
-<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
-<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
-<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto" type="button"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light" type="button"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark" type="button"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
 </ul>
 </div></div>
 <div class="navbar-item"><ul aria-label="Icon Links" class="navbar-icon-links">
@@ -138,7 +146,7 @@
 </div>
 </div>
 <div class="navbar-persistent--mobile">
-<button aria-label="Search" class="btn search-button-field search-button__button pst-js-only" data-bs-placement="bottom" data-bs-toggle="tooltip" title="Search">
+<button aria-label="Search" class="btn search-button-field search-button__button pst-js-only" data-bs-placement="bottom" data-bs-toggle="tooltip" title="Search" type="button">
 <i class="fa-solid fa-magnifying-glass"></i>
 <span class="search-button__default-text">Search</span>
 <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
@@ -148,7 +156,7 @@
 </header>
 <div class="bd-container">
 <div class="bd-container__inner bd-page-width">
-<dialog id="pst-primary-sidebar-modal"></dialog>
+<dialog id="pst-primary-sidebar-modal" tabindex="-1"></dialog>
 <div class="bd-sidebar-primary bd-sidebar hide-on-wide" id="pst-primary-sidebar">
 <div class="sidebar-header-items sidebar-primary__section">
 <div class="sidebar-header-items__center">
@@ -181,15 +189,15 @@
 <div class="sidebar-header-items__end">
 <div class="navbar-item">
 <div class="theme-switch-container dropdown pst-js-only" data-bs-placement="bottom" data-bs-toggle="tooltip" title="Color mode">
-<button aria-label="Color mode" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" data-bs-toggle="dropdown">
-<i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
-<i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
-<i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+<button aria-label="Color mode" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" data-bs-toggle="dropdown" type="button">
+<i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+<i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+<i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
 </button>
 <ul class="dropdown-menu dropdown-menu-end">
-<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
-<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
-<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto" type="button"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light" type="button"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark" type="button"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
 </ul>
 </div></div>
 <div class="navbar-item"><ul aria-label="Icon Links" class="navbar-icon-links">
@@ -212,31 +220,32 @@
 <div id="searchbox"></div>
 <article class="bd-article">
 <section id="pelagos-py-documentation">
-<h1>Pelagos-Py documentation<a class="headerlink" href="#pelagos-py-documentation" title="Link to this heading">#</a></h1>
+<h1>pelagos-py documentation<a class="headerlink" href="#pelagos-py-documentation" title="Link to this heading">#</a></h1>
 <dl class="field-list simple">
 <dt class="field-odd">Version<span class="colon">:</span></dt>
-<dd class="field-odd"><p>0.0.0+unknown</p>
+<dd class="field-odd"><p>0.0.19.dev1+g7f7a5771e</p>
 </dd>
 </dl>
-<p>The NOC (National Oceanography Centre) Autonomy Toolbox, pelagos_py, is a modular processing pipeline tool designed to operate on raw
-OG1-like format glider/ALR data, outputting “science ready” datasets. The user interfaces with the tool through a single YAML config file, allowing for easy definition and dissemination
-of processing protocols. This allows academics to “standardise” their processing tools and easily share their methods by simply sharing raw data and config files.</p>
-<p>As we hope this tool will be adopted by the glider community, effort has been made to implement a broad range of desirable processing steps, covering a large number of oceanographic
-variables which continue to grow. We are always welcome to new suggestions and for those who want to get their hands dirty, we have attempted to make implementation of custom steps as
-simple as possible. See <a class="reference internal" href="development.html"><span class="doc">Development</span></a> for more details.</p>
-<p>Whilst the tool itself is written in python, interfacing with it requires little prior knowledge of the language. In most cases, processing is achieved through a few lines of code:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><a class="sphinx-codeautolink-a" href="api/pelagos_py/index.html#module-pelagos_py"><span class="nn">pelagos_py</span></a><span class="w"> </span><span class="kn">import</span> <span class="n">Pipeline</span>
+<p>pelagos-py, from the NOC (National Oceanography Centre) Autonomy group, is a modular processing pipeline for raw
+OG1-format glider and ALR data that outputs science-ready datasets. You control it through a single YAML config file, so a
+processing method can be shared and reproduced by sharing the raw data and the config.</p>
+<p>It covers a broad and growing range of oceanographic variables. Suggestions are always welcome, and adding your own steps
+is kept as simple as possible: see <a class="reference internal" href="development.html"><span class="doc">Development</span></a>.</p>
+<p>The tool is written in Python, but using it needs little Python. In most cases processing takes a few lines:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><a class="sphinx-codeautolink-a" href="api/pelagos_py/index.html#module-pelagos_py"><span class="nn">pelagos_py</span></a><span class="w"> </span><span class="kn">import</span> <a class="sphinx-codeautolink-a" href="api/pelagos_py/pipeline/index.html#pelagos_py.pipeline.Pipeline" title="pelagos_py.pipeline.Pipeline"><span class="n">Pipeline</span></a>
 
 <span class="c1"># Create the pipeline using the specified config</span>
-<span class="n">Pipeline</span><span class="o">.</span><span class="n">load_config</span><span class="p">(</span><span class="s2">"config.yaml"</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<a class="sphinx-codeautolink-a" href="api/pelagos_py/pipeline/index.html#pelagos_py.pipeline.Pipeline.load_config" title="pelagos_py.pipeline.Pipeline.load_config"><span class="n">Pipeline</span><span class="o">.</span><span class="n">load_config</span></a><span class="p">(</span><span class="s2">"config.yaml"</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 
 <span class="c1"># Or build a config for an OG1 file from the default template, then run it</span>
-<span class="n">Pipeline</span><span class="o">.</span><span class="n">make_config</span><span class="p">(</span><span class="s2">"glider.nc"</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<a class="sphinx-codeautolink-a" href="api/pelagos_py/pipeline/index.html#pelagos_py.pipeline.Pipeline.make_config" title="pelagos_py.pipeline.Pipeline.make_config"><span class="n">Pipeline</span><span class="o">.</span><span class="n">make_config</span></a><span class="p">(</span><span class="s2">"glider.nc"</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>The only involved part is defining your <code class="docutils literal notranslate"><span class="pre">config.yaml</span></code> (<code class="docutils literal notranslate"><span class="pre">make_config</span></code> builds one for your file to start from), which determines the details of how your raw data will be processed. YAML files are designed to be “human readable” so it should
-be fairly intuitive to set them up. We have provided extensive details in <code class="docutils literal notranslate"><span class="pre">examples/configs/all_step_configs.yaml</span></code> which should help you - but if you see anything that doesn’t
-make sense, let us know so we can improve it.</p>
+<p>The main work is writing your <code class="docutils literal notranslate"><span class="pre">config.yaml</span></code>, which sets how the raw data is processed. <code class="docutils literal notranslate"><span class="pre">make_config</span></code> builds one for your
+file to start from, and <code class="docutils literal notranslate"><span class="pre">examples/configs/all_step_configs.yaml</span></code> documents every step’s options. If anything doesn’t make
+sense, let us know so we can improve it.</p>
+<a class="reference internal image-reference" href="_images/pelagos_demo.gif"><img alt="pelagos-py building, running and exporting a pipeline" src="_images/pelagos_demo.gif" style="width: 100%;"/>
+</a>
 <hr class="docutils"/>
 <div class="sd-container-fluid sd-sphinx-override sd-mb-4 docutils">
 <div class="sd-row sd-row-cols-1 sd-row-cols-xs-1 sd-row-cols-sm-2 sd-row-cols-md-2 sd-row-cols-lg-2 sd-g-3 sd-g-xs-3 sd-g-sm-3 sd-g-md-3 sd-g-lg-3 docutils">
@@ -306,8 +315,8 @@ make sense, let us know so we can improve it.</p>
 </div>
 </div>
 <!-- Scripts loaded after <body> so the DOM is not blocked -->
-<script defer="" src="_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5"></script>
-<script defer="" src="_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5"></script>
+<script defer="" src="_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8"></script>
+<script defer="" src="_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8"></script>
 <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
 <div class="footer-items__start">
@@ -320,16 +329,15 @@ make sense, let us know so we can improve it.</p>
 </div>
 <div class="footer-item">
 <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
-    <br/>
-</p>
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.1.
+  </p>
 </div>
 </div>
 <div class="footer-items__end">
 <div class="footer-item">
 <p class="theme-version">
 <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.19.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.24.0.
 </p></div>
 </div>
 </div>
