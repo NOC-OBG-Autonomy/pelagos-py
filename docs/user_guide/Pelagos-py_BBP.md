@@ -1,10 +1,8 @@
 # Particulate Backscattering (b<sub>bp</sub>) Processing
 
-```{figure} ../_static/bbp/bbp_section.png
+```{image} ../_static/bbp/bbp_section.png
 :alt: Particulate backscattering (bbp) against pressure and time for the demo deployment
 :width: 100%
-
-Particulate backscattering (b<sub>bp</sub>) from the pelagos-py demo deployment (one month, June 2024) against pressure and time, with QC-flagged samples removed. The left strip shows the same values against pressure.
 ```
 
 ## Overview

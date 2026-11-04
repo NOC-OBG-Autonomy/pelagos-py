@@ -1,10 +1,8 @@
 # Temperature Processing
 
-```{figure} ../_static/temp/temp_section.png
+```{image} ../_static/temp/temp_section.png
 :alt: Temperature against pressure and time for the demo deployment
 :width: 100%
-
-Temperature from the pelagos-py demo deployment (one month, June 2024) against pressure and time, with QC-flagged samples removed. The left strip shows the same values against pressure.
 ```
 
 ## Overview

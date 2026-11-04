@@ -1,10 +1,8 @@
 # Chlorophyll-*a* Processing
 
-```{figure} ../_static/chla/chla_section.png
+```{image} ../_static/chla/chla_section.png
 :alt: Chlorophyll-a against pressure and time for the demo deployment
 :width: 100%
-
-Chlorophyll-*a* from the pelagos-py demo deployment (one month, June 2024) against pressure and time, with QC-flagged samples removed. The left strip shows the same values against pressure.
 ```
 
 ## Overview

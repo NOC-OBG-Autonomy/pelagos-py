@@ -1,10 +1,8 @@
 # Salinity Adjustment
 
-```{figure} ../_static/salinity/salinity_section.png
+```{image} ../_static/salinity/salinity_section.png
 :alt: Practical salinity against pressure and time for the demo deployment
 :width: 100%
-
-Practical salinity from the pelagos-py demo deployment (one month, June 2024) against pressure and time, with QC-flagged samples removed. The left strip shows the same values against pressure.
 ```
 
 ## Overview

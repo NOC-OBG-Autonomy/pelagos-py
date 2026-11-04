@@ -1,10 +1,8 @@
 # Oxygen Processing: Aanderaa Optodes
 
-```{figure} ../_static/doxy/doxy_section.png
+```{image} ../_static/doxy/doxy_section.png
 :alt: Oxygen concentration against pressure and time for the demo deployment
 :width: 100%
-
-Oxygen concentration from the pelagos-py demo deployment (one month, June 2024) against pressure and time, with QC-flagged samples removed. The left strip shows the same values against pressure.
 ```
 
 ## Overview
