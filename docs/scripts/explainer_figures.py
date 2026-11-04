@@ -29,7 +29,6 @@ from pelagos_py.utils.demo_data import get_demo_file  # noqa: E402
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 SAMPLE_SECONDS = 10
-TOP_PLOT_H = 3.2  # short banner plots at the top of a page
 
 
 def _leg(start, end, seconds):
@@ -191,7 +190,7 @@ def demo_phases(out):
     df = _demo_days("2024-06-14", 1)
     result = fp.find_profiles(df.copy())
     fig, axes = fig_spec.new_fig()
-    fig.set_size_inches(fig_spec.FIG_W, TOP_PLOT_H)
+    fig.set_size_inches(fig_spec.FIG_W, fig_spec.BANNER_H)
     ax = axes[0][0]
     _phase_points(
         ax, df["TIME"].to_numpy(), df["PRES"].to_numpy(), result["SCI_PHASE"].to_numpy()
@@ -209,7 +208,7 @@ def pressure_track(out):
     # Break the line at data gaps rather than drawing across them.
     pres = df["PRES"].mask(df["TIME"].diff() > pd.Timedelta(minutes=5))
     fig, axes = fig_spec.new_fig()
-    fig.set_size_inches(fig_spec.FIG_W, TOP_PLOT_H)
+    fig.set_size_inches(fig_spec.FIG_W, fig_spec.BANNER_H)
     ax = axes[0][0]
     ax.plot(df["TIME"], pres, color=fig_spec.CATEGORY[0], lw=1)
     ax.invert_yaxis()

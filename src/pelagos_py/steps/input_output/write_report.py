@@ -1973,7 +1973,7 @@ def cross_section_figure(
     #   A4-portrait stack of PRES-vs-TIME panels (see _CROSS_SECTION_PANELS), one
     #   per variable, sharing the TIME axis, each with a profile strip and
     #   colourbar. Robust percentile colour limits; returns the saved path or None.
-    #   ``labels`` limits it to those panels (e.g. ["Temperature"]), sized to fit.
+    #   ``labels`` limits it to those panels (e.g. ["Temperature"]), each BANNER_H tall.
     import matplotlib.dates as mdates
     from matplotlib.colors import LinearSegmentedColormap
     from matplotlib.ticker import MaxNLocator
@@ -2031,8 +2031,11 @@ def cross_section_figure(
     #   A4-portrait proportions, trimmed a little in height so the "Cross Section
     #   Plots" heading and the figure sit together on one page. constrained_layout
     #   lines up every panel with its left profile strip and right colourbar.
-    height = 10.3 if labels is None else 1.0 + 2.4 * len(resolved_panels)
-    fig = plt.figure(figsize=(8.27, height), layout="constrained")
+    if labels is None:
+        figsize = (8.27, 10.3)
+    else:
+        figsize = (fig_spec.FIG_W, fig_spec.BANNER_H * len(resolved_panels))
+    fig = plt.figure(figsize=figsize, layout="constrained")
     #   Per row: [narrow profile strip] [main cross-section] [thin colourbar].
     gs = fig.add_gridspec(len(resolved_panels), 3, width_ratios=[0.22, 1.0, 0.045])
 
