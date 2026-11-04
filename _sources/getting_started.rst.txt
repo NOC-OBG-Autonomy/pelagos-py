@@ -80,7 +80,7 @@ for your OG1 file or from a config you already have:
    # Or load a config you already have, e.g. glider.yaml after editing it
    pipeline = Pipeline.load_config("my_pipeline.yaml")
 
-To try it without your own data, ``get_demo_file`` downloads a demo OG1 file (a month of NOC glider data from the North Atlantic, ~15 MB) into
+To try it without your own data, ``get_demo_file`` downloads a demo OG1 file (a month of NOC glider data from the North Atlantic, ~35 MB) into
 ``examples/data/OG1`` (only the first time) and returns its path. ``examples/python/run_demo.py`` does this end to end:
 
 .. code-block:: python
