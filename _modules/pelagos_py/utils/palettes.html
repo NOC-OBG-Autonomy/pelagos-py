@@ -418,51 +418,125 @@
 <span class="c1"># Per-variable sequential palettes, keyed by lower-case name; stops low -&gt; high.</span>
 <span class="n">SEQUENTIAL</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">"temperature"</span><span class="p">:</span> <span class="p">[</span>
-        <span class="s2">"#1b1c6e"</span><span class="p">,</span> <span class="s2">"#365292"</span><span class="p">,</span> <span class="s2">"#5286b7"</span><span class="p">,</span> <span class="s2">"#8db4c4"</span><span class="p">,</span> <span class="s2">"#dbe5cd"</span><span class="p">,</span>
-        <span class="s2">"#f1d8b4"</span><span class="p">,</span> <span class="s2">"#d9997e"</span><span class="p">,</span> <span class="s2">"#c05e4c"</span><span class="p">,</span> <span class="s2">"#a0372b"</span><span class="p">,</span> <span class="s2">"#811910"</span><span class="p">,</span>
+        <span class="s2">"#1b1c6e"</span><span class="p">,</span>
+        <span class="s2">"#365292"</span><span class="p">,</span>
+        <span class="s2">"#5286b7"</span><span class="p">,</span>
+        <span class="s2">"#8db4c4"</span><span class="p">,</span>
+        <span class="s2">"#dbe5cd"</span><span class="p">,</span>
+        <span class="s2">"#f1d8b4"</span><span class="p">,</span>
+        <span class="s2">"#d9997e"</span><span class="p">,</span>
+        <span class="s2">"#c05e4c"</span><span class="p">,</span>
+        <span class="s2">"#a0372b"</span><span class="p">,</span>
+        <span class="s2">"#811910"</span><span class="p">,</span>
     <span class="p">],</span>
     <span class="s2">"salinity"</span><span class="p">:</span> <span class="p">[</span>
-        <span class="s2">"#f9e8b1"</span><span class="p">,</span> <span class="s2">"#f1c38f"</span><span class="p">,</span> <span class="s2">"#e8a074"</span><span class="p">,</span> <span class="s2">"#db7c5f"</span><span class="p">,</span> <span class="s2">"#cb5c58"</span><span class="p">,</span>
-        <span class="s2">"#b2425c"</span><span class="p">,</span> <span class="s2">"#943061"</span><span class="p">,</span> <span class="s2">"#732460"</span><span class="p">,</span> <span class="s2">"#511c53"</span><span class="p">,</span> <span class="s2">"#321340"</span><span class="p">,</span>
+        <span class="s2">"#f9e8b1"</span><span class="p">,</span>
+        <span class="s2">"#f1c38f"</span><span class="p">,</span>
+        <span class="s2">"#e8a074"</span><span class="p">,</span>
+        <span class="s2">"#db7c5f"</span><span class="p">,</span>
+        <span class="s2">"#cb5c58"</span><span class="p">,</span>
+        <span class="s2">"#b2425c"</span><span class="p">,</span>
+        <span class="s2">"#943061"</span><span class="p">,</span>
+        <span class="s2">"#732460"</span><span class="p">,</span>
+        <span class="s2">"#511c53"</span><span class="p">,</span>
+        <span class="s2">"#321340"</span><span class="p">,</span>
     <span class="p">],</span>
     <span class="s2">"density"</span><span class="p">:</span> <span class="p">[</span>
-        <span class="s2">"#e6f1f7"</span><span class="p">,</span> <span class="s2">"#c4d8e8"</span><span class="p">,</span> <span class="s2">"#a6bed9"</span><span class="p">,</span> <span class="s2">"#8ba4c9"</span><span class="p">,</span> <span class="s2">"#7489b8"</span><span class="p">,</span> <span class="s2">"#636c9f"</span><span class="p">,</span>
-        <span class="s2">"#595388"</span><span class="p">,</span> <span class="s2">"#55406e"</span><span class="p">,</span> <span class="s2">"#4e3055"</span><span class="p">,</span> <span class="s2">"#3f2040"</span><span class="p">,</span> <span class="s2">"#2e1226"</span><span class="p">,</span>
+        <span class="s2">"#e6f1f7"</span><span class="p">,</span>
+        <span class="s2">"#c4d8e8"</span><span class="p">,</span>
+        <span class="s2">"#a6bed9"</span><span class="p">,</span>
+        <span class="s2">"#8ba4c9"</span><span class="p">,</span>
+        <span class="s2">"#7489b8"</span><span class="p">,</span>
+        <span class="s2">"#636c9f"</span><span class="p">,</span>
+        <span class="s2">"#595388"</span><span class="p">,</span>
+        <span class="s2">"#55406e"</span><span class="p">,</span>
+        <span class="s2">"#4e3055"</span><span class="p">,</span>
+        <span class="s2">"#3f2040"</span><span class="p">,</span>
+        <span class="s2">"#2e1226"</span><span class="p">,</span>
     <span class="p">],</span>
     <span class="s2">"oxygen"</span><span class="p">:</span> <span class="p">[</span>
-        <span class="s2">"#eaf85a"</span><span class="p">,</span> <span class="s2">"#f5d848"</span><span class="p">,</span> <span class="s2">"#fbba3e"</span><span class="p">,</span> <span class="s2">"#fb9e3e"</span><span class="p">,</span> <span class="s2">"#f4844c"</span><span class="p">,</span> <span class="s2">"#e4725f"</span><span class="p">,</span>
-        <span class="s2">"#ca6774"</span><span class="p">,</span> <span class="s2">"#af5f82"</span><span class="p">,</span> <span class="s2">"#95568a"</span><span class="p">,</span> <span class="s2">"#7c4d90"</span><span class="p">,</span> <span class="s2">"#634198"</span><span class="p">,</span> <span class="s2">"#4735a0"</span><span class="p">,</span>
-        <span class="s2">"#203487"</span><span class="p">,</span> <span class="s2">"#0a2f59"</span><span class="p">,</span> <span class="s2">"#313335"</span><span class="p">,</span>
+        <span class="s2">"#eaf85a"</span><span class="p">,</span>
+        <span class="s2">"#f5d848"</span><span class="p">,</span>
+        <span class="s2">"#fbba3e"</span><span class="p">,</span>
+        <span class="s2">"#fb9e3e"</span><span class="p">,</span>
+        <span class="s2">"#f4844c"</span><span class="p">,</span>
+        <span class="s2">"#e4725f"</span><span class="p">,</span>
+        <span class="s2">"#ca6774"</span><span class="p">,</span>
+        <span class="s2">"#af5f82"</span><span class="p">,</span>
+        <span class="s2">"#95568a"</span><span class="p">,</span>
+        <span class="s2">"#7c4d90"</span><span class="p">,</span>
+        <span class="s2">"#634198"</span><span class="p">,</span>
+        <span class="s2">"#4735a0"</span><span class="p">,</span>
+        <span class="s2">"#203487"</span><span class="p">,</span>
+        <span class="s2">"#0a2f59"</span><span class="p">,</span>
+        <span class="s2">"#313335"</span><span class="p">,</span>
     <span class="p">],</span>
     <span class="s2">"chlorophyll"</span><span class="p">:</span> <span class="p">[</span>
-        <span class="s2">"#182548"</span><span class="p">,</span> <span class="s2">"#2c5398"</span><span class="p">,</span> <span class="s2">"#4a88a4"</span><span class="p">,</span> <span class="s2">"#87b8b5"</span><span class="p">,</span> <span class="s2">"#dae4da"</span><span class="p">,</span>
-        <span class="s2">"#e6d992"</span><span class="p">,</span> <span class="s2">"#a8ab3e"</span><span class="p">,</span> <span class="s2">"#56872e"</span><span class="p">,</span> <span class="s2">"#285932"</span><span class="p">,</span> <span class="s2">"#1b2617"</span><span class="p">,</span>
+        <span class="s2">"#182548"</span><span class="p">,</span>
+        <span class="s2">"#2c5398"</span><span class="p">,</span>
+        <span class="s2">"#4a88a4"</span><span class="p">,</span>
+        <span class="s2">"#87b8b5"</span><span class="p">,</span>
+        <span class="s2">"#dae4da"</span><span class="p">,</span>
+        <span class="s2">"#e6d992"</span><span class="p">,</span>
+        <span class="s2">"#a8ab3e"</span><span class="p">,</span>
+        <span class="s2">"#56872e"</span><span class="p">,</span>
+        <span class="s2">"#285932"</span><span class="p">,</span>
+        <span class="s2">"#1b2617"</span><span class="p">,</span>
     <span class="p">],</span>
     <span class="s2">"backscatter"</span><span class="p">:</span> <span class="p">[</span>
-        <span class="s2">"#cccccc"</span><span class="p">,</span> <span class="s2">"#737373"</span><span class="p">,</span> <span class="s2">"#000000"</span><span class="p">,</span> <span class="s2">"#1335f5"</span><span class="p">,</span> <span class="s2">"#3f8df7"</span><span class="p">,</span>
-        <span class="s2">"#67dffb"</span><span class="p">,</span> <span class="s2">"#a1fc4e"</span><span class="p">,</span> <span class="s2">"#f8d748"</span><span class="p">,</span> <span class="s2">"#ef8733"</span><span class="p">,</span> <span class="s2">"#ea3323"</span><span class="p">,</span>
+        <span class="s2">"#cccccc"</span><span class="p">,</span>
+        <span class="s2">"#737373"</span><span class="p">,</span>
+        <span class="s2">"#000000"</span><span class="p">,</span>
+        <span class="s2">"#1335f5"</span><span class="p">,</span>
+        <span class="s2">"#3f8df7"</span><span class="p">,</span>
+        <span class="s2">"#67dffb"</span><span class="p">,</span>
+        <span class="s2">"#a1fc4e"</span><span class="p">,</span>
+        <span class="s2">"#f8d748"</span><span class="p">,</span>
+        <span class="s2">"#ef8733"</span><span class="p">,</span>
+        <span class="s2">"#ea3323"</span><span class="p">,</span>
     <span class="p">],</span>
     <span class="c1"># cmocean "solar" sampled to hex (dark maroon -&gt; bright yellow), for PAR.</span>
     <span class="s2">"solar"</span><span class="p">:</span> <span class="p">[</span>
-        <span class="s2">"#331318"</span><span class="p">,</span> <span class="s2">"#4d1c1a"</span><span class="p">,</span> <span class="s2">"#6a2517"</span><span class="p">,</span> <span class="s2">"#862f13"</span><span class="p">,</span> <span class="s2">"#9c3d13"</span><span class="p">,</span> <span class="s2">"#ad5017"</span><span class="p">,</span>
-        <span class="s2">"#bb641c"</span><span class="p">,</span> <span class="s2">"#c67c24"</span><span class="p">,</span> <span class="s2">"#cf9730"</span><span class="p">,</span> <span class="s2">"#d4b445"</span><span class="p">,</span> <span class="s2">"#d3d55e"</span><span class="p">,</span>
+        <span class="s2">"#331318"</span><span class="p">,</span>
+        <span class="s2">"#4d1c1a"</span><span class="p">,</span>
+        <span class="s2">"#6a2517"</span><span class="p">,</span>
+        <span class="s2">"#862f13"</span><span class="p">,</span>
+        <span class="s2">"#9c3d13"</span><span class="p">,</span>
+        <span class="s2">"#ad5017"</span><span class="p">,</span>
+        <span class="s2">"#bb641c"</span><span class="p">,</span>
+        <span class="s2">"#c67c24"</span><span class="p">,</span>
+        <span class="s2">"#cf9730"</span><span class="p">,</span>
+        <span class="s2">"#d4b445"</span><span class="p">,</span>
+        <span class="s2">"#d3d55e"</span><span class="p">,</span>
     <span class="p">],</span>
 <span class="p">}</span>
 
-<span class="c1"># Dataset variable names -&gt; SEQUENTIAL palette key.</span>
+<span class="c1"># Dataset variable names -&gt; SEQUENTIAL palette key; X_ADJUSTED uses X's.</span>
 <span class="n">VARIABLE_PALETTES</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">"TEMP"</span><span class="p">:</span> <span class="s2">"temperature"</span><span class="p">,</span>
     <span class="s2">"CONS_TEMP"</span><span class="p">:</span> <span class="s2">"temperature"</span><span class="p">,</span>
     <span class="s2">"PSAL"</span><span class="p">:</span> <span class="s2">"salinity"</span><span class="p">,</span>
-    <span class="s2">"PRAC_SALINITY"</span><span class="p">:</span> <span class="s2">"salinity"</span><span class="p">,</span>
-    <span class="s2">"ABS_SALINITY"</span><span class="p">:</span> <span class="s2">"salinity"</span><span class="p">,</span>
+    <span class="s2">"ASAL"</span><span class="p">:</span> <span class="s2">"salinity"</span><span class="p">,</span>
     <span class="s2">"DENSITY"</span><span class="p">:</span> <span class="s2">"density"</span><span class="p">,</span>
     <span class="s2">"SIGMA0"</span><span class="p">:</span> <span class="s2">"density"</span><span class="p">,</span>
     <span class="s2">"DOXY"</span><span class="p">:</span> <span class="s2">"oxygen"</span><span class="p">,</span>
     <span class="s2">"CHLA"</span><span class="p">:</span> <span class="s2">"chlorophyll"</span><span class="p">,</span>
-    <span class="s2">"CHLA_ADJUSTED"</span><span class="p">:</span> <span class="s2">"chlorophyll"</span><span class="p">,</span>
     <span class="s2">"BBP700"</span><span class="p">:</span> <span class="s2">"backscatter"</span><span class="p">,</span>
-    <span class="s2">"BBP700_ADJUSTED"</span><span class="p">:</span> <span class="s2">"backscatter"</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="c1"># Fixed colours for categorical variables (value -&gt; hex), so every plot of one agrees.</span>
+<span class="n">CATEGORICAL</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="c1"># Find Profiles phases: unknown, ascent, descent, surfacing, parking, inflection, propelled, transition</span>
+    <span class="s2">"SCI_PHASE"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="mi">0</span><span class="p">:</span> <span class="s2">"#9ca3af"</span><span class="p">,</span>
+        <span class="mi">1</span><span class="p">:</span> <span class="s2">"#22c55e"</span><span class="p">,</span>
+        <span class="mi">2</span><span class="p">:</span> <span class="s2">"#3b82f6"</span><span class="p">,</span>
+        <span class="mi">3</span><span class="p">:</span> <span class="s2">"#f97316"</span><span class="p">,</span>
+        <span class="mi">4</span><span class="p">:</span> <span class="s2">"#a855f7"</span><span class="p">,</span>
+        <span class="mi">5</span><span class="p">:</span> <span class="s2">"#06b6d4"</span><span class="p">,</span>
+        <span class="mi">6</span><span class="p">:</span> <span class="s2">"#ef4444"</span><span class="p">,</span>
+        <span class="mi">7</span><span class="p">:</span> <span class="s2">"#eab308"</span><span class="p">,</span>
+    <span class="p">},</span>
 <span class="p">}</span>
 
 
@@ -486,7 +560,7 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">cmap_for_variable</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Colormap for a dataset variable name (case-insensitive), or ``default``</span>
 <span class="sd">    when the variable has no mapping in VARIABLE_PALETTES."""</span>
-    <span class="n">key</span> <span class="o">=</span> <span class="n">VARIABLE_PALETTES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">variable</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">VARIABLE_PALETTES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">variable</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="o">.</span><span class="n">removesuffix</span><span class="p">(</span><span class="s2">"_ADJUSTED"</span><span class="p">))</span>
     <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">default</span>
     <span class="k">return</span> <span class="n">get_cmap</span><span class="p">(</span><span class="n">key</span><span class="p">)</span></div>

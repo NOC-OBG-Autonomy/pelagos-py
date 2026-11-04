@@ -419,7 +419,6 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.yaml_loading</span><span class="w"> </span><span class="kn">import</span> <span class="n">safe_load</span> <span class="k">as</span> <span class="n">yaml_safe_load</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">REGISTERED_STEPS</span>
@@ -468,9 +467,7 @@
     <span class="n">failed_modules</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="c1"># Pre-collect module files so the scan can show a determinate progress bar.</span>
     <span class="n">module_files</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="n">py_file</span>
-        <span class="k">for</span> <span class="n">py_file</span> <span class="ow">in</span> <span class="n">base_dir</span><span class="o">.</span><span class="n">rglob</span><span class="p">(</span><span class="s2">"*.py"</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">py_file</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s2">"__init__.py"</span>
+        <span class="n">py_file</span> <span class="k">for</span> <span class="n">py_file</span> <span class="ow">in</span> <span class="n">base_dir</span><span class="o">.</span><span class="n">rglob</span><span class="p">(</span><span class="s2">"*.py"</span><span class="p">)</span> <span class="k">if</span> <span class="n">py_file</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s2">"__init__.py"</span>
     <span class="p">]</span>
     <span class="k">for</span> <span class="n">py_file</span> <span class="ow">in</span> <span class="n">progress_bar</span><span class="p">(</span><span class="n">module_files</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">"Discovering steps"</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">"mod"</span><span class="p">):</span>
         <span class="c1"># Convert file path to module path</span>

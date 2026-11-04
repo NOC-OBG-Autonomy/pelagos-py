@@ -477,6 +477,10 @@
     <span class="n">parameter_schema</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">qc_outputs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">overwrite_flags</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="kc">False</span>  <span class="c1"># set by Apply QC: return_qc then merges with existing_flags</span>
+    <span class="p">)</span>
+    <span class="n">existing_flags</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="c1"># data may be None when a test is instantiated to introspect its</span>
@@ -487,7 +491,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
 
         <span class="c1"># Connect to the main pipeline logging hierarchy</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="sa">f</span><span class="s2">"pelagos_py.pipeline.qc.</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">qc_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">' '</span><span class="p">,</span><span class="w"> </span><span class="s1">'_'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"pelagos_py.pipeline.qc.</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">qc_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">' '</span><span class="p">,</span><span class="w"> </span><span class="s1">'_'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span>
 
         <span class="c1"># Resolve parameters against the schema: applies defaults, enforces required</span>
         <span class="c1"># parameters, and rejects unknown ones. Resolved values become attributes.</span>
@@ -498,6 +504,14 @@
             <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">keep_vars</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">extra</span><span class="p">):</span>
+        <span class="c1"># required variables plus TIME (for plots) and any extra present in the data</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span> <span class="o">+</span> <span class="p">[</span>
+            <span class="n">v</span>
+            <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"TIME"</span><span class="p">,</span> <span class="o">*</span><span class="n">extra</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="ow">and</span> <span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">required_variables</span>
+        <span class="p">]</span>
 
     <span class="nd">@classmethod</span>
 <div class="viewcode-block" id="BaseQC.describe_parameters">

@@ -413,127 +413,29 @@
 <span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">seaborn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sns</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.dates</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mdates</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">geopy.distance</span><span class="w"> </span><span class="kn">import</span> <span class="n">geodesic</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.time</span><span class="w"> </span><span class="kn">import</span> <span class="n">safe_median_datetime</span><span class="p">,</span> <span class="n">add_datetime_secondary_xaxis</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
-
-
-<div class="viewcode-block" id="plot_time_series">
-<a class="viewcode-back" href="../../../api/pelagos_py/utils/diagnostics/index.html#pelagos_py.utils.diagnostics.plot_time_series">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">plot_time_series</span><span class="p">(</span>
-    <span class="n">data</span><span class="p">,</span> <span class="n">x_var</span><span class="p">,</span> <span class="n">y_var</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Time Series Plot"</span><span class="p">,</span> <span class="n">xlabel</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-<span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Generates a time series plot for xarray data."""</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
-        <span class="c1"># Ensure that the variables exist in the xarray dataset</span>
-        <span class="k">if</span> <span class="n">x_var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">coords</span> <span class="ow">or</span> <span class="n">y_var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"Variables </span><span class="si">{</span><span class="n">x_var</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">y_var</span><span class="si">}</span><span class="s2"> must exist in the dataset."</span>
-            <span class="p">)</span>
-        <span class="n">x_data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">x_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>  <span class="c1"># Extract x_data (usually time dimension)</span>
-        <span class="n">y_data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">y_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>  <span class="c1"># Extract the y_data (variable to plot)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="c1"># Assuming custom format such as lists or arrays</span>
-        <span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-
-    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="n">xlabel</span> <span class="ow">or</span> <span class="n">x_var</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="n">ylabel</span> <span class="ow">or</span> <span class="n">y_var</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
-
-
-
-<div class="viewcode-block" id="plot_histogram">
-<a class="viewcode-back" href="../../../api/pelagos_py/utils/diagnostics/index.html#pelagos_py.utils.diagnostics.plot_histogram">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">plot_histogram</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Histogram"</span><span class="p">,</span> <span class="n">xlabel</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Generates a histogram for a given variable in xarray data."""</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
-        <span class="c1"># Ensure that the variable exists in the xarray dataset</span>
-        <span class="k">if</span> <span class="n">var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Variable </span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2"> must exist in the dataset."</span><span class="p">)</span>
-        <span class="n">data_to_plot</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="c1"># Handle custom data types like lists or arrays</span>
-        <span class="n">data_to_plot</span> <span class="o">=</span> <span class="n">data</span>
-
-    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">data_to_plot</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">bins</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="n">xlabel</span> <span class="ow">or</span> <span class="n">var</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">"Frequency"</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
-
-
-
-<div class="viewcode-block" id="plot_boxplot">
-<a class="viewcode-back" href="../../../api/pelagos_py/utils/diagnostics/index.html#pelagos_py.utils.diagnostics.plot_boxplot">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">plot_boxplot</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Box Plot"</span><span class="p">,</span> <span class="n">xlabel</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Generates a box plot for a given variable in xarray data."""</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
-        <span class="c1"># Ensure that the variable exists in the xarray dataset</span>
-        <span class="k">if</span> <span class="n">var</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Variable </span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2"> must exist in the dataset."</span><span class="p">)</span>
-        <span class="n">data_to_plot</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="c1"># Handle custom data types like lists or arrays</span>
-        <span class="n">data_to_plot</span> <span class="o">=</span> <span class="n">data</span>
-
-    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
-    <span class="n">sns</span><span class="o">.</span><span class="n">boxplot</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data_to_plot</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="n">xlabel</span> <span class="ow">or</span> <span class="n">var</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
-
-
-
-<div class="viewcode-block" id="plot_correlation_matrix">
-<a class="viewcode-back" href="../../../api/pelagos_py/utils/diagnostics/index.html#pelagos_py.utils.diagnostics.plot_correlation_matrix">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">plot_correlation_matrix</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Correlation Matrix"</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Generates a heatmap of the correlation matrix for xarray data."""</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">variables</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">variables</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">data_vars</span><span class="p">)</span>  <span class="c1"># Use all variables by default</span>
-        <span class="c1"># Extract the variables to calculate the correlation matrix</span>
-        <span class="n">corr</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">variables</span><span class="p">]</span><span class="o">.</span><span class="n">to_array</span><span class="p">()</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">corr</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s2">"dim_0"</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">"Data must be a Xarray Dataset to generate correlation matrix."</span><span class="p">)</span>
-
-    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
-    <span class="n">sns</span><span class="o">.</span><span class="n">heatmap</span><span class="p">(</span><span class="n">corr</span><span class="p">,</span> <span class="n">annot</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"coolwarm"</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s2">".2f"</span><span class="p">,</span> <span class="n">linewidths</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
-
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span>
 
 
 <div class="viewcode-block" id="generate_info">
 <a class="viewcode-back" href="../../../api/pelagos_py/utils/diagnostics/index.html#pelagos_py.utils.diagnostics.generate_info">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">generate_info</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Generate info for a given dataset"""</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
-        <span class="c1"># For xarray, we'll summarize each data variable</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">"Data Info:"</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">info</span><span class="p">())</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">"Data Info only supported for xarray Dataset "</span><span class="p">)</span></div>
-
-
-
-<div class="viewcode-block" id="check_missing_values">
-<a class="viewcode-back" href="../../../api/pelagos_py/utils/diagnostics/index.html#pelagos_py.utils.diagnostics.check_missing_values">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">check_missing_values</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Check for missing values in the dataset."""</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
-        <span class="n">missing</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">"Missing Values in Xarray Dataset:</span><span class="se">\n</span><span class="s2">"</span><span class="p">,</span> <span class="n">missing</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">"Missing value check only supported for xarray Dataset "</span><span class="p">)</span></div>
+<span class="w">    </span><span class="sd">"""Print one line per variable: name, dtype, units, and whether a QC companion exists."""</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Data Info only supported for xarray Dataset "</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="n">names</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">variables</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">"_QC"</span><span class="p">))</span>
+    <span class="n">n_qc</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">_QC"</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">variables</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">names</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Dimensions: "</span> <span class="o">+</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">sizes</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Variables: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">)</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">n_qc</span><span class="si">}</span><span class="s2"> with QC flags)"</span><span class="p">)</span>
+    <span class="n">width</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">max</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">))</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">names</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="mi">24</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+        <span class="n">units</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">v</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span>
+        <span class="n">qc</span> <span class="o">=</span> <span class="s2">"QC"</span> <span class="k">if</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">_QC"</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">variables</span> <span class="k">else</span> <span class="s2">""</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="si">:</span><span class="s2">&lt;</span><span class="si">{</span><span class="n">width</span><span class="si">}}</span><span class="s2"> </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">v</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="si">:</span><span class="s2">&lt;14</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">units</span><span class="si">:</span><span class="s2">&lt;12</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">qc</span><span class="si">}</span><span class="s2">"</span><span class="o">.</span><span class="n">rstrip</span><span class="p">())</span></div>
 
 
 
@@ -631,6 +533,8 @@
     <span class="n">closest_ids</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">time_diffs</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">distances</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">geopy.distance</span><span class="w"> </span><span class="kn">import</span> <span class="n">geodesic</span>
 
     <span class="k">for</span> <span class="n">a_time</span><span class="p">,</span> <span class="n">a_lat</span><span class="p">,</span> <span class="n">a_lon</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">a_times</span><span class="p">,</span> <span class="n">a_lats</span><span class="p">,</span> <span class="n">a_lons</span><span class="p">):</span>
         <span class="n">time_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">b_times</span> <span class="o">-</span> <span class="n">a_time</span><span class="p">)</span>
@@ -796,6 +700,8 @@
     <span class="k">if</span> <span class="n">df_cross</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
 
+    <span class="kn">from</span><span class="w"> </span><span class="nn">geopy.distance</span><span class="w"> </span><span class="kn">import</span> <span class="n">geodesic</span>
+
     <span class="c1"># Vectorised geodesic distance using np.vectorize</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">compute_dist_km</span><span class="p">(</span><span class="n">lat_a</span><span class="p">,</span> <span class="n">lon_a</span><span class="p">,</span> <span class="n">lat_b</span><span class="p">,</span> <span class="n">lon_b</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">lat_a</span><span class="p">)</span> <span class="ow">or</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">lon_a</span><span class="p">)</span> <span class="ow">or</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">lat_b</span><span class="p">)</span> <span class="ow">or</span> <span class="n">pd</span><span class="o">.</span><span class="n">isna</span><span class="p">(</span><span class="n">lon_b</span><span class="p">):</span>
@@ -874,7 +780,7 @@
 
     <span class="n">H_cum</span> <span class="o">=</span> <span class="n">H</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
     <span class="n">X</span><span class="p">,</span> <span class="n">Y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">yedges</span><span class="p">,</span> <span class="n">xedges</span><span class="p">)</span>
-    <span class="n">im</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">pcolormesh</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">H_cum</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"PuBu"</span><span class="p">,</span> <span class="n">shading</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">pcolormesh</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">,</span> <span class="n">H_cum</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"PuBu"</span><span class="p">,</span> <span class="n">shading</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">)</span>
     <span class="c1"># add additional axis if top row or right column</span>
     <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
         <span class="n">secax</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">secondary_xaxis</span><span class="p">(</span><span class="s2">"top"</span><span class="p">)</span>

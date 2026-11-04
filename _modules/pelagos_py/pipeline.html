@@ -411,14 +411,10 @@
 <span class="sd">"""Pipeline class definition to handle configuration and step execution."""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">gc</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">_dt</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">difflib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
@@ -430,17 +426,30 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.log_levels</span><span class="w"> </span><span class="kn">import</span> <span class="n">STOP</span><span class="p">,</span> <span class="n">SEVERE</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.console</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_console_handler</span><span class="p">,</span> <span class="n">progress_bar</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">config_builder</span><span class="p">,</span> <span class="n">diagnostic_capture</span><span class="p">,</span> <span class="n">file_probe</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_step</span><span class="p">,</span> <span class="n">STEP_CLASSES</span><span class="p">,</span> <span class="n">resolve_step_name</span>
 
 <div class="viewcode-block" id="REPORT_STEP_NAME">
 <a class="viewcode-back" href="../../api/pelagos_py/pipeline/index.html#pelagos_py.pipeline.REPORT_STEP_NAME">[docs]</a>
-<span class="n">REPORT_STEP_NAME</span> <span class="o">=</span> <span class="s2">"Write Data Report (Python)"</span></div>
+<span class="n">REPORT_STEP_NAME</span> <span class="o">=</span> <span class="s2">"Write Data Report"</span></div>
 
 <span class="sd">"""Name of the report step that triggers background diagnostic capture."""</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_step</span><span class="p">,</span> <span class="n">STEP_CLASSES</span><span class="p">,</span> <span class="n">resolve_step_name</span>
-
 <span class="n">_PIPELINE_LOGGER_NAME</span> <span class="o">=</span> <span class="s2">"pelagos_py.pipeline"</span>
 <span class="sd">"""Global logger name for the pipeline. Used to create child loggers for steps."""</span>
+
+
+<span class="n">ON_STEP_FAIL</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"skip"</span><span class="p">,</span> <span class="s2">"pause"</span><span class="p">,</span> <span class="s2">"stop"</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="resolve_on_step_fail">
+<a class="viewcode-back" href="../../api/pelagos_py/pipeline/index.html#pelagos_py.pipeline.resolve_on_step_fail">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">resolve_on_step_fail</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Return the ``on_step_fail`` setting: "skip", "pause" or "stop" (default "pause")."""</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span> <span class="ow">or</span> <span class="s2">"pause"</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">v</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ON_STEP_FAIL</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"on_step_fail must be one of </span><span class="si">{</span><span class="n">ON_STEP_FAIL</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">v</span></div>
+
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_setup_logging</span><span class="p">(</span><span class="n">out_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">log_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">):</span>
@@ -561,14 +570,14 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">steps</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># hierarchical step configs</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># mirrors _parameters["pipeline"]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_context</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_diagnose_failures</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># dashboard: plot every step failure</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">headless</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># never open plot windows</span>
 
         <span class="c1"># initialise config mirror system</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_init_config_mirror</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="n">config_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">"Provide either config_path or config, not both."</span>
-            <span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Provide either config_path or config, not both."</span><span class="p">)</span>
 
         <span class="n">has_config</span> <span class="o">=</span> <span class="n">config_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">config</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">config_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -616,8 +625,8 @@
 <span class="sd">        Build a config for an OG1 file from the default template and create a pipeline from it.</span>
 
 <span class="sd">        The template's steps are adapted to what the file holds (e.g. the PAR steps are</span>
-<span class="sd">        dropped if it has no PAR) and the config is saved to ``config_path`` (default:</span>
-<span class="sd">        ``&lt;file name&gt;.yaml`` next to the file), so the run can be edited and repeated with</span>
+<span class="sd">        dropped if it has no PAR; Visual QC is left out as it needs the dashboard) and the</span>
+<span class="sd">        config is saved to ``config_path`` (default: ``&lt;file name&gt;.yaml`` next to the file), so the run can be edited and repeated with</span>
 <span class="sd">        :meth:`load_config`. With ``ask=True`` each choice is asked in the terminal;</span>
 <span class="sd">        otherwise the defaults are used and logged.</span>
 
@@ -631,20 +640,33 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Could not read '</span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2">' to build a config for it."</span><span class="p">)</span>
         <span class="n">config_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">config_path</span> <span class="ow">or</span> <span class="n">Path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span><span class="o">.</span><span class="n">with_suffix</span><span class="p">(</span><span class="s2">".yaml"</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">ask</span> <span class="ow">and</span> <span class="n">config_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
-            <span class="k">if</span> <span class="nb">input</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">config_path</span><span class="si">}</span><span class="s2"> already exists. Overwrite it? [y/N] "</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">"y"</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">FileExistsError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">config_path</span><span class="si">}</span><span class="s2"> exists; pass config_path= to save elsewhere."</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="nb">input</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">config_path</span><span class="si">}</span><span class="s2"> already exists. Overwrite it? [y/N] "</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                <span class="o">!=</span> <span class="s2">"y"</span>
+            <span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">FileExistsError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">config_path</span><span class="si">}</span><span class="s2"> exists; pass config_path= to save elsewhere."</span>
+                <span class="p">)</span>
 
         <span class="n">decisions</span> <span class="o">=</span> <span class="n">config_builder</span><span class="o">.</span><span class="n">decisions</span><span class="p">(</span><span class="n">probe</span><span class="p">)</span>
         <span class="n">choices</span> <span class="o">=</span> <span class="n">config_builder</span><span class="o">.</span><span class="n">ask_choices</span><span class="p">(</span><span class="n">decisions</span><span class="p">)</span> <span class="k">if</span> <span class="n">ask</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="n">template</span> <span class="o">=</span> <span class="n">config_builder</span><span class="o">.</span><span class="n">DEFAULT_CONFIG</span><span class="o">.</span><span class="n">read_text</span><span class="p">()</span>
         <span class="n">replaced</span> <span class="o">=</span> <span class="n">config_path</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
-        <span class="n">config_path</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">config_builder</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">),</span> <span class="n">probe</span><span class="p">,</span> <span class="n">choices</span><span class="p">))</span>
+        <span class="n">config_path</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span>
+            <span class="n">config_builder</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">file_path</span><span class="p">),</span> <span class="n">probe</span><span class="p">,</span> <span class="n">choices</span><span class="p">)</span>
+        <span class="p">)</span>
 
         <span class="n">pipeline</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">config_path</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">config_path</span><span class="p">))</span>
-        <span class="n">pipeline</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'Replaced'</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">replaced</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">'Wrote'</span><span class="si">}</span><span class="s2"> config </span><span class="si">{</span><span class="n">config_path</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">pipeline</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'Replaced'</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">replaced</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">'Wrote'</span><span class="si">}</span><span class="s2"> config </span><span class="si">{</span><span class="n">config_path</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">ask</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">decisions</span><span class="p">:</span>
-                <span class="n">chosen</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">o</span><span class="p">[</span><span class="s2">"label"</span><span class="p">]</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">d</span><span class="p">[</span><span class="s2">"options"</span><span class="p">]</span> <span class="k">if</span> <span class="n">o</span><span class="p">[</span><span class="s2">"key"</span><span class="p">]</span> <span class="o">==</span> <span class="n">d</span><span class="p">[</span><span class="s2">"default"</span><span class="p">]),</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="n">chosen</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span>
+                    <span class="p">(</span><span class="n">o</span><span class="p">[</span><span class="s2">"label"</span><span class="p">]</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">d</span><span class="p">[</span><span class="s2">"options"</span><span class="p">]</span> <span class="k">if</span> <span class="n">o</span><span class="p">[</span><span class="s2">"key"</span><span class="p">]</span> <span class="o">==</span> <span class="n">d</span><span class="p">[</span><span class="s2">"default"</span><span class="p">]),</span> <span class="kc">None</span>
+                <span class="p">)</span>
                 <span class="n">pipeline</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">d</span><span class="p">[</span><span class="s1">'title'</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">chosen</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">d</span><span class="p">[</span><span class="s1">'detail'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">pipeline</span></div>
 
@@ -662,7 +684,9 @@
 <span class="sd">        steps_config : list of dict</span>
 <span class="sd">            List of step configurations.</span>
 <span class="sd">        """</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Assembling steps to run from config."</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">"console"</span><span class="p">:</span> <span class="kc">False</span><span class="p">})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">"Assembling steps to run from config."</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">"console"</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
+        <span class="p">)</span>
         <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">progress_bar</span><span class="p">(</span><span class="n">steps_config</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">"Assembling steps"</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">"step"</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">add_step</span><span class="p">(</span>
                 <span class="n">step_name</span><span class="o">=</span><span class="n">step</span><span class="p">[</span><span class="s2">"name"</span><span class="p">],</span>
@@ -788,12 +812,18 @@
         <span class="c1"># performance logging. Capture mode additionally force-enables the</span>
         <span class="c1"># diagnostic code path so its figures can be saved for the report,</span>
         <span class="c1"># without otherwise changing how the step reports performance.</span>
-        <span class="n">user_diagnostics</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">diagnostics</span>
+        <span class="c1"># a QC test with diagnostics on counts even when the step's own flag is off</span>
+        <span class="n">qc_tests</span> <span class="o">=</span> <span class="p">(</span><span class="n">step</span><span class="o">.</span><span class="n">parameters</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"qc_settings"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="n">user_diagnostics</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">diagnostics</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">bool</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"diagnostics"</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">qc_tests</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+        <span class="p">)</span>
         <span class="c1"># True when diagnostics run only to feed the report (not user-requested).</span>
         <span class="n">step</span><span class="o">.</span><span class="n">_report_capture</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">capture</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">user_diagnostics</span><span class="p">)</span>
         <span class="n">captured_images</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">if</span> <span class="n">capture</span><span class="p">:</span>
-            <span class="n">step</span><span class="o">.</span><span class="n">diagnostics</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">step</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>  <span class="c1"># keep a user's own figure selection</span>
+                <span class="n">step</span><span class="o">.</span><span class="n">diagnostics</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="n">diagnostic_capture</span><span class="o">.</span><span class="n">make_diagnostics_safe</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
@@ -811,7 +841,7 @@
                     <span class="c1"># Steps the user explicitly enabled diagnostics on still get</span>
                     <span class="c1"># their interactive blocking popup (in addition to being</span>
                     <span class="c1"># saved into the report); force-captured steps stay headless.</span>
-                    <span class="n">interactive</span><span class="o">=</span><span class="n">user_diagnostics</span><span class="p">,</span>
+                    <span class="n">interactive</span><span class="o">=</span><span class="n">user_diagnostics</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">headless</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">if</span> <span class="n">capture</span>
                 <span class="k">else</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">nullcontext</span><span class="p">()</span>
@@ -843,12 +873,24 @@
 
             <span class="k">return</span> <span class="n">result</span>
 
+        <span class="k">except</span> <span class="ne">SystemExit</span><span class="p">:</span>  <span class="c1"># step.halt(): already logged, propagates as is</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_plot_failure</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">user_diagnostics</span><span class="p">)</span>
+            <span class="k">raise</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">"Fatal error encountered while executing step '</span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">': </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_plot_failure</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">user_diagnostics</span><span class="p">)</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Pipeline failed at step '</span><span class="si">{</span><span class="n">step</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">': </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span></div>
 
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_plot_failure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">,</span> <span class="n">user_diagnostics</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_diagnose_failures</span> <span class="ow">or</span> <span class="n">user_diagnostics</span><span class="p">):</span>
+            <span class="k">return</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">step</span><span class="o">.</span><span class="n">plot_failure</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># noqa: BLE001 - never mask the real error</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Failure plot for '</span><span class="si">%s</span><span class="s2">' failed: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">step</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Pipeline.run_last_step">
 <a class="viewcode-back" href="../../api/pelagos_py/pipeline/index.html#pelagos_py.pipeline.Pipeline.run_last_step">[docs]</a>
@@ -870,6 +912,37 @@
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Runs the entire pipeline.</span>
 <span class="sd">        """</span>
+        <span class="c1"># Pausing needs the dashboard; here it just skips.</span>
+        <span class="n">stop_on_fail</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">resolve_on_step_fail</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"on_step_fail"</span><span class="p">))</span> <span class="o">==</span> <span class="s2">"stop"</span>
+        <span class="p">)</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_context</span><span class="p">()</span> <span class="k">as</span> <span class="n">report_present</span><span class="p">:</span>
+            <span class="c1"># Headless Agg for the whole run: toggling the backend per step can crash on Windows</span>
+            <span class="n">backend_ctx</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">diagnostic_capture</span><span class="o">.</span><span class="n">force_headless_backend</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">report_present</span>
+                <span class="k">else</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">nullcontext</span><span class="p">()</span>
+            <span class="p">)</span>
+            <span class="k">with</span> <span class="n">backend_ctx</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute_step</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_context</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="p">(</span><span class="ne">RuntimeError</span><span class="p">,</span> <span class="ne">SystemExit</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="n">stop_on_fail</span><span class="p">:</span>
+                            <span class="k">raise</span>
+                        <span class="c1"># execute_step/halt() already logged the underlying</span>
+                        <span class="c1"># error; this just marks the step as skipped and moves</span>
+                        <span class="c1"># on, keeping the prior step's context.</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+                            <span class="n">SEVERE</span><span class="p">,</span> <span class="s2">"Step '</span><span class="si">%s</span><span class="s2">' failed and was skipped."</span><span class="p">,</span> <span class="n">step</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span>
+                        <span class="p">)</span></div>
+
+
+    <span class="nd">@contextlib</span><span class="o">.</span><span class="n">contextmanager</span>
+<div class="viewcode-block" id="Pipeline.run_context">
+<a class="viewcode-back" href="../../api/pelagos_py/pipeline/index.html#pelagos_py.pipeline.Pipeline.run_context">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run_context</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Validate and set up report capture around a run; yields whether a report step is present."""</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">check_pipeline_variables</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
@@ -880,17 +953,20 @@
             <span class="p">)</span>
             <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
 
-        <span class="c1"># If the pipeline writes a report, capture each step's diagnostic plots</span>
-        <span class="c1"># in the background (regardless of that step's own diagnostics setting)</span>
-        <span class="c1"># so they can be embedded in the report. This exercises every step's</span>
-        <span class="c1"># diagnostic code, which is why it can slow the run down.</span>
+        <span class="c1"># A report captures every step's diagnostic plots (regardless of its own</span>
+        <span class="c1"># diagnostics setting) so they can be embedded, which slows the run down.</span>
         <span class="n">report_params</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span>
-            <span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s2">"parameters"</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps</span> <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span> <span class="o">==</span> <span class="n">REPORT_STEP_NAME</span><span class="p">),</span>
+            <span class="p">(</span>
+                <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"parameters"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+                <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps</span>
+                <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span> <span class="o">==</span> <span class="n">REPORT_STEP_NAME</span>
+            <span class="p">),</span>
             <span class="kc">None</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">report_present</span> <span class="o">=</span> <span class="n">report_params</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-        <span class="n">capture_diagnostics</span> <span class="o">=</span> <span class="n">report_present</span> <span class="ow">and</span> <span class="n">report_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"show_diagnostic_plots"</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
-
+        <span class="n">capture_diagnostics</span> <span class="o">=</span> <span class="n">report_present</span> <span class="ow">and</span> <span class="n">report_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s2">"show_diagnostic_plots"</span><span class="p">,</span> <span class="kc">True</span>
+        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_step_index</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">if</span> <span class="n">capture_diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_capture_diagnostics</span> <span class="o">=</span> <span class="kc">True</span>
@@ -902,38 +978,16 @@
                 <span class="s2">"may run more slowly than usual. `pdb.trace()` may not work as "</span>
                 <span class="s2">"intended."</span>
             <span class="p">)</span>
-
-        <span class="c1"># When capturing for the report, force the headless Agg backend once for</span>
-        <span class="c1"># the whole run (see force_headless_backend). Toggling the backend per</span>
-        <span class="c1"># step can hard-crash on Windows, so it stays on Agg start to finish.</span>
-        <span class="n">backend_ctx</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">diagnostic_capture</span><span class="o">.</span><span class="n">force_headless_backend</span><span class="p">()</span>
-            <span class="k">if</span> <span class="n">report_present</span>
-            <span class="k">else</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">nullcontext</span><span class="p">()</span>
-        <span class="p">)</span>
-        <span class="n">continue_on_step_fail</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">global_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-            <span class="s2">"continue_on_step_fail"</span><span class="p">,</span> <span class="kc">True</span>
-        <span class="p">)</span>
+        <span class="n">gc</span><span class="o">.</span><span class="n">freeze</span><span class="p">()</span>  <span class="c1"># keeps the per-step gc.collect() from walking every library object</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="k">with</span> <span class="n">backend_ctx</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">:</span>
-                    <span class="k">try</span><span class="p">:</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute_step</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_context</span><span class="p">)</span>
-                    <span class="k">except</span> <span class="p">(</span><span class="ne">RuntimeError</span><span class="p">,</span> <span class="ne">SystemExit</span><span class="p">):</span>
-                        <span class="k">if</span> <span class="ow">not</span> <span class="n">continue_on_step_fail</span><span class="p">:</span>
-                            <span class="k">raise</span>
-                        <span class="c1"># execute_step/halt() already logged the underlying</span>
-                        <span class="c1"># error; this just marks the step as skipped and moves</span>
-                        <span class="c1"># on, keeping the prior step's context.</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
-                            <span class="n">SEVERE</span><span class="p">,</span> <span class="s2">"Step '</span><span class="si">%s</span><span class="s2">' failed and was skipped."</span><span class="p">,</span> <span class="n">step</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span>
-                        <span class="p">)</span>
+            <span class="k">yield</span> <span class="n">report_present</span>
         <span class="k">finally</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">report_present</span><span class="p">:</span>
-                <span class="c1">#   Figures have been embedded by the report writer by now.</span>
-                <span class="k">if</span> <span class="n">capture_diagnostics</span><span class="p">:</span>
-                    <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_capture_dir</span><span class="p">,</span> <span class="n">ignore_errors</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_capture_diagnostics</span> <span class="o">=</span> <span class="kc">False</span></div>
+            <span class="n">gc</span><span class="o">.</span><span class="n">unfreeze</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">capture_diagnostics</span><span class="p">:</span>
+                <span class="c1">#   Figures have been embedded by the report writer by now, unless it failed.</span>
+                <span class="n">diagnostic_capture</span><span class="o">.</span><span class="n">wait_for_saves</span><span class="p">()</span>
+                <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_capture_dir</span><span class="p">,</span> <span class="n">ignore_errors</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_capture_diagnostics</span> <span class="o">=</span> <span class="kc">False</span></div>
 
 
 <div class="viewcode-block" id="Pipeline.generate_config">

@@ -57,7 +57,7 @@
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
     <link rel="next" title="pelagos_py.utils.file_probe" href="../file_probe/index.html" />
-    <link rel="prev" title="pelagos_py.utils.diagnostics" href="../diagnostics/index.html" />
+    <link rel="prev" title="pelagos_py.utils.fig_save_worker" href="../fig_save_worker/index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="0.0" />
@@ -409,6 +409,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../demo_data/index.html">pelagos_py.utils.demo_data</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../diagnostic_capture/index.html">pelagos_py.utils.diagnostic_capture</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../diagnostics/index.html">pelagos_py.utils.diagnostics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../fig_save_worker/index.html">pelagos_py.utils.fig_save_worker</a></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">pelagos_py.utils.fig_spec</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../file_probe/index.html">pelagos_py.utils.file_probe</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../log_levels/index.html">pelagos_py.utils.log_levels</a></li>
@@ -490,11 +491,23 @@
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="pelagos_py.utils.fig_spec.categories">
+<span class="sig-prename descclassname"><span class="pre">pelagos_py.utils.fig_spec.</span></span><span class="sig-name descname"><span class="pre">categories</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">da</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/utils/fig_spec.html#categories"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.utils.fig_spec.categories" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">[(value,</span> <span class="pre">meaning,</span> <span class="pre">colour)]</span></code> for a variable with CF <code class="docutils literal notranslate"><span class="pre">flag_values</span></code>, else None.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pelagos_py.utils.fig_spec.thin_idx">
+<span class="sig-prename descclassname"><span class="pre">pelagos_py.utils.fig_spec.</span></span><span class="sig-name descname"><span class="pre">thin_idx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/utils/fig_spec.html#thin_idx"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.utils.fig_spec.thin_idx" title="Link to this definition">#</a></dt>
+<dd><p>Indices evenly thinning <code class="docutils literal notranslate"><span class="pre">n</span></code> points to <code class="docutils literal notranslate"><span class="pre">cap</span></code> (default MAX_POINTS); arange(n) if under the cap.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="pelagos_py.utils.fig_spec.new_fig">
-<span class="sig-prename descclassname"><span class="pre">pelagos_py.utils.fig_spec.</span></span><span class="sig-name descname"><span class="pre">new_fig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nrows</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ncols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sharex</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sharey</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height_ratios</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/utils/fig_spec.html#new_fig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.utils.fig_spec.new_fig" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">pelagos_py.utils.fig_spec.</span></span><span class="sig-name descname"><span class="pre">new_fig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nrows</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ncols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sharex</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sharey</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height_ratios</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width_ratios</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/utils/fig_spec.html#new_fig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.utils.fig_spec.new_fig" title="Link to this definition">#</a></dt>
 <dd><p>A standard figure + axes at the standard width/dpi. Axes always 2D: axes[r][c].</p>
 <p>Single panel is 16:9; multi-panel grows height by <code class="docutils literal notranslate"><span class="pre">ROW_H</span></code> per row.
-<code class="docutils literal notranslate"><span class="pre">height_ratios</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">(3,</span> <span class="pre">1)</span></code>) sets unequal row heights via gridspec.</p>
+<code class="docutils literal notranslate"><span class="pre">height_ratios</span></code> / <code class="docutils literal notranslate"><span class="pre">width_ratios</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">(3,</span> <span class="pre">1)</span></code>) set unequal panel sizes via gridspec.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -511,8 +524,21 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="pelagos_py.utils.fig_spec.date_axis">
-<span class="sig-prename descclassname"><span class="pre">pelagos_py.utils.fig_spec.</span></span><span class="sig-name descname"><span class="pre">date_axis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">which</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'x'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/utils/fig_spec.html#date_axis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.utils.fig_spec.date_axis" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">pelagos_py.utils.fig_spec.</span></span><span class="sig-name descname"><span class="pre">date_axis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">which</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'x'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/utils/fig_spec.html#date_axis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.utils.fig_spec.date_axis" title="Link to this definition">#</a></dt>
 <dd><p>Consistent date formatting on the chosen axis (x or y).</p>
+<p><code class="docutils literal notranslate"><span class="pre">index</span></code> (the full TIME array) also adds an N_MEASUREMENTS axis along the top.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pelagos_py.utils.fig_spec.x_time">
+<span class="sig-prename descclassname"><span class="pre">pelagos_py.utils.fig_spec.</span></span><span class="sig-name descname"><span class="pre">x_time</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/utils/fig_spec.html#x_time"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.utils.fig_spec.x_time" title="Link to this definition">#</a></dt>
+<dd><p>What a whole-dataset series is plotted against: TIME if present, else N_MEASUREMENTS.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pelagos_py.utils.fig_spec.x_axis">
+<span class="sig-prename descclassname"><span class="pre">pelagos_py.utils.fig_spec.</span></span><span class="sig-name descname"><span class="pre">x_axis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/utils/fig_spec.html#x_axis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.utils.fig_spec.x_axis" title="Link to this definition">#</a></dt>
+<dd><p>Label the x axis for an <code class="docutils literal notranslate"><span class="pre">x_time</span></code> array: TIME below + N_MEASUREMENTS on top, or Index.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -537,6 +563,24 @@
 <dt class="sig sig-object py" id="pelagos_py.utils.fig_spec.finish">
 <span class="sig-prename descclassname"><span class="pre">pelagos_py.utils.fig_spec.</span></span><span class="sig-name descname"><span class="pre">finish</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suptitle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/utils/fig_spec.html#finish"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.utils.fig_spec.finish" title="Link to this definition">#</a></dt>
 <dd><p>Suptitle + tight layout, the same for every figure.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pelagos_py.utils.fig_spec.land_polygons">
+<span class="sig-prename descclassname"><span class="pre">pelagos_py.utils.fig_spec.</span></span><span class="sig-name descname"><span class="pre">land_polygons</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resolution</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'110m'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/utils/fig_spec.html#land_polygons"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.utils.fig_spec.land_polygons" title="Link to this definition">#</a></dt>
+<dd><p>Natural Earth land as one shapely geometry (cartopy caches the download).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pelagos_py.utils.fig_spec.map_extent">
+<span class="sig-prename descclassname"><span class="pre">pelagos_py.utils.fig_spec.</span></span><span class="sig-name descname"><span class="pre">map_extent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lon</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_span</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/utils/fig_spec.html#map_extent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.utils.fig_spec.map_extent" title="Link to this definition">#</a></dt>
+<dd><p>[lon0, lon1, lat0, lat1] around the finite positions, widened in longitude so land keeps its shape.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pelagos_py.utils.fig_spec.coastlines">
+<span class="sig-prename descclassname"><span class="pre">pelagos_py.utils.fig_spec.</span></span><span class="sig-name descname"><span class="pre">coastlines</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extent</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'0.35'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">linewidth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/utils/fig_spec.html#coastlines"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.utils.fig_spec.coastlines" title="Link to this definition">#</a></dt>
+<dd><p>Coastlines clipped to <code class="docutils literal notranslate"><span class="pre">extent</span></code> as one plot() call (WebGL-safe); <code class="docutils literal notranslate"><span class="pre">fill</span></code> adds land fill (PNG-only).</p>
 </dd></dl>
 
 </section>
@@ -565,14 +609,21 @@
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.utils.fig_spec.flag_label"><code class="docutils literal notranslate"><span class="pre">flag_label()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.utils.fig_spec.categories"><code class="docutils literal notranslate"><span class="pre">categories()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.utils.fig_spec.thin_idx"><code class="docutils literal notranslate"><span class="pre">thin_idx()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.utils.fig_spec.new_fig"><code class="docutils literal notranslate"><span class="pre">new_fig()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.utils.fig_spec.style_axes"><code class="docutils literal notranslate"><span class="pre">style_axes()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.utils.fig_spec.axis_label"><code class="docutils literal notranslate"><span class="pre">axis_label()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.utils.fig_spec.date_axis"><code class="docutils literal notranslate"><span class="pre">date_axis()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.utils.fig_spec.x_time"><code class="docutils literal notranslate"><span class="pre">x_time()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.utils.fig_spec.x_axis"><code class="docutils literal notranslate"><span class="pre">x_axis()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.utils.fig_spec.points"><code class="docutils literal notranslate"><span class="pre">points()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.utils.fig_spec.flag_points"><code class="docutils literal notranslate"><span class="pre">flag_points()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.utils.fig_spec.legend"><code class="docutils literal notranslate"><span class="pre">legend()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.utils.fig_spec.finish"><code class="docutils literal notranslate"><span class="pre">finish()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.utils.fig_spec.land_polygons"><code class="docutils literal notranslate"><span class="pre">land_polygons()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.utils.fig_spec.map_extent"><code class="docutils literal notranslate"><span class="pre">map_extent()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.utils.fig_spec.coastlines"><code class="docutils literal notranslate"><span class="pre">coastlines()</span></code></a></li>
 </ul>
   </nav></div>
 

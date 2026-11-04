@@ -12,7 +12,7 @@
           "pelagos_py.pipeline"
         ]
       },
-      "doc_lineno": 71
+      "doc_lineno": 94
     },
     {
       "source": "Pipeline.make_config(\"glider.nc\").run()\nPipeline.make_config(\"glider.nc\", ask=True)  # build and save only",
@@ -24,7 +24,7 @@
           "pelagos_py.pipeline"
         ]
       },
-      "doc_lineno": 106
+      "doc_lineno": 129
     }
   ],
   "api/pelagos_py/steps/base_qc/index": [],
@@ -39,7 +39,7 @@
           "pelagos_py.steps.base_step"
         ]
       },
-      "doc_lineno": 263
+      "doc_lineno": 385
     }
   ],
   "api/pelagos_py/steps/index": [],
@@ -497,6 +497,7 @@
   ],
   "api/pelagos_py/utils/diagnostic_capture/index": [],
   "api/pelagos_py/utils/diagnostics/index": [],
+  "api/pelagos_py/utils/fig_save_worker/index": [],
   "api/pelagos_py/utils/fig_spec/index": [],
   "api/pelagos_py/utils/file_probe/index": [],
   "api/pelagos_py/utils/index": [],

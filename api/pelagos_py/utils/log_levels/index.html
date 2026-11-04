@@ -409,6 +409,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../demo_data/index.html">pelagos_py.utils.demo_data</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../diagnostic_capture/index.html">pelagos_py.utils.diagnostic_capture</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../diagnostics/index.html">pelagos_py.utils.diagnostics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../fig_save_worker/index.html">pelagos_py.utils.fig_save_worker</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../fig_spec/index.html">pelagos_py.utils.fig_spec</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../file_probe/index.html">pelagos_py.utils.file_probe</a></li>
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">pelagos_py.utils.log_levels</a></li>
@@ -493,7 +494,7 @@
 <dl class="py data">
 <dt class="sig sig-object py" id="pelagos_py.utils.log_levels.SEVERE">
 <span class="sig-prename descclassname"><span class="pre">pelagos_py.utils.log_levels.</span></span><span class="sig-name descname"><span class="pre">SEVERE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">35</span></em><a class="reference internal" href="../../../../_modules/pelagos_py/utils/log_levels.html#SEVERE"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.utils.log_levels.SEVERE" title="Link to this definition">#</a></dt>
-<dd><p>Custom log level for a step that failed but was skipped (continue_on_step_fail).</p>
+<dd><p>Custom log level for a step that failed but was skipped (on_step_fail).</p>
 <p>Sits between WARNING and ERROR, and is rendered amber (vs. WARNING’s yellow) to
 stand out from ordinary warnings.</p>
 </dd></dl>
@@ -501,7 +502,7 @@ stand out from ordinary warnings.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="pelagos_py.utils.log_levels.ColorFormatter">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pelagos_py.utils.log_levels.</span></span><span class="sig-name descname"><span class="pre">ColorFormatter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stream</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/utils/log_levels.html#ColorFormatter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.utils.log_levels.ColorFormatter" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.Formatter" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">logging.Formatter</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/logging.html#logging.Formatter" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">logging.Formatter</span></code></a></p>
 <p>Formatter that colours records by level on the console (STOP/ERROR red,
 SEVERE amber, WARNING yellow).</p>
 <p>Colour is only emitted when the target stream is an interactive terminal

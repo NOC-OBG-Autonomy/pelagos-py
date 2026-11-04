@@ -425,7 +425,6 @@
 <div class="viewcode-block" id="BlankStep">
 <a class="viewcode-back" href="../../../../api/pelagos_py/steps/templates/blank_step/index.html#pelagos_py.steps.templates.blank_step.BlankStep">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">BlankStep</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
-
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"Blank Step"</span>
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">provided_variables</span> <span class="o">=</span> <span class="p">[]</span>
@@ -467,7 +466,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="c1"># `diagnostics: true` draws the defaults; `all` or a list of names picks others</span>
+    <span class="n">diagnostic_figures</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># EXAMPLE: {"overview": ("Raw vs processed", True)}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">draw_figure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="c1"># Return one matplotlib Figure per name, built with pelagos_py.utils.fig_spec</span>
         <span class="k">pass</span></div>
 
 </pre></div>

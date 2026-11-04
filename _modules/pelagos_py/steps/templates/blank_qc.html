@@ -414,7 +414,7 @@
 <span class="sd">"""Example QC test template, using parts of impossible_date_test as a skeleton."""</span>
 
 <span class="c1">#### Mandatory imports ####</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_qc</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseQC</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_qc</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseQC</span><span class="p">,</span> <span class="n">register_qc</span>
 
 <span class="c1">#### Custom imports ####</span>
 <span class="c1"># any additional imports required for the test go here</span>
@@ -457,9 +457,10 @@
         <span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">"tkagg"</span><span class="p">)</span>
         <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">new_fig</span><span class="p">()</span>
         <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-        <span class="c1"># fig_spec.flag_points(ax, self.data["N_MEASUREMENTS"], self.data[var],</span>
-        <span class="c1">#                      self.data[f"{var}_QC"])</span>
-        <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">xlabel</span><span class="o">=</span><span class="s2">"Index"</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">x_time</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>  <span class="c1"># TIME (with N_MEASUREMENTS on top) or index</span>
+        <span class="c1"># fig_spec.flag_points(ax, x, self.data[var], self.data[f"{var}_QC"])</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">style_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="s2">""</span><span class="p">)</span>
+        <span class="n">fig_spec</span><span class="o">.</span><span class="n">x_axis</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
         <span class="n">fig_spec</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Flags"</span><span class="p">)</span>
         <span class="n">fig_spec</span><span class="o">.</span><span class="n">finish</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">suptitle</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">qc_name</span><span class="p">)</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>

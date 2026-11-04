@@ -415,12 +415,9 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.config_mirror</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigMirrorMixin</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">parameter_spec</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.log_levels</span><span class="w"> </span><span class="kn">import</span> <span class="n">STOP</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">parameter_spec</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.log_levels</span><span class="w"> </span><span class="kn">import</span> <span class="n">STOP</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.qc_handling</span><span class="w"> </span><span class="kn">import</span> <span class="n">adjusted_name</span><span class="p">,</span> <span class="n">prefer_adjusted</span><span class="p">,</span> <span class="n">raw_name</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 
 <div class="viewcode-block" id="REGISTERED_STEPS">
@@ -462,6 +459,9 @@
     <span class="c1">#: permitted in a step's config even when absent from ``parameter_schema``</span>
     <span class="c1">#: (e.g. ``qc_handling_settings`` handled by :class:`QCHandlingMixin`).</span>
     <span class="n">framework_parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"qc_handling_settings"</span><span class="p">}</span>
+
+    <span class="c1"># Shown as "beta" in the dashboard: works, but the method is still being refined.</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="kc">False</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">diagnostics</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="c1"># === Core behaviour (same as before) ===</span>
@@ -527,14 +527,48 @@
 
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">describe_parameters</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">"""Return a JSON-serialisable description of this step's parameters.</span>
+<div class="viewcode-block" id="BaseStep.output_variables">
+<a class="viewcode-back" href="../../../api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep.output_variables">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">output_variables</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">parameters</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Variables this step writes for the given config ``parameters`` (read by the config validator)."""</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s2">"provided_variables"</span><span class="p">,</span> <span class="p">[]))</span>
+        <span class="n">outputs</span> <span class="o">+=</span> <span class="n">parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"qc_outputs"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="n">schema</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">parameter_schema</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="n">output_as</span> <span class="o">=</span> <span class="n">parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s2">"output_as"</span><span class="p">,</span> <span class="p">(</span><span class="n">schema</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"output_as"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"default"</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">output_as</span><span class="p">:</span>
+            <span class="n">outputs</span> <span class="o">+=</span> <span class="p">[</span><span class="n">output_as</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output_as</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="n">output_as</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">outputs</span></div>
 
-<span class="sd">        Introspection surface for external tools (e.g. a dashboard) that need to</span>
-<span class="sd">        render a parameter form without instantiating the step. See</span>
-<span class="sd">        :func:`pelagos_py.utils.parameter_spec.describe`.</span>
-<span class="sd">        """</span>
-        <span class="k">return</span> <span class="n">parameter_spec</span><span class="o">.</span><span class="n">describe</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">parameter_schema</span> <span class="ow">or</span> <span class="p">{})</span>
+
+<div class="viewcode-block" id="BaseStep.resolve">
+<a class="viewcode-back" href="../../../api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep.resolve">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""``var``'s ``_ADJUSTED`` version if it exists in ``self.data``, else the raw one."""</span>
+        <span class="k">return</span> <span class="n">prefer_adjusted</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">variables</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BaseStep.adjusted_copy">
+<a class="viewcode-back" href="../../../api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep.adjusted_copy">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">adjusted_copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Name of ``var``'s ``_ADJUSTED`` version, created (with its ``_QC``) as a copy of the raw variable if missing."""</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">adjusted_name</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+            <span class="n">raw</span> <span class="o">=</span> <span class="n">raw_name</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">raw</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">if</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">raw</span><span class="si">}</span><span class="s2">_QC"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">raw</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">name</span></div>
+
+
+<div class="viewcode-block" id="BaseStep.mark_intermediate">
+<a class="viewcode-back" href="../../../api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep.mark_intermediate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mark_intermediate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">names</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Record pipeline-made working variables that Data Export leaves out unless asked to keep them."""</span>
+        <span class="n">known</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"intermediate_variables"</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"intermediate_variables"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">known</span><span class="p">)</span> <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="n">names</span><span class="p">))</span></div>
+
 
     <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
@@ -548,15 +582,69 @@
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Step '</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">' must implement a run() method."</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
 
+    <span class="c1"># {name: (title, level)}; level True = default, False = extra ("all"), None = by name only</span>
+    <span class="n">diagnostic_figures</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">draw_figure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="c1"># return the figure registered under name, or None to skip it</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Step '</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">' has no figure '</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">'."</span><span class="p">)</span>
+
+<div class="viewcode-block" id="BaseStep.selected_figures">
+<a class="viewcode-back" href="../../../api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep.selected_figures">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">selected_figures</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Figure names this run draws, resolved from the ``diagnostics`` setting."""</span>
+        <span class="n">selection</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">selection</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostic_figures</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">selection</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span>
+                <span class="n">n</span> <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">level</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostic_figures</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">level</span> <span class="ow">is</span> <span class="kc">True</span>
+            <span class="p">]</span>
+        <span class="k">if</span> <span class="n">selection</span> <span class="o">==</span> <span class="s2">"all"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span>
+                <span class="n">n</span>
+                <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">level</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostic_figures</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">level</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="p">]</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">selection</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">selection</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="n">selection</span><span class="p">)</span>
+        <span class="n">unknown</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">names</span> <span class="k">if</span> <span class="n">n</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostic_figures</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">unknown</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">halt</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Unknown diagnostics figure(s) </span><span class="si">{</span><span class="n">unknown</span><span class="si">}</span><span class="s2">; choose from "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">diagnostic_figures</span><span class="p">)</span><span class="si">}</span><span class="s2"> (or true / all)."</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">names</span></div>
+
+
     <span class="k">def</span><span class="w"> </span><span class="nf">generate_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Optional hook for emitting step diagnostics.</span>
 
-<span class="sd">        Subclasses override this to log or plot information about their output;</span>
-<span class="sd">        the base implementation does nothing.</span>
+<span class="sd">        Draws the figures from :meth:`selected_figures`; steps without a registry override this.</span>
 
 <span class="sd">        :meta private:</span>
 <span class="sd">        """</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">selected_figures</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">names</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mpl</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+        <span class="n">mpl</span><span class="o">.</span><span class="n">use</span><span class="p">(</span>
+            <span class="s2">"tkagg"</span>
+        <span class="p">)</span>  <span class="c1"># report capture neutralises this; standalone runs pop a window</span>
+        <span class="n">drawn</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+            <span class="n">fig</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">draw_figure</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">fig</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">fig</span><span class="o">.</span><span class="n">_pelagos_figure</span> <span class="o">=</span> <span class="n">name</span>  <span class="c1"># names the saved file under report capture</span>
+            <span class="n">drawn</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">drawn</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">block</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">plot_failure</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># optional: plot what the step had when it failed</span>
         <span class="k">pass</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_wrap_diagnostics_timing</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -608,7 +696,7 @@
             <span class="kn">import</span><span class="w"> </span><span class="nn">psutil</span>
 
             <span class="n">mem_info</span> <span class="o">=</span> <span class="n">psutil</span><span class="o">.</span><span class="n">Process</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">())</span><span class="o">.</span><span class="n">memory_info</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Current memory usage: </span><span class="si">{</span><span class="n">mem_info</span><span class="o">.</span><span class="n">rss</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="w"> </span><span class="o">**</span><span class="w"> </span><span class="mi">2</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> MB"</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Current memory usage: </span><span class="si">{</span><span class="n">mem_info</span><span class="o">.</span><span class="n">rss</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="o">**</span><span class="mi">2</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> MB"</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
             <span class="k">pass</span>
 
@@ -682,7 +770,11 @@
 <span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"[</span><span class="si">%s</span><span class="s2">] </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">STOP</span><span class="p">,</span> <span class="s2">"Pipeline stopped at step '</span><span class="si">%s</span><span class="s2">'."</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-        <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
+        <span class="n">exc</span> <span class="o">=</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">exc</span><span class="o">.</span><span class="n">halt_message</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">message</span>  <span class="c1"># lets the dashboard show the reason, not "SystemExit: 1"</span>
+        <span class="p">)</span>
+        <span class="k">raise</span> <span class="n">exc</span></div>
 
 
     <span class="c1"># ----------- Config Handling -----------</span>
@@ -715,7 +807,8 @@
 <a class="viewcode-back" href="../../../api/pelagos_py/steps/base_step/index.html#pelagos_py.steps.base_step.BaseStep.save_config">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">save_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Save this step's config to YAML (for standalone debugging)."""</span>
-        <span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span><span class="o">,</span><span class="w"> </span><span class="nn">os</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
         <span class="n">cfg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_config</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
