@@ -32,7 +32,7 @@ pipeline:
  log_file: last_run.log
  # [on_step_fail]: pause | skip | stop
  #   What happens when a step fails. pause (default) waits so an interactive front end
- #   can show the failure plot and let you fix and re-run; run from Python, it skips.
+ #   can show the failure plot and let you fix and re-run; run from Python, it stops.
  on_step_fail: pause
 
 # All step configs
