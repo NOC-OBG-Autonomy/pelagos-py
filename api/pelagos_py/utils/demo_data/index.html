@@ -486,14 +486,14 @@
 <span id="pelagos-py-utils-demo-data"></span><h1>pelagos_py.utils.demo_data<a class="headerlink" href="#module-pelagos_py.utils.demo_data" title="Link to this heading">#</a></h1>
 <dl class="py function">
 <dt class="sig sig-object py" id="pelagos_py.utils.demo_data.get_demo_file">
-<span class="sig-prename descclassname"><span class="pre">pelagos_py.utils.demo_data.</span></span><span class="sig-name descname"><span class="pre">get_demo_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_progress</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/utils/demo_data.html#get_demo_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.utils.demo_data.get_demo_file" title="Link to this definition">#</a></dt>
-<dd><p>Download a demo OG1 file into <code class="docutils literal notranslate"><span class="pre">examples/data/OG1</span></code> (<code class="docutils literal notranslate"><span class="pre">~/Documents/pelagos-py/demo_data</span></code>
+<span class="sig-prename descclassname"><span class="pre">pelagos_py.utils.demo_data.</span></span><span class="sig-name descname"><span class="pre">get_demo_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">on_progress</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/utils/demo_data.html#get_demo_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.utils.demo_data.get_demo_file" title="Link to this definition">#</a></dt>
+<dd><p>Download the demo OG1 file into <code class="docutils literal notranslate"><span class="pre">examples/data/OG1</span></code> (<code class="docutils literal notranslate"><span class="pre">~/Documents/pelagos-py/demo_data</span></code>
 for a pip install), only the first time, and return its path.</p>
-<p>Long deployments are cut down to a shorter time window after downloading. Call it with
-no name to list the demos.</p>
+<p>The demo is one month of NOC glider data from the North Atlantic in OG1 format,
+thinned to one reading per sensor every 2 m of depth.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pipeline</span><span class="p">,</span> <span class="n">get_demo_file</span>
 
-<span class="n">Pipeline</span><span class="o">.</span><span class="n">make_config</span><span class="p">(</span><span class="n">get_demo_file</span><span class="p">(</span><span class="s2">"nelson_646_r"</span><span class="p">))</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<span class="n">Pipeline</span><span class="o">.</span><span class="n">make_config</span><span class="p">(</span><span class="n">get_demo_file</span><span class="p">())</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 </pre></div>
 </div>
 </dd></dl>

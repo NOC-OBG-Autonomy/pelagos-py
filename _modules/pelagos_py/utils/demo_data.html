@@ -408,193 +408,47 @@
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
 
-<span class="sd">"""Demo OG1 datasets: the demo registry and :func:`get_demo_file`.</span>
+<span class="sd">"""The demo OG1 file: :func:`get_demo_file` downloads it the first time it's used."""</span>
 
-<span class="sd">``DEMOS`` keys are the lower-case file names, e.g. ``churchill_647`` (delayed mode) and</span>
-<span class="sd">``churchill_647_r`` (near real time); ``MISSIONS`` groups them by campaign in picker order.</span>
-<span class="sd">"""</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tqdm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
 
-<span class="n">_MODE_LABELS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"nrt"</span><span class="p">:</span> <span class="s2">"NRT"</span><span class="p">,</span> <span class="s2">"delayed"</span><span class="p">:</span> <span class="s2">"Full"</span><span class="p">}</span>
-
-
-<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">DemoEntry</span><span class="p">:</span>
-    <span class="n">url</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">window</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span>
-    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># glider display name, shared by its nrt/delayed variants</span>
-    <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># "nrt" or "delayed"</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">display_label</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>  <span class="c1"># e.g. "Nelson (NRT)"</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">_MODE_LABELS</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="p">]</span><span class="si">}</span><span class="s2">)"</span>
-
-
-<span class="n">_OG1_NRT</span> <span class="o">=</span> <span class="s2">"https://linkedsystems.uk/erddap/files/Public_OG1_Data_001"</span>
-<span class="n">_OG1_DELAYED</span> <span class="o">=</span> <span class="s2">"https://linkedsystems.uk/erddap/files/Public_OG1_Data_001_Recovery"</span>
-<span class="n">_GLIDER_DATA</span> <span class="o">=</span> <span class="s2">"https://linkedsystems.uk/erddap/files/Public_Glider_Data_0711"</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_deployment</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">nrt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">delayed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="c1"># The NRT and delayed-mode (recovered) files of one deployment, from the BODC OG1 store.</span>
-    <span class="n">entries</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">if</span> <span class="n">nrt</span><span class="p">:</span>
-        <span class="n">entries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">DemoEntry</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_OG1_NRT</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">folder</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">nrt</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">nrt</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="s2">"nrt"</span><span class="p">))</span>
-    <span class="k">if</span> <span class="n">delayed</span><span class="p">:</span>
-        <span class="n">entries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-            <span class="n">DemoEntry</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_OG1_DELAYED</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">folder</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">delayed</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">delayed</span><span class="p">,</span> <span class="n">window</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="s2">"delayed"</span>
-            <span class="p">)</span>
-        <span class="p">)</span>
-    <span class="k">return</span> <span class="n">entries</span>
-
-
-<span class="c1"># Picker groups, in order.</span>
-<span class="n">_MISSION_ENTRIES</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">"Bio-Carbon"</span><span class="p">:</span> <span class="p">[</span>
-        <span class="o">*</span><span class="n">_deployment</span><span class="p">(</span>
-            <span class="s2">"Nelson_20240528"</span><span class="p">,</span> <span class="s2">"Nelson"</span><span class="p">,</span> <span class="n">nrt</span><span class="o">=</span><span class="s2">"Nelson_646_R.nc"</span><span class="p">,</span> <span class="n">delayed</span><span class="o">=</span><span class="s2">"Nelson_646.nc"</span>
-        <span class="p">),</span>
-        <span class="o">*</span><span class="n">_deployment</span><span class="p">(</span>
-            <span class="s2">"Doombar_20240528"</span><span class="p">,</span>
-            <span class="s2">"Doombar"</span><span class="p">,</span>
-            <span class="n">nrt</span><span class="o">=</span><span class="s2">"Doombar_648_R.nc"</span><span class="p">,</span>
-            <span class="n">delayed</span><span class="o">=</span><span class="s2">"Doombar_648.nc"</span><span class="p">,</span>
-        <span class="p">),</span>
-        <span class="o">*</span><span class="n">_deployment</span><span class="p">(</span>
-            <span class="s2">"Churchill_20240528"</span><span class="p">,</span>
-            <span class="s2">"Churchill"</span><span class="p">,</span>
-            <span class="n">nrt</span><span class="o">=</span><span class="s2">"Churchill_647_R.nc"</span><span class="p">,</span>
-            <span class="n">delayed</span><span class="o">=</span><span class="s2">"Churchill_647.nc"</span><span class="p">,</span>
-            <span class="n">window</span><span class="o">=</span><span class="p">(</span><span class="s2">"2024-08-01"</span><span class="p">,</span> <span class="s2">"2024-09-01"</span><span class="p">),</span>
-        <span class="p">),</span>
-        <span class="o">*</span><span class="n">_deployment</span><span class="p">(</span>
-            <span class="s2">"ALR_4_20240609"</span><span class="p">,</span> <span class="s2">"ALR 4"</span><span class="p">,</span> <span class="n">nrt</span><span class="o">=</span><span class="s2">"ALR_4_649_R.nc"</span><span class="p">,</span> <span class="n">delayed</span><span class="o">=</span><span class="s2">"ALR_4_649.nc"</span>
-        <span class="p">),</span>
-        <span class="o">*</span><span class="n">_deployment</span><span class="p">(</span>
-            <span class="s2">"ALR_6_20240611"</span><span class="p">,</span> <span class="s2">"ALR 6"</span><span class="p">,</span> <span class="n">nrt</span><span class="o">=</span><span class="s2">"ALR_6_650_R.nc"</span><span class="p">,</span> <span class="n">delayed</span><span class="o">=</span><span class="s2">"ALR_6_650.nc"</span>
-        <span class="p">),</span>
-        <span class="o">*</span><span class="n">_deployment</span><span class="p">(</span>
-            <span class="s2">"Cabot_20240528"</span><span class="p">,</span> <span class="s2">"Cabot"</span><span class="p">,</span> <span class="n">nrt</span><span class="o">=</span><span class="s2">"Cabot_645_R.nc"</span><span class="p">,</span> <span class="n">delayed</span><span class="o">=</span><span class="s2">"Cabot_645.nc"</span>
-        <span class="p">),</span>
-    <span class="p">],</span>
-    <span class="s2">"Custard 1"</span><span class="p">:</span> <span class="p">[</span>
-        <span class="o">*</span><span class="n">_deployment</span><span class="p">(</span>
-            <span class="s2">"Churchill_20181204"</span><span class="p">,</span>
-            <span class="s2">"Churchill"</span><span class="p">,</span>
-            <span class="n">nrt</span><span class="o">=</span><span class="s2">"Churchill_501_R.nc"</span><span class="p">,</span>
-            <span class="n">delayed</span><span class="o">=</span><span class="s2">"Churchill_501.nc"</span><span class="p">,</span>
-        <span class="p">),</span>
-        <span class="o">*</span><span class="n">_deployment</span><span class="p">(</span><span class="s2">"Pancake_20181209"</span><span class="p">,</span> <span class="s2">"Pancake"</span><span class="p">,</span> <span class="n">nrt</span><span class="o">=</span><span class="s2">"Pancake_502_R.nc"</span><span class="p">),</span>
-        <span class="c1"># Only hosted on the raw glider-data store, not the OG1 one.</span>
-        <span class="n">DemoEntry</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_GLIDER_DATA</span><span class="si">}</span><span class="s2">/Doombar_20181204/Doombar_503_R.nc"</span><span class="p">,</span>
-            <span class="s2">"Doombar_503_R.nc"</span><span class="p">,</span>
-            <span class="kc">None</span><span class="p">,</span>
-            <span class="s2">"Doombar"</span><span class="p">,</span>
-            <span class="s2">"nrt"</span><span class="p">,</span>
-        <span class="p">),</span>
-    <span class="p">],</span>
-    <span class="s2">"Custard 2"</span><span class="p">:</span> <span class="p">[</span>
-        <span class="o">*</span><span class="n">_deployment</span><span class="p">(</span>
-            <span class="s2">"Bellamite_20191206"</span><span class="p">,</span>
-            <span class="s2">"Bellamite"</span><span class="p">,</span>
-            <span class="n">nrt</span><span class="o">=</span><span class="s2">"Bellamite_538_R.nc"</span><span class="p">,</span>
-            <span class="n">delayed</span><span class="o">=</span><span class="s2">"Bellamite_538.nc"</span><span class="p">,</span>
-        <span class="p">),</span>
-        <span class="o">*</span><span class="n">_deployment</span><span class="p">(</span><span class="s2">"Zephyr_20191206"</span><span class="p">,</span> <span class="s2">"Zephyr"</span><span class="p">,</span> <span class="n">delayed</span><span class="o">=</span><span class="s2">"Zephyr_539.nc"</span><span class="p">),</span>
-    <span class="p">],</span>
-    <span class="s2">"ReBELS"</span><span class="p">:</span> <span class="p">[</span>
-        <span class="o">*</span><span class="n">_deployment</span><span class="p">(</span>
-            <span class="s2">"Zephyr_20250323"</span><span class="p">,</span> <span class="s2">"Zephyr"</span><span class="p">,</span> <span class="n">nrt</span><span class="o">=</span><span class="s2">"Zephyr_675_R.nc"</span><span class="p">,</span> <span class="n">delayed</span><span class="o">=</span><span class="s2">"Zephyr_675.nc"</span>
-        <span class="p">),</span>
-        <span class="o">*</span><span class="n">_deployment</span><span class="p">(</span><span class="s2">"OMG-1_20250324"</span><span class="p">,</span> <span class="s2">"OMG-1"</span><span class="p">,</span> <span class="n">nrt</span><span class="o">=</span><span class="s2">"OMG-1_676_R.nc"</span><span class="p">),</span>
-        <span class="o">*</span><span class="n">_deployment</span><span class="p">(</span><span class="s2">"9JA_20250812"</span><span class="p">,</span> <span class="s2">"9JA"</span><span class="p">,</span> <span class="n">nrt</span><span class="o">=</span><span class="s2">"9JA_699_R.nc"</span><span class="p">,</span> <span class="n">delayed</span><span class="o">=</span><span class="s2">"9JA_699.nc"</span><span class="p">),</span>
-        <span class="o">*</span><span class="n">_deployment</span><span class="p">(</span>
-            <span class="s2">"Growler_20250323"</span><span class="p">,</span>
-            <span class="s2">"Growler"</span><span class="p">,</span>
-            <span class="n">nrt</span><span class="o">=</span><span class="s2">"Growler_677_R.nc"</span><span class="p">,</span>
-            <span class="n">delayed</span><span class="o">=</span><span class="s2">"Growler_677.nc"</span><span class="p">,</span>
-        <span class="p">),</span>
-        <span class="o">*</span><span class="n">_deployment</span><span class="p">(</span>
-            <span class="s2">"Stella_20250323"</span><span class="p">,</span> <span class="s2">"Stella"</span><span class="p">,</span> <span class="n">nrt</span><span class="o">=</span><span class="s2">"Stella_678_R.nc"</span><span class="p">,</span> <span class="n">delayed</span><span class="o">=</span><span class="s2">"Stella_678.nc"</span>
-        <span class="p">),</span>
-    <span class="p">],</span>
-    <span class="s2">"ReBELS 2"</span><span class="p">:</span> <span class="p">[</span>
-        <span class="o">*</span><span class="n">_deployment</span><span class="p">(</span><span class="s2">"Stella_20260403"</span><span class="p">,</span> <span class="s2">"Stella"</span><span class="p">,</span> <span class="n">nrt</span><span class="o">=</span><span class="s2">"Stella_713_R.nc"</span><span class="p">),</span>
-    <span class="p">],</span>
-    <span class="s2">"VOTO"</span><span class="p">:</span> <span class="p">[</span>
-        <span class="c1"># Hosted on VOTO's own erddap, not BODC.</span>
-        <span class="n">DemoEntry</span><span class="p">(</span>
-            <span class="s2">"https://erddap.observations.voiceoftheocean.org/erddap/files/"</span>
-            <span class="s2">"OG_complete_SEA063_M75/SEA063_20240724T0737_delayed.nc"</span><span class="p">,</span>
-            <span class="s2">"SEA063_20240724T0737_delayed.nc"</span><span class="p">,</span>
-            <span class="p">(</span><span class="s2">"2024-07-25"</span><span class="p">,</span> <span class="s2">"2024-08-03"</span><span class="p">),</span>
-            <span class="s2">"SEA063"</span><span class="p">,</span>
-            <span class="s2">"delayed"</span><span class="p">,</span>
-        <span class="p">),</span>
-    <span class="p">],</span>
-<span class="p">}</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_key</span><span class="p">(</span><span class="n">entry</span><span class="p">):</span>
-    <span class="c1"># The file name, e.g. "Churchill_647_R.nc" -&gt; "churchill_647_r".</span>
-    <span class="k">return</span> <span class="n">Path</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span><span class="o">.</span><span class="n">stem</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-
-
-<span class="n">DEMOS</span> <span class="o">=</span> <span class="p">{</span><span class="n">_key</span><span class="p">(</span><span class="n">e</span><span class="p">):</span> <span class="n">e</span> <span class="k">for</span> <span class="n">entries</span> <span class="ow">in</span> <span class="n">_MISSION_ENTRIES</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">entries</span><span class="p">}</span>
-<span class="n">MISSIONS</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="n">mission</span><span class="p">:</span> <span class="p">[</span><span class="n">_key</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">entries</span><span class="p">]</span> <span class="k">for</span> <span class="n">mission</span><span class="p">,</span> <span class="n">entries</span> <span class="ow">in</span> <span class="n">_MISSION_ENTRIES</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-<span class="p">}</span>
-
+<span class="n">DEMO_URL</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">"https://github.com/NOC-OBG-Autonomy/pelagos-py/releases/download/"</span>
+    <span class="s2">"demo-data-v1/demo_OG1.nc"</span>
+<span class="p">)</span>
 <span class="n">WORKSPACE_DIR</span> <span class="o">=</span> <span class="n">Path</span><span class="o">.</span><span class="n">home</span><span class="p">()</span> <span class="o">/</span> <span class="s2">"Documents"</span> <span class="o">/</span> <span class="s2">"pelagos-py"</span>
 <span class="n">_REPO_EXAMPLES</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">parents</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">/</span> <span class="s2">"examples"</span>
-<span class="c1"># A source checkout keeps demos with the examples; a pip install has no examples folder.</span>
+<span class="c1"># A source checkout keeps the demo with the examples; a pip install has no examples folder.</span>
 <span class="k">if</span> <span class="n">_REPO_EXAMPLES</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
     <span class="n">DEMO_DATA_DIR</span> <span class="o">=</span> <span class="n">_REPO_EXAMPLES</span> <span class="o">/</span> <span class="s2">"data"</span> <span class="o">/</span> <span class="s2">"OG1"</span>
 <span class="k">else</span><span class="p">:</span>
     <span class="n">DEMO_DATA_DIR</span> <span class="o">=</span> <span class="n">WORKSPACE_DIR</span> <span class="o">/</span> <span class="s2">"demo_data"</span>
+<span class="n">DEMO_FILE</span> <span class="o">=</span> <span class="n">DEMO_DATA_DIR</span> <span class="o">/</span> <span class="s2">"demo_OG1.nc"</span>
 
 
 <div class="viewcode-block" id="get_demo_file">
 <a class="viewcode-back" href="../../../api/pelagos_py/utils/demo_data/index.html#pelagos_py.utils.demo_data.get_demo_file">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">get_demo_file</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_progress</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_demo_file</span><span class="p">(</span><span class="n">on_progress</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""</span>
-<span class="sd">    Download a demo OG1 file into ``examples/data/OG1`` (``~/Documents/pelagos-py/demo_data``</span>
+<span class="sd">    Download the demo OG1 file into ``examples/data/OG1`` (``~/Documents/pelagos-py/demo_data``</span>
 <span class="sd">    for a pip install), only the first time, and return its path.</span>
 
-<span class="sd">    Long deployments are cut down to a shorter time window after downloading. Call it with</span>
-<span class="sd">    no name to list the demos.</span>
+<span class="sd">    The demo is one month of NOC glider data from the North Atlantic in OG1 format,</span>
+<span class="sd">    thinned to one reading per sensor every 2 m of depth.</span>
 
 <span class="sd">    .. code-block:: python</span>
 
 <span class="sd">        from pelagos_py import Pipeline, get_demo_file</span>
 
-<span class="sd">        Pipeline.make_config(get_demo_file("nelson_646_r")).run()</span>
+<span class="sd">        Pipeline.make_config(get_demo_file()).run()</span>
 <span class="sd">    """</span>
-    <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">mission</span><span class="p">,</span> <span class="n">keys</span> <span class="ow">in</span> <span class="n">MISSIONS</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">mission</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-        <span class="k">return</span> <span class="kc">None</span>
-    <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">DEMOS</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unknown demo '</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">'. Call get_demo_file() to list them."</span><span class="p">)</span>
-    <span class="n">entry</span> <span class="o">=</span> <span class="n">DEMOS</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
-    <span class="n">dest</span> <span class="o">=</span> <span class="n">DEMO_DATA_DIR</span> <span class="o">/</span> <span class="n">entry</span><span class="o">.</span><span class="n">filename</span>
-    <span class="k">if</span> <span class="n">dest</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
-        <span class="k">return</span> <span class="n">dest</span>
-    <span class="n">DEMO_DATA_DIR</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">_download</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="n">dest</span><span class="p">,</span> <span class="n">on_progress</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">window</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">_cut_to_window</span><span class="p">(</span><span class="n">dest</span><span class="p">,</span> <span class="o">*</span><span class="n">entry</span><span class="o">.</span><span class="n">window</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">dest</span></div>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">DEMO_FILE</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="n">DEMO_DATA_DIR</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">_download</span><span class="p">(</span><span class="n">DEMO_URL</span><span class="p">,</span> <span class="n">DEMO_FILE</span><span class="p">,</span> <span class="n">on_progress</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">DEMO_FILE</span></div>
 
 
 
@@ -621,47 +475,6 @@
         <span class="n">tmp</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">dest</span><span class="p">)</span>
     <span class="k">finally</span><span class="p">:</span>
         <span class="n">tmp</span><span class="o">.</span><span class="n">unlink</span><span class="p">(</span><span class="n">missing_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># left behind only if the download failed</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_cut_to_window</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">):</span>
-    <span class="c1"># Keep measurements in [start, end) whose TIME is valid and strictly increasing</span>
-    <span class="c1"># (the pipeline requires monotonic, non-NaT time). NaT excludes itself since its</span>
-    <span class="c1"># comparisons are False; the running-max test drops any out-of-order sample.</span>
-    <span class="k">with</span> <span class="n">xr</span><span class="o">.</span><span class="n">open_dataset</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">as</span> <span class="n">ds</span><span class="p">:</span>
-        <span class="n">t</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">((</span><span class="n">t</span> <span class="o">&gt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span><span class="p">(</span><span class="n">start</span><span class="p">))</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">t</span> <span class="o">&lt;</span> <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span><span class="p">(</span><span class="n">end</span><span class="p">)))</span>
-        <span class="k">if</span> <span class="n">idx</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
-            <span class="n">tt</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-            <span class="n">increasing</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span>
-                <span class="p">([</span><span class="kc">True</span><span class="p">],</span> <span class="n">tt</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="o">.</span><span class="n">accumulate</span><span class="p">(</span><span class="n">tt</span><span class="p">)[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-            <span class="p">)</span>
-            <span class="n">idx</span> <span class="o">=</span> <span class="n">idx</span><span class="p">[</span><span class="n">increasing</span><span class="p">]</span>
-        <span class="n">n_total</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">sizes</span><span class="p">[</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">]</span>
-        <span class="k">if</span> <span class="n">idx</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  no measurements found in </span><span class="si">{</span><span class="n">start</span><span class="si">}</span><span class="s2">..</span><span class="si">{</span><span class="n">end</span><span class="si">}</span><span class="s2">; leaving file unchanged"</span><span class="p">)</span>
-            <span class="k">return</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  cutting to </span><span class="si">{</span><span class="n">start</span><span class="si">}</span><span class="s2">..</span><span class="si">{</span><span class="n">end</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">idx</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="n">n_total</span><span class="si">}</span><span class="s2"> measurements..."</span><span class="p">)</span>
-        <span class="c1"># Read the contiguous slice covering the window, then pick out the kept rows</span>
-        <span class="c1"># in memory: a fancy-index isel straight off the compressed file stalls for</span>
-        <span class="c1"># millions of points.</span>
-        <span class="n">lo</span><span class="p">,</span> <span class="n">hi</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">idx</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span>
-        <span class="n">subset</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">ds</span><span class="o">.</span><span class="n">isel</span><span class="p">(</span><span class="n">N_MEASUREMENTS</span><span class="o">=</span><span class="nb">slice</span><span class="p">(</span><span class="n">lo</span><span class="p">,</span> <span class="n">hi</span><span class="p">))</span><span class="o">.</span><span class="n">load</span><span class="p">()</span><span class="o">.</span><span class="n">isel</span><span class="p">(</span><span class="n">N_MEASUREMENTS</span><span class="o">=</span><span class="n">idx</span> <span class="o">-</span> <span class="n">lo</span><span class="p">)</span>
-        <span class="p">)</span>
-    <span class="c1"># Drop the source's chunk encoding (its chunksizes were sized for the full</span>
-    <span class="c1"># dimension and stall the subset write); re-apply zlib to keep the file small.</span>
-    <span class="n">encoding</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">subset</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
-        <span class="n">subset</span><span class="p">[</span><span class="n">v</span><span class="p">]</span><span class="o">.</span><span class="n">encoding</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">if</span> <span class="n">subset</span><span class="p">[</span><span class="n">v</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="ow">in</span> <span class="s2">"fiu"</span><span class="p">:</span>
-            <span class="n">encoding</span><span class="p">[</span><span class="n">v</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"zlib"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">"complevel"</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
-    <span class="c1"># Swap the trimmed file in only once it's fully written, so a failed write never leaves a partial file.</span>
-    <span class="n">tmp</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">with_suffix</span><span class="p">(</span><span class="s2">".cut.nc"</span><span class="p">)</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">subset</span><span class="o">.</span><span class="n">to_netcdf</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="n">encoding</span><span class="p">)</span>
-        <span class="n">tmp</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-    <span class="k">finally</span><span class="p">:</span>
-        <span class="n">tmp</span><span class="o">.</span><span class="n">unlink</span><span class="p">(</span><span class="n">missing_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 
                 </article>

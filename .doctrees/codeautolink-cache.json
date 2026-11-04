@@ -448,7 +448,7 @@
   "api/pelagos_py/utils/console/index": [],
   "api/pelagos_py/utils/demo_data/index": [
     {
-      "source": "from pelagos_py import Pipeline, get_demo_file\n\nPipeline.make_config(get_demo_file(\"nelson_646_r\")).run()",
+      "source": "from pelagos_py import Pipeline, get_demo_file\n\nPipeline.make_config(get_demo_file()).run()",
       "names": [
         {
           "import_components": [
@@ -524,7 +524,7 @@
       "doc_lineno": 70
     },
     {
-      "source": "from pelagos_py import Pipeline, get_demo_file\n\npipeline = Pipeline.make_config(get_demo_file(\"nelson_646_r\"))",
+      "source": "from pelagos_py import Pipeline, get_demo_file\n\npipeline = Pipeline.make_config(get_demo_file())",
       "names": [
         {
           "import_components": [
