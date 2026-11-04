@@ -23,7 +23,7 @@ Each output is written as `<name>_ADJUSTED` (e.g. `PSAL_ADJUSTED`), so any raw v
 | `CONS_TEMP_ADJUSTED` | `gsw.CT_from_t` | `ASAL`, `TEMP`, `PRES` | °C |
 | `DENSITY_ADJUSTED` | `gsw.rho` | `ASAL`, `CONS_TEMP`, `PRES` | kg/m<sup>3</sup> |
 
-Variables are derived in the order of the table, so later ones can use earlier ones from the same step. If an input is missing, that output is skipped with a warning. Each output's `_QC` is combined from the QC of its inputs.
+Variables are derived in the order of the table, so later ones can use earlier ones from the same step. Each output's `_QC` is combined from the QC of its inputs.
 
 **Depth.** `gsw.z_from_p` returns height, which is negative below the surface. pelagos-py negates it, so `DEPTH` is positive down, as in OG1.
 

@@ -30,7 +30,7 @@ Time (`TIME`) and position (`LATITUDE`, `LONGITUDE`) place every measurement. Th
 
 Missing times (`NaT`) stop the pipeline, and a warning is logged if `TIME` is not increasing.
 
-If the file has no `LATITUDE`/`LONGITUDE`, {doc}`Prepare OG1 </api/pelagos_py/steps/input_output/prepare_og1/index>` renames them from `LATITUDE_GPS`/`LONGITUDE_GPS` (or `ALATPT01`/`ALONPT01`).
+If the file has no `LATITUDE`/`LONGITUDE`, {doc}`Prepare OG1 </api/pelagos_py/steps/input_output/prepare_og1/index>` renames them from `LATITUDE_GPS`/`LONGITUDE_GPS` (or `ALATPT01`/`ALONPT01`) if available.
 
 ---
 
@@ -58,7 +58,7 @@ All four tests flag bad values `4` and missing values `9`. Default configuration
 
 ## 2.3 Position on land
 
-{doc}`Position On Land QC </api/pelagos_py/steps/quality_control/position_on_land_qc/index>` flags `LATITUDE` and `LONGITUDE` together where the position falls on land, using the Natural Earth 1:110m land polygons. This coastline is coarse, so positions very close to the coast can be missed or wrongly flagged. It has no parameters.
+{doc}`Position On Land QC </api/pelagos_py/steps/quality_control/position_on_land_qc/index>` flags `LATITUDE` and `LONGITUDE` together where the position falls on land, using the Natural Earth 1:110m land polygons. Positions very close to the coast can be missed or incorrectly flagged.
 
 ## 2.4 Impossible speed
 
@@ -69,8 +69,6 @@ impossible speed qc:
   threshold: 3      # m/s
   min_interval: 60  # s
 ```
-
-Comparing against the last *good* fix means one bad fix does not also get the next one flagged, and the minimum interval stops GPS jitter between close fixes tripping the test. Where only one of `LATITUDE`/`LONGITUDE` exists, the other is left unchecked (`0`).
 
 ---
 

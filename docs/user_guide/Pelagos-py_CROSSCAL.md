@@ -2,14 +2,11 @@
 
 ## Overview
 
-Two sensors measuring the same water rarely agree exactly. Cross-calibration adjusts one sensor to match a reference, such as another glider, a ship CTD cast or a laboratory sample.
+Two sensors measuring the same water rarely agree exactly. Cross-calibration adjusts one sensor to match a reference, such as another glider, a ship CTD cast or a lab sample.
 
-pelagos-py applies a cross-calibration with the {doc}`Correct Values </api/pelagos_py/steps/input_output/correct_values/index>` step. The step does not compare against the reference itself: you work out the correction from your own comparison and enter it as a slope and an intercept.
+pelagos-py applies a cross-calibration with the {doc}`Correct Values </api/pelagos_py/steps/input_output/correct_values/index>` step. The step does not compare against the reference itself. For now you work out the correction from your own comparison and enter it as a slope and an intercept.
 
-The default pipeline runs it twice, both as placeholders that change nothing until real values are entered:
-
-1. **`TEMP`**, early on, so salinity, density and MLD all use the calibrated temperature.
-2. **`PSAL_ADJUSTED`**, after Salinity Adjustment and before `ASAL`, `CONS_TEMP` and `DENSITY` are derived from it.
+The default pipeline runs it twice (for `TEMP` and `PSAL_ADJUSTED`) as placeholders that change nothing until real values are entered.
 
 ---
 
@@ -23,7 +20,7 @@ corrected = slope * value + intercept
 
 - **Input.** If `X_ADJUSTED` already exists it is corrected instead of `X`, so corrections build on each other.
 - **Time window.** With `time_start` and/or `time_end`, only samples in that window (bounds included) are corrected; the rest keep their value. Use this when a sensor drifts or is swapped part-way through a deployment.
-- **Expected range check.** With `expected_range: [min, max]`, the step first takes the median of the input (within the time window). If the median is already inside the range, the data is assumed correct and nothing is changed. Without `expected_range` the correction is always applied.
+- **Expected range check.** With `expected_range: [min, max]`, the step first takes the median of the input (within the time window). If the median is already inside the range, the data is assumed correct and nothing is changed. Without `expected_range` the correction is always applied. This is an advanced use case to automatically apply corrections to data with known errors.
 - **No-op.** `slope: 1` and `intercept: 0` change nothing, so the step skips.
 
 All samples are corrected, including flagged ones, and their QC flags are not changed.
