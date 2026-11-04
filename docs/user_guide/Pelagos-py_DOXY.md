@@ -13,12 +13,14 @@ Dissolved oxygen in seawater gives us information about ocean ventilation, prima
 
 Dissolved oxygen is measured by optodes based on the principle of luminescence quenching by oxygen molecules. The optode has a sensing foil that is permeable to oxygen, allowing it to diffuse across it. The foil contains luminophores that are excited by short pulses of blue light. When the luminophores relax to their ground state, they release energy in the form of light, i.e., luminescence. When oxygen molecules collide with the luminophores, a part of the released energy is transferred to the oxygen molecule, thereby quenching the luminescence. The amount by which the luminescence is quenched, i.e. the luminescence intensity is reduced, can therefore be translated into dissolved oxygen concentration.
 
+<!-- Hidden until the image and permission to reuse it are available.
 ```{figure} ../_static/doxy/optode_diagram_Aanderaa2007.png
 :alt: Schematic illustration of the oxygen optode
 :width: 70%
 
 Schematic illustration of the oxygen optode. From Aanderaa (2007).
 ```
+-->
 
 However, since light intensity is affected by source intensity, scattering, and other variables, it is prone to biases. Instead, a single-frequency phase shift technique is used which relies on the exponential decay of luminescence with time. Excitation intensity is modulated at a constant frequency, producing an emission that can be described as a *phase*. When oxygen molecules quench the luminenscence pulses, the resulting phase of the emitted light is *shifted*. It is this *phase shift* that is used as the measurement of dissolved oxygen. More detailed information can be found in Bittig et al. (2018).
 
@@ -26,7 +28,7 @@ However, since light intensity is affected by source intensity, scattering, and 
 :alt: Schematic illustration of the optode phase shift
 :width: 90%
 
-Schematic illustration of the optode phase shift. Reproduced from Bittig et al. (2018) under a [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) licence.
+Schematic illustration of the optode phase shift. Reproduced from Bittig et al. (2018), Fig. 2, under a [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) licence.
 ```
 
 The integration of oxygen sensors onto autonomous platforms has greatly increased the spatial and temporal range on which oxygen variability can be studied and understood. However, the data output of the sensor requires rigorous QC, various corrections, calibrations, and processing by the user. The processing steps may vary depending on the optode type and available calibration data. pelagos-py suggests which processing steps need to be applied given the metadata in the data attributes. The toolbox will also suggest default parameters where it has enough information to do so, which can altered by the user. Differing nomenclature for the same variables outputted by different sensors have been standardised in the OG format, allowing pelagos-py to streamline processing steps as much as possible. Table 1 in the section on *Optode Variables* summarises how the standardisation of the optode variable names and how they are referred to in pelagos-py.
@@ -58,6 +60,11 @@ The workflow for processing dissolved oxygen measurements consists of the follow
 12. **In-air calibration** - *not yet implemented*
 
 13. **Two-point calibration** - *not yet implemented*
+
+```{image} ../_static/doxy/Pelagos-py_DOXY_Flowchart.png
+:alt: Oxygen optode processing flowchart
+:width: 100%
+```
 
 
 ---
@@ -192,12 +199,14 @@ The red light excitation is often not used, in which it does not appear in the d
 
 The CTD and oxygen optode may not be physically co-located on the autonomous platform. For example, it is common for the CTD to be integrated nearer the middle or front of a glider, while the optode sits in the rear. The CTD therefore measures a water parcel at a different time than the optode measures the same parcel. Typically, this will lead to a time delay of several seconds. We can correct for this time offset by applying a geometric lag correction, which will align the optode data to the CTD data in time.
 
+<!-- Hidden until the image and permission to reuse it are available.
 ```{figure} ../_static/doxy/diagram_geometric_alignment_WooGourcuff2023.png
 :alt: Schematic illustration of the geometric lag correction
 :width: 70%
 
 Schematic illustration of the geometric lag correction. From Woo & Gourcuff (2023).
 ```
+-->
 
 If the distance between the sensors is $d$ and the glider's along-track velocity is $v$, the geometric time delay is
 
