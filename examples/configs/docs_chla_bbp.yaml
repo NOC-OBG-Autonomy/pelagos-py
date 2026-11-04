@@ -9,7 +9,7 @@ pipeline:
 steps:
   - name: Load OG1
     parameters:
-      file_path: examples/data/docs/Growler_677_docs.nc
+      file_path: examples/data/OG1/demo_OG1.nc  # pelagos_py.get_demo_file()
       filter_bad_time: true
 
   - name: Apply QC

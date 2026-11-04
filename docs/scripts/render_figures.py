@@ -2,7 +2,8 @@
 
     python docs/scripts/render_figures.py [docs/scripts/figures.yaml] [--data FILE] [--out docs/_static]
 
---data overrides the Load OG1 file_path; --profile replaces PROFILE in figures.yaml.
+Runs on the demo file (downloaded on first use) unless --data gives another;
+--profile replaces PROFILE in figures.yaml.
 """
 
 import argparse
@@ -14,6 +15,7 @@ import tempfile
 import yaml
 
 from pelagos_py.pipeline import Pipeline
+from pelagos_py.utils.demo_data import get_demo_file
 from pelagos_py.steps import create_step
 from pelagos_py.utils import diagnostic_capture
 
@@ -47,7 +49,7 @@ def main():
     ap.add_argument(
         "spec", nargs="?", default=os.path.join(ROOT, "docs", "scripts", "figures.yaml")
     )
-    ap.add_argument("--data", default=os.environ.get("PELAGOS_DOCS_DATA"))
+    ap.add_argument("--data")
     ap.add_argument("--out", default=os.path.join(ROOT, "docs", "_static"))
     ap.add_argument("--profile", type=int, default=None)
     args = ap.parse_args()
@@ -58,12 +60,7 @@ def main():
         config = yaml.safe_load(fh)
     for step in config["steps"]:
         if step["name"] == "Load OG1":
-            if args.data:
-                step["parameters"]["file_path"] = args.data
-            elif not os.path.isabs(step["parameters"]["file_path"]):
-                step["parameters"]["file_path"] = os.path.join(
-                    ROOT, step["parameters"]["file_path"]
-                )
+            step["parameters"]["file_path"] = args.data or str(get_demo_file())
 
     captured = tempfile.mkdtemp(prefix="pelagos_docs_figs_")
     with diagnostic_capture.force_headless_backend():

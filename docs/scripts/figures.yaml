@@ -14,7 +14,7 @@ figures:
   chla/npq_timeseries.png: {step: CHLA Quenching, figure: timeseries}
   chla/npq_example_profile.png: {step: CHLA Quenching, figure: example_profile}
 
-# PROFILE is the shared example day profile, set by the docs dataset window.
+# PROFILE is the shared example day profile, picked by render_figures.py.
 variants:
   - step: CHLA Quenching
     parameters: {method: sackmann2008, apply_to: CHLA_ADJUSTED, plot_profiles: [PROFILE]}
