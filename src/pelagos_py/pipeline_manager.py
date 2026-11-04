@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Not maintained alongside Pipeline: recent pipeline changes may have broken this, needs checking before use.
 from pelagos_py.utils.config_mirror import ConfigMirrorMixin
 
 import os
@@ -42,7 +43,6 @@ from pelagos_py.utils.alignment import (
     collect_xy_from_r2_ds,
     fit_linear_map,
 )
-from pelagos_py.utils.validation import validate
 
 
 class PipelineManager(ConfigMirrorMixin):
@@ -602,6 +602,8 @@ class PipelineManager(ConfigMirrorMixin):
             mngr.validate_with_device("Doombar")
             mngr.validate_with_device("Doombar", show_plots=False, apply_and_save=True)
         """
+        from .utils.validation import validate
+
         # Fast path: no overrides → just call through
         if not overrides:
             validate(self, target=target)

@@ -26,7 +26,6 @@ import pelagos_py.utils.diagnostics as diag
 
 # @register_step  # Uncomment when implementing
 class BlankStep(BaseStep, QCHandlingMixin):
-
     step_name = "Blank Step"
     required_variables = []
     provided_variables = []
@@ -68,5 +67,9 @@ class BlankStep(BaseStep, QCHandlingMixin):
         self.context["data"] = self.data
         return self.context
 
-    def generate_diagnostics(self):
+    # `diagnostics: true` draws the defaults; `all` or a list of names picks others
+    diagnostic_figures = {}  # EXAMPLE: {"overview": ("Raw vs processed", True)}
+
+    def draw_figure(self, name):
+        # Return one matplotlib Figure per name, built with pelagos_py.utils.fig_spec
         pass

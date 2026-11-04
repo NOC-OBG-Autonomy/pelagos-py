@@ -18,12 +18,9 @@
 from pelagos_py.utils.config_mirror import ConfigMirrorMixin
 from pelagos_py.utils import parameter_spec
 from pelagos_py.utils.log_levels import STOP
-from pelagos_py.utils import parameter_spec
-from pelagos_py.utils.log_levels import STOP
-import warnings
+from pelagos_py.utils.qc_handling import adjusted_name, prefer_adjusted, raw_name
 import logging
 import os
-import time
 import time
 
 REGISTERED_STEPS = {}
@@ -57,6 +54,9 @@ class BaseStep(ConfigMirrorMixin):
     #: permitted in a step's config even when absent from ``parameter_schema``
     #: (e.g. ``qc_handling_settings`` handled by :class:`QCHandlingMixin`).
     framework_parameters = {"qc_handling_settings"}
+
+    # Shown as "beta" in the dashboard: works, but the method is still being refined.
+    beta = False
 
     def __init__(self, name, parameters=None, diagnostics=False, context=None):
         # === Core behaviour (same as before) ===
@@ -119,14 +119,36 @@ class BaseStep(ConfigMirrorMixin):
         return parameter_spec.describe(cls.parameter_schema or {})
 
     @classmethod
-    def describe_parameters(cls):
-        """Return a JSON-serialisable description of this step's parameters.
+    def output_variables(cls, parameters):
+        """Variables this step writes for the given config ``parameters`` (read by the config validator)."""
+        outputs = list(getattr(cls, "provided_variables", []))
+        outputs += parameters.get("qc_outputs") or []
+        schema = cls.parameter_schema or {}
+        output_as = parameters.get(
+            "output_as", (schema.get("output_as") or {}).get("default")
+        )
+        if output_as:
+            outputs += [output_as] if isinstance(output_as, str) else list(output_as)
+        return outputs
 
-        Introspection surface for external tools (e.g. a dashboard) that need to
-        render a parameter form without instantiating the step. See
-        :func:`pelagos_py.utils.parameter_spec.describe`.
-        """
-        return parameter_spec.describe(cls.parameter_schema or {})
+    def resolve(self, var):
+        """``var``'s ``_ADJUSTED`` version if it exists in ``self.data``, else the raw one."""
+        return prefer_adjusted(var, self.data.variables)
+
+    def adjusted_copy(self, var):
+        """Name of ``var``'s ``_ADJUSTED`` version, created (with its ``_QC``) as a copy of the raw variable if missing."""
+        name = adjusted_name(var)
+        if name not in self.data:
+            raw = raw_name(var)
+            self.data[name] = self.data[raw].copy(deep=True)
+            if f"{raw}_QC" in self.data:
+                self.data[f"{name}_QC"] = self.data[f"{raw}_QC"].copy(deep=True)
+        return name
+
+    def mark_intermediate(self, *names):
+        """Record pipeline-made working variables that Data Export leaves out unless asked to keep them."""
+        known = self.context.get("intermediate_variables", [])
+        self.context["intermediate_variables"] = sorted(set(known) | set(names))
 
     def run(self):
         """
@@ -140,15 +162,66 @@ class BaseStep(ConfigMirrorMixin):
         raise NotImplementedError(f"Step '{self.name}' must implement a run() method.")
         return self.context
 
+    # {name: (title, level)}; level True = default, False = extra ("all"), None = by name only
+    diagnostic_figures = {}
+
+    def draw_figure(self, name):
+        # return the figure registered under name, or None to skip it
+        raise NotImplementedError(f"Step '{self.name}' has no figure '{name}'.")
+
+    def selected_figures(self):
+        """Figure names this run draws, resolved from the ``diagnostics`` setting."""
+        selection = self.diagnostics
+        if not selection or not self.diagnostic_figures:
+            return []
+        if selection is True:
+            return [
+                n for n, (_, level) in self.diagnostic_figures.items() if level is True
+            ]
+        if selection == "all":
+            return [
+                n
+                for n, (_, level) in self.diagnostic_figures.items()
+                if level is not None
+            ]
+        names = [selection] if isinstance(selection, str) else list(selection)
+        unknown = [n for n in names if n not in self.diagnostic_figures]
+        if unknown:
+            self.halt(
+                f"Unknown diagnostics figure(s) {unknown}; choose from "
+                f"{list(self.diagnostic_figures)} (or true / all)."
+            )
+        return names
+
     def generate_diagnostics(self):
         """
         Optional hook for emitting step diagnostics.
 
-        Subclasses override this to log or plot information about their output;
-        the base implementation does nothing.
+        Draws the figures from :meth:`selected_figures`; steps without a registry override this.
 
         :meta private:
         """
+        names = self.selected_figures()
+        if not names:
+            return
+        import matplotlib as mpl
+        import matplotlib.pyplot as plt
+
+        mpl.use(
+            "tkagg"
+        )  # report capture neutralises this; standalone runs pop a window
+        drawn = 0
+        for name in names:
+            fig = self.draw_figure(name)
+            if fig is None:
+                continue
+            fig._pelagos_figure = name  # names the saved file under report capture
+            drawn += 1
+        if drawn:
+            plt.show(block=True)
+
+    def plot_failure(self):
+        # optional: plot what the step had when it failed
         pass
 
     def _wrap_diagnostics_timing(self):
@@ -200,7 +273,7 @@ class BaseStep(ConfigMirrorMixin):
             import psutil
 
             mem_info = psutil.Process(os.getpid()).memory_info()
-            self.log(f"Current memory usage: {mem_info.rss / 1024 ** 2:.2f} MB")
+            self.log(f"Current memory usage: {mem_info.rss / 1024**2:.2f} MB")
         except ImportError:
             pass
 
@@ -257,7 +330,11 @@ class BaseStep(ConfigMirrorMixin):
         """
         self.logger.error("[%s] %s", self.name, message)
         self.logger.log(STOP, "Pipeline stopped at step '%s'.", self.name)
-        raise SystemExit(1)
+        exc = SystemExit(1)
+        exc.halt_message = (
+            message  # lets the dashboard show the reason, not "SystemExit: 1"
+        )
+        raise exc
 
     # ----------- Config Handling -----------
 
@@ -281,7 +358,8 @@ class BaseStep(ConfigMirrorMixin):
 
     def save_config(self, path: str | None = None):
         """Save this step's config to YAML (for standalone debugging)."""
-        import yaml, os
+        import yaml
+        import os
 
         cfg = self.generate_config()
         if path is None:

@@ -25,11 +25,72 @@ import xarray as xr
 # inform the correction.
 DEFAULT_CALCULATION_FLAGS = [3, 4, 9]
 
+# Argo flag-merge matrix: QC_COMBINATRIX[existing, new] never downgrades a
+# flag, and 0 (unchecked) never changes the other side.
+QC_COMBINATRIX = np.array(
+    [
+        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        [1, 1, 2, 3, 4, 5, 1, 1, 8, 9],
+        [2, 2, 2, 3, 4, 5, 2, 2, 8, 9],
+        [3, 3, 3, 3, 4, 3, 3, 3, 3, 9],
+        [4, 4, 4, 4, 4, 4, 4, 4, 4, 9],
+        [5, 5, 5, 3, 4, 5, 5, 5, 8, 9],
+        [6, 1, 2, 3, 4, 5, 6, 6, 8, 9],
+        [7, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        [8, 8, 8, 3, 4, 8, 8, 8, 8, 9],
+        [9, 9, 9, 9, 9, 9, 9, 9, 9, 9],
+    ]
+)
+
+
+def propagate_flags(base, src):
+    """Merge ``src`` flags onto companion ``base``; missing (9) is per-variable so is not carried over."""
+    return QC_COMBINATRIX[np.asarray(base), np.where(np.asarray(src) == 9, 0, src)]
+
+
+def adjusted_name(var):
+    return var if var.endswith("_ADJUSTED") else f"{var}_ADJUSTED"
+
+
+def raw_name(var):
+    return var.removesuffix("_ADJUSTED")
+
+
+def prefer_adjusted(settings, names):
+    """Swap each variable name in QC ``settings`` for its ``_ADJUSTED`` version if
+    present in ``names``, else its raw version. Other values are left unchanged."""
+    if isinstance(settings, str):
+        raw = settings.removesuffix("_ADJUSTED")
+        for candidate in (f"{raw}_ADJUSTED", raw):
+            if candidate in names:
+                return candidate
+        return settings
+    if isinstance(settings, dict):
+        resolved = {}
+        for key, value in settings.items():
+            # CHLA and CHLA_ADJUSTED may both resolve to one name: keep the first.
+            resolved.setdefault(
+                prefer_adjusted(key, names), prefer_adjusted(value, names)
+            )
+        return resolved
+    if isinstance(settings, list):
+        resolved = []
+        for value in settings:
+            value = prefer_adjusted(value, names)
+            if not (isinstance(value, str) and value in resolved):
+                resolved.append(value)
+        return resolved
+    return settings
+
 
 class QCHandlingMixin:
     def __init__(self):
         qc_settings = self.parameters.get("qc_handling_settings") or {}
-        self.filter_settings = qc_settings.get("flag_filter_settings") or {}
+        self.check_data()
+        full_data = self.context["data"]
+        self.filter_settings = prefer_adjusted(
+            qc_settings.get("flag_filter_settings") or {}, full_data.variables
+        )
         self.behaviour = qc_settings.get("reconstruction_behaviour") or "reinsert"
 
         calculation_flags = qc_settings.get("calculation_flag_filter")
@@ -42,10 +103,6 @@ class QCHandlingMixin:
         self.flag_mapping = {flag: flag for flag in list(range(10))}
         if user_mappings := qc_settings.get("flag_mapping"):
             self.flag_mapping.update(user_mappings)
-
-        # Logs + STOPs the pipeline if data is absent (see BaseStep.check_data).
-        self.check_data()
-        full_data = self.context["data"]
 
         if getattr(self, "uses_data_subset", False):
             # Opt-in: deep-copying the whole dataset is wasteful when a step only
@@ -67,18 +124,15 @@ class QCHandlingMixin:
                 value = getattr(self, attr, None)
                 if value is None:
                     continue
-                values = [value] if isinstance(value, str) else value
+                values = (
+                    [value] if isinstance(value, str) else list(value)
+                )  # a dict gives its keys
                 subset_names.update(values)
-                # Several steps use the OG1 "prefer an existing _ADJUSTED variant"
-                # convention (e.g. apply_to="CHLA" but CHLA_ADJUSTED is read/used if
-                # present). Harmless to include speculatively: filtered out below if
-                # it doesn't exist in the full dataset.
-                subset_names.update(f"{v}_ADJUSTED" for v in values)
+            # Steps read X_ADJUSTED when it exists; names that don't are filtered out below.
+            subset_names.update(adjusted_name(v) for v in list(subset_names))
             subset_names.update(f"{var}_QC" for var in list(subset_names))
             subset_names.update(
-                name
-                for var in self.filter_settings
-                for name in (var, f"{var}_QC")
+                name for var in self.filter_settings for name in (var, f"{var}_QC")
             )
             subset_vars = [name for name in subset_names if name in full_data.variables]
             self.data = full_data[subset_vars].copy(deep=True)
@@ -147,7 +201,9 @@ class QCHandlingMixin:
             if f"{var}_QC" not in self.data:
                 ungated.append(var)
                 continue
-            mask &= ~np.isin(self.data[f"{var}_QC"].values, self.calculation_flag_filter)
+            mask &= ~np.isin(
+                self.data[f"{var}_QC"].values, self.calculation_flag_filter
+            )
 
         if ungated:
             self.log(
@@ -241,27 +297,10 @@ class QCHandlingMixin:
             # Assign the child the first parent's QC, then upgrade per parent.
             self.data[qc_child] = self.data[qc_parents[0]].copy(deep=True)
 
-            if len(qc_parents) > 1:
-                # Combinatrix defining flag-upgrade priority.
-                qc_combinatrix = np.array(
-                    [
-                        [0, 0, 0, 3, 4, 0, 0, 0, 0, 9],
-                        [0, 1, 2, 3, 4, 5, 1, 1, 8, 9],
-                        [0, 2, 2, 3, 4, 5, 2, 2, 8, 9],
-                        [3, 3, 3, 3, 4, 3, 3, 3, 3, 9],
-                        [4, 4, 4, 4, 4, 4, 4, 4, 4, 9],
-                        [0, 5, 5, 3, 4, 5, 5, 5, 8, 9],
-                        [0, 1, 2, 3, 4, 5, 6, 6, 8, 9],
-                        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-                        [0, 8, 8, 3, 4, 8, 8, 8, 8, 9],
-                        [9, 9, 9, 9, 9, 9, 9, 9, 9, 9],
-                    ]
-                )
-
-                for qc_parent in qc_parents[1:]:
-                    self.data[qc_child][:] = qc_combinatrix[
-                        self.data[qc_child], self.data[qc_parent]
-                    ]
+            for qc_parent in qc_parents[1:]:
+                self.data[qc_child][:] = QC_COMBINATRIX[
+                    self.data[qc_child], self.data[qc_parent]
+                ]
 
             # Flag nans as missing values
             is_nan = np.isnan(self.data[f"{qc_child[:-3]}"])
@@ -275,7 +314,7 @@ class QCHandlingMixin:
         }
         all_qc_names = {var[:-3] for var in self.data.data_vars if "_QC" in var}
         missing_qc = all_var_names - all_qc_names
-        
+
         if len(missing_qc) > 0:
             self.log(
                 f"The following variables are missing QC: {missing_qc}. Assigning unchecked (0) QC flags."
@@ -283,14 +322,16 @@ class QCHandlingMixin:
             data_subset = self.data[list(missing_qc)]
             flags = (
                 xr.where(data_subset.isnull(), 9, 0)
-                .astype(int)
+                .astype(np.int8)
                 .rename({var: f"{var}_QC" for var in missing_qc})
                 .reset_coords(drop=True)
             )
             self.data.update(flags)
-        
+
         for name, attrs in attrs_before.items():
             if name in self.data.variables:
                 if self.data[name].attrs != attrs:
-                    self.log_warn(f"Attributes when initializing QC do not match:\n{self.data[name].attrs}\n{attrs}")
+                    self.log_warn(
+                        f"Attributes when initializing QC do not match:\n{self.data[name].attrs}\n{attrs}"
+                    )
                 # self.data[name].attrs = attrs
