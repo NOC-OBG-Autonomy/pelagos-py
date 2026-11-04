@@ -142,13 +142,13 @@ with units of m<sup>-1</sup>.
 - **In-place overwrite**: if `apply_to` and `output_as` are the same (the default), the QC for the output variable is **not** regenerated — the pre-existing `_QC` array is left untouched and a warning is logged. This means that, for platforms using the default in-place configuration, any new missing (`9`) flags arising from `TEMP`/`PRAC_SALINITY` gaps during the conversion are not automatically reflected in `BBP700_QC` unless `output_as` is set to a distinct variable name.
 - **DEPTH is never modified** by this step, consistent with its treatment throughout the pipeline.
 
-## 2.4 Figure placeholder
+## 2.4 Figure
 
 ```{figure} ../_static/bbp/bbp_from_beta_boxplot.png
-:alt: Placeholder for the Beta vs bbp diagnostic box plot.
+:alt: The beta vs bbp diagnostic box plot.
 :width: 70%
 
-**Placeholder.** Box plot comparing the value distribution of the raw beta input and the converted b<sub>bp</sub> output.
+Box plot comparing the value distribution of the raw beta input and the converted b<sub>bp</sub> output.
 ```
 
 ---
@@ -193,13 +193,13 @@ Both the baseline and spike components are retained as independent output variab
 
 Unlike BBP from Beta (Section 2.3), Isolate BBP Spikes **does** exclude flagged samples from the despike calculation by default: samples carrying QC flags `3`, `4` or `9` on `apply_to` are masked to `NaN` before the rolling filter is applied, so a flagged (e.g. biofouled) stretch cannot drag down the rolling baseline computed for an isolated good sample nearby. Samples excluded this way receive **no** baseline or spike value at all (both `NaN`), and are flagged missing (`9`) in the corresponding `_BASELINE_QC`/`_SPIKES_QC` outputs — this differs from steps such as `deep_correction`, where excluded samples are still corrected even though they do not inform the correction. A gap left this way in the baseline is not filled by this step; an **Interpolate Data** step run afterward on `<var>_BASELINE` produces a gap-free baseline for downstream use (e.g. by the chlorophyll NPQ methods that require a continuous backscatter reference).
 
-## 3.4 Figure placeholder
+## 3.4 Figure
 
 ```{figure} ../_static/bbp/bbp_baseline_spikes_timeseries.png
-:alt: Placeholder for the bbp baseline and spikes diagnostic time series.
+:alt: The bbp baseline and spikes diagnostic time series.
 :width: 90%
 
-**Placeholder.** Raw b<sub>bp</sub> time series with the despiked baseline overlaid (top panel), and the isolated spike component (bottom panel).
+Raw b<sub>bp</sub> time series with the despiked baseline overlaid (top panel), and the isolated spike component (bottom panel).
 ```
 
 ---
