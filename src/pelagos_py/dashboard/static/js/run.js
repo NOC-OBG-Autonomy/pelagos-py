@@ -437,6 +437,8 @@ const Run = {
   renderGallery() {
     const gallery = document.getElementById('plots-gallery');
     gallery.innerHTML = '';
+    // While paused, earlier steps shrink to one row so the paused step's plot stays in view.
+    gallery.classList.toggle('compact', Review.active);
     const shown = Run.groups.filter((g) => !(Review.active && g.key === Review.key));
     document.getElementById('plots-empty').classList.toggle('hidden', !!shown.length || Review.active);
     for (const g of shown) {

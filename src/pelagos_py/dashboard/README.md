@@ -20,8 +20,8 @@ pelagos-py dashboard
 Or from Python: `from pelagos_py import dashboard; dashboard.run()`. Then open
 <http://localhost:8791>.
 
-Saved configs go in `~/Documents/pelagos-py/configs/` and demo data in
-`~/Documents/pelagos-py/demo_data/`. The pipeline runs from
+Saved configs go in `~/Documents/pelagos-py/configs/` and the demo file in
+`examples/data/OG1/` (`~/Documents/pelagos-py/demo_data/` for a pip install). The pipeline runs from
 `~/Documents/pelagos-py`, so relative paths in a config resolve from there.
 
 **Sections** group a run of steps under a name. They can be renamed, collapsed
@@ -160,7 +160,7 @@ Commands on stdin: `continue`, `skip`, `rerun <json parameters>` and
 | `static/js/mem.js` | RAM meter from `__PELAGOS_MEM__` / `__PELAGOS_SAMPLE__` |
 | `static/js/visual.js` | Visual QC tab |
 | `static/js/inspect.js` | Inspect tab: variables, sensors and attributes of the input file |
-| `static/js/demos.js` | Files tab: your input files and demo deployments, grouped by mission |
+| `static/js/demos.js` | Files tab: your input files and the demo file |
 | `static/js/outputs.js` | Output files from runs (reports, exports, logs), with open/delete |
 | `static/js/icons.js` | Inline SVG icons |
 | `static/js/logo.js` | Sizes the brand text to match the logo |

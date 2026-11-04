@@ -455,6 +455,7 @@ body.run-locked .flow-link .add-step { display: none; }
 .v-status { --c: var(--muted); --c-ink: var(--muted); --c-soft: var(--panel-2); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 8px 12px; border-radius: var(--r-sm); background: var(--c-soft); color: var(--c-ink); font-size: 12px; }
 .v-status.v-ok { --c: var(--ok); --c-ink: var(--ok-ink); --c-soft: var(--ok-soft); }
 .v-status.v-err { --c: var(--danger); --c-ink: var(--danger-ink); --c-soft: var(--danger-soft); }
+.v-status.v-start { --c: var(--accent); --c-ink: var(--ink); --c-soft: var(--accent-soft); }
 .v-status.v-warn { --c: var(--warn); --c-ink: var(--warn-ink); --c-soft: var(--warn-soft); cursor: pointer; }
 .top-slot:not(.expanded) .v-status.v-warn .v-body { display: none; }
 .v-status .v-icon { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; color: #fff; background: var(--c); }
@@ -596,7 +597,7 @@ body.run-locked .flow-link .add-step { display: none; }
 .tab-panel[data-panel="plots"] { overflow-y: auto; }
 .plots-gallery { padding: 4px; }
 .plot-step { margin-bottom: 22px; }
-.plot-step-title, .inspect-section-title, .demos-mission-title { margin: 0 0 10px; font-size: 12px; font-weight: 700; color: var(--ink); border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+.plot-step-title, .inspect-section-title { margin: 0 0 10px; font-size: 12px; font-weight: 700; color: var(--ink); border-bottom: 1px solid var(--border); padding-bottom: 6px; }
 .plot-cards { display: flex; flex-wrap: wrap; gap: 12px; }
 .plot-card { margin: 0; border: 1px solid var(--border); border-radius: var(--r-sm); padding: 7px; background: #fff; max-width: 320px; cursor: zoom-in; }
 .plot-card:hover { border-color: var(--accent); }
@@ -604,6 +605,12 @@ body.run-locked .flow-link .add-step { display: none; }
 .plot-card img { display: block; max-width: 100%; height: auto; border-radius: 5px; }
 .plot-card figcaption { margin-top: 5px; font-size: 11px; color: var(--muted); word-break: break-word; }
 .plot-card.big { max-width: 100%; width: 100%; }
+.plots-gallery.compact { display: flex; gap: 12px; overflow-x: auto; }
+.plots-gallery.compact .plot-step { flex: none; margin-bottom: 0; }
+.plots-gallery.compact .plot-step-title { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plots-gallery.compact .plot-cards { flex-wrap: nowrap; gap: 6px; }
+.plots-gallery.compact .plot-card { max-width: 150px; padding: 4px; }
+.plots-gallery.compact .plot-card figcaption { display: none; }
 .plot-card.log-card { cursor: default; max-width: 480px; }
 .plot-card.log-card:hover { border-color: var(--border); }
 .plot-card.log-card.big .log-card-text { max-height: none; }
@@ -639,7 +646,7 @@ body.run-locked .flow-link .add-step { display: none; }
 .output-meta { font-size: 10.5px; color: var(--muted); font-family: var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .output-size { font-size: 11px; color: var(--muted); flex: 0 0 auto; }
 /* Delete actions are inert while a run owns the outputs/inputs (see RunLock). */
-body.run-locked :is(#btn-outputs-clean, #btn-demos-clean, .output-row .icon-btn.danger, .demo-card-del) { opacity: .45; pointer-events: none; }
+body.run-locked :is(#btn-outputs-clean, .output-row .icon-btn.danger, .demo-card-del) { opacity: .45; pointer-events: none; }
 
 /* ---------- Inspect tab ---------- */
 .inspect-search-wrap { position: relative; margin-bottom: 8px; flex: 0 0 auto; }
@@ -723,12 +730,9 @@ body.run-locked .drag { pointer-events: none; }
 
 /* ---------- Demos tab ---------- */
 .files-scroll { flex: 1; overflow: auto; min-height: 0; }
-.files-tip { display: inline-block; margin: 0 0 12px; }
 .files-section { border: 1px solid var(--border); border-radius: var(--r-lg); padding: 12px 14px; margin-bottom: 14px; }
 .demos-head strong { font-size: 13px; }
 .demos-head input { flex: 1; }
-.demos-toggle { cursor: pointer; user-select: none; }
-#demos-section.collapsed .demos-toggle { margin-bottom: 0; }
 .settings-body .field { display: grid; grid-template-columns: 110px 1fr; align-items: center; column-gap: 10px; padding-top: 3px; padding-bottom: 3px; }
 .settings-body .field > label { margin: 0; }
 .settings-body .field > :not(label) { grid-column: 2; }
@@ -742,10 +746,8 @@ body.run-locked .drag { pointer-events: none; }
 .settings-body .seg { padding: 2px; }
 .settings-body .seg > button { height: 22px; border-radius: calc(var(--r-lg) - 2px); }
 .settings-body .all-diag-label { flex: 0 0 auto; font-weight: 600; font-size: 12px; }
-#demos-section.collapsed #demos-body, #demos-section:not(.collapsed) #demos-sub { display: none; }
 .demos-list { display: flex; flex-direction: column; gap: 18px; }
 
-.demos-mission-title { margin-bottom: 8px; }
 .demos-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; font-size: 10.5px; color: var(--muted); }
 .demos-foot a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .demos-foot a:hover { color: var(--accent); }
@@ -765,6 +767,7 @@ body.run-locked .drag { pointer-events: none; }
 .demo-card:hover .demo-card-del { opacity: 1; }
 .demo-card-del:hover { color: var(--danger); background: var(--danger-soft); }
 .demo-card-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.demo-card:not(.file-card) .demo-card-text { grid-column: 1 / 3; }
 .demo-card-hint { font-size: 10.5px; color: var(--muted); text-align: right; justify-self: end; }
 .file-card { grid-template-columns: 1fr 48px 24px 24px; }
 .file-card .demo-card-text { display: flex; flex-direction: column; gap: 1px; }

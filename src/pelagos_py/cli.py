@@ -29,9 +29,7 @@ def run(args):
 
 
 def demo(args):
-    path = get_demo_file(args.name)
-    if path is not None:
-        print(path)
+    print(get_demo_file())
 
 
 def main():
@@ -64,9 +62,8 @@ def main():
     run_cmd.set_defaults(func=run)
 
     demo_cmd = commands.add_parser(
-        "demo", help="list the demo datasets, or download one and print its path"
+        "demo", help="download the demo dataset and print its path"
     )
-    demo_cmd.add_argument("name", nargs="?", help="demo to download, e.g. nelson_646_r")
     demo_cmd.set_defaults(func=demo)
 
     args = parser.parse_args()

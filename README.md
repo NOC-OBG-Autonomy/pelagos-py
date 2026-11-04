@@ -57,8 +57,7 @@ pelagos-py dashboard              # opens the dashboard (pip install "pelagos_py
 pelagos-py build glider.nc        # writes glider.yaml   (--ask to choose options, -o to save elsewhere)
 pelagos-py run glider.nc          # builds a config, then runs it
 pelagos-py run my_pipeline.yaml   # runs an existing config
-pelagos-py demo                   # lists demo datasets
-pelagos-py demo nelson_646_r      # downloads one and prints its path
+pelagos-py demo                   # downloads the demo file and prints its path
 ```
 
 ### From Python

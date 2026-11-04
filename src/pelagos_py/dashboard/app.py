@@ -51,9 +51,8 @@ from pelagos_py.steps import STEP_CLASSES, QC_CLASSES, resolve_step_name
 from pelagos_py.utils import parameter_spec
 from pelagos_py.utils.qc_handling import QC_COMBINATRIX
 from pelagos_py.utils.demo_data import (
-    DEMOS as DEMO_FILES,
     DEMO_DATA_DIR,
-    MISSIONS,
+    DEMO_FILE,
     WORKSPACE_DIR,
     get_demo_file,
 )
@@ -358,7 +357,8 @@ class SavePayload(BaseModel):
 
 
 # virtual: no file on disk, the YAML is built per file by /api/build
-DEMO_CONFIGS = {f"demo_{key}.yaml" for key in DEMO_FILES}
+DEMO_CONFIG = "demo.yaml"
+DEMO_CONFIGS = {DEMO_CONFIG}
 
 DEFAULT_CONFIG_NAME = "default.yaml"
 
@@ -375,15 +375,8 @@ def _safe_config_path(name: str) -> Path:
     return candidate
 
 
-def _demo_key(config_name: str) -> str:
-    return config_name[len("demo_") : -len(".yaml")]
-
-
 def _demo_dest(config_name: str) -> Path | None:
-    entry = DEMO_FILES.get(_demo_key(config_name))
-    if entry is None:
-        return None
-    return DEMO_DATA_DIR / entry.filename
+    return DEMO_FILE if config_name in DEMO_CONFIGS else None
 
 
 @app.get("/api/configs")
@@ -398,18 +391,7 @@ def list_configs():
         "configs": sorted(set(files) | DEMO_CONFIGS | {DEFAULT_CONFIG_NAME}),
         "protected": sorted(PROTECTED_CONFIGS),
         "demo": demo,
-        "missions": {
-            mission: [f"demo_{key}.yaml" for key in keys]
-            for mission, keys in MISSIONS.items()
-        },
-        # glider names repeat across missions and NRT/full, hence labels
-        "labels": {
-            f"demo_{key}.yaml": entry.display_label for key, entry in DEMO_FILES.items()
-        },
-        "gliders": {
-            f"demo_{key}.yaml": entry.label for key, entry in DEMO_FILES.items()
-        },
-        "modes": {f"demo_{key}.yaml": entry.mode for key, entry in DEMO_FILES.items()},
+        "labels": {DEMO_CONFIG: "NOC glider, North Atlantic"},
         "reference": sorted(
             (PROTECTED_CONFIGS - DEMO_CONFIGS) & (set(files) | {DEFAULT_CONFIG_NAME})
         ),
@@ -479,13 +461,6 @@ def download_demo(name: str):
             status_code=502, detail=f"Could not download demo data: {exc}"
         ) from exc
     return {"status": "downloaded", "name": name}
-
-
-@app.post("/api/demos/clean")
-def clean_demos():
-    _no_run_in_flight()
-    removed = [name for name in sorted(DEMO_CONFIGS) if _delete_demo(name)]
-    return {"status": "deleted", "removed": removed}
 
 
 # ================================= Outputs =================================
@@ -737,7 +712,7 @@ def _ensure_demo_file(config_name: str) -> None:
 
     progress(0, 0)
     try:
-        get_demo_file(_demo_key(config_name), on_progress=progress)
+        get_demo_file(on_progress=progress)
     finally:
         _DOWNLOADS.pop(config_name, None)
 
@@ -804,14 +779,11 @@ def load_config(name: str):
                 status_code=502, detail=f"Could not download demo data: {exc}"
             ) from exc
         # built by /api/build once the user confirms the decisions; this only names the file
-        entry = DEMO_FILES[_demo_key(demo_name)]
         return {
             "name": demo_name,
             "build": {
-                "file_path": str(
-                    (DEMO_DATA_DIR / entry.filename).relative_to(WORKSPACE_DIR)
-                ),
-                "description": f"A demo pipeline using {entry.display_label} data.",
+                "file_path": str(DEMO_FILE),
+                "description": "A demo pipeline using a month of NOC glider data from the North Atlantic.",
             },
         }
     if demo_name == DEFAULT_CONFIG_NAME:

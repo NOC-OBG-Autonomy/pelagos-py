@@ -1,44 +1,12 @@
-// Demos tab: demo deployments as cards grouped by mission. Config.load downloads first if needed.
+// Demos tab: the demo dataset as a card. Config.load downloads first if needed.
 const Demos = {
   render() {
     const root = document.getElementById('demos-list');
     if (!root) return;
     root.innerHTML = '';
-    for (const [mission, names] of Object.entries(Config.missions)) {
-      const here = names.filter((n) => Config.known.includes(n));
-      if (!here.length) continue;
-      const sec = document.createElement('section');
-      sec.className = 'demos-mission';
-      sec.appendChild(Forms.el('h3', { class: 'demos-mission-title', textContent: mission }));
-      const grid = document.createElement('div');
-      grid.className = 'demos-grid';
-      for (const name of here) grid.appendChild(Demos.card(name));
-      sec.appendChild(grid);
-      root.appendChild(sec);
-    }
-    Demos.renderHead();
-  },
-
-  // The on-disk summary shows in the header only while collapsed.
-  initSection() {
-    const sec = document.getElementById('demos-section');
-    const set = (c) => {
-      sec.classList.toggle('collapsed', c);
-      document.getElementById('demos-chevron').innerHTML = Icon.svg(c ? 'right' : 'down', 14);
-      try { localStorage.setItem('pelagos.demosCollapsed', c ? '1' : ''); } catch (e) { /* no storage */ }
-    };
-    let c = false;
-    try { c = !!localStorage.getItem('pelagos.demosCollapsed'); } catch (e) { /* no storage */ }
-    set(c);
-    document.getElementById('demos-toggle').addEventListener('click', () => set(!sec.classList.contains('collapsed')));
-  },
-
-  renderHead() {
-    const n = Config.downloaded.length;
-    const bytes = Config.downloaded.reduce((t, name) => t + (Config.sizes[name] || 0), 0);
-    document.getElementById('demos-sub').textContent = n
-      ? `${n} downloaded · ${fmtBytes(bytes)}` : '';
-    document.getElementById('btn-demos-clean').classList.toggle('hidden', !n);
+    const grid = Forms.el('div', { class: 'demos-grid' });
+    for (const name of Config.demo) grid.appendChild(Demos.card(name));
+    root.appendChild(grid);
   },
 
   card(name) {
@@ -57,9 +25,7 @@ const Demos = {
       try { await Config.load(name); }
       catch (e) { Config.notice('Could not load ' + name + ': ' + e.message, { sticky: true, err: true }); }
     };
-    el.appendChild(Forms.el('span', { class: 'demo-card-text', textContent: Config.gliders[name] || Config.demoLabel(name) }));
-    const mode = Config.modes[name];
-    if (mode) el.appendChild(Forms.el('span', { class: 'tag ' + (mode === 'nrt' ? 'accent' : 'ok'), textContent: mode === 'nrt' ? 'NRT' : 'Delayed' }));
+    el.appendChild(Forms.el('span', { class: 'demo-card-text', textContent: Config.demoLabel(name) }));
     el.appendChild(downloaded || busy
       ? Forms.el('span', { class: 'demo-card-hint', textContent: busy ? '' : active ? 'loaded' : fmtBytes(Config.sizes[name] || 0) })
       : Forms.button('Download', { cls: 'sm demo-card-hint', onclick: (e) => { e.stopPropagation(); Demos.download(name); } }));
@@ -142,16 +108,6 @@ const Demos = {
     try { await API.deleteDemo(name); }
     catch (e) { Config.notice('Could not delete: ' + e.message, { sticky: true, err: true }); }
     if (Build.active && Build.name === name) Build.close(); // its file is gone
-    await Config.refreshList(Config.selected);
-  },
-
-  async clean() {
-    if (RunLock.running) return;
-    const n = Config.downloaded.length;
-    if (!n || !confirm(`Delete all ${n} downloaded demo file${n === 1 ? '' : 's'}? They can be downloaded again from here.`)) return;
-    try { await API.cleanDemos(); }
-    catch (e) { Config.notice('Could not delete: ' + e.message, { sticky: true, err: true }); }
-    if (Build.active && Config.demo.includes(Build.name)) Build.close();
     await Config.refreshList(Config.selected);
   },
 };

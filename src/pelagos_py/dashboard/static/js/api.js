@@ -17,7 +17,7 @@ const API = {
     if (!r.ok) await _fail(r, 'validation failed');
     return r.json();
   },
-  // -> {configs, protected, demo, missions, labels, reference, downloaded: [name]}
+  // -> {configs, protected, demo, labels, reference, downloaded: [name]}
   async listConfigs() {
     const r = await fetch('/api/configs');
     return r.json();
@@ -88,11 +88,6 @@ const API = {
   async deleteDemo(name) {
     const r = await fetch('/api/demos/' + encodeURIComponent(name), { method: 'DELETE' });
     if (!r.ok) await _fail(r, 'delete failed');
-  },
-  async cleanDemos() {
-    const r = await fetch('/api/demos/clean', { method: 'POST' });
-    if (!r.ok) await _fail(r, 'delete failed');
-    return r.json();
   },
   // -> {dirs, files: [{path, name, dir, kind, size, mtime}]}
   async listOutputs(dirs, exports) {

@@ -137,8 +137,6 @@ const Outputs = {
       try { await API.revealOutputs(dirs[0] || ''); }
       catch (e) { alert(e.message); }
     });
-    document.getElementById('btn-demos-clean').addEventListener('click', () => Demos.clean());
     Files.init();
-    Demos.initSection();
   },
 };
