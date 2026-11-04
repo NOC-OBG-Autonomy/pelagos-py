@@ -369,6 +369,7 @@ A template for a static check is provided in
    :caption: Variable processing
    :hidden:
 
+   Pressure <user_guide/Pelagos-py_PRESSURE>
    Temperature <user_guide/Pelagos-py_TEMP>
    Salinity <user_guide/pelagos-py_SALINITY>
    Oxygen <user_guide/Pelagos-py_DOXY>
