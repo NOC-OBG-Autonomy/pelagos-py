@@ -242,9 +242,11 @@ def _assign_profile_and_cycle(phase, chunk_id):
     # each time it actually goes underwater.
     n = len(phase)
     core_mask = (phase == ASCENT) | (phase == DESCENT)
-    padded = np.concatenate(([False], core_mask, [False]))
-    starts = np.flatnonzero(padded[1:] & ~padded[:-1])
-    ends = np.flatnonzero(~padded[1:] & padded[:-1])  # exclusive
+    # Split on any phase change, so a descent turning straight into an ascent (no
+    # inflection row between them, as in sparse data) is still two profiles.
+    phase_changes = phase[1:] != phase[:-1]
+    starts = np.flatnonzero(core_mask & np.concatenate(([True], phase_changes)))
+    ends = np.flatnonzero(core_mask & np.concatenate((phase_changes, [True]))) + 1
 
     profile_num = np.full(n, np.nan)
     cycle = np.ones(n, dtype=np.int32)
