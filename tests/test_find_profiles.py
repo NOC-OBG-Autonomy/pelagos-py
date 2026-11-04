@@ -92,6 +92,30 @@ def test_multiple_profiles_numbered():
     assert (profile_numbers >= 1).all()
 
 
+def test_turn_without_inflection_splits_profiles():
+    # A V-shaped dive with no samples in the 72 s around the bottom turn, as in
+    # thinned data, so the phase jumps from descent straight to ascent.
+    seconds = np.arange(0, 7200, 18, dtype=float)
+    seconds = seconds[np.abs(seconds - 3600) >= 36]
+    depth = 0.115 * (3600 - np.abs(seconds - 3600))
+    times = np.datetime64("2024-01-01T00:00:00", "ns") + (seconds * 1e9).astype(
+        "timedelta64[ns]"
+    )
+    df = pd.DataFrame(
+        {"N_MEASUREMENTS": np.arange(len(depth)), "TIME": times, "PRES": depth}
+    )
+
+    result = run(df)
+
+    phases = result["SCI_PHASE"].to_numpy()
+    assert not (phases == 7).any(), "test needs a turn with no inflection row"
+    descent = result.loc[phases == 2, "PROFILE_NUMBER"]
+    ascent = result.loc[phases == 1, "PROFILE_NUMBER"]
+    assert descent.nunique() == 1
+    assert ascent.nunique() == 1
+    assert descent.iloc[0] != ascent.iloc[0]
+
+
 def test_empty_input_returns_defaults():
     """An empty input still yields the derived columns without raising."""
     empty = pd.DataFrame({"N_MEASUREMENTS": [], "TIME": [], "PRES": []})

@@ -23,7 +23,7 @@ from tqdm import tqdm
 
 DEMO_URL = (
     "https://github.com/NOC-OBG-Autonomy/pelagos-py/releases/download/"
-    "demo-data-v1/demo_OG1.nc"
+    "demo-data-v2/demo_OG1.nc"
 )
 WORKSPACE_DIR = Path.home() / "Documents" / "pelagos-py"
 _REPO_EXAMPLES = Path(__file__).resolve().parents[3] / "examples"
