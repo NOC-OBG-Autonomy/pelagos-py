@@ -11,7 +11,7 @@ call make_config with ask=True to be prompted about each choice:
 make_config saves the config next to the data file (e.g. demo_OG1.yaml), so you can
 edit it and rerun it with load_config.
 
-The demo file (a month of NOC glider data from the North Atlantic, ~15 MB) is downloaded into
+The demo file (a month of NOC glider data from the North Atlantic, ~35 MB) is downloaded into
 examples/data/OG1 the first time.
 """
 
