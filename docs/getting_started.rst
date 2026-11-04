@@ -80,14 +80,14 @@ for your OG1 file or from a config you already have:
    # Or load a config you already have, e.g. glider.yaml after editing it
    pipeline = Pipeline.load_config("my_pipeline.yaml")
 
-To try it without your own data, ``get_demo_file`` downloads a demo OG1 file into
-``examples/data/OG1`` (only the first time) and returns its path; ``get_demo_file()`` lists the demos. ``examples/python/run_demo.py`` does this end to end:
+To try it without your own data, ``get_demo_file`` downloads a demo OG1 file (a month of NOC glider data from the North Atlantic, ~15 MB) into
+``~/Documents/pelagos-py/demo_data`` (only the first time) and returns its path. ``examples/python/run_demo.py`` does this end to end:
 
 .. code-block:: python
 
    from pelagos_py import Pipeline, get_demo_file
 
-   pipeline = Pipeline.make_config(get_demo_file("nelson_646_r"))
+   pipeline = Pipeline.make_config(get_demo_file())
 
 **Pipeline Execution**
 
@@ -146,7 +146,7 @@ A minimal YAML configuration for a simple pipeline. See ``examples/notebooks/pip
 Example Pipeline
 ----------------
 
-If you are new here, we recommend checking out the ``examples/notebooks/pipeline_demo.ipynb`` Jupyter notebook, or running ``examples/python/run_demo.py``. This provides an example use case for processing CTD measurements from glider data hosted by the British Oceanographic Data Centre (BODC).
+If you are new here, we recommend checking out the ``examples/notebooks/pipeline_demo.ipynb`` Jupyter notebook, or running ``examples/python/run_demo.py``. This provides an example use case for processing CTD measurements from the demo glider data.
 
 Both build a fully commented configuration file for the demo data, which serves as an excellent template for your own projects.
 
