@@ -35,6 +35,14 @@ pipeline.run()
 
 `make_config` saves the config as a YAML file next to the data, ready to edit and rerun with `Pipeline.load_config`.
 
+Or from the terminal (the dashboard needs `pip install "pelagos-py[dashboard]"`):
+
+```bash
+pelagos-py dashboard          # build, validate and run configs in the browser
+pelagos-py run glider.nc      # build a config for the file, then run it
+pelagos-py demo               # download the demo file and print its path
+```
+
 ## Documentation
 
 - [Getting Started](https://noc-obg-autonomy.github.io/pelagos-py/getting_started.html): installation, running a pipeline and an example config
