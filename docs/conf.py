@@ -21,7 +21,6 @@ author = "National Oceanography Centre"
 # ``release`` is the full version (e.g. "2.4.1.dev3+gabc1234"); ``version`` is
 # the short X.Y form shown in the docs. Both feed the |release| / |version|
 # substitutions used on the index page.
-
 try:
     release = _get_version("pelagos_py")
 except PackageNotFoundError:
@@ -68,7 +67,7 @@ templates_path = ["_templates"]
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "user_guide/README.md"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
@@ -143,7 +142,7 @@ html_baseurl = "https://noc-obg-autonomy.github.io/pelagos-py/"
 html_static_path = ["_static"]
 html_last_updated_fmt = "%b %d, %Y"
 html_show_sourcelink = False
-html_title = "Pelagos-Py"
+html_title = "pelagos-py"
 html_favicon = "_static/NOC_logo.svg"
 html_css_files = [
     "https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Ubuntu&display=swap",

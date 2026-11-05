@@ -128,7 +128,8 @@ class QCHandlingMixin:
                     [value] if isinstance(value, str) else list(value)
                 )  # a dict gives its keys
                 subset_names.update(values)
-            # Steps read X_ADJUSTED when it exists; names that don't are filtered out below.
+            # Steps read X_ADJUSTED when it exists, else fall back to X; absent names are filtered out below.
+            subset_names.update(raw_name(v) for v in list(subset_names))
             subset_names.update(adjusted_name(v) for v in list(subset_names))
             subset_names.update(f"{var}_QC" for var in list(subset_names))
             subset_names.update(

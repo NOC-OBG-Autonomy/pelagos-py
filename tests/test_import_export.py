@@ -146,6 +146,19 @@ def test_missing_qc_is_added(step, qc_dataset, tmp_path):
         assert "TEMP_QC_QC" not in ds
 
 
+def test_missing_qc_is_added_for_coordinates(step, qc_dataset, tmp_path):
+    qc_dataset["LATITUDE"][1] = np.nan
+    step.context["data"] = qc_dataset.set_coords(["LATITUDE", "LONGITUDE"])
+    outfile = tmp_path / "test.nc"
+    step.parameters["output_path"] = str(outfile)
+
+    step.run()
+
+    with xr.open_dataset(outfile) as ds:
+        assert ds["LATITUDE_QC"].values.tolist() == [0, 9, 0, 0, 0]
+        assert "LONGITUDE_QC" in ds
+
+
 #   Test the valueerrors
 def test_invalid_export_format(step):
     step.parameters["export_format"] = "xlsx"

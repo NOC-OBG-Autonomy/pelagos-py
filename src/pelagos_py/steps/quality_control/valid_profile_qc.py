@@ -26,6 +26,7 @@ import pandas as pd
 import xarray as xr
 import matplotlib
 from pelagos_py.utils import fig_spec
+from pelagos_py.utils.qc_handling import prefer_adjusted
 
 
 @register_qc
@@ -38,7 +39,7 @@ class valid_profile_qc(BaseQC):
     | **Flags applied:** ``flag`` (default 4, bad)
 
     Every row of a profile (rows sharing a ``PROFILE_NUMBER`` from
-    :doc:`Find Profiles <../processing/find_profiles/index>`) gets ``flag`` when the
+    :class:`Find Profiles <pelagos_py.steps.processing.find_profiles.FindProfilesStep>`) gets ``flag`` when the
     profile has fewer than ``min_length`` rows or, if ``depth_range`` is set, no
     ``depth_var`` sample inside it. Passing profiles are flagged 1; rows without a
     profile are left unchecked (0), so their existing flag is kept.
@@ -90,6 +91,9 @@ class valid_profile_qc(BaseQC):
             raise ValueError(
                 f"[{self.qc_name}] invalid QC flag {self.flag!r}; expected 0-9."
             )
+        # data is None when Apply QC only introspects the required variables
+        names = data.variables if data is not None else []
+        self.depth_var = prefer_adjusted(self.depth_var, names)
         self.required_variables = ["PROFILE_NUMBER"] + (
             [self.depth_var] if self.depth_range else []
         )
@@ -118,12 +122,15 @@ class valid_profile_qc(BaseQC):
         x = fig_spec.x_time(self.data)
         fig, axes = fig_spec.new_fig()
         ax = axes[0][0]
-        y = self.data[self.depth_var]
+        # without depth_range the depth variable isn't required, so it may be absent
+        plot_var = self.depth_var if self.depth_var in self.data else "PROFILE_NUMBER"
+        y = self.data[plot_var]
         fig_spec.flag_points(ax, x, y.values, self.flags["PROFILE_NUMBER_QC"].values)
         fig_spec.style_axes(
-            ax, ylabel=fig_spec.axis_label(self.depth_var, y.attrs.get("units"))
+            ax, ylabel=fig_spec.axis_label(plot_var, y.attrs.get("units"))
         )
-        ax.invert_yaxis()
+        if plot_var == self.depth_var:
+            ax.invert_yaxis()
         fig_spec.x_axis(ax, x)
         fig_spec.legend(ax, title="Flags")
         fig_spec.finish(fig, suptitle="Valid Profile Test")

@@ -13,8 +13,24 @@ figures:
   chla/npq_method_comparison.png: {step: CHLA Quenching, figure: method_comparison}
   chla/npq_timeseries.png: {step: CHLA Quenching, figure: timeseries}
   chla/npq_example_profile.png: {step: CHLA Quenching, figure: example_profile}
+  mld/mld_demo.png: {step: Mixed Layer Depth, figure: temp}
+  salinity/salinity_lag_search.png: {step: Salinity Adjustment, figure: lag_search}
+  salinity/salinity_lag_per_profile.png: {step: Salinity Adjustment, figure: lag_per_profile}
+  salinity/salinity_thermal_mass.png: {step: Salinity Adjustment, figure: thermal_mass}
+  salinity/salinity_profiles.png: {step: Salinity Adjustment, figure: profiles}
 
-# PROFILE is the shared example day profile, set by the docs dataset window.
+# sections: the report's cross-section plot of the final dataset, keyed by
+#           output path -> panel labels (see write_report._CROSS_SECTION_PANELS).
+sections:
+  temp/temp_section.png: [Temperature]
+  salinity/salinity_section.png: [Salinity]
+  doxy/doxy_section.png: [Oxygen]
+  par/par_section.png: [Downwelling PAR]
+  chla/chla_section.png: [Chlorophyll]
+  bbp/bbp_section.png: [Backscatter]
+  derived/derived_section.png: [Density]
+
+# PROFILE is the shared example day profile, picked by render_figures.py.
 variants:
   - step: CHLA Quenching
     parameters: {method: sackmann2008, apply_to: CHLA_ADJUSTED, plot_profiles: [PROFILE]}

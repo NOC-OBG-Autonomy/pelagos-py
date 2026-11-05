@@ -8,6 +8,10 @@ data/
 testing/
 /testing/
 
+# Dashboard run output (this branch has no dashboard code, but running it locally drops these here)
+dashboard/_run_figures/
+dashboard/configs/_last_run.yaml
+
 # Keep test data (these are reduced size .nc files for unit testing)
 !tests/test_data/*.nc 
 
@@ -86,6 +90,15 @@ instance/
 .webassets-cache
 .scrapy
 docs/_build/
+# rendered by docs/scripts/render_figures.py and explainer_figures.py
+docs/_static/bbp/
+docs/_static/*/*_section.png
+docs/_static/chla/npq_*.png
+docs/_static/pressure/
+docs/_static/profiles/
+docs/_static/mld/
+docs/_static/salinity/
+docs/_static/position/
 celerybeat-schedule
 celerybeat.pid
 

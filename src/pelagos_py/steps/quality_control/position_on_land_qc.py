@@ -34,7 +34,7 @@ class position_on_land_qc(BaseQC):
     Target Variable: LATITUDE, LONGITUDE
     Flag Number: 4 (bad data)
     Variables Flagged: LATITUDE, LONGITUDE
-    Checks that the measurement location is not on land.
+    Flags positions on land, using the Natural Earth 1:110m land polygons.
     """
 
     qc_name = "position on land qc"
@@ -63,6 +63,9 @@ class position_on_land_qc(BaseQC):
         lon, lat = self.data["LONGITUDE"].values, self.data["LATITUDE"].values
         flags = self.flags["LATITUDE_QC"].values
         bad = flags == 4
+        if not (np.isfinite(lon) & np.isfinite(lat)).any():
+            self.log_warn("No positions to plot.")
+            return
         # left: regional context; right: zoomed on flagged positions, else on the track
         views = [("Region", fig_spec.map_extent(lon, lat, pad=2.0))]
         if bad.any():

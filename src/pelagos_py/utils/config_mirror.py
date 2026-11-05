@@ -15,10 +15,13 @@
 # limitations under the License.
 
 # config_mirror.py
+import logging
 import os
 import yaml
 import json
 from pelagos_py.utils.yaml_loading import safe_load as yaml_safe_load
+
+logger = logging.getLogger("pelagos_py.pipeline.config")
 
 
 class ConfigMirrorMixin:
@@ -92,7 +95,7 @@ class ConfigMirrorMixin:
         os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
         with open(path, "w") as f:
             yaml.safe_dump(self._parameters, f, sort_keys=False)
-        print(f"[Config] Saved → {path}")
+        logger.info(f"[Config] Saved → {path}")
 
     # ---- dot-path getters/setters for nested values ----
     def get_param(self, keypath: str, default=None):

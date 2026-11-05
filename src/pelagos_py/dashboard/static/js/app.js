@@ -264,7 +264,7 @@ function renderValidation(result) {
   if (ranked.length === 1) {
     const issue = ranked[0];
     const parsed = parseIssue(issue.error);
-    const bar = statusBar('err', parsed.tag, issueWhere(issue));
+    const bar = statusBar(parsed.start ? 'start' : 'err', parsed.tag, issueWhere(issue));
     bar.classList.add('v-single');
     bar.appendChild(issueBody(parsed.html));
     linkToStep(bar, issue);
@@ -316,7 +316,8 @@ function issueMarksFor(issues) {
 function statusBar(kind, title, sub) {
   const bar = document.createElement('div');
   bar.className = `v-status v-${kind}`;
-  const icon = kind === 'ok' ? 'check' : kind === 'pending' ? 'rerun' : 'alert';
+  const icons = { ok: 'check', pending: 'rerun', start: 'folder' };
+  const icon = icons[kind] || 'alert';
   bar.innerHTML = `<span class="v-icon">${Icon.svg(icon, 14)}</span>` +
     `<div class="v-text"><strong>${escapeHtml(title)}</strong>` +
     `<span>${escapeHtml(sub)}</span></div>`;
@@ -363,10 +364,11 @@ function parseIssue(raw) {
   }
   m = msg.match(/^'Load OG1' has no 'file_path' set[^.]*\.\s*(.*)$/s);
   if (m) {
-    return { kind: 'load', tag: 'No file set', critical: true,
+    // The normal first-launch state, so it reads as a starting point, not an error.
+    return { kind: 'load', tag: 'Start with a data file', critical: true, start: true,
       fields: [{ param: 'file_path', text: 'No file set' }],
-      html: `<div class="v-msg">Choose an input file, or get a demo from ` +
-        `<a href="#" data-tab="files">Files</a>.</div>` };
+      html: `<div class="v-msg">Pick an OG1 NetCDF file in <a href="#" data-tab="files">Files</a> ` +
+        `to set up a pipeline for it, or try the demo data there.</div>` };
   }
   m = msg.match(/^Data file '(.*)' is not a NetCDF \(\.nc\) file\.$/s);
   if (m) {

@@ -270,11 +270,11 @@ BOOKTABS = _BooktabsBorders()
 
 
 class _ColumnFlow:
-    #   Lay content out in newspaper-style columns on a ReportPDF: top-to-bottom
+    #   Lay content out in newspaper-style columns on a _ReportPDF: top-to-bottom
     #   down one column, then the next, then a fresh page. place() returns the
     #   (x, y) to draw at; auto page break is disabled until finish().
 
-    def __init__(self, pdf: "ReportPDF", ncols: int = 2, col_gap: float = 6):
+    def __init__(self, pdf: "_ReportPDF", ncols: int = 2, col_gap: float = 6):
         self.pdf = pdf
         self.ncols = ncols
         self.col_gap = col_gap
@@ -324,7 +324,7 @@ class _ColumnFlow:
         self.pdf.set_y(self.max_y)
 
 
-class ReportPDF(FPDF):
+class _ReportPDF(FPDF):
     #   FPDF subclass with the report's title page and heading/body/table/image
     #   helpers. Pages after the title page carry a running header and footer.
 
@@ -933,7 +933,11 @@ def config_to_yaml(config: dict, width: int = 88) -> str:
 
 
 def config_section(
-    pdf: ReportPDF, config: dict, ncols: int = 2, font_size: int = 8, col_gap: float = 6
+    pdf: _ReportPDF,
+    config: dict,
+    ncols: int = 2,
+    font_size: int = 8,
+    col_gap: float = 6,
 ) -> None:
     #   Write the run config as a multi-column YAML listing, flowed across ncols
     #   columns (wrap width derived from the column width) to save pages.
@@ -970,7 +974,7 @@ def _image_aspect(path: str, default: float = 0.6) -> float:
         return default
 
 
-def diagnostics_section(pdf: ReportPDF, captured: list) -> None:
+def diagnostics_section(pdf: _ReportPDF, captured: list) -> None:
     #   Embed the diagnostic plot(s) captured for each step. captured is a list
     #   of {"step": name, "images": [path, ...]} records in run order.
     if not captured:
@@ -1086,7 +1090,7 @@ def build_qc_stoplight_summary(qc_dict: dict, n_points: int):
     return tests, rows
 
 
-def qc_section(pdf: ReportPDF, data: xr.Dataset) -> None:
+def qc_section(pdf: _ReportPDF, data: xr.Dataset) -> None:
     """Write the Quality Control tables.
 
     This consists of two tables:
@@ -1127,7 +1131,7 @@ def qc_section(pdf: ReportPDF, data: xr.Dataset) -> None:
         )
 
 
-def add_log(logfile, pdf: ReportPDF, ncols: int = 4) -> None:
+def add_log(logfile, pdf: _ReportPDF, ncols: int = 4) -> None:
     #   Add the logfile as a terminal-style block. Requires a log_file set in the
     #   global pipeline parameters; ncols is the " - " fields per log line.
     pdf.add_page()
@@ -1196,7 +1200,7 @@ def _collapse_repeated_msgs(msgs) -> list:
     return out
 
 
-def _render_cc_results(pdf: ReportPDF, cc_data: dict) -> None:
+def _render_cc_results(pdf: _ReportPDF, cc_data: dict) -> None:
     #   Render compliance-checker results: per-checker score heading then a
     #   heading-led block of findings. cc_data maps checker name -> result dict.
     for cname, test_data in cc_data.items():
@@ -1226,7 +1230,7 @@ def _render_cc_results(pdf: ReportPDF, cc_data: dict) -> None:
 
 
 def format_checker_section(
-    pdf: ReportPDF, cc_results: dict = None, ccfile=None
+    pdf: _ReportPDF, cc_results: dict = None, ccfile=None
 ) -> None:
     #   Write the Format Checker results from cc_results (stashed by the step),
     #   falling back to a saved ccfile (JSON parsed, else embedded verbatim).
@@ -1281,7 +1285,7 @@ def variable_index_rows(data: xr.Dataset) -> list:
     return rows
 
 
-def contents_page(pdf: ReportPDF, outline) -> None:
+def contents_page(pdf: _ReportPDF, outline) -> None:
     #   Fills the reserved contents page from fpdf's document outline (populated
     #   by section_heading via start_section) once page numbers are known.
     pdf.h2("Contents")
@@ -1304,7 +1308,7 @@ def contents_page(pdf: ReportPDF, outline) -> None:
     pdf.ln(2)
 
 
-def index_section(pdf: ReportPDF, data: xr.Dataset) -> None:
+def index_section(pdf: _ReportPDF, data: xr.Dataset) -> None:
     #   Closing index page: pelagos-py credit, a linked contents list, then the
     #   QC flag glossary, variable index and glider global attributes.
     pdf.add_page()
@@ -1531,7 +1535,7 @@ def glider_track_map(data: xr.Dataset, outdir: str, ext: str = ".png") -> str:
     ax.add_collection(track)
 
     fig.tight_layout(pad=0.3)
-    fname = outdir + "glider_track" + ext
+    fname = os.path.join(outdir, "glider_track" + ext)
     save_figure(fig, fname, dpi=200, facecolor=fig.get_facecolor())
     plt.close(fig)
     return fname
@@ -1620,7 +1624,7 @@ def qc_hist(
     if dataset_label:
         fig.supylabel(dataset_label)
 
-    fname = outdir + var + ext
+    fname = os.path.join(outdir, var + ext)
     save_figure(fig, fname)
     plt.close(fig)
     return fname
@@ -1674,7 +1678,7 @@ def qc_hist_figures(data: xr.Dataset, outdir: str, bar=None) -> list:
     return figures
 
 
-def make_plots(pdf: ReportPDF, figures: list) -> None:
+def make_plots(pdf: _ReportPDF, figures: list) -> None:
     pdf.add_page()
     pdf.section_heading("QC Plots")
     for var, hist_img in figures:
@@ -1685,7 +1689,7 @@ def make_plots(pdf: ReportPDF, figures: list) -> None:
 
 
 def glidertest_section(
-    pdf: ReportPDF, data: xr.Dataset, outdir: str, log=print, log_warn=print
+    pdf: _ReportPDF, data: xr.Dataset, outdir: str, log=print, log_warn=print
 ) -> None:
     """
     Runs plotting routines from `glidertest` and inserts them into the document.
@@ -1726,7 +1730,7 @@ def glidertest_section(
     #   Glider track - comparable to `glider_track_map` above
     try:
         fig, __ = gtplots.plot_glider_track(ds=data)
-        fig_name = f"{outdir}glider_track_glidertest.png"
+        fig_name = os.path.join(outdir, "glider_track_glidertest.png")
         fig.savefig(fig_name)
         plt.close(fig)
 
@@ -1739,7 +1743,7 @@ def glidertest_section(
     #   Basic variables: T, S, DO, CHLA
     try:
         fig, __ = gtplots.plot_basic_vars(ds=data)
-        fig_name = f"{outdir}basic_vars.png"
+        fig_name = os.path.join(outdir, "basic_vars.png")
         fig.savefig(fig_name)
         plt.close(fig)
 
@@ -1758,7 +1762,7 @@ def glidertest_section(
         #   TODO: Pull these out as a config option.
         for var in ["TEMP", "CNDC", "DOXY"]:
             fig, __ = gtplots.plot_updown_bias(data, var=var)
-            fig_name = f"{outdir}{var}_updown.png"
+            fig_name = os.path.join(outdir, f"{var}_updown.png")
             fig.savefig(fig_name)
             plt.close(fig)
             pdf.image_fit(
@@ -1773,7 +1777,7 @@ def glidertest_section(
     try:
         #   This step has an output - capture it (eventually) and type it in underneat the figures.
         fig, __ = gtplots.process_optics_assess(ds=data)
-        fig_name = f"{outdir}optics_assess.png"
+        fig_name = os.path.join(outdir, "optics_assess.png")
         fig.savefig(fig_name)
         plt.close(fig)
 
@@ -1790,7 +1794,7 @@ def glidertest_section(
         for var in ["CHLA", "CDOM", "DPAR", "DOXY"]:  #   TODO: Pull these out into yaml
             if var in data.data_vars:
                 fig, __ = gtplots.plot_daynight_avg(ds=data, var=var)
-                fig_name = f"{outdir}daynight_avg_{var}.png"
+                fig_name = os.path.join(outdir, f"daynight_avg_{var}.png")
                 fig.savefig(fig_name)
                 plt.close(fig)
 
@@ -1802,7 +1806,7 @@ def glidertest_section(
     try:
         if "CHLA" in data.data_vars:
             fig, __ = gtplots.plot_quench_assess(ds=data, sel_var="CHLA")
-            fig_name = f"{outdir}chla_quench_assess.png"
+            fig_name = os.path.join(outdir, "chla_quench_assess.png")
             fig.savefig(fig_name)
             plt.close(fig)
 
@@ -1825,7 +1829,7 @@ def glidertest_section(
 
         for var in ["CNDC", "PSAL", "DOXY"]:
             fig, __ = gtplots.check_temporal_drift(ds=data, var=var)
-            fig_name = f"{outdir}{var}_temporal_drift_check.png"
+            fig_name = os.path.join(outdir, f"{var}_temporal_drift_check.png")
             fig.savefig(fig_name)
             plt.close(fig)
 
@@ -1840,7 +1844,7 @@ def glidertest_section(
     #   Grid spacing
     try:
         fig, __ = gtplots.plot_grid_spacing(ds=data)
-        fig_name = f"{outdir}grid_spacing.png"
+        fig_name = os.path.join(outdir, "grid_spacing.png")
         fig.savefig(fig_name)
         plt.close(fig)
 
@@ -1858,7 +1862,7 @@ def glidertest_section(
     #   Sampling period
     try:
         fig, __ = gtplots.plot_sampling_period_all(ds=data)
-        fig_name = f"{outdir}default_sample_period.png"
+        fig_name = os.path.join(outdir, "default_sample_period.png")
         fig.savefig(fig_name)
         plt.close(fig)
 
@@ -1876,7 +1880,7 @@ def glidertest_section(
     #   TS plot with 2D density
     try:
         fig, __ = gtplots.plot_ts(ds=data)
-        fig_name = f"{outdir}ts.png"
+        fig_name = os.path.join(outdir, "ts.png")
         fig.savefig(fig_name)
         plt.close(fig)
 
@@ -1902,7 +1906,7 @@ def glidertest_section(
         ]:  #   TODO: Pull these out into yaml
             if var in data.data_vars:
                 fig, __ = gtplots.plot_hysteresis(ds=data, var=var)
-                fig_name = f"{outdir}hysteresis_{var}.png"
+                fig_name = os.path.join(outdir, f"hysteresis_{var}.png")
                 fig.savefig(fig_name)
                 plt.close(fig)
 
@@ -1928,7 +1932,7 @@ def glidertest_section(
                 fig, __ = gtplots.plot_global_range(
                     ds=data, var=var, min_val=min_val, max_val=max_val
                 )
-                fig_name = f"{outdir}global_range_{var}.png"
+                fig_name = os.path.join(outdir, f"global_range_{var}.png")
                 fig.savefig(fig_name)
                 plt.close(fig)
 
@@ -1945,7 +1949,7 @@ def glidertest_section(
             ds=data,
             bins=20,  #   For shallow profiles - could use bins = max(data["DEPTH"])
         )
-        fig_name = f"{outdir}profile_depths.png"
+        fig_name = os.path.join(outdir, "profile_depths.png")
         fig.savefig(fig_name)
         plt.close(fig)
 
@@ -1963,10 +1967,13 @@ def glidertest_section(
     log("Glidertest section written out.")
 
 
-def cross_section_figure(data: xr.Dataset, outdir: str, ext: str = ".png") -> str:
+def cross_section_figure(
+    data: xr.Dataset, outdir: str, ext: str = ".png", labels=None
+) -> str:
     #   A4-portrait stack of PRES-vs-TIME panels (see _CROSS_SECTION_PANELS), one
     #   per variable, sharing the TIME axis, each with a profile strip and
     #   colourbar. Robust percentile colour limits; returns the saved path or None.
+    #   ``labels`` limits it to those panels (e.g. ["Temperature"]), each BANNER_H tall.
     import matplotlib.dates as mdates
     from matplotlib.colors import LinearSegmentedColormap
     from matplotlib.ticker import MaxNLocator
@@ -1996,6 +2003,8 @@ def cross_section_figure(data: xr.Dataset, outdir: str, ext: str = ".png") -> st
     #   available" placeholder - e.g. no salinity derived, or no oxygen sensor.
     resolved_panels = []
     for panel in _CROSS_SECTION_PANELS:
+        if labels is not None and panel["label"] not in labels:
+            continue
         cvar = _first_present(data, panel["candidates"])
         if cvar is None:
             continue
@@ -2022,7 +2031,11 @@ def cross_section_figure(data: xr.Dataset, outdir: str, ext: str = ".png") -> st
     #   A4-portrait proportions, trimmed a little in height so the "Cross Section
     #   Plots" heading and the figure sit together on one page. constrained_layout
     #   lines up every panel with its left profile strip and right colourbar.
-    fig = plt.figure(figsize=(8.27, 10.3), layout="constrained")
+    if labels is None:
+        figsize = (8.27, 10.3)
+    else:
+        figsize = (fig_spec.FIG_W, fig_spec.BANNER_H * len(resolved_panels))
+    fig = plt.figure(figsize=figsize, layout="constrained")
     #   Per row: [narrow profile strip] [main cross-section] [thin colourbar].
     gs = fig.add_gridspec(len(resolved_panels), 3, width_ratios=[0.22, 1.0, 0.045])
 
@@ -2092,6 +2105,7 @@ def cross_section_figure(data: xr.Dataset, outdir: str, ext: str = ".png") -> st
         ax_prof.set_ylabel(_var_label(data, pres_name, pres_name), fontsize=7)
         ax_prof.set_xlabel(panel["label"], fontsize=6)
         ax_prof.xaxis.set_major_locator(MaxNLocator(3))
+        ax_prof.set_xlim(vmin, vmax)
         ax_prof.tick_params(labelsize=6)
         ax_main.tick_params(labelleft=False)
 
@@ -2111,18 +2125,18 @@ def cross_section_figure(data: xr.Dataset, outdir: str, ext: str = ".png") -> st
     for ax in main_axes[:-1]:
         ax.tick_params(labelbottom=False)
     bottom = main_axes[-1]
-    bottom.xaxis.set_major_locator(mdates.AutoDateLocator())
+    bottom.xaxis.set_major_locator(mdates.AutoDateLocator(maxticks=8))
     bottom.xaxis.set_major_formatter(mdates.DateFormatter(_cs_date_format(span_days)))
     bottom.tick_params(axis="x", labelsize=7)
     bottom.set_xlabel(time_name, fontsize=8)
 
-    fname = outdir + "cross_section" + ext
+    fname = os.path.join(outdir, "cross_section" + ext)
     save_figure(fig, fname, dpi=200)
     plt.close(fig)
     return fname
 
 
-def cross_section_section(pdf: ReportPDF, img: str | None) -> None:
+def cross_section_section(pdf: _ReportPDF, img: str | None) -> None:
     #   Write the Cross Section Plots section (the full-page A4 figure).
     pdf.add_page()
     pdf.section_heading("Cross Section Plots")
@@ -2310,7 +2324,7 @@ class WriteDataReport(BaseStep):
             fname = fname_core + ".pdf"
         if not fname.endswith(".pdf"):
             fname += ".pdf"
-        fout = odir + fname
+        fout = os.path.join(odir, fname)
 
         title = self.parameters.get("title")
         if not title:
@@ -2341,7 +2355,6 @@ class WriteDataReport(BaseStep):
             stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
             fig_dir = os.path.join(odir, f"{fname_core}_report_figures_{stamp}")
             os.makedirs(fig_dir, exist_ok=True)
-        fig_dir = fig_dir + os.sep  #   figure paths are built by string concatenation
 
         #   Pipeline name and description (from the pipeline config block) are
         #   shown on the title page.
@@ -2371,7 +2384,7 @@ class WriteDataReport(BaseStep):
             wait_for_saves()
 
             #   Build the PDF
-            pdf = ReportPDF(
+            pdf = _ReportPDF(
                 title=title,
                 subtitle=subtitle,
                 steps=step_names,
@@ -2435,7 +2448,9 @@ class WriteDataReport(BaseStep):
                 )
 
             if self.parameters.get("show_logs", True):
-                log_path = odir + self.context["global_parameters"]["log_file"]
+                log_path = os.path.join(
+                    odir, self.context["global_parameters"]["log_file"]
+                )
                 add_log(log_path, pdf)
 
             if self.parameters.get("show_index", True):

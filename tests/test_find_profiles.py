@@ -92,6 +92,30 @@ def test_multiple_profiles_numbered():
     assert (profile_numbers >= 1).all()
 
 
+def test_turn_without_inflection_splits_profiles():
+    # A V-shaped dive with no samples in the 72 s around the bottom turn, as in
+    # thinned data, so the phase jumps from descent straight to ascent.
+    seconds = np.arange(0, 7200, 18, dtype=float)
+    seconds = seconds[np.abs(seconds - 3600) >= 36]
+    depth = 0.115 * (3600 - np.abs(seconds - 3600))
+    times = np.datetime64("2024-01-01T00:00:00", "ns") + (seconds * 1e9).astype(
+        "timedelta64[ns]"
+    )
+    df = pd.DataFrame(
+        {"N_MEASUREMENTS": np.arange(len(depth)), "TIME": times, "PRES": depth}
+    )
+
+    result = run(df)
+
+    phases = result["SCI_PHASE"].to_numpy()
+    assert not (phases == 7).any(), "test needs a turn with no inflection row"
+    descent = result.loc[phases == 2, "PROFILE_NUMBER"]
+    ascent = result.loc[phases == 1, "PROFILE_NUMBER"]
+    assert descent.nunique() == 1
+    assert ascent.nunique() == 1
+    assert descent.iloc[0] != ascent.iloc[0]
+
+
 def test_empty_input_returns_defaults():
     """An empty input still yields the derived columns without raising."""
     empty = pd.DataFrame({"N_MEASUREMENTS": [], "TIME": [], "PRES": []})
@@ -112,8 +136,8 @@ def test_gap_ending_before_surface_stays_ascent():
     comms cut PRES off before reaching the true surface - not a natural turn, so
     no deceleration), followed by a real data gap, must not have its tail forced
     into a fabricated surfacing/transition phase - it should stay genuine ascent
-    right up to the gap. The next leg should start its own cycle/profile rather
-    than being bridged across the gap."""
+    right up to the gap. The next leg should start its own profile rather than
+    being bridged across the gap; with no surfacing seen it stays in one cycle."""
     n, sample_seconds = 60, 10
     offsets = (np.arange(n) * sample_seconds * 1_000_000_000).astype("timedelta64[ns]")
     times = np.datetime64("2024-01-01T00:00:00", "ns") + offsets
@@ -132,7 +156,42 @@ def test_gap_ending_before_surface_stays_ascent():
 
     profile_numbers = result["PROFILE_NUMBER"].dropna()
     assert profile_numbers.nunique() >= 2
-    assert result["CYCLE"].nunique() >= 2
+    assert result["CYCLE"].nunique() == 1
+
+
+def test_cycle_advances_only_after_surfacing():
+    # Surface, a dive with a mid-water turn, surface, a plain dive, surface.
+    def flat(depth, seconds):
+        return np.full(seconds // 10, depth)
+
+    def leg(start, end, seconds):
+        return _make_leg(min(start, end), max(start, end), seconds // 10, start < end)
+
+    depth = np.concatenate(
+        [
+            flat(0.5, 300),
+            leg(0.5, 100, 600),
+            leg(100, 40, 300),
+            leg(40, 100, 300),
+            leg(100, 0.5, 600),
+            flat(0.5, 300),
+            leg(0.5, 100, 600),
+            leg(100, 0.5, 600),
+            flat(0.5, 300),
+        ]
+    )
+    offsets = (np.arange(len(depth)) * 10 * 1_000_000_000).astype("timedelta64[ns]")
+    times = np.datetime64("2024-01-01T00:00:00", "ns") + offsets
+    df = pd.DataFrame(
+        {"N_MEASUREMENTS": np.arange(len(depth)), "TIME": times, "PRES": depth}
+    )
+
+    result = run(df)
+
+    assert result["PROFILE_NUMBER"].nunique() == 6
+    assert result["CYCLE"].nunique() == 2
+    first_dive = result["TIME"] < times[len(depth) // 2]
+    assert (result.loc[first_dive, "CYCLE"] == 1).all()
 
 
 def test_excluded_rows_labelled_from_neighbours():

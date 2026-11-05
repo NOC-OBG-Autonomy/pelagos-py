@@ -9,7 +9,7 @@ pipeline:
 steps:
   - name: Load OG1
     parameters:
-      file_path: examples/data/docs/Growler_677_docs.nc
+      file_path: examples/data/OG1/demo_OG1.nc  # pelagos_py.get_demo_file()
       filter_bad_time: true
 
   - name: Apply QC
@@ -51,11 +51,24 @@ steps:
 
   - name: Find Profiles
 
+  - name: Salinity Adjustment
+    parameters:
+      qc_handling_settings:
+        flag_filter_settings:
+          CNDC: [3, 4, 9]
+          TEMP: [3, 4, 9]
+          PROFILE_NUMBER: [3, 4, 9]
+        reconstruction_behaviour: reinsert
+        flag_mapping: {0: 5, 1: 5, 2: 5}
+      filter_window_size: 21
+    diagnostics: [lag_search, lag_per_profile, thermal_mass, profiles]
+
   - name: Derive CTD
     parameters:
-      to_derive: [PSAL, ASAL, CONS_TEMP]
+      to_derive: [PSAL, ASAL, CONS_TEMP, DENSITY]
 
   - name: Mixed Layer Depth
+    diagnostics: [temp]
 
   - name: Interpolate PAR
 
@@ -68,7 +81,7 @@ steps:
   - name: Isolate BBP Spikes
     parameters:
       apply_to: BBP700
-      window_size: 50
+      window_size: 7
       method: median
     diagnostics: all
 

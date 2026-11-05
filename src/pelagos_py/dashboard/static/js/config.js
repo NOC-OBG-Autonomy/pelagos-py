@@ -164,10 +164,7 @@ const Config = {
   known: [],
   locked: [],
   demo: [],
-  missions: {},
-  labels: {},       // glider names repeat across missions
-  gliders: {},
-  modes: {},        // 'nrt' | 'delayed' per demo config
+  labels: {},
   reference: [],
   downloaded: [],
   sizes: {},
@@ -304,10 +301,8 @@ const Config = {
     }
   },
 
-  // "demo_nelson.yaml" -> "Nelson"; prefers the server label since glider names repeat.
   demoLabel(name) {
-    return Config.labels[name] || name.replace(/^demo_/, '').replace(/\.ya?ml$/, '')
-      .replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    return Config.labels[name] || name;
   },
 
   renderPicker() {
@@ -444,10 +439,7 @@ const Config = {
     Config.known = info.configs || [];
     Config.locked = info.protected || [];
     Config.demo = info.demo || [];
-    Config.missions = info.missions || {};
     Config.labels = info.labels || {};
-    Config.gliders = info.gliders || {};
-    Config.modes = info.modes || {};
     Config.reference = info.reference || [];
     Config.downloaded = info.downloaded || [];
     Config.sizes = info.sizes || {};

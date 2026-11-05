@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import numpy as np
 import xarray as xr
 
@@ -39,3 +41,21 @@ def test_depth_range_only_requires_depth_var():
     assert qc.required_variables == ["PROFILE_NUMBER"]
     qc = valid_profile_qc(None, depth_range=[0, 10], depth_var="DEPTH")
     assert qc.required_variables == ["PROFILE_NUMBER", "DEPTH"]
+
+
+def test_depth_range_prefers_adjusted_pressure():
+    data = make_dataset([1, 1, 1], [500, 600, 700])
+    data["PRES_ADJUSTED"] = ("N_MEASUREMENTS", np.array([10.0, 20.0, 30.0]))
+    qc = valid_profile_qc(data, min_length=3, depth_range=[0, 100])
+    assert qc.required_variables == ["PROFILE_NUMBER", "PRES_ADJUSTED"]
+    assert list(qc.return_qc()["PROFILE_NUMBER_QC"].values) == [1, 1, 1]
+
+
+@patch("pelagos_py.steps.quality_control.valid_profile_qc.plt.show")
+@patch("pelagos_py.steps.quality_control.valid_profile_qc.matplotlib.use")
+def test_plot_diagnostics_without_depth_variable(mock_use, mock_show):
+    data = make_dataset([1, 1, 2, 2], [10, 20, 10, 20]).drop_vars("PRES")
+    qc = valid_profile_qc(data, min_length=2)
+    qc.return_qc()
+    qc.plot_diagnostics()
+    mock_show.assert_called_once_with(block=True)

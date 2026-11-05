@@ -1,16 +1,21 @@
 # Particulate Backscattering (b<sub>bp</sub>) Processing
 
+```{image} ../_static/bbp/bbp_section.png
+:alt: Particulate backscattering (bbp) against pressure and time for the demo deployment
+:width: 100%
+```
+
 ## Overview
 
 Optical backscattering (b<sub>b</sub>) is an inherent optical property defined as the limit, as path length approaches zero, of the fraction of light is scattered in a backwards direction, per unit distance traveled through the water. It is a fundamental inherent optical property of seawater, critical to ocean color, and important for visibility and light penetration in the ocean. Particulate optical backscattering (b<sub>bp</sub>), is the backscattering by particulate matter. As measured by autonomous oceanographic platforms, (b<sub>bp</sub>) provides a proxy for particle concentration and size. In the open ocean, at low inorganic particle concentrations, it is a useful proxy for particulate organic carbon (POC) concentration and and is a required optical reference for several of the non-photochemical quenching (NPQ) correction methods used in chlorophyll-*a* processing. Raw backscattering sensors measure the volume scattering function at a single angle and wavelength (beta, in m<sup>-1</sup> sr<sup>-1</sup>), which must be converted to the particulate backscattering coefficient (b<sub>bp</sub>, in m<sup>-1</sup>) and separated from isolated spikes before it can be interpreted or used downstream.
 
-pelagos-py implements a short, focused backscatter processing workflow that combines generic quality-control algorithms with a variable-specific physical conversion and despiking step. Unlike chlorophyll, backscatter cannot be dark corrected in situ, so factory dark values are used by default without adjustment. b<sub>bp</sub> is processed once, early in the pipeline, and its despiked baseline is then consumed as an input by several chlorophyll NPQ correction methods (see [4. Use in chlorophyll NPQ correction](#4-use-in-chlorophyll-npq-correction) and the **Chlorophyll-*a* Processing** documentation).
+pelagos-py implements a short, focused backscatter processing workflow that combines generic quality-control algorithms with a variable-specific physical conversion and despiking step. Unlike chlorophyll, backscatter cannot be dark corrected in situ, so factory dark values are used by default without adjustment. b<sub>bp</sub> is processed once, early in the pipeline, and its despiked baseline is then consumed as an input by several chlorophyll NPQ correction methods (see [4. Use in chlorophyll NPQ correction](#use-in-chlorophyll-npq-correction) and the **Chlorophyll-*a* Processing** documentation).
 
 The backscatter processing workflow consists of three sequential stages:
 
 1. **Initial quality control** — applies the generic Range QC and Stuck Value QC modules to the raw sensor signal to identify grossly implausible or frozen readings. Deliberately, no spike test is applied at this stage: backscatter spikes correspond to real particles or aggregates rather than sensor artefacts, and are separated out (not discarded) in stage 3.
 
-2. **BBP from Beta** — converts the raw volume scattering function (beta, m<sup>-1</sup> sr<sup>-1</sup>) to the total (particulate + seawater) backscattering coefficient (b<sub>bp</sub>, m<sup>-1</sup>) using the pure-seawater scattering model of Zhang et al. (2009) and the chi-factor scaling of Sullivan et al. (2013). Note that Zhang et al. (2009) has been superceded by Hu et al. (2019), which adds a small pressure effect, so this should eventually be changed.
+2. **BBP from Beta** — converts the raw volume scattering function (beta, m<sup>-1</sup> sr<sup>-1</sup>) to the particulate backscattering coefficient (b<sub>bp</sub>, m<sup>-1</sup>) using the pure-seawater scattering model of Zhang et al. (2009) and the chi-factor scaling of Sullivan et al. (2013). Note that Zhang et al. (2009) has been superceded by Hu et al. (2019), which adds a small pressure effect, so this should eventually be changed.
 
 3. **Isolate BBP Spikes** — applies a despiking routine (following Briggs et al., 2011) directly to b<sub>bp</sub> to separate a smooth baseline from isolated spikes, producing `<var>_BASELINE` and `<var>_SPIKES`. The baseline is the variable subsequently used as the optical reference by chlorophyll NPQ correction methods.
 
@@ -48,7 +53,7 @@ qc_settings:
       BETA_BACKSCATTERING700: 3
 ```
 
-A frozen reading (three or more identical consecutive values, using the recommended threshold) indicates a dead or fouled sensor and is flagged probably bad (`3`).
+A frozen reading (four or more identical consecutive values, using the recommended threshold of 3) indicates a dead or fouled sensor and is flagged bad (`4`).
 
 ## 1.3 No spike test
 
@@ -60,7 +65,7 @@ Deliberately, **no Spike QC test is applied** to the raw backscatter signal. Lar
 
 ## 2.1 Physical basis
 
-The conversion follows the OOI/WET Labs formulation implemented in `glidertools.flo_functions.flo_bback_total`, which itself follows Zhang et al. (2009) for the pure-seawater scattering contribution and Sullivan et al. (2013) for the particulate chi-factor scaling.
+The conversion follows the BGC-Argo definition of particulate backscattering, using Zhang et al. (2009) for the pure-seawater scattering contribution (via `glidertools.flo_functions.flo_zhang_scatter_coeffs`) and Sullivan et al. (2013) for the particulate chi-factor scaling.
 
 The raw sensor measures the volume scattering function at the instrument's effective scattering angle $\theta$ and wavelength $\lambda$:
 
@@ -84,43 +89,14 @@ $$
 b_{bp}(\lambda) = \chi \cdot 2\pi \cdot \beta_p(\theta,\lambda).
 $$
 
-**Seawater backscatter.** Because the effective scattering centres in pure seawater are much smaller than the measurement wavelength, seawater scattering is symmetric in the forward and backward directions, so the seawater backscattering coefficient is simply half the total seawater scattering coefficient:
-
-$$
-b_{bsw}(\lambda) = \frac{b_{sw}(\lambda)}{2}.
-$$
-
-**Output.** The value written to the dataset is the **total** (particulate + seawater) backscattering coefficient,
-
-$$
-b_{b}(\lambda) = b_{bp}(\lambda) + b_{bsw}(\lambda),
-$$
-
-with units of m<sup>-1</sup>.
-
-> **Note — known issue: `BBP700` currently reports total, not particulate, backscattering**
->
-> The output variable's `long_name` attribute reads "Total particulate backscatter", and this is unfortunately accurate: the value returned by `flo_bback_total` — and therefore the value pelagos-py writes to `BBP700` (or whichever `output_as` name is configured) — is the **total** backscattering coefficient $b_{b}$, i.e. particulate **plus** the residual seawater contribution $b_{bsw}$, not $b_{bp}$ alone. This is a bug rather than an intentional design choice: `BBP700` is documented and used throughout this pipeline as a particulate/POC proxy, and the seawater term is never subtracted out.
->
-> The added seawater term is a near-constant offset of roughly 3.2 &times; 10<sup>-4</sup> m<sup>-1</sup> at 700 nm (varying only slightly with temperature and salinity). Because it is additive, its effect depends heavily on how much particulate signal is present:
->
-> | Regime | true $b_{bp}$ (m<sup>-1</sup>) | reported `BBP700` (m<sup>-1</sup>) | overestimate |
-> |---|---|---|---|
-> | Deep ocean (>1000 m) | 5 &times; 10<sup>-5</sup> | 3.7 &times; 10<sup>-4</sup> | ~640% |
-> | Oligotrophic surface | 3 &times; 10<sup>-4</sup> | 6.2 &times; 10<sup>-4</sup> | ~106% |
-> | Temperate surface | 1 &times; 10<sup>-3</sup> | 1.3 &times; 10<sup>-3</sup> | ~32% |
-> | Spring bloom | 4 &times; 10<sup>-3</sup> | 4.3 &times; 10<sup>-3</sup> | ~8% |
->
-> The error is largest exactly where $b_{bp}$ is smallest — deep water and oligotrophic surface water — so "small relative to the particulate signal" only holds in blooms; elsewhere the added seawater term can exceed the true particulate signal several times over. It also biases the chlorophyll/backscatter ratio used by the backscatter-based NPQ correction methods (see [4. Use in chlorophyll NPQ correction](#4-use-in-chlorophyll-npq-correction)).
->
-> **Status**: fix proposed in [pelagos-py PR #162](https://github.com/NOC-OBG-Autonomy/pelagos-py/pull/162), which computes $b_{bp}$ directly ($b_{bp} = 2\pi\chi(\beta_p - \beta_{sw})$, following the BGC-Argo definition) instead of using `flo_bback_total`. Until that PR is merged, any `BBP700` produced by this step should be treated as $b_{b}$ rather than $b_{bp}$; users who need particulate-only backscatter should subtract the seawater term themselves (Section 2.1 above) or apply the fix from that PR.
+**Output.** The value written to the dataset is the particulate backscattering coefficient $b_{bp}(\lambda)$ above, with units of m<sup>-1</sup>.
 
 ## 2.2 Default configuration
 
 ```yaml
 - name: "BBP from Beta"
   parameters:
-    apply_to: BBP700
+    apply_to: BETA_BACKSCATTERING700
     output_as: BBP700
     theta: 124
     xfactor: 1.076
@@ -129,7 +105,7 @@ with units of m<sup>-1</sup>.
 
 `theta` (124°) and `xfactor` (1.076) are the effective scattering angle and chi factor for a three-channel WET Labs ECO-BB3-type instrument (Sullivan et al., 2013, Table 6.2b). Two-channel ECO instruments (e.g. FLBB, FLNTU) use a different geometry — an effective angle of 140° and a chi factor of 1.096 — and `theta`/`xfactor` should be adjusted accordingly for those sensors.
 
-`apply_to` and `output_as` default to the same name (`BBP700`), so the step overwrites its input in place unless a different `output_as` is configured — see the implementation note below. Deployments that log the raw signal under a distinct name (e.g. Churchill's `BETA_BACKSCATTERING700`) set `apply_to` to that name and `output_as: BBP700` to derive a new variable.
+`apply_to` defaults to `BETA_BACKSCATTERING700` and `output_as` to `BBP700`, so the step writes a new variable. Platforms that report beta under the `BBP700` name can set both to `BBP700`, in which case the step overwrites its input in place — see the implementation note below.
 
 > **Note — wavelength is not a configurable parameter**
 >
@@ -137,18 +113,18 @@ with units of m<sup>-1</sup>.
 
 ## 2.3 Implementation notes
 
-- **Required inputs**: `TEMP`, `PRAC_SALINITY`, `DEPTH` and the beta variable named by `apply_to`. Gaps in `TEMP` or `PRAC_SALINITY` are left as `NaN` — the step does not gap-fill its inputs — so b<sub>bp</sub> is not derived at those samples and the corresponding output is flagged missing (`9`). An **Interpolate Data** step run beforehand on `TEMP`/`PRAC_SALINITY` produces a gap-free b<sub>bp</sub> record.
+- **Required inputs**: `TIME`, `TEMP`, `PSAL`, `DEPTH` and the beta variable named by `apply_to`; `_ADJUSTED` versions are used where available. Gaps in temperature or salinity are left as `NaN` — the step does not gap-fill its inputs — so b<sub>bp</sub> is not derived at those samples and the corresponding output is flagged missing (`9`). An **Interpolate Data** step run beforehand on `TEMP`/`PSAL` fills eligible gaps.
 - **QC flag filtering**: unlike the Isolate BBP Spikes step (Section 3) and the generic `deep_correction` step, BBP from Beta does **not** automatically exclude samples carrying bad/probably-bad/missing QC flags (`3`, `4`, `9`) from the conversion — every finite `apply_to` value is converted regardless of its QC flag, unless the user explicitly configures `qc_handling_settings` to NaN-out flagged beta first. Flags on the input are still carried across to the output's QC via `generate_qc`, so a flagged input value converts to a flagged output value; the flag simply does not prevent the arithmetic conversion itself.
-- **In-place overwrite**: if `apply_to` and `output_as` are the same (the default), the QC for the output variable is **not** regenerated — the pre-existing `_QC` array is left untouched and a warning is logged. This means that, for platforms using the default in-place configuration, any new missing (`9`) flags arising from `TEMP`/`PRAC_SALINITY` gaps during the conversion are not automatically reflected in `BBP700_QC` unless `output_as` is set to a distinct variable name.
+- **In-place overwrite**: if `apply_to` and `output_as` are the same, the QC for the output variable is **not** regenerated — the pre-existing `_QC` array is left untouched and a warning is logged. This means that, for platforms using an in-place configuration, any new missing (`9`) flags arising from `TEMP`/`PSAL` gaps during the conversion are not automatically reflected in `BBP700_QC` unless `output_as` is set to a distinct variable name.
 - **DEPTH is never modified** by this step, consistent with its treatment throughout the pipeline.
 
-## 2.4 Figure placeholder
+## 2.4 Figure
 
 ```{figure} ../_static/bbp/bbp_from_beta_boxplot.png
-:alt: Placeholder for the Beta vs bbp diagnostic box plot.
+:alt: The beta vs bbp diagnostic box plot.
 :width: 70%
 
-**Placeholder.** Box plot comparing the value distribution of the raw beta input and the converted b<sub>bp</sub> output.
+Box plot comparing the value distribution of the raw beta input and the converted b<sub>bp</sub> output.
 ```
 
 ---
@@ -176,30 +152,24 @@ Both the baseline and spike components are retained as independent output variab
 - name: "Isolate BBP Spikes"
   parameters:
     apply_to: BBP700
-    window_size: 50
+    window_size: 7
     method: median
   diagnostics: true
 ```
 
-> **Note — known issue: default `window_size` of 50 is likely too large, and its stated justification does not match the code**
->
-> This documentation has stated that "the default 50-point rolling window is the same window size used by the CHLA fluorescence despiking step" — but no such CHLA despiking step exists in pelagos-py (checked both `main` and `DEMO`): the only `filter_window_size` in the codebase belongs to an unrelated PSAL smoothing filter (default 21, in `salinity.py`), not to any chlorophyll despiking routine. The stated rationale for 50 does not currently anchor to anything in the code.
->
-> Briggs et al. (2011) — the method this despiking step implements (`glidertools.cleaning.despike`, called with `apply_to: BBP700`) — used a **7-point** rolling filter, applied over valid (non-NaN) b<sub>bp</sub> points. `window_size` in pelagos-py has the same "N valid points" semantics (QC-flagged samples are masked to `NaN` and excluded before the rolling window is applied — see Section 3.3), so `window_size: 50` is directly comparable to that 7-point choice, not confounded by a different windowing convention. Even allowing for much higher-resolution modern glider sampling than the original Briggs et al. (2011) float data, 50 is roughly 3–7&times; larger than would typically be expected (a window of order 11–15 points).
->
-> This is a tuning/default question rather than a correctness bug — the "right" window size depends on sensor sampling rate and platform vertical speed, and the older deployment configs set `window_size: 50` explicitly, whereas the default template (`src/pelagos_py/default_config.yaml`) now uses Briggs' 7-point window. See [pelagos-py issue #163](https://github.com/NOC-OBG-Autonomy/pelagos-py/issues/163) for discussion before assuming 50 is appropriate for a new deployment; consider comparing against a smaller window (e.g. 11–15 points) for high-resolution data.
+`window_size: 7` follows the 7-point rolling filter of Briggs et al. (2011), counted over valid (non-flagged) points. A larger window is a deliberate tuning choice, depending on the sensor's sampling rate and the platform's vertical speed.
 
 ## 3.3 QC filtering and missing-value propagation
 
 Unlike BBP from Beta (Section 2.3), Isolate BBP Spikes **does** exclude flagged samples from the despike calculation by default: samples carrying QC flags `3`, `4` or `9` on `apply_to` are masked to `NaN` before the rolling filter is applied, so a flagged (e.g. biofouled) stretch cannot drag down the rolling baseline computed for an isolated good sample nearby. Samples excluded this way receive **no** baseline or spike value at all (both `NaN`), and are flagged missing (`9`) in the corresponding `_BASELINE_QC`/`_SPIKES_QC` outputs — this differs from steps such as `deep_correction`, where excluded samples are still corrected even though they do not inform the correction. A gap left this way in the baseline is not filled by this step; an **Interpolate Data** step run afterward on `<var>_BASELINE` produces a gap-free baseline for downstream use (e.g. by the chlorophyll NPQ methods that require a continuous backscatter reference).
 
-## 3.4 Figure placeholder
+## 3.4 Figure
 
 ```{figure} ../_static/bbp/bbp_baseline_spikes_timeseries.png
-:alt: Placeholder for the bbp baseline and spikes diagnostic time series.
+:alt: The bbp baseline and spikes diagnostic time series.
 :width: 90%
 
-**Placeholder.** Raw b<sub>bp</sub> time series with the despiked baseline overlaid (top panel), and the isolated spike component (bottom panel).
+Raw b<sub>bp</sub> time series with the despiked baseline overlaid (top panel), and the isolated spike component (bottom panel).
 ```
 
 ---
@@ -229,7 +199,7 @@ The backscatter processing workflow produces or updates the following variables:
 |---|---|
 | `BETA_BACKSCATTERING700` (or platform-specific equivalent) | Raw volume scattering function in m<sup>-1</sup> sr<sup>-1</sup>, measured at the sensor's effective angle and wavelength. This is the native measurement used as the input to the BBP from Beta conversion. |
 | `<apply_to>_QC` | Quality-control flags associated with the raw signal, including the results of the initial range and stuck-value tests. |
-| `BBP700` (or configured `output_as`) | Total (particulate + seawater) backscattering coefficient in m<sup>-1</sup>, derived from the raw signal using the Zhang et al. (2009) seawater-scattering model and the Sullivan et al. (2013) chi-factor scaling. See the note in Section 2.1 regarding the seawater contribution retained in this value. |
+| `BBP700` (or configured `output_as`) | Particulate backscattering coefficient in m<sup>-1</sup>, derived from the raw signal using the Zhang et al. (2009) seawater-scattering model and the Sullivan et al. (2013) chi-factor scaling. See the note in Section 2.1 regarding the seawater contribution retained in this value. |
 | `BBP700_QC` | Quality-control flags associated with `BBP700`. Inherited from the input's QC when `output_as` differs from `apply_to`; left unmodified (with a logged warning) when the conversion is applied in place. |
 | `BBP700_BASELINE` | Despiked baseline backscatter signal, produced by the Isolate BBP Spikes step. This is the variable most commonly consumed by the backscatter-based chlorophyll NPQ correction methods. |
 | `BBP700_SPIKES` | Backscatter spike component separated from the baseline, retained independently as it represents discrete particle/aggregate signal rather than an artefact. |
@@ -247,17 +217,15 @@ A scientific methods section describing backscatter processing with pelagos-py s
 
 - the effective scattering angle (`theta`) and chi factor (`xfactor`) used for the beta-to-b<sub>bp</sub> conversion, and the sensor model/geometry they correspond to;
 
-- that the reported b<sub>bp</sub> value is the total (particulate + seawater) backscattering coefficient, not the particulate component alone;
-
 - the despiking window size and method (median or minmax) used to separate the baseline and spike components; and
 
 - which backscatter variable (raw, or despiked baseline) was used as the optical reference for any chlorophyll NPQ correction applied.
 
 An example methods description is given below.
 
-> Particulate backscattering was processed using pelagos-py. The raw volume scattering function (`BETA_BACKSCATTERING700`, m<sup>-1</sup> sr<sup>-1</sup>) was screened using a range test, with values outside 0 to 0.01 m<sup>-1</sup> sr<sup>-1</sup> flagged probably bad and values outside -1.0 &times; 10<sup>-4</sup> to 0.05 m<sup>-1</sup> sr<sup>-1</sup> flagged bad, together with a stuck-value test flagging three or more identical consecutive readings as probably bad. No spike test was applied to the raw signal, as backscatter spikes were considered to represent genuine particulate/aggregate signal rather than sensor artefacts.
+> Particulate backscattering was processed using pelagos-py. The raw volume scattering function (`BETA_BACKSCATTERING700`, m<sup>-1</sup> sr<sup>-1</sup>) was screened using a range test, with values outside 0 to 0.01 m<sup>-1</sup> sr<sup>-1</sup> flagged probably bad and values outside -1.0 &times; 10<sup>-4</sup> to 0.05 m<sup>-1</sup> sr<sup>-1</sup> flagged bad, together with a stuck-value test flagging four or more identical consecutive readings as bad. No spike test was applied to the raw signal, as backscatter spikes were considered to represent genuine particulate/aggregate signal rather than sensor artefacts.
 >
-> The raw signal was converted to the total (particulate + seawater) backscattering coefficient at 700 nm (`BBP700`, m<sup>-1</sup>) following the pure-seawater scattering model of Zhang et al. (2009) and the chi-factor scaling of Sullivan et al. (2013), using an effective scattering angle of 124&deg; and a chi factor of 1.076, appropriate for a three-channel WET Labs ECO-type instrument. The converted signal was subsequently despiked using a centred rolling-median filter of 50 observations following Briggs et al. (2011), producing a despiked baseline (`BBP700_BASELINE`) and an isolated spike component (`BBP700_SPIKES`). The despiked baseline was used as the optical reference for chlorophyll non-photochemical quenching correction.
+> The raw signal was converted to the particulate backscattering coefficient at 700 nm (`BBP700`, m<sup>-1</sup>) following the pure-seawater scattering model of Zhang et al. (2009) and the chi-factor scaling of Sullivan et al. (2013), using an effective scattering angle of 124&deg; and a chi factor of 1.076, appropriate for a three-channel WET Labs ECO-type instrument. The converted signal was subsequently despiked using a centred rolling-median filter of 7 observations following Briggs et al. (2011), producing a despiked baseline (`BBP700_BASELINE`) and an isolated spike component (`BBP700_SPIKES`). The despiked baseline was used as the optical reference for chlorophyll non-photochemical quenching correction.
 
 ---
 

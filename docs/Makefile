@@ -12,10 +12,11 @@ BUILDDIR      = _build
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-# Re-render the user-guide figures (docs/scripts/figures.yaml) from the docs
-# dataset; set PELAGOS_DOCS_DATA to point at it. Not part of "make html".
+# Re-render the user-guide figures (docs/scripts/figures.yaml) from the demo
+# file. Not part of "make html".
 figures:
 	python scripts/render_figures.py
+	python scripts/explainer_figures.py
 
 .PHONY: help figures Makefile
 

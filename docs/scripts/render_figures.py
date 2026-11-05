@@ -2,7 +2,8 @@
 
     python docs/scripts/render_figures.py [docs/scripts/figures.yaml] [--data FILE] [--out docs/_static]
 
---data overrides the Load OG1 file_path; --profile replaces PROFILE in figures.yaml.
+Runs on the demo file (downloaded on first use) unless --data gives another;
+--profile replaces PROFILE in figures.yaml.
 """
 
 import argparse
@@ -14,7 +15,9 @@ import tempfile
 import yaml
 
 from pelagos_py.pipeline import Pipeline
+from pelagos_py.utils.demo_data import get_demo_file
 from pelagos_py.steps import create_step
+from pelagos_py.steps.input_output.write_report import cross_section_figure
 from pelagos_py.utils import diagnostic_capture
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -47,7 +50,7 @@ def main():
     ap.add_argument(
         "spec", nargs="?", default=os.path.join(ROOT, "docs", "scripts", "figures.yaml")
     )
-    ap.add_argument("--data", default=os.environ.get("PELAGOS_DOCS_DATA"))
+    ap.add_argument("--data")
     ap.add_argument("--out", default=os.path.join(ROOT, "docs", "_static"))
     ap.add_argument("--profile", type=int, default=None)
     args = ap.parse_args()
@@ -58,12 +61,7 @@ def main():
         config = yaml.safe_load(fh)
     for step in config["steps"]:
         if step["name"] == "Load OG1":
-            if args.data:
-                step["parameters"]["file_path"] = args.data
-            elif not os.path.isabs(step["parameters"]["file_path"]):
-                step["parameters"]["file_path"] = os.path.join(
-                    ROOT, step["parameters"]["file_path"]
-                )
+            step["parameters"]["file_path"] = args.data or str(get_demo_file())
 
     captured = tempfile.mkdtemp(prefix="pelagos_docs_figs_")
     with diagnostic_capture.force_headless_backend():
@@ -77,10 +75,13 @@ def main():
         pipe.run()
         ds = pipe.get_data()
 
+        variants = spec.get("variants", [])
+        if variants:
+            base = _data_before(config, variants[0]["step"])
         profile = args.profile
-        for i, variant in enumerate(spec.get("variants", [])):
+        for i, variant in enumerate(variants):
             if profile is None:
-                profile = _example_profile(ds)
+                profile = _example_profile(base)
             variant = _fill_profile(variant, profile)
             step_config = {
                 "name": variant["step"],
@@ -91,7 +92,7 @@ def main():
                 captured, variant["step"], 100 + i, []
             ):
                 create_step(
-                    step_config, {"data": ds.copy(), "global_parameters": {}}
+                    step_config, {"data": base.copy(), "global_parameters": {}}
                 ).run()
         diagnostic_capture.wait_for_saves()
 
@@ -107,7 +108,28 @@ def main():
         os.makedirs(os.path.dirname(dest), exist_ok=True)
         shutil.copyfile(_find(captured, step, figure, index), dest)
         print("wrote", os.path.relpath(dest, ROOT))
+    sections = {}
+    for path, labels in spec.get("sections", {}).items():
+        section_dir = os.path.join(captured, "sections", os.path.dirname(path))
+        os.makedirs(section_dir, exist_ok=True)
+        sections[path] = cross_section_figure(ds, section_dir, labels=labels)
+    diagnostic_capture.wait_for_saves()
+    for path, image in sections.items():
+        dest = os.path.join(args.out, path)
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        shutil.copyfile(image, dest)
+        print("wrote", os.path.relpath(dest, ROOT))
     shutil.rmtree(captured, ignore_errors=True)
+
+
+def _data_before(config, step_name):
+    # Variants must correct the input the pipeline's own step saw, not its output.
+    last = max(i for i, s in enumerate(config["steps"]) if s["name"] == step_name)
+    steps = [{**s, "diagnostics": False} for s in config["steps"][:last]]
+    pipe = Pipeline(config={**config, "steps": steps})
+    pipe.headless = True
+    pipe.run()
+    return pipe.get_data()
 
 
 def _example_profile(ds):

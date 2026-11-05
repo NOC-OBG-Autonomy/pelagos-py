@@ -67,3 +67,15 @@ def test_dive_depths_finds_each_bottom_including_yos(tmp_path):
         990.0,
         790.0,
     ]
+
+
+def test_packed_pressure_fill_values_are_missing(tmp_path):
+    import netCDF4
+
+    path = tmp_path / "g.nc"
+    pres = np.array([10.0, np.nan, 30.0])
+    encoding = {"PRES": {"dtype": "int16", "scale_factor": 0.1, "_FillValue": 32767}}
+    xr.Dataset({"PRES": ("N", pres)}).to_netcdf(path, encoding=encoding)
+    with netCDF4.Dataset(path) as nc:
+        read = file_probe._read_pres(nc["PRES"], 0, 3)
+    assert np.allclose(read, pres, equal_nan=True)
