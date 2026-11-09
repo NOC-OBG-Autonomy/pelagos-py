@@ -276,7 +276,7 @@ function renderValidation(result) {
     const parsed = parseIssue(issue.error);
     const row = issueBody(
       `<div class="v-msg"><strong>${escapeHtml(parsed.tag)}</strong> ` +
-      `<span class="v-muted">· ${issueWhere(issue)}</span></div>${parsed.html}`);
+      `<span class="v-muted">· ${escapeHtml(issueWhere(issue))}</span></div>${parsed.html}`);
     linkToStep(row, issue);
     bar.appendChild(row);
   }
@@ -290,7 +290,7 @@ function warningsBar(warnings, slot) {
   bar.title = 'Show or hide the warnings';
   for (const warning of warnings) {
     const row = issueBody(
-      `<div class="v-msg"><span class="v-muted">${issueWhere(warning)} ·</span> ` +
+      `<div class="v-msg"><span class="v-muted">${escapeHtml(issueWhere(warning))} ·</span> ` +
       `${escapeHtml(warning.message)}</div>`);
     linkToStep(row, warning);
     bar.appendChild(row);
@@ -333,7 +333,7 @@ function issueBody(html) {
 
 function issueWhere(issue) {
   if (issue.index == null) return 'Pipeline';
-  return `Step ${issue.index + 1}${issue.name ? ' · ' + escapeHtml(issue.name) : ''}`;
+  return `Step ${issue.index + 1}${issue.name ? ' · ' + issue.name : ''}`;
 }
 
 function linkToStep(el, issue) {
