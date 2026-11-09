@@ -758,14 +758,11 @@ def build_config(payload: BuildPayload):
     probe = file_probe.probe_file(path)
     if probe is None:
         raise HTTPException(status_code=400, detail=f"Could not read '{path.name}'.")
-    # keep demo paths workspace-relative so the config works on any machine
-    file_path = payload.file_path
-    if not Path(file_path).is_absolute():
-        file_path = str(path.relative_to(WORKSPACE_DIR))
+    # relative paths stay relative (runs use the workspace as cwd), so the config is portable
     return {
         "yaml_content": config_builder.build(
             _template_text(),
-            file_path,
+            payload.file_path,
             probe,
             payload.choices,
             payload.description,
