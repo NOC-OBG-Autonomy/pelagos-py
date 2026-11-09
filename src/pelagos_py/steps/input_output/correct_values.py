@@ -39,15 +39,13 @@ class CorrectValues(BaseStep):
     """
     Apply an affine correction ``corrected = slope * value + intercept`` to a variable.
 
-    The correction is conditional when ``expected_range`` is given: the median of the
-    valid (non-NaN) data is compared against ``[min, max]``, and the correction is
-    applied only when the median falls *outside* that range (i.e. the data still looks
-    uncorrected). When ``expected_range`` is omitted the correction is always applied.
+    Used for cross-calibration against a reference, unit conversions and renames.
+    The coefficients come from the user; the step does no comparison itself. QC flags
+    are copied unchanged. See :doc:`/user_guide/Pelagos-py_CROSSCAL`.
 
-    This makes a config robust to upstream fixes: a unit conversion targeting an
-    ``expected_range`` quietly skips files that already arrive in the right units.
-    (CNDC does not need this: Derive CTD reads the units attribute and converts
-    S/m -> mS/cm for gsw itself.)
+    With ``expected_range``, the correction runs only when the median of the input
+    (before correcting) is *outside* ``[min, max]``, so a unit conversion skips files
+    that already arrive in the right units. Leave it out for cross-calibration.
 
     Parameters
     ----------
@@ -66,9 +64,8 @@ class CorrectValues(BaseStep):
     intercept : float, optional
         Additive offset applied after scaling (default ``0.0``). Use for alignment.
     expected_range : list, optional
-        ``[min, max]`` for the *corrected* variable. The correction is applied only
-        when the data's median falls outside this range. If omitted, the correction
-        is always applied.
+        ``[min, max]`` where correct data lies. The correction is applied only when
+        the input's median falls outside it. If omitted, it is always applied.
     time_start, time_end : str, optional
         Restrict the correction to a TIME window (e.g. ``"2024-07-01T00:00:00"``).
         Points outside the window keep their raw value. Either bound may be omitted.
@@ -96,7 +93,6 @@ class CorrectValues(BaseStep):
               target_variable: TEMP
               slope: 1.001
               intercept: -0.05
-              expected_range: [-2.5, 40]
             diagnostics: false
     """
 

@@ -23,7 +23,7 @@ from pelagos_py.utils.processing_utils import cndc_scale_factor, profile_indices
 
 #### Custom imports ####
 import matplotlib.pyplot as plt
-import matplotlib as mpl
+from pelagos_py.utils import fig_spec
 import xarray as xr
 import pandas as pd
 import numpy as np
@@ -185,6 +185,7 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
     Samples flagged in ``calculation_flag_filter`` (by default probably-bad (3),
     bad (4), missing (9)) neither inform the lag estimate nor anchor the correction
     interpolants, but both corrections are still evaluated at every sample.
+    See :doc:`/user_guide/Pelagos-py_SALINITY`.
 
     Parameters
     ----------
@@ -199,7 +200,7 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
     .. code-block:: yaml
 
         steps:
-          - name: "ADJ: Salinity"
+          - name: Salinity Adjustment
             parameters:
               filter_window_size: 21
             diagnostics: false
@@ -381,7 +382,11 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
                         optimal_lag, cost_data = compute_optimal_lag(
                             profile, filter_size, self.time_col, return_cost_data=True
                         )
-                        self._ct_cost_data = cost_data
+                        if cost_data is not None:
+                            self._ct_cost_data = {
+                                **cost_data,
+                                "profile": profile_number,
+                            }
                     else:
                         optimal_lag = compute_optimal_lag(
                             profile, filter_size, self.time_col
@@ -548,6 +553,7 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
                 self._thermal_scatter_data = {
                     "dT_dt": np.gradient(TEMP_1Hz_sampling, TIME_1Hz_sampling),
                     "correction": TEMP_correction,
+                    "profile": prof,
                 }
 
         self.temp = np.where(
@@ -579,27 +585,143 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
         if source_qcs:
             self.generate_qc({"PSAL_ADJUSTED_QC": source_qcs})
 
-    def generate_diagnostics(self):
-        # Dashboard of applied CNDC/TEMP adjustments and their dataset-wide impact
-        mpl.use("tkagg")
+    diagnostic_figures = {
+        "dashboard": ("All salinity adjustment diagnostics", True),
+        "lag_search": ("C-T lag search for one profile", None),
+        "lag_per_profile": ("Optimal C-T lag per profile", None),
+        "thermal_mass": ("Thermal-mass correction against dT/dt", None),
+        "profiles": ("Salinity profiles before and after adjustment", None),
+    }
 
-        # --- Friendly Configuration Variables ---
-        FIG_SIZE = (12, 7)
-        DPI = 120
+    COLOUR_BEST = "darkorange"
+    COLOUR_SMOOTH = "dimgrey"
+    COLOUR_SCATTER = "tab:purple"
+    COLOUR_COMBINED = "teal"
+    COLOUR_DOWN = "grey"
+    COLOUR_UP = "tab:blue"
+    TITLE_SIZE = 9
+    LABEL_SIZE = 8
 
-        # Colours
-        COLOUR_BEST = "darkorange"
-        COLOUR_SMOOTH = "dimgrey"
-        COLOUR_SCATTER = "tab:purple"
-        COLOUR_COMBINED = "teal"
+    def draw_figure(self, name):
+        if name == "dashboard":
+            fig = plt.figure(figsize=(12, 7), dpi=120, constrained_layout=True)
+            gs = fig.add_gridspec(2, 3)
+            self._draw_lag_per_profile(fig.add_subplot(gs[0, 0:2]))
+            self._draw_lag_search(fig.add_subplot(gs[0, 2]))
+            self._draw_thermal_mass(fig.add_subplot(gs[1, 0]))
+            self._draw_profiles(fig.add_subplot(gs[1, 1]), fig.add_subplot(gs[1, 2]))
+            fig.suptitle(
+                "Salinity Adjustment Diagnostics Dashboard",
+                fontsize=11,
+                fontweight="bold",
+            )
+            return fig
 
-        # Text Styles
-        TITLE_SIZE = 9
-        LABEL_SIZE = 8
+        if name == "profiles":
+            fig, axes = fig_spec.new_fig(ncols=2, sharey=True)
+            self._draw_profiles(axes[0][0], axes[0][1])
+        else:
+            fig, axes = fig_spec.new_fig()
+            panels = {
+                "lag_search": self._draw_lag_search,
+                "lag_per_profile": self._draw_lag_per_profile,
+                "thermal_mass": self._draw_thermal_mass,
+            }
+            panels[name](axes[0][0])
+        fig_spec.finish(fig)
+        return fig
 
-        # --- Data Preparation ---
+    def _draw_lag_per_profile(self, ax):
+        ax.axhline(0, color="black", linestyle="-", lw=1.2, alpha=0.8, zorder=1)
+        profs = self.per_profile_optimal_lag[:, 0]
+        lags = self.per_profile_optimal_lag[:, 1]
+        valid = ~np.isnan(lags)
+        if np.any(valid):
+            ax.scatter(
+                profs[valid],
+                lags[valid],
+                c=self.COLOUR_COMBINED,
+                s=12,
+                alpha=0.6,
+                label=f"Combined (median: {self.ct_lag_median:.2f}s)",
+                zorder=2,
+            )
+            ax.axhline(
+                self.ct_lag_median,
+                color=self.COLOUR_COMBINED,
+                linestyle="--",
+                lw=1.5,
+                zorder=3,
+            )
+        ax.set_title("Dataset Lag Distribution by Profile", fontsize=self.TITLE_SIZE)
+        ax.set_xlabel("Profile Number", fontsize=self.LABEL_SIZE)
+        ax.set_ylabel("Optimal Lag (s)", fontsize=self.LABEL_SIZE)
+        ax.tick_params(axis="both", labelsize=self.LABEL_SIZE)
+        ax.grid(True, alpha=0.2)
+        ax.legend(fontsize=7)
+
+    def _draw_lag_search(self, ax):
+        c = self._ct_cost_data
+        if not c:
+            return
+        ax.plot(c["lags"], c["costs"], "o-", color=self.COLOUR_SMOOTH, lw=1, ms=3)
+        ax.axvline(
+            c["best_lag"],
+            color=self.COLOUR_BEST,
+            ls="--",
+            label=f"Best: {c['best_lag']:.2f}s",
+        )
+        ax.set_xlabel("Trial Lag (s)", fontsize=self.LABEL_SIZE)
+        ax.set_ylabel("std(PSAL - smooth)", fontsize=self.LABEL_SIZE)
+        ax.set_title(
+            f"Optimal CT Lag Search (Profile {c['profile']:.0f})",
+            fontsize=self.TITLE_SIZE,
+        )
+        ax.tick_params(axis="both", labelsize=self.LABEL_SIZE)
+        ax.legend(fontsize=7)
+        ax.grid(True, alpha=0.2)
+
+    def _draw_thermal_mass(self, ax):
+        ts = self._thermal_scatter_data
+        if not ts:
+            return
+        finite = np.isfinite(ts["correction"]) & np.isfinite(ts["dT_dt"])
+        ax.scatter(
+            ts["dT_dt"][finite],
+            ts["correction"][finite],
+            s=4,
+            alpha=0.3,
+            color=self.COLOUR_SCATTER,
+        )
+        ax.set_xlabel("dT/dt (°C/s)", fontsize=self.LABEL_SIZE)
+        ax.set_ylabel("Corr Amplitude (°C)", fontsize=self.LABEL_SIZE)
+        ax.set_title(
+            f"Thermal Mass Verification (Profile {ts['profile']:.0f})",
+            fontsize=self.TITLE_SIZE,
+        )
+        ax.tick_params(axis="both", labelsize=self.LABEL_SIZE)
+        ax.grid(True, alpha=0.2)
+
+        alpha_val = self.filter_params.get("alpha", np.nan)
+        tau_val = self.filter_params.get("tau", np.nan)
+        param_text = f"Flow Velocity: ~0.49 m/s\nAlpha (α): {alpha_val:.4f}\nTau (τ): {tau_val:.2f} s"
+        ax.text(
+            0.05,
+            0.95,
+            param_text,
+            transform=ax.transAxes,
+            fontsize=7,
+            verticalalignment="top",
+            bbox=dict(boxstyle="round", facecolor="white", alpha=0.8, edgecolor="#ccc"),
+        )
+
+    def _draw_profiles(self, ax_raw, ax_corr):
+        # Up/down-cast salinity, raw (left, all samples) vs QC-clean + adjusted (right),
+        # for ~20 mid-mission profiles sharing one sal/pres range.
         prof_arr = self.data["PROFILE_NUMBER"].values
         unique_profs = np.unique(prof_arr[~pd.isnull(prof_arr)])
+        if len(unique_profs) == 0 or "PROFILE_DIRECTION" not in self.data:
+            return
 
         plot_qc_mask = xr.ones_like(self.data_copy["PROFILE_NUMBER"], dtype=bool)
         for var in [
@@ -613,122 +735,6 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
             if qc_col in self.data_copy.data_vars:
                 plot_qc_mask = plot_qc_mask & ~self.data_copy[qc_col].isin([3, 4, 9])
 
-        valid_lags = self.per_profile_optimal_lag[
-            ~np.isnan(self.per_profile_optimal_lag[:, 1])
-        ]
-        processed_profs = valid_lags[:, 0]
-
-        if len(processed_profs) > 0:
-            sample_prof = processed_profs[len(processed_profs) // 2]
-        else:
-            sample_prof = unique_profs[0] if len(unique_profs) > 0 else np.nan
-
-        # --- Main Figure Setup ---
-        fig = plt.figure(figsize=FIG_SIZE, dpi=DPI, constrained_layout=True)
-        gs = fig.add_gridspec(2, 3)
-
-        ax_lag = fig.add_subplot(gs[0, 0:2])
-        ax_cost = fig.add_subplot(gs[0, 2])
-        ax_scatter = fig.add_subplot(gs[1, 0])
-        ax_sal = fig.add_subplot(gs[1, 1])
-        ax_diff = fig.add_subplot(gs[1, 2])
-
-        # (1) Row 1, Col 1-2: Applied Lag Distribution over Profile Index
-        ax_lag.axhline(0, color="black", linestyle="-", lw=1.2, alpha=0.8, zorder=1)
-
-        profs_subset = self.per_profile_optimal_lag[:, 0]
-        lags_subset = self.per_profile_optimal_lag[:, 1]
-        valid_indices = ~np.isnan(lags_subset)
-
-        if np.any(valid_indices):
-            profs_plot = profs_subset[valid_indices]
-            lags_plot = lags_subset[valid_indices]
-
-            label_text = f"Combined (median: {self.ct_lag_median:.2f}s)"
-            ax_lag.scatter(
-                profs_plot,
-                lags_plot,
-                c=COLOUR_COMBINED,
-                s=12,
-                alpha=0.6,
-                label=label_text,
-                zorder=2,
-            )
-            ax_lag.axhline(
-                self.ct_lag_median,
-                color=COLOUR_COMBINED,
-                linestyle="--",
-                lw=1.5,
-                zorder=3,
-            )
-
-        ax_lag.set_title("Dataset Lag Distribution by Profile", fontsize=TITLE_SIZE)
-        ax_lag.set_xlabel("Profile Number", fontsize=LABEL_SIZE)
-        ax_lag.set_ylabel("Optimal Lag (s)", fontsize=LABEL_SIZE)
-        ax_lag.tick_params(axis="both", labelsize=LABEL_SIZE)
-        ax_lag.grid(True, alpha=0.2)
-        ax_lag.legend(fontsize=7)
-
-        # (2) Row 1, Col 3: CT Lag Cost Curve
-        if self._ct_cost_data:
-            c = self._ct_cost_data
-            ax_cost.plot(c["lags"], c["costs"], "o-", color=COLOUR_SMOOTH, lw=1, ms=3)
-            ax_cost.axvline(
-                c["best_lag"],
-                color=COLOUR_BEST,
-                ls="--",
-                label=f"Best: {c['best_lag']:.2f}s",
-            )
-            ax_cost.set_xlabel("Trial Lag (s)", fontsize=LABEL_SIZE)
-            ax_cost.set_ylabel("std(PSAL - smooth)", fontsize=LABEL_SIZE)
-            ax_cost.set_title(
-                f"Optimal CT Lag Search (Profile {sample_prof:.0f})",
-                fontsize=TITLE_SIZE,
-            )
-            ax_cost.tick_params(axis="both", labelsize=LABEL_SIZE)
-            ax_cost.legend(fontsize=7)
-            ax_cost.grid(True, alpha=0.2)
-
-        # (3) Row 2, Col 1: Thermal Scatter & Parameters Legend
-        if self._thermal_scatter_data:
-            ts = self._thermal_scatter_data
-            finite = np.isfinite(ts["correction"]) & np.isfinite(ts["dT_dt"])
-            ax_scatter.scatter(
-                ts["dT_dt"][finite],
-                ts["correction"][finite],
-                s=4,
-                alpha=0.3,
-                color=COLOUR_SCATTER,
-            )
-            ax_scatter.set_xlabel("dT/dt (°C/s)", fontsize=LABEL_SIZE)
-            ax_scatter.set_ylabel("Corr Amplitude (°C)", fontsize=LABEL_SIZE)
-            ax_scatter.set_title(
-                f"Thermal Mass Verification (Profile {sample_prof:.0f})",
-                fontsize=TITLE_SIZE,
-            )
-            ax_scatter.tick_params(axis="both", labelsize=LABEL_SIZE)
-            ax_scatter.grid(True, alpha=0.2)
-
-            alpha_val = self.filter_params.get("alpha", np.nan)
-            tau_val = self.filter_params.get("tau", np.nan)
-            param_text = f"Flow Velocity: ~0.49 m/s\nAlpha (α): {alpha_val:.4f}\nTau (τ): {tau_val:.2f} s"
-            ax_scatter.text(
-                0.05,
-                0.95,
-                param_text,
-                transform=ax_scatter.transAxes,
-                fontsize=7,
-                verticalalignment="top",
-                bbox=dict(
-                    boxstyle="round", facecolor="white", alpha=0.8, edgecolor="#ccc"
-                ),
-            )
-
-        # (4)+(5) Row 2, Col 2-3: up/down-cast salinity, raw (left, all samples) vs
-        # QC-clean + adjusted (right). ~20 mid-mission profiles sharing one sal/pres range.
-        COLOUR_DOWN = "grey"
-        COLOUR_UP = "tab:blue"
-
         def psal_from(ds):
             cndc = ds[self.cndc_var]
             c = cndc.values * cndc_scale_factor(cndc.attrs.get("units"))
@@ -736,91 +742,81 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
                 c, ds[self.temp_var].values, ds[self.pres_var].values
             )
 
-        has_direction = "PROFILE_DIRECTION" in self.data
-        if len(unique_profs) > 0 and has_direction:
-            # Contiguous ~20-profile block from the middle of the deployment
-            p1 = int(np.nanmedian(unique_profs))
-            p2 = p1 + int(min(len(unique_profs) / 2, 20))
-            in_subset = (prof_arr > p1) & (prof_arr < p2)
-            subset_mask = in_subset & plot_qc_mask.values
+        # Contiguous ~20-profile block from the middle of the deployment
+        p1 = int(np.nanmedian(unique_profs))
+        p2 = p1 + int(min(len(unique_profs) / 2, 20))
+        in_subset = (prof_arr > p1) & (prof_arr < p2)
+        subset_mask = in_subset & plot_qc_mask.values
 
-            dir_arr = self.data["PROFILE_DIRECTION"].values
-            pres = self.data_copy[self.pres_var].values
-            psal_raw = psal_from(self.data_copy)
-            psal_corr = self.data["PSAL_ADJUSTED"].values
+        dir_arr = self.data["PROFILE_DIRECTION"].values
+        pres = self.data_copy[self.pres_var].values
+        psal_raw = psal_from(self.data_copy)
+        psal_corr = self.data["PSAL_ADJUSTED"].values
 
-            # Log sample counts and depth/salinity scales so a small correction on a
-            # deep axis stays diagnosable
-            _sub = subset_mask & np.isin(dir_arr, [1.0, -1.0])
-            _dsal = np.abs(psal_corr[_sub] - psal_raw[_sub])
-            _p = pres[_sub][np.isfinite(pres[_sub])]
-            _sr = psal_raw[_sub]
-            _dropped = int(
-                (in_subset & ~plot_qc_mask.values & np.isfinite(psal_raw)).sum()
-            )
-            self.log(
-                f"Salinity profile panels: {int(_sub.sum())} samples shown, "
-                f"{_dropped} hidden by QC flags (3/4/9); "
-                f"PRES {np.nanmin(_p):.0f}-{np.nanmax(_p):.0f} dbar; "
-                f"raw PSAL spread {np.nanmax(_sr) - np.nanmin(_sr):.3f}; "
-                f"correction |Δpsal| median {np.nanmedian(_dsal):.4f}, "
-                f"max {np.nanmax(_dsal):.4f}"
-            )
-
-            def draw_profiles(ax, psal, mask, title):
-                for direction, colour, lbl in (
-                    (1.0, COLOUR_DOWN, "Downcast"),
-                    (-1.0, COLOUR_UP, "Upcast"),
-                ):
-                    sel = mask & (dir_arr == direction)
-                    first = True
-                    for pn in np.unique(prof_arr[sel]):
-                        idx = np.where(sel & (prof_arr == pn))[0]
-                        if len(idx) == 0:
-                            continue
-                        # Drop NaN samples so points connect into a profile line
-                        x = psal[idx]
-                        y = pres[idx]
-                        finite = np.isfinite(x) & np.isfinite(y)
-                        if not finite.any():
-                            continue
-                        ax.plot(
-                            x[finite],
-                            y[finite],
-                            color=colour,
-                            lw=0.7,
-                            alpha=0.7,
-                            label=lbl if first else None,
-                        )
-                        first = False
-                ax.set_title(title, fontsize=TITLE_SIZE)
-                ax.set_xlabel("Practical Salinity", fontsize=LABEL_SIZE)
-                ax.tick_params(axis="both", labelsize=LABEL_SIZE)
-                ax.grid(True, alpha=0.2)
-                ax.legend(fontsize=7, loc="lower right")
-
-            draw_profiles(ax_sal, psal_raw, in_subset, "Raw salinity")
-            draw_profiles(ax_diff, psal_corr, subset_mask, "QC + adjusted")
-            ax_sal.set_ylabel("Pressure (dbar)", fontsize=LABEL_SIZE)
-
-            # Shared pressure-down ranges framed on QC-clean salinity; raw spikes clip
-            raw_sub = in_subset & np.isin(dir_arr, [1.0, -1.0])
-            clean_sal = psal_corr[subset_mask & np.isin(dir_arr, [1.0, -1.0])]
-            clean_sal = clean_sal[np.isfinite(clean_sal)]
-            if clean_sal.size:
-                s_lo, s_hi = clean_sal.min(), clean_sal.max()
-                pad = 0.02 * (s_hi - s_lo) if s_hi > s_lo else 0.02
-                for ax in (ax_sal, ax_diff):
-                    ax.set_xlim(s_lo - pad, s_hi + pad)
-            p_finite = pres[raw_sub][np.isfinite(pres[raw_sub])]
-            if len(p_finite) > 0:
-                pmin, pmax = p_finite.min(), p_finite.max()
-                ppad = 0.02 * (pmax - pmin) if pmax > pmin else 1.0
-                for ax in (ax_sal, ax_diff):
-                    ax.set_ylim(pmax + ppad, pmin - ppad)
-
-        # Final Render
-        fig.suptitle(
-            "Salinity Adjustment Diagnostics Dashboard", fontsize=11, fontweight="bold"
+        # Log sample counts and depth/salinity scales so a small correction on a
+        # deep axis stays diagnosable
+        _sub = subset_mask & np.isin(dir_arr, [1.0, -1.0])
+        _dsal = np.abs(psal_corr[_sub] - psal_raw[_sub])
+        _p = pres[_sub][np.isfinite(pres[_sub])]
+        _sr = psal_raw[_sub]
+        _dropped = int((in_subset & ~plot_qc_mask.values & np.isfinite(psal_raw)).sum())
+        self.log(
+            f"Salinity profile panels: {int(_sub.sum())} samples shown, "
+            f"{_dropped} hidden by QC flags (3/4/9); "
+            f"PRES {np.nanmin(_p):.0f}-{np.nanmax(_p):.0f} dbar; "
+            f"raw PSAL spread {np.nanmax(_sr) - np.nanmin(_sr):.3f}; "
+            f"correction |Δpsal| median {np.nanmedian(_dsal):.4f}, "
+            f"max {np.nanmax(_dsal):.4f}"
         )
-        plt.show(block=True)
+
+        def draw_profiles(ax, psal, mask, title):
+            for direction, colour, lbl in (
+                (1.0, self.COLOUR_DOWN, "Downcast"),
+                (-1.0, self.COLOUR_UP, "Upcast"),
+            ):
+                sel = mask & (dir_arr == direction)
+                first = True
+                for pn in np.unique(prof_arr[sel]):
+                    idx = np.where(sel & (prof_arr == pn))[0]
+                    if len(idx) == 0:
+                        continue
+                    # Drop NaN samples so points connect into a profile line
+                    x = psal[idx]
+                    y = pres[idx]
+                    finite = np.isfinite(x) & np.isfinite(y)
+                    if not finite.any():
+                        continue
+                    ax.plot(
+                        x[finite],
+                        y[finite],
+                        color=colour,
+                        lw=0.7,
+                        alpha=0.7,
+                        label=lbl if first else None,
+                    )
+                    first = False
+            ax.set_title(title, fontsize=self.TITLE_SIZE)
+            ax.set_xlabel("Practical Salinity", fontsize=self.LABEL_SIZE)
+            ax.tick_params(axis="both", labelsize=self.LABEL_SIZE)
+            ax.grid(True, alpha=0.2)
+            ax.legend(fontsize=7, loc="lower right")
+
+        draw_profiles(ax_raw, psal_raw, in_subset, "Raw salinity")
+        draw_profiles(ax_corr, psal_corr, subset_mask, "QC + adjusted")
+        ax_raw.set_ylabel("Pressure (dbar)", fontsize=self.LABEL_SIZE)
+
+        # Shared pressure-down ranges framed on QC-clean salinity; raw spikes clip
+        raw_sub = in_subset & np.isin(dir_arr, [1.0, -1.0])
+        clean_sal = psal_corr[subset_mask & np.isin(dir_arr, [1.0, -1.0])]
+        clean_sal = clean_sal[np.isfinite(clean_sal)]
+        if clean_sal.size:
+            s_lo, s_hi = np.percentile(clean_sal, [0.5, 99.5])
+            pad = 0.02 * (s_hi - s_lo) if s_hi > s_lo else 0.02
+            for ax in (ax_raw, ax_corr):
+                ax.set_xlim(s_lo - pad, s_hi + pad)
+        p_finite = pres[raw_sub][np.isfinite(pres[raw_sub])]
+        if len(p_finite) > 0:
+            pmin, pmax = p_finite.min(), p_finite.max()
+            ppad = 0.02 * (pmax - pmin) if pmax > pmin else 1.0
+            for ax in (ax_raw, ax_corr):
+                ax.set_ylim(pmax + ppad, pmin - ppad)

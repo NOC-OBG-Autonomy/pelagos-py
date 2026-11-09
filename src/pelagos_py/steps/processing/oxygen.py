@@ -181,6 +181,25 @@ def _plot_diff(data, raw_var, corrected_var, pressure_var, step_name):
 
 @register_step
 class DeriveUncalibratedPhase(BaseStep, QCHandlingMixin):
+    """
+    Derives the optode's uncalibrated phase, ``UNCAL_PHASE_DOXY``, from the blue phase,
+    minus the red phase when given.
+
+    See :doc:`/user_guide/Pelagos-py_DOXY`.
+
+    Examples
+    --------
+    .. code-block:: yaml
+
+        - name: "Derive Uncalibrated Phase"
+          parameters:
+            #  <MANDATORY>
+            blue_phase_name: "BPHASE_DOXY"
+            # <OPTIONAL>
+            red_phase_name: "RPHASE_DOXY"
+          diagnostics: false
+    """
+
     step_name = "Derive Uncalibrated Phase"
     beta = True
     provided_variables = ["UNCAL_PHASE_DOXY"]
@@ -202,23 +221,6 @@ class DeriveUncalibratedPhase(BaseStep, QCHandlingMixin):
     }
 
     def run(self):
-        """
-        Example
-        -------
-        ::
-
-            - name: "Derive Uncalibrated Phase"
-              parameters:
-                #  <MANDATORY>
-                blue_phase_name: "BPHASE_DOXY"
-                # <OPTIONAL>
-                red_phase_name: "RPHASE_DOXY"
-              diagnostics: false
-
-        Returns
-        -------
-
-        """
 
         self.filter_qc()
 
@@ -266,6 +268,23 @@ class DeriveUncalibratedPhase(BaseStep, QCHandlingMixin):
 
 @register_step
 class DeriveOptodeTemperature(BaseStep, QCHandlingMixin):
+    """
+    Derives optode temperature, ``TEMP_DOXY``, from its temperature voltage with a
+    calibration polynomial.
+
+    See :doc:`/user_guide/Pelagos-py_DOXY`.
+
+    Examples
+    --------
+    .. code-block:: yaml
+
+        - name: "Derive Optode Temperature"
+          parameters:
+            temp_voltage_name: "TEMP_VOLTAGE_DOXY"
+            calib_coefficients: [0, 1, 0, 0, 0, 0]
+          diagnostics: false
+    """
+
     step_name = "Derive Optode Temperature"
     beta = True
     provided_variables = ["TEMP_DOXY"]
@@ -287,21 +306,6 @@ class DeriveOptodeTemperature(BaseStep, QCHandlingMixin):
     }
 
     def run(self):
-        """
-        Example
-        -------
-        ::
-
-            - name: "Derive Optode Temperature"
-              parameters:
-                temp_voltage_name: "TEMP_VOLTAGE_DOXY"
-                calib_coefficients: [0, 1, 0, 0, 0, 0]
-              diagnostics: false
-
-        Returns
-        -------
-
-        """
 
         self.filter_qc()
 
@@ -349,6 +353,22 @@ class DeriveOptodeTemperature(BaseStep, QCHandlingMixin):
 
 @register_step
 class PhasePressureCorrection(BaseStep, QCHandlingMixin):
+    """
+    Corrects the uncalibrated phase for pressure, writing ``UNCAL_PHASE_DOXY_PCORR``.
+
+    See :doc:`/user_guide/Pelagos-py_DOXY`.
+
+    Examples
+    --------
+    .. code-block:: yaml
+
+        - name: "Phase Pressure Correction"
+          parameters:
+            optode_pressure_name: "PRES"
+            correction_coefficient: 0.1
+          diagnostics: false
+    """
+
     step_name = "Phase Pressure Correction"
     beta = True
     required_variables = ["UNCAL_PHASE_DOXY"]
@@ -371,21 +391,6 @@ class PhasePressureCorrection(BaseStep, QCHandlingMixin):
     }
 
     def run(self):
-        """
-        Example
-        -------
-        ::
-
-            - name: "Phase Pressure Correction"
-              parameters:
-                optode_pressure_name: "PRES"
-                correction_coefficient: 0.1
-              diagnostics: false
-
-        Returns
-        -------
-
-        """
 
         self.filter_qc()
 
@@ -482,6 +487,36 @@ def _plot_shift_diff(data, raw_var, shifted_var, pressure_var, step_name, lag_la
 
 @register_step
 class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
+    """
+    Geometrically time-shifts optode measurements (e.g. phase, optode temperature) onto
+    the CTD's dense sampling grid, correcting for the water travel time between the two
+    sensors' positions on the glider (Woo & Gourcuff, 2023). This is the reverse of the
+    more common approach of cloning CTD data onto the sparse optode grid: it produces
+    one shifted oxygen value per ``N_MEASUREMENTS`` row, named ``<variable>_SHIFTED``.
+
+    If ``lag_seconds`` is not set, the lag is instead derived per profile from mean
+    pitch and dive rate. If ``pitch_name`` cannot be found (or is empty), a warning is
+    logged and the step fails, since no lag is then available; set ``lag_seconds`` for a
+    constant lag instead.
+
+    See :doc:`/user_guide/Pelagos-py_DOXY`.
+
+    Examples
+    --------
+    .. code-block:: yaml
+
+        - name: "Shift Oxygen To CTD"
+          parameters:
+            # <MANDATORY>
+            shift_vars: ["UNCAL_PHASE_DOXY", "TEMP_DOXY"]
+            # <OPTIONAL>
+            lag_seconds: null
+            pitch_name: "GLIDER_PITCH"
+            distance_cm: 90
+            cast_id_var: "PROFILE_DIRECTION"
+          diagnostics: false
+    """
+
     step_name = "Shift Oxygen To CTD"
     beta = True
     required_variables = ["PROFILE_NUMBER"]
@@ -595,39 +630,6 @@ class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
         return shifted
 
     def run(self):
-        """
-        Example
-        -------
-        ::
-
-            - name: "Shift Oxygen To CTD"
-              parameters:
-                # <MANDATORY>
-                shift_vars: ["UNCAL_PHASE_DOXY", "TEMP_DOXY"]
-                # <OPTIONAL>
-                lag_seconds: null
-                pitch_name: "GLIDER_PITCH"
-                distance_cm: 90
-                cast_id_var: "PROFILE_DIRECTION"
-              diagnostics: false
-
-        Geometrically time-shifts optode measurements (e.g. phase, optode
-        temperature) onto the CTD's dense sampling grid, correcting for the
-        water travel time between the two sensors' positions on the glider
-        (Woo & Gourcuff, 2023). This is the reverse of the more common
-        approach of cloning CTD data onto the sparse optode grid: it produces
-        one shifted oxygen value per ``N_MEASUREMENTS`` row, named
-        ``<variable>_SHIFTED``.
-
-        If ``lag_seconds`` is not set, the lag is instead derived per profile
-        from mean pitch and dive rate. If ``pitch_name`` cannot be found (or
-        is empty), a warning is logged and the step fails, since no lag is
-        then available; set ``lag_seconds`` for a constant lag instead.
-
-        Returns
-        -------
-
-        """
 
         self.filter_qc()
 
@@ -722,6 +724,23 @@ class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
 
 @register_step
 class DeriveCalibratedPhase(BaseStep, QCHandlingMixin):
+    """
+    Derives the calibrated phase, ``CAL_PHASE_DOXY``, from the uncalibrated phase with a
+    calibration polynomial.
+
+    See :doc:`/user_guide/Pelagos-py_DOXY`.
+
+    Examples
+    --------
+    .. code-block:: yaml
+
+        - name: "Derive Calibrated Phase"
+          parameters:
+            uncalibrated_phase_name: "UNCAL_PHASE_DOXY"
+            calib_coefficients: [0, 1, 0, 0]
+          diagnostics: false
+    """
+
     step_name = "Derive Calibrated Phase"
     beta = True
     provided_variables = ["CAL_PHASE_DOXY"]
@@ -743,21 +762,6 @@ class DeriveCalibratedPhase(BaseStep, QCHandlingMixin):
     }
 
     def run(self):
-        """
-        Example
-        -------
-        ::
-
-            - name: "Derive Calibrated Phase"
-              parameters:
-                uncalibrated_phase_name: "UNCAL_PHASE_DOXY"
-                calib_coefficients: [0, 1, 0, 0]
-              diagnostics: false
-
-        Returns
-        -------
-
-        """
 
         self.filter_qc()
 
@@ -808,6 +812,32 @@ class DeriveCalibratedPhase(BaseStep, QCHandlingMixin):
 
 @register_step
 class DeriveOxygenConcentration(BaseStep, QCHandlingMixin):
+    """
+    Converts the calibrated phase to molar oxygen concentration,
+    ``MOLAR_DOXY_ADJUSTED``.
+
+    ``method: "poly"`` instead expects ``calib_coefficient_matrix`` (shape (5, 4));
+    ``method: "SVU"`` expects ``svu_coefficients``, the 7 manufacturer SVUFoilCoef
+    values (Stern-Volmer-Uchida equation). Writes ``MOLAR_DOXY_ADJUSTED``, so a
+    ``MOLAR_DOXY`` shipped in the file is kept unchanged.
+
+    See :doc:`/user_guide/Pelagos-py_DOXY`.
+
+    Examples
+    --------
+    .. code-block:: yaml
+
+        - name: "Derive Oxygen Concentration"
+          parameters:
+            # <MANDATORY>
+            method: "SVU"
+            # <METHOD DEPENDENT>
+            # The following params are for "SVU" method
+            temperature_name: "TEMP_DOXY"
+            svu_coefficients: [c0, c1, c2, c3, c4, c5, c6]  # manufacturer SVUFoilCoef0-6
+          diagnostics: false
+    """
+
     step_name = "Derive Oxygen Concentration"
     beta = True
     required_variables = ["CAL_PHASE_DOXY"]
@@ -876,31 +906,6 @@ class DeriveOxygenConcentration(BaseStep, QCHandlingMixin):
         return (P0 / Pc - 1.0) / K_SV
 
     def run(self):
-        """
-        Example
-        -------
-        ::
-
-            - name: "Derive Oxygen Concentration"
-              parameters:
-                # <MANDATORY>
-                method: "SVU"
-                # <METHOD DEPENDENT>
-                # The following params are for "SVU" method
-                temperature_name: "TEMP_DOXY"
-                svu_coefficients: [c0, c1, c2, c3, c4, c5, c6]  # manufacturer SVUFoilCoef0-6
-              diagnostics: false
-
-        ``method: "poly"`` instead expects ``calib_coefficient_matrix`` (shape
-        (5, 4)); ``method: "SVU"`` expects ``svu_coefficients``, the 7
-        manufacturer SVUFoilCoef values (Stern-Volmer-Uchida equation).
-        Writes ``MOLAR_DOXY_ADJUSTED``, so a ``MOLAR_DOXY`` shipped in the file
-        is kept unchanged.
-
-        Returns
-        -------
-
-        """
 
         self.filter_qc()
 
@@ -959,6 +964,26 @@ class DeriveOxygenConcentration(BaseStep, QCHandlingMixin):
 
 @register_step
 class MolarDOXYSalinityCorrection(BaseStep, QCHandlingMixin):
+    """
+    Corrects molar oxygen for salinity relative to ``reference_salinity``, writing
+    ``MOLAR_DOXY_PSAL``.
+
+    See :doc:`/user_guide/Pelagos-py_DOXY`.
+
+    Examples
+    --------
+    .. code-block:: yaml
+
+        - name: "Molar DOXY Salinity Correction"
+          parameters:
+            # <MANDATORY>
+            salinity_name: "PSAL"
+            temperature_name: "TEMP"
+            # <OPTIONAL>
+            reference_salinity: 0
+          diagnostics: false
+    """
+
     step_name = "Molar DOXY Salinity Correction"
     beta = True
     required_variables = ["MOLAR_DOXY"]
@@ -1033,24 +1058,6 @@ class MolarDOXYSalinityCorrection(BaseStep, QCHandlingMixin):
         return vapour_partial_pressure
 
     def run(self):
-        """
-        Example
-        -------
-        ::
-
-            - name: "Molar DOXY Salinity Correction"
-              parameters:
-                # <MANDATORY>
-                salinity_name: "PSAL"
-                temperature_name: "TEMP"
-                # <OPTIONAL>
-                reference_salinity: 0
-              diagnostics: false
-
-        Returns
-        -------
-
-        """
 
         self.filter_qc()
 
@@ -1113,6 +1120,25 @@ class MolarDOXYSalinityCorrection(BaseStep, QCHandlingMixin):
 
 @register_step
 class MolarDOXYPressureCorrection(BaseStep, QCHandlingMixin):
+    """
+    Corrects molar oxygen for pressure, writing ``MOLAR_DOXY_PSAL_PRES``.
+
+    See :doc:`/user_guide/Pelagos-py_DOXY`.
+
+    Examples
+    --------
+    .. code-block:: yaml
+
+        - name: "Molar DOXY Pressure Correction"
+          parameters:
+            # <MANDATORY>
+            pressure_name: "PRES"
+            temperature_name: "TEMP"
+            molar_doxy_name: "MOLAR_DOXY_PSAL"
+            uncalibrated_phase_correction_applied: true
+          diagnostics: false
+    """
+
     step_name = "Molar DOXY Pressure Correction"
     beta = True
     provided_variables = ["MOLAR_DOXY_PSAL_PRES"]
@@ -1144,24 +1170,6 @@ class MolarDOXYPressureCorrection(BaseStep, QCHandlingMixin):
     }
 
     def run(self):
-        """
-        Example
-        -------
-        ::
-
-            - name: "Molar DOXY Pressure Correction"
-              parameters:
-                # <MANDATORY>
-                pressure_name: "PRES"
-                temperature_name: "TEMP"
-                molar_doxy_name: "MOLAR_DOXY_PSAL"
-                uncalibrated_phase_correction_applied: true
-              diagnostics: false
-
-        Returns
-        -------
-
-        """
 
         self.filter_qc()
 

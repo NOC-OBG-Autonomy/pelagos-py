@@ -1,17 +1,16 @@
-Pelagos-Py documentation
+pelagos-py documentation
 ========================
 
 :Version: |release|
 
-The NOC (National Oceanography Centre) Autonomy Toolbox, pelagos_py, is a modular processing pipeline tool designed to operate on raw
-OG1-like format glider/ALR data, outputting "science ready" datasets. The user interfaces with the tool through a single YAML config file, allowing for easy definition and dissemination
-of processing protocols. This allows academics to "standardise" their processing tools and easily share their methods by simply sharing raw data and config files.
+pelagos-py, from the NOC (National Oceanography Centre) Autonomy group, is a modular processing pipeline for raw
+OG1-format glider and ALR data that outputs science-ready datasets. You control it through a single YAML config file, so a
+processing method can be shared and reproduced by sharing the raw data and the config.
 
-As we hope this tool will be adopted by the glider community, effort has been made to implement a broad range of desirable processing steps, covering a large number of oceanographic
-variables which continue to grow. We are always welcome to new suggestions and for those who want to get their hands dirty, we have attempted to make implementation of custom steps as
-simple as possible. See :doc:`Development<development>` for more details.
+It covers a broad and growing range of oceanographic variables. Suggestions are always welcome, and adding your own steps
+is kept as simple as possible: see :doc:`Development<development>`.
 
-Whilst the tool itself is written in python, interfacing with it requires little prior knowledge of the language. In most cases, processing is achieved through a few lines of code:
+The tool is written in Python, but using it needs little Python. In most cases processing takes a few lines:
 
 .. code-block:: python
 
@@ -23,9 +22,13 @@ Whilst the tool itself is written in python, interfacing with it requires little
    # Or build a config for an OG1 file from the default template, then run it
    Pipeline.make_config("glider.nc").run()
 
-The only involved part is defining your ``config.yaml`` (``make_config`` builds one for your file to start from), which determines the details of how your raw data will be processed. YAML files are designed to be "human readable" so it should
-be fairly intuitive to set them up. We have provided extensive details in ``examples/configs/all_step_configs.yaml`` which should help you - but if you see anything that doesn't
-make sense, let us know so we can improve it.
+The main work is writing your ``config.yaml``, which sets how the raw data is processed. ``make_config`` builds one for your
+file to start from, and ``examples/configs/all_step_configs.yaml`` documents every step's options. If anything doesn't make
+sense, let us know so we can improve it.
+
+.. image:: _static/pelagos_demo.gif
+   :alt: pelagos-py building, running and exporting a pipeline
+   :width: 100%
 
 ----
 

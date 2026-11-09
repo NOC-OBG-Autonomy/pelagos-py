@@ -39,6 +39,7 @@ from functools import partial
 # Geometry: single panel is 16:9; multi-panel keeps width, grows height by ROW_H/row.
 FIG_W, FIG_H, DPI = 10, 5.625, 130
 ROW_H = 3.0  # inches per panel for multi-panel (nrows > 1) figures
+BANNER_H = 3.2  # short full-width plots, e.g. at the top of a user-guide page
 
 FS_SUPTITLE, FS_TITLE, FS_LABEL, FS_TICK, FS_LEGEND = 12, 11, 9, 8, 8
 
