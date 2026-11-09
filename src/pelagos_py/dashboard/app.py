@@ -181,6 +181,17 @@ app.add_middleware(TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1
 
 
 _SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
+# frame-ancestors 'self', not 'none': the Report tab shows PDFs in a same-origin iframe
+_CSP = "; ".join(
+    [
+        "default-src 'self'",
+        "script-src 'self'",
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "font-src 'self' https://fonts.gstatic.com",
+        "img-src 'self' data:",
+        "frame-ancestors 'self'",
+    ]
+)
 
 
 def _cross_site(request) -> bool:
@@ -204,6 +215,9 @@ async def _guard_and_headers(request, call_next):
         or path.startswith("/api/")
     ):
         response.headers["Cache-Control"] = "no-store"
+    response.headers["Content-Security-Policy"] = _CSP
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "no-referrer"
     return response
 
 
