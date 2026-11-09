@@ -651,16 +651,24 @@ class BrowsePayload(BaseModel):
     start: str = ""
 
 
-@app.post("/api/files/pick")
-def pick_files(payload: BrowsePayload):
-    # a picked folder adds all its .nc files
-    start = Path(payload.start).expanduser() if payload.start else None
-    start_dir = start.parent if start and start.parent.is_dir() else Path.cwd()
+def _native_dialog(start: str, prompt: str, multiple: bool) -> list[str]:
+    # browsers never expose a picked file's real path, so the OS picker runs here
+    start_path = Path(start).expanduser() if start else None
+    if start_path and start_path.parent.is_dir():
+        start_dir = start_path.parent
+    else:
+        start_dir = Path.cwd()
     if sys.platform == "darwin":
+        if multiple:
+            choose = (
+                'choose file of type {"public.folder", "public.data"} '
+                f'with prompt "{prompt}" with multiple selections allowed'
+            )
+        else:
+            choose = f'choose file with prompt "{prompt}"'
         script = (
             "on run argv\n"
-            'set fs to choose file of type {"public.folder", "public.data"} with prompt '
-            '"Choose OG1 NetCDF files or a folder" with multiple selections allowed default location POSIX file (item 1 of argv)\n'
+            f"set fs to ({choose} default location POSIX file (item 1 of argv))\n"
             "if class of fs is not list then set fs to {fs}\n"
             'set out to ""\nrepeat with f in fs\nset out to out & POSIX path of f & linefeed\nend repeat\nreturn out\n'
             "end run"
@@ -668,24 +676,34 @@ def pick_files(payload: BrowsePayload):
         proc = subprocess.run(
             ["osascript", "-e", script, str(start_dir)], capture_output=True, text=True
         )
-        chosen = proc.stdout.splitlines() if proc.returncode == 0 else []
-    else:
-        try:
-            import tkinter
-            from tkinter import filedialog
-        except ImportError as exc:
-            raise HTTPException(
-                status_code=500, detail=f"No file dialog available: {exc}"
-            )
-        root = tkinter.Tk()
-        root.withdraw()
-        root.attributes("-topmost", True)
+        return proc.stdout.splitlines() if proc.returncode == 0 else []
+    try:
+        import tkinter
+        from tkinter import filedialog
+    except ImportError as exc:
+        raise HTTPException(status_code=500, detail=f"No file dialog available: {exc}")
+    root = tkinter.Tk()
+    root.withdraw()
+    root.attributes("-topmost", True)
+    if multiple:
         chosen = list(
             filedialog.askopenfilenames(
-                initialdir=str(start_dir), filetypes=[("NetCDF", "*.nc")]
+                initialdir=str(start_dir), title=prompt, filetypes=[("NetCDF", "*.nc")]
             )
         )
-        root.destroy()
+    else:
+        picked = filedialog.askopenfilename(initialdir=str(start_dir), title=prompt)
+        chosen = [picked] if picked else []
+    root.destroy()
+    return chosen
+
+
+@app.post("/api/files/pick")
+def pick_files(payload: BrowsePayload):
+    # a picked folder adds all its .nc files
+    chosen = _native_dialog(
+        payload.start, "Choose OG1 NetCDF files or a folder", multiple=True
+    )
     paths = []
     for c in chosen:
         if not c:
@@ -699,35 +717,11 @@ def pick_files(payload: BrowsePayload):
 
 @app.post("/api/browse")
 def browse_file(payload: BrowsePayload):
-    """Open the OS file picker; browsers never expose a picked file's real path."""
-    start = Path(payload.start).expanduser() if payload.start else None
-    start_dir = start.parent if start and start.parent.is_dir() else Path.cwd()
-    if sys.platform == "darwin":
-        script = (
-            "on run argv\n"
-            'POSIX path of (choose file with prompt "Choose an input NetCDF file" '
-            "default location POSIX file (item 1 of argv))\n"
-            "end run"
-        )
-        proc = subprocess.run(
-            ["osascript", "-e", script, str(start_dir)], capture_output=True, text=True
-        )
-        if proc.returncode != 0:
-            return {"path": None}
-        return {"path": proc.stdout.strip()}
-    try:
-        import tkinter
-        from tkinter import filedialog
-    except ImportError as exc:
-        raise HTTPException(status_code=500, detail=f"No file dialog available: {exc}")
-    root = tkinter.Tk()
-    root.withdraw()
-    root.attributes("-topmost", True)
-    chosen = filedialog.askopenfilename(
-        initialdir=str(start_dir), title="Choose an input NetCDF file"
+    """Open the OS file picker for one input file."""
+    chosen = _native_dialog(
+        payload.start, "Choose an input NetCDF file", multiple=False
     )
-    root.destroy()
-    return {"path": chosen or None}
+    return {"path": chosen[0] if chosen else None}
 
 
 # config name -> (bytes done, total or 0 if unknown)
