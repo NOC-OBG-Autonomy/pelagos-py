@@ -890,6 +890,7 @@ class _Run:
             self.live_after = 0
             self.finished = False
             self.returncode = None
+            self.reports = set()
             self._active, self._since = 0.0, None
         threading.Thread(target=self._pump, args=(self.proc,), daemon=True).start()
         threading.Thread(
