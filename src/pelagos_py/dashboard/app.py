@@ -180,8 +180,22 @@ app = FastAPI(title="pelagos_py dashboard")
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1"])
 
 
+_SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
+
+
+def _cross_site(request) -> bool:
+    # a cross-site form auto-submit needs no CORS preflight, so check where writes come from
+    if request.headers.get("sec-fetch-site") == "cross-site":
+        return True
+    # the Host header itself is checked by TrustedHostMiddleware
+    origin = request.headers.get("origin")
+    return origin is not None and origin != f"http://{request.headers.get('host')}"
+
+
 @app.middleware("http")
-async def _no_cache(request, call_next):
+async def _guard_and_headers(request, call_next):
+    if request.method not in _SAFE_METHODS and _cross_site(request):
+        return Response("Cross-site request blocked.", status_code=403)
     response = await call_next(request)
     path = request.url.path
     if (
