@@ -348,8 +348,7 @@ def validate(payload: ValidatePayload):
     # the variable check instantiates steps, so only run it once the parameters are valid
     warnings = []
     if not issues:
-        # unregistered logger per request: validate runs on every keystroke, so its lines
-        # stay off the console, and concurrent requests can't mix up their warnings
+        # unregistered per-request logger: keeps per-keystroke warnings off the console and apart
         collector = _WarningCollector()
         logger = logging.Logger("pelagos_py.dashboard.validate")
         logger.addHandler(collector)
