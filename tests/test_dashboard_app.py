@@ -16,6 +16,7 @@ from pelagos_py.utils import demo_data  # noqa: E402
 _real_workspace = demo_data.WORKSPACE_DIR
 demo_data.WORKSPACE_DIR = Path(tempfile.mkdtemp(prefix="pelagos-test-workspace-"))
 from pelagos_py.dashboard import app as dashboard_app  # noqa: E402
+from pelagos_py.dashboard import runner  # noqa: E402
 
 demo_data.WORKSPACE_DIR = _real_workspace
 
@@ -25,6 +26,7 @@ def workspace(tmp_path, monkeypatch):
     config_dir = tmp_path / "configs"
     config_dir.mkdir()
     monkeypatch.setattr(dashboard_app, "WORKSPACE_DIR", tmp_path)
+    monkeypatch.setattr(runner, "WORKSPACE_DIR", tmp_path)
     monkeypatch.setattr(dashboard_app, "CONFIG_DIR", config_dir)
     return tmp_path
 
@@ -176,7 +178,7 @@ class FakeProc:
 
 
 def test_pump_splits_lines_and_progress_redraws():
-    run = dashboard_app._Run()
+    run = runner._Run()
     proc = FakeProc(b"__PELAGOS_STEP__ 0\tLoad\r\n10%\r50%\rdone\n90%\r")
     run.proc = proc
     run._pump(proc)
@@ -187,7 +189,7 @@ def test_pump_splits_lines_and_progress_redraws():
 
 
 def test_stale_pump_does_not_touch_the_current_run():
-    run = dashboard_app._Run()
+    run = runner._Run()
     stale = FakeProc(b"old line\n", returncode=130)
     run.proc = FakeProc(b"")
     run._pump(stale)
@@ -204,8 +206,8 @@ def test_stopped_run_output_does_not_leak_into_next_run(tmp_path, monkeypatch):
         "if 'first' in sys.argv[1]:\n"
         "    time.sleep(30)\n"
     )
-    monkeypatch.setattr(dashboard_app, "RUN_BOOTSTRAP", script)
-    run = dashboard_app._Run()
+    monkeypatch.setattr(runner, "RUN_BOOTSTRAP", script)
+    run = runner._Run()
     try:
         run.start(tmp_path / "first.yaml")
         deadline = time.time() + 10
@@ -228,8 +230,8 @@ def test_stopped_run_output_does_not_leak_into_next_run(tmp_path, monkeypatch):
 def test_stop_ends_the_subprocess(tmp_path, monkeypatch):
     script = tmp_path / "sleeper.py"
     script.write_text("import time\nprint('up', flush=True)\ntime.sleep(30)\n")
-    monkeypatch.setattr(dashboard_app, "RUN_BOOTSTRAP", script)
-    run = dashboard_app._Run()
+    monkeypatch.setattr(runner, "RUN_BOOTSTRAP", script)
+    run = runner._Run()
     run.start(tmp_path / "config.yaml")
     deadline = time.time() + 10
     while "up" not in run.lines and time.time() < deadline:

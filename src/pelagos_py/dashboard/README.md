@@ -143,6 +143,7 @@ Commands on stdin: `continue`, `skip`, `rerun <json parameters>` and
 |------|------|
 | `__init__.py` | `run()`: checks the extra is installed and starts the server |
 | `app.py` | FastAPI backend: registry, validation, configs, demos, outputs, runs and the log stream |
+| `runner.py` | The pipeline subprocess: start/stop, output pump, progress and RAM sampling, figure folder |
 | `run_bootstrap.py` | Subprocess that runs the pipeline and captures each `plt.show()` figure |
 | `fig_spec.py` | matplotlib figure → plot spec + float32 data |
 | `static/index.html` | Page shell |
