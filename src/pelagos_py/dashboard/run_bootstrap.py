@@ -458,11 +458,13 @@ def _run(pipeline):
             for idx, step_config in enumerate(pipeline.steps)
             for sub, test in _expand(step_config)
         ]
+        fail_mode = resolve_on_step_fail(pipeline.global_parameters.get("on_step_fail"))
         for idx, step_config, test in units:
             name = step_config.get("name", "")
             pausable = _pausable(step_config, test)
-            snapshot = _snapshot(context) if pausable else None
-            pre_context = context
+            # a failed step may have mutated context in place, so keep a clean copy
+            can_pause = pausable or fail_mode == "pause"
+            snapshot = _snapshot(context) if can_pause else None
             # a re-run replaces this unit's report figures
             captured_mark = len(getattr(pipeline, "_captured_figures", None) or [])
             label = name + (f"\t{test}" if test else "")
@@ -481,9 +483,6 @@ def _run(pipeline):
             except (RuntimeError, SystemExit) as exc:
                 _diag_capture["chunks"] = None
                 # same on_step_fail handling as Pipeline.run()
-                fail_mode = resolve_on_step_fail(
-                    pipeline.global_parameters.get("on_step_fail")
-                )
                 if fail_mode == "stop":
                     pipeline.logger.log(STOP, "Pipeline stopped at step '%s'.", label)
                     sys.exit(1)
@@ -511,11 +510,12 @@ def _run(pipeline):
                     action, params = _read_command()
                 _emit_time(paused=False)
                 if action == "skip":
-                    context = snapshot if snapshot is not None else pre_context
+                    context = snapshot
                     pipeline.logger.log(SEVERE, "Step '%s' was skipped.", label)
                     break
                 if action == "continue":
                     if failed and not has_result:
+                        context = snapshot
                         pipeline.logger.log(
                             SEVERE, "Step '%s' failed and was skipped.", label
                         )
@@ -548,12 +548,7 @@ def _run(pipeline):
                     _mem_begin(mem_label)
                     _begin_diag_capture(True)
                     _drop_captures(pipeline, captured_mark)
-                    if snapshot is None:
-                        # keep pre_context clean so Skip still means "before this step"
-                        snapshot = _snapshot(pre_context)
-                    retry_context = (
-                        _snapshot(snapshot) if snapshot is not None else pre_context
-                    )
+                    retry_context = _snapshot(snapshot)
                     try:
                         context = pipeline.execute_step(rerun_config, retry_context)
                     except (RuntimeError, SystemExit) as exc:
