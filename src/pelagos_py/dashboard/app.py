@@ -702,23 +702,28 @@ def browse_file(payload: BrowsePayload):
     return {"path": chosen or None}
 
 
+# config name -> (bytes done, total or 0 if unknown)
+_DOWNLOADS: dict[str, tuple[int, int]] = {}
+# concurrent requests wait for the one download instead of sharing its .part file
+_download_lock = threading.Lock()
+
+
 def _ensure_demo_file(config_name: str) -> None:
     dest = _demo_dest(config_name)
-    if dest is None or dest.exists():
+    if dest is None:
         return
 
     def progress(done, total):
         _DOWNLOADS[config_name] = (done, total)
 
-    progress(0, 0)
-    try:
-        get_demo_file(on_progress=progress)
-    finally:
-        _DOWNLOADS.pop(config_name, None)
-
-
-# config name -> (bytes done, total or 0 if unknown)
-_DOWNLOADS: dict[str, tuple[int, int]] = {}
+    with _download_lock:
+        if dest.exists():
+            return
+        progress(0, 0)
+        try:
+            get_demo_file(on_progress=progress)
+        finally:
+            _DOWNLOADS.pop(config_name, None)
 
 
 @app.get("/api/demos/progress")
