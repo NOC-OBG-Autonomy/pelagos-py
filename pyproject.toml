@@ -86,6 +86,8 @@ color = true
 test = [
     "pytest",
     "pytest-cov",
+    "httpx",
+    "pelagos_py[dashboard]",
 ]
 dashboard = [
     "fastapi>=0.110",
