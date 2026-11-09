@@ -854,7 +854,7 @@ class _Run:
             except Exception:  # noqa: BLE001
                 return
             with self._lock:
-                if self._since is not None:
+                if self._since is not None and proc is self.proc:
                     x = self._active + time.time() - self._since
                     self.lines.append(f"__PELAGOS_SAMPLE__ {x:.1f}\t{rss:.1f}")
             time.sleep(0.5)
@@ -884,26 +884,30 @@ class _Run:
             env=env,
             bufsize=-1,  # binary BufferedReader: keeps \r and has read1, so bar ticks stream promptly
         )
-        self.lines = []
-        self.live = None
-        self.live_after = 0
-        self.finished = False
-        self.returncode = None
-        self._active, self._since = 0.0, None
-        threading.Thread(target=self._pump, daemon=True).start()
+        with self._lock:
+            self.lines = []
+            self.live = None
+            self.live_after = 0
+            self.finished = False
+            self.returncode = None
+            self._active, self._since = 0.0, None
+        threading.Thread(target=self._pump, args=(self.proc,), daemon=True).start()
         threading.Thread(
             target=self._sample_mem, args=(self.proc,), daemon=True
         ).start()
 
-    def _commit(self, text: str):
+    def _commit(self, proc, text: str):
         if text.startswith("__PELAGOS_DATA__ "):  # a reply to columns(), not a log line
             with self._columns:
                 self._columns_done.add(int(text.split(" ", 1)[1]))
                 self._columns.notify_all()
             return
-        if text.startswith("__PELAGOS_REPORT__ "):
-            self.reports.add(text.split(" ", 1)[1].split("\t")[0].strip())
         with self._lock:
+            # a stopped run's pump can still be draining after the next run started
+            if proc is not self.proc:
+                return
+            if text.startswith("__PELAGOS_REPORT__ "):
+                self.reports.add(text.split(" ", 1)[1].split("\t")[0].strip())
             self.lines.append(text)
             self.live = None
             self.live_after = len(self.lines)
@@ -915,15 +919,16 @@ class _Run:
                 except ValueError:
                     pass
 
-    def _progress(self, text: str):
+    def _progress(self, proc, text: str):
         with self._lock:
+            if proc is not self.proc:
+                return
             self.live = text
             self.live_after = len(self.lines)
 
-    def _pump(self):
-        assert self.proc is not None
+    def _pump(self, proc):
         decoder = codecs.getincrementaldecoder("utf-8")("replace")
-        stream = self.proc.stdout
+        stream = proc.stdout
         seg = ""  # chars since the last \r or \n
         pending_cr = False
         while True:
@@ -934,14 +939,14 @@ class _Run:
                 if ch == "\n":
                     # \r\n is a line ending, not a redraw
                     pending_cr = False
-                    self._commit(_clean_ansi(seg))
+                    self._commit(proc, _clean_ansi(seg))
                     seg = ""
                     continue
                 if pending_cr:
                     # a lone \r is a progress-bar redraw
                     cleaned = _clean_ansi(seg)
                     if cleaned:
-                        self._progress(cleaned)
+                        self._progress(proc, cleaned)
                     seg = ""
                     pending_cr = False
                 if ch == "\r":
@@ -952,12 +957,15 @@ class _Run:
             if pending_cr:
                 cleaned = _clean_ansi(seg)
                 if cleaned:
-                    self._progress(cleaned)
+                    self._progress(proc, cleaned)
             else:
-                self._commit(_clean_ansi(seg))
-        self.returncode = self.proc.wait()
-        self.proc.stdin.close()
-        self.finished = True
+                self._commit(proc, _clean_ansi(seg))
+        returncode = proc.wait()
+        proc.stdin.close()
+        with self._lock:
+            if proc is self.proc:
+                self.returncode = returncode
+                self.finished = True
 
     def stop(self):
         if self.is_running() and sys.platform == "win32":
@@ -973,6 +981,7 @@ class _Run:
                     self.proc.wait(timeout=1)
                 except subprocess.TimeoutExpired:
                     self.proc.kill()
+                    self.proc.wait()
 
     def send(self, command: str):
         # a control line for run_bootstrap.py's pause loop; ignored once the run has exited
