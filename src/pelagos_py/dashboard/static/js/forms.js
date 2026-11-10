@@ -54,6 +54,15 @@ const Forms = {
     return e;
   },
 
+  // The server opens these windows, so in a VM or over SSH there's nowhere to show them.
+  needsDisplay(btn) {
+    if (!STATE.registry.display) {
+      btn.disabled = true;
+      btn.title = "Can't open a file explorer on this machine";
+    }
+    return btn;
+  },
+
   button(label, { icon, iconSize = 16, cls = '', ...props } = {}) {
     const b = Forms.el('button', {
       type: 'button',
@@ -227,7 +236,7 @@ const Forms = {
         syncOutputPath(input.value);
         onChange();
       };
-      const browse = Forms.button('Browse…', { icon: 'folder' });
+      const browse = Forms.needsDisplay(Forms.button('Browse…', { icon: 'folder' }));
       browse.onclick = async () => {
         browse.disabled = true;
         try {

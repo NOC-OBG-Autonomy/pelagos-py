@@ -217,6 +217,7 @@ const Files = {
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') add();
     });
+    Forms.needsDisplay(document.getElementById('btn-files-browse'));
     document.getElementById('btn-files-browse').addEventListener('click', async () => {
       try {
         Files.add(await API.pickFiles(Files.list()[0]));
@@ -298,20 +299,22 @@ const Files = {
     );
     el.appendChild(Forms.el('span', { class: 'demo-card-hint', textContent: fmtBytes(info.size || 0) }));
     el.appendChild(
-      Forms.button('', {
-        icon: 'folder',
-        iconSize: 13,
-        cls: 'icon-btn',
-        title: 'Show in Finder',
-        onclick: async (e) => {
-          e.stopPropagation();
-          try {
-            await API.revealFile(path);
-          } catch (err) {
-            alert(err.message);
-          }
-        },
-      }),
+      Forms.needsDisplay(
+        Forms.button('', {
+          icon: 'folder',
+          iconSize: 13,
+          cls: 'icon-btn',
+          title: 'Show in Finder',
+          onclick: async (e) => {
+            e.stopPropagation();
+            try {
+              await API.revealFile(path);
+            } catch (err) {
+              alert(err.message);
+            }
+          },
+        }),
+      ),
     );
     el.appendChild(
       Forms.button('', {

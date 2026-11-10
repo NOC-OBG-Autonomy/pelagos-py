@@ -699,6 +699,7 @@ async function boot() {
     if (e.key === 'Escape') Config.closePicker();
   });
 
+  Forms.needsDisplay(document.getElementById('btn-reveal'));
   document.getElementById('btn-reveal').addEventListener('click', async () => {
     try {
       const { path } = await API.revealConfigs();

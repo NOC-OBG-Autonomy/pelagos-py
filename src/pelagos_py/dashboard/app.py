@@ -228,6 +228,7 @@ def registry():
         "combinatrix": QC_COMBINATRIX.tolist(),
         "flag_colours": fig_spec.FLAG_COLOURS,
         "log_step_width": console._NAME_WIDTH,
+        "display": _has_display(),
     }
 
 
@@ -424,21 +425,15 @@ def _has_display() -> bool:
     return bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
 
 
-def _no_dialog() -> HTTPException:
+def _no_file_explorer() -> HTTPException:
     return HTTPException(
-        status_code=503,
-        detail="Can't open a file dialog on the machine running the dashboard "
-        "(no display, e.g. in a VM or over SSH). Paste the file path instead.",
+        status_code=503, detail="Can't open a file explorer on this machine."
     )
 
 
 def _reveal(folder: Path) -> dict:
     if not _has_display():
-        raise HTTPException(
-            status_code=503,
-            detail="Can't open a folder window on the machine running the dashboard "
-            f"(no display). The folder is {folder}",
-        )
+        raise _no_file_explorer()
     if sys.platform == "darwin":
         cmd = ["open", str(folder)]
     elif os.name == "nt":
@@ -688,18 +683,18 @@ def _native_dialog(start: str, prompt: str, multiple: bool) -> list[str]:
             return proc.stdout.splitlines()
         if "(-128)" in proc.stderr:  # the user pressed Cancel
             return []
-        raise _no_dialog()
+        raise _no_file_explorer()
     if not _has_display():
-        raise _no_dialog()
+        raise _no_file_explorer()
     try:
         import tkinter
         from tkinter import filedialog
     except ImportError as exc:
-        raise _no_dialog() from exc
+        raise _no_file_explorer() from exc
     try:
         root = tkinter.Tk()
     except tkinter.TclError as exc:
-        raise _no_dialog() from exc
+        raise _no_file_explorer() from exc
     root.withdraw()
     root.attributes("-topmost", True)
     if multiple:

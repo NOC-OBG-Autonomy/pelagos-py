@@ -89,6 +89,7 @@ const Outputs = {
     reveal.className = 'icon-btn';
     reveal.title = 'Show in Finder';
     reveal.appendChild(Icon.el('folder', 14));
+    Forms.needsDisplay(reveal);
     reveal.addEventListener('click', async (e) => {
       e.stopPropagation();
       try {
@@ -152,6 +153,7 @@ const Outputs = {
 
   init() {
     document.getElementById('btn-outputs-clean').addEventListener('click', () => Outputs.clean());
+    Forms.needsDisplay(document.getElementById('btn-outputs-reveal'));
     document.getElementById('btn-outputs-reveal').addEventListener('click', async () => {
       const { dirs } = Outputs.fromConfig();
       try {

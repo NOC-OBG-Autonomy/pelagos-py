@@ -560,15 +560,18 @@ def no_display(monkeypatch):
 
 
 @pytest.mark.parametrize("url", ["/api/browse", "/api/files/pick"])
-def test_browse_without_a_display_asks_for_a_path(client, no_display, url):
+def test_browse_without_a_display_is_refused(client, no_display, url):
     response = client.post(url, json={"start": ""})
     assert response.status_code == 503
-    assert "Paste the file path" in response.json()["detail"]
+    assert "file explorer" in response.json()["detail"]
 
 
-def test_reveal_without_a_display_names_the_folder(client, no_display, workspace):
+def test_reveal_without_a_display_is_refused(client, no_display, workspace):
     data_file = workspace / "glider.nc"
     data_file.touch()
     response = client.post("/api/files/reveal", json={"path": str(data_file)})
     assert response.status_code == 503
-    assert str(workspace) in response.json()["detail"]
+
+
+def test_registry_reports_no_display(client, no_display):
+    assert client.get("/api/registry").json()["display"] is False
