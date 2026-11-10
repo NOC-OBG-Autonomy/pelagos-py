@@ -37,8 +37,7 @@ _ANSI_RE = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
 
 
 def _clean_ansi(text: str) -> str:
-    # keep colour codes, drop cursor/clear-line ones
-    return _ANSI_RE.sub(lambda m: m.group(0) if m.group(0).endswith("m") else "", text)
+    return _ANSI_RE.sub("", text)
 
 
 RUN_BOOTSTRAP = Path(__file__).resolve().parent / "run_bootstrap.py"
@@ -92,7 +91,7 @@ class _Run:
     def start(self, config_path: Path):
         env = dict(os.environ)
         env["PYTHONUNBUFFERED"] = "1"
-        # a pipe isn't a terminal, so force colour and tqdm bars (the browser console renders both)
+        # a pipe isn't a terminal, so force tqdm bars on (their colour codes are stripped below)
         env["FORCE_COLOR"] = "1"
         env.pop("NO_COLOR", None)
         env["COLUMNS"] = "110"

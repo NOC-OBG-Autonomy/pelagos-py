@@ -204,3 +204,24 @@ def test_has_data(bootstrap):
     assert bootstrap._has_data(np.array([np.nan, 1.0]))
     assert not bootstrap._has_data(np.array([np.nan, 0.0]))
     assert not bootstrap._has_data(np.array(["NaT"], dtype="datetime64[ns]"))
+
+
+def test_level_formatter_tags_warnings_but_not_info(bootstrap):
+    formatter = bootstrap._LevelFormatter()
+    logger = logging.getLogger("pelagos_py.pipeline.step.salinity_adjustment")
+
+    def fmt(level, msg):
+        return formatter.format(
+            logger.makeRecord(logger.name, level, "f", 1, msg, None, None)
+        )
+
+    assert fmt(logging.INFO, "[Salinity Adjustment] lag 0.3 s").endswith(
+        "Salinity Adjustment   lag 0.3 s"
+    )
+    level, prefix, message = fmt(
+        logging.WARNING, "[Salinity Adjustment] no CNDC"
+    ).split("\t")
+    assert level == "__PELAGOS_LEVEL__ WARNING"
+    assert prefix.endswith("Salinity Adjustment   ")
+    assert message == "no CNDC"
+    assert "\x1b" not in prefix + message

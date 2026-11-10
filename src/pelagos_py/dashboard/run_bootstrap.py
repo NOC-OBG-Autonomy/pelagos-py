@@ -9,6 +9,7 @@ import base64
 import contextlib
 import io
 import json
+import logging
 import os
 import signal
 import sys
@@ -32,6 +33,7 @@ plt.switch_backend = lambda *args, **kwargs: None
 
 import numpy as np  # noqa: E402
 from pelagos_py.dashboard import fig_spec  # noqa: E402
+from pelagos_py.utils.console import _TAG, ConsoleFormatter  # noqa: E402
 from pelagos_py.pipeline import (  # noqa: E402
     REPORT_STEP_NAME,
     SEVERE,
@@ -364,12 +366,36 @@ def _read_command():
     return ("continue", None)
 
 
+class _LevelFormatter(ConsoleFormatter):
+    # warning+ lines carry their level, so the browser tags them instead of reading colour codes
+    def __init__(self):
+        super().__init__()
+        self._use_color = False
+
+    def format(self, record):
+        line = super().format(record)
+        if record.levelno < logging.WARNING or getattr(record, "raw", False):
+            return line
+        message = _TAG.sub("", record.getMessage(), count=1)
+        prefix = line[: len(line) - len(message)] if line.endswith(message) else ""
+        message = line[len(prefix) :]
+        return f"__PELAGOS_LEVEL__ {record.levelname}\t{prefix}\t{message}"
+
+
+def _send_levels():
+    for name in list(logging.Logger.manager.loggerDict):
+        for handler in logging.getLogger(name).handlers:
+            if isinstance(handler.formatter, ConsoleFormatter):
+                handler.setFormatter(_LevelFormatter())
+
+
 def main():
     config_path = sys.argv[1]
     try:
         _patch_diagnostics_capture()
         _emit_time(paused=False)
         pipeline = Pipeline(config_path=config_path)
+        _send_levels()
         pipeline._diagnose_failures = True
         _run(pipeline)
     except KeyboardInterrupt:

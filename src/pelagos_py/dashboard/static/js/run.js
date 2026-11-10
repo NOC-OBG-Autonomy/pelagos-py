@@ -23,6 +23,7 @@ const Run = {
   // Marker prefixes run_bootstrap.py prints on stdout; formats in its module docstring.
   FIG_MARKER: '__PELAGOS_FIG__ ',
   LOG_MARKER: '__PELAGOS_LOG__ ',
+  LEVEL_MARKER: '__PELAGOS_LEVEL__ ',
   FAIL_MARKER: '__PELAGOS_FAIL__ ',
   STEP_MARKER: '__PELAGOS_STEP__ ',
   PAUSE_MARKER: '__PELAGOS_PAUSE__ ',
@@ -43,90 +44,6 @@ const Run = {
   heldParams: null,
   sentParams: null,
   continueAfter: false, // carry on once the re-run passes
-
-  // The server forwards only SGR colour codes; it strips other escapes.
-  ANSI_SGR: /\x1b\[([0-9;]*)m/g,
-  ANSI_COLORS: {
-    30: 'ansi-black',
-    31: 'ansi-red',
-    32: 'ansi-green',
-    33: 'ansi-yellow',
-    34: 'ansi-blue',
-    35: 'ansi-magenta',
-    36: 'ansi-cyan',
-    37: 'ansi-white',
-    90: 'ansi-bright-black',
-    91: 'ansi-bright-red',
-    92: 'ansi-bright-green',
-    93: 'ansi-bright-yellow',
-    94: 'ansi-bright-blue',
-    95: 'ansi-bright-magenta',
-    96: 'ansi-bright-cyan',
-    97: 'ansi-bright-white',
-  },
-
-  stripAnsi(text) {
-    return text.replace(Run.ANSI_SGR, '');
-  },
-
-  // Text is escaped first, so log output can't inject markup.
-  ansiToHtml(text) {
-    let out = '',
-      fg = null,
-      bold = false,
-      dim = false,
-      open = false,
-      last = 0;
-    const close = () => {
-      if (open) {
-        out += '</span>';
-        open = false;
-      }
-    };
-    const openSpan = () => {
-      const cls = [fg, bold ? 'ansi-bold' : null, dim ? 'ansi-dim' : null].filter(Boolean).join(' ');
-      if (cls) {
-        out += `<span class="${cls}">`;
-        open = true;
-      }
-    };
-    for (const m of text.matchAll(Run.ANSI_SGR)) {
-      out += escapeHtml(text.slice(last, m.index));
-      last = m.index + m[0].length;
-      close();
-      const parts = (m[1] || '0').split(';');
-      for (let i = 0; i < parts.length; i++) {
-        const n = Number(parts[i] || 0);
-        if (n === 0) {
-          fg = null;
-          bold = false;
-          dim = false;
-        } else if (n === 1) bold = true;
-        else if (n === 2) dim = true;
-        else if (n === 22) {
-          bold = false;
-          dim = false;
-        } else if (n === 39) fg = null;
-        // 256-colour: only the SEVERE amber (202) the pipeline emits is mapped.
-        else if (n === 38 && parts[i + 1] === '5') {
-          if (Number(parts[i + 2]) === 202) fg = 'ansi-amber';
-          i += 2;
-        } else if (Run.ANSI_COLORS[n]) fg = Run.ANSI_COLORS[n];
-      }
-      openSpan();
-    }
-    out += escapeHtml(text.slice(last));
-    close();
-    return out;
-  },
-
-  levelClass(line) {
-    if (/ - ERROR - | ERROR:| Traceback/.test(line)) return 'lvl-error';
-    if (/ - WARNING - | WARN/.test(line)) return 'lvl-warn';
-    if (/ - SEVERE - /.test(line)) return 'lvl-severe';
-    if (/STOP|Pipeline stopped/.test(line)) return 'lvl-stop';
-    return '';
-  },
 
   looksLikeProgress(line) {
     return /\d+%\|/.test(line);
@@ -162,14 +79,18 @@ const Run = {
     document.getElementById('log-to-bottom').addEventListener('click', () => Run.scrollToBottom());
   },
 
-  append(line) {
+  append(line, level = null, prefix = '') {
     Run.settleStart();
     const c = document.getElementById('log-console');
     const span = document.createElement('span');
-    // Fallback colour; real ANSI colour still wins, being set on a descendant span.
-    const cls = Run.levelClass(Run.stripAnsi(line));
-    if (cls) span.className = cls;
-    span.innerHTML = Run.ansiToHtml(line) + '\n';
+    span.append(prefix);
+    if (level) {
+      const tag = document.createElement('b');
+      tag.className = 'log-tag log-' + level.toLowerCase();
+      tag.textContent = level === 'WARNING' ? 'WARN' : level;
+      span.append(tag, ' ');
+    }
+    span.append(line + '\n');
     c.appendChild(span);
     Run.autoScroll();
   },
@@ -234,6 +155,7 @@ const Run = {
     for (const marker of [
       Run.FIG_MARKER,
       Run.LOG_MARKER,
+      Run.LEVEL_MARKER,
       Run.FAIL_MARKER,
       Run.STEP_MARKER,
       Run.PAUSE_MARKER,
@@ -251,20 +173,24 @@ const Run = {
   },
 
   handleLine(line) {
-    // Uncoloured, so a leading colour code can't hide a marker.
-    const plain = Run.stripAnsi(line);
-    const hit = Run.markerAt(plain);
+    const hit = Run.markerAt(line);
     if (hit) {
-      if (hit.at > 0) Run.renderLine(plain.slice(0, hit.at));
+      if (hit.at > 0) Run.renderLine(line.slice(0, hit.at));
       // RAM samples arrive mid-step, so they must not freeze a live bar.
       if (hit.marker !== Run.SAMPLE_MARKER) Run.finalizeProgress();
-      Run.handleMarker(hit.marker, plain.slice(hit.at));
+      Run.handleMarker(hit.marker, line.slice(hit.at));
       return;
     }
     Run.renderLine(line);
   },
 
   handleMarker(marker, plain) {
+    if (marker === Run.LEVEL_MARKER) {
+      // "<level>\t<time and step>\t<message>"
+      const [level, prefix, ...message] = plain.slice(marker.length).split('\t');
+      Run.append(message.join('\t'), level, prefix);
+      return;
+    }
     if (marker === Run.MEM_MARKER) {
       Mem.setData(plain.slice(marker.length)); // dataset size at a step's end
       return;
@@ -355,10 +281,10 @@ const Run = {
     // The final bar frame arrives newline-terminated: finalise it rather than duplicate it.
     if (
       Run.progressEl &&
-      Run.looksLikeProgress(Run.stripAnsi(line)) &&
+      Run.looksLikeProgress(line) &&
       Run.barDesc(line) === Run.barDesc(Run.progressEl.textContent || '')
     ) {
-      Run.progressEl.innerHTML = Run.ansiToHtml(line) + '\n';
+      Run.progressEl.textContent = line + '\n';
       Run.progressEl = null;
       Run.autoScroll();
       return;
@@ -369,20 +295,20 @@ const Run = {
 
   // The text before the percentage: "<time>  <step>  <desc>", minus the time.
   barDesc(plain) {
-    const m = Run.stripAnsi(plain).match(/^\S+\s+(.*?)\s*\d+%\|/);
-    return m ? m[1] : Run.stripAnsi(plain);
+    const m = plain.match(/^\S+\s+(.*?)\s*\d+%\|/);
+    return m ? m[1] : plain;
   },
 
   // A leave=False bar erases itself without a 100% frame, so it could freeze mid-way.
   finalizeProgress() {
     if (!Run.progressEl) return;
-    const plain = Run.stripAnsi(Run.progressEl.textContent || '').replace(/\n+$/, '');
+    const plain = (Run.progressEl.textContent || '').replace(/\n+$/, '');
     const m = plain.match(/^(.*?)\d+%\|([^|]*)\|\s*\d+\/(\d+)(.*)$/);
     if (m) {
       const [, desc, bar, total, tail] = m;
       const doneTail = tail.replace(/<.*?\]/, '<00:00]');
       const line = `${desc}100%|${'█'.repeat(bar.length)}| ${total}/${total}${doneTail}`;
-      Run.progressEl.innerHTML = Run.ansiToHtml(line) + '\n';
+      Run.progressEl.textContent = line + '\n';
     }
     Run.progressEl = null;
   },
@@ -390,7 +316,7 @@ const Run = {
   handleProgress(line) {
     Run.settleStart();
     const c = document.getElementById('log-console');
-    const plain = Run.stripAnsi(line);
+    const plain = line;
     if (!plain.trim()) return; // a closing bar's blank erase frame
     // A new description means a new loop: keep the finished bar, start another line.
     if (
@@ -405,7 +331,7 @@ const Run = {
       Run.progressEl.className = 'lvl-progress';
       c.appendChild(Run.progressEl);
     }
-    Run.progressEl.innerHTML = Run.ansiToHtml(line) + '\n';
+    Run.progressEl.textContent = line + '\n';
     Run.autoScroll();
   },
 
