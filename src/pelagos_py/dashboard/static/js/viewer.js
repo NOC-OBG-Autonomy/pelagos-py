@@ -4,9 +4,9 @@
 const Viewer = {
   el: null,
   imgEl: null,
-  items: [],   // [{fname, caption, spec, url}]
+  items: [], // [{fname, caption, spec, url}]
   index: 0,
-  interactive: true,  // sticky across figures while paging
+  interactive: true, // sticky across figures while paging
 
   _ensure() {
     if (Viewer.el) return;
@@ -38,30 +38,62 @@ const Viewer = {
     Viewer.progressEl = el.querySelector('.viewer-progress');
 
     el.querySelector('.viewer-close').onclick = Viewer.close;
-    el.querySelector('.viewer-toggle').onclick = (e) => { e.stopPropagation(); Viewer.interactive = !Viewer.interactive; Viewer.show(); };
-    el.querySelector('.viewer-reset').onclick = (e) => { e.stopPropagation(); if (Viewer.plotEl._chart) Viewer.plotEl._chart.reset(); };
-    el.querySelector('.viewer-png').onclick = (e) => { e.stopPropagation(); Viewer.downloadPNG(); };
+    el.querySelector('.viewer-toggle').onclick = (e) => {
+      e.stopPropagation();
+      Viewer.interactive = !Viewer.interactive;
+      Viewer.show();
+    };
+    el.querySelector('.viewer-reset').onclick = (e) => {
+      e.stopPropagation();
+      if (Viewer.plotEl._chart) Viewer.plotEl._chart.reset();
+    };
+    el.querySelector('.viewer-png').onclick = (e) => {
+      e.stopPropagation();
+      Viewer.downloadPNG();
+    };
     Viewer.plotEl.onclick = (e) => e.stopPropagation();
-    el.querySelector('.prev').onclick = (e) => { e.stopPropagation(); Viewer.step(-1); };
-    el.querySelector('.next').onclick = (e) => { e.stopPropagation(); Viewer.step(1); };
-    Viewer.imgEl.onclick = (e) => { e.stopPropagation(); Viewer.toggleZoom(); };
+    el.querySelector('.prev').onclick = (e) => {
+      e.stopPropagation();
+      Viewer.step(-1);
+    };
+    el.querySelector('.next').onclick = (e) => {
+      e.stopPropagation();
+      Viewer.step(1);
+    };
+    Viewer.imgEl.onclick = (e) => {
+      e.stopPropagation();
+      Viewer.toggleZoom();
+    };
     el.querySelector('.viewer-stage').onclick = Viewer.close;
     document.addEventListener('keydown', Viewer._onKey);
   },
 
   _onKey(e) {
     if (!Viewer.el || Viewer.el.classList.contains('hidden')) return;
-    if (e.key === 'Escape') { Viewer.close(); e.preventDefault(); }
-    else if (e.key === 'ArrowLeft') { Viewer.step(-1); e.preventDefault(); }
-    else if (e.key === 'ArrowRight') { Viewer.step(1); e.preventDefault(); }
+    if (e.key === 'Escape') {
+      Viewer.close();
+      e.preventDefault();
+    } else if (e.key === 'ArrowLeft') {
+      Viewer.step(-1);
+      e.preventDefault();
+    } else if (e.key === 'ArrowRight') {
+      Viewer.step(1);
+      e.preventDefault();
+    }
   },
 
-  url(fname) { return '/api/run/figure/' + encodeURIComponent(fname); },
+  url(fname) {
+    return '/api/run/figure/' + encodeURIComponent(fname);
+  },
 
   // Filenames restart at fig_001.png every run, so bust the cache.
   _seq: 0,
-  freshUrl(fname) { return Viewer.url(fname) + '?v=' + (++Viewer._seq); },
-  src(fig) { return fig.url || Viewer.url(fig.fname); },
+  freshUrl(fname) {
+    return Viewer.url(fname) + '?v=' + ++Viewer._seq;
+  },
+  src(fig) {
+    return fig.url || Viewer.url(fig.fname);
+  },
 
   open(items, index = 0) {
     if (!items || !items.length) return;
@@ -77,7 +109,8 @@ const Viewer = {
     if (!it) return;
     const q = (sel) => Viewer.el.querySelector(sel);
     q('.viewer-caption').textContent = it.caption || it.fname;
-    q('.viewer-count').textContent = Viewer.items.length > 1 ? `${Viewer.index + 1} / ${Viewer.items.length}` : '';
+    q('.viewer-count').textContent =
+      Viewer.items.length > 1 ? `${Viewer.index + 1} / ${Viewer.items.length}` : '';
     q('.viewer-raw').href = Viewer.src(it);
     const multi = Viewer.items.length > 1;
     Viewer.el.querySelectorAll('.viewer-nav').forEach((b) => b.classList.toggle('hidden', !multi));
@@ -86,7 +119,9 @@ const Viewer = {
     const toggle = q('.viewer-toggle');
     toggle.classList.toggle('hidden', !it.spec);
     toggle.textContent = Viewer.interactive ? 'Image' : 'Interactive';
-    toggle.title = Viewer.interactive ? 'Show the original matplotlib image' : 'Redraw this plot with the full data';
+    toggle.title = Viewer.interactive
+      ? 'Show the original matplotlib image'
+      : 'Redraw this plot with the full data';
     q('.viewer-reset').classList.toggle('hidden', !live);
     q('.viewer-png').classList.toggle('hidden', !live);
     q('.viewer-hint').classList.toggle('hidden', !live);
@@ -120,11 +155,16 @@ const Viewer = {
         if (token !== Viewer._token) return;
         Viewer.note(Viewer.fmtPoints(spec.points));
         return Plot.render(Viewer.plotEl, spec, {
-          name: it.spec, signal: abort.signal,
-          onProgress: (loaded, total) => { if (token === Viewer._token) Viewer.progress(total ? loaded / total : null, loaded); },
+          name: it.spec,
+          signal: abort.signal,
+          onProgress: (loaded, total) => {
+            if (token === Viewer._token) Viewer.progress(total ? loaded / total : null, loaded);
+          },
         });
       })
-      .then(() => { if (token === Viewer._token) Viewer.progress(null); })
+      .then(() => {
+        if (token === Viewer._token) Viewer.progress(null);
+      })
       .catch((err) => {
         if (token !== Viewer._token || err.name === 'AbortError') return;
         Viewer.progress(null);
@@ -137,7 +177,9 @@ const Viewer = {
 
   fmtPoints(n) {
     if (!n) return '';
-    return (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(0) + 'k' : String(n)) + ' points';
+    return (
+      (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(0) + 'k' : String(n)) + ' points'
+    );
   },
 
   // fraction null hides the bar; undefined total shows bytes so far.
@@ -172,7 +214,9 @@ const Viewer = {
     Viewer.show();
   },
 
-  toggleZoom() { Viewer.imgEl.classList.toggle('zoomed'); },
+  toggleZoom() {
+    Viewer.imgEl.classList.toggle('zoomed');
+  },
 
   close() {
     if (!Viewer.el) return;

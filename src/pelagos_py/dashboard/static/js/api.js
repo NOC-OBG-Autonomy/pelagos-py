@@ -92,7 +92,8 @@ const API = {
   // -> {dirs, files: [{path, name, dir, kind, size, mtime}]}
   async listOutputs(dirs, exports) {
     const r = await fetch('/api/outputs', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ dirs, exports }),
     });
     if (!r.ok) await _fail(r, 'listing failed');
@@ -107,7 +108,8 @@ const API = {
   },
   async cleanOutputs(dirs, exports) {
     const r = await fetch('/api/outputs/clean', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ dirs, exports }),
     });
     if (!r.ok) await _fail(r, 'delete failed');
@@ -115,7 +117,8 @@ const API = {
   },
   async revealOutputs(path) {
     const r = await fetch('/api/outputs/reveal', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path: path || '' }),
     });
     if (!r.ok) await _fail(r, 'could not open folder');
@@ -123,7 +126,9 @@ const API = {
   },
   async filesInfo(paths) {
     const r = await fetch('/api/files/info', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ paths }),
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paths }),
     });
     if (!r.ok) await _fail(r, 'could not stat files');
     return r.json();
@@ -131,14 +136,18 @@ const API = {
   // Resolves to the .nc paths.
   async pickFiles(start) {
     const r = await fetch('/api/files/pick', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ start: start || '' }),
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ start: start || '' }),
     });
     if (!r.ok) await _fail(r, 'Browse failed');
     return (await r.json()).paths;
   },
   async revealFile(path) {
     const r = await fetch('/api/files/reveal', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path }),
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path }),
     });
     if (!r.ok) await _fail(r, 'could not open folder');
     return r.json();
@@ -146,7 +155,8 @@ const API = {
   // Native dialog on the server; resolves to the path or null.
   async browseFile(start) {
     const r = await fetch('/api/browse', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ start: start || '' }),
     });
     if (!r.ok) await _fail(r, 'Browse failed');

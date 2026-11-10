@@ -10,7 +10,9 @@ const STATE = {
   onChange: () => {}, // wired by app.js to regenerate YAML
 };
 
-function isSection(n) { return !!n && n.kind === 'section'; }
+function isSection(n) {
+  return !!n && n.kind === 'section';
+}
 
 function makeSection(title = 'New container') {
   return { kind: 'section', id: ++STATE._seq, title, collapsed: false, steps: [] };
@@ -47,7 +49,8 @@ function sectionOfStep(id) {
 // Detected by shape (a `qc_settings` param), not by name, so a new QC-applying step also works.
 function isQcContainer(def) {
   return (def.parameters || []).some(
-    (p) => p.name === 'qc_settings' && (p.type === 'dict' || (Array.isArray(p.type) && p.type.includes('dict')))
+    (p) =>
+      p.name === 'qc_settings' && (p.type === 'dict' || (Array.isArray(p.type) && p.type.includes('dict'))),
   );
 }
 
@@ -64,7 +67,10 @@ function diagnosticsLeaves() {
   for (const item of STATE.pipeline.items) {
     if (isQcContainer(item.def)) {
       const tests = Object.keys(item.values.qc_settings || {});
-      if (!tests.length) { leaves.push(item.diagnostics); continue; }
+      if (!tests.length) {
+        leaves.push(item.diagnostics);
+        continue;
+      }
       for (const name of tests) {
         const tv = item.values.qc_settings[name];
         leaves.push('diagnostics' in tv ? !!tv.diagnostics : !!item.diagnostics);
@@ -102,7 +108,10 @@ function setAllDiagnostics(v) {
 let picker = null;
 
 function closeStepPicker() {
-  if (picker) { picker.remove(); picker.anchor.classList.remove('open'); }
+  if (picker) {
+    picker.remove();
+    picker.anchor.classList.remove('open');
+  }
   picker = null;
   document.removeEventListener('mousedown', onPickerOutside);
 }
@@ -122,23 +131,29 @@ function openStepPicker(anchor, list, index) {
   search.placeholder = 'Search steps…';
   const body = document.createElement('div');
   body.className = 'step-picker-list';
-  picker.appendChild(search); picker.appendChild(body);
-  const insert = (fn) => { closeStepPicker(); fn(); };
+  picker.appendChild(search);
+  picker.appendChild(body);
+  const insert = (fn) => {
+    closeStepPicker();
+    fn();
+  };
   const fill = () => {
     renderPaletteInto(body, search.value, {
       step: (name) => insert(() => insertStepAt(name, list, index)),
-      qc: (container, test) => insert(() => {
-        // A test picked right under an Apply QC step joins it.
-        const prev = list[index - 1];
-        if (prev && prev.name === container && isQcContainer(prev.def)) addTestTo(prev, test);
-        else insertQcAt(container, test, list, index);
-      }),
+      qc: (container, test) =>
+        insert(() => {
+          // A test picked right under an Apply QC step joins it.
+          const prev = list[index - 1];
+          if (prev && prev.name === container && isQcContainer(prev.def)) addTestTo(prev, test);
+          else insertQcAt(container, test, list, index);
+        }),
     });
     // Containers only go at the top level: they never nest.
     const atRoot = list === STATE.pipeline.nodes;
     if (atRoot && 'new container'.includes(search.value.trim().toLowerCase())) {
-      const item = paletteItem('New container', 'An empty group to put steps in', null,
-        () => insert(() => addSection(index)));
+      const item = paletteItem('New container', 'An empty group to put steps in', null, () =>
+        insert(() => addSection(index)),
+      );
       item.draggable = false;
       body.prepend(item);
     }
@@ -161,24 +176,32 @@ function renderPaletteInto(host, filter, on) {
   ];
   const all = STATE.registry.steps;
   for (const [cat, title] of cats) {
-    const match = (x) => !f || x.name.toLowerCase().includes(f) || (x.description || '').toLowerCase().includes(f);
+    const match = (x) =>
+      !f || x.name.toLowerCase().includes(f) || (x.description || '').toLowerCase().includes(f);
     const items = all.filter(
-      (s) => s.category === cat && (match(s) || (isQcContainer(s) && STATE.registry.qc.some(match)))
+      (s) => s.category === cat && (match(s) || (isQcContainer(s) && STATE.registry.qc.some(match))),
     );
     if (!items.length) continue;
     const group = document.createElement('div');
     group.className = 'cat-group cat-' + cat;
     const h = document.createElement('div');
-    h.className = 'cat-title'; h.textContent = title;
+    h.className = 'cat-title';
+    h.textContent = title;
     group.appendChild(h);
     for (const s of items) {
-      group.appendChild(paletteItem(s.name, s.description, { kind: 'new', name: s.name }, () => on.step(s.name)));
+      group.appendChild(
+        paletteItem(s.name, s.description, { kind: 'new', name: s.name }, () => on.step(s.name)),
+      );
       // QC tests are listed under their container so one can be dragged straight in.
       if (isQcContainer(s)) {
         for (const qc of STATE.registry.qc) {
           if (!match(s) && !match(qc)) continue;
-          const el = paletteItem(qc.name, qc.description, { kind: 'qc', container: s.name, test: qc.name },
-            () => on.qc(s.name, qc.name));
+          const el = paletteItem(
+            qc.name,
+            qc.description,
+            { kind: 'qc', container: s.name, test: qc.name },
+            () => on.qc(s.name, qc.name),
+          );
           el.classList.add('palette-qc');
           group.appendChild(el);
         }
@@ -192,7 +215,8 @@ function paletteItem(name, description, drag, onClick) {
   const el = document.createElement('div');
   el.className = 'palette-item';
   el.draggable = true;
-  el.innerHTML = `<div class="pi-name">${escapeHtml(name)}</div>` +
+  el.innerHTML =
+    `<div class="pi-name">${escapeHtml(name)}</div>` +
     (description ? `<div class="pi-desc">${escapeHtml(description)}</div>` : '');
   el.onclick = onClick;
   el.addEventListener('dragstart', (e) => {
@@ -202,7 +226,9 @@ function paletteItem(name, description, drag, onClick) {
     e.dataTransfer.setData('text/plain', name); // Firefox needs some data set
   });
   el.addEventListener('dragend', () => {
-    el.classList.remove('dragging'); clearDropIndicator(); dragState = null;
+    el.classList.remove('dragging');
+    clearDropIndicator();
+    dragState = null;
   });
   return el;
 }
@@ -217,9 +243,22 @@ function flowLink(list, index, tail = false) {
   if (cur != null && into >= 0 && into <= cur) el.classList.add('done');
   const empty = tail && list === STATE.pipeline.nodes && !list.length;
   if (empty) el.classList.add('empty');
-  el.appendChild(Forms.button(empty ? 'Add step' : '', { icon: 'plus', iconSize: 12, cls: 'add-step sm',
-    title: tail && list !== STATE.pipeline.nodes ? 'Add a step at the end of this container' : 'Insert a step here',
-    onclick: (e) => { e.stopPropagation(); el.classList.add('open'); openStepPicker(el, list, index); } }));
+  el.appendChild(
+    Forms.button(empty ? 'Add step' : '', {
+      icon: 'plus',
+      iconSize: 12,
+      cls: 'add-step sm',
+      title:
+        tail && list !== STATE.pipeline.nodes
+          ? 'Add a step at the end of this container'
+          : 'Insert a step here',
+      onclick: (e) => {
+        e.stopPropagation();
+        el.classList.add('open');
+        openStepPicker(el, list, index);
+      },
+    }),
+  );
   return el;
 }
 
@@ -304,7 +343,10 @@ function syncOutputPath(filePath) {
   for (const item of STATE.pipeline.items) {
     if (!(item.def && item.def.parameters.some((p) => p.name === 'output_path'))) continue;
     const cur = item.values.output_path;
-    if ((!cur || /Processed\.nc$/.test(cur)) && cur !== auto) { item.values.output_path = auto; changed = true; }
+    if ((!cur || /Processed\.nc$/.test(cur)) && cur !== auto) {
+      item.values.output_path = auto;
+      changed = true;
+    }
   }
   if (changed) renderPipeline();
 }
@@ -389,16 +431,15 @@ function dropHostAt(target) {
 
 function listForHost(host) {
   if (!host.classList.contains('section-body')) return STATE.pipeline.nodes;
-  const sec = STATE.pipeline.nodes.find(
-    (n) => isSection(n) && n.id === Number(host.dataset.secId)
-  );
+  const sec = STATE.pipeline.nodes.find((n) => isSection(n) && n.id === Number(host.dataset.secId));
   return sec ? sec.steps : STATE.pipeline.nodes;
 }
 
 function dropSlots(host) {
   const kids = host.children;
-  return [...kids].filter((el) =>
-    el.classList.contains('step-card') || el.classList.contains('section-card'));
+  return [...kids].filter(
+    (el) => el.classList.contains('step-card') || el.classList.contains('section-card'),
+  );
 }
 
 function computeDropIndex(host, y) {
@@ -432,7 +473,8 @@ function showDropIndicator(host, y) {
   const index = computeDropIndex(host, y);
   const slots = dropSlots(host);
   const at = index < slots.length ? slots[index] : null;
-  if (at) at.parentElement.insertBefore(dropIndicator, at); else host.appendChild(dropIndicator);
+  if (at) at.parentElement.insertBefore(dropIndicator, at);
+  else host.appendChild(dropIndicator);
 }
 
 function clearDropIndicator() {
@@ -450,7 +492,10 @@ function initBuilderDnD() {
     e.dataTransfer.dropEffect = dragState.kind === 'new' || dragState.kind === 'qc' ? 'copy' : 'move';
     clearDropIndicator();
     const qc = qcCardAt(e.target);
-    if (qc) { qc.card.classList.add('drag-active'); return; }
+    if (qc) {
+      qc.card.classList.add('drag-active');
+      return;
+    }
     const host = dropHostAt(e.target);
     host.classList.add('drag-active');
     showDropIndicator(host, e.clientY);
@@ -471,8 +516,7 @@ function initBuilderDnD() {
     if (st.kind === 'qc') {
       if (qc) addTestTo(qc.item, st.test);
       else insertQcAt(st.container, st.test, list, index);
-    }
-    else if (st.kind === 'new') insertStepAt(st.name, list, index);
+    } else if (st.kind === 'new') insertStepAt(st.name, list, index);
     else if (st.kind === 'section') moveSectionTo(st.id, index);
     else moveStepTo(st.id, list, index);
   });
@@ -484,7 +528,9 @@ function renderSettings() {
   host.innerHTML = '';
   const card = document.createElement('section');
   card.className = 'files-section settings-box';
-  card.appendChild(Forms.el('div', { class: 'demos-head' }, Forms.el('strong', { textContent: 'Pipeline settings' })));
+  card.appendChild(
+    Forms.el('div', { class: 'demos-head' }, Forms.el('strong', { textContent: 'Pipeline settings' })),
+  );
   const settings = STATE.pipeline.settings;
   const body = document.createElement('div');
   body.className = 'settings-body';
@@ -498,12 +544,16 @@ function renderSettings() {
     if (!(spec.name in settings)) settings[spec.name] = Forms.defaultValue(spec);
     const field = Forms.render(spec, settings, STATE.onChange);
     const hint = field.querySelector(':scope > .hint');
-    if (hint) { field.title = hint.textContent; hint.remove(); }
+    if (hint) {
+      field.title = hint.textContent;
+      hint.remove();
+    }
     body.appendChild(field);
   }
   const diagRow = makeAllDiagnosticsRow();
-  diagRow.title = 'On / Off flips the diagnostics switch of every step and QC test at once '
-    + '(a step\'s "more diagnostics" is switched off too). Mixed means the switches differ.';
+  diagRow.title =
+    'On / Off flips the diagnostics switch of every step and QC test at once ' +
+    '(a step\'s "more diagnostics" is switched off too). Mixed means the switches differ.';
   body.appendChild(Forms.el('div', { class: 'settings-pair' }, body.lastElementChild, diagRow));
   card.appendChild(body);
   host.appendChild(card);
@@ -520,9 +570,23 @@ function makeAllDiagnosticsRow() {
   label.className = 'switch-label all-diag-label';
   label.textContent = 'All diagnostics';
   row.appendChild(label);
-  row.appendChild(Forms.seg([[true, 'On'], [false, 'Off']], null, setAllDiagnostics));
-  row.appendChild(Forms.el('span', { id: 'all-diag-state', class: 'all-diag-mixed',
-    title: 'The diagnostics switches differ between steps' }));
+  row.appendChild(
+    Forms.seg(
+      [
+        [true, 'On'],
+        [false, 'Off'],
+      ],
+      null,
+      setAllDiagnostics,
+    ),
+  );
+  row.appendChild(
+    Forms.el('span', {
+      id: 'all-diag-state',
+      class: 'all-diag-mixed',
+      title: 'The diagnostics switches differ between steps',
+    }),
+  );
   return row;
 }
 
@@ -539,13 +603,19 @@ function renderAllDiagnosticsRow() {
 // Frozen while running; only the paused step (or QC test) unlocks, since that's what Re-run acts on.
 const RunLock = {
   running: false,
-  index: null,   // null: all locked
+  index: null, // null: all locked
   test: null,
   runningIndex: null,
   runningTest: null,
 
-  begin() { RunLock.set(true, null, null); },
-  end() { RunLock.runningIndex = null; RunLock.runningTest = null; RunLock.set(false, null, null); },
+  begin() {
+    RunLock.set(true, null, null);
+  },
+  end() {
+    RunLock.runningIndex = null;
+    RunLock.runningTest = null;
+    RunLock.set(false, null, null);
+  },
 
   // A null index re-locks everything (still running, no longer paused).
   pauseAt(index, test) {
@@ -555,7 +625,9 @@ const RunLock = {
       RunLock.set(true, null, null);
       return;
     }
-    STATE.pipeline.items.forEach((s, i) => { s.collapsed = i !== index; });
+    STATE.pipeline.items.forEach((s, i) => {
+      s.collapsed = i !== index;
+    });
     // Before rendering, or an already-expanded card keeps its old sections open.
     const item = STATE.pipeline.items[index];
     if (item && test) item.qcOpen = { [test]: true };
@@ -574,7 +646,10 @@ const RunLock = {
       if (card) markRunningTest(card);
       return;
     }
-    STATE.pipeline.items.forEach((s) => { s.collapsed = true; s.qcOpen = null; });
+    STATE.pipeline.items.forEach((s) => {
+      s.collapsed = true;
+      s.qcOpen = null;
+    });
     // Its section must be open for the card to scroll into view.
     const item = STATE.pipeline.items[index];
     const sec = item && sectionOfStep(item.id);
@@ -625,7 +700,9 @@ function applyRunLock() {
     picker.disabled = running;
     picker.title = running ? 'Locked while the pipeline is running' : '';
   }
-  document.querySelectorAll('#pipeline-steps .add-step').forEach((b) => { b.disabled = running; });
+  document.querySelectorAll('#pipeline-steps .add-step').forEach((b) => {
+    b.disabled = running;
+  });
   if (!running) return;
   const settings = document.getElementById('pipeline-settings');
   if (settings) {
@@ -653,8 +730,8 @@ function lockCard(card, index) {
   for (const b of card.querySelectorAll('.step-head button')) {
     if (b.title !== 'collapse' && b.title !== 'close') b.disabled = true;
   }
-  const test = RunLock.test && card.querySelector(
-    `.qc-test[data-test="${CSS.escape(RunLock.test)}"] .qc-test-body`);
+  const test =
+    RunLock.test && card.querySelector(`.qc-test[data-test="${CSS.escape(RunLock.test)}"] .qc-test-body`);
   if (RunLock.test) freezeControls(card.querySelector('.step-body'), test || undefined);
 }
 
@@ -665,8 +742,12 @@ function stepElement(index) {
 // ---------------------------------------------------------------- steps
 // How the pipeline differs from default.yaml (see Defaults.compute).
 let defaultsView = {
-  byId: new Map(), first: [], after: new Map(),
-  sectionFirst: new Map(), sectionsAfter: new Map(), sectionsFirst: [],
+  byId: new Map(),
+  first: [],
+  after: new Map(),
+  sectionFirst: new Map(),
+  sectionsAfter: new Map(),
+  sectionsFirst: [],
 };
 
 // Field edits re-mark in place; a full render would drop focus from the field.
@@ -698,7 +779,10 @@ function applyDefaultMarks(card, item) {
   };
   const setNote = (host, note) => {
     host.querySelectorAll(':scope > .default-note.head-note').forEach((n) => n.remove());
-    if (note) { note.classList.add('head-note'); host.prepend(note); }
+    if (note) {
+      note.classList.add('head-note');
+      host.prepend(note);
+    }
   };
   const changesNote = (n, what, onRestore) =>
     Defaults.note(`${n} ${n === 1 ? 'change' : 'changes'} from the ${what} —`, 'Restore defaults', onRestore);
@@ -728,7 +812,7 @@ function applyDefaultMarks(card, item) {
     shown += (diff.params || []).filter((p) => p.name === 'qc_settings').length;
     shown += qcd.removed.length; // removed tests have ghost rows
   }
-  const baseQc = qcd ? ((info.base.parameters || {}).qc_settings || {}) : {};
+  const baseQc = qcd ? (info.base.parameters || {}).qc_settings || {} : {};
   for (const el of card.querySelectorAll('.qc-test[data-test]')) {
     const t = el.dataset.test;
     const added = qcd && qcd.added.includes(t);
@@ -737,13 +821,31 @@ function applyDefaultMarks(card, item) {
     const tb = el.querySelector('.qc-test-body');
     const inFields = markFields(tb, changed, item.values.qc_settings[t]);
     const unshown = changed ? changed.length - inFields : 0;
-    setNote(tb, added
-      ? Defaults.note('Not in the default pipeline —', 'Remove', () => { delete item.values.qc_settings[t]; Defaults.commit(); }, 'extra')
-      : unshown ? changesNote(unshown, 'default', () => Defaults.restoreTest(item, t, baseQc)) : null);
+    setNote(
+      tb,
+      added
+        ? Defaults.note(
+            'Not in the default pipeline —',
+            'Remove',
+            () => {
+              delete item.values.qc_settings[t];
+              Defaults.commit();
+            },
+            'extra',
+          )
+        : unshown
+          ? changesNote(unshown, 'default', () => Defaults.restoreTest(item, t, baseQc))
+          : null,
+    );
     if (added || changed) shown++;
   }
   const unshown = diff ? diff.count - shown : 0;
-  setNote(body, unshown > 0 ? changesNote(unshown, 'default pipeline', () => Defaults.restoreStep(item, info.base)) : null);
+  setNote(
+    body,
+    unshown > 0
+      ? changesNote(unshown, 'default pipeline', () => Defaults.restoreStep(item, info.base))
+      : null,
+  );
 }
 
 function badgeSlot(name) {
@@ -781,20 +883,39 @@ function appendStepCard(host, item) {
 }
 
 // ---------------------------------------------------------------- view
-const SUMMARY_KEYS = ['to_derive', 'target_variable', 'apply_to', 'shift_vars', 'par_var', 'variables', 'variable', 'method', 'export_format', 'standards'];
+const SUMMARY_KEYS = [
+  'to_derive',
+  'target_variable',
+  'apply_to',
+  'shift_vars',
+  'par_var',
+  'variables',
+  'variable',
+  'method',
+  'export_format',
+  'standards',
+];
 function stepSummary(item) {
   const v = item.values || {};
   if (isQcContainer(item.def)) {
-    return Object.entries(v.qc_settings || {}).map(([t, tv]) => {
-      const vars = Object.keys((tv && (tv.variable_ranges || tv.variables)) || {});
-      return t.replace(/\s+qc$/, '') + (vars.length ? ': ' + vars.join(', ') : '');
-    }).join(' · ');
+    return Object.entries(v.qc_settings || {})
+      .map(([t, tv]) => {
+        const vars = Object.keys((tv && (tv.variable_ranges || tv.variables)) || {});
+        return t.replace(/\s+qc$/, '') + (vars.length ? ': ' + vars.join(', ') : '');
+      })
+      .join(' · ');
   }
   const parts = [];
   for (const k of SUMMARY_KEYS) {
     if (!(k in v) || v[k] === '' || v[k] == null) continue;
     const val = v[k];
-    parts.push(Array.isArray(val) ? val.join(', ') : typeof val === 'object' ? Object.keys(val).join(', ') : String(val));
+    parts.push(
+      Array.isArray(val)
+        ? val.join(', ')
+        : typeof val === 'object'
+          ? Object.keys(val).join(', ')
+          : String(val),
+    );
     if (parts.length === 2) break;
   }
   if (v.output_as) parts.push('→ ' + v.output_as);
@@ -804,13 +925,13 @@ function stepSummary(item) {
 function renderPipeline() {
   const host = document.getElementById('pipeline-steps');
   // Emptying the host would snap the pane's scroll to the top; put it back.
-  const scroller = host.closest('.builder-scroll'), top = scroller.scrollTop;
+  const scroller = host.closest('.builder-scroll'),
+    top = scroller.scrollTop;
   host.innerHTML = '';
   closeStepPicker();
   syncItems();
   defaultsView = Defaults.compute();
-  document.getElementById('empty-hint').style.display =
-    STATE.pipeline.nodes.length ? 'none' : 'block';
+  document.getElementById('empty-hint').style.display = STATE.pipeline.nodes.length ? 'none' : 'block';
 
   for (const g of defaultsView.sectionsFirst) host.appendChild(Defaults.ghostSection(g));
   for (const g of defaultsView.first) host.appendChild(Defaults.ghostStep(g, null));
@@ -832,10 +953,18 @@ function renderPipeline() {
 
 // --sec-* tokens in style.css; unmatched sections alternate by position.
 const SECTION_COLOURS = [
-  [/chla|chlorophyll|quench/, 'chla'], [/profile/, 'profiles'], [/import|load|export|write/, 'io'],
-  [/\blat|\blon|coord|position/, 'coords'], [/cross.?cal/, 'crosscal'], [/interpol/, 'interp'],
-  [/salin|cndc|conduct/, 'salinity'], [/ctd|temp|pres/, 'ctd'], [/backscatter|bbp|beta/, 'bbp'],
-  [/oxy|doxy/, 'oxygen'], [/par\b|irradiance|light/, 'par'], [/mixed layer|mld|density/, 'mld'],
+  [/chla|chlorophyll|quench/, 'chla'],
+  [/profile/, 'profiles'],
+  [/import|load|export|write/, 'io'],
+  [/\blat|\blon|coord|position/, 'coords'],
+  [/cross.?cal/, 'crosscal'],
+  [/interpol/, 'interp'],
+  [/salin|cndc|conduct/, 'salinity'],
+  [/ctd|temp|pres/, 'ctd'],
+  [/backscatter|bbp|beta/, 'bbp'],
+  [/oxy|doxy/, 'oxygen'],
+  [/par\b|irradiance|light/, 'par'],
+  [/mixed layer|mld|density/, 'mld'],
 ];
 function sectionColour(sec, index) {
   const title = (sec.title || '').toLowerCase();
@@ -859,14 +988,26 @@ function renderSection(sec, index = 0) {
   title.className = 'section-title';
   title.value = sec.title;
   title.placeholder = 'Container name';
-  title.oninput = () => { sec.title = title.value; STATE.onChange(); };
+  title.oninput = () => {
+    sec.title = title.value;
+    STATE.onChange();
+  };
   title.onclick = (e) => e.stopPropagation(); // clicking the name shouldn't collapse
   head.appendChild(title);
 
-  const names = sec.steps.flatMap((s) => isQcContainer(s.def) && Object.keys(s.values.qc_settings || {}).length
-    ? Object.keys(s.values.qc_settings).map(testLabel) : [s.name]);
-  head.appendChild(Forms.el('span', { class: sec.collapsed ? 'sec-seq' : 'sec-count',
-    textContent: sec.collapsed ? names.join('  ›  ') : sec.steps.length + (sec.steps.length === 1 ? ' step' : ' steps') }));
+  const names = sec.steps.flatMap((s) =>
+    isQcContainer(s.def) && Object.keys(s.values.qc_settings || {}).length
+      ? Object.keys(s.values.qc_settings).map(testLabel)
+      : [s.name],
+  );
+  head.appendChild(
+    Forms.el('span', {
+      class: sec.collapsed ? 'sec-seq' : 'sec-count',
+      textContent: sec.collapsed
+        ? names.join('  ›  ')
+        : sec.steps.length + (sec.steps.length === 1 ? ' step' : ' steps'),
+    }),
+  );
 
   const tools = document.createElement('span');
   tools.className = 'step-tools';
@@ -874,7 +1015,10 @@ function renderSection(sec, index = 0) {
   del.className = 'icon-btn';
   del.innerHTML = Icon.svg('close', 14);
   del.title = 'remove container and its steps';
-  del.onclick = (e) => { e.stopPropagation(); removeSection(sec.id); };
+  del.onclick = (e) => {
+    e.stopPropagation();
+    removeSection(sec.id);
+  };
   tools.appendChild(del);
   head.appendChild(tools);
 
@@ -886,8 +1030,12 @@ function renderSection(sec, index = 0) {
 
   // Handle-gated drag, so the title stays editable.
   const handle = head.querySelector('.drag');
-  handle.addEventListener('mousedown', () => { card.draggable = true; });
-  handle.addEventListener('mouseup', () => { card.draggable = false; });
+  handle.addEventListener('mousedown', () => {
+    card.draggable = true;
+  });
+  handle.addEventListener('mouseup', () => {
+    card.draggable = false;
+  });
   card.addEventListener('dragstart', (e) => {
     if (e.target !== card) return; // a step inside being dragged, bubbling up
     dragState = { kind: 'section', id: sec.id };
@@ -907,7 +1055,8 @@ function renderSection(sec, index = 0) {
   body.className = 'section-body';
   body.dataset.secId = String(sec.id);
   if (sec.collapsed) body.style.display = 'none';
-  for (const g of defaultsView.sectionFirst.get(sec.id) || []) body.appendChild(Defaults.ghostStep(g, null, sec.id));
+  for (const g of defaultsView.sectionFirst.get(sec.id) || [])
+    body.appendChild(Defaults.ghostStep(g, null, sec.id));
   sec.steps.forEach((item, i) => {
     body.appendChild(flowLink(sec.steps, i));
     appendStepCard(body, item);
@@ -922,7 +1071,8 @@ function renderSection(sec, index = 0) {
 function renderStepCard(item) {
   const card = document.createElement('div');
   card.className = 'step-card cat-' + item.def.category;
-  if (isQcContainer(item.def) && 'visual qc' in (item.values.qc_settings || {})) card.classList.add('visual-qc');
+  if (isQcContainer(item.def) && 'visual qc' in (item.values.qc_settings || {}))
+    card.classList.add('visual-qc');
   card.dataset.stepId = item.id;
 
   const head = document.createElement('div');
@@ -932,7 +1082,11 @@ function renderStepCard(item) {
   expand.innerHTML = Icon.svg('down', 15);
   expand.title = item.collapsed ? 'expand' : 'collapse';
   expand.setAttribute('aria-expanded', String(!item.collapsed));
-  expand.onclick = (e) => { e.stopPropagation(); item.collapsed = !item.collapsed; renderPipeline(); };
+  expand.onclick = (e) => {
+    e.stopPropagation();
+    item.collapsed = !item.collapsed;
+    renderPipeline();
+  };
   head.appendChild(expand);
   const title = document.createElement('span');
   title.className = 'step-title';
@@ -947,15 +1101,25 @@ function renderStepCard(item) {
       row.dataset.test = t;
       row.appendChild(stepIcon(t === 'visual qc' ? 'visual' : 'qc'));
       row.appendChild(stepText(testLabel(t), testVars(item.values.qc_settings[t]).join(', '), 'qc-row-name'));
-      row.onclick = (e) => { e.stopPropagation(); item.collapsed = false; item.qcOpen = { [t]: true }; renderPipeline(); };
+      row.onclick = (e) => {
+        e.stopPropagation();
+        item.collapsed = false;
+        item.qcOpen = { [t]: true };
+        renderPipeline();
+      };
       title.appendChild(row);
     });
   } else {
     title.appendChild(stepIcon(stepKind(item)));
     title.appendChild(stepText(item.name, item.collapsed ? stepSummary(item) : ''));
     if (item.def.beta) {
-      title.appendChild(Forms.el('span', { class: 'tag beta', textContent: 'beta',
-        title: 'Beta: works, but the method is still being refined.' }));
+      title.appendChild(
+        Forms.el('span', {
+          class: 'tag beta',
+          textContent: 'beta',
+          title: 'Beta: works, but the method is still being refined.',
+        }),
+      );
     }
   }
   head.appendChild(title);
@@ -963,8 +1127,13 @@ function renderStepCard(item) {
   const tools = document.createElement('span');
   tools.className = 'step-tools';
   const del = document.createElement('button');
-  del.className = 'icon-btn step-del'; del.innerHTML = Icon.svg('close', 14); del.title = 'remove';
-  del.onclick = (e) => { e.stopPropagation(); removeStep(item.id); };
+  del.className = 'icon-btn step-del';
+  del.innerHTML = Icon.svg('close', 14);
+  del.title = 'remove';
+  del.onclick = (e) => {
+    e.stopPropagation();
+    removeStep(item.id);
+  };
   tools.appendChild(del);
   head.appendChild(tools);
 
@@ -978,8 +1147,12 @@ function renderStepCard(item) {
 
   // Draggable only while the handle is held, so text selection in the body still works.
   for (const handle of head.querySelectorAll('.drag')) {
-    handle.addEventListener('mousedown', () => { card.draggable = true; });
-    handle.addEventListener('mouseup', () => { card.draggable = false; });
+    handle.addEventListener('mousedown', () => {
+      card.draggable = true;
+    });
+    handle.addEventListener('mouseup', () => {
+      card.draggable = false;
+    });
   }
   card.addEventListener('dragstart', (e) => {
     dragState = { kind: 'move', id: item.id };
@@ -1007,22 +1180,28 @@ function renderStepCard(item) {
     const diag = document.createElement('div');
     diag.className = 'diag-row';
     // true/false, or 'all' for more plots; a YAML list of names shows as plain on.
-    const more = item.def.more_diagnostics ? Forms.switchEl(item.diagnostics === 'all', (v) => {
-      item.diagnostics = v ? 'all' : true;
-      sw.input.checked = true;
-      renderAllDiagnosticsRow(); STATE.onChange();
-    }) : null;
+    const more = item.def.more_diagnostics
+      ? Forms.switchEl(item.diagnostics === 'all', (v) => {
+          item.diagnostics = v ? 'all' : true;
+          sw.input.checked = true;
+          renderAllDiagnosticsRow();
+          STATE.onChange();
+        })
+      : null;
     const sw = Forms.switchEl(!!item.diagnostics, (v) => {
       item.diagnostics = v;
       if (more) more.input.checked = false;
-      renderAllDiagnosticsRow(); STATE.onChange();
+      renderAllDiagnosticsRow();
+      STATE.onChange();
     });
     sw.input.id = 'diag-' + item.id;
     const lbl = document.createElement('label');
     lbl.className = 'switch-label';
     lbl.htmlFor = sw.input.id;
-    lbl.textContent = 'diagnostics'; lbl.style.margin = '0';
-    diag.appendChild(sw.el); diag.appendChild(lbl);
+    lbl.textContent = 'diagnostics';
+    lbl.style.margin = '0';
+    diag.appendChild(sw.el);
+    diag.appendChild(lbl);
     diagTop.appendChild(diag);
     if (more) {
       const row = document.createElement('div');
@@ -1031,19 +1210,21 @@ function renderStepCard(item) {
       const mlbl = document.createElement('label');
       mlbl.className = 'switch-label';
       mlbl.htmlFor = more.input.id;
-      mlbl.textContent = 'more diagnostics'; mlbl.style.margin = '0';
+      mlbl.textContent = 'more diagnostics';
+      mlbl.style.margin = '0';
       mlbl.title = 'Also draw every extra plot this step offers (turns diagnostics on)';
-      row.appendChild(more.el); row.appendChild(mlbl);
+      row.appendChild(more.el);
+      row.appendChild(mlbl);
       diagTop.appendChild(row);
     }
     body.appendChild(diagTop);
   }
 
-
   if (!item.def.schema_declared) {
     const note = document.createElement('div');
     note.className = 'hint';
-    note.textContent = 'This step has not declared a parameter schema yet; edit its parameters in the YAML pane.';
+    note.textContent =
+      'This step has not declared a parameter schema yet; edit its parameters in the YAML pane.';
     body.appendChild(note);
   }
 
@@ -1125,7 +1306,7 @@ function focusStepInBuilder(index) {
 // `info` is the step's entry in defaultsView, for the removed-test rows.
 function renderQcEditor(item, spec, info) {
   const qcd = info && !info.extra ? info.diff.qc : null;
-  const baseQc = qcd ? ((info.base.parameters || {}).qc_settings || {}) : {};
+  const baseQc = qcd ? (info.base.parameters || {}).qc_settings || {} : {};
   const wrap = document.createElement('div');
   wrap.className = 'field';
   const label = document.createElement('label');
@@ -1133,7 +1314,8 @@ function renderQcEditor(item, spec, info) {
   wrap.appendChild(label);
   if (spec.description) {
     const hint = document.createElement('div');
-    hint.className = 'hint'; hint.textContent = spec.description;
+    hint.className = 'hint';
+    hint.textContent = spec.description;
     wrap.appendChild(hint);
   }
 
@@ -1156,12 +1338,18 @@ function renderQcEditor(item, spec, info) {
   mlbl.className = 'switch-label';
   mlbl.htmlFor = msw.input.id;
   mlbl.textContent = 'diagnostics — all tests';
-  master.appendChild(msw.el); master.appendChild(mlbl);
+  master.appendChild(msw.el);
+  master.appendChild(mlbl);
   editor.appendChild(master);
 
   const addRow = document.createElement('div');
   addRow.className = 'qc-add';
-  const sel = Forms.select(STATE.registry.qc.map((q) => q.name), null, null, { placeholder: '— add a QC test —' });
+  const sel = Forms.select(
+    STATE.registry.qc.map((q) => q.name),
+    null,
+    null,
+    { placeholder: '— add a QC test —' },
+  );
   const addBtn = Forms.button('Add', { icon: 'plus' });
   addBtn.onclick = () => {
     const name = sel.value;
@@ -1171,7 +1359,8 @@ function renderQcEditor(item, spec, info) {
     renderPipeline();
     STATE.onChange();
   };
-  addRow.appendChild(sel); addRow.appendChild(addBtn);
+  addRow.appendChild(sel);
+  addRow.appendChild(addBtn);
   editor.appendChild(addRow);
 
   // insertion order = application order
@@ -1192,11 +1381,14 @@ function renderQcEditor(item, spec, info) {
     th.appendChild(chev);
     th.insertAdjacentHTML('beforeend', `<span class="qc-test-name">${escapeHtml(qcName)}</span>`);
     const rm = document.createElement('button');
-    rm.className = 'icon-btn'; rm.innerHTML = Icon.svg('close'); rm.title = 'remove test';
+    rm.className = 'icon-btn';
+    rm.innerHTML = Icon.svg('close');
+    rm.title = 'remove test';
     rm.onclick = (e) => {
       e.stopPropagation();
       delete item.values.qc_settings[qcName];
-      renderPipeline(); STATE.onChange();
+      renderPipeline();
+      STATE.onChange();
     };
     th.appendChild(rm);
 
@@ -1212,19 +1404,22 @@ function renderQcEditor(item, spec, info) {
 
     if (qcDef && qcDef.description) {
       const d = document.createElement('div');
-      d.className = 'hint qc-meta'; d.textContent = qcDef.description;
+      d.className = 'hint qc-meta';
+      d.textContent = qcDef.description;
       tb.appendChild(d);
     }
     const reqs = (qcDef && qcDef.required_variables) || [];
     const outs = (qcDef && qcDef.qc_outputs) || [];
     if (reqs.length) {
       const r = document.createElement('div');
-      r.className = 'hint qc-meta'; r.textContent = 'Requires: ' + reqs.join(', ');
+      r.className = 'hint qc-meta';
+      r.textContent = 'Requires: ' + reqs.join(', ');
       tb.appendChild(r);
     }
     if (outs.length) {
       const o = document.createElement('div');
-      o.className = 'hint qc-meta'; o.textContent = 'Outputs: ' + outs.join(', ');
+      o.className = 'hint qc-meta';
+      o.textContent = 'Outputs: ' + outs.join(', ');
       tb.appendChild(o);
     }
 
@@ -1232,26 +1427,35 @@ function renderQcEditor(item, spec, info) {
     const diagDefault = 'diagnostics' in testValues ? testValues.diagnostics : item.diagnostics;
     const drow = document.createElement('div');
     drow.className = 'diag-row';
-    const dsw = Forms.switchEl(!!diagDefault, (v) => { testValues.diagnostics = v; renderAllDiagnosticsRow(); STATE.onChange(); });
+    const dsw = Forms.switchEl(!!diagDefault, (v) => {
+      testValues.diagnostics = v;
+      renderAllDiagnosticsRow();
+      STATE.onChange();
+    });
     dsw.input.id = 'qc-diag-' + item.id + '-' + qcName.replace(/\s+/g, '_');
     const dlbl = document.createElement('label');
-    dlbl.className = 'switch-label'; dlbl.htmlFor = dsw.input.id;
-    dlbl.textContent = 'diagnostics'; dlbl.style.margin = '0';
-    drow.appendChild(dsw.el); drow.appendChild(dlbl);
+    dlbl.className = 'switch-label';
+    dlbl.htmlFor = dsw.input.id;
+    dlbl.textContent = 'diagnostics';
+    dlbl.style.margin = '0';
+    drow.appendChild(dsw.el);
+    drow.appendChild(dlbl);
     tb.appendChild(drow);
 
     const params = (qcDef && qcDef.parameters) || [];
     if (!params.length) {
       const none = document.createElement('div');
-      none.className = 'hint'; none.textContent = 'No parameters.';
+      none.className = 'hint';
+      none.textContent = 'No parameters.';
       tb.appendChild(none);
     }
     for (const p of params) tb.appendChild(Forms.render(p, testValues, onFieldEdit));
 
-    test.appendChild(th); test.appendChild(tb);
+    test.appendChild(th);
+    test.appendChild(tb);
     editor.appendChild(test);
   }
-  for (const t of (qcd ? qcd.removed : [])) editor.appendChild(Defaults.ghostTest(item, t, baseQc));
+  for (const t of qcd ? qcd.removed : []) editor.appendChild(Defaults.ghostTest(item, t, baseQc));
 
   wrap.appendChild(editor);
   return wrap;

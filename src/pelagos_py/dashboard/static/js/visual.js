@@ -4,49 +4,77 @@
 const VisualQC = {
   TEST: 'visual qc',
   FLAGS: [
-    [0, 'no QC performed'], [1, 'good'], [2, 'probably good'], [3, 'probably bad'],
-    [4, 'bad'], [5, 'value changed'], [6, 'not used'], [7, 'not used'],
-    [8, 'estimated / interpolated'], [9, 'missing value'],
+    [0, 'no QC performed'],
+    [1, 'good'],
+    [2, 'probably good'],
+    [3, 'probably bad'],
+    [4, 'bad'],
+    [5, 'value changed'],
+    [6, 'not used'],
+    [7, 'not used'],
+    [8, 'estimated / interpolated'],
+    [9, 'missing value'],
   ],
   // fig_spec.FLAG_COLOURS via /api/registry, so plots and the editor share one palette.
-  get COLOURS() { return STATE.registry.flag_colours; },
+  get COLOURS() {
+    return STATE.registry.flag_colours;
+  },
   // Argo merge table COMBINATRIX[existing][new], from qc_handling via /api/registry.
-  get COMBINATRIX() { return STATE.registry.combinatrix; },
+  get COMBINATRIX() {
+    return STATE.registry.combinatrix;
+  },
   // Darker outline so a box stays visible over points of the same flag.
   border(flag) {
     const hex = VisualQC.COLOURS[flag] || '#333333';
     const c = parseInt(hex.slice(1), 16);
-    const d = (v) => Math.round(v * 0.55).toString(16).padStart(2, '0');
+    const d = (v) =>
+      Math.round(v * 0.55)
+        .toString(16)
+        .padStart(2, '0');
     return '#' + d(c >> 16) + d((c >> 8) & 255) + d(c & 255);
   },
-  VIEWS: [['time', 'Time'], ['profile', 'Profile'], ['variable', 'Variable'], ['ts', 'T–S'], ['map', 'Map']],
+  VIEWS: [
+    ['time', 'Time'],
+    ['profile', 'Profile'],
+    ['variable', 'Variable'],
+    ['ts', 'T–S'],
+    ['map', 'Map'],
+  ],
 
   // Kept across re-runs and tab switches within one pause.
   tool: { flag: 4, mode: 'inside', override: true },
   chart: null,
   fig: null,
-  hi: null,      // box index hovered in the list
-  sel: null,     // box index selected in the list
-  dirty: false,  // boxes edited since the last re-run
+  hi: null, // box index hovered in the list
+  sel: null, // box index selected in the list
+  dirty: false, // boxes edited since the last re-run
   view: 'time',
   coloured: false, // Time/T–S/Map colour by the shown variable rather than by flag
-  gi: 0,         // index into the test's `variables`
-  param: null,   // the variable shown (null: the bubble's first)
+  gi: 0, // index into the test's `variables`
+  param: null, // the variable shown (null: the bubble's first)
   // `by` ALL shows every sample, else one profile/cycle id at `pos`.
   prof: { by: 'ALL', pos: 0 },
   hidden: new Set(), // flags toggled off in the legend
-  past: [],      // undo snapshots of the box list, current one last
-  future: [],    // redo snapshots
-  cols: {},      // column name -> promise of {values, date, stops}
-  index: {},     // PROFILE_NUMBER / CYCLE -> {ids, at: Map id -> sample indices}
-  nearest: {},   // point box (JSON) -> its nearest sample
+  past: [], // undo snapshots of the box list, current one last
+  future: [], // redo snapshots
+  cols: {}, // column name -> promise of {values, date, stops}
+  index: {}, // PROFILE_NUMBER / CYCLE -> {ids, at: Map id -> sample indices}
+  nearest: {}, // point box (JSON) -> its nearest sample
   flagCache: null, // replayed flags of one variable, see replayFlags
-  sigma: {},     // T–S window -> promise of sigma0 contours
+  sigma: {}, // T–S window -> promise of sigma0 contours
 
-  isActive() { return Review.active && Review.test === VisualQC.TEST; },
-  tab() { return document.querySelector('.tab[data-tab="visual"]'); },
-  host() { return document.getElementById('visual-workspace'); },
-  rail() { return document.getElementById('visual-rail'); },
+  isActive() {
+    return Review.active && Review.test === VisualQC.TEST;
+  },
+  tab() {
+    return document.querySelector('.tab[data-tab="visual"]');
+  },
+  host() {
+    return document.getElementById('visual-workspace');
+  },
+  rail() {
+    return document.getElementById('visual-rail');
+  },
 
   values() {
     const v = Review.testValues();
@@ -55,18 +83,34 @@ const VisualQC = {
     return v;
   },
 
-  mod() { return navigator.platform.toLowerCase().includes('mac') ? '⌘' : 'Ctrl'; },
-  xVar() { const v = VisualQC.values(); return (v && v.x_variable) || 'TIME'; },
-  yVar() { const v = VisualQC.values(); return (v && v.y_variable) || 'PRES'; },
-  boxY(b) { return b.y_variable || VisualQC.yVar(); },
-  boxX(b) { return b.x_variable || VisualQC.xVar(); },
-  boxVars(b) { return b.variables || [VisualQC.boxY(b)]; },
+  mod() {
+    return navigator.platform.toLowerCase().includes('mac') ? '⌘' : 'Ctrl';
+  },
+  xVar() {
+    const v = VisualQC.values();
+    return (v && v.x_variable) || 'TIME';
+  },
+  yVar() {
+    const v = VisualQC.values();
+    return (v && v.y_variable) || 'PRES';
+  },
+  boxY(b) {
+    return b.y_variable || VisualQC.yVar();
+  },
+  boxX(b) {
+    return b.x_variable || VisualQC.xVar();
+  },
+  boxVars(b) {
+    return b.variables || [VisualQC.boxY(b)];
+  },
 
   groups() {
     const values = VisualQC.values();
     return (values ? values.variables : []).map((v) => (Array.isArray(v) ? v : [v]));
   },
-  group() { return VisualQC.groups()[VisualQC.gi] || null; },
+  group() {
+    return VisualQC.groups()[VisualQC.gi] || null;
+  },
   inGroup(b, group) {
     const vars = VisualQC.boxVars(b);
     return !!group && vars.length === group.length && vars.every((v) => group.includes(v));
@@ -92,12 +136,18 @@ const VisualQC = {
       map: { x: 'LONGITUDE', y: 'LATITUDE' },
     }[VisualQC.view];
   },
-  colourView() { return ['time', 'ts', 'map'].includes(VisualQC.view); },
-  colourBy() { return VisualQC.colourView() && VisualQC.coloured ? VisualQC.paramVar() : null; },
+  colourView() {
+    return ['time', 'ts', 'map'].includes(VisualQC.view);
+  },
+  colourBy() {
+    return VisualQC.colourView() && VisualQC.coloured ? VisualQC.paramVar() : null;
+  },
   tsAxes() {
     const have = VisualQC.variables();
-    return { x: ['PSAL_ADJUSTED', 'PSAL', 'ASAL_ADJUSTED', 'ASAL'].find((v) => have.includes(v)),
-      y: ['TEMP_ADJUSTED', 'TEMP', 'CONS_TEMP_ADJUSTED', 'CONS_TEMP'].find((v) => have.includes(v)) };
+    return {
+      x: ['PSAL_ADJUSTED', 'PSAL', 'ASAL_ADJUSTED', 'ASAL'].find((v) => have.includes(v)),
+      y: ['TEMP_ADJUSTED', 'TEMP', 'CONS_TEMP_ADJUSTED', 'CONS_TEMP'].find((v) => have.includes(v)),
+    };
   },
   viewMissing(view) {
     const have = VisualQC.variables();
@@ -118,13 +168,19 @@ const VisualQC = {
     const group = VisualQC.group();
     const single = VisualQC.view === 'profile' && VisualQC.prof.by !== 'ALL';
     const key = VisualQC.prof.by === 'CYCLE' ? 'cycles' : 'profiles';
-    const inView = (b) => (!b.profiles && !b.cycles) || (single && (b[key] || []).map(Number).includes(VisualQC.profileId()));
-    return (values ? values.boxes : []).map((b, i) => ({ b, i }))
-      .filter(({ b }) => b && VisualQC.inGroup(b, group) && VisualQC.boxX(b) === x && VisualQC.boxY(b) === y && inView(b));
+    const inView = (b) =>
+      (!b.profiles && !b.cycles) || (single && (b[key] || []).map(Number).includes(VisualQC.profileId()));
+    return (values ? values.boxes : [])
+      .map((b, i) => ({ b, i }))
+      .filter(
+        ({ b }) =>
+          b && VisualQC.inGroup(b, group) && VisualQC.boxX(b) === x && VisualQC.boxY(b) === y && inView(b),
+      );
   },
 
   boxView(b) {
-    const x = VisualQC.boxX(b), y = VisualQC.boxY(b);
+    const x = VisualQC.boxX(b),
+      y = VisualQC.boxY(b);
     const ts = VisualQC.tsAxes();
     if (x === 'LONGITUDE' && y === 'LATITUDE') return { view: 'map', label: 'Map' };
     if (x === ts.x && y === ts.y) return { view: 'ts', label: 'T–S' };
@@ -139,13 +195,20 @@ const VisualQC = {
     const p = VisualQC.prof;
     VisualQC.view = view;
     if (param) VisualQC.param = param;
-    VisualQC.sel = i; VisualQC.hi = null;
+    VisualQC.sel = i;
+    VisualQC.hi = null;
     const by = b.profiles ? 'PROFILE_NUMBER' : b.cycles ? 'CYCLE' : null;
     if (view === 'profile') p.by = by || 'ALL';
     VisualQC.host().querySelector('.visual-plots').replaceWith(VisualQC.toolbar());
-    if (!by) { VisualQC.draw(); return; }
+    if (!by) {
+      VisualQC.draw();
+      return;
+    }
     VisualQC.columns([by]).then((cols) => {
-      p.pos = Math.max(0, VisualQC.profileIndex(by, cols[by]).ids.indexOf(Number((b.profiles || b.cycles)[0])));
+      p.pos = Math.max(
+        0,
+        VisualQC.profileIndex(by, cols[by]).ids.indexOf(Number((b.profiles || b.cycles)[0])),
+      );
       VisualQC.draw();
     });
   },
@@ -153,19 +216,27 @@ const VisualQC = {
   // What the runner reported at this pause, plus whatever the config already names.
   variables() {
     const out = [...(Run.variables || [])];
-    for (const v of [VisualQC.xVar(), VisualQC.yVar(), ...VisualQC.groups().flat()]) if (!out.includes(v)) out.push(v);
+    for (const v of [VisualQC.xVar(), VisualQC.yVar(), ...VisualQC.groups().flat()])
+      if (!out.includes(v)) out.push(v);
     return out;
   },
 
   open() {
-    VisualQC.cols = {}; VisualQC.index = {}; VisualQC.nearest = {}; VisualQC.flagCache = null;
-    VisualQC.hi = null; VisualQC.sel = null;
+    VisualQC.cols = {};
+    VisualQC.index = {};
+    VisualQC.nearest = {};
+    VisualQC.flagCache = null;
+    VisualQC.hi = null;
+    VisualQC.sel = null;
     VisualQC.dirty = false;
-    VisualQC.hidden = new Set(); VisualQC.past = []; VisualQC.future = [];
+    VisualQC.hidden = new Set();
+    VisualQC.past = [];
+    VisualQC.future = [];
     VisualQC.clicks = null;
     VisualQC.tab().classList.remove('hidden');
     VisualQC.dropChart();
-    VisualQC.host().innerHTML = ''; VisualQC.rail().innerHTML = '';
+    VisualQC.host().innerHTML = '';
+    VisualQC.rail().innerHTML = '';
     Run.showTab('visual');
   },
 
@@ -176,28 +247,35 @@ const VisualQC = {
   },
 
   close() {
-    VisualQC.dropChart(); VisualQC.fig = null;
+    VisualQC.dropChart();
+    VisualQC.fig = null;
     VisualQC.dirty = false;
     VisualQC.buttons();
     const tab = VisualQC.tab();
     tab.classList.add('hidden');
     if (tab.classList.contains('on')) Run.showTab('run');
-    VisualQC.host().innerHTML = ''; VisualQC.rail().innerHTML = '';
+    VisualQC.host().innerHTML = '';
+    VisualQC.rail().innerHTML = '';
   },
 
   // A new figure means the test ran, so rebuild the editor; the same figure just redraws.
   render(fig) {
     const host = VisualQC.host();
-    if (fig && fig === VisualQC.fig && host.children.length) { VisualQC.draw(); return; }
+    if (fig && fig === VisualQC.fig && host.children.length) {
+      VisualQC.draw();
+      return;
+    }
     VisualQC.fig = fig;
     VisualQC.dirty = false;
     VisualQC.buttons();
     VisualQC.dropChart();
-    host.innerHTML = ''; VisualQC.rail().innerHTML = '';
+    host.innerHTML = '';
+    VisualQC.rail().innerHTML = '';
     if (!fig) {
       const hint = document.createElement('div');
       hint.className = 'hint review-empty';
-      hint.textContent = Review.busy ? 'Re-running — the plot will appear here.'
+      hint.textContent = Review.busy
+        ? 'Re-running — the plot will appear here.'
         : 'The test produced no figure. Re-run it with diagnostics on, or Continue.';
       host.appendChild(hint);
       return;
@@ -222,7 +300,8 @@ const VisualQC = {
     const sec = document.createElement('div');
     sec.className = 'visual-sec';
     const h = document.createElement('div');
-    h.className = 'visual-sec-title'; h.textContent = title;
+    h.className = 'visual-sec-title';
+    h.textContent = title;
     sec.appendChild(h);
     return sec;
   },
@@ -240,30 +319,46 @@ const VisualQC = {
     const btns = [];
     for (const [f, meaning] of VisualQC.FLAGS) {
       const b = document.createElement('button');
-      b.type = 'button'; b.className = 'visual-flag' + (f === t.flag ? ' on' : '');
+      b.type = 'button';
+      b.className = 'visual-flag' + (f === t.flag ? ' on' : '');
       b.style.setProperty('--fc', VisualQC.COLOURS[f]);
       b.innerHTML = `<b>${f}</b><span>${meaning}</span>`;
-      b.onclick = () => { t.flag = f; btns.forEach((x) => x.classList.toggle('on', x === b)); };
-      btns.push(b); grid.appendChild(b);
+      b.onclick = () => {
+        t.flag = f;
+        btns.forEach((x) => x.classList.toggle('on', x === b));
+      };
+      btns.push(b);
+      grid.appendChild(b);
     }
     flags.appendChild(grid);
     const modes = document.createElement('div');
     modes.className = 'visual-modes';
-    for (const [m, text] of [['inside', 'Inside the box'], ['outside', 'Outside the box']]) {
+    for (const [m, text] of [
+      ['inside', 'Inside the box'],
+      ['outside', 'Outside the box'],
+    ]) {
       const l = document.createElement('label');
       const r = document.createElement('input');
-      r.type = 'radio'; r.name = 'visual-mode'; r.checked = m === t.mode;
-      r.onchange = () => { t.mode = m; };
-      l.appendChild(r); l.appendChild(document.createTextNode(' ' + text));
+      r.type = 'radio';
+      r.name = 'visual-mode';
+      r.checked = m === t.mode;
+      r.onchange = () => {
+        t.mode = m;
+      };
+      l.appendChild(r);
+      l.appendChild(document.createTextNode(' ' + text));
       modes.appendChild(l);
     }
     flags.appendChild(modes);
     const ov = document.createElement('label');
     ov.className = 'visual-toggle';
-    const ovsw = Forms.switchEl(t.override, (checked) => { t.override = checked; });
+    const ovsw = Forms.switchEl(t.override, (checked) => {
+      t.override = checked;
+    });
     ov.appendChild(ovsw.el);
     ov.appendChild(document.createTextNode(' Override existing flags'));
-    ov.title = 'On: the box sets this flag outright, even bad → good. Off: merge by the Argo combinatrix, which never lowers a flag.';
+    ov.title =
+      'On: the box sets this flag outright, even bad → good. Off: merge by the Argo combinatrix, which never lowers a flag.';
     flags.appendChild(ov);
     tools.appendChild(flags);
 
@@ -289,7 +384,8 @@ const VisualQC = {
     rest.appendChild(row);
     const rh = document.createElement('div');
     rh.className = 'hint';
-    rh.textContent = 'Points no box covers, for the variables being QC\'d. Off leaves them at 0 (no QC) for a later step.';
+    rh.textContent =
+      "Points no box covers, for the variables being QC'd. Off leaves them at 0 (no QC) for a later step.";
     rest.appendChild(rh);
     tools.appendChild(rest);
     return side;
@@ -298,15 +394,32 @@ const VisualQC = {
   panel() {
     const side = Forms.el('div', { class: 'visual-right' });
     const legend = VisualQC.section('Flags');
-    legend.append(Forms.el('div', { class: 'visual-legend', id: 'visual-legend' }),
-      Forms.el('div', { class: 'hint', id: 'visual-legend-hint' }));
+    legend.append(
+      Forms.el('div', { class: 'visual-legend', id: 'visual-legend' }),
+      Forms.el('div', { class: 'hint', id: 'visual-legend-hint' }),
+    );
     side.appendChild(legend);
 
     const boxes = VisualQC.section('Boxes');
     boxes.classList.add('visual-boxes');
     boxes.firstChild.append(
-      Forms.button('', { icon: 'undo', iconSize: 14, cls: 'icon-btn', id: 'visual-undo', title: `Undo (${VisualQC.mod()}Z)`, onclick: () => VisualQC.undo() }),
-      Forms.button('', { icon: 'redo', iconSize: 14, cls: 'icon-btn', id: 'visual-redo', title: `Redo (⇧${VisualQC.mod()}Z)`, onclick: () => VisualQC.redo() }));
+      Forms.button('', {
+        icon: 'undo',
+        iconSize: 14,
+        cls: 'icon-btn',
+        id: 'visual-undo',
+        title: `Undo (${VisualQC.mod()}Z)`,
+        onclick: () => VisualQC.undo(),
+      }),
+      Forms.button('', {
+        icon: 'redo',
+        iconSize: 14,
+        cls: 'icon-btn',
+        id: 'visual-redo',
+        title: `Redo (⇧${VisualQC.mod()}Z)`,
+        onclick: () => VisualQC.redo(),
+      }),
+    );
     boxes.appendChild(Forms.el('div', { class: 'visual-list', id: 'visual-list' }));
     side.appendChild(boxes);
     return side;
@@ -319,19 +432,29 @@ const VisualQC = {
     for (const [f, meaning] of VisualQC.FLAGS) {
       const hidden = VisualQC.hidden.has(f);
       if (!counts[f] && !hidden) continue;
-      const row = Forms.button('', { cls: 'visual-leg' + (hidden ? ' off' : ''), title: hidden ? 'Show' : 'Hide',
+      const row = Forms.button('', {
+        cls: 'visual-leg' + (hidden ? ' off' : ''),
+        title: hidden ? 'Show' : 'Hide',
         onclick: () => {
-          if (hidden) VisualQC.hidden.delete(f); else VisualQC.hidden.add(f);
+          if (hidden) VisualQC.hidden.delete(f);
+          else VisualQC.hidden.add(f);
           VisualQC.draw();
-        } });
+        },
+      });
       row.style.setProperty('--fc', VisualQC.COLOURS[f]);
-      row.append(Forms.el('i'), Forms.el('span', { textContent: `${f} ${meaning}` }),
+      row.append(
+        Forms.el('i'),
+        Forms.el('span', { textContent: `${f} ${meaning}` }),
         Forms.el('b', { textContent: (counts[f] || 0).toLocaleString() }),
-        Forms.el('span', { class: 'visual-leg-eye', html: Icon.svg(hidden ? 'eyeOff' : 'eye', 14) }));
+        Forms.el('span', { class: 'visual-leg-eye', html: Icon.svg(hidden ? 'eyeOff' : 'eye', 14) }),
+      );
       el.appendChild(row);
     }
     const hint = document.getElementById('visual-legend-hint');
-    if (hint) hint.textContent = VisualQC.group() ? `Flags of ${VisualQC.flagVar()}, with your boxes. Hiding a flag hides its points and boxes.` : '';
+    if (hint)
+      hint.textContent = VisualQC.group()
+        ? `Flags of ${VisualQC.flagVar()}, with your boxes. Hiding a flag hides its points and boxes.`
+        : '';
   },
 
   record() {
@@ -359,7 +482,8 @@ const VisualQC = {
     const values = VisualQC.values();
     if (!values) return;
     values.boxes = JSON.parse(snap);
-    VisualQC.sel = null; VisualQC.hi = null;
+    VisualQC.sel = null;
+    VisualQC.hi = null;
     VisualQC.commit({ record: false });
   },
 
@@ -368,12 +492,14 @@ const VisualQC = {
     const clicks = VisualQC.clicks;
     VisualQC.clicks = null;
     if (!clicks || Date.now() - clicks.at > 600) return;
-    while (VisualQC.past.length > 1 && VisualQC.past[VisualQC.past.length - 1] !== clicks.before) VisualQC.past.pop();
+    while (VisualQC.past.length > 1 && VisualQC.past[VisualQC.past.length - 1] !== clicks.before)
+      VisualQC.past.pop();
     VisualQC.restore(clicks.before);
   },
 
   history() {
-    const undo = document.getElementById('visual-undo'), redo = document.getElementById('visual-redo');
+    const undo = document.getElementById('visual-undo'),
+      redo = document.getElementById('visual-redo');
     if (undo) undo.disabled = VisualQC.past.length < 2;
     if (redo) redo.disabled = !VisualQC.future.length;
   },
@@ -382,7 +508,8 @@ const VisualQC = {
     if (gi === VisualQC.gi) return;
     VisualQC.gi = gi;
     VisualQC.param = null;
-    VisualQC.sel = null; VisualQC.hi = null;
+    VisualQC.sel = null;
+    VisualQC.hi = null;
     VisualQC.rebuild();
     VisualQC.draw();
   },
@@ -401,7 +528,13 @@ const VisualQC = {
     const values = VisualQC.values();
     const group = VisualQC.groups()[gi];
     const mine = values.boxes.filter((b) => b && VisualQC.inGroup(b, group));
-    if (mine.length && !confirm(`Stop QC'ing ${group.join(' + ')} and remove its ${mine.length} box${mine.length === 1 ? '' : 'es'}?`)) return;
+    if (
+      mine.length &&
+      !confirm(
+        `Stop QC'ing ${group.join(' + ')} and remove its ${mine.length} box${mine.length === 1 ? '' : 'es'}?`,
+      )
+    )
+      return;
     values.boxes = values.boxes.filter((b) => !mine.includes(b));
     values.variables.splice(gi, 1);
     VisualQC.gi = Math.max(0, Math.min(VisualQC.gi, values.variables.length - 1));
@@ -424,27 +557,36 @@ const VisualQC = {
 
   varPicker() {
     const chosen = new Set(VisualQC.group());
-    const candidates = () => VisualQC.variables().filter((v) => v !== 'TIME' && !(Run.emptyVariables || []).includes(v));
+    const candidates = () =>
+      VisualQC.variables().filter((v) => v !== 'TIME' && !(Run.emptyVariables || []).includes(v));
     const wrap = document.createElement('div');
     wrap.className = 'visual-pick';
     const btn = document.createElement('button');
-    btn.type = 'button'; btn.className = 'selectish visual-pick-btn';
+    btn.type = 'button';
+    btn.className = 'selectish visual-pick-btn';
     const summary = () => {
       const v = [...chosen];
       const all = candidates().every((c) => chosen.has(c));
-      btn.replaceChildren(Forms.el('span', { textContent: all ? `All variables (${v.length})` : v.join(', ') }));
+      btn.replaceChildren(
+        Forms.el('span', { textContent: all ? `All variables (${v.length})` : v.join(', ') }),
+      );
       btn.title = v.join(', ');
     };
     summary();
     const menu = document.createElement('div');
     menu.className = 'visual-pick-menu hidden';
     const search = document.createElement('input');
-    search.type = 'search'; search.placeholder = 'Search variables…';
+    search.type = 'search';
+    search.placeholder = 'Search variables…';
     menu.appendChild(search);
     const opts = document.createElement('div');
     opts.className = 'visual-pick-opts';
     menu.appendChild(opts);
-    const changed = () => { summary(); fill(); VisualQC.setGroupVars([...chosen]); };
+    const changed = () => {
+      summary();
+      fill();
+      VisualQC.setGroupVars([...chosen]);
+    };
     const option = (text, checked, onchange, cls = '') => {
       const l = Forms.el('label', { class: cls });
       const c = Forms.el('input', { type: 'checkbox', checked });
@@ -457,31 +599,51 @@ const VisualQC = {
       const q = search.value.trim().toLowerCase();
       if (!q) {
         const all = candidates();
-        option('All variables', all.every((v) => chosen.has(v)), (on) => {
-          if (on) all.forEach((v) => chosen.add(v));
-          else { const first = VisualQC.group()[0]; chosen.clear(); chosen.add(first); }
-          changed();
-        }, 'visual-pick-all');
+        option(
+          'All variables',
+          all.every((v) => chosen.has(v)),
+          (on) => {
+            if (on) all.forEach((v) => chosen.add(v));
+            else {
+              const first = VisualQC.group()[0];
+              chosen.clear();
+              chosen.add(first);
+            }
+            changed();
+          },
+          'visual-pick-all',
+        );
       }
       for (const v of candidates()) {
         if (q && !v.toLowerCase().includes(q)) continue;
         option(v, chosen.has(v), (on) => {
-          if (on) chosen.add(v); else if (chosen.size > 1) chosen.delete(v);
+          if (on) chosen.add(v);
+          else if (chosen.size > 1) chosen.delete(v);
           changed();
         });
       }
     };
     search.oninput = fill;
-    const close = () => { menu.classList.add('hidden'); document.removeEventListener('pointerdown', away); };
-    const away = (e) => { if (!wrap.contains(e.target)) close(); };
+    const close = () => {
+      menu.classList.add('hidden');
+      document.removeEventListener('pointerdown', away);
+    };
+    const away = (e) => {
+      if (!wrap.contains(e.target)) close();
+    };
     btn.onclick = () => {
-      if (!menu.classList.contains('hidden')) { close(); return; }
-      search.value = ''; fill();
+      if (!menu.classList.contains('hidden')) {
+        close();
+        return;
+      }
+      search.value = '';
+      fill();
       menu.classList.remove('hidden');
       document.addEventListener('pointerdown', away);
       search.focus();
     };
-    wrap.appendChild(btn); wrap.appendChild(menu);
+    wrap.appendChild(btn);
+    wrap.appendChild(menu);
     return wrap;
   },
 
@@ -493,21 +655,49 @@ const VisualQC = {
     const seg = Forms.el('div', { class: 'seg' });
     VisualQC.groups().forEach((group, gi) => {
       const n = boxes.filter((b) => b && VisualQC.inGroup(b, group)).length;
-      seg.appendChild(Forms.button('', { cls: 'visual-plot' + (gi === VisualQC.gi ? ' on' : ''), onclick: () => VisualQC.setGroup(gi),
-        html: `<span>${group.join(' + ')}</span>` + (n ? `<i>${n}</i>` : ''),
-        title: `Flags ${group.join(', ')}` + (n ? ` · ${n} box${n === 1 ? '' : 'es'}` : '') }));
+      seg.appendChild(
+        Forms.button('', {
+          cls: 'visual-plot' + (gi === VisualQC.gi ? ' on' : ''),
+          onclick: () => VisualQC.setGroup(gi),
+          html: `<span>${group.join(' + ')}</span>` + (n ? `<i>${n}</i>` : ''),
+          title: `Flags ${group.join(', ')}` + (n ? ` · ${n} box${n === 1 ? '' : 'es'}` : ''),
+        }),
+      );
     });
     if (seg.children.length) bubbles.appendChild(seg);
     if (VisualQC.group()) {
-      bubbles.appendChild(Forms.button('', { icon: 'close', iconSize: 14, cls: 'icon-btn', title: 'Stop QC\'ing ' + VisualQC.group().join(' + '),
-        onclick: () => VisualQC.removeGroup(VisualQC.gi) }));
+      bubbles.appendChild(
+        Forms.button('', {
+          icon: 'close',
+          iconSize: 14,
+          cls: 'icon-btn',
+          title: "Stop QC'ing " + VisualQC.group().join(' + '),
+          onclick: () => VisualQC.removeGroup(VisualQC.gi),
+        }),
+      );
     }
-    const taken = new Set(VisualQC.groups().filter((g) => g.length === 1).map((g) => g[0]));
-    bubbles.appendChild(VisualQC.variableSelect(null, (v) => { if (v) VisualQC.addGroup(v); },
-      { placeholder: '+ QC variable', skip: taken }));
+    const taken = new Set(
+      VisualQC.groups()
+        .filter((g) => g.length === 1)
+        .map((g) => g[0]),
+    );
+    bubbles.appendChild(
+      VisualQC.variableSelect(
+        null,
+        (v) => {
+          if (v) VisualQC.addGroup(v);
+        },
+        { placeholder: '+ QC variable', skip: taken },
+      ),
+    );
     bar.appendChild(bubbles);
     if (!VisualQC.group()) {
-      bar.appendChild(Forms.el('span', { class: 'hint', textContent: 'Pick a variable to QC to draw boxes: each gets its own plot.' }));
+      bar.appendChild(
+        Forms.el('span', {
+          class: 'hint',
+          textContent: 'Pick a variable to QC to draw boxes: each gets its own plot.',
+        }),
+      );
       return bar;
     }
 
@@ -524,12 +714,19 @@ const VisualQC = {
     views.appendChild(Forms.el('span', { class: 'hint', textContent: 'showing' }));
     const colourView = VisualQC.colourView();
     const shown = colourView && !VisualQC.coloured ? '' : VisualQC.paramVar();
-    views.appendChild(VisualQC.variableSelect(shown, (v) => {
-      if (colourView) VisualQC.coloured = !!v;
-      if (v) VisualQC.param = v;
-      VisualQC.sel = null; VisualQC.hi = null;
-      VisualQC.draw();
-    }, { cls: 'sm visual-param', placeholder: colourView ? 'flags only' : undefined }));
+    views.appendChild(
+      VisualQC.variableSelect(
+        shown,
+        (v) => {
+          if (colourView) VisualQC.coloured = !!v;
+          if (v) VisualQC.param = v;
+          VisualQC.sel = null;
+          VisualQC.hi = null;
+          VisualQC.draw();
+        },
+        { cls: 'sm visual-param', placeholder: colourView ? 'flags only' : undefined },
+      ),
+    );
     if (VisualQC.view === 'profile') views.append(...VisualQC.profileControls());
     bar.appendChild(views);
     return bar;
@@ -538,7 +735,8 @@ const VisualQC = {
   setView(view) {
     if (view === VisualQC.view) return;
     VisualQC.view = view;
-    VisualQC.sel = null; VisualQC.hi = null;
+    VisualQC.sel = null;
+    VisualQC.hi = null;
     VisualQC.host().querySelector('.visual-plots').replaceWith(VisualQC.toolbar());
     VisualQC.draw();
   },
@@ -559,7 +757,9 @@ const VisualQC = {
     for (const [label, prefixes] of VisualQC.VARIABLE_GROUPS) {
       const rank = (v) => prefixes.findIndex((pre) => v.startsWith(pre));
       const adjustedFirst = (a, b) => b.endsWith('_ADJUSTED') - a.endsWith('_ADJUSTED');
-      const members = rest.filter((v) => rank(v) >= 0).sort((a, b) => rank(a) - rank(b) || adjustedFirst(a, b));
+      const members = rest
+        .filter((v) => rank(v) >= 0)
+        .sort((a, b) => rank(a) - rank(b) || adjustedFirst(a, b));
       rest = rest.filter((v) => !members.includes(v));
       groups.push([label, members]);
     }
@@ -568,7 +768,8 @@ const VisualQC = {
     for (const [label, members] of groups) {
       if (!members.length) continue;
       const group = Forms.el('optgroup', { label });
-      for (const v of members) group.appendChild(Forms.el('option', { value: v, textContent: v, selected: v === value }));
+      for (const v of members)
+        group.appendChild(Forms.el('option', { value: v, textContent: v, selected: v === value }));
       sel.appendChild(group);
     }
     return sel;
@@ -576,14 +777,25 @@ const VisualQC = {
 
   profileControls() {
     const p = VisualQC.prof;
-    const by = Forms.seg([['ALL', 'All'], ['PROFILE_NUMBER', 'Profile'], ['CYCLE', 'Cycle']], p.by, (v) => VisualQC.setBy(v), 'sm');
+    const by = Forms.seg(
+      [
+        ['ALL', 'All'],
+        ['PROFILE_NUMBER', 'Profile'],
+        ['CYCLE', 'Cycle'],
+      ],
+      p.by,
+      (v) => VisualQC.setBy(v),
+      'sm',
+    );
     ['PROFILE_NUMBER', 'CYCLE'].forEach((name, k) => {
       if (VisualQC.variables().includes(name)) return;
       by.children[k + 1].disabled = true;
       by.children[k + 1].title = `Needs ${name}: run Find Profiles before this QC step`;
     });
     const nav = Forms.el('div', { class: 'visual-nav' + (p.by === 'ALL' ? ' hidden' : '') });
-    nav.appendChild(Forms.button('◀', { cls: 'sm', title: 'Previous (←)', onclick: () => VisualQC.step(-1) }));
+    nav.appendChild(
+      Forms.button('◀', { cls: 'sm', title: 'Previous (←)', onclick: () => VisualQC.step(-1) }),
+    );
     const id = Forms.el('input', { type: 'number', class: 'sm visual-nav-id', title: 'Jump to an id' });
     id.onchange = () => {
       const index = VisualQC.index[p.by];
@@ -633,9 +845,15 @@ const VisualQC = {
     const first = old && old.at.get(old.ids[p.pos]);
     p.by = by;
     p.pos = 0;
-    VisualQC.host().querySelector('.visual-nav').classList.toggle('hidden', by === 'ALL');
-    VisualQC.sel = null; VisualQC.hi = null;
-    if (by === 'ALL') { VisualQC.draw(); return; }
+    VisualQC.host()
+      .querySelector('.visual-nav')
+      .classList.toggle('hidden', by === 'ALL');
+    VisualQC.sel = null;
+    VisualQC.hi = null;
+    if (by === 'ALL') {
+      VisualQC.draw();
+      return;
+    }
     VisualQC.columns([by]).then((cols) => {
       const index = VisualQC.profileIndex(by, cols[by]);
       if (first) p.pos = Math.max(0, index.ids.indexOf(cols[by].values[first[0]]));
@@ -654,7 +872,12 @@ const VisualQC = {
         for (const c of columns) {
           const Arr = c.dtype === 'f8' ? Float64Array : Float32Array;
           const bytes = c.n * Arr.BYTES_PER_ELEMENT;
-          out[c.name] = { values: new Arr(buf.slice(off, off + bytes)), date: c.dtype === 'f8', stops: c.stops, categories: c.categories };
+          out[c.name] = {
+            values: new Arr(buf.slice(off, off + bytes)),
+            date: c.dtype === 'f8',
+            stops: c.stops,
+            categories: c.categories,
+          };
           off += bytes;
         }
         return out;
@@ -664,19 +887,22 @@ const VisualQC = {
         VisualQC.cols[n].catch(() => delete VisualQC.cols[n]);
       }
     }
-    return Promise.all(names.map((n) => VisualQC.cols[n])).then((list) => Object.fromEntries(names.map((n, i) => [n, list[i]])));
+    return Promise.all(names.map((n) => VisualQC.cols[n])).then((list) =>
+      Object.fromEntries(names.map((n, i) => [n, list[i]])),
+    );
   },
 
   sigma0(xlim, ylim) {
     const key = [...xlim, ...ylim].map((v) => v.toPrecision(4)).join(',');
-    if (!VisualQC.sigma[key]) VisualQC.sigma[key] = API.sigma0(xlim[0], xlim[1], ylim[0], ylim[1]).catch(() => []);
+    if (!VisualQC.sigma[key])
+      VisualQC.sigma[key] = API.sigma0(xlim[0], xlim[1], ylim[0], ylim[1]).catch(() => []);
     return VisualQC.sigma[key];
   },
 
   replayColumns(v) {
     const values = VisualQC.values();
     const names = [v + '_QC'];
-    for (const b of (values ? values.boxes : [])) {
+    for (const b of values ? values.boxes : []) {
       if (!b || !VisualQC.boxVars(b).includes(v)) continue;
       names.push(VisualQC.boxX(b), VisualQC.boxY(b));
       if (b.profiles) names.push('PROFILE_NUMBER');
@@ -687,9 +913,11 @@ const VisualQC = {
 
   // Mirrors visual_qc._box_mask; null when a column it needs is missing.
   boxHit(b, cols) {
-    const X = cols[VisualQC.boxX(b)], Y = cols[VisualQC.boxY(b)];
+    const X = cols[VisualQC.boxX(b)],
+      Y = cols[VisualQC.boxY(b)];
     if (!X || !Y) return null;
-    const x = X.values, y = Y.values;
+    const x = X.values,
+      y = Y.values;
     const scope = b.profiles ? cols.PROFILE_NUMBER : b.cycles ? cols.CYCLE : null;
     const ids = (b.profiles || b.cycles || []).map(Number);
     const valid = (i) => isFinite(x[i]) && isFinite(y[i]) && (!scope || ids.includes(scope.values[i]));
@@ -703,18 +931,30 @@ const VisualQC = {
     if (b.x.length === 1) {
       const key = JSON.stringify(b);
       if (!(key in VisualQC.nearest)) {
-        const px = bound(b.x[0], X), py = bound(b.y[0], Y);
-        let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+        const px = bound(b.x[0], X),
+          py = bound(b.y[0], Y);
+        let x0 = Infinity,
+          x1 = -Infinity,
+          y0 = Infinity,
+          y1 = -Infinity;
         for (let i = 0; i < x.length; i++) {
           if (!valid(i)) continue;
-          x0 = Math.min(x0, x[i]); x1 = Math.max(x1, x[i]); y0 = Math.min(y0, y[i]); y1 = Math.max(y1, y[i]);
+          x0 = Math.min(x0, x[i]);
+          x1 = Math.max(x1, x[i]);
+          y0 = Math.min(y0, y[i]);
+          y1 = Math.max(y1, y[i]);
         }
-        const sx = (x1 - x0) || 1, sy = (y1 - y0) || 1;
-        let best = -1, bestD = Infinity;
+        const sx = x1 - x0 || 1,
+          sy = y1 - y0 || 1;
+        let best = -1,
+          bestD = Infinity;
         for (let i = 0; i < x.length; i++) {
           if (!valid(i)) continue;
           const d = ((x[i] - px) / sx) ** 2 + ((y[i] - py) / sy) ** 2;
-          if (d < bestD) { bestD = d; best = i; }
+          if (d < bestD) {
+            bestD = d;
+            best = i;
+          }
         }
         VisualQC.nearest[key] = best;
       }
@@ -736,8 +976,12 @@ const VisualQC = {
     const keys = boxes.map((b) => JSON.stringify(b));
     const src = cols[v + '_QC'];
     let cache = VisualQC.flagCache;
-    const reuse = cache && cache.v === v && cache.src === src
-      && cache.keys.length <= keys.length && cache.keys.every((k, j) => k === keys[j]);
+    const reuse =
+      cache &&
+      cache.v === v &&
+      cache.src === src &&
+      cache.keys.length <= keys.length &&
+      cache.keys.every((k, j) => k === keys[j]);
     if (!reuse) cache = VisualQC.flagCache = { v, src, keys: [], flags: Uint8Array.from(src.values) };
     const flags = cache.flags;
     for (let j = cache.keys.length; j < boxes.length; j++) {
@@ -759,16 +1003,20 @@ const VisualQC = {
     if (!col.range) {
       const step = Math.max(1, Math.floor(col.values.length / 200000));
       const sample = [];
-      for (let i = 0; i < col.values.length; i += step) if (isFinite(col.values[i])) sample.push(col.values[i]);
+      for (let i = 0; i < col.values.length; i += step)
+        if (isFinite(col.values[i])) sample.push(col.values[i]);
       sample.sort((a, b) => a - b);
-      col.range = sample.length ? [sample[Math.floor(sample.length * 0.01)], sample[Math.floor((sample.length - 1) * 0.99)]] : null;
+      col.range = sample.length
+        ? [sample[Math.floor(sample.length * 0.01)], sample[Math.floor((sample.length - 1) * 0.99)]]
+        : null;
     }
     return col.range;
   },
 
   // Padded [lo, hi] of arr, over the samples in idx (all when null).
   limits(arr, idx) {
-    let lo = Infinity, hi = -Infinity;
+    let lo = Infinity,
+      hi = -Infinity;
     const n = idx ? idx.length : arr.length;
     for (let k = 0; k < n; k++) {
       const v = arr[idx ? idx[k] : k];
@@ -783,7 +1031,8 @@ const VisualQC = {
   // The chart wants Float32, with dates as seconds since the column's first sample; worked out once per column.
   chartValues(col) {
     if (!col.chart) {
-      let t0 = 0, values = col.values;
+      let t0 = 0,
+        values = col.values;
       if (col.date) {
         t0 = values.find((v) => isFinite(v)) || 0;
         values = new Float32Array(col.values.length);
@@ -803,18 +1052,22 @@ const VisualQC = {
   async draw() {
     const stage = VisualQC.host().querySelector('.visual-stage');
     if (!stage) return;
-    const token = VisualQC.drawToken = (VisualQC.drawToken || 0) + 1;
+    const token = (VisualQC.drawToken = (VisualQC.drawToken || 0) + 1);
     const message = (text) => {
       VisualQC.loading(stage, null);
-      Plot.purge(stage); VisualQC.chart = null;
+      Plot.purge(stage);
+      VisualQC.chart = null;
       stage.innerHTML = `<div class="hint review-empty">${escapeHtml(text)}</div>`;
-      VisualQC.renderLegend({}); VisualQC.renderList();
+      VisualQC.renderLegend({});
+      VisualQC.renderList();
     };
     // Nothing picked to QC yet: still show a plain PRES vs time plot.
     const plain = !VisualQC.group();
-    const p = VisualQC.prof, view = plain ? 'time' : VisualQC.view;
+    const p = VisualQC.prof,
+      view = plain ? 'time' : VisualQC.view;
     const { x: xv, y: yv } = plain ? { x: VisualQC.xVar(), y: VisualQC.yVar() } : VisualQC.axes();
-    const cv = plain ? null : VisualQC.colourBy(), fv = plain ? null : VisualQC.flagVar();
+    const cv = plain ? null : VisualQC.colourBy(),
+      fv = plain ? null : VisualQC.flagVar();
     const single = view === 'profile' && p.by !== 'ALL';
     const names = [xv, yv, ...(plain ? [] : VisualQC.replayColumns(fv))];
     if (single) names.push(p.by);
@@ -828,30 +1081,44 @@ const VisualQC = {
       return;
     }
     if (token !== VisualQC.drawToken) return; // superseded by a later change
-    if (!cols[xv] || !cols[yv]) { message(`No ${yv} or ${xv} in the data.`); return; }
+    if (!cols[xv] || !cols[yv]) {
+      message(`No ${yv} or ${xv} in the data.`);
+      return;
+    }
     // Let the overlay paint before the loops below hold up the page.
     await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve)));
     if (token !== VisualQC.drawToken) return;
 
-    let idx = null, id = null, index = null;
+    let idx = null,
+      id = null,
+      index = null;
     const label = p.by === 'CYCLE' ? 'Cycle' : 'Profile';
     if (single) {
       index = VisualQC.profileIndex(p.by, cols[p.by]);
-      if (!index.ids.length) { message(`No ${label.toLowerCase()}s to show.`); return; }
+      if (!index.ids.length) {
+        message(`No ${label.toLowerCase()}s to show.`);
+        return;
+      }
       p.pos = Math.min(p.pos, index.ids.length - 1);
       id = index.ids[p.pos];
       idx = index.at.get(id);
       const bar = VisualQC.host().querySelector('.visual-plots');
       const idInput = bar && bar.querySelector('.visual-nav-id');
-      if (idInput) { idInput.value = id; bar.querySelector('.visual-nav-of').textContent = `${p.pos + 1} of ${index.ids.length}`; }
+      if (idInput) {
+        idInput.value = id;
+        bar.querySelector('.visual-nav-of').textContent = `${p.pos + 1} of ${index.ids.length}`;
+      }
     }
 
-    const X = VisualQC.chartValues(cols[xv]), Y = VisualQC.chartValues(cols[yv]);
-    const xs = X.values, ys = Y.values;
+    const X = VisualQC.chartValues(cols[xv]),
+      Y = VisualQC.chartValues(cols[yv]);
+    const xs = X.values,
+      ys = Y.values;
     const xdate = cols[xv].date;
     const xlim = idx ? VisualQC.limits(xs, idx) : X.lim;
     const ylim = idx ? VisualQC.limits(ys, idx) : Y.lim;
-    const traces = [], data = {};
+    const traces = [],
+      data = {};
     const add = (x, y, t, rgba) => {
       data['0_' + traces.length] = { x, y, rgba: rgba || null };
       traces.push({ mode: 'markers', size: 4, opacity: 1, ...t });
@@ -860,13 +1127,35 @@ const VisualQC = {
     if (view === 'ts') {
       const levels = await VisualQC.sigma0(xlim, ylim);
       if (token !== VisualQC.drawToken) return;
-      const lx = [], ly = [];
-      for (const { lines } of levels) for (const line of lines) { for (const [s, t] of line) { lx.push(s); ly.push(t); } lx.push(NaN); ly.push(NaN); }
+      const lx = [],
+        ly = [];
+      for (const { lines } of levels)
+        for (const line of lines) {
+          for (const [s, t] of line) {
+            lx.push(s);
+            ly.push(t);
+          }
+          lx.push(NaN);
+          ly.push(NaN);
+        }
       data['0_' + traces.length] = { x: Float32Array.from(lx), y: Float32Array.from(ly), rgba: null };
-      traces.push({ mode: 'lines', color: '#c3c9d0', opacity: 1, width: 1, dash: 'solid', size: 0, label: '_sigma0' });
+      traces.push({
+        mode: 'lines',
+        color: '#c3c9d0',
+        opacity: 1,
+        width: 1,
+        dash: 'solid',
+        size: 0,
+        label: '_sigma0',
+      });
     }
-    const around = single ? [index.ids[p.pos - 1], index.ids[p.pos + 1]].filter((v) => v !== undefined).flatMap((v) => index.at.get(v)) : [];
-    if (around.length) add(subset(around, xs), subset(around, ys), { label: 'neighbours', color: '#d0d4d8', size: 3 });
+    const around = single
+      ? [index.ids[p.pos - 1], index.ids[p.pos + 1]]
+          .filter((v) => v !== undefined)
+          .flatMap((v) => index.at.get(v))
+      : [];
+    if (around.length)
+      add(subset(around, xs), subset(around, ys), { label: 'neighbours', color: '#d0d4d8', size: 3 });
 
     // One pass to count, one to fill typed arrays: 10M+ points are too many for array filter/map.
     const values = VisualQC.values();
@@ -876,8 +1165,10 @@ const VisualQC = {
     const col = cv && cols[cv];
     const cvals = col ? col.values : null;
     const n = idx ? idx.length : xs.length;
-    const counts = {}, perFlag = {};
-    let nNone = 0, nWith = 0;
+    const counts = {},
+      perFlag = {};
+    let nNone = 0,
+      nWith = 0;
     for (let k = 0; k < n; k++) {
       const i = idx ? idx[k] : k;
       if (!isFinite(xs[i]) || !isFinite(ys[i])) continue;
@@ -894,15 +1185,20 @@ const VisualQC = {
     let cbar = null;
     if (!col) {
       const out = {};
-      for (const f in perFlag) out[f] = { x: new Float32Array(perFlag[f]), y: new Float32Array(perFlag[f]), k: 0 };
+      for (const f in perFlag)
+        out[f] = { x: new Float32Array(perFlag[f]), y: new Float32Array(perFlag[f]), k: 0 };
       for (let k = 0; k < n; k++) {
         const i = idx ? idx[k] : k;
         if (!isFinite(xs[i]) || !isFinite(ys[i])) continue;
         const o = out[flagAt(i)];
         if (!o) continue;
-        o.x[o.k] = xs[i]; o.y[o.k] = ys[i]; o.k++;
+        o.x[o.k] = xs[i];
+        o.y[o.k] = ys[i];
+        o.k++;
       }
-      for (const f of Object.keys(out).map(Number).sort((a, b) => a - b)) {
+      for (const f of Object.keys(out)
+        .map(Number)
+        .sort((a, b) => a - b)) {
         const meaning = (VisualQC.FLAGS.find(([m]) => m === f) || [f, ''])[1];
         add(out[f].x, out[f].y, { label: plain ? yv : `${f} (${meaning})`, color: VisualQC.COLOURS[f] });
       }
@@ -910,7 +1206,12 @@ const VisualQC = {
       const hexRGB = (h) => [1, 3, 5].map((j) => parseInt(h.slice(j, j + 2), 16));
       const grey = hexRGB('#d0d4d8');
       // Categorical (e.g. SCI_PHASE): a fixed colour per category, as its own step plots it.
-      const byValue = new Map((col.categories || []).map(([v, meaning, colour]) => [v, { label: `${v} ${meaning}`, colour, rgb: hexRGB(colour) }]));
+      const byValue = new Map(
+        (col.categories || []).map(([v, meaning, colour]) => [
+          v,
+          { label: `${v} ${meaning}`, colour, rgb: hexRGB(colour) },
+        ]),
+      );
       const seen = new Set();
       let colourOf;
       if (col.categories) {
@@ -924,9 +1225,16 @@ const VisualQC = {
       } else {
         const range = VisualQC.colourRange(col);
         const stops = col.stops.map(hexRGB);
-        const lo = range ? range[0] : 0, span = range ? (range[1] - range[0]) || 1 : 1;
+        const lo = range ? range[0] : 0,
+          span = range ? range[1] - range[0] || 1 : 1;
         colourOf = (v) => stops[Math.round(Math.max(0, Math.min(1, (v - lo) / span)) * (stops.length - 1))];
-        cbar = { label: cv, lo: range ? range[0] : null, hi: range ? range[1] : null, stops: col.stops, missing: nNone > 0 };
+        cbar = {
+          label: cv,
+          lo: range ? range[0] : null,
+          hi: range ? range[1] : null,
+          stops: col.stops,
+          missing: nNone > 0,
+        };
       }
       const none = { x: new Float32Array(nNone), y: new Float32Array(nNone), k: 0 };
       const withValue = { x: new Float32Array(nWith), y: new Float32Array(nWith), k: 0 };
@@ -935,30 +1243,66 @@ const VisualQC = {
         const i = idx ? idx[k] : k;
         if (!isFinite(xs[i]) || !isFinite(ys[i])) continue;
         if (VisualQC.hidden.has(flagAt(i))) continue;
-        if (!isFinite(cvals[i])) { none.x[none.k] = xs[i]; none.y[none.k] = ys[i]; none.k++; continue; }
-        const c = colourOf(cvals[i]), o = withValue.k * 4;
-        rgba[o] = c[0]; rgba[o + 1] = c[1]; rgba[o + 2] = c[2]; rgba[o + 3] = 255;
-        withValue.x[withValue.k] = xs[i]; withValue.y[withValue.k] = ys[i]; withValue.k++;
+        if (!isFinite(cvals[i])) {
+          none.x[none.k] = xs[i];
+          none.y[none.k] = ys[i];
+          none.k++;
+          continue;
+        }
+        const c = colourOf(cvals[i]),
+          o = withValue.k * 4;
+        rgba[o] = c[0];
+        rgba[o + 1] = c[1];
+        rgba[o + 2] = c[2];
+        rgba[o + 3] = 255;
+        withValue.x[withValue.k] = xs[i];
+        withValue.y[withValue.k] = ys[i];
+        withValue.k++;
       }
-      if (col.categories) cbar.categories = [...byValue].filter(([v]) => seen.has(v)).map(([, c]) => [c.label, c.colour]);
+      if (col.categories)
+        cbar.categories = [...byValue].filter(([v]) => seen.has(v)).map(([, c]) => [c.label, c.colour]);
       if (nNone) add(none.x, none.y, { label: '_none', color: '#d0d4d8', size: 3 });
       add(withValue.x, withValue.y, { label: '_fill' }, rgba);
     }
 
     const title = {
-      time: plain ? `${yv} vs time` : cv ? `${yv} vs time · coloured by ${cv}` : `${yv} vs time · coloured by ${fv} flag`,
+      time: plain
+        ? `${yv} vs time`
+        : cv
+          ? `${yv} vs time · coloured by ${cv}`
+          : `${yv} vs time · coloured by ${fv} flag`,
       profile: single ? `${label} ${id} · ${n} samples` : `${yv} vs ${xv} · all profiles`,
       variable: `${yv} vs time · coloured by flag`,
-      ts: cv ? `T–S · coloured by ${cv} · grey lines: σ0 (kg m⁻³)` : `T–S · coloured by ${fv} flag · grey lines: σ0 (kg m⁻³)`,
+      ts: cv
+        ? `T–S · coloured by ${cv} · grey lines: σ0 (kg m⁻³)`
+        : `T–S · coloured by ${fv} flag · grey lines: σ0 (kg m⁻³)`,
       map: cv ? `Position · coloured by ${cv}` : `Position · coloured by ${fv} flag`,
     }[view];
     const spec = {
-      suptitle: '', t0: X.t0, points: n,
-      panels: [{
-        title, xlabel: xdate ? 'Time' : xv, ylabel: yv, xdate, ydate: false,
-        xlim, ylim: /^(PRES|DEPTH)/.test(yv) ? [ylim[1], ylim[0]] : ylim, xscale: 'linear', yscale: 'linear',
-        legend: false, cell: null, share_x: 0, share_y: 0, traces, reflines: [], top_axis: null, cbar,
-      }],
+      suptitle: '',
+      t0: X.t0,
+      points: n,
+      panels: [
+        {
+          title,
+          xlabel: xdate ? 'Time' : xv,
+          ylabel: yv,
+          xdate,
+          ydate: false,
+          xlim,
+          ylim: /^(PRES|DEPTH)/.test(yv) ? [ylim[1], ylim[0]] : ylim,
+          xscale: 'linear',
+          yscale: 'linear',
+          legend: false,
+          cell: null,
+          share_x: 0,
+          share_y: 0,
+          traces,
+          reflines: [],
+          top_axis: null,
+          cbar,
+        },
+      ],
     };
     const old = VisualQC.chart;
     const key = [view, p.by, id, xv, yv].join('|');
@@ -974,7 +1318,10 @@ const VisualQC = {
     });
     stage._chart = chart;
     chart.key = key;
-    if (keep) { chart.panels[0].view = keep; chart.draw(); }
+    if (keep) {
+      chart.panels[0].view = keep;
+      chart.draw();
+    }
     VisualQC.zoomHint(stage, chart);
     VisualQC.chart = chart;
     VisualQC.syncOverlays();
@@ -986,10 +1333,12 @@ const VisualQC = {
     if (e.target.closest('input, select, textarea, .CodeMirror')) return;
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
       e.preventDefault();
-      if (e.shiftKey) VisualQC.redo(); else VisualQC.undo();
+      if (e.shiftKey) VisualQC.redo();
+      else VisualQC.undo();
       return;
     }
-    if (VisualQC.view !== 'profile' || VisualQC.prof.by === 'ALL' || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (VisualQC.view !== 'profile' || VisualQC.prof.by === 'ALL' || e.metaKey || e.ctrlKey || e.altKey)
+      return;
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       e.preventDefault();
       VisualQC.step(e.key === 'ArrowLeft' ? -1 : 1);
@@ -998,7 +1347,10 @@ const VisualQC = {
 
   // The chart uses seconds since spec.t0 on a date axis and log10 on a log axis.
   toChart(v, isDate, log) {
-    if (isDate) { const ms = Date.parse(v); return isNaN(ms) ? NaN : (ms - VisualQC.chart.spec.t0) / 1000; }
+    if (isDate) {
+      const ms = Date.parse(v);
+      return isNaN(ms) ? NaN : (ms - VisualQC.chart.spec.t0) / 1000;
+    }
     const n = Number(v);
     return log ? Math.log10(n) : n;
   },
@@ -1016,11 +1368,17 @@ const VisualQC = {
     const out = [];
     VisualQC.shownBoxes().forEach(({ b, i }) => {
       if (!Array.isArray(b.x) || !Array.isArray(b.y)) return;
-      const x = b.x.map((v) => VisualQC.toChart(v, xd, xl)), y = b.y.map((v) => VisualQC.toChart(v, yd, yl));
+      const x = b.x.map((v) => VisualQC.toChart(v, xd, xl)),
+        y = b.y.map((v) => VisualQC.toChart(v, yd, yl));
       if (![...x, ...y].every(isFinite)) return;
       out.push({
-        index: i, box: b, point: x.length === 1,
-        x0: Math.min(...x), x1: Math.max(...x), y0: Math.min(...y), y1: Math.max(...y),
+        index: i,
+        box: b,
+        point: x.length === 1,
+        x0: Math.min(...x),
+        x1: Math.max(...x),
+        y0: Math.min(...y),
+        y1: Math.max(...y),
       });
     });
     return out;
@@ -1042,12 +1400,16 @@ const VisualQC = {
   syncOverlays() {
     const chart = VisualQC.chart;
     if (!chart) return;
-    chart.setOverlays(VisualQC.chartBoxes().filter((c) => !VisualQC.hidden.has(c.box.flag)).map((c) => ({
-      ...c,
-      color: VisualQC.border(c.box.flag),
-      label: `${c.box.flag}${(c.box.mode || 'inside') === 'outside' ? ' outside' : ''}${c.box.override === false ? ' merge' : ''}`,
-      hi: c.index === VisualQC.hi || c.index === VisualQC.sel,
-    })));
+    chart.setOverlays(
+      VisualQC.chartBoxes()
+        .filter((c) => !VisualQC.hidden.has(c.box.flag))
+        .map((c) => ({
+          ...c,
+          color: VisualQC.border(c.box.flag),
+          label: `${c.box.flag}${(c.box.mode || 'inside') === 'outside' ? ' outside' : ''}${c.box.override === false ? ' merge' : ''}`,
+          hi: c.index === VisualQC.hi || c.index === VisualQC.sel,
+        })),
+    );
   },
 
   // {x0, x1, y0, y1} is a box; {x0, y0} alone is a point (nearest sample).
@@ -1060,12 +1422,17 @@ const VisualQC = {
     const point = rect.x1 === undefined;
     if (point) {
       const burst = VisualQC.clicks && Date.now() - VisualQC.clicks.at < 600;
-      VisualQC.clicks = { at: Date.now(), before: burst ? VisualQC.clicks.before : JSON.stringify(values.boxes) };
+      VisualQC.clicks = {
+        at: Date.now(),
+        before: burst ? VisualQC.clicks.before : JSON.stringify(values.boxes),
+      };
     }
     const box = {
-      x: point ? [VisualQC.fromChart(rect.x0, xd, xl)]
+      x: point
+        ? [VisualQC.fromChart(rect.x0, xd, xl)]
         : [VisualQC.fromChart(rect.x0, xd, xl), VisualQC.fromChart(rect.x1, xd, xl)],
-      y: point ? [VisualQC.fromChart(rect.y0, yd, yl)]
+      y: point
+        ? [VisualQC.fromChart(rect.y0, yd, yl)]
         : [VisualQC.fromChart(rect.y0, yd, yl), VisualQC.fromChart(rect.y1, yd, yl)],
       flag: VisualQC.tool.flag,
       mode: VisualQC.tool.mode,
@@ -1085,7 +1452,8 @@ const VisualQC = {
     const values = VisualQC.values();
     if (!values || !values.boxes[index]) return;
     values.boxes.splice(index, 1);
-    VisualQC.hi = null; VisualQC.sel = null;
+    VisualQC.hi = null;
+    VisualQC.sel = null;
     VisualQC.commit();
   },
 
@@ -1112,7 +1480,10 @@ const VisualQC = {
 
   // Re-runs first if needed; Run.showPause continues once that pause lands.
   applyAndContinue() {
-    if (!VisualQC.dirty) { Run.continueRun(); return; }
+    if (!VisualQC.dirty) {
+      Run.continueRun();
+      return;
+    }
     VisualQC.apply(true);
   },
 
@@ -1138,7 +1509,9 @@ const VisualQC = {
     const values = VisualQC.values();
     const boxes = values ? values.boxes : [];
     const here = new Set(VisualQC.chart ? VisualQC.shownBoxes().map(({ i }) => i) : []);
-    const mine = boxes.map((b, i) => ({ b, i })).filter(({ b }) => b && VisualQC.inGroup(b, VisualQC.group()));
+    const mine = boxes
+      .map((b, i) => ({ b, i }))
+      .filter(({ b }) => b && VisualQC.inGroup(b, VisualQC.group()));
     if (!mine.length) {
       const hint = document.createElement('div');
       hint.className = 'hint';
@@ -1149,20 +1522,35 @@ const VisualQC = {
     const short = (v) => {
       const s = String(v);
       const m = s.match(/^\d{4}-(\d\d-\d\d)T(\d\d:\d\d)/);
-      return m ? `${m[1]} ${m[2]}` : (isFinite(+s) ? String(+(+s).toPrecision(4)) : s);
+      return m ? `${m[1]} ${m[2]}` : isFinite(+s) ? String(+(+s).toPrecision(4)) : s;
     };
     mine.forEach(({ b, i }) => {
       const row = document.createElement('div');
-      row.className = 'visual-row' + (i === VisualQC.hi ? ' hi' : '') + (i === VisualQC.sel ? ' sel' : '') + (here.has(i) ? '' : ' elsewhere');
+      row.className =
+        'visual-row' +
+        (i === VisualQC.hi ? ' hi' : '') +
+        (i === VisualQC.sel ? ' sel' : '') +
+        (here.has(i) ? '' : ' elsewhere');
       row.style.setProperty('--fc', VisualQC.COLOURS[b.flag] || '#333');
       // Later boxes win on overlap, so order is part of the config.
       row.draggable = true;
-      row.ondragstart = (e) => { VisualQC.drag = i; e.dataTransfer.effectAllowed = 'move'; row.classList.add('dragging'); };
-      row.ondragend = () => { VisualQC.drag = null; row.classList.remove('dragging'); };
-      row.ondragover = (e) => { e.preventDefault(); row.classList.add('over'); };
+      row.ondragstart = (e) => {
+        VisualQC.drag = i;
+        e.dataTransfer.effectAllowed = 'move';
+        row.classList.add('dragging');
+      };
+      row.ondragend = () => {
+        VisualQC.drag = null;
+        row.classList.remove('dragging');
+      };
+      row.ondragover = (e) => {
+        e.preventDefault();
+        row.classList.add('over');
+      };
       row.ondragleave = () => row.classList.remove('over');
       row.ondrop = (e) => {
-        e.preventDefault(); row.classList.remove('over');
+        e.preventDefault();
+        row.classList.remove('over');
         const from = VisualQC.drag;
         if (from === null || from === i) return;
         const [moved] = boxes.splice(from, 1);
@@ -1170,45 +1558,96 @@ const VisualQC = {
         VisualQC.sel = null;
         VisualQC.commit();
       };
-      row.onmouseenter = () => { VisualQC.hi = i; VisualQC.syncOverlays(); };
-      row.onmouseleave = () => { VisualQC.hi = null; VisualQC.syncOverlays(); };
+      row.onmouseenter = () => {
+        VisualQC.hi = i;
+        VisualQC.syncOverlays();
+      };
+      row.onmouseleave = () => {
+        VisualQC.hi = null;
+        VisualQC.syncOverlays();
+      };
       row.onclick = (e) => {
         if (e.target.closest('.visual-row-edit, .visual-row-rm')) return;
-        if (!here.has(i)) { VisualQC.goToBox(i); return; }
+        if (!here.has(i)) {
+          VisualQC.goToBox(i);
+          return;
+        }
         VisualQC.sel = VisualQC.sel === i ? null : i;
-        VisualQC.renderList(); VisualQC.syncOverlays();
+        VisualQC.renderList();
+        VisualQC.syncOverlays();
       };
 
       const head = document.createElement('div');
       head.className = 'visual-row-head';
       const sw = document.createElement('span');
-      sw.className = 'sw'; sw.textContent = b.flag;
+      sw.className = 'sw';
+      sw.textContent = b.flag;
       head.appendChild(sw);
       const txt = document.createElement('span');
       txt.className = 'visual-row-text';
       const point = b.x.length === 1;
-      txt.textContent = (point ? 'point ' : (b.mode === 'outside' ? 'outside ' : '')) +
+      txt.textContent =
+        (point ? 'point ' : b.mode === 'outside' ? 'outside ' : '') +
         (point ? `${short(b.x[0])}, ${short(b.y[0])}` : `${short(b.y[0])}–${short(b.y[1])}`) +
-        (b.profiles ? ` · profile ${b.profiles.join(', ')}` : b.cycles ? ` · cycle ${b.cycles.join(', ')}` : '');
+        (b.profiles
+          ? ` · profile ${b.profiles.join(', ')}`
+          : b.cycles
+            ? ` · cycle ${b.cycles.join(', ')}`
+            : '');
       head.appendChild(txt);
-      head.appendChild(Forms.el('span', { class: 'visual-row-view', textContent: VisualQC.boxView(b).label }));
-      head.appendChild(Forms.button('×', { cls: 'icon-btn reveal visual-row-rm', title: 'remove this box',
-        onclick: (e) => { e.stopPropagation(); VisualQC.remove(i); } }));
+      head.appendChild(
+        Forms.el('span', { class: 'visual-row-view', textContent: VisualQC.boxView(b).label }),
+      );
+      head.appendChild(
+        Forms.button('×', {
+          cls: 'icon-btn reveal visual-row-rm',
+          title: 'remove this box',
+          onclick: (e) => {
+            e.stopPropagation();
+            VisualQC.remove(i);
+          },
+        }),
+      );
       row.appendChild(head);
 
       if (i === VisualQC.sel) {
         const edit = document.createElement('div');
         edit.className = 'visual-row-edit';
-        edit.appendChild(Forms.select(VisualQC.FLAGS.map(([f, m]) => [f, `${f} ${m}`]), b.flag,
-          (v) => { b.flag = Number(v); VisualQC.commit(); }, { cls: 'sm' }));
-        edit.appendChild(Forms.select(['inside', 'outside'], b.mode || 'inside',
-          (v) => { b.mode = v; VisualQC.commit(); }, { cls: 'sm' }));
+        edit.appendChild(
+          Forms.select(
+            VisualQC.FLAGS.map(([f, m]) => [f, `${f} ${m}`]),
+            b.flag,
+            (v) => {
+              b.flag = Number(v);
+              VisualQC.commit();
+            },
+            { cls: 'sm' },
+          ),
+        );
+        edit.appendChild(
+          Forms.select(
+            ['inside', 'outside'],
+            b.mode || 'inside',
+            (v) => {
+              b.mode = v;
+              VisualQC.commit();
+            },
+            { cls: 'sm' },
+          ),
+        );
         const ov = document.createElement('label');
-        ov.className = 'visual-row-ov'; ov.title = 'override existing flags';
+        ov.className = 'visual-row-ov';
+        ov.title = 'override existing flags';
         const ovc = document.createElement('input');
-        ovc.type = 'checkbox'; ovc.checked = b.override !== false;
-        ovc.onchange = () => { if (ovc.checked) delete b.override; else b.override = false; VisualQC.commit(); };
-        ov.appendChild(ovc); ov.appendChild(document.createTextNode('override'));
+        ovc.type = 'checkbox';
+        ovc.checked = b.override !== false;
+        ovc.onchange = () => {
+          if (ovc.checked) delete b.override;
+          else b.override = false;
+          VisualQC.commit();
+        };
+        ov.appendChild(ovc);
+        ov.appendChild(document.createTextNode('override'));
         edit.appendChild(ov);
         const detail = document.createElement('div');
         detail.className = 'visual-row-detail';
@@ -1223,4 +1662,6 @@ const VisualQC = {
 
 document.addEventListener('keydown', VisualQC.onKey);
 // Unapplied boxes live only in this page.
-window.addEventListener('beforeunload', (e) => { if (VisualQC.isActive() && VisualQC.dirty) e.preventDefault(); });
+window.addEventListener('beforeunload', (e) => {
+  if (VisualQC.isActive() && VisualQC.dirty) e.preventDefault();
+});

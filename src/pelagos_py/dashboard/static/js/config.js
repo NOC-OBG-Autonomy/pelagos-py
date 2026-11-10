@@ -70,11 +70,16 @@ const Config = {
     const isBar = (l) => /^\s*#\s*[=~-]{5,}\s*$/.test(l || '');
     const oneLine = /^\s*#\s*[-=]{4,}\s*(\S.*?)\s*[-=]{4,}\s*$/;
     const found = [];
-    let inSteps = false, stepsIndent = null, count = 0;
+    let inSteps = false,
+      stepsIndent = null,
+      count = 0;
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      if (!inSteps) { if (/^steps:\s*$/.test(line)) inSteps = true; continue; }
+      if (!inSteps) {
+        if (/^steps:\s*$/.test(line)) inSteps = true;
+        continue;
+      }
       const m = line.match(/^(\s*)-\s/);
       if (m) {
         if (stepsIndent === null) stepsIndent = m[1].length;
@@ -82,10 +87,16 @@ const Config = {
         continue;
       }
       const one = line.match(oneLine);
-      if (one && /[A-Za-z0-9]/.test(one[1])) { found.push({ title: one[1], index: count }); continue; }
+      if (one && /[A-Za-z0-9]/.test(one[1])) {
+        found.push({ title: one[1], index: count });
+        continue;
+      }
       if (isBar(line) && !isBar(lines[i + 1]) && isBar(lines[i + 2])) {
         const t = (lines[i + 1] || '').match(/^\s*#\s*(\S.*?)\s*$/);
-        if (t) { found.push({ title: t[1], index: count }); i += 2; }
+        if (t) {
+          found.push({ title: t[1], index: count });
+          i += 2;
+        }
       }
     }
     return found;
@@ -111,7 +122,7 @@ const Config = {
       name: canonical,
       def,
       values: initValues(def),
-      diagnostics: (s.diagnostics === 'all' || Array.isArray(s.diagnostics)) ? s.diagnostics : !!s.diagnostics,
+      diagnostics: s.diagnostics === 'all' || Array.isArray(s.diagnostics) ? s.diagnostics : !!s.diagnostics,
       collapsed: true,
     };
     const params = s.parameters || {};
@@ -170,8 +181,8 @@ const Config = {
   sizes: {},
   current: null,
   selected: '',
-  loading: false,   // so loading isn't seen as an edit
-  picks: 0,         // a finished download only opens if nothing else was picked since
+  loading: false, // so loading isn't seen as an edit
+  picks: 0, // a finished download only opens if nothing else was picked since
 
   isLocked(name) {
     return !!name && Config.locked.includes(Config.withExt(name));
@@ -190,7 +201,7 @@ const Config = {
     return `custom_run_${n + 1}`;
   },
 
-  builtFor: null,   // data file the pipeline was generated for, until saved
+  builtFor: null, // data file the pipeline was generated for, until saved
   savedText: '',
   updateStatus() {
     const el = document.getElementById('config-status');
@@ -208,7 +219,9 @@ const Config = {
   // Visual QC boxes belong to one data file, so offer to clear them when it changes.
   dataFile: null,
   checkDataFile() {
-    const load = STATE.pipeline.items.find((i) => (i.def.parameters || []).some((p) => p.name === 'file_path'));
+    const load = STATE.pipeline.items.find((i) =>
+      (i.def.parameters || []).some((p) => p.name === 'file_path'),
+    );
     const path = (load && load.values.file_path) || '';
     const previous = Config.dataFile;
     Config.dataFile = path;
@@ -218,14 +231,17 @@ const Config = {
       .map((i) => (i.values.qc_settings || {})['visual qc'])
       .filter((t) => t && (t.boxes || []).length);
     if (!visual.length) return;
-    Config.notice('Visual QC boxes were drawn on the previous data file.', { sticky: true, action: {
-      label: 'Clear boxes',
-      onClick: () => {
-        for (const t of visual) t.boxes = [];
-        Config.notice('');
-        Defaults.commit();
+    Config.notice('Visual QC boxes were drawn on the previous data file.', {
+      sticky: true,
+      action: {
+        label: 'Clear boxes',
+        onClick: () => {
+          for (const t of visual) t.boxes = [];
+          Config.notice('');
+          Defaults.commit();
+        },
       },
-    } });
+    });
   },
 
   setCurrent(name) {
@@ -252,8 +268,8 @@ const Config = {
     btn.title = !typed
       ? 'Enter a name to save this pipeline'
       : overwriting
-      ? `Save changes to ${Config.current}`
-      : `Save as a new pipeline: ${Config.withExt(typed)}`;
+        ? `Save changes to ${Config.current}`
+        : `Save as a new pipeline: ${Config.withExt(typed)}`;
   },
 
   updateControls() {
@@ -262,7 +278,8 @@ const Config = {
     const chosen = Config.selected;
     del.disabled = !chosen || Config.isLocked(chosen) || RunLock.running;
     if (RunLock.running) del.title = 'Locked while the pipeline is running';
-    else if (Config.isLocked(chosen)) del.title = `${chosen} is a locked reference config and cannot be deleted`;
+    else if (Config.isLocked(chosen))
+      del.title = `${chosen} is a locked reference config and cannot be deleted`;
     else del.title = 'Delete the selected config';
   },
 
@@ -275,8 +292,12 @@ const Config = {
     syncingFromBuilder = false;
     Config.dataFile = null;
     Config.builtFor = null;
-    try { Config.fromYAML(text); refreshYAML(); }
-    catch (e) { Config.notice('Loaded as raw YAML — the builder could not read it: ' + e.message); }
+    try {
+      Config.fromYAML(text);
+      refreshYAML();
+    } catch (e) {
+      Config.notice('Loaded as raw YAML — the builder could not read it: ' + e.message);
+    }
     Config.savedText = editor.getValue();
     Config.loading = false;
     Config.updateStatus();
@@ -293,7 +314,9 @@ const Config = {
     Config.notice('');
     if (build) {
       await Build.start({
-        name, filePath: build.file_path, description: build.description,
+        name,
+        filePath: build.file_path,
+        description: build.description,
       });
     } else {
       Config.apply(yaml_content);
@@ -322,8 +345,12 @@ const Config = {
       const locked = Config.locked.includes(name);
       const needsDownload = demo && !Config.downloaded.includes(name);
       const li = document.createElement('li');
-      li.className = 'cfg-opt' + (locked ? ' ref' : '') + (demo ? ' demo' : '') +
-        (needsDownload ? ' needs-download' : '') + (name === Config.selected || unsaved ? ' selected' : '');
+      li.className =
+        'cfg-opt' +
+        (locked ? ' ref' : '') +
+        (demo ? ' demo' : '') +
+        (needsDownload ? ' needs-download' : '') +
+        (name === Config.selected || unsaved ? ' selected' : '');
       li.setAttribute('role', 'option');
       if (title) li.title = title;
       if (needsDownload) {
@@ -348,8 +375,9 @@ const Config = {
       li.addEventListener('click', async () => {
         Config.closePicker();
         if (unsaved) return;
-        try { await Config.load(name); }
-        catch (e) {
+        try {
+          await Config.load(name);
+        } catch (e) {
           Config.notice('Could not load ' + name + ': ' + e.message, { sticky: true, err: true });
         }
       });
@@ -366,7 +394,7 @@ const Config = {
     const LAST_RUN = '_last_run.yaml';
     const referenceNames = Config.known.filter((n) => Config.reference.includes(n));
     const otherNames = Config.known.filter(
-      (n) => !Config.demo.includes(n) && !Config.reference.includes(n) && n !== LAST_RUN
+      (n) => !Config.demo.includes(n) && !Config.reference.includes(n) && n !== LAST_RUN,
     );
     const unsaved = Config.current && !Config.known.includes(Config.current);
 
@@ -382,8 +410,13 @@ const Config = {
     }
     if (Config.known.includes(LAST_RUN)) {
       group('Automatic');
-      menu.appendChild(makeOpt(LAST_RUN, { label: 'Last run', hint: 'copy of what last ran',
-        title: 'The exact pipeline of your most recent run, saved automatically each time you press Run' }));
+      menu.appendChild(
+        makeOpt(LAST_RUN, {
+          label: 'Last run',
+          hint: 'copy of what last ran',
+          title: 'The exact pipeline of your most recent run, saved automatically each time you press Run',
+        }),
+      );
     }
   },
 
@@ -414,8 +447,12 @@ const Config = {
     Config.renderPicker();
     Config.updateControls();
     Config.updateSaveLabel();
-    Config.notice('Editing a copy — save it in the', { action: {
-      label: 'YAML tab', onClick: () => document.querySelector('.tab[data-tab="yaml"]').click() } });
+    Config.notice('Editing a copy — save it in the', {
+      action: {
+        label: 'YAML tab',
+        onClick: () => document.querySelector('.tab[data-tab="yaml"]').click(),
+      },
+    });
   },
 
   // sticky: stays until the next notice(), so errors and downloads aren't missed.

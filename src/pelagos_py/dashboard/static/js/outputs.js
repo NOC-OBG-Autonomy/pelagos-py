@@ -6,8 +6,13 @@ const Outputs = {
 
   fromConfig() {
     let cfg = {};
-    try { cfg = jsyaml.load(editor.getValue()) || {}; } catch (e) { /* mid-edit */ }
-    const dirs = [], exports = [];
+    try {
+      cfg = jsyaml.load(editor.getValue()) || {};
+    } catch (e) {
+      /* mid-edit */
+    }
+    const dirs = [],
+      exports = [];
     const out = (cfg.pipeline || {}).out_directory;
     if (out) dirs.push(String(out));
     for (const step of cfg.steps || []) {
@@ -26,7 +31,8 @@ const Outputs = {
       Outputs.files = res.files || [];
       Outputs.dirs = res.dirs || [];
     } catch (e) {
-      Outputs.files = []; Outputs.dirs = [];
+      Outputs.files = [];
+      Outputs.dirs = [];
     }
     Outputs.render();
   },
@@ -59,8 +65,8 @@ const Outputs = {
     el.appendChild(ico);
     const text = document.createElement('div');
     text.className = 'output-text';
-    text.innerHTML = `<strong>${escapeHtml(f.name)}</strong>` +
-      `<span class="output-meta">${escapeHtml(f.dir)}</span>`;
+    text.innerHTML =
+      `<strong>${escapeHtml(f.name)}</strong>` + `<span class="output-meta">${escapeHtml(f.dir)}</span>`;
     el.appendChild(text);
     const meta = document.createElement('span');
     meta.className = 'output-size';
@@ -85,7 +91,11 @@ const Outputs = {
     reveal.appendChild(Icon.el('folder', 14));
     reveal.addEventListener('click', async (e) => {
       e.stopPropagation();
-      try { await API.revealOutputs(f.dir); } catch (err) { alert(err.message); }
+      try {
+        await API.revealOutputs(f.dir);
+      } catch (err) {
+        alert(err.message);
+      }
     });
     el.appendChild(reveal);
     const del = document.createElement('button');
@@ -93,7 +103,10 @@ const Outputs = {
     del.className = 'icon-btn danger';
     del.title = 'Delete';
     del.appendChild(Icon.el('trash2', 14));
-    del.addEventListener('click', (e) => { e.stopPropagation(); Outputs.remove(f); });
+    del.addEventListener('click', (e) => {
+      e.stopPropagation();
+      Outputs.remove(f);
+    });
     el.appendChild(del);
     if (el.classList.contains('output-pdf')) {
       el.title = 'Preview this report above';
@@ -114,18 +127,25 @@ const Outputs = {
   async remove(f) {
     if (RunLock.running) return;
     if (!confirm(`Delete ${f.name}?`)) return;
-    try { await API.deleteOutput(f.path); }
-    catch (e) { alert('Could not delete: ' + e.message); }
+    try {
+      await API.deleteOutput(f.path);
+    } catch (e) {
+      alert('Could not delete: ' + e.message);
+    }
     await Outputs.refresh();
   },
 
   async clean() {
     if (RunLock.running) return;
     const n = Outputs.files.length;
-    if (!n || !confirm(`Delete all ${n} output file${n === 1 ? '' : 's'}? Input data files are kept.`)) return;
+    if (!n || !confirm(`Delete all ${n} output file${n === 1 ? '' : 's'}? Input data files are kept.`))
+      return;
     const { dirs, exports } = Outputs.fromConfig();
-    try { await API.cleanOutputs(dirs, exports); }
-    catch (e) { alert('Could not delete: ' + e.message); }
+    try {
+      await API.cleanOutputs(dirs, exports);
+    } catch (e) {
+      alert('Could not delete: ' + e.message);
+    }
     Run.clearReport();
     await Outputs.refresh();
   },
@@ -134,8 +154,11 @@ const Outputs = {
     document.getElementById('btn-outputs-clean').addEventListener('click', () => Outputs.clean());
     document.getElementById('btn-outputs-reveal').addEventListener('click', async () => {
       const { dirs } = Outputs.fromConfig();
-      try { await API.revealOutputs(dirs[0] || ''); }
-      catch (e) { alert(e.message); }
+      try {
+        await API.revealOutputs(dirs[0] || '');
+      } catch (e) {
+        alert(e.message);
+      }
     });
     Files.init();
   },
