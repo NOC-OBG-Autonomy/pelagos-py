@@ -300,7 +300,7 @@ def test_index_serves_the_dashboard_page(client):
     response = client.get("/")
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/html")
-    assert response.text == INDEX_HTML
+    assert response.content == (dashboard_app.STATIC_DIR / "index.html").read_bytes()
 
 
 @pytest.mark.parametrize("asset", LOCAL_ASSETS)

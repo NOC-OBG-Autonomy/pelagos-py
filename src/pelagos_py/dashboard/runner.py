@@ -214,6 +214,7 @@ class _Run:
     def stop(self):
         if self.is_running() and sys.platform == "win32":
             self.proc.terminate()  # Windows Popen can't send SIGINT (raises ValueError)
+            self.proc.wait()
         elif self.is_running():
             # SIGINT first so the child runs its cleanup and doesn't leak pool semaphores
             self.proc.send_signal(signal.SIGINT)
