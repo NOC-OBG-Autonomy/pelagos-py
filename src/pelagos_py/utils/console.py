@@ -16,8 +16,8 @@
 
 """Console presentation for pipeline runs.
 
-Every line is ``time  step-name  detail`` (colour by severity: warnings yellow,
-SEVERE amber, errors/STOP red), with countable loops shown as a live progress bar. The console
+Every line is ``time  step-name  detail``; warnings and errors add a short
+coloured level tag before the detail, and countable loops show a live progress bar. The console
 handler reshapes each record and writes through :func:`tqdm.write` so log lines
 and a live bar coexist; :func:`progress_bar` is the uniform bar style.
 """
@@ -29,12 +29,7 @@ import time
 
 from tqdm import tqdm
 
-from pelagos_py.utils.log_levels import SEVERE, _supports_color
-
-_RESET = "\033[0m"
-_RED = "\033[31m"
-_AMBER = "\033[38;5;202m"
-_YELLOW = "\033[33m"
+from pelagos_py.utils.log_levels import LEVEL_STYLES, _supports_color
 
 # Width the step/process name is padded to, so the detail columns line up.
 _NAME_WIDTH = 20
@@ -75,11 +70,12 @@ def _bar_prefix(step_name):
 
 
 class ConsoleFormatter(logging.Formatter):
-    """Reshape a record to ``time  name  message`` and colour it by severity.
+    """Reshape a record to ``time  name  message``, with a level tag for warnings.
 
-    Name comes from the ``[...]`` tag when present, else the logger name. WARNING
-    yellow, SEVERE amber, ERROR/STOP red. Pass ``extra={"raw": True}`` to emit a
-    line verbatim.
+    Name comes from the ``[...]`` tag when present, else the logger name.
+    Warning-and-above lines get a tag (``WARN``, ``SEVERE``, ``ERROR``, ``STOP``)
+    before the message, coloured when the stream supports it. Pass
+    ``extra={"raw": True}`` to emit a line verbatim.
     """
 
     def __init__(self, *args, stream=None, **kwargs):
@@ -99,18 +95,15 @@ class ConsoleFormatter(logging.Formatter):
             name = _display_name(record)
 
         stamp = self.formatTime(record, "%H:%M:%S")
-        line = f"{stamp}  {name:<{_NAME_WIDTH}}  {message}"
+        prefix = f"{stamp}  {name:<{_NAME_WIDTH}}  "
 
-        if not self._use_color:
-            return line
-        # Info stays the terminal default; only warnings/errors colour.
-        if record.levelno >= logging.ERROR:
-            return f"{_RED}{line}{_RESET}"
-        if record.levelno >= SEVERE:
-            return f"{_AMBER}{line}{_RESET}"
-        if record.levelno >= logging.WARNING:
-            return f"{_YELLOW}{line}{_RESET}"
-        return line
+        style = LEVEL_STYLES.get(record.levelname)
+        if style is None:
+            return prefix + message
+        level_tag = style.tag
+        if self._use_color:
+            level_tag = f"\033[1;{style.ansi}m{style.tag}\033[0m"
+        return f"{prefix}{level_tag}  {message}"
 
 
 class _TqdmHandler(logging.StreamHandler):

@@ -18,6 +18,7 @@
 
 import logging
 import os
+from typing import NamedTuple
 
 STOP = logging.ERROR + 5
 """Custom log level for a deliberate pipeline halt (e.g. invalid config).
@@ -29,10 +30,26 @@ logging.addLevelName(STOP, "STOP")
 SEVERE = logging.WARNING + 5
 """Custom log level for a step that failed but was skipped (on_step_fail).
 
-Sits between WARNING and ERROR, and is rendered amber (vs. WARNING's yellow) to
+Sits between WARNING and ERROR, and its tag is amber (vs. WARNING's yellow) to
 stand out from ordinary warnings.
 """
 logging.addLevelName(SEVERE, "SEVERE")
+
+
+class LevelStyle(NamedTuple):
+    tag: str
+    ansi: str  # SGR colour code for the terminal
+    rgb: tuple  # colour for the PDF report's log panel
+
+
+# Warning-and-above levels get a short coloured tag; INFO/DEBUG get none.
+LEVEL_STYLES = {
+    "WARNING": LevelStyle("WARN", "33", (240, 200, 110)),
+    "SEVERE": LevelStyle("SEVERE", "38;5;202", (245, 150, 80)),
+    "ERROR": LevelStyle("ERROR", "31", (240, 130, 130)),
+    "STOP": LevelStyle("STOP", "31", (240, 130, 130)),
+    "CRITICAL": LevelStyle("CRITICAL", "31", (240, 130, 130)),
+}
 
 
 def _supports_color(stream):
