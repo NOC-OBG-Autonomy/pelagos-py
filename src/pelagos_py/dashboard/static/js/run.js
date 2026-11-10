@@ -79,32 +79,43 @@ const Run = {
     document.getElementById('log-to-bottom').addEventListener('click', () => Run.scrollToBottom());
   },
 
-  // "hh:mm:ss  step  message" from the console formatter, spacing kept so copied text stays aligned.
-  LOG_LINE: /^(\d\d:\d\d:\d\d {2})(.*? {2,})(.*)$/s,
+  // "hh:mm:ss  step  message" from the console formatter and the progress bars.
+  LOG_LINE: /^(\d\d:\d\d:\d\d) {2}(.*?) {2,}(.*)$/s,
+  STEP_WIDTH: 20,
 
-  append(line, level = null) {
-    Run.settleStart();
-    const c = document.getElementById('log-console');
-    const span = document.createElement('span');
+  // Long step names are cut so every message starts in the same column; the raw line stays in _raw.
+  fillLine(el, line, level = null) {
+    el._raw = line;
+    el.replaceChildren();
     const m = line.match(Run.LOG_LINE);
     if (m) {
+      const name = m[2].trim();
+      const w = Run.STEP_WIDTH;
       const time = document.createElement('span');
       const step = document.createElement('span');
       time.className = 'log-time';
       step.className = 'log-step';
-      time.textContent = m[1];
-      step.textContent = m[2];
-      span.className = 'log-row';
-      span.append(time, step);
+      time.textContent = m[1] + '  ';
+      step.textContent = (name.length > w ? name.slice(0, w - 1) + '…' : name).padEnd(w) + '  ';
+      step.title = name;
+      el.classList.add('log-row');
+      el.append(time, step);
       line = m[3];
     }
     if (level) {
       const tag = document.createElement('b');
       tag.className = 'log-tag log-' + level.toLowerCase();
       tag.textContent = level === 'WARNING' ? 'WARN' : level;
-      span.append(tag, ' ');
+      el.append(tag, ' ');
     }
-    span.append(line + '\n');
+    el.append(line + '\n');
+  },
+
+  append(line, level = null) {
+    Run.settleStart();
+    const c = document.getElementById('log-console');
+    const span = document.createElement('span');
+    Run.fillLine(span, line, level);
     c.appendChild(span);
     Run.autoScroll();
   },
@@ -296,9 +307,9 @@ const Run = {
     if (
       Run.progressEl &&
       Run.looksLikeProgress(line) &&
-      Run.barDesc(line) === Run.barDesc(Run.progressEl.textContent || '')
+      Run.barDesc(line) === Run.barDesc(Run.progressEl._raw || '')
     ) {
-      Run.progressEl.textContent = line + '\n';
+      Run.fillLine(Run.progressEl, line);
       Run.progressEl = null;
       Run.autoScroll();
       return;
@@ -316,13 +327,13 @@ const Run = {
   // A leave=False bar erases itself without a 100% frame, so it could freeze mid-way.
   finalizeProgress() {
     if (!Run.progressEl) return;
-    const plain = (Run.progressEl.textContent || '').replace(/\n+$/, '');
+    const plain = Run.progressEl._raw || '';
     const m = plain.match(/^(.*?)\d+%\|([^|]*)\|\s*\d+\/(\d+)(.*)$/);
     if (m) {
       const [, desc, bar, total, tail] = m;
       const doneTail = tail.replace(/<.*?\]/, '<00:00]');
       const line = `${desc}100%|${'█'.repeat(bar.length)}| ${total}/${total}${doneTail}`;
-      Run.progressEl.textContent = line + '\n';
+      Run.fillLine(Run.progressEl, line);
     }
     Run.progressEl = null;
   },
@@ -336,7 +347,7 @@ const Run = {
     if (
       Run.progressEl &&
       Run.looksLikeProgress(plain) &&
-      Run.barDesc(plain) !== Run.barDesc(Run.progressEl.textContent || '')
+      Run.barDesc(plain) !== Run.barDesc(Run.progressEl._raw || '')
     ) {
       Run.finalizeProgress();
     }
@@ -345,7 +356,7 @@ const Run = {
       Run.progressEl.className = 'lvl-progress';
       c.appendChild(Run.progressEl);
     }
-    Run.progressEl.textContent = line + '\n';
+    Run.fillLine(Run.progressEl, line);
     Run.autoScroll();
   },
 
