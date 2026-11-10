@@ -64,6 +64,7 @@ const Demos = {
     }
     el.addEventListener('click', load);
     el.addEventListener('keydown', (e) => {
+      if (e.target !== el) return;
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         load();
@@ -108,7 +109,7 @@ const Demos = {
     }
     Demos.trackDownload(name, false);
     Demos.requests.delete(name);
-    await Config.refreshList(Config.selected);
+    await Config.refreshList(Config.selected).catch(Config.listFailed);
   },
 
   trackDownload(name, on) {
@@ -133,7 +134,7 @@ const Demos = {
         if (Demos.resumed.has(n) && !all[n]) {
           Demos.resumed.delete(n);
           Demos.trackDownload(n, false);
-          Config.refreshList(Config.selected);
+          Config.refreshList(Config.selected).catch(Config.listFailed);
         } else {
           Demos.setProgress(n, all[n] || null);
         }
@@ -165,7 +166,7 @@ const Demos = {
       Config.notice('Could not delete: ' + e.message, { sticky: true, err: true });
     }
     if (Build.active && Build.name === name) Build.close(); // its file is gone
-    await Config.refreshList(Config.selected);
+    await Config.refreshList(Config.selected).catch(Config.listFailed);
   },
 };
 
@@ -329,6 +330,7 @@ const Files = {
     };
     el.addEventListener('click', pick);
     el.addEventListener('keydown', (e) => {
+      if (e.target !== el) return;
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         pick();

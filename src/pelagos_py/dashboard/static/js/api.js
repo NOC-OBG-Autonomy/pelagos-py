@@ -20,6 +20,7 @@ const API = {
   // -> {configs, protected, demo, labels, reference, downloaded: [name]}
   async listConfigs() {
     const r = await fetch('/api/configs');
+    if (!r.ok) await _fail(r, 'could not list configs');
     return r.json();
   },
   async loadConfig(name) {
@@ -78,7 +79,9 @@ const API = {
   },
   // -> {name: {done, total}} for demo downloads in flight
   async demoProgress() {
-    return (await fetch('/api/demos/progress')).json();
+    const r = await fetch('/api/demos/progress');
+    if (!r.ok) await _fail(r, 'progress failed');
+    return r.json();
   },
   async downloadDemo(name) {
     const r = await fetch('/api/demos/' + encodeURIComponent(name) + '/download', { method: 'POST' });

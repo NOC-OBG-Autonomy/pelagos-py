@@ -132,7 +132,13 @@ const Config = {
       if (described.has(k)) item.values[k] = Forms.clone(v);
       else item.extras[k] = Forms.clone(v);
     }
-    if (isQcContainer(def) && !item.values.qc_settings) item.values.qc_settings = {};
+    if (isQcContainer(def)) {
+      item.values.qc_settings = item.values.qc_settings || {};
+      // A test with no body (`impossible date qc:`) loads as null.
+      for (const [test, testValues] of Object.entries(item.values.qc_settings)) {
+        if (testValues === null) item.values.qc_settings[test] = {};
+      }
+    }
     return item;
   },
 
@@ -469,6 +475,10 @@ const Config = {
     el.classList.toggle('err', !!err);
     clearTimeout(Config._noticeTimer);
     if (text && !sticky) Config._noticeTimer = setTimeout(() => Config.notice(''), 8000);
+  },
+
+  listFailed(e) {
+    Config.notice('Could not refresh the config list: ' + e.message, { sticky: true, err: true });
   },
 
   async refreshList(selected) {

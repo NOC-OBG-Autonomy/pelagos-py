@@ -209,9 +209,10 @@ const Defaults = {
         .trim()
         .toLowerCase();
     const at = banners.findIndex((b) => norm(b.title) === norm(ghost.title));
+    if (at < 0) throw new Error('the rebuilt config has no ' + ghost.title + ' container');
     const steps = (cfg.steps || []).slice(
-      at < 0 ? 0 : banners[at].index,
-      at < 0 || !banners[at + 1] ? undefined : banners[at + 1].index,
+      banners[at].index,
+      banners[at + 1] ? banners[at + 1].index : undefined,
     );
     const built = (cfg.steps || []).find((s) => s && s.name === 'Prepare OG1');
     const prep = STATE.pipeline.items.find((i) => i.name === 'Prepare OG1');

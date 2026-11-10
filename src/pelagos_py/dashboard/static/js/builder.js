@@ -728,7 +728,7 @@ function lockCard(card, index) {
   card.classList.add('unlocked');
   // Reordering or removing a step mid-run would break the runner's step indices.
   for (const b of card.querySelectorAll('.step-head button')) {
-    if (b.title !== 'collapse' && b.title !== 'close') b.disabled = true;
+    if (!b.classList.contains('step-expand')) b.disabled = true;
   }
   const test =
     RunLock.test && card.querySelector(`.qc-test[data-test="${CSS.escape(RunLock.test)}"] .qc-test-body`);

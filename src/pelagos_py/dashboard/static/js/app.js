@@ -212,7 +212,7 @@ function syncYamlToBuilder() {
       RunLock.pauseAt(RunLock.index, RunLock.test);
     }
   } catch (e) {
-    /* structurally odd but parseable: leave builder, Validate reports it */
+    Config.notice('The builder could not read this YAML: ' + e.message, { err: true });
   }
 }
 const scheduleYamlToBuilder = debounce(syncYamlToBuilder, 400);
@@ -682,13 +682,15 @@ async function boot() {
   });
 
   document.getElementById('btn-copy').addEventListener('click', () => {
-    navigator.clipboard.writeText(editor.getValue());
+    navigator.clipboard
+      .writeText(editor.getValue())
+      .catch((e) => Config.notice('Could not copy: ' + e.message, { sticky: true, err: true }));
   });
 
   const picker = document.getElementById('config-select');
   picker.querySelector('.cfg-trigger').addEventListener('click', () => {
     if (picker.classList.contains('open')) Config.closePicker();
-    else Config.openPicker();
+    else Config.openPicker().catch(Config.listFailed);
   });
   document.addEventListener('click', (e) => {
     if (!picker.contains(e.target)) Config.closePicker();
@@ -704,7 +706,7 @@ async function boot() {
     } catch (e) {
       Config.notice('Could not open the configs folder: ' + e.message);
     }
-    await Config.refreshList();
+    await Config.refreshList().catch(Config.listFailed);
   });
   document.getElementById('config-name').addEventListener('input', () => Config.updateSaveLabel());
   document.getElementById('btn-save').addEventListener('click', async () => {
@@ -727,7 +729,7 @@ async function boot() {
     }
     Config.savedText = editor.getValue();
     Config.builtFor = null;
-    await Config.refreshList(Config.withExt(name));
+    await Config.refreshList(Config.withExt(name)).catch(Config.listFailed);
     Config.setCurrent(name);
   });
   document.getElementById('btn-delete').addEventListener('click', async () => {
@@ -741,7 +743,7 @@ async function boot() {
       return;
     }
     if (Config.current === name) Config.current = null;
-    await Config.refreshList();
+    await Config.refreshList().catch(Config.listFailed);
   });
 
   Run.initScroll();
@@ -784,5 +786,5 @@ async function checkServer() {
 }
 
 boot().catch((e) => {
-  document.body.innerHTML = `<pre style="padding:20px;color:#dc2626">Failed to start dashboard:\n${escapeHtml(e.stack || e)}</pre>`;
+  document.body.innerHTML = `<pre style="padding:20px;color:var(--danger)">Failed to start dashboard:\n${escapeHtml(e.stack || e)}</pre>`;
 });
