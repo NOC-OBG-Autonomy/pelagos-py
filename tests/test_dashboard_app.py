@@ -550,3 +550,25 @@ def test_end_to_end_run_through_the_api(client):
         assert client.post("/api/run/stop").json() == {"status": "stopping"}
     finally:
         runner._run.stop()
+
+
+@pytest.fixture
+def no_display(monkeypatch):
+    monkeypatch.setattr(dashboard_app.sys, "platform", "linux")
+    monkeypatch.delenv("DISPLAY", raising=False)
+    monkeypatch.delenv("WAYLAND_DISPLAY", raising=False)
+
+
+@pytest.mark.parametrize("url", ["/api/browse", "/api/files/pick"])
+def test_browse_without_a_display_asks_for_a_path(client, no_display, url):
+    response = client.post(url, json={"start": ""})
+    assert response.status_code == 503
+    assert "Paste the file path" in response.json()["detail"]
+
+
+def test_reveal_without_a_display_names_the_folder(client, no_display, workspace):
+    data_file = workspace / "glider.nc"
+    data_file.touch()
+    response = client.post("/api/files/reveal", json={"path": str(data_file)})
+    assert response.status_code == 503
+    assert str(workspace) in response.json()["detail"]

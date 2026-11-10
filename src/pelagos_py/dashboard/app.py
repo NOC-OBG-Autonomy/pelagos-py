@@ -417,7 +417,28 @@ def list_configs():
     }
 
 
+def _has_display() -> bool:
+    # false in a VM or over SSH, where a window would open on a screen nobody sees
+    if not sys.platform.startswith("linux"):
+        return True
+    return bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
+
+
+def _no_dialog() -> HTTPException:
+    return HTTPException(
+        status_code=503,
+        detail="Can't open a file dialog on the machine running the dashboard "
+        "(no display, e.g. in a VM or over SSH). Paste the file path instead.",
+    )
+
+
 def _reveal(folder: Path) -> dict:
+    if not _has_display():
+        raise HTTPException(
+            status_code=503,
+            detail="Can't open a folder window on the machine running the dashboard "
+            f"(no display). The folder is {folder}",
+        )
     if sys.platform == "darwin":
         cmd = ["open", str(folder)]
     elif os.name == "nt":
@@ -663,13 +684,22 @@ def _native_dialog(start: str, prompt: str, multiple: bool) -> list[str]:
         proc = subprocess.run(
             ["osascript", "-e", script, str(start_dir)], capture_output=True, text=True
         )
-        return proc.stdout.splitlines() if proc.returncode == 0 else []
+        if proc.returncode == 0:
+            return proc.stdout.splitlines()
+        if "(-128)" in proc.stderr:  # the user pressed Cancel
+            return []
+        raise _no_dialog()
+    if not _has_display():
+        raise _no_dialog()
     try:
         import tkinter
         from tkinter import filedialog
     except ImportError as exc:
-        raise HTTPException(status_code=500, detail=f"No file dialog available: {exc}")
-    root = tkinter.Tk()
+        raise _no_dialog() from exc
+    try:
+        root = tkinter.Tk()
+    except tkinter.TclError as exc:
+        raise _no_dialog() from exc
     root.withdraw()
     root.attributes("-topmost", True)
     if multiple:
