@@ -18,7 +18,6 @@
 
 import logging
 import os
-import sys
 
 STOP = logging.ERROR + 5
 """Custom log level for a deliberate pipeline halt (e.g. invalid config).
@@ -51,57 +50,3 @@ def _supports_color(stream):
         return False
     return hasattr(stream, "isatty") and stream.isatty()
 
-
-class ColorFormatter(logging.Formatter):
-    """Formatter that colours records by level on the console (STOP/ERROR red,
-    SEVERE amber, WARNING yellow).
-
-    Colour is only emitted when the target stream is an interactive terminal
-    that supports it (see :func:`_supports_color`), so redirected output and
-    dumb terminals stay clean plain text. Intended for stream handlers only;
-    the file handler keeps a plain formatter so log files carry no escape codes.
-    """
-
-    _RESET = "\033[0m"
-    _RED = "\033[31m"
-    _AMBER = "\033[38;5;202m"
-    _YELLOW = "\033[33m"
-    _GREY = "\033[90m"
-
-    # Colours a record may request via ``extra={"color": ...}``; unknown names
-    # leave it uncoloured.
-    _NAMED_COLORS = {
-        "grey": _GREY,
-        "gray": _GREY,
-        "red": _RED,
-        "amber": _AMBER,
-        "yellow": _YELLOW,
-    }
-
-    def __init__(self, *args, stream=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._use_color = _supports_color(stream if stream is not None else sys.stderr)
-
-    def _color_for(self, record):
-        """Return the ANSI colour for a record, or None to leave it uncoloured.
-
-        An explicit ``color`` on the record wins; otherwise colour is chosen by
-        level (ERROR/STOP red, SEVERE amber, WARNING yellow).
-        """
-        requested = getattr(record, "color", None)
-        if requested:
-            return self._NAMED_COLORS.get(requested)
-        if record.levelno >= logging.ERROR:
-            return self._RED
-        if record.levelno >= SEVERE:
-            return self._AMBER
-        if record.levelno >= logging.WARNING:
-            return self._YELLOW
-        return None
-
-    def format(self, record):
-        message = super().format(record)
-        color = self._color_for(record) if self._use_color else None
-        if color:
-            return f"{color}{message}{self._RESET}"
-        return message
