@@ -288,7 +288,7 @@ const Forms = {
 
   // js-yaml would render `[20, 45]` as a block list; keep scalar lists inline like the hand-written configs.
   _isScalar(x) {
-    return x === null || typeof x !== 'object';
+    return x === null || typeof x !== 'object' || x instanceof Date;
   },
 
   _scalarText(x) {
@@ -315,7 +315,7 @@ const Forms = {
       });
       return '\n' + parts.join('\n');
     }
-    if (v && typeof v === 'object') {
+    if (!Forms._isScalar(v)) {
       const keys = Object.keys(v);
       if (keys.length === 0) return '{}';
       const parts = keys.map((k) => {
