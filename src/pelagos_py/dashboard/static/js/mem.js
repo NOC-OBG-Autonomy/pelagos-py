@@ -1,7 +1,7 @@
-// Live RAM meter for a run: one point per __PELAGOS_MEM__ marker, with per-step detail in each dot's tooltip.
+// Live RAM meter for a run: a line of the server's RAM samples, with a dot per finished step.
 
 const Mem = {
-  points: [],  // {rss, stepPeak, added, data, label, t} per step, in run order
+  points: [],  // {rss, stepPeak, added, data, label, t} per step (__PELAGOS_MEM__), in run order
   samples: [], // {t, rss} every 0.5 s of processing time (__PELAGOS_SAMPLE__)
   peak: 0,     // running max RSS this run, also the plot's y-axis top
 
@@ -20,22 +20,22 @@ const Mem = {
     });
   },
 
-  // "<rss>\t<runPeak>\t<data>\t<label>\t<stepPeak>\t<peakLabel>\t<stepStart>\t<t>", MB.
+  // "<data MB>\t<label>\t<t>" at a step's end; its RAM figures come from the samples since the last step.
   add(payload) {
     const parts = payload.split('\t');
-    const rss = parseFloat(parts[0]);
-    if (!isFinite(rss)) return;
-    const data = parseFloat(parts[2]); // NaN when the field is empty
-    const label = (parts[3] || '').trim();
-    const stepPeak = parseFloat(parts[4]);
-    const stepStart = parseFloat(parts[6]);
-    const t = parseFloat(parts[7]); // processing seconds at step end
-    Mem.peak = parseFloat(parts[1]);
+    const data = parseFloat(parts[0]); // NaN when the field is empty
+    const label = (parts[1] || '').trim();
+    const t = parseFloat(parts[2]); // processing seconds at step end
+    const prevT = Mem.points.length ? Mem.points[Mem.points.length - 1].t : -Infinity;
+    const upToNow = Mem.samples.filter((s) => s.t <= t);
+    if (!isFinite(t) || !upToNow.length) return;
+    const before = upToNow.filter((s) => s.t <= prevT);
+    const during = upToNow.filter((s) => s.t > prevT);
+    const rss = upToNow[upToNow.length - 1].rss;
+    const stepPeak = Math.max(rss, ...during.map((s) => s.rss));
+    const stepStart = before.length ? before[before.length - 1].rss : upToNow[0].rss;
     Mem.points.push({ rss, stepPeak, added: Math.max(0, stepPeak - stepStart),
       data: isFinite(data) ? data : null, label, t });
-    document.getElementById('mem-meter').classList.remove('hidden');
-    Mem.setNum('mem-cur', rss);
-    Mem.setNum('mem-peak', Mem.peak);
     Mem.setNum('mem-data', data);
     Mem.render();
   },
@@ -72,9 +72,7 @@ const Mem = {
     svg.innerHTML = '';
     const top = Mem.peak || 1;
     const y = (mb) => H - pad - (mb / top) * (H - 2 * pad);
-    // Samples and step-end readings come from different clocks, so sort the merge.
-    const readings = Mem.samples.concat(Mem.points.map((p) => ({ t: p.t, rss: p.rss })))
-      .sort((a, b) => a.t - b.t);
+    const readings = Mem.samples;
     if (!readings.length) return;
     const tmax = readings[readings.length - 1].t || 1;
     const xt = (t) => pad + (t / tmax) * (W - 2 * pad);

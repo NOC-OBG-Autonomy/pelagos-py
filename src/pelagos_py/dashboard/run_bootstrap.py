@@ -12,7 +12,6 @@ import json
 import os
 import signal
 import sys
-import threading
 import time
 from pathlib import Path
 
@@ -49,83 +48,19 @@ FIG_DIR = sys.argv[2]
 _saved = {"n": 0}
 _orig_show = plt.show
 
-# RAM meter: a step's memory spike is usually freed before it returns, so a thread polls RSS during it.
-_mem = {
-    "label": "startup",
-    "step_start": 0.0,
-    "step_peak": 0.0,
-    "run_peak": 0.0,
-    "run_peak_label": "",
-}
-_mem_lock = threading.Lock()
-
 # Processing time, stopped while paused on stdin
 _clock = {"active": 0.0, "since": _START}
 
 
-def _rss_mb():
-    try:
-        import psutil
-
-        return psutil.Process(os.getpid()).memory_info().rss / 1024**2
-    except Exception:  # noqa: BLE001
-        return None
-
-
-def _mem_sampler():
-    while True:
-        rss = _rss_mb()
-        if rss is not None:
-            with _mem_lock:
-                if rss > _mem["step_peak"]:
-                    _mem["step_peak"] = rss
-                if rss > _mem["run_peak"]:
-                    _mem["run_peak"] = rss
-                    _mem["run_peak_label"] = _mem["label"]
-        time.sleep(0.4)
-
-
-def _mem_begin(label):
-    rss = _rss_mb() or 0.0
-    with _mem_lock:
-        _mem["label"] = label
-        _mem["step_start"] = rss
-        _mem["step_peak"] = rss
-
-
-def _emit_mem(context):
-    rss_mb = _rss_mb()
-    if rss_mb is None:
-        return
-    with _mem_lock:
-        step_peak = max(_mem["step_peak"], rss_mb)
-        step_start = _mem["step_start"]
-        if rss_mb > _mem["run_peak"]:
-            _mem["run_peak"] = rss_mb
-            _mem["run_peak_label"] = _mem["label"]
-        run_peak = _mem["run_peak"]
-        run_peak_label = _mem["run_peak_label"]
-        label = _mem["label"]
-    data_mb = ""
-    try:
-        data = (context or {}).get("data")
-        nbytes = getattr(data, "nbytes", None)
-        if nbytes is not None:
-            data_mb = f"{nbytes / 1024**2:.1f}"
-    except Exception:  # noqa: BLE001
-        data_mb = ""
+# RAM itself is sampled by the dashboard server; this only marks where each step ended
+def _emit_step_end(label, context):
+    data = (context or {}).get("data")
+    nbytes = getattr(data, "nbytes", None)
+    data_mb = f"{nbytes / 1024**2:.1f}" if nbytes is not None else ""
     active = _clock["active"] + (
         time.time() - _clock["since"] if _clock["since"] else 0
     )
-    print(
-        f"__PELAGOS_MEM__ {rss_mb:.1f}\t{run_peak:.1f}\t{data_mb}\t{label}"
-        f"\t{step_peak:.1f}\t{run_peak_label}\t{step_start:.1f}\t{active:.1f}",
-        flush=True,
-    )
-
-
-if _rss_mb() is not None:
-    threading.Thread(target=_mem_sampler, daemon=True).start()
+    print(f"__PELAGOS_MEM__ {data_mb}\t{label}\t{active:.1f}", flush=True)
 
 
 def _caption(fig) -> str:
@@ -471,7 +406,6 @@ def _run(pipeline):
             # the pipeline's own "Executing:" line is file-only, so announce the step here
             print(f"__PELAGOS_STEP__ {idx}\t{label}", flush=True)
             mem_label = name + (f" · {test}" if test else "")
-            _mem_begin(mem_label)
             report_since = time.time()
             _begin_diag_capture(pausable)
             failed = False
@@ -495,7 +429,7 @@ def _run(pipeline):
                 _emit_fail(idx, name, test, exc)
             if not failed:
                 _emit_diag_log(idx, name, test)
-                _emit_mem(context)
+                _emit_step_end(mem_label, context)
                 if name == REPORT_STEP_NAME:
                     _emit_report(context, report_since - 2)
             if not pausable and not failed:
@@ -545,7 +479,6 @@ def _run(pipeline):
                         f"Re-running with parameters: {rerun_config.get('parameters')}",
                         flush=True,
                     )
-                    _mem_begin(mem_label)
                     _begin_diag_capture(True)
                     _drop_captures(pipeline, captured_mark)
                     retry_context = _snapshot(snapshot)
@@ -559,7 +492,7 @@ def _run(pipeline):
                     failed = False
                     has_result = True
                     _emit_diag_log(idx, name, test)
-                    _emit_mem(context)
+                    _emit_step_end(mem_label, context)
         pipeline._context = context
 
 
