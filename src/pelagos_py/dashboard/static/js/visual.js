@@ -8,9 +8,8 @@ const VisualQC = {
     [4, 'bad'], [5, 'value changed'], [6, 'not used'], [7, 'not used'],
     [8, 'estimated / interpolated'], [9, 'missing value'],
   ],
-  // Same palette as pelagos_py.utils.fig_spec.FLAG_COLOURS.
-  COLOURS: { 0: '#9aa5ad', 1: '#1f6fd6', 2: '#7fb2e5', 3: '#e8912b', 4: '#d6392f',
-    5: '#9aa5ad', 6: '#9aa5ad', 7: '#9aa5ad', 8: '#17b6c4', 9: '#111111' },
+  // fig_spec.FLAG_COLOURS via /api/registry, so plots and the editor share one palette.
+  get COLOURS() { return STATE.registry.flag_colours; },
   // Argo merge table COMBINATRIX[existing][new], from qc_handling via /api/registry.
   get COMBINATRIX() { return STATE.registry.combinatrix; },
   // Darker outline so a box stays visible over points of the same flag.
