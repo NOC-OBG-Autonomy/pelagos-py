@@ -1,4 +1,5 @@
 import io
+import json
 import re
 import sys
 import tempfile
@@ -576,3 +577,38 @@ def test_reveal_without_a_display_is_refused(client, no_display, workspace):
 
 def test_registry_reports_no_display(client, no_display):
     assert client.get("/api/registry").json()["display"] is False
+
+
+@pytest.fixture
+def paused_run(monkeypatch):
+    sent = []
+
+    def resume(command):
+        sent.append(command)
+        return True
+
+    monkeypatch.setattr(runner._run, "paused", True)
+    monkeypatch.setattr(runner._run, "resume", resume)
+    return sent
+
+
+def test_rerun_sends_yaml_parameters_with_infinite_bounds(client, paused_run):
+    parameters_yaml = "variable_ranges:\n  PRES:\n    4: [-5, -.inf, inside]\n"
+    response = client.post("/api/run/rerun", json={"parameters_yaml": parameters_yaml})
+    assert response.status_code == 200
+    action, parameters = paused_run[0].split(" ", 1)
+    assert action == "rerun"
+    assert json.loads(parameters) == {
+        "variable_ranges": {"PRES": {"4": [-5, float("-inf"), "inside"]}}
+    }
+
+
+def test_rerun_without_parameters_keeps_the_step_parameters(client, paused_run):
+    assert client.post("/api/run/rerun", json={}).status_code == 200
+    assert paused_run == ["rerun null"]
+
+
+def test_rerun_rejects_parameters_that_are_not_a_mapping(client, paused_run):
+    response = client.post("/api/run/rerun", json={"parameters_yaml": "- a\n- b\n"})
+    assert response.status_code == 400
+    assert paused_run == []

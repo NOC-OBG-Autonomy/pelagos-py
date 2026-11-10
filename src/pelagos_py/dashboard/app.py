@@ -881,7 +881,8 @@ def stop_pipeline():
 
 
 class RerunPayload(BaseModel):
-    parameters: dict = {}
+    # YAML rather than JSON so bounds like -.inf survive the trip from the browser
+    parameters_yaml: str = ""
     yaml_content: str = ""
 
 
@@ -909,10 +910,17 @@ def rerun_step(payload: RerunPayload):
     """Re-run the currently paused step with edited parameters, then re-pause."""
     if not _run.paused:
         raise HTTPException(status_code=409, detail="The run is not paused.")
+    try:
+        parameters = yaml.safe_load(payload.parameters_yaml)
+    except yaml.YAMLError as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid YAML: {exc}") from None
+    if parameters is not None and not isinstance(parameters, dict):
+        raise HTTPException(status_code=400, detail="Parameters must be a mapping.")
     if payload.yaml_content:
         # a page reload reopens this file, so keep it in step with the edits
         (CONFIG_DIR / "_last_run.yaml").write_text(payload.yaml_content)
-    _resume("rerun " + json.dumps(payload.parameters))
+    # null re-runs with the step's current parameters; json.dumps keeps Infinity
+    _resume("rerun " + json.dumps(parameters))
     return {"status": "rerunning"}
 
 

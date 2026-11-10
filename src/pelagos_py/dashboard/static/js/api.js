@@ -190,7 +190,8 @@ const API = {
     const r = await fetch('/api/run/rerun', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ parameters, yaml_content: yamlContent }),
+      // As YAML, since JSON would turn the -.inf range bounds into null.
+      body: JSON.stringify({ parameters_yaml: jsyaml.dump(parameters), yaml_content: yamlContent }),
     });
     if (!r.ok) await _fail(r, 're-run failed');
   },
