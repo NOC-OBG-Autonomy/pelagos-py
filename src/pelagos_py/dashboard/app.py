@@ -1203,6 +1203,8 @@ def serve(port=8791):
 
     # Otherwise the browser opens on whatever already holds the port, e.g. a stale dashboard.
     with socket.socket() as probe:
+        # as uvicorn does, so closed connections still in TIME_WAIT don't count as "in use"
+        probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
             probe.bind(("127.0.0.1", port))
         except OSError:
