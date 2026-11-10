@@ -80,7 +80,9 @@ def test_save_load_delete_config_roundtrip(client, workspace):
         "/api/configs", json={"name": "mine", "yaml_content": "steps: []\n"}
     )
     assert saved.json() == {"status": "saved", "name": "mine.yaml"}
-    assert (workspace / "configs" / "mine.yaml").read_text() == "steps: []\n"
+    assert (workspace / "configs" / "mine.yaml").read_text(
+        encoding="utf-8"
+    ) == "steps: []\n"
     assert client.get("/api/configs/mine.yaml").json()["yaml_content"] == "steps: []\n"
     client.delete("/api/configs/mine.yaml")
     assert not (workspace / "configs" / "mine.yaml").exists()
@@ -290,7 +292,7 @@ def test_commands_are_refused_when_the_run_is_not_paused(client, path):
     assert client.post(path, json={}).status_code == 409
 
 
-INDEX_HTML = (dashboard_app.STATIC_DIR / "index.html").read_text()
+INDEX_HTML = (dashboard_app.STATIC_DIR / "index.html").read_text(encoding="utf-8")
 LOCAL_ASSETS = re.findall(r'(?:src|href)="(/[^"]+)"', INDEX_HTML)
 
 

@@ -102,7 +102,7 @@ def _capture_spec(fig, stem: str):
         if spec is None:
             return "", reason
         name = stem + ".json"
-        with open(os.path.join(FIG_DIR, name), "w") as handle:
+        with open(os.path.join(FIG_DIR, name), "w", encoding="utf-8") as handle:
             json.dump(spec, handle)
         with open(os.path.join(FIG_DIR, stem + ".f32"), "wb") as handle:
             handle.write(blob)

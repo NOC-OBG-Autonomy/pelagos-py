@@ -772,7 +772,7 @@ class BuildPayload(BaseModel):
 
 
 def _template_text() -> str:
-    return config_builder.DEFAULT_CONFIG.read_text()
+    return config_builder.DEFAULT_CONFIG.read_text(encoding="utf-8")
 
 
 @app.post("/api/build/decisions")
@@ -827,7 +827,7 @@ def load_config(name: str):
     path = _safe_config_path(name)
     if not path.exists():
         raise HTTPException(status_code=404, detail="Config not found.")
-    return {"name": path.name, "yaml_content": path.read_text()}
+    return {"name": path.name, "yaml_content": path.read_text(encoding="utf-8")}
 
 
 @app.post("/api/configs")
@@ -839,7 +839,7 @@ def save_config(payload: SavePayload):
             detail=f"'{path.name}' is a locked reference config. "
             "Save your changes under a different name.",
         )
-    path.write_text(payload.yaml_content)
+    path.write_text(payload.yaml_content, encoding="utf-8")
     return {"status": "saved", "name": path.name}
 
 
@@ -866,7 +866,7 @@ def run_pipeline(payload: RunPayload):
     if _run.is_running():
         raise HTTPException(status_code=409, detail="A pipeline is already running.")
     run_path = CONFIG_DIR / "_last_run.yaml"
-    run_path.write_text(payload.yaml_content)
+    run_path.write_text(payload.yaml_content, encoding="utf-8")
     try:
         _run.start(run_path)
     except RuntimeError as exc:
@@ -918,7 +918,9 @@ def rerun_step(payload: RerunPayload):
         raise HTTPException(status_code=400, detail="Parameters must be a mapping.")
     if payload.yaml_content:
         # a page reload reopens this file, so keep it in step with the edits
-        (CONFIG_DIR / "_last_run.yaml").write_text(payload.yaml_content)
+        (CONFIG_DIR / "_last_run.yaml").write_text(
+            payload.yaml_content, encoding="utf-8"
+        )
     # null re-runs with the step's current parameters; json.dumps keeps Infinity
     _resume("rerun " + json.dumps(parameters))
     return {"status": "rerunning"}
@@ -1057,7 +1059,9 @@ def run_figpoint(name: str, panel: int, trace: int, index: int):
     key = f"{panel}_{trace}"
     if f"{key}_x" not in data or not 0 <= index < len(data[f"{key}_x"]):
         raise HTTPException(status_code=404, detail="No such point.")
-    spec = json.loads((FIG_DIR / (stem + ".json")).read_text())["panels"][panel]
+    spec = json.loads((FIG_DIR / (stem + ".json")).read_text(encoding="utf-8"))[
+        "panels"
+    ][panel]
 
     def fmt(v, is_date):
         if not np.isfinite(v):
