@@ -219,8 +219,7 @@ class ApplyQC(BaseStep):
         if any(other_existing_qc):
             # File-only: this set can be large and repeats every QC step.
             self.logger.info(
-                "[%s] %s pre-existing QC column(s) left untouched by this step: %s",
-                self.name,
+                "%s pre-existing QC column(s) left untouched by this step: %s",
                 len(other_existing_qc),
                 ", ".join(sorted(other_existing_qc)),
                 extra={"console": False},

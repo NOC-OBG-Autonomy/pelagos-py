@@ -30,7 +30,7 @@ from pathlib import Path
 from pelagos_py.utils.config_mirror import ConfigMirrorMixin
 from pelagos_py.utils.valid_config_check import check_pipeline_variables
 from pelagos_py.utils.log_levels import STOP, SEVERE
-from pelagos_py.utils.console import make_console_handler, progress_bar
+from pelagos_py.utils.console import LogFormatter, make_console_handler, progress_bar
 from pelagos_py.utils import config_builder, diagnostic_capture, file_probe
 from pelagos_py.steps import create_step, STEP_CLASSES, resolve_step_name
 
@@ -89,13 +89,7 @@ def _setup_logging(out_dir=None, log_file=None, level=logging.INFO):
         logger.removeHandler(handler)
         handler.close()
 
-    formatter = logging.Formatter(
-        "%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-        "%Y-%m-%d %H:%M:%S",
-    )
-
-    # Console handler: always added, compact + coloured, and coexists with live
-    # progress bars (the full prefix lives in the file handler below).
+    # Console handler: always added, coloured, and coexists with live progress bars.
     logger.addHandler(make_console_handler(level))
 
     # Treat unset / explicit "none"-like values as "no log file". This catches
@@ -116,9 +110,9 @@ def _setup_logging(out_dir=None, log_file=None, level=logging.INFO):
         os.makedirs(
             os.path.dirname(log_file) or ".", exist_ok=True
         )  #   Builds logfile directory
-        fh = logging.FileHandler(log_file, "w+")  #   Init the logfile
+        fh = logging.FileHandler(log_file, "w+", encoding="utf-8")  #   Init the logfile
         fh.setLevel(level)
-        fh.setFormatter(formatter)
+        fh.setFormatter(LogFormatter(datefmt="%Y-%m-%d %H:%M:%S"))
         logger.addHandler(fh)
         logger.info(
             "Logging to file: %s", log_file

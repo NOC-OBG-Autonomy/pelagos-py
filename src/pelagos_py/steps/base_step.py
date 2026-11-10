@@ -278,8 +278,8 @@ class BaseStep(ConfigMirrorMixin):
             pass
 
     def log(self, message, console=True):
-        """Log an info-level message with step name prefix. ``console=False`` keeps it in the log file only."""
-        self.logger.info("[%s] %s", self.name, message, extra={"console": console})
+        """Log an info-level message. ``console=False`` keeps it in the log file only."""
+        self.logger.info(message, extra={"console": console})
 
     def log_generating_diagnostics(self):
         """Log that diagnostics are being produced, distinguishing report-capture runs from ``diagnostics: true``."""
@@ -303,15 +303,13 @@ class BaseStep(ConfigMirrorMixin):
         )
 
     def log_warn(self, message, warning_type=UserWarning):
-        """Log a warning-level message with step name prefix."""
-        self.logger.warning("[%s] %s", self.name, message)
+        """Log a warning-level message."""
+        self.logger.warning(message)
 
     def check_data(self):
         """Check for data in context for transformer steps."""
         if "data" not in self.context:
-            self.logger.error(
-                "[%s] No data found in context. Please load data first.", self.name
-            )
+            self.logger.error("No data found in context. Please load data first.")
             self.logger.log(
                 STOP,
                 "Pipeline stopped at step '%s'. "
@@ -328,7 +326,7 @@ class BaseStep(ConfigMirrorMixin):
         this instead of raising for config problems discovered at run time, so
         the user sees one actionable error rather than a wrapped traceback.
         """
-        self.logger.error("[%s] %s", self.name, message)
+        self.logger.error(message)
         self.logger.log(STOP, "Pipeline stopped at step '%s'.", self.name)
         exc = SystemExit(1)
         exc.halt_message = (

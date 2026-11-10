@@ -42,6 +42,7 @@ from glidertest import plots as gtplots
 import os
 import platform
 import json
+import re
 import shutil
 import tempfile
 import yaml
@@ -50,7 +51,7 @@ import matplotlib.pyplot as plt
 import xarray as xr
 import numpy as np
 
-from pelagos_py.utils.console import progress_bar
+from pelagos_py.utils.console import _NAME_WIDTH, progress_bar
 from pelagos_py.utils.log_levels import LEVEL_STYLES
 from pelagos_py.utils import fig_spec
 from pelagos_py.utils.qc_handling import adjusted_name
@@ -71,7 +72,15 @@ CHAR_REPLACEMENTS = {
     "”": '"',
     "‘": "'",
     "’": "'",
+    "…": ".",
 }
+
+
+#   A LogFormatter line: date, time, padded name, optional level tag, message.
+_TAG_RGB = {style.tag: style.rgb for style in LEVEL_STYLES.values()}
+_LOG_LINE = re.compile(
+    rf"^\S+ (\S+)  (.{{{_NAME_WIDTH}}})  (?:({'|'.join(_TAG_RGB)})  )?(.*)$"
+)
 
 
 def sanitize(text) -> str:
@@ -651,8 +660,8 @@ class _ReportPDF(FPDF):
     _TERMINAL_FG = (220, 220, 220)
 
     def terminal_block(self, lines, font_size: float = 6.5) -> None:
-        #   Render (time, level, location, message) log lines in a dark, mono
-        #   panel; only the level of warnings and errors is coloured.
+        #   Render (time, name, level tag, message) log lines in a dark, mono
+        #   panel; only the level tag of warnings and errors is coloured.
         if not lines:
             return
         line_h = font_size * 0.62
@@ -660,17 +669,17 @@ class _ReportPDF(FPDF):
         self.set_fill_color(*self._TERMINAL_BG)
         self.set_draw_color(*self._TERMINAL_BG)
 
-        for time_s, level, location, message in lines:
-            time_text = f"{time_s}  "
-            level_text = f"{level:<7} "
-            rest = sanitize(f"{location}: {message}")
-            time_w = self.get_string_width(time_text)
-            level_w = self.get_string_width(level_text)
-            rest_w = self.epw - time_w - level_w
+        for time_s, name, tag, message in lines:
+            prefix = f"{time_s}  {name}  "
+            tag_text = f"{tag}  " if tag else ""
+            message = sanitize(message)
+            prefix_w = self.get_string_width(prefix)
+            tag_w = self.get_string_width(tag_text)
+            message_w = self.epw - prefix_w - tag_w
             height = self.multi_cell(
-                rest_w,
+                message_w,
                 line_h,
-                rest,
+                message,
                 dry_run=True,
                 output=MethodReturnValue.HEIGHT,
             )
@@ -681,18 +690,17 @@ class _ReportPDF(FPDF):
             self.rect(self.l_margin, self.get_y(), self.epw, height + 0.3, style="F")
 
             self.set_text_color(*self._TERMINAL_FG)
-            self.cell(time_w, line_h, time_text)
-            style = LEVEL_STYLES.get(level.upper())
-            if style is not None:
-                self.set_text_color(*style.rgb)
+            self.cell(prefix_w, line_h, sanitize(prefix))
+            if tag:
+                self.set_text_color(*_TAG_RGB[tag])
                 self.set_font("Courier", "B", font_size)
-            self.cell(level_w, line_h, level_text)
-            self.set_text_color(*self._TERMINAL_FG)
-            self.set_font("Courier", "", font_size)
+                self.cell(tag_w, line_h, tag_text)
+                self.set_text_color(*self._TERMINAL_FG)
+                self.set_font("Courier", "", font_size)
             self.multi_cell(
-                rest_w,
+                message_w,
                 line_h,
-                rest,
+                message,
                 new_x=XPos.LMARGIN,
                 new_y=YPos.NEXT,
                 align="L",
@@ -1147,31 +1155,19 @@ def qc_section(pdf: _ReportPDF, data: xr.Dataset) -> None:
         )
 
 
-def add_log(logfile, pdf: _ReportPDF, ncols: int = 4) -> None:
+def add_log(logfile, pdf: _ReportPDF) -> None:
     #   Add the logfile as a terminal-style block. Requires a log_file set in the
-    #   global pipeline parameters; ncols is the " - " fields per log line.
+    #   global pipeline parameters.
     pdf.add_page()
     pdf.section_heading("Logfile of run")
 
     rows = []
     try:
-        with open(logfile, "r") as f:
+        with open(logfile, encoding="utf-8") as f:
             for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-
-                parts = line.split(" - ", maxsplit=ncols - 1)
-                if len(parts) != ncols:
-                    # malformed or unexpected line, skip
-                    continue
-
-                timestamp, level, location, message = parts
-                #   Remove date for more space for comment
-                timestamp = timestamp.split(" ")[1] if " " in timestamp else timestamp
-                location = location.removeprefix("pelagos_py.")
-
-                rows.append((timestamp, level, location, message))
+                match = _LOG_LINE.match(line.rstrip("\n"))
+                if match:
+                    rows.append(match.groups())
     except FileNotFoundError:
         pdf.body("Logfile not found.")
         return

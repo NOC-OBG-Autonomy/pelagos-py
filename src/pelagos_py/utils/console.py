@@ -16,14 +16,13 @@
 
 """Console presentation for pipeline runs.
 
-Every line is ``time  step-name  detail``; warnings and errors add a short
-coloured level tag before the detail, and countable loops show a live progress bar. The console
-handler reshapes each record and writes through :func:`tqdm.write` so log lines
-and a live bar coexist; :func:`progress_bar` is the uniform bar style.
+Every line is ``time  step-name  detail``, on the console and in the log file;
+warnings and errors add a short level tag before the detail, and countable loops
+show a live progress bar. The console handler writes through :func:`tqdm.write`
+so log lines and a live bar coexist; :func:`progress_bar` is the uniform bar style.
 """
 
 import logging
-import re
 import sys
 import time
 
@@ -39,9 +38,6 @@ BAR_FORMAT = (
     "{desc} {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]"
 )
 
-# Leading ``[Step Name] `` tag steps prepend via ``BaseStep.log``; lifted into its own column.
-_TAG = re.compile(r"^\[([^\]]*)\]\s*")
-
 
 def _console_enabled(stream=None):
     # False when output is redirected or colour is disabled (tqdm/colour off).
@@ -49,7 +45,7 @@ def _console_enabled(stream=None):
 
 
 def _display_name(record):
-    # Short step/process name for a record with no ``[...]`` tag.
+    # Short step/process name from the logger name.
     name = record.name
     for prefix in ("pelagos_py.pipeline.step.", "pelagos_py.pipeline.qc."):
         if name.startswith(prefix):
@@ -61,47 +57,46 @@ def _display_name(record):
     return name.rsplit(".", 1)[-1]
 
 
+def _name_column(name):
+    if len(name) > _NAME_WIDTH:
+        name = name[: _NAME_WIDTH - 1] + "…"
+    return f"{name:<{_NAME_WIDTH}}"
+
+
 def _bar_prefix(step_name):
     # The ``time  name`` prefix a progress bar shares with log lines.
     stamp = time.strftime("%H:%M:%S")
     if step_name:
-        return f"{stamp}  {step_name:<{_NAME_WIDTH}}  "
+        return f"{stamp}  {_name_column(step_name)}  "
     return f"{stamp}  "
 
 
-class ConsoleFormatter(logging.Formatter):
-    """Reshape a record to ``time  name  message``, with a level tag for warnings.
+class LogFormatter(logging.Formatter):
+    """Format a record as ``time  name  message``, for the console and the log file.
 
-    Name comes from the ``[...]`` tag when present, else the logger name.
-    Warning-and-above lines get a tag (``WARN``, ``SEVERE``, ``ERROR``, ``STOP``)
-    before the message, coloured when the stream supports it. Pass
-    ``extra={"raw": True}`` to emit a line verbatim.
+    The name is the step or process the logger belongs to, padded or cut to one
+    width so the messages line up. Warning-and-above lines get a tag (``WARN``,
+    ``SEVERE``, ``ERROR``, ``STOP``) before the message, coloured if ``color``.
+    Pass ``extra={"raw": True}`` to emit a line verbatim.
     """
 
-    def __init__(self, *args, stream=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._use_color = _console_enabled(stream)
+    def __init__(self, datefmt="%H:%M:%S", color=False):
+        super().__init__(datefmt=datefmt)
+        self.color = color
 
     def format(self, record):
-        if getattr(record, "raw", False):
-            return record.getMessage()
-
         message = record.getMessage()
-        tag = _TAG.match(message)
-        if tag:
-            name = tag.group(1)
-            message = message[tag.end() :]
-        else:
-            name = _display_name(record)
+        if getattr(record, "raw", False):
+            return message
 
-        stamp = self.formatTime(record, "%H:%M:%S")
-        prefix = f"{stamp}  {name:<{_NAME_WIDTH}}  "
+        stamp = self.formatTime(record, self.datefmt)
+        prefix = f"{stamp}  {_name_column(_display_name(record))}  "
 
         style = LEVEL_STYLES.get(record.levelname)
         if style is None:
             return prefix + message
         level_tag = style.tag
-        if self._use_color:
+        if self.color:
             level_tag = f"\033[1;{style.ansi}m{style.tag}\033[0m"
         return f"{prefix}{level_tag}  {message}"
 
@@ -129,7 +124,7 @@ def make_console_handler(level=logging.INFO):
     """Build the pipeline's console handler: compact, coloured, tqdm-aware."""
     handler = _TqdmHandler(stream=sys.stderr)
     handler.setLevel(level)
-    handler.setFormatter(ConsoleFormatter(stream=sys.stderr))
+    handler.setFormatter(LogFormatter(color=_console_enabled(sys.stderr)))
     handler.addFilter(_ConsoleOnlyFilter())
     return handler
 
@@ -142,13 +137,11 @@ class _PhaseBar(tqdm):
         self,
         *args,
         logger=None,
-        step_name=None,
         summary_unit=None,
         summary_label=None,
         **kwargs,
     ):
         self._logger = logger
-        self._step_name = step_name
         self._summary_unit = summary_unit
         self._summary_label = summary_label
         self._summary_start = time.time()
@@ -178,8 +171,7 @@ class _PhaseBar(tqdm):
         self._summarised = True
         if self._logger is not None and self._count:
             self._logger.info(
-                "[%s] %s: %s %s (%.1fs)",
-                self._step_name or "",
+                "%s: %s %s (%.1fs)",
                 self._summary_label or "progress",
                 self._count,
                 self._summary_unit or self.unit,
@@ -214,7 +206,6 @@ def progress_bar(
         colour="white",
         disable=not _console_enabled(),
         logger=logger,
-        step_name=step_name,
         summary_unit=unit,
         summary_label=desc,
     )
