@@ -469,6 +469,7 @@ def test_reveal_opens_the_folder_without_a_real_file_manager(
     client, outputs, monkeypatch
 ):
     opened = []
+    monkeypatch.setattr(dashboard_app, "_has_display", lambda: True)
     monkeypatch.setattr(dashboard_app.subprocess, "Popen", opened.append)
     client.post("/api/configs/reveal")
     client.post("/api/files/reveal", json={"path": str(outputs / "run.log")})
