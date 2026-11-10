@@ -617,11 +617,16 @@ const Run = {
     }
     const key = Run.unitKey(Run.pausedStep, Run.pausedTest);
     const form = Run.paramsAt(Run.pausedStep, Run.pausedTest);
+    Run.setRunButton('busy');
     try {
       await (action === 'skip' ? API.skipStep() : API.continueRun());
     } catch (e) {
-      Run.note('error', e.message, 'err');
-      return;
+      // "not paused" means an earlier Continue already got through
+      if (!/not paused/i.test(e.message)) {
+        Run.note('error', e.message, 'err');
+        Run.setRunButton('paused');
+        return;
+      }
     }
     const attempts = Run.groupsFor(key);
     const kept = attempts.filter((g) => g.params && Forms.equal(g.params, form)).pop();
@@ -682,7 +687,7 @@ const Run = {
     try {
       await API.rerunStep(params, editor.getValue());
     } catch (e) {
-      Run.note('error', e.message, 'err');
+      if (!/not paused/i.test(e.message)) Run.note('error', e.message, 'err');
       Run.pendingParams = null;
       Run.sentParams = null;
       Run.continueAfter = false;
@@ -795,39 +800,40 @@ const Run = {
     Run.source = new EventSource('/api/run/stream');
     Run.source.onmessage = (ev) => Run.handleLine(ev.data);
     Run.source.addEventListener('progress', (ev) => Run.handleProgress(ev.data));
-    Run.source.addEventListener('end', (ev) => {
-      Run.finalizeProgress();
-      RunClock.stop();
-      const code = Number(ev.data);
-      const took = RunClock.epoch === null ? '' : RunClock.fmt(RunClock.seconds());
-      if (Run.stopping) {
-        Run.setStatus('stopped', 'err');
-        Run.settle('stopped', 'Pipeline stopped', took);
-      } else if (code === 0) {
-        Run.setStatus('finished', 'ok');
-        Run.banner(
-          'ok',
-          'Pipeline finished',
-          [
-            took,
-            Run.plotCount ? `${Run.plotCount} plot${Run.plotCount === 1 ? '' : 's'}` : '',
-            Run.reportName ? 'report ready in the Output tab' : '',
-          ]
-            .filter(Boolean)
-            .join(' · '),
-        );
-      } else if (code < 0) {
-        // Killed by a signal we didn't send, most often the OS reclaiming memory.
-        Run.setStatus('killed', 'err');
-        Run.banner('err', 'Pipeline killed', ['possibly out of memory', took].filter(Boolean).join(' · '));
-      } else {
-        Run.setStatus('failed', 'err');
-        Run.banner('err', 'Pipeline failed');
-      }
-      Run.cleanup();
-      Outputs.refresh();
-    });
+    Run.source.addEventListener('end', (ev) => Run.finish(Number(ev.data)));
     Run.source.onerror = () => Run.handleDrop();
+  },
+
+  finish(code) {
+    Run.finalizeProgress();
+    RunClock.stop();
+    const took = RunClock.epoch === null ? '' : RunClock.fmt(RunClock.seconds());
+    if (Run.stopping) {
+      Run.setStatus('stopped', 'err');
+      Run.settle('stopped', 'Pipeline stopped', took);
+    } else if (code === 0) {
+      Run.setStatus('finished', 'ok');
+      Run.banner(
+        'ok',
+        'Pipeline finished',
+        [
+          took,
+          Run.plotCount ? `${Run.plotCount} plot${Run.plotCount === 1 ? '' : 's'}` : '',
+          Run.reportName ? 'report ready in the Output tab' : '',
+        ]
+          .filter(Boolean)
+          .join(' · '),
+      );
+    } else if (code < 0) {
+      // Killed by a signal we didn't send, most often the OS reclaiming memory.
+      Run.setStatus('killed', 'err');
+      Run.banner('err', 'Pipeline killed', ['possibly out of memory', took].filter(Boolean).join(' · '));
+    } else {
+      Run.setStatus('failed', 'err');
+      Run.banner('err', 'Pipeline failed');
+    }
+    Run.cleanup();
+    Outputs.refresh();
   },
 
   // A dropped stream (laptop sleep) doesn't end the run: re-attach and let the backlog replay.
@@ -837,12 +843,15 @@ const Run = {
       Run.source = null;
     }
     clearTimeout(Run._retry);
-    if (Run.stopping) return; // Stop is in flight; the end event settles it
-    Run.setStatus('reconnecting…', 'running');
+    if (!Run.stopping) Run.setStatus('reconnecting…', 'running');
     API.runStatus()
       .then((s) => {
         if (s.running) {
-          Run._retry = setTimeout(() => Run.connect(true), 1500);
+          // connect() would forget the stop, so keep polling until it lands
+          Run._retry = setTimeout(() => (Run.stopping ? Run.handleDrop() : Run.connect(true)), 1500);
+        } else if (Run.stopping) {
+          // the closed stream can't deliver the end event
+          Run.finish(null);
         } else {
           Run.setStatus('run ended while disconnected', '');
           Run.cleanup();

@@ -204,13 +204,16 @@ const VisualQC = {
       VisualQC.draw();
       return;
     }
-    VisualQC.columns([by]).then((cols) => {
-      p.pos = Math.max(
-        0,
-        VisualQC.profileIndex(by, cols[by]).ids.indexOf(Number((b.profiles || b.cycles)[0])),
-      );
-      VisualQC.draw();
-    });
+    VisualQC.columns([by]).then(
+      (cols) => {
+        p.pos = Math.max(
+          0,
+          VisualQC.profileIndex(by, cols[by]).ids.indexOf(Number((b.profiles || b.cycles)[0])),
+        );
+        VisualQC.draw();
+      },
+      () => VisualQC.draw(), // it retries the load and shows the error
+    );
   },
 
   // What the runner reported at this pause, plus whatever the config already names.
@@ -659,7 +662,7 @@ const VisualQC = {
         Forms.button('', {
           cls: 'visual-plot' + (gi === VisualQC.gi ? ' on' : ''),
           onclick: () => VisualQC.setGroup(gi),
-          html: `<span>${group.join(' + ')}</span>` + (n ? `<i>${n}</i>` : ''),
+          html: `<span>${escapeHtml(group.join(' + '))}</span>` + (n ? `<i>${n}</i>` : ''),
           title: `Flags ${group.join(', ')}` + (n ? ` · ${n} box${n === 1 ? '' : 'es'}` : ''),
         }),
       );
@@ -854,11 +857,14 @@ const VisualQC = {
       VisualQC.draw();
       return;
     }
-    VisualQC.columns([by]).then((cols) => {
-      const index = VisualQC.profileIndex(by, cols[by]);
-      if (first) p.pos = Math.max(0, index.ids.indexOf(cols[by].values[first[0]]));
-      VisualQC.draw();
-    });
+    VisualQC.columns([by]).then(
+      (cols) => {
+        const index = VisualQC.profileIndex(by, cols[by]);
+        if (first) p.pos = Math.max(0, index.ids.indexOf(cols[by].values[first[0]]));
+        VisualQC.draw();
+      },
+      () => VisualQC.draw(), // it retries the load and shows the error
+    );
   },
 
   columns(names) {
@@ -1085,6 +1091,10 @@ const VisualQC = {
       message(`No ${yv} or ${xv} in the data.`);
       return;
     }
+    if (!plain && !cols[fv + '_QC']) {
+      message(`No ${fv}_QC in the data.`);
+      return;
+    }
     // Let the overlay paint before the loops below hold up the page.
     await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve)));
     if (token !== VisualQC.drawToken) return;
@@ -1309,13 +1319,19 @@ const VisualQC = {
     const keep = old && old.key === key ? old.panels[0].view : null;
     Plot.purge(stage);
     VisualQC.loading(stage, null);
-    const chart = new Chart(stage, spec, data, null, {
-      onSelect: (rect) => VisualQC.addBox(rect),
-      onPoint: (pt) => VisualQC.addBox({ x0: pt.x, y0: pt.y }),
-      onView: () => VisualQC.zoomHint(stage, chart),
-      onRemove: (o) => VisualQC.remove(o.index),
-      onDoubleClick: () => VisualQC.undoClicks(),
-    });
+    let chart;
+    try {
+      chart = new Chart(stage, spec, data, null, {
+        onSelect: (rect) => VisualQC.addBox(rect),
+        onPoint: (pt) => VisualQC.addBox({ x0: pt.x, y0: pt.y }),
+        onView: () => VisualQC.zoomHint(stage, chart),
+        onRemove: (o) => VisualQC.remove(o.index),
+        onDoubleClick: () => VisualQC.undoClicks(),
+      });
+    } catch (err) {
+      message('Interactive view unavailable: ' + err.message);
+      return;
+    }
     stage._chart = chart;
     chart.key = key;
     if (keep) {
