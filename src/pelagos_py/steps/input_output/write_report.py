@@ -51,6 +51,7 @@ import xarray as xr
 import numpy as np
 
 from pelagos_py.utils.console import progress_bar
+from pelagos_py.utils.log_levels import LEVEL_STYLES
 from pelagos_py.utils import fig_spec
 from pelagos_py.utils.qc_handling import adjusted_name
 from pelagos_py.utils.diagnostic_capture import save_figure, wait_for_saves
@@ -645,21 +646,13 @@ class _ReportPDF(FPDF):
         self.set_fill_color(255, 255, 255)
         self.ln(2)
 
-    #   Terminal palette: dark background with light text; log levels are
-    #   tinted as they would be in a colourised console.
+    #   Terminal palette: dark background with light text.
     _TERMINAL_BG = (24, 24, 27)
     _TERMINAL_FG = (220, 220, 220)
-    _TERMINAL_LEVEL_COLORS = {
-        "DEBUG": (130, 170, 255),
-        "INFO": (180, 220, 180),
-        "WARNING": (240, 200, 110),
-        "ERROR": (240, 130, 130),
-        "CRITICAL": (240, 130, 130),
-    }
 
     def terminal_block(self, lines, font_size: float = 6.5) -> None:
         #   Render (time, level, location, message) log lines in a dark, mono
-        #   panel tinted by log level, like colourised console output.
+        #   panel; only the level of warnings and errors is coloured.
         if not lines:
             return
         line_h = font_size * 0.62
@@ -668,18 +661,41 @@ class _ReportPDF(FPDF):
         self.set_draw_color(*self._TERMINAL_BG)
 
         for time_s, level, location, message in lines:
-            text = f"{time_s}  {level:<7} {location}: {message}"
-            color = self._TERMINAL_LEVEL_COLORS.get(level.upper(), self._TERMINAL_FG)
-            self.set_text_color(*color)
-            #   multi_cell fills every wrapped line, so the dark panel stays
-            #   continuous even when a long message spills onto another line.
-            self.multi_cell(
-                0,
+            time_text = f"{time_s}  "
+            level_text = f"{level:<7} "
+            rest = sanitize(f"{location}: {message}")
+            time_w = self.get_string_width(time_text)
+            level_w = self.get_string_width(level_text)
+            rest_w = self.epw - time_w - level_w
+            height = self.multi_cell(
+                rest_w,
                 line_h,
-                sanitize(text),
+                rest,
+                dry_run=True,
+                output=MethodReturnValue.HEIGHT,
+            )
+            if self.get_y() + height > self.page_break_trigger:
+                self.add_page()
+            #   One rect per entry (covering wrapped lines), overlapping the next
+            #   slightly so no hairline seam shows between rows.
+            self.rect(self.l_margin, self.get_y(), self.epw, height + 0.3, style="F")
+
+            self.set_text_color(*self._TERMINAL_FG)
+            self.cell(time_w, line_h, time_text)
+            style = LEVEL_STYLES.get(level.upper())
+            if style is not None:
+                self.set_text_color(*style.rgb)
+                self.set_font("Courier", "B", font_size)
+            self.cell(level_w, line_h, level_text)
+            self.set_text_color(*self._TERMINAL_FG)
+            self.set_font("Courier", "", font_size)
+            self.multi_cell(
+                rest_w,
+                line_h,
+                rest,
                 new_x=XPos.LMARGIN,
                 new_y=YPos.NEXT,
-                fill=True,
+                align="L",
                 border=0,
             )
 

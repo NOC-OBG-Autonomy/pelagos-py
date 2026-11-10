@@ -247,6 +247,22 @@ def test_add_log(tmp_path):
     assert len(rows) == 2
 
 
+def test_terminal_block_colours_only_warning_levels():
+    pdf = wrp._ReportPDF()
+    pdf.add_page()
+    colours = []
+    with patch.object(pdf, "set_text_color", side_effect=lambda *c: colours.append(c)):
+        pdf.terminal_block(
+            [
+                ("12:00:00", "INFO", "pipeline", "fine " * 80),
+                ("12:00:01", "WARNING", "pipeline", "odd"),
+            ]
+        )
+    warn_rgb = wrp.LEVEL_STYLES["WARNING"].rgb
+    assert colours.count(warn_rgb) == 1
+    assert set(colours) == {pdf._TERMINAL_FG, warn_rgb, (0,)}
+
+
 def test_add_log_missing_file(tmp_path):
     pdf = MagicMock()
     wrp.add_log(str(tmp_path / "nope.log"), pdf)
