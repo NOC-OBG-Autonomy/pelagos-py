@@ -516,8 +516,8 @@ body.run-locked .flow-link .add-step { display: none; }
 }
 .log-to-bottom { position: absolute; bottom: 14px; right: 18px; z-index: 3; width: 30px; height: 30px; border-radius: 50%; background: var(--console-3); color: var(--console-ink); box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
 .log-to-bottom:hover { background: var(--accent); color: #fff; }
-/* wrapped messages continue under the message column: 8ch time + 2 + 20ch step + 2 */
-.log-console .log-row { display: block; padding-left: 32ch; text-indent: -32ch; }
+/* wrapped messages continue under the message column: 8ch time + 2 + step + 2 */
+.log-console .log-row { --indent: calc((var(--log-step-w, 20) + 12) * 1ch); display: block; padding-left: var(--indent); text-indent: calc(-1 * var(--indent)); }
 .log-console .log-time { color: var(--console-muted); opacity: .7; }
 .log-console .log-step { color: var(--console-muted); }
 .log-console .log-tag { font-weight: 700; }

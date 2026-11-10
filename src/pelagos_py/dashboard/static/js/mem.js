@@ -35,12 +35,18 @@ const Mem = {
     if (rss > Mem.peak) Mem.peak = rss;
     Mem.setNum('mem-cur', rss);
     Mem.setNum('mem-peak', Mem.peak);
-    Mem.render();
+    // a reconnect replays every sample at once, so redraw at most once per frame
+    if (!Mem.frame) {
+      Mem.frame = requestAnimationFrame(() => {
+        Mem.frame = null;
+        Mem.render();
+      });
+    }
   },
 
   fmt(mb) {
-    return fmtBytes(mb == null ? null : mb * 1048576);
-  }, // readings arrive in MiB
+    return fmtBytes(mb == null ? null : mb * 1e6);
+  },
 
   setNum(id, mb) {
     const el = document.getElementById(id);

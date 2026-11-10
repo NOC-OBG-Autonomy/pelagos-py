@@ -81,16 +81,25 @@ const Run = {
 
   // "hh:mm:ss  step  message" from the console formatter and the progress bars.
   LOG_LINE: /^(\d\d:\d\d:\d\d) {2}(.*?) {2,}(.*)$/s,
-  STEP_WIDTH: 20,
+  // uncoloured lines from outside the logger (uncaught errors, Python warnings)
+  STDERR_LEVEL: [
+    [/^Traceback \(most recent call last\)|\b\w*(Error|Exception): /, 'error'],
+    [/\b\w*Warning: /, 'warning'],
+  ],
+
+  get stepWidth() {
+    return STATE.registry.log_step_width;
+  },
 
   // Long step names are cut so every message starts in the same column; the raw line stays in _raw.
   fillLine(el, line, level = null) {
     el._raw = line;
     el.replaceChildren();
+    const w = Run.stepWidth;
     const m = line.match(Run.LOG_LINE);
-    if (m) {
+    // a real step column is padded to its width; a bar with no step name ("Assembling steps  45%") isn't
+    if (m && line.length - m[3].length - 10 >= w + 2) {
       const name = m[2].trim();
-      const w = Run.STEP_WIDTH;
       const time = document.createElement('span');
       const step = document.createElement('span');
       time.className = 'log-time';
@@ -107,6 +116,9 @@ const Run = {
       tag.className = 'log-tag log-' + level.toLowerCase();
       tag.textContent = level === 'WARNING' ? 'WARN' : level;
       el.append(tag, ' ');
+    } else if (!el.classList.contains('log-row')) {
+      const hit = Run.STDERR_LEVEL.find(([re]) => re.test(line));
+      if (hit) el.classList.add('log-' + hit[1]);
     }
     el.append(line + '\n');
   },

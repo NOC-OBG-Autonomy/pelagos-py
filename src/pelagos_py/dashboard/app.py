@@ -52,7 +52,7 @@ from pelagos_py.utils.demo_data import (
     get_demo_file,
 )
 from pelagos_py.utils.valid_config_check import check_pipeline_variables
-from pelagos_py.utils import config_builder, fig_spec, file_probe
+from pelagos_py.utils import config_builder, console, fig_spec, file_probe
 from pelagos_py.dashboard.runner import FIG_DIR, _FIGDATA_CACHE, _run
 
 # HDF5 prints its own error stack on a failed open, which is already raised as an exception
@@ -227,6 +227,7 @@ def registry():
         "pipeline_fields": PIPELINE_FIELDS,
         "combinatrix": QC_COMBINATRIX.tolist(),
         "flag_colours": fig_spec.FLAG_COLOURS,
+        "log_step_width": console._NAME_WIDTH,
     }
 
 

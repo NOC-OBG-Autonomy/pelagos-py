@@ -250,6 +250,18 @@ def test_stop_ends_the_subprocess(tmp_path, monkeypatch):
     assert not run.is_running()
 
 
+def test_columns_request_returns_when_the_run_exits(tmp_path, monkeypatch):
+    # the run ignores the data request and exits, so columns() must not wait out its timeout
+    script = tmp_path / "exits.py"
+    script.write_text("import time\nprint('up', flush=True)\ntime.sleep(0.5)\n")
+    monkeypatch.setattr(runner, "RUN_BOOTSTRAP", script)
+    run = runner._Run()
+    run.start(tmp_path / "config.yaml")
+    started = time.time()
+    assert run.columns(["TEMP"], timeout=20) is None
+    assert time.time() - started < 5
+
+
 INDEX_HTML = (dashboard_app.STATIC_DIR / "index.html").read_text()
 LOCAL_ASSETS = re.findall(r'(?:src|href)="(/[^"]+)"', INDEX_HTML)
 

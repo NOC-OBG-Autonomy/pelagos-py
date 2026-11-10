@@ -592,6 +592,7 @@ function fmtBytes(b) {
 async function boot() {
   Icon.hydrate();
   STATE.registry = await API.registry();
+  document.documentElement.style.setProperty('--log-step-w', STATE.registry.log_step_width);
   for (const s of STATE.registry.steps) STATE.stepsByName[s.name] = s;
   for (const q of STATE.registry.qc) STATE.qcByName[q.name] = q;
   STATE.onChange = refreshYAML;

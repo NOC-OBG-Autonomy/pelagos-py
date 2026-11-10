@@ -76,7 +76,7 @@ class _Run:
             return
         while proc.poll() is None:
             try:
-                rss = child.memory_info().rss / 1024**2
+                rss = child.memory_info().rss / 1e6
             except Exception:  # noqa: BLE001
                 return
             with self._lock:
@@ -193,6 +193,8 @@ class _Run:
             if proc is self.proc:
                 self.returncode = returncode
                 self.finished = True
+        with self._columns:
+            self._columns.notify_all()  # a columns() request can't be answered any more
 
     def stop(self):
         if self.is_running() and sys.platform == "win32":

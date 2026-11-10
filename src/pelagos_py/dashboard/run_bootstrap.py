@@ -34,6 +34,7 @@ plt.switch_backend = lambda *args, **kwargs: None
 import numpy as np  # noqa: E402
 from pelagos_py.dashboard import fig_spec  # noqa: E402
 from pelagos_py.utils.console import ConsoleFormatter  # noqa: E402
+import pelagos_py.pipeline as pipeline_module  # noqa: E402
 from pelagos_py.pipeline import (  # noqa: E402
     REPORT_STEP_NAME,
     SEVERE,
@@ -58,7 +59,7 @@ _clock = {"active": 0.0, "since": _START}
 def _emit_data_size(context):
     nbytes = getattr((context or {}).get("data"), "nbytes", None)
     if nbytes is not None:
-        print(f"__PELAGOS_MEM__ {nbytes / 1024**2:.1f}", flush=True)
+        print(f"__PELAGOS_MEM__ {nbytes / 1e6:.1f}", flush=True)
 
 
 def _caption(fig) -> str:
@@ -384,6 +385,15 @@ def _send_levels():
         for handler in logging.getLogger(name).handlers:
             if isinstance(handler.formatter, ConsoleFormatter):
                 handler.setFormatter(_LevelFormatter())
+    # Pipeline() makes a fresh console handler, and logs while doing so
+    make_handler = pipeline_module.make_console_handler
+
+    def make_level_handler(*args, **kwargs):
+        handler = make_handler(*args, **kwargs)
+        handler.setFormatter(_LevelFormatter())
+        return handler
+
+    pipeline_module.make_console_handler = make_level_handler
 
 
 def main():
@@ -391,8 +401,8 @@ def main():
     try:
         _patch_diagnostics_capture()
         _emit_time(paused=False)
-        pipeline = Pipeline(config_path=config_path)
         _send_levels()
+        pipeline = Pipeline(config_path=config_path)
         pipeline._diagnose_failures = True
         _run(pipeline)
     except KeyboardInterrupt:
