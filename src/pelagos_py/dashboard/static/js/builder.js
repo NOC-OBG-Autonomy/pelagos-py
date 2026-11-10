@@ -65,6 +65,7 @@ function initValues(def) {
 function diagnosticsLeaves() {
   const leaves = [];
   for (const item of STATE.pipeline.items) {
+    if (item.unknown) continue;
     if (isQcContainer(item.def)) {
       const tests = Object.keys(item.values.qc_settings || {});
       if (!tests.length) {
@@ -93,6 +94,7 @@ function allDiagnosticsState() {
 // Also clears Apply QC per-test overrides so every test follows the master.
 function setAllDiagnostics(v) {
   for (const item of STATE.pipeline.items) {
+    if (item.unknown) continue;
     item.diagnostics = v;
     if (isQcContainer(item.def)) {
       for (const name of Object.keys(item.values.qc_settings || {})) {
@@ -1121,6 +1123,9 @@ function renderStepCard(item) {
         }),
       );
     }
+    if (item.unknown) {
+      title.appendChild(Forms.el('span', { class: 'tag warn', textContent: 'unknown step' }));
+    }
   }
   head.appendChild(title);
 
@@ -1174,7 +1179,7 @@ function renderStepCard(item) {
   body.className = 'step-body' + (item.collapsed ? ' collapsed' : '');
 
   // Apply QC has its own master and per-test switches in the QC editor.
-  if (!isQcContainer(item.def)) {
+  if (!isQcContainer(item.def) && !item.unknown) {
     const diagTop = document.createElement('div');
     diagTop.className = 'diag-top';
     const diag = document.createElement('div');
@@ -1223,8 +1228,9 @@ function renderStepCard(item) {
   if (!item.def.schema_declared) {
     const note = document.createElement('div');
     note.className = 'hint';
-    note.textContent =
-      'This step has not declared a parameter schema yet; edit its parameters in the YAML pane.';
+    note.textContent = item.unknown
+      ? 'No step has this name, so it is kept exactly as written; fix it in the YAML pane.'
+      : 'This step has not declared a parameter schema yet; edit its parameters in the YAML pane.';
     body.appendChild(note);
   }
 

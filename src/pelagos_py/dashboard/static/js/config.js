@@ -12,6 +12,7 @@ const Config = {
     if (Object.keys(pipeline).length) cfg.pipeline = pipeline;
 
     cfg.steps = STATE.pipeline.items.map((item) => {
+      if (item.unknown) return item.raw;
       const params = {};
       for (const spec of item.def.parameters || []) {
         const val = item.values[spec.name];
@@ -116,7 +117,18 @@ const Config = {
     if (!s || !s.name) return null;
     const canonical = Config.stepName(s.name);
     const def = STATE.stepsByName[canonical];
-    if (!def) return null;
+    // Kept as written so saving doesn't drop a misspelled step; Validate reports the name.
+    if (!def) {
+      return {
+        id: ++STATE._seq,
+        name: s.name,
+        def: { category: 'unknown', parameters: [] },
+        values: {},
+        raw: Forms.clone(s),
+        unknown: true,
+        collapsed: true,
+      };
+    }
     const item = {
       id: ++STATE._seq,
       name: canonical,
