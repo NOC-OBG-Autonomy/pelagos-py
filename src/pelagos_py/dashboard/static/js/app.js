@@ -510,6 +510,14 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+function fmtBytes(b) {
+  if (b == null || !isFinite(b)) return '–';
+  if (b >= 1e9) return (b / 1e9).toFixed(1) + ' GB';
+  if (b >= 1e6) return Math.round(b / 1e6) + ' MB';
+  if (b >= 1e3) return Math.round(b / 1e3) + ' kB';
+  return Math.round(b) + ' B';
+}
+
 async function boot() {
   Icon.hydrate();
   STATE.registry = await API.registry();

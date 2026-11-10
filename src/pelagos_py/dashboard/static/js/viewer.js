@@ -148,7 +148,7 @@ const Viewer = {
     if (fraction === null) return;
     const fill = bar.firstElementChild;
     fill.style.width = (fraction * 100).toFixed(1) + '%';
-    if (loaded) Viewer.note((loaded / 1048576).toFixed(1) + ' MB' + (fraction ? ' · ' + Math.round(fraction * 100) + '%' : ''));
+    if (loaded) Viewer.note(fmtBytes(loaded) + (fraction ? ' · ' + Math.round(fraction * 100) + '%' : ''));
   },
 
   note(text) {

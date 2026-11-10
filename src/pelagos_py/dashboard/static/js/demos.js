@@ -192,10 +192,3 @@ const Files = {
     return el;
   },
 };
-
-function fmtBytes(b) {
-  if (b >= 1e9) return (b / 1e9).toFixed(1) + ' GB';
-  if (b >= 1e6) return Math.round(b / 1e6) + ' MB';
-  if (b >= 1e3) return Math.round(b / 1e3) + ' kB';
-  return b + ' B';
-}

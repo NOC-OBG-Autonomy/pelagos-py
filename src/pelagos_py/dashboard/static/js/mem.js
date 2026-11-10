@@ -52,10 +52,7 @@ const Mem = {
     Mem.render();
   },
 
-  fmt(mb) {
-    if (mb == null || !isFinite(mb)) return '–';
-    return mb >= 1024 ? (mb / 1024).toFixed(1) + ' GB' : Math.round(mb) + ' MB';
-  },
+  fmt(mb) { return fmtBytes(mb == null ? null : mb * 1048576); }, // readings arrive in MiB
 
   setNum(id, mb) {
     const el = document.getElementById(id);
