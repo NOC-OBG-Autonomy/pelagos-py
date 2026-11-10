@@ -4,7 +4,7 @@ const Build = {
   async start({ name, filePath, description, onCancel }) {
     const root = document.getElementById('build-panel');
     if (!root) return;
-    Config.picks++;
+    const pick = ++Config.picks;
     root.innerHTML = '';
     root.hidden = false;
     Build.name = name; // the demo config the open panel is for, if any
@@ -19,15 +19,19 @@ const Build = {
       `<strong>Set up a pipeline for ${escapeHtml(file)}</strong>` + '<span>Inspecting the file…</span>';
     root.appendChild(head);
 
+    // A later pick, or closing the panel, makes this inspection stale.
+    const stale = () => pick !== Config.picks || root.hidden;
     let decisions;
     try {
       ({ decisions } = await API.buildDecisions(filePath));
     } catch (e) {
+      if (stale()) return;
       Build.close();
       Config.notice(`Could not inspect ${file}: ${e.message}`, { sticky: true, err: true });
       if (onCancel) onCancel();
       return;
     }
+    if (stale()) return;
     head.querySelector('span').textContent = decisions.length
       ? 'The full pipeline template is adapted to this file as listed below. Change a choice if needed, then build.'
       : 'The file supports the full pipeline template; nothing needs changing.';
