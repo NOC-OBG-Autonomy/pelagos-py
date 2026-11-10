@@ -22,6 +22,7 @@ to the dashboard as ``__PELAGOS_*__`` lines on stdout (see the README).
 
 import base64
 import contextlib
+import copy
 import io
 import json
 import logging
@@ -240,6 +241,9 @@ def _snapshot(context):
     snap = dict(context)
     if snap.get("data") is not None:
         snap["data"] = snap["data"].copy(deep=True)
+    # Apply QC appends to these lists in place
+    if "qc_history" in snap:
+        snap["qc_history"] = copy.deepcopy(snap["qc_history"])
     return snap
 
 
@@ -250,9 +254,8 @@ def _qc_tests(step_config):
 
 def _pausable(step_config, test):
     step_diag = bool(step_config.get("diagnostics"))
-    if (
-        test is None
-    ):  # an unsplit QC step only exists when no test is pausable (see _expand)
+    # an unsplit QC step only exists when no test is pausable (see _expand)
+    if test is None:
         return step_diag
     return bool(
         ((_qc_tests(step_config) or {}).get(test) or {}).get("diagnostics", step_diag)
@@ -274,6 +277,30 @@ def _expand(step_config):
         )
         units.append((sub, name))
     return units
+
+
+def _qc_flags(context):
+    data = context["data"]
+    return data[[name for name in data.data_vars if name.endswith("_QC")]].copy(
+        deep=True
+    )
+
+
+def _unit_context(context, test, flags_before):
+    # Each test of a split Apply QC reads the flags from before the step, as in one unsplit step
+    if test is None:
+        return context
+    return dict(context, qc_flags_before=flags_before)
+
+
+def _accept_parameters(pipeline, idx, test, parameters):
+    # later steps (e.g. the report) read the run's parameters from pipeline.steps
+    step = pipeline.steps[idx]
+    if test is not None:
+        qc_settings = dict(_qc_tests(step))
+        qc_settings[test] = parameters["qc_settings"][test]
+        parameters = dict(step["parameters"], qc_settings=qc_settings)
+    pipeline.steps[idx] = dict(step, parameters=parameters)
 
 
 def _has_data(values):
@@ -349,17 +376,21 @@ def _emit_columns(context, snapshot, request):
     print(f"__PELAGOS_DATA__ {request_id}", flush=True)
 
 
-def _drop_captures(pipeline, mark):
+def _drop_captures(pipeline, start, end=None):
     figs = getattr(pipeline, "_captured_figures", None)
     if not figs:
         return
-    for entry in figs[mark:]:
+    for entry in figs[start:end]:
         for path in entry.get("images", []):
             try:
                 os.remove(path)
             except OSError:
                 pass
-    del figs[mark:]
+    del figs[start:end]
+
+
+def _capture_count(pipeline):
+    return len(getattr(pipeline, "_captured_figures", None) or [])
 
 
 def _emit_time(paused):
@@ -446,14 +477,16 @@ def _run(pipeline):
             for sub, test in _expand(step_config)
         ]
         fail_mode = resolve_on_step_fail(pipeline.global_parameters.get("on_step_fail"))
+        flags_idx, flags_before = None, None
         for idx, step_config, test in units:
             name = step_config.get("name", "")
+            if test is not None and idx != flags_idx:
+                flags_idx, flags_before = idx, _qc_flags(context)
             pausable = _pausable(step_config, test)
             # a failed step may have mutated context in place, so keep a clean copy
             can_pause = pausable or fail_mode == "pause"
             snapshot = _snapshot(context) if can_pause else None
-            # a re-run replaces this unit's report figures
-            captured_mark = len(getattr(pipeline, "_captured_figures", None) or [])
+            captured_mark = _capture_count(pipeline)
             label = name + (f"\t{test}" if test else "")
             # the pipeline's own "Executing:" line is file-only, so announce the step here
             print(f"__PELAGOS_STEP__ {idx}\t{label}", flush=True)
@@ -463,7 +496,9 @@ def _run(pipeline):
             # True once any attempt succeeded, so a later failed re-run still keeps that result
             has_result = False
             try:
-                context = pipeline.execute_step(step_config, context)
+                context = pipeline.execute_step(
+                    step_config, _unit_context(context, test, flags_before)
+                )
                 has_result = True
             except (RuntimeError, ValueError, SystemExit) as exc:
                 _diag_capture["chunks"] = None
@@ -496,11 +531,13 @@ def _run(pipeline):
                 _emit_time(paused=False)
                 if action == "skip":
                     context = snapshot
+                    _drop_captures(pipeline, captured_mark)
                     pipeline.logger.log(SEVERE, "Step '%s' was skipped.", label)
                     break
                 if action == "continue":
                     if failed and not has_result:
                         context = snapshot
+                        _drop_captures(pipeline, captured_mark)
                         pipeline.logger.log(
                             SEVERE, "Step '%s' failed and was skipped.", label
                         )
@@ -531,15 +568,23 @@ def _run(pipeline):
                         flush=True,
                     )
                     _begin_diag_capture(True)
-                    _drop_captures(pipeline, captured_mark)
-                    retry_context = _snapshot(snapshot)
+                    retry_mark = _capture_count(pipeline)
+                    retry_context = _unit_context(
+                        _snapshot(snapshot), test, flags_before
+                    )
                     try:
                         context = pipeline.execute_step(rerun_config, retry_context)
                     except (RuntimeError, ValueError, SystemExit) as exc:
                         _diag_capture["chunks"] = None
+                        _drop_captures(pipeline, retry_mark)
                         failed = True
                         _emit_fail(idx, name, test, exc)
                         continue
+                    # the re-run's figures replace the earlier result's
+                    _drop_captures(pipeline, captured_mark, retry_mark)
+                    if params is not None:
+                        step_config = dict(step_config, parameters=params)
+                        _accept_parameters(pipeline, idx, test, params)
                     failed = False
                     has_result = True
                     _emit_diag_log(idx, name, test)

@@ -190,6 +190,20 @@ class ApplyQC(BaseStep):
         subset_names.add("TIME")  # diagnostics plot against time
         subset_vars = [name for name in subset_names if name in full_data.variables]
         data = full_data[subset_vars].copy(deep=True)
+        # The dashboard runs each test as its own step; tests still read the pre-step flags
+        test_data = data
+        flags_before = self.context.pop("qc_flags_before", None)
+        if flags_before is not None:
+            test_data = data.drop_vars(
+                [name for name in data.data_vars if name.endswith("_QC")]
+            )
+            test_data = test_data.assign(
+                {
+                    name: flags_before[name]
+                    for name in subset_vars
+                    if name in flags_before
+                }
+            )
         # Fetch existing flags from the data and create a place to store them
         existing_flags = [
             flag_col for flag_col in data.data_vars if flag_col in test_qc_outputs_cols
@@ -235,7 +249,7 @@ class ApplyQC(BaseStep):
             self.log(
                 f"Applying: {qc_qc_name}"
             )  # print(f"[Apply QC] Applying: {qc_qc_name}")
-            qc_test_instance = QC_CLASSES[qc_qc_name](data, **qc_test_params)
+            qc_test_instance = QC_CLASSES[qc_qc_name](test_data, **qc_test_params)
             overwrite = qc_test_instance.overwrite_flags
             if overwrite:  # the test merges against the store itself
                 qc_test_instance.existing_flags = self.flag_store

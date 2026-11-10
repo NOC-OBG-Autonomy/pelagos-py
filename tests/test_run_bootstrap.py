@@ -238,3 +238,139 @@ def test_level_formatter_tags_warnings_but_not_info(bootstrap):
     assert level == "__PELAGOS_LEVEL__ WARNING"
     assert line.endswith("Salinity Adjustment   no CNDC")
     assert "\x1b" not in line
+
+
+def test_snapshot_copies_qc_history(bootstrap):
+    context = {"data": None, "qc_history": {"X_QC": [("range qc", 0.5)]}}
+    snapshot = bootstrap._snapshot(context)
+    context["qc_history"]["X_QC"].append(("spike qc", 0.1))
+    assert snapshot["qc_history"] == {"X_QC": [("range qc", 0.5)]}
+
+
+class CapturingPipeline(FakePipeline):
+    def __init__(self, behaviours):
+        super().__init__([{"name": "Plot", "diagnostics": True}], {})
+        self._captured_figures = []
+        self.behaviours = list(behaviours)
+
+    def execute_step(self, step_config, context):
+        name, fail = self.behaviours.pop(0)
+        self._captured_figures.append({"name": name, "images": []})
+        if fail:
+            raise RuntimeError("step failed")
+        return context
+
+
+def captured_names(pipeline):
+    return [entry["name"] for entry in pipeline._captured_figures]
+
+
+def test_skip_drops_the_steps_figures(bootstrap, monkeypatch):
+    pipeline = CapturingPipeline([("first", False)])
+    run_with_commands(bootstrap, monkeypatch, pipeline, [("skip", None)])
+    assert captured_names(pipeline) == []
+
+
+def test_continue_after_failure_drops_the_failed_figures(bootstrap, monkeypatch):
+    pipeline = CapturingPipeline([("first", True)])
+    run_with_commands(bootstrap, monkeypatch, pipeline, [("continue", None)])
+    assert captured_names(pipeline) == []
+
+
+def test_failed_rerun_keeps_the_earlier_figures(bootstrap, monkeypatch):
+    pipeline = CapturingPipeline([("first", False), ("retry", True)])
+    run_with_commands(
+        bootstrap, monkeypatch, pipeline, [("rerun", None), ("continue", None)]
+    )
+    assert captured_names(pipeline) == ["first"]
+
+
+def test_successful_rerun_replaces_the_earlier_figures(bootstrap, monkeypatch):
+    pipeline = CapturingPipeline([("first", False), ("retry", False)])
+    run_with_commands(
+        bootstrap, monkeypatch, pipeline, [("rerun", None), ("continue", None)]
+    )
+    assert captured_names(pipeline) == ["retry"]
+
+
+def test_accepted_rerun_parameters_are_kept_for_later_steps(bootstrap, monkeypatch):
+    def reject_bad_parameters(step_config, context):
+        if step_config.get("parameters") == {"a": "bad"}:
+            raise ValueError("bad parameter")
+        return context
+
+    # fails first, so it pauses without diagnostics and the re-run forces them on
+    pipeline = FakePipeline(
+        [{"name": "Tune", "parameters": {"a": "bad"}}],
+        {"Tune": reject_bad_parameters},
+    )
+    run_with_commands(
+        bootstrap,
+        monkeypatch,
+        pipeline,
+        [("rerun", {"a": 2}), ("rerun", {"a": "bad"}), ("continue", None)],
+    )
+    assert pipeline.steps == [{"name": "Tune", "parameters": {"a": 2}}]
+
+
+def test_rerun_of_a_split_qc_unit_only_updates_its_own_test(bootstrap, monkeypatch):
+    qc_settings = {"range qc": {"diagnostics": True, "a": 1}, "spike qc": {"b": 1}}
+    pipeline = FakePipeline(
+        [{"name": "Apply QC", "parameters": {"qc_settings": qc_settings}}],
+        {"Apply QC": lambda config, context: context},
+    )
+    edited = {"qc_settings": {"range qc": {"a": 2}, "spike qc": {"b": 2}}}
+    run_with_commands(
+        bootstrap, monkeypatch, pipeline, [("rerun", edited), ("continue", None)]
+    )
+    assert pipeline.steps == [
+        {
+            "name": "Apply QC",
+            "parameters": {"qc_settings": {"range qc": {"a": 2}, "spike qc": {"b": 1}}},
+        }
+    ]
+
+
+def qc_data():
+    rng = np.random.default_rng(0)
+    chla = 1.0 + rng.normal(0, 0.01, 40)
+    chla[10] = 1.5  # a small spike, hidden while the huge one inflates the threshold
+    chla[25] = 1000.0  # out of range
+    return xr.Dataset(
+        {
+            "CHLA": ("N_MEASUREMENTS", chla),
+            "PROFILE_NUMBER": ("N_MEASUREMENTS", np.zeros(40)),
+        },
+        coords={"N_MEASUREMENTS": np.arange(40)},
+    )
+
+
+def test_split_qc_units_flag_like_one_apply_qc_step(bootstrap, monkeypatch):
+    from pelagos_py.pipeline import Pipeline
+    from pelagos_py.steps.quality_control.range_qc import range_qc
+
+    monkeypatch.setattr(range_qc, "plot_diagnostics", lambda self: None)
+    step = {
+        "name": "Apply QC",
+        "parameters": {
+            "qc_settings": {
+                "range qc": {
+                    "variable_ranges": {"CHLA": {4: [0, 100, "outside"]}},
+                    "diagnostics": True,
+                },
+                "spike qc": {"variables": {"CHLA": 2}, "window_size": 5},
+            }
+        },
+    }
+    pipeline = Pipeline()
+    unsplit = pipeline.execute_step(step, {"data": qc_data()})["data"]
+
+    pipeline.steps = [step]
+    pipeline._context = {"data": qc_data()}
+    monkeypatch.setattr(pipeline, "run_context", contextlib.nullcontext)
+    run_with_commands(bootstrap, monkeypatch, pipeline, [("continue", None)])
+    split = pipeline._context["data"]
+
+    flag_names = [name for name in unsplit.data_vars if name.endswith("_QC")]
+    xr.testing.assert_identical(split[flag_names], unsplit[flag_names])
+    assert unsplit["CHLA_QC"].values[25] == 4
