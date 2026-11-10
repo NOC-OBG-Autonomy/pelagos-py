@@ -1,3 +1,18 @@
+# This file is part of pelagos_py.
+#
+# Copyright 2025-2026 National Oceanography Centre and The Contributors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Subprocess the dashboard runs a pipeline in: ``python run_bootstrap.py <config> <figure_dir>``.
 
 Forces the Agg backend, saves each ``plt.show()`` figure (plus a plot spec) to
@@ -211,6 +226,13 @@ def _emit_report(context, since):
         pass
 
 
+def _emit_log_file(pipeline):
+    # the Outputs list only offers to delete files a run wrote
+    for handler in pipeline.logger.handlers:
+        if isinstance(handler, logging.FileHandler):
+            print(f"__PELAGOS_OUTPUT__ {handler.baseFilename}", flush=True)
+
+
 def _snapshot(context):
     # steps mutate the dataset in place, so a re-run needs a deep copy
     if context is None:
@@ -403,6 +425,7 @@ def main():
         _emit_time(paused=False)
         _send_levels()
         pipeline = Pipeline(config_path=config_path)
+        _emit_log_file(pipeline)
         pipeline._diagnose_failures = True
         _run(pipeline)
     except KeyboardInterrupt:
@@ -442,7 +465,7 @@ def _run(pipeline):
             try:
                 context = pipeline.execute_step(step_config, context)
                 has_result = True
-            except (RuntimeError, SystemExit) as exc:
+            except (RuntimeError, ValueError, SystemExit) as exc:
                 _diag_capture["chunks"] = None
                 # same on_step_fail handling as Pipeline.run()
                 if fail_mode == "stop":
@@ -512,7 +535,7 @@ def _run(pipeline):
                     retry_context = _snapshot(snapshot)
                     try:
                         context = pipeline.execute_step(rerun_config, retry_context)
-                    except (RuntimeError, SystemExit) as exc:
+                    except (RuntimeError, ValueError, SystemExit) as exc:
                         _diag_capture["chunks"] = None
                         failed = True
                         _emit_fail(idx, name, test, exc)

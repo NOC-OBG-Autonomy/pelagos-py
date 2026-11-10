@@ -253,13 +253,40 @@ def test_stop_ends_the_subprocess(tmp_path, monkeypatch):
 def test_columns_request_returns_when_the_run_exits(tmp_path, monkeypatch):
     # the run ignores the data request and exits, so columns() must not wait out its timeout
     script = tmp_path / "exits.py"
-    script.write_text("import time\nprint('up', flush=True)\ntime.sleep(0.5)\n")
+    script.write_text(
+        "import time\nprint('__PELAGOS_PAUSE__ 0\\tStep', flush=True)\ntime.sleep(0.5)\n"
+    )
     monkeypatch.setattr(runner, "RUN_BOOTSTRAP", script)
     run = runner._Run()
     run.start(tmp_path / "config.yaml")
+    deadline = time.time() + 10
+    while not run.paused and time.time() < deadline:
+        time.sleep(0.02)
     started = time.time()
     assert run.columns(["TEMP"], timeout=20) is None
     assert time.time() - started < 5
+
+
+def test_start_while_running_is_refused(tmp_path, monkeypatch):
+    script = tmp_path / "sleeper.py"
+    script.write_text("import time\ntime.sleep(30)\n")
+    monkeypatch.setattr(runner, "RUN_BOOTSTRAP", script)
+    run = runner._Run()
+    try:
+        run.start(tmp_path / "config.yaml")
+        first = run.proc
+        with pytest.raises(RuntimeError):
+            run.start(tmp_path / "config.yaml")
+        assert run.proc is first
+    finally:
+        run.stop()
+
+
+@pytest.mark.parametrize(
+    "path", ["/api/run/continue", "/api/run/skip", "/api/run/rerun"]
+)
+def test_commands_are_refused_when_the_run_is_not_paused(client, path):
+    assert client.post(path, json={}).status_code == 409
 
 
 INDEX_HTML = (dashboard_app.STATIC_DIR / "index.html").read_text()
@@ -367,18 +394,28 @@ def test_failed_demo_download_is_502(client):
 
 
 @pytest.fixture
-def outputs(workspace):
+def outputs(workspace, monkeypatch):
     out = workspace / "out"
     out.mkdir()
-    for name in ["run.log", "report.pdf", "result.nc", "other.nc", "notes.txt"]:
+    for name in [
+        "run.log",
+        "report.pdf",
+        "paper.pdf",
+        "result.nc",
+        "other.nc",
+        "notes.txt",
+    ]:
         (out / name).write_text(name)
     (out / "run_report_figures_1").mkdir()
     (out / "run_report_figures_1" / "fig.png").write_bytes(b"png")
+    # as if a run had announced its log and report
+    run_files = {(out / "run.log").resolve(), (out / "report.pdf").resolve()}
+    monkeypatch.setattr(runner._run, "outputs", run_files)
     return out
 
 
 def list_outputs(client):
-    payload = {"dirs": ["out"], "exports": ["result.nc"]}
+    payload = {"dirs": ["out"], "exports": ["out/result.nc"]}
     return client.post("/api/outputs", json=payload).json()
 
 
@@ -409,11 +446,13 @@ def test_delete_and_clean_outputs(client, outputs):
     list_outputs(client)
     client.delete("/api/outputs/file", params={"path": str(outputs / "run.log")})
     assert not (outputs / "run.log").exists()
-    cleaned = client.post(
-        "/api/outputs/clean", json={"dirs": ["out"], "exports": ["result.nc"]}
-    )
+    cleaned = client.post("/api/outputs/clean")
     assert cleaned.json()["removed"] == 3
-    assert sorted(p.name for p in outputs.iterdir()) == ["notes.txt", "other.nc"]
+    assert sorted(p.name for p in outputs.iterdir()) == [
+        "notes.txt",
+        "other.nc",
+        "paper.pdf",
+    ]
 
 
 def test_files_info_reports_existence_and_size(client, outputs):
@@ -497,7 +536,9 @@ def test_end_to_end_run_through_the_api(client):
         columns = client.get("/api/run/columns", params={"names": "PROFILE_NUMBER"})
         assert columns.status_code == 200
         assert columns.content
-        client.post("/api/run/continue")
+        assert client.post("/api/run/continue").status_code == 200
+        # a double click must not be queued for a later pause
+        assert client.post("/api/run/continue").status_code == 409
         assert wait_for(lambda: runner._run.finished)
         status = client.get("/api/run/status").json()
         assert status["running"] is False

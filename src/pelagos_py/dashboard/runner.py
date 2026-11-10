@@ -58,6 +58,9 @@ class _Run:
         self.finished = False
         self.returncode: int | None = None
         self.reports: set[str] = set()  # only announced PDFs are served
+        self.paused = False
+        # every report/log file this dashboard's runs wrote; the only ones Outputs lists
+        self.outputs: set[Path] = set()
         self._lock = threading.Lock()
         # processing clock from __PELAGOS_TIME__, so RAM samples share the runtime readout's x-axis
         self._active = 0.0
@@ -97,27 +100,31 @@ class _Run:
         env["COLUMNS"] = "110"
         # locking can fail (Errno -101) right after another process (the variable check) closed the file
         env["HDF5_USE_FILE_LOCKING"] = "FALSE"
-        for pattern in ("*.png", "*.json", "*.f32", "*_full.npz", "cols_*.bin"):
-            for old in FIG_DIR.glob(pattern):
-                old.unlink(missing_ok=True)
-        _FIGDATA_CACHE.clear()
-        self.proc = subprocess.Popen(
-            [sys.executable, str(RUN_BOOTSTRAP), str(config_path), str(FIG_DIR)],
-            cwd=str(WORKSPACE_DIR),
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            env=env,
-            bufsize=-1,  # binary BufferedReader: keeps \r and has read1, so bar ticks stream promptly
-        )
+        # check and start under one lock: the app serves requests from a thread pool
         with self._lock:
+            if self.is_running():
+                raise RuntimeError("A pipeline is already running.")
+            for pattern in ("*.png", "*.json", "*.f32", "*_full.npz", "cols_*.bin"):
+                for old in FIG_DIR.glob(pattern):
+                    old.unlink(missing_ok=True)
+            _FIGDATA_CACHE.clear()
             self.lines = []
             self.live = None
             self.live_after = 0
             self.finished = False
             self.returncode = None
             self.reports = set()
+            self.paused = False
             self._active, self._since = 0.0, None
+            self.proc = subprocess.Popen(
+                [sys.executable, str(RUN_BOOTSTRAP), str(config_path), str(FIG_DIR)],
+                cwd=str(WORKSPACE_DIR),
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                env=env,
+                bufsize=-1,  # binary BufferedReader: keeps \r and has read1, so bar ticks stream promptly
+            )
         threading.Thread(target=self._pump, args=(self.proc,), daemon=True).start()
         threading.Thread(
             target=self._sample_mem, args=(self.proc,), daemon=True
@@ -133,8 +140,16 @@ class _Run:
             # a stopped run's pump can still be draining after the next run started
             if proc is not self.proc:
                 return
+            # for Outputs only, not a log line
+            if text.startswith("__PELAGOS_OUTPUT__ "):
+                self.outputs.add(Path(text.split(" ", 1)[1].strip()).resolve())
+                return
             if text.startswith("__PELAGOS_REPORT__ "):
-                self.reports.add(text.split(" ", 1)[1].split("\t")[0].strip())
+                report = text.split(" ", 1)[1].split("\t")[0].strip()
+                self.reports.add(report)
+                self.outputs.add(Path(report).resolve())
+            if text.startswith("__PELAGOS_PAUSE__ "):
+                self.paused = True
             self.lines.append(text)
             self.live = None
             self.live_after = len(self.lines)
@@ -221,8 +236,19 @@ class _Run:
             except (BrokenPipeError, ValueError, OSError):
                 pass
 
+    def resume(self, command: str) -> bool:
+        # continue, skip or rerun; refused unless paused, so a double click can't answer the next pause
+        with self._lock:
+            if not self.paused or not self.is_running():
+                return False
+            self.paused = False
+        self.send(command)
+        return True
+
     def columns(self, names: list[str], timeout: float = 60.0) -> bytes | None:
-        # packed columns from the paused runner, or None if it didn't answer
+        # packed columns from the paused runner, or None if it isn't paused or didn't answer
+        if not self.paused:
+            return None
         with self._columns:
             self._columns_id += 1
             request_id = self._columns_id

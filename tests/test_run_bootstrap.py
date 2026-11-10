@@ -143,6 +143,22 @@ def test_rerun_passes_edited_parameters(bootstrap, monkeypatch):
     assert [config["parameters"] for config in configs] == [{"a": 1}, {"a": 2}]
 
 
+def test_rerun_with_rejected_parameters_pauses_again(bootstrap, monkeypatch):
+    def reject_bad_parameters(step_config, context):
+        if step_config.get("parameters") == {"a": "bad"}:
+            raise ValueError("bad parameter")
+        return add_one(step_config, context)
+
+    pipeline = FakePipeline(
+        [{"name": "Tune", "diagnostics": True}, {"name": "Record"}],
+        {"Tune": reject_bad_parameters, "Record": lambda config, context: context},
+    )
+    run_with_commands(
+        bootstrap, monkeypatch, pipeline, [("rerun", {"a": "bad"}), ("continue", None)]
+    )
+    assert pipeline.seen[-1] == ("Record", [2.0, 3.0])
+
+
 def test_skip_mode_moves_on_without_pausing(bootstrap, monkeypatch):
     pipeline = FakePipeline(
         [{"name": "Mutate"}, {"name": "Record"}],

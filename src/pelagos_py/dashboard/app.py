@@ -485,7 +485,6 @@ _OUTPUT_KINDS = {
     ".parquet": "data",
     ".h5": "data",
     ".hdf5": "data",
-    ".rst": "report",
 }
 _listed_outputs: set[Path] = set()  # only listed files may be served or deleted
 
@@ -514,7 +513,10 @@ def _dir_size(path: Path) -> int:
 
 
 def _list_outputs(payload: OutputsPayload) -> dict:
-    exports = {Path(f).name for f in payload.exports if f}
+    # only files runs wrote, so "Delete all" can't take a user's own PDFs or logs
+    run_files = {(WORKSPACE_DIR / f).resolve() for f in payload.exports if f}
+    with _run._lock:
+        run_files |= _run.outputs
     dirs = _output_dirs(payload.dirs)
     files = []
     _listed_outputs.clear()
@@ -523,12 +525,12 @@ def _list_outputs(payload: OutputsPayload) -> dict:
             if entry.name.startswith("."):
                 continue
             if entry.is_dir():
-                if "_report_figures_" not in entry.name and entry.name != "_build":
+                if "_report_figures_" not in entry.name:
                     continue
                 kind, size = "figures", _dir_size(entry)
             else:
                 kind = _OUTPUT_KINDS.get(entry.suffix.lower())
-                if kind is None or (kind == "data" and entry.name not in exports):
+                if kind is None or entry not in run_files:
                     continue
                 size = entry.stat().st_size
             _listed_outputs.add(entry)
@@ -563,7 +565,7 @@ def output_file(path: str):
     p = _listed_output(path)
     if p.is_dir():
         raise HTTPException(status_code=400, detail="Not a file.")
-    inline = p.suffix.lower() in (".pdf", ".log", ".rst")
+    inline = p.suffix.lower() in (".pdf", ".log")
     return FileResponse(
         p,
         media_type="application/pdf" if p.suffix.lower() == ".pdf" else None,
@@ -590,13 +592,13 @@ def delete_output(path: str):
 
 
 @app.post("/api/outputs/clean")
-def clean_outputs(payload: OutputsPayload):
+def clean_outputs():
     _no_run_in_flight()
-    listing = _list_outputs(payload)
-    for f in listing["files"]:
-        _remove(Path(f["path"]))
+    removed = len(_listed_outputs)
+    for p in _listed_outputs:
+        _remove(p)
     _listed_outputs.clear()
-    return {"status": "deleted", "removed": len(listing["files"])}
+    return {"status": "deleted", "removed": removed}
 
 
 class RevealPayload(BaseModel):
@@ -840,7 +842,10 @@ def run_pipeline(payload: RunPayload):
         raise HTTPException(status_code=409, detail="A pipeline is already running.")
     run_path = CONFIG_DIR / "_last_run.yaml"
     run_path.write_text(payload.yaml_content)
-    _run.start(run_path)
+    try:
+        _run.start(run_path)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from None
     return {"status": "started"}
 
 
@@ -855,27 +860,34 @@ class RerunPayload(BaseModel):
     yaml_content: str = ""
 
 
+def _resume(command: str):
+    if not _run.resume(command):
+        raise HTTPException(status_code=409, detail="The run is not paused.")
+
+
 @app.post("/api/run/continue")
 def continue_run():
     """Resume a paused run."""
-    _run.send("continue")
+    _resume("continue")
     return {"status": "continued"}
 
 
 @app.post("/api/run/skip")
 def skip_step():
     """Resume a paused run without the paused step's result."""
-    _run.send("skip")
+    _resume("skip")
     return {"status": "skipped"}
 
 
 @app.post("/api/run/rerun")
 def rerun_step(payload: RerunPayload):
     """Re-run the currently paused step with edited parameters, then re-pause."""
+    if not _run.paused:
+        raise HTTPException(status_code=409, detail="The run is not paused.")
     if payload.yaml_content:
         # a page reload reopens this file, so keep it in step with the edits
         (CONFIG_DIR / "_last_run.yaml").write_text(payload.yaml_content)
-    _run.send("rerun " + json.dumps(payload.parameters))
+    _resume("rerun " + json.dumps(payload.parameters))
     return {"status": "rerunning"}
 
 
