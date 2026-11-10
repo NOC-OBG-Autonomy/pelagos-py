@@ -27,8 +27,8 @@
     const orgEl = document.querySelector('.brand-org');
     if (!nameEl || !orgEl) return;
     nameEl.textContent = document.title;
-    const n = measure(document.title.toUpperCase(), `400 ${R}px 'Bebas Neue'`);
-    const o = measure(orgEl.textContent, `500 ${R}px 'Ubuntu'`);
+    const n = measure(document.title.toUpperCase(), `400 ${R}px 'Anton'`);
+    const o = measure(orgEl.textContent.toUpperCase(), `400 ${R}px Arial`);
     const vals = [n.w, n.h, n.shift, o.w, o.h, o.shift];
     if (!n.w || !o.w || !n.h || !o.h || vals.some((v) => !Number.isFinite(v))) return;
     const ratio = n.w / o.w;
@@ -38,5 +38,5 @@
   }
 
   fit();
-  Promise.all([document.fonts.load("1em 'Bebas Neue'"), document.fonts.load("500 1em 'Ubuntu'")]).then(fit);
+  document.fonts.load("1em 'Anton'").then(fit);
 })();
