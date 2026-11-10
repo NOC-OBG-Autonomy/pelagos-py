@@ -231,8 +231,7 @@ const Run = {
 
   handleMarker(marker, plain) {
     if (marker === Run.MEM_MARKER) {
-      // "<rss>\t<peak>\t<data>\t<label>" for the RAM meter, not the console.
-      Mem.add(plain.slice(marker.length));
+      Mem.setData(plain.slice(marker.length)); // dataset size at a step's end
       return;
     }
     if (marker === Run.SAMPLE_MARKER) {

@@ -52,15 +52,11 @@ _orig_show = plt.show
 _clock = {"active": 0.0, "since": _START}
 
 
-# RAM itself is sampled by the dashboard server; this only marks where each step ended
-def _emit_step_end(label, context):
-    data = (context or {}).get("data")
-    nbytes = getattr(data, "nbytes", None)
-    data_mb = f"{nbytes / 1024**2:.1f}" if nbytes is not None else ""
-    active = _clock["active"] + (
-        time.time() - _clock["since"] if _clock["since"] else 0
-    )
-    print(f"__PELAGOS_MEM__ {data_mb}\t{label}\t{active:.1f}", flush=True)
+# RAM itself is sampled by the dashboard server; this adds the dataset size after each step
+def _emit_data_size(context):
+    nbytes = getattr((context or {}).get("data"), "nbytes", None)
+    if nbytes is not None:
+        print(f"__PELAGOS_MEM__ {nbytes / 1024**2:.1f}", flush=True)
 
 
 def _caption(fig) -> str:
@@ -405,7 +401,6 @@ def _run(pipeline):
             label = name + (f"\t{test}" if test else "")
             # the pipeline's own "Executing:" line is file-only, so announce the step here
             print(f"__PELAGOS_STEP__ {idx}\t{label}", flush=True)
-            mem_label = name + (f" · {test}" if test else "")
             report_since = time.time()
             _begin_diag_capture(pausable)
             failed = False
@@ -429,7 +424,7 @@ def _run(pipeline):
                 _emit_fail(idx, name, test, exc)
             if not failed:
                 _emit_diag_log(idx, name, test)
-                _emit_step_end(mem_label, context)
+                _emit_data_size(context)
                 if name == REPORT_STEP_NAME:
                     _emit_report(context, report_since - 2)
             if not pausable and not failed:
@@ -492,7 +487,7 @@ def _run(pipeline):
                     failed = False
                     has_result = True
                     _emit_diag_log(idx, name, test)
-                    _emit_step_end(mem_label, context)
+                    _emit_data_size(context)
         pipeline._context = context
 
 

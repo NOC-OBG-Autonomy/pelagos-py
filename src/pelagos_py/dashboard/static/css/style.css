@@ -582,11 +582,7 @@ body.run-locked .flow-link .add-step { display: none; }
 .mem-spark-area { fill: var(--accent); opacity: .12; stroke: none; }
 .mem-spark-line { fill: none; stroke: var(--accent); stroke-width: 1; vector-effect: non-scaling-stroke; }
 .mem-spark-peak { stroke: var(--warn); stroke-width: 0.5; stroke-dasharray: 2 2; opacity: .6; vector-effect: non-scaling-stroke; }
-.mem-spark-dot { fill: var(--accent); }
-.mem-spark-dot.peak { fill: var(--warn); }
-.mem-spark-dot.active { r: 3.4px; stroke: var(--ink); stroke-width: 1px; }
-.mem-spark-dot.quiet { opacity: 0; }
-.mem-spark-dot.quiet.active { opacity: 1; }
+.mem-spark-dot { fill: var(--accent); stroke: var(--ink); stroke-width: 1px; }
 .mem-tooltip {
   position: fixed; z-index: 50; pointer-events: none; transform: translate(-50%, 14px); background: var(--panel); border: 1px solid var(--border);
   border-radius: var(--r-sm); padding: 6px 8px; font-size: 11px; font-family: var(--mono); color: var(--muted); line-height: 1.5; white-space: nowrap; box-shadow: var(--shadow-pop);
