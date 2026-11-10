@@ -167,8 +167,3 @@ Commands on stdin: `continue`, `skip`, `rerun <json parameters>` and
 | `static/js/outputs.js` | Output files from runs (reports, exports, logs), with open/delete |
 | `static/js/icons.js` | Inline SVG icons |
 | `static/js/logo.js` | Sizes the brand text to match the logo |
-
-## Offline use
-
-CodeMirror and js-yaml are vendored in `static/vendor/`. Offline, the Anton
-headline font (Google Fonts) falls back to Impact, and demo downloads fail.
