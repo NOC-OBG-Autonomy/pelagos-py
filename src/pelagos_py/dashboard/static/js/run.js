@@ -79,11 +79,25 @@ const Run = {
     document.getElementById('log-to-bottom').addEventListener('click', () => Run.scrollToBottom());
   },
 
-  append(line, level = null, prefix = '') {
+  // "hh:mm:ss  step  message" from the console formatter, spacing kept so copied text stays aligned.
+  LOG_LINE: /^(\d\d:\d\d:\d\d {2})(.*? {2,})(.*)$/s,
+
+  append(line, level = null) {
     Run.settleStart();
     const c = document.getElementById('log-console');
     const span = document.createElement('span');
-    span.append(prefix);
+    const m = line.match(Run.LOG_LINE);
+    if (m) {
+      const time = document.createElement('span');
+      const step = document.createElement('span');
+      time.className = 'log-time';
+      step.className = 'log-step';
+      time.textContent = m[1];
+      step.textContent = m[2];
+      span.className = 'log-row';
+      span.append(time, step);
+      line = m[3];
+    }
     if (level) {
       const tag = document.createElement('b');
       tag.className = 'log-tag log-' + level.toLowerCase();
@@ -186,9 +200,9 @@ const Run = {
 
   handleMarker(marker, plain) {
     if (marker === Run.LEVEL_MARKER) {
-      // "<level>\t<time and step>\t<message>"
-      const [level, prefix, ...message] = plain.slice(marker.length).split('\t');
-      Run.append(message.join('\t'), level, prefix);
+      const payload = plain.slice(marker.length);
+      const tab = payload.indexOf('\t');
+      Run.append(payload.slice(tab + 1), payload.slice(0, tab));
       return;
     }
     if (marker === Run.MEM_MARKER) {

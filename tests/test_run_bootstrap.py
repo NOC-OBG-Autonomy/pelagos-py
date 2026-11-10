@@ -218,10 +218,7 @@ def test_level_formatter_tags_warnings_but_not_info(bootstrap):
     assert fmt(logging.INFO, "[Salinity Adjustment] lag 0.3 s").endswith(
         "Salinity Adjustment   lag 0.3 s"
     )
-    level, prefix, message = fmt(
-        logging.WARNING, "[Salinity Adjustment] no CNDC"
-    ).split("\t")
+    level, line = fmt(logging.WARNING, "[Salinity Adjustment] no CNDC").split("\t")
     assert level == "__PELAGOS_LEVEL__ WARNING"
-    assert prefix.endswith("Salinity Adjustment   ")
-    assert message == "no CNDC"
-    assert "\x1b" not in prefix + message
+    assert line.endswith("Salinity Adjustment   no CNDC")
+    assert "\x1b" not in line

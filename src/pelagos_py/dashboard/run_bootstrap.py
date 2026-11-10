@@ -33,7 +33,7 @@ plt.switch_backend = lambda *args, **kwargs: None
 
 import numpy as np  # noqa: E402
 from pelagos_py.dashboard import fig_spec  # noqa: E402
-from pelagos_py.utils.console import _TAG, ConsoleFormatter  # noqa: E402
+from pelagos_py.utils.console import ConsoleFormatter  # noqa: E402
 from pelagos_py.pipeline import (  # noqa: E402
     REPORT_STEP_NAME,
     SEVERE,
@@ -376,10 +376,7 @@ class _LevelFormatter(ConsoleFormatter):
         line = super().format(record)
         if record.levelno < logging.WARNING or getattr(record, "raw", False):
             return line
-        message = _TAG.sub("", record.getMessage(), count=1)
-        prefix = line[: len(line) - len(message)] if line.endswith(message) else ""
-        message = line[len(prefix) :]
-        return f"__PELAGOS_LEVEL__ {record.levelname}\t{prefix}\t{message}"
+        return f"__PELAGOS_LEVEL__ {record.levelname}\t{line}"
 
 
 def _send_levels():
