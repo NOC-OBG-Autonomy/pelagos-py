@@ -34,7 +34,7 @@ DASH = {"--": "dash", "-.": "dashdot", ":": "dot"}
 def _hex(color, default="#1f77b4"):
     try:
         return to_hex(color)
-    except Exception:  # noqa: BLE001
+    except Exception:
         return default
 
 
@@ -76,7 +76,7 @@ def _ref_line(line, ax):
     try:
         is_h = line.get_transform() == ax.get_yaxis_transform()
         is_v = line.get_transform() == ax.get_xaxis_transform()
-    except Exception:  # noqa: BLE001
+    except Exception:
         return None
     if not (is_h or is_v):
         return None
@@ -137,7 +137,7 @@ def _scatter_trace(coll):
         return None
     try:  # c=<array> colours only resolve at draw time, and this figure was never drawn
         coll.update_scalarmappable()
-    except Exception:  # noqa: BLE001
+    except Exception:
         pass
     faces = coll.get_facecolors()
     rgba = None
@@ -185,7 +185,7 @@ def _share_groups(axes, which):
         try:
             grouper = ax.get_shared_x_axes() if which == "x" else ax.get_shared_y_axes()
             siblings = set(grouper.get_siblings(ax))
-        except Exception:  # noqa: BLE001
+        except Exception:
             siblings = {ax}
         for gid, members in enumerate(groups):
             if members & siblings:
@@ -215,7 +215,7 @@ def _grid_cell(ax):
             round(sum(wr[c0:c1]) / wtot, 6),
             round(sum(hr[r0:r1]) / htot, 6),
         ]
-    except Exception:  # noqa: BLE001
+    except Exception:
         return None
 
 

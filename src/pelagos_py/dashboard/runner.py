@@ -75,12 +75,12 @@ class _Run:
             import psutil
 
             child = psutil.Process(proc.pid)
-        except Exception:  # noqa: BLE001
+        except Exception:
             return
         while proc.poll() is None:
             try:
                 rss = child.memory_info().rss / 1e6
-            except Exception:  # noqa: BLE001
+            except Exception:
                 return
             with self._lock:
                 if self._since is not None and proc is self.proc:

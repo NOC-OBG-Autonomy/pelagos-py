@@ -90,7 +90,7 @@ def _caption(fig) -> str:
                     break
         # the marker is one line, so a multi-line title must be flattened
         return " ".join(text.split())
-    except Exception:  # noqa: BLE001
+    except Exception:
         return ""
 
 
@@ -107,7 +107,7 @@ def _capture_spec(fig, stem: str):
             handle.write(blob)
         np.savez(os.path.join(FIG_DIR, stem + "_full.npz"), **full)
         return name, ""
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return "", f"{type(exc).__name__}"
 
 
@@ -124,7 +124,7 @@ def _capture_show(*args, **kwargs):
                 f"__PELAGOS_FIG__ {fname}\t{_caption(fig)}\t{spec}\t{reason}",
                 flush=True,
             )
-        except Exception:  # noqa: BLE001
+        except Exception:
             pass
         finally:
             plt.close(fig)
@@ -222,7 +222,7 @@ def _emit_report(context, since):
                 newest, newest_mtime = pdf, mtime
         if newest is not None:
             print(f"__PELAGOS_REPORT__ {newest.resolve()}\t{newest.name}", flush=True)
-    except Exception:  # noqa: BLE001
+    except Exception:
         pass
 
 
@@ -302,7 +302,7 @@ def _emit_vars(context):
             f"__PELAGOS_VARS__ {json.dumps({'names': names, 'empty': empty})}",
             flush=True,
         )
-    except Exception:  # noqa: BLE001
+    except Exception:
         pass
 
 
@@ -344,7 +344,7 @@ def _emit_columns(context, snapshot, request):
             arrays.append(values)
         with open(os.path.join(FIG_DIR, f"cols_{request_id}.bin"), "wb") as handle:
             handle.write(fig_spec._pack({"columns": header}, arrays))
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         print(f"Could not send columns to the dashboard: {exc}", flush=True)
     print(f"__PELAGOS_DATA__ {request_id}", flush=True)
 
@@ -384,7 +384,7 @@ def _read_command():
         if line.startswith(action + " "):
             try:
                 return (action, json.loads(line[len(action) + 1 :]))
-            except Exception:  # noqa: BLE001
+            except Exception:
                 return ("continue", None)
     return ("continue", None)
 
