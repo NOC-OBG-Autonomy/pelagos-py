@@ -175,7 +175,7 @@ def test_validator_flags_out_of_order_variable_parameter():
             "name": "Deep Correction",
             "parameters": {"apply_to": "DEPTH", "depth_var": "PRES"},
         },
-        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH", "PSAL"]}},
+        {"name": "Derive CTD", "parameters": {"to_derive": ["PSAL"]}},
     ]
     with pytest.raises(ValueError, match="DEPTH"):
         check_pipeline_variables(steps, LOGGER)
@@ -185,7 +185,7 @@ def test_validator_ignores_self_produced_variable_parameter():
     # apply_to and output_as are both BBP700; that is not an ordering mistake.
     steps = [
         {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
-        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH", "PSAL"]}},
+        {"name": "Derive CTD", "parameters": {"to_derive": ["PSAL"]}},
         {"name": "BBP from Beta", "parameters": {}},
     ]
     # No file to check BBP700 against, so it is left for the run-time check.
@@ -241,7 +241,7 @@ def test_validator_flags_variable_parameter_missing_from_file(tmp_path):
     )
     steps = [
         {"name": "Load OG1", "parameters": {"file_path": str(file_path)}},
-        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH", "PSAL"]}},
+        {"name": "Derive CTD", "parameters": {"to_derive": ["PSAL"]}},
         {"name": "Isolate BBP Spikes", "parameters": {}},
     ]
     with pytest.raises(ValueError, match="BBP700"):
@@ -284,7 +284,7 @@ def test_validator_passes_when_file_has_everything(tmp_path):
     )
     steps = [
         {"name": "Load OG1", "parameters": {"file_path": str(file_path)}},
-        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH", "PSAL"]}},
+        {"name": "Derive CTD", "parameters": {"to_derive": ["PSAL"]}},
         {"name": "BBP from Beta", "parameters": {}},
     ]
     assert check_pipeline_variables(steps, LOGGER) is True
@@ -437,7 +437,7 @@ def test_validator_accepts_adjusted_version_of_required_variable(monkeypatch):
     _file_with(monkeypatch)
     steps = [
         {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
-        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH"]}},
+        {"name": "Derive CTD", "parameters": {}},
         {"name": "Find Profiles", "parameters": {}},
         {"name": "Mixed Layer Depth", "parameters": {"method": "temp"}},
     ]

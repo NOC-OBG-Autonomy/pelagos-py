@@ -18,7 +18,15 @@
 from pelagos_py.utils.config_mirror import ConfigMirrorMixin
 from pelagos_py.utils import parameter_spec
 from pelagos_py.utils.log_levels import STOP
-from pelagos_py.utils.qc_handling import adjusted_name, prefer_adjusted, raw_name
+from pelagos_py.utils.processing_utils import interpolate_at
+from pelagos_py.utils.qc_handling import (
+    DEFAULT_CALCULATION_FLAGS,
+    QC_COMBINATRIX,
+    adjusted_name,
+    prefer_adjusted,
+    raw_name,
+)
+import numpy as np
 import logging
 import os
 import time
@@ -144,6 +152,34 @@ class BaseStep(ConfigMirrorMixin):
             if f"{raw}_QC" in self.data:
                 self.data[f"{name}_QC"] = self.data[f"{raw}_QC"].copy(deep=True)
         return name
+
+    def values_at_rows_of(self, var, rows_of):
+        """``var`` time-interpolated onto the rows where ``rows_of`` has data, as ``(values, flags)``.
+
+        For a step needing another sensor's values at its own rows; the result is for
+        the calculation only and never written to the data. Samples flagged in the
+        calculation flags (default 3/4/9) are not interpolated from, and each row's
+        flag is the merged flag of the samples it came from (9 where no value).
+        """
+        var = self.resolve(var)
+        values = self.data[var].values.astype(float)
+        if f"{var}_QC" in self.data:
+            flags = np.nan_to_num(self.data[f"{var}_QC"].values, nan=9).astype(np.int8)
+        else:
+            flags = np.zeros(values.shape, dtype=np.int8)
+        excluded = getattr(self, "calculation_flag_filter", DEFAULT_CALCULATION_FLAGS)
+        usable = np.where(np.isin(flags, excluded), np.nan, values)
+
+        time = self.data["TIME"].values.astype("datetime64[ns]")
+        seconds = np.where(np.isnat(time), np.nan, time.astype("int64") / 1e9)
+        rows = np.isfinite(self.data[self.resolve(rows_of)].values)
+        query_time = np.where(rows, seconds, np.nan)
+
+        result, before, after = interpolate_at(seconds, usable, query_time)
+        found = before >= 0
+        merged = np.full(values.shape, 9, dtype=np.int8)
+        merged[found] = QC_COMBINATRIX[flags[before[found]], flags[after[found]]]
+        return result, merged
 
     def mark_intermediate(self, *names):
         """Record pipeline-made working variables that Data Export leaves out unless asked to keep them."""

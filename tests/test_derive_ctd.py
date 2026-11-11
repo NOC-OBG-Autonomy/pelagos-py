@@ -4,7 +4,7 @@ import gsw
 import numpy as np
 import xarray as xr
 
-ALL = ["DEPTH", "PSAL", "ASAL", "CONS_TEMP", "DENSITY"]
+ALL = ["PSAL", "ASAL", "CONS_TEMP", "DENSITY"]
 
 
 def make_context(**extra):
@@ -42,7 +42,7 @@ def run_step(context, to_derive=ALL):
 def test_writes_adjusted_variables_with_qc():
     data = run_step(make_context())
 
-    for var in ALL:
+    for var in ["DEPTH"] + ALL:
         assert f"{var}_ADJUSTED" in data
         assert f"{var}_ADJUSTED_QC" in data
         assert var not in data
@@ -68,7 +68,25 @@ def test_existing_psal_adjusted_is_not_overwritten_and_feeds_asal():
     assert np.allclose(data["ASAL_ADJUSTED"].values, expected)
 
 
-def test_output_variables_follow_to_derive():
-    outputs = DeriveCTDVariables.output_variables({"to_derive": ["DEPTH", "PSAL"]})
+def test_output_variables_always_include_depth():
+    assert DeriveCTDVariables.output_variables({"to_derive": ["PSAL"]}) == [
+        "DEPTH_ADJUSTED",
+        "PSAL_ADJUSTED",
+    ]
+    assert DeriveCTDVariables.output_variables({}) == ["DEPTH_ADJUSTED"]
 
-    assert outputs == ["DEPTH_ADJUSTED", "PSAL_ADJUSTED"]
+
+def test_depth_is_filled_on_every_row_and_flagged_8():
+    context = make_context()
+    pres = context["data"]["PRES"].values
+    pres[1::2] = np.nan  # another sensor's rows
+    context["data"]["PRES_QC"].values[1::2] = 9
+    context["data"]["PRES_QC"].values[10] = 4  # a bad reading is filled over
+    data = run_step(context, to_derive=["PSAL"])
+
+    depth, qc = data["DEPTH_ADJUSTED"].values, data["DEPTH_ADJUSTED_QC"].values
+    assert np.isfinite(depth[:-1]).all()  # the last row has no depth after it
+    assert (qc[1:-1:2] == 8).all() and qc[10] == 8
+    assert np.allclose(depth[1], (depth[0] + depth[2]) / 2)
+    assert np.isnan(data["PRES"].values[1::2]).all()
+    assert np.isnan(data["PSAL_ADJUSTED"].values[1::2]).all()

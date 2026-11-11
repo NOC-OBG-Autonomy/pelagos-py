@@ -16,6 +16,9 @@
 
 import numpy as np
 
+# Largest gap between two samples that a value is interpolated across (Interpolate Data's default).
+MAX_FILL_GAP_SECONDS = 5 * 60
+
 
 # ------------------------------- Units -----------------------------------
 def cndc_scale_factor(units):
@@ -45,6 +48,42 @@ def interpolate_by_time(values, time):
     out = v.copy()
     out[~ok] = np.interp(t[~ok], t[ok], v[ok], left=np.nan, right=np.nan)
     return out
+
+
+def interpolate_at(time, values, query_time, max_gap_seconds=MAX_FILL_GAP_SECONDS):
+    """Linearly interpolate the finite ``values`` (at ``time``, in seconds) at each ``query_time``.
+
+    NaN before the first and after the last value, and between two values more than
+    ``max_gap_seconds`` apart. Also returns the indices of the values either side of
+    each query (equal for an exact match, -1 where the result is NaN).
+    """
+    time = np.asarray(time, dtype=float)
+    values = np.asarray(values, dtype=float)
+    query_time = np.asarray(query_time, dtype=float)
+    known = np.flatnonzero(np.isfinite(values) & np.isfinite(time))
+    known = known[np.argsort(time[known], kind="stable")]
+    result = np.full(query_time.shape, np.nan)
+    before = np.full(query_time.shape, -1)
+    after = np.full(query_time.shape, -1)
+    if known.size == 0:
+        return result, before, after
+
+    known_time = time[known]
+    right = np.searchsorted(known_time, query_time, side="left")
+    right_clipped = np.minimum(right, known.size - 1)
+    exact = np.isfinite(query_time) & (known_time[right_clipped] == query_time)
+    left = right - 1
+    between = ~exact & (left >= 0) & (right < known.size)
+    between[between] = (
+        known_time[right[between]] - known_time[left[between]] <= max_gap_seconds
+    )
+
+    before[exact] = after[exact] = known[right_clipped[exact]]
+    before[between] = known[left[between]]
+    after[between] = known[right[between]]
+    found = exact | between
+    result[found] = np.interp(query_time[found], known_time, values[known])
+    return result, before, after
 
 
 def find_nans(data: np.ndarray):

@@ -24,6 +24,7 @@ from pelagos_py.utils.qc_handling import QCHandlingMixin, adjusted_name, raw_nam
 import gsw
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 from pelagos_py.utils import fig_spec
 from pelagos_py.utils.processing_utils import cndc_scale_factor
 
@@ -40,12 +41,17 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
     their ``_ADJUSTED`` version where one exists. A ``PSAL_ADJUSTED`` already made by Salinity
     Adjustment is not overwritten. See :doc:`/user_guide/Pelagos-py_DERIVED`.
 
+    ``DEPTH_ADJUSTED`` is always derived from ``PRES``. As the vertical coordinate it is the
+    one derived variable filled on every row: rows without a usable pressure (none, or
+    flagged 3/4/9) are interpolated in time from the depth either side, at most 5 minutes
+    apart, and flagged 8. The other variables only exist on the CTD's own rows.
+
     Parameters
     ----------
     to_derive : list
-        Variables to derive, each written as ``<name>_ADJUSTED``: ``DEPTH``, ``PSAL``
+        Further variables to derive, each written as ``<name>_ADJUSTED``: ``PSAL``
         (practical salinity), ``ASAL`` (absolute salinity), ``CONS_TEMP``
-        (conservative temperature) and ``DENSITY``.
+        (conservative temperature) and ``DENSITY``. Empty derives only ``DEPTH``.
 
     Examples
     --------
@@ -57,7 +63,6 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
           - name: "Derive CTD"
             parameters:
                 to_derive: [
-                    DEPTH,
                     PSAL,
                     ASAL,
                     CONS_TEMP,
@@ -81,21 +86,21 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
     parameter_schema = {
         "to_derive": {
             "type": list,
-            "required": True,
+            "default": [],
             "options": [
-                "DEPTH",
                 "PSAL",
                 "ASAL",
                 "CONS_TEMP",
                 "DENSITY",
             ],
-            "description": "Subset of CTD variables to derive and add to the dataset.",
+            "description": "CTD variables to derive besides DEPTH, which is always derived.",
         },
     }
 
     @classmethod
     def output_variables(cls, parameters):
-        return [adjusted_name(var) for var in parameters.get("to_derive") or []]
+        to_derive = parameters.get("to_derive") or []
+        return ["DEPTH_ADJUSTED"] + [adjusted_name(var) for var in to_derive]
 
     def run(self):
         self.log("Processing CTD...")
@@ -173,7 +178,7 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
 
         # Process each GSW function call to derive new variables
         for var_name, func, args in gsw_function_calls:
-            if var_name not in self.to_derive:
+            if var_name != "DEPTH" and var_name not in self.to_derive:
                 continue
 
             output_name = adjusted_name(var_name)
@@ -209,6 +214,9 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
             if source_qcs:
                 self.generate_qc({f"{output_name}_QC": source_qcs})
 
+        if "DEPTH_ADJUSTED" in self.data:
+            self.fill_depth()
+
         # Show diagnostic plots if diagnostics are enabled
         if self.diagnostics:
             self.plot_diagnostics()
@@ -220,6 +228,18 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
         self.context["data"].update(self.data)
         return self.context
 
+    def fill_depth(self):
+        # Every row needs a depth to place other sensors' samples in the water column.
+        depth, flags = self.values_at_rows_of("DEPTH_ADJUSTED", "TIME")
+        qc = self.data["DEPTH_ADJUSTED_QC"].values
+        usable = np.isfinite(self.data["DEPTH_ADJUSTED"].values) & ~np.isin(
+            qc, self.calculation_flag_filter
+        )
+        filled = ~usable & np.isfinite(depth)
+        self.data["DEPTH_ADJUSTED"].values[filled] = depth[filled]
+        self.data["DEPTH_ADJUSTED_QC"].values[filled] = 8
+        self.log(f"Filled DEPTH_ADJUSTED on {int(filled.sum())} rows (flagged 8).")
+
     def plot_diagnostics(self):
         if "TIME" not in self.data:
             return
@@ -227,7 +247,8 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
         plot_vars = [
             var
             for var in self.provided_variables
-            if raw_name(var) in self.to_derive and var in self.data
+            if (var == "DEPTH_ADJUSTED" or raw_name(var) in self.to_derive)
+            and var in self.data
         ]
 
         if not plot_vars:
