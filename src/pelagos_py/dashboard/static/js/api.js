@@ -20,6 +20,7 @@ const API = {
   // -> {configs, protected, demo, labels, reference, downloaded: [name]}
   async listConfigs() {
     const r = await fetch('/api/configs');
+    if (!r.ok) await _fail(r, 'could not list configs');
     return r.json();
   },
   async loadConfig(name) {
@@ -78,7 +79,9 @@ const API = {
   },
   // -> {name: {done, total}} for demo downloads in flight
   async demoProgress() {
-    return (await fetch('/api/demos/progress')).json();
+    const r = await fetch('/api/demos/progress');
+    if (!r.ok) await _fail(r, 'progress failed');
+    return r.json();
   },
   async downloadDemo(name) {
     const r = await fetch('/api/demos/' + encodeURIComponent(name) + '/download', { method: 'POST' });
@@ -92,7 +95,8 @@ const API = {
   // -> {dirs, files: [{path, name, dir, kind, size, mtime}]}
   async listOutputs(dirs, exports) {
     const r = await fetch('/api/outputs', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ dirs, exports }),
     });
     if (!r.ok) await _fail(r, 'listing failed');
@@ -107,7 +111,8 @@ const API = {
   },
   async cleanOutputs(dirs, exports) {
     const r = await fetch('/api/outputs/clean', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ dirs, exports }),
     });
     if (!r.ok) await _fail(r, 'delete failed');
@@ -115,7 +120,8 @@ const API = {
   },
   async revealOutputs(path) {
     const r = await fetch('/api/outputs/reveal', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path: path || '' }),
     });
     if (!r.ok) await _fail(r, 'could not open folder');
@@ -123,7 +129,9 @@ const API = {
   },
   async filesInfo(paths) {
     const r = await fetch('/api/files/info', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ paths }),
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paths }),
     });
     if (!r.ok) await _fail(r, 'could not stat files');
     return r.json();
@@ -131,14 +139,18 @@ const API = {
   // Resolves to the .nc paths.
   async pickFiles(start) {
     const r = await fetch('/api/files/pick', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ start: start || '' }),
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ start: start || '' }),
     });
     if (!r.ok) await _fail(r, 'Browse failed');
     return (await r.json()).paths;
   },
   async revealFile(path) {
     const r = await fetch('/api/files/reveal', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path }),
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path }),
     });
     if (!r.ok) await _fail(r, 'could not open folder');
     return r.json();
@@ -146,7 +158,8 @@ const API = {
   // Native dialog on the server; resolves to the path or null.
   async browseFile(start) {
     const r = await fetch('/api/browse', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ start: start || '' }),
     });
     if (!r.ok) await _fail(r, 'Browse failed');
@@ -177,7 +190,8 @@ const API = {
     const r = await fetch('/api/run/rerun', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ parameters, yaml_content: yamlContent }),
+      // As YAML, since JSON would turn the -.inf range bounds into null.
+      body: JSON.stringify({ parameters_yaml: jsyaml.dump(parameters), yaml_content: yamlContent }),
     });
     if (!r.ok) await _fail(r, 're-run failed');
   },

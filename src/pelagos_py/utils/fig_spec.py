@@ -259,6 +259,8 @@ def flag_points(ax, x, y, flags):
 
 def legend(ax, *, title=None):
     """Compact legend just outside the axes on the right."""
+    if not ax.get_legend_handles_labels()[0]:
+        return  # nothing labelled (e.g. every point NaN): matplotlib would only warn
     ax.legend(
         title=title,
         fontsize=FS_LEGEND,

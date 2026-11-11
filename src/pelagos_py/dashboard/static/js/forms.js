@@ -21,16 +21,24 @@ const Forms = {
   defaultValue(spec) {
     if ('default' in spec) return Forms.clone(spec.default);
     switch (Forms.kind(spec)) {
-      case 'bool': return false;
-      case 'number': return null;
-      case 'select': return spec.options[0];
-      case 'multiselect': return [];
-      case 'yaml': return null;
-      default: return '';
+      case 'bool':
+        return false;
+      case 'number':
+        return null;
+      case 'select':
+        return spec.options[0];
+      case 'multiselect':
+        return [];
+      case 'yaml':
+        return null;
+      default:
+        return '';
     }
   },
 
-  clone(v) { return v == null ? v : structuredClone(v); }, // JSON would turn ±Infinity (YAML .inf) into null
+  clone(v) {
+    return v == null ? v : structuredClone(v);
+  }, // JSON would turn ±Infinity (YAML .inf) into null
 
   _uid: 0,
 
@@ -46,8 +54,22 @@ const Forms = {
     return e;
   },
 
+  // The server opens these windows, so in a VM or over SSH there's nowhere to show them.
+  needsDisplay(btn) {
+    if (!STATE.registry.display) {
+      btn.disabled = true;
+      btn.title = "Can't open a file explorer on this machine";
+    }
+    return btn;
+  },
+
   button(label, { icon, iconSize = 16, cls = '', ...props } = {}) {
-    const b = Forms.el('button', { type: 'button', class: cls, html: icon ? Icon.svg(icon, iconSize) : '', ...props });
+    const b = Forms.el('button', {
+      type: 'button',
+      class: cls,
+      html: icon ? Icon.svg(icon, iconSize) : '',
+      ...props,
+    });
     b.append(label);
     return b;
   },
@@ -58,7 +80,9 @@ const Forms = {
     if (placeholder) sel.appendChild(Forms.el('option', { value: '', textContent: placeholder }));
     for (const o of options) {
       const [v, label] = Array.isArray(o) ? o : [o, o];
-      sel.appendChild(Forms.el('option', { value: String(v), textContent: String(label), selected: v === value }));
+      sel.appendChild(
+        Forms.el('option', { value: String(v), textContent: String(label), selected: v === value }),
+      );
     }
     if (onChange) sel.onchange = () => onChange(sel.value, sel);
     return sel;
@@ -66,7 +90,14 @@ const Forms = {
 
   seg(options, value, onChange, cls = '') {
     const seg = Forms.el('div', { class: 'seg ' + cls });
-    const btns = options.map(([v, label]) => Forms.button(label, { onclick: () => { seg.set(v); onChange(v); } }));
+    const btns = options.map(([v, label]) =>
+      Forms.button(label, {
+        onclick: () => {
+          seg.set(v);
+          onChange(v);
+        },
+      }),
+    );
     seg.append(...btns);
     seg.set = (v) => btns.forEach((b, i) => b.classList.toggle('on', options[i][0] === v));
     seg.set(value);
@@ -105,7 +136,8 @@ const Forms = {
     label.textContent = spec.name;
     if (spec.required) {
       const req = document.createElement('span');
-      req.className = 'req'; req.textContent = '*';
+      req.className = 'req';
+      req.textContent = '*';
       label.appendChild(req);
     }
     const typeTag = document.createElement('span');
@@ -118,7 +150,10 @@ const Forms = {
     const cur = spec.name in values ? values[spec.name] : Forms.defaultValue(spec);
 
     if (kind === 'select') {
-      input = Forms.select(spec.options, cur, (v, sel) => { values[spec.name] = spec.options[sel.selectedIndex]; onChange(); });
+      input = Forms.select(spec.options, cur, (v, sel) => {
+        values[spec.name] = spec.options[sel.selectedIndex];
+        onChange();
+      });
     } else if (kind === 'multiselect') {
       input = document.createElement('div');
       input.className = 'multiselect';
@@ -138,9 +173,12 @@ const Forms = {
         input.appendChild(item);
       }
     } else if (kind === 'bool') {
-      const sw = Forms.switchEl(!!cur, (v) => { values[spec.name] = v; onChange(); });
+      const sw = Forms.switchEl(!!cur, (v) => {
+        values[spec.name] = v;
+        onChange();
+      });
       input = sw.input;
-      input.id = 'f-' + (++Forms._uid);
+      input.id = 'f-' + ++Forms._uid;
       label.htmlFor = input.id;
       label.classList.add('switch-label');
       boolSwitch = sw.el;
@@ -162,7 +200,11 @@ const Forms = {
       input.placeholder = 'YAML / JSON value';
       input.onchange = () => {
         const txt = input.value.trim();
-        if (txt === '') { values[spec.name] = null; onChange(); return; }
+        if (txt === '') {
+          values[spec.name] = null;
+          onChange();
+          return;
+        }
         try {
           values[spec.name] = jsyaml.load(txt);
           input.style.borderColor = '';
@@ -175,7 +217,10 @@ const Forms = {
       input = document.createElement('input');
       input.type = 'text';
       if (cur != null) input.value = cur;
-      input.onchange = () => { values[spec.name] = input.value; onChange(); };
+      input.onchange = () => {
+        values[spec.name] = input.value;
+        onChange();
+      };
     }
 
     if (kind === 'bool') {
@@ -186,18 +231,28 @@ const Forms = {
       const row = document.createElement('div');
       row.className = 'file-row';
       input.placeholder = 'Path to your input NetCDF file';
-      input.onchange = () => { values[spec.name] = input.value; syncOutputPath(input.value); onChange(); };
-      const browse = Forms.button('Browse…', { icon: 'folder' });
+      input.onchange = () => {
+        values[spec.name] = input.value;
+        syncOutputPath(input.value);
+        onChange();
+      };
+      const browse = Forms.needsDisplay(Forms.button('Browse…', { icon: 'folder' }));
       browse.onclick = async () => {
         browse.disabled = true;
         try {
           const path = await API.browseFile(input.value);
           if (path) {
-            input.value = path; values[spec.name] = path; syncOutputPath(path); onChange();
+            input.value = path;
+            values[spec.name] = path;
+            syncOutputPath(path);
+            onChange();
             Build.start({ name: null, filePath: path }); // cancel keeps just the path
           }
-        } catch (e) { alert(e.message); }
-        finally { browse.disabled = false; }
+        } catch (e) {
+          alert(e.message);
+        } finally {
+          browse.disabled = false;
+        }
       };
       row.appendChild(input);
       row.appendChild(browse);
@@ -232,9 +287,13 @@ const Forms = {
   },
 
   // js-yaml would render `[20, 45]` as a block list; keep scalar lists inline like the hand-written configs.
-  _isScalar(x) { return x === null || typeof x !== 'object'; },
+  _isScalar(x) {
+    return x === null || typeof x !== 'object' || x instanceof Date;
+  },
 
-  _scalarText(x) { return jsyaml.dump(x, { flowLevel: 0, lineWidth: -1 }).trimEnd(); },
+  _scalarText(x) {
+    return jsyaml.dump(x, { flowLevel: 0, lineWidth: -1 }).trimEnd();
+  },
 
   // One item per line, so a config with many visual QC boxes stays readable.
   _FLOW_KEYS: new Set(['boxes']),
@@ -256,14 +315,25 @@ const Forms = {
       });
       return '\n' + parts.join('\n');
     }
-    if (v && typeof v === 'object') {
+    if (!Forms._isScalar(v)) {
       const keys = Object.keys(v);
       if (keys.length === 0) return '{}';
       const parts = keys.map((k) => {
-        const flow = Forms._FLOW_KEYS.has(k) && Array.isArray(v[k]) && v[k].length &&
-          v[k].every((m) => m && typeof m === 'object' && !Array.isArray(m) &&
-            Object.values(m).every((x) => Forms._isScalar(x) || (Array.isArray(x) && x.every(Forms._isScalar))));
-        const c = flow ? '\n' + v[k].map((m) => indent + '  - ' + Forms._flowMap(m)).join('\n')
+        const flow =
+          Forms._FLOW_KEYS.has(k) &&
+          Array.isArray(v[k]) &&
+          v[k].length &&
+          v[k].every(
+            (m) =>
+              m &&
+              typeof m === 'object' &&
+              !Array.isArray(m) &&
+              Object.values(m).every(
+                (x) => Forms._isScalar(x) || (Array.isArray(x) && x.every(Forms._isScalar)),
+              ),
+          );
+        const c = flow
+          ? '\n' + v[k].map((m) => indent + '  - ' + Forms._flowMap(m)).join('\n')
           : Forms._emit(v[k], indent + '  ');
         // Integer keys (QC flags) stay unquoted so the pipeline reads them as ints.
         const key = /^-?\d+$/.test(k) ? k : Forms._scalarText(k);

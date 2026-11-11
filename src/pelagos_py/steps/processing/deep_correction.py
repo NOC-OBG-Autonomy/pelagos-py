@@ -84,6 +84,7 @@ class DeepCorrection(BaseStep, QCHandlingMixin):
     required_variables = ["PROFILE_NUMBER"]
     provided_variables = []
     variable_parameters = ["apply_to", "depth_var"]
+    optional_variables = ["TIME"]
     uses_data_subset = True
 
     parameter_schema = {
@@ -147,6 +148,8 @@ class DeepCorrection(BaseStep, QCHandlingMixin):
 
         self.apply_to, self.output_as = self.resolve_variables()
         self.depth_var = self.resolve(self.depth_var)
+        # e.g. PRES is on the CTD's rows only: read it at apply_to's rows
+        self.depth, _ = self.values_at_rows_of(self.depth_var, self.apply_to)
 
         self.compute_dark_value()
         self.log(f"Dark correction value for {self.apply_to} = {self.dark_value:.6f}")
@@ -205,11 +208,12 @@ class DeepCorrection(BaseStep, QCHandlingMixin):
                 f"[{self.step_name}] {missing_vars} could not be found in the data."
             )
 
-        df = self.data[["PROFILE_NUMBER", depth, var]].to_pandas()
+        df = self.data[["PROFILE_NUMBER", var]].to_pandas()
+        df[depth] = self.depth
 
         # Flagged samples must not inform the dark value, but are still corrected
         # by it, so drop them here rather than from self.data.
-        df.loc[~self.calculation_mask(["PROFILE_NUMBER", depth, var]), var] = np.nan
+        df.loc[~self.calculation_mask(["PROFILE_NUMBER", var]), var] = np.nan
 
         df = df.dropna(subset=["PROFILE_NUMBER", depth])
 
@@ -386,7 +390,7 @@ class DeepCorrection(BaseStep, QCHandlingMixin):
 
         # samples with a value are drawn on top of those without
         pnum = np.asarray(self.data["PROFILE_NUMBER"].values, dtype=float)
-        depth = np.asarray(self.data[self.depth_var].values, dtype=float)
+        depth = self.depth
         has_val = np.isfinite(np.asarray(self.data[self.apply_to].values, dtype=float))
         ok = np.isfinite(pnum) & np.isfinite(depth)
         fig_spec.points(
@@ -491,7 +495,7 @@ class DeepCorrection(BaseStep, QCHandlingMixin):
 
     def _plot_full_record(self, fig, ax_corr):
         # Whole record vs depth: raw in grey, corrected coloured; downsampled.
-        depth = np.asarray(self.data[self.depth_var].values).ravel()
+        depth = self.depth
         raw = np.asarray(self.data[self.apply_to].values).ravel()
         corr = np.asarray(self.data[self.output_as].values).ravel()
 

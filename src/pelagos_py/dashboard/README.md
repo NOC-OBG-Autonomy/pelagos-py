@@ -125,12 +125,14 @@ commands on stdin.
 | `__PELAGOS_FIG__` | PNG file, caption, spec file, reason | a figure was saved |
 | `__PELAGOS_LOG__` | index, name, QC test, base64 text | a step printed diagnostics but drew no figure |
 | `__PELAGOS_FAIL__` | index, name, QC test, base64 text | a step failed (`on_step_fail: pause`) |
+| `__PELAGOS_LEVEL__` | level name, log line | a warning or worse, so the console can tag it |
 | `__PELAGOS_PAUSE__` | index, name, QC test | waiting for a command |
 | `__PELAGOS_RERUN__` | index | a re-run is starting |
 | `__PELAGOS_VARS__` | JSON | variables for the Visual QC pickers |
 | `__PELAGOS_DATA__` | request id | requested columns written to `cols_<id>.bin` |
 | `__PELAGOS_REPORT__` | path, file name | a PDF report was written |
-| `__PELAGOS_MEM__` | RSS, peaks, dataset size, step | RAM meter reading after a step |
+| `__PELAGOS_OUTPUT__` | path | the run's log file, so Outputs can list it (kept off the console) |
+| `__PELAGOS_MEM__` | dataset size (MB) | size of the data after a step, for the RAM meter |
 | `__PELAGOS_TIME__` | active seconds, paused, epoch | processing clock |
 
 Commands on stdin: `continue`, `skip`, `rerun <json parameters>` and
@@ -143,6 +145,7 @@ Commands on stdin: `continue`, `skip`, `rerun <json parameters>` and
 |------|------|
 | `__init__.py` | `run()`: checks the extra is installed and starts the server |
 | `app.py` | FastAPI backend: registry, validation, configs, demos, outputs, runs and the log stream |
+| `runner.py` | The pipeline subprocess: start/stop, output pump, progress and RAM sampling, figure folder |
 | `run_bootstrap.py` | Subprocess that runs the pipeline and captures each `plt.show()` figure |
 | `fig_spec.py` | matplotlib figure → plot spec + float32 data |
 | `static/index.html` | Page shell |
@@ -164,8 +167,3 @@ Commands on stdin: `continue`, `skip`, `rerun <json parameters>` and
 | `static/js/outputs.js` | Output files from runs (reports, exports, logs), with open/delete |
 | `static/js/icons.js` | Inline SVG icons |
 | `static/js/logo.js` | Sizes the brand text to match the logo |
-
-## Offline use
-
-CodeMirror and js-yaml load from a CDN. To run offline, copy them into
-`static/vendor/` and point `index.html` at the local copies.

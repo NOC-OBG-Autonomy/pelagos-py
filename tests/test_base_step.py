@@ -69,3 +69,40 @@ def test_output_variables_default():
         "X",
         "Y",
     ]
+
+
+def seconds(*offsets):
+    return np.datetime64("2024-01-01") + np.array(offsets).astype("timedelta64[s]")
+
+
+def test_values_at_rows_of_interpolates_onto_the_other_sensors_rows():
+    nan = np.nan
+    data = xr.Dataset(
+        {
+            "TIME": ("N_MEASUREMENTS", seconds(0, 10, 20, 30, 40, 900)),
+            "TEMP": ("N_MEASUREMENTS", np.array([10.0, nan, 12.0, 99.0, 14.0, 20.0])),
+            "TEMP_QC": ("N_MEASUREMENTS", np.array([1, 9, 2, 4, 1, 1], dtype=np.int8)),
+            "DOXY": ("N_MEASUREMENTS", np.array([nan, 5.0, nan, 5.0, nan, nan])),
+        }
+    )
+    values, flags = make_step(data).values_at_rows_of("TEMP", "DOXY")
+
+    # the bad (4) TEMP on a DOXY row isn't used: it's filled from either side
+    assert np.allclose(values[[1, 3]], [11.0, 13.0])
+    assert list(flags[[1, 3]]) == [2, 2]
+    assert np.isnan(values[[0, 2, 4, 5]]).all()
+    assert (flags[[0, 2, 4, 5]] == 9).all()
+    assert np.isnan(data["TEMP"].values[1])
+
+
+def test_values_at_rows_of_does_not_bridge_long_gaps():
+    data = xr.Dataset(
+        {
+            "TIME": ("N_MEASUREMENTS", seconds(0, 200, 600)),
+            "PRES": ("N_MEASUREMENTS", np.array([1.0, np.nan, 3.0])),
+            "CHLA": ("N_MEASUREMENTS", np.array([np.nan, 0.5, np.nan])),
+        }
+    )
+    values, flags = make_step(data).values_at_rows_of("PRES", "CHLA")
+    assert np.isnan(values).all()
+    assert (flags == 9).all()

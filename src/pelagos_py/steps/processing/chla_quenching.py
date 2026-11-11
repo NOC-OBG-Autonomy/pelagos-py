@@ -18,7 +18,11 @@
 
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
-from pelagos_py.utils.qc_handling import QCHandlingMixin, adjusted_name
+from pelagos_py.utils.qc_handling import (
+    QC_COMBINATRIX,
+    QCHandlingMixin,
+    adjusted_name,
+)
 from pelagos_py.utils.processing_utils import profile_indices
 import pelagos_py.utils.palettes as palettes
 from pelagos_py.utils import fig_spec
@@ -95,6 +99,9 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
     sample; each method just reads a NaN-masked copy of its inputs wherever it
     derives a quantity, so flagging the unstable top few metres keeps it out of the
     references while it still gets corrected.
+
+    Values the correction changes are flagged 5 (value changed) in the output's
+    ``_QC``, merged so an existing 3 or 4 is kept.
 
     The mixed layer depth is read from the ``MLD`` variable, produced by a
     preceding Mixed Layer Depth step.
@@ -254,8 +261,8 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
             "default": None,
             "description": (
                 "Profile numbers drawn by the 'profile' / 'quenching_depth' "
-                "diagnostic figures; defaults to the day profile the correction "
-                "changed most."
+                "diagnostic figures; defaults to a typical day profile (median "
+                "change from the correction)."
             ),
         },
         "max_photic_depth": {
@@ -509,12 +516,28 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
 
         self.reconstruct_data()
         self.update_qc()
+        self.flag_changed_values()
 
         if self.diagnostics:
             self.generate_diagnostics()
 
         self.context["data"].update(self.data)
         return self.context
+
+    def flag_changed_values(self):
+        # Argo: values the quenching correction changed are flagged 5 (value changed)
+        qc_name = f"{self.output_as}_QC"
+        if qc_name not in self.data:
+            return
+        before = self.data_copy[self.apply_to].values
+        after = self.data[self.output_as].values
+        changed = np.isfinite(after) & ~np.isclose(after, before, equal_nan=True)
+        new_flags = np.where(changed, 5, 0)
+        merged = QC_COMBINATRIX[self.data[qc_name].values.astype(int), new_flags]
+        self.data[qc_name][:] = merged
+        self.log(
+            f"Flagged {int(changed.sum())} quench-corrected values 5.", console=False
+        )
 
     # ==================================================================
     # Shared helpers - inputs and per-profile quantities used by the methods below
@@ -2247,8 +2270,8 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
         )
 
     def _example_profiles(self):
-        # day profile = the one the configured method changed most; night profile
-        # = the nearest in time to it
+        # day profile = a typical one (median change among changed day profiles);
+        # night profile = the nearest in time to it
         change = np.abs(
             self.data[self.output_as].values - self.data_copy[self.apply_to].values
         )
@@ -2263,7 +2286,9 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
             p for p in total_change if elev.get(p, 0) > self.day_min_elevation
         ]
         pool = day_candidates or list(total_change)
-        day_pn = max(pool, key=lambda p: total_change[p])
+        changed = [p for p in pool if total_change[p] > 0] or pool
+        median_change = np.median([total_change[p] for p in changed])
+        day_pn = min(changed, key=lambda p: abs(total_change[p] - median_change))
 
         night_candidates = [
             p for p in total_change if elev.get(p, 0) < self.night_max_elevation

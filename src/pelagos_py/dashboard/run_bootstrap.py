@@ -1,3 +1,18 @@
+# This file is part of pelagos_py.
+#
+# Copyright 2025-2026 National Oceanography Centre and The Contributors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Subprocess the dashboard runs a pipeline in: ``python run_bootstrap.py <config> <figure_dir>``.
 
 Forces the Agg backend, saves each ``plt.show()`` figure (plus a plot spec) to
@@ -7,12 +22,13 @@ to the dashboard as ``__PELAGOS_*__`` lines on stdout (see the README).
 
 import base64
 import contextlib
+import copy
 import io
 import json
+import logging
 import os
 import signal
 import sys
-import threading
 import time
 from pathlib import Path
 
@@ -33,6 +49,8 @@ plt.switch_backend = lambda *args, **kwargs: None
 
 import numpy as np  # noqa: E402
 from pelagos_py.dashboard import fig_spec  # noqa: E402
+from pelagos_py.utils.console import LogFormatter  # noqa: E402
+import pelagos_py.pipeline as pipeline_module  # noqa: E402
 from pelagos_py.pipeline import (  # noqa: E402
     REPORT_STEP_NAME,
     SEVERE,
@@ -49,83 +67,15 @@ FIG_DIR = sys.argv[2]
 _saved = {"n": 0}
 _orig_show = plt.show
 
-# RAM meter: a step's memory spike is usually freed before it returns, so a thread polls RSS during it.
-_mem = {
-    "label": "startup",
-    "step_start": 0.0,
-    "step_peak": 0.0,
-    "run_peak": 0.0,
-    "run_peak_label": "",
-}
-_mem_lock = threading.Lock()
-
 # Processing time, stopped while paused on stdin
 _clock = {"active": 0.0, "since": _START}
 
 
-def _rss_mb():
-    try:
-        import psutil
-
-        return psutil.Process(os.getpid()).memory_info().rss / 1024**2
-    except Exception:  # noqa: BLE001
-        return None
-
-
-def _mem_sampler():
-    while True:
-        rss = _rss_mb()
-        if rss is not None:
-            with _mem_lock:
-                if rss > _mem["step_peak"]:
-                    _mem["step_peak"] = rss
-                if rss > _mem["run_peak"]:
-                    _mem["run_peak"] = rss
-                    _mem["run_peak_label"] = _mem["label"]
-        time.sleep(0.4)
-
-
-def _mem_begin(label):
-    rss = _rss_mb() or 0.0
-    with _mem_lock:
-        _mem["label"] = label
-        _mem["step_start"] = rss
-        _mem["step_peak"] = rss
-
-
-def _emit_mem(context):
-    rss_mb = _rss_mb()
-    if rss_mb is None:
-        return
-    with _mem_lock:
-        step_peak = max(_mem["step_peak"], rss_mb)
-        step_start = _mem["step_start"]
-        if rss_mb > _mem["run_peak"]:
-            _mem["run_peak"] = rss_mb
-            _mem["run_peak_label"] = _mem["label"]
-        run_peak = _mem["run_peak"]
-        run_peak_label = _mem["run_peak_label"]
-        label = _mem["label"]
-    data_mb = ""
-    try:
-        data = (context or {}).get("data")
-        nbytes = getattr(data, "nbytes", None)
-        if nbytes is not None:
-            data_mb = f"{nbytes / 1024**2:.1f}"
-    except Exception:  # noqa: BLE001
-        data_mb = ""
-    active = _clock["active"] + (
-        time.time() - _clock["since"] if _clock["since"] else 0
-    )
-    print(
-        f"__PELAGOS_MEM__ {rss_mb:.1f}\t{run_peak:.1f}\t{data_mb}\t{label}"
-        f"\t{step_peak:.1f}\t{run_peak_label}\t{step_start:.1f}\t{active:.1f}",
-        flush=True,
-    )
-
-
-if _rss_mb() is not None:
-    threading.Thread(target=_mem_sampler, daemon=True).start()
+# RAM itself is sampled by the dashboard server; this adds the dataset size after each step
+def _emit_data_size(context):
+    nbytes = getattr((context or {}).get("data"), "nbytes", None)
+    if nbytes is not None:
+        print(f"__PELAGOS_MEM__ {nbytes / 1e6:.1f}", flush=True)
 
 
 def _caption(fig) -> str:
@@ -141,7 +91,7 @@ def _caption(fig) -> str:
                     break
         # the marker is one line, so a multi-line title must be flattened
         return " ".join(text.split())
-    except Exception:  # noqa: BLE001
+    except Exception:
         return ""
 
 
@@ -152,13 +102,13 @@ def _capture_spec(fig, stem: str):
         if spec is None:
             return "", reason
         name = stem + ".json"
-        with open(os.path.join(FIG_DIR, name), "w") as handle:
+        with open(os.path.join(FIG_DIR, name), "w", encoding="utf-8") as handle:
             json.dump(spec, handle)
         with open(os.path.join(FIG_DIR, stem + ".f32"), "wb") as handle:
             handle.write(blob)
         np.savez(os.path.join(FIG_DIR, stem + "_full.npz"), **full)
         return name, ""
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return "", f"{type(exc).__name__}"
 
 
@@ -175,7 +125,7 @@ def _capture_show(*args, **kwargs):
                 f"__PELAGOS_FIG__ {fname}\t{_caption(fig)}\t{spec}\t{reason}",
                 flush=True,
             )
-        except Exception:  # noqa: BLE001
+        except Exception:
             pass
         finally:
             plt.close(fig)
@@ -273,8 +223,15 @@ def _emit_report(context, since):
                 newest, newest_mtime = pdf, mtime
         if newest is not None:
             print(f"__PELAGOS_REPORT__ {newest.resolve()}\t{newest.name}", flush=True)
-    except Exception:  # noqa: BLE001
+    except Exception:
         pass
+
+
+def _emit_log_file(pipeline):
+    # the Outputs list only offers to delete files a run wrote
+    for handler in pipeline.logger.handlers:
+        if isinstance(handler, logging.FileHandler):
+            print(f"__PELAGOS_OUTPUT__ {handler.baseFilename}", flush=True)
 
 
 def _snapshot(context):
@@ -284,6 +241,9 @@ def _snapshot(context):
     snap = dict(context)
     if snap.get("data") is not None:
         snap["data"] = snap["data"].copy(deep=True)
+    # Apply QC appends to these lists in place
+    if "qc_history" in snap:
+        snap["qc_history"] = copy.deepcopy(snap["qc_history"])
     return snap
 
 
@@ -294,9 +254,8 @@ def _qc_tests(step_config):
 
 def _pausable(step_config, test):
     step_diag = bool(step_config.get("diagnostics"))
-    if (
-        test is None
-    ):  # an unsplit QC step only exists when no test is pausable (see _expand)
+    # an unsplit QC step only exists when no test is pausable (see _expand)
+    if test is None:
         return step_diag
     return bool(
         ((_qc_tests(step_config) or {}).get(test) or {}).get("diagnostics", step_diag)
@@ -318,6 +277,30 @@ def _expand(step_config):
         )
         units.append((sub, name))
     return units
+
+
+def _qc_flags(context):
+    data = context["data"]
+    return data[[name for name in data.data_vars if name.endswith("_QC")]].copy(
+        deep=True
+    )
+
+
+def _unit_context(context, test, flags_before):
+    # Each test of a split Apply QC reads the flags from before the step, as in one unsplit step
+    if test is None:
+        return context
+    return dict(context, qc_flags_before=flags_before)
+
+
+def _accept_parameters(pipeline, idx, test, parameters):
+    # later steps (e.g. the report) read the run's parameters from pipeline.steps
+    step = pipeline.steps[idx]
+    if test is not None:
+        qc_settings = dict(_qc_tests(step))
+        qc_settings[test] = parameters["qc_settings"][test]
+        parameters = dict(step["parameters"], qc_settings=qc_settings)
+    pipeline.steps[idx] = dict(step, parameters=parameters)
 
 
 def _has_data(values):
@@ -346,7 +329,7 @@ def _emit_vars(context):
             f"__PELAGOS_VARS__ {json.dumps({'names': names, 'empty': empty})}",
             flush=True,
         )
-    except Exception:  # noqa: BLE001
+    except Exception:
         pass
 
 
@@ -388,22 +371,26 @@ def _emit_columns(context, snapshot, request):
             arrays.append(values)
         with open(os.path.join(FIG_DIR, f"cols_{request_id}.bin"), "wb") as handle:
             handle.write(fig_spec._pack({"columns": header}, arrays))
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         print(f"Could not send columns to the dashboard: {exc}", flush=True)
     print(f"__PELAGOS_DATA__ {request_id}", flush=True)
 
 
-def _drop_captures(pipeline, mark):
+def _drop_captures(pipeline, start, end=None):
     figs = getattr(pipeline, "_captured_figures", None)
     if not figs:
         return
-    for entry in figs[mark:]:
+    for entry in figs[start:end]:
         for path in entry.get("images", []):
             try:
                 os.remove(path)
             except OSError:
                 pass
-    del figs[mark:]
+    del figs[start:end]
+
+
+def _capture_count(pipeline):
+    return len(getattr(pipeline, "_captured_figures", None) or [])
 
 
 def _emit_time(paused):
@@ -428,9 +415,34 @@ def _read_command():
         if line.startswith(action + " "):
             try:
                 return (action, json.loads(line[len(action) + 1 :]))
-            except Exception:  # noqa: BLE001
+            except Exception:
                 return ("continue", None)
     return ("continue", None)
+
+
+class _LevelFormatter(LogFormatter):
+    # warning+ lines carry their level instead of a tag, so the browser draws the tag itself
+    def format(self, record):
+        if record.levelno < logging.WARNING or getattr(record, "raw", False):
+            return super().format(record)
+        line = self.prefix(record) + record.getMessage()
+        return f"__PELAGOS_LEVEL__ {record.levelname}\t{line}"
+
+
+def _send_levels():
+    for name in list(logging.Logger.manager.loggerDict):
+        for handler in logging.getLogger(name).handlers:
+            if isinstance(handler.formatter, LogFormatter):
+                handler.setFormatter(_LevelFormatter())
+    # Pipeline() makes a fresh console handler, and logs while doing so
+    make_handler = pipeline_module.make_console_handler
+
+    def make_level_handler(*args, **kwargs):
+        handler = make_handler(*args, **kwargs)
+        handler.setFormatter(_LevelFormatter())
+        return handler
+
+    pipeline_module.make_console_handler = make_level_handler
 
 
 def main():
@@ -438,7 +450,9 @@ def main():
     try:
         _patch_diagnostics_capture()
         _emit_time(paused=False)
+        _send_levels()
         pipeline = Pipeline(config_path=config_path)
+        _emit_log_file(pipeline)
         pipeline._diagnose_failures = True
         _run(pipeline)
     except KeyboardInterrupt:
@@ -458,45 +472,42 @@ def _run(pipeline):
             for idx, step_config in enumerate(pipeline.steps)
             for sub, test in _expand(step_config)
         ]
+        fail_mode = resolve_on_step_fail(pipeline.global_parameters.get("on_step_fail"))
+        flags_idx, flags_before = None, None
         for idx, step_config, test in units:
             name = step_config.get("name", "")
+            if test is not None and idx != flags_idx:
+                flags_idx, flags_before = idx, _qc_flags(context)
             pausable = _pausable(step_config, test)
-            snapshot = _snapshot(context) if pausable else None
-            pre_context = context
-            # a re-run replaces this unit's report figures
-            captured_mark = len(getattr(pipeline, "_captured_figures", None) or [])
+            # a failed step may have mutated context in place, so keep a clean copy
+            can_pause = pausable or fail_mode == "pause"
+            snapshot = _snapshot(context) if can_pause else None
+            captured_mark = _capture_count(pipeline)
             label = name + (f"\t{test}" if test else "")
             # the pipeline's own "Executing:" line is file-only, so announce the step here
             print(f"__PELAGOS_STEP__ {idx}\t{label}", flush=True)
-            mem_label = name + (f" · {test}" if test else "")
-            _mem_begin(mem_label)
             report_since = time.time()
             _begin_diag_capture(pausable)
             failed = False
             # True once any attempt succeeded, so a later failed re-run still keeps that result
             has_result = False
             try:
-                context = pipeline.execute_step(step_config, context)
-                has_result = True
-            except (RuntimeError, SystemExit) as exc:
-                _diag_capture["chunks"] = None
-                # same on_step_fail handling as Pipeline.run()
-                fail_mode = resolve_on_step_fail(
-                    pipeline.global_parameters.get("on_step_fail")
+                context = pipeline.execute_step(
+                    step_config, _unit_context(context, test, flags_before)
                 )
+                has_result = True
+            except (RuntimeError, ValueError, SystemExit) as exc:
+                _diag_capture["chunks"] = None
                 if fail_mode == "stop":
                     pipeline.logger.log(STOP, "Pipeline stopped at step '%s'.", label)
                     sys.exit(1)
-                if fail_mode == "skip":
-                    pipeline.logger.log(
-                        SEVERE, "Step '%s' failed and was skipped.", label
-                    )
+                if pipeline._skip_failed_step(fail_mode, label):
                     continue
                 failed = True
                 _emit_fail(idx, name, test, exc)
             if not failed:
                 _emit_diag_log(idx, name, test)
-                _emit_mem(context)
+                _emit_data_size(context)
                 if name == REPORT_STEP_NAME:
                     _emit_report(context, report_since - 2)
             if not pausable and not failed:
@@ -511,11 +522,14 @@ def _run(pipeline):
                     action, params = _read_command()
                 _emit_time(paused=False)
                 if action == "skip":
-                    context = snapshot if snapshot is not None else pre_context
+                    context = snapshot
+                    _drop_captures(pipeline, captured_mark)
                     pipeline.logger.log(SEVERE, "Step '%s' was skipped.", label)
                     break
                 if action == "continue":
                     if failed and not has_result:
+                        context = snapshot
+                        _drop_captures(pipeline, captured_mark)
                         pipeline.logger.log(
                             SEVERE, "Step '%s' failed and was skipped.", label
                         )
@@ -545,26 +559,28 @@ def _run(pipeline):
                         f"Re-running with parameters: {rerun_config.get('parameters')}",
                         flush=True,
                     )
-                    _mem_begin(mem_label)
                     _begin_diag_capture(True)
-                    _drop_captures(pipeline, captured_mark)
-                    if snapshot is None:
-                        # keep pre_context clean so Skip still means "before this step"
-                        snapshot = _snapshot(pre_context)
-                    retry_context = (
-                        _snapshot(snapshot) if snapshot is not None else pre_context
+                    retry_mark = _capture_count(pipeline)
+                    retry_context = _unit_context(
+                        _snapshot(snapshot), test, flags_before
                     )
                     try:
                         context = pipeline.execute_step(rerun_config, retry_context)
-                    except (RuntimeError, SystemExit) as exc:
+                    except (RuntimeError, ValueError, SystemExit) as exc:
                         _diag_capture["chunks"] = None
+                        _drop_captures(pipeline, retry_mark)
                         failed = True
                         _emit_fail(idx, name, test, exc)
                         continue
+                    # the re-run's figures replace the earlier result's
+                    _drop_captures(pipeline, captured_mark, retry_mark)
+                    if params is not None:
+                        step_config = dict(step_config, parameters=params)
+                        _accept_parameters(pipeline, idx, test, params)
                     failed = False
                     has_result = True
                     _emit_diag_log(idx, name, test)
-                    _emit_mem(context)
+                    _emit_data_size(context)
         pipeline._context = context
 
 

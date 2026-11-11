@@ -24,6 +24,7 @@ from pelagos_py.utils.qc_handling import QCHandlingMixin, adjusted_name, raw_nam
 import gsw
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 from pelagos_py.utils import fig_spec
 from pelagos_py.utils.processing_utils import cndc_scale_factor
 
@@ -39,6 +40,11 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
     ``PSAL_ADJUSTED``), so raw versions from the input file are kept, and inputs are read from
     their ``_ADJUSTED`` version where one exists. A ``PSAL_ADJUSTED`` already made by Salinity
     Adjustment is not overwritten. See :doc:`/user_guide/Pelagos-py_DERIVED`.
+
+    ``DEPTH_ADJUSTED`` is the vertical coordinate, so it is the one derived variable
+    filled on every row: rows without a usable pressure (none, or
+    flagged 3/4/9) are interpolated in time from the depth either side, at most 5 minutes
+    apart, and flagged 8. The other variables only exist on the CTD's own rows.
 
     Parameters
     ----------
@@ -209,6 +215,9 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
             if source_qcs:
                 self.generate_qc({f"{output_name}_QC": source_qcs})
 
+        if "DEPTH" in self.to_derive:
+            self.fill_depth()
+
         # Show diagnostic plots if diagnostics are enabled
         if self.diagnostics:
             self.plot_diagnostics()
@@ -220,6 +229,18 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
         self.context["data"].update(self.data)
         return self.context
 
+    def fill_depth(self):
+        # Every row needs a depth to place other sensors' samples in the water column.
+        depth, flags = self.values_at_rows_of("DEPTH_ADJUSTED", "TIME")
+        qc = self.data["DEPTH_ADJUSTED_QC"].values
+        usable = np.isfinite(self.data["DEPTH_ADJUSTED"].values) & ~np.isin(
+            qc, self.calculation_flag_filter
+        )
+        filled = ~usable & np.isfinite(depth)
+        self.data["DEPTH_ADJUSTED"].values[filled] = depth[filled]
+        self.data["DEPTH_ADJUSTED_QC"].values[filled] = 8
+        self.log(f"Filled DEPTH_ADJUSTED on {int(filled.sum())} rows (flagged 8).")
+
     def plot_diagnostics(self):
         if "TIME" not in self.data:
             return
@@ -227,7 +248,8 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
         plot_vars = [
             var
             for var in self.provided_variables
-            if raw_name(var) in self.to_derive and var in self.data
+            if (var == "DEPTH_ADJUSTED" or raw_name(var) in self.to_derive)
+            and var in self.data
         ]
 
         if not plot_vars:

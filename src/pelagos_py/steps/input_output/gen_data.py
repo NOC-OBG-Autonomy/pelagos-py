@@ -129,7 +129,7 @@ class GenerateData(BaseStep):
             }
             variable_limits.update(user_value_limits)
             if diagnostics:
-                self.log(f"[Generate Data] Variables: {variable_limits}")
+                self.log(f"Variables: {variable_limits}")
 
             # Make time index for dataframe (df)
             df = pd.DataFrame(

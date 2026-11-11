@@ -72,3 +72,19 @@ def test_output_variables_follow_to_derive():
     outputs = DeriveCTDVariables.output_variables({"to_derive": ["DEPTH", "PSAL"]})
 
     assert outputs == ["DEPTH_ADJUSTED", "PSAL_ADJUSTED"]
+
+
+def test_depth_is_filled_on_every_row_and_flagged_8():
+    context = make_context()
+    pres = context["data"]["PRES"].values
+    pres[1::2] = np.nan  # another sensor's rows
+    context["data"]["PRES_QC"].values[1::2] = 9
+    context["data"]["PRES_QC"].values[10] = 4  # a bad reading is filled over
+    data = run_step(context, to_derive=["DEPTH", "PSAL"])
+
+    depth, qc = data["DEPTH_ADJUSTED"].values, data["DEPTH_ADJUSTED_QC"].values
+    assert np.isfinite(depth[:-1]).all()  # the last row has no depth after it
+    assert (qc[1:-1:2] == 8).all() and qc[10] == 8
+    assert np.allclose(depth[1], (depth[0] + depth[2]) / 2)
+    assert np.isnan(data["PRES"].values[1::2]).all()
+    assert np.isnan(data["PSAL_ADJUSTED"].values[1::2]).all()

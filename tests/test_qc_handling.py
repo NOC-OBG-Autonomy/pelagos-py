@@ -90,6 +90,33 @@ def test_generate_qc_unchecked_parent_does_not_downgrade():
     assert list(step.data["C_QC"].values) == [1, 2, 4, 1]
 
 
+def test_merging_never_creates_flag_8():
+    flags = np.arange(10)
+    existing, new = np.meshgrid(flags, flags, indexing="ij")
+    merged = qc_handling.QC_COMBINATRIX[existing, new]
+    assert np.all((merged != 8) | (existing == 8))
+
+
+def test_propagated_8_and_9_leave_companion_unchanged():
+    base = np.array([0, 1, 4, 8])
+    assert list(qc_handling.propagate_flags(base, np.full(4, 8))) == [0, 1, 4, 8]
+    assert list(qc_handling.propagate_flags(base, np.full(4, 9))) == [0, 1, 4, 8]
+
+
+def test_generate_qc_interpolated_parent_does_not_make_child_8():
+    step = make_step({"LATITUDE": [8, 8, 1, 8], "TEMP": [1, 4, 2, 0]})
+    step.data["DENSITY"] = ("N_MEASUREMENTS", np.zeros(4))
+    step.data["ASAL"] = ("N_MEASUREMENTS", np.zeros(4))
+    step.generate_qc(
+        {
+            "DENSITY_QC": ["LATITUDE_QC", "TEMP_QC"],
+            "ASAL_QC": ["TEMP_QC", "LATITUDE_QC"],
+        }
+    )
+    assert list(step.data["DENSITY_QC"].values) == [1, 4, 2, 0]
+    assert list(step.data["ASAL_QC"].values) == [1, 4, 2, 0]
+
+
 def test_prefer_adjusted_uses_adjusted_when_present():
     settings = {
         "variable_ranges": {"DEPTH": {3: [-np.inf, 2, "inside"]}},

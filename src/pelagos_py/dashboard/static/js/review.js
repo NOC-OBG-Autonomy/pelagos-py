@@ -2,14 +2,16 @@
 
 const Review = {
   active: false,
-  index: null,     // step index in the running pipeline
-  name: null,      // step name, used to match figures and guard the re-run
-  test: null,      // QC test, when the runner split this step test by test
-  key: null,       // Run.unitKey(index, test), what figures are grouped under
-  busy: false,     // true between "Re-run" and the next pause
-  selected: null,  // attempt shown in the main view; null = the latest one
+  index: null, // step index in the running pipeline
+  name: null, // step name, used to match figures and guard the re-run
+  test: null, // QC test, when the runner split this step test by test
+  key: null, // Run.unitKey(index, test), what figures are grouped under
+  busy: false, // true between "Re-run" and the next pause
+  selected: null, // attempt shown in the main view; null = the latest one
 
-  host() { return document.getElementById('step-review'); },
+  host() {
+    return document.getElementById('step-review');
+  },
 
   show(index, name, test) {
     Review.active = true;
@@ -48,8 +50,7 @@ const Review = {
   selectedGroup() {
     const attempts = Run.groupsFor(Review.key);
     if (!attempts.length) return null;
-    return attempts.includes(Review.selected)
-      ? Review.selected : attempts[attempts.length - 1];
+    return attempts.includes(Review.selected) ? Review.selected : attempts[attempts.length - 1];
   },
 
   select(group) {
@@ -81,13 +82,12 @@ const Review = {
       if (!values) return;
       const def = STATE.qcByName[Review.test];
       for (const spec of (def && def.parameters) || []) {
-        values[spec.name] = spec.name in params
-          ? Forms.clone(params[spec.name]) : Forms.defaultValue(spec);
+        values[spec.name] = spec.name in params ? Forms.clone(params[spec.name]) : Forms.defaultValue(spec);
       }
     } else {
       for (const spec of item.def.parameters || []) {
-        item.values[spec.name] = spec.name in params
-          ? Forms.clone(params[spec.name]) : Forms.defaultValue(spec);
+        item.values[spec.name] =
+          spec.name in params ? Forms.clone(params[spec.name]) : Forms.defaultValue(spec);
       }
     }
     STATE.onChange();
@@ -99,9 +99,11 @@ const Review = {
     const host = Review.host();
     host.innerHTML = '';
     const title = document.createElement('h4');
-    title.className = 'plot-step-title review-title'; title.id = 'review-title';
+    title.className = 'plot-step-title review-title';
+    title.id = 'review-title';
     const hint = document.createElement('div');
-    hint.className = 'review-hint hidden'; hint.id = 'review-hint';
+    hint.className = 'review-hint hidden';
+    hint.id = 'review-hint';
     const plots = document.createElement('div');
     plots.id = 'review-plots';
     host.appendChild(title);
@@ -140,7 +142,10 @@ const Review = {
     const current = Review.selectedGroup();
     // No open group means the last re-run drew nothing, so the figure shown is stale.
     const isLatest = current && current === attempts[attempts.length - 1];
-    const stale = !Review.busy && isLatest && attempts.length > 0 &&
+    const stale =
+      !Review.busy &&
+      isLatest &&
+      attempts.length > 0 &&
       (!Run.activeGroup || Run.activeGroup.key !== Review.key);
 
     if (!current || !current.figs.length) {
@@ -158,15 +163,14 @@ const Review = {
       label.className = 'review-attempt-label';
       label.textContent = stale
         ? `Attempt ${no} — the last re-run produced no new figure`
-        : (attempts.length > 1
+        : attempts.length > 1
           ? `Attempt ${no}${isLatest ? ' (latest — this is what Continue carries forward)' : ''}`
-          : 'Result');
+          : 'Result';
       main.appendChild(label);
       main.appendChild(Review.paramSummary(current.params));
       const cards = document.createElement('div');
       cards.className = 'review-main-cards';
-      current.figs.forEach((_, i) =>
-        cards.appendChild(Viewer.card(current.figs, i, { cls: 'big' })));
+      current.figs.forEach((_, i) => cards.appendChild(Viewer.card(current.figs, i, { cls: 'big' })));
       main.appendChild(cards);
       host.appendChild(main);
     }
@@ -192,8 +196,8 @@ const Review = {
         cell.className = 'review-thumb' + (failed ? ' failed' : '') + (g === current ? ' selected' : '');
         if (g.figs.length && g.figs[0].isLog) {
           const pre = document.createElement('pre');
-          pre.className = 'log-card-text log-card-text-compact' +
-            (g.figs[0].isError ? ' error-card-text' : '');
+          pre.className =
+            'log-card-text log-card-text-compact' + (g.figs[0].isError ? ' error-card-text' : '');
           pre.textContent = g.figs[0].text;
           cell.appendChild(pre);
         } else if (g.figs.length) {

@@ -19,9 +19,11 @@ pelagos-py follows the standardised Argo flagging system:
 * **2**: Probably good data.
 * **3**: Probably bad data (potentially correctable).
 * **4**: Bad data (not correctable).
-* **5**: Value changed (e.g. by a correction step).
+* **5**: Value changed (only CHLA Quenching sets this, as in Argo).
 * **8**: Interpolated value.
 * **9**: Missing value.
+
+Flags are merged so the worse one wins: a sample flagged 3 stays 3 when a later check says 2. Chlorophyll is the exception the default config makes on purpose. Raw ``CHLA`` always needs correcting, so ``CHLA_QC`` is 3, or 4 outside the global range. After Deep Correction and CHLA Quenching (which flags the values it changes 5), a final range test with ``reset_flags: [3, 5]`` re-assesses ``CHLA_ADJUSTED_QC``, so it ends as 2 (probably good) or 4 (bad).
 
 Configuration
 -------------
@@ -57,7 +59,7 @@ Range and Value Checks
 
 These identify data points that fall outside expected physical or sensor limits.
 
-* :doc:`Range <api/pelagos_py/steps/quality_control/range_qc/index>`: Flags values by range, per variable. Each band carries an ``inside``/``outside`` keyword: ``[low, high, "outside"]`` is a band of good values (data outside it is flagged), while ``[low, high, "inside"]`` is an impossible band (data within it is flagged). A flag may list several bands. If the keyword is omitted the bound order is the fallback (ascending → outside, descending → inside). A single scalar flags exact matches (e.g. fill values).
+* :doc:`Range <api/pelagos_py/steps/quality_control/range_qc/index>`: Flags values by range, per variable. Each band carries an ``inside``/``outside`` keyword: ``[low, high, "outside"]`` is a band of good values (data outside it is flagged), while ``[low, high, "inside"]`` is an impossible band (data within it is flagged). A flag may list several bands. If the keyword is omitted the bound order is the fallback (ascending → outside, descending → inside). A single scalar flags exact matches (e.g. fill values). ``reset_flags`` lists existing flags the test replaces instead of merging with, so a re-test after a correction can turn a 3 into a 2.
 * :doc:`Visual <api/pelagos_py/steps/quality_control/visual_qc/index>`: Flags samples inside (or outside) hand-drawn boxes on an ``x_variable``/``y_variable`` plot — each box is a 2D range test with its own flag and target variables.
 * :doc:`Stuck Value <api/pelagos_py/steps/quality_control/stuck_value_qc/index>`: Identifies sensor "freezing" by looking for sequences of identical values where variation is expected.
 * :doc:`Spike <api/pelagos_py/steps/quality_control/spike_qc/index>`: Flags spikes: values that depart from a rolling median by more than a threshold.

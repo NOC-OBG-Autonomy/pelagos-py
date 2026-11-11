@@ -225,6 +225,11 @@ steps:
           #   without flagging DEPTH itself:
           #     variable_ranges: {DEPTH: {3: [0, 5, inside], 2: [0, 5, outside]}}
           #     flag_instead: {DEPTH: [CHLA]}
+          # [reset_flags]:
+          #   Existing flags this test replaces instead of merging with (normally the worst flag wins,
+          #   so a 3 can't become a 2). eg. after the CHLA corrections, re-assess the interim 3 and 5:
+          #     variable_ranges: {CHLA_ADJUSTED: {4: [-0.2, 100, outside], 2: [-0.2, 100, inside]}}
+          #     reset_flags: [3, 5]
           # [diagnostics]:
           #   When the Apply QC step has diagnostics enabled, every flagged variable is plotted
           #   coloured by flag number (no separate 'plot' parameter is needed).
@@ -338,7 +343,6 @@ steps:
   - name: "Interpolate Data"
     parameters:
       variables:  # per variable, the QC flags treated as gaps to fill
-        PRES: [3, 4, 9]
         LATITUDE: [3, 4, 9]
         LONGITUDE: [3, 4, 9]
     # [diagnostics]:
@@ -349,7 +353,7 @@ steps:
 # ------------------------------------------------------------------------------------------- Profile Finding -------------------------------------------------------------------------------------------
 
 # Find Profiles (src/pelagos_py/steps/processing/find_profiles.py):
-# Classifies each measurement into an OG1 scientific phase (SCI_PHASE) and derives
+# Classifies each measurement into an OG1 scientific phase (PHASE_SCI) and derives
 # PROFILE_NUMBER, PROFILE_DIRECTION, PROFILE_GRADIENT and CYCLE. All parameters are
 # optional — the defaults shown below work out of the box, so `- name: "Find Profiles"`
 # on its own is a valid step.
@@ -378,7 +382,7 @@ steps:
       min_transect_duration_seconds: 300
     # [diagnostics]:
     #   If true, plots a static two-panel figure: the phase classification (DEPTH-TIME
-    #   coloured by SCI_PHASE) and the derived PROFILE_NUMBER / CYCLE numbering.
+    #   coloured by PHASE_SCI) and the derived PROFILE_NUMBER / CYCLE numbering.
     diagnostics: false
 
 # Apply QC (post-profile): tests that depend on PROFILE_NUMBER must run after "Find Profiles".
@@ -411,6 +415,7 @@ steps:
 # Derives CTD variables using gsw-python (TEOS-10) from PRES, CNDC & TEMP (their _ADJUSTED
 # versions where present). Each derived variable is written as <name>_ADJUSTED, e.g. PSAL_ADJUSTED;
 # one already in the dataset (e.g. PSAL_ADJUSTED from Salinity Adjustment) is skipped with a warning.
+# DEPTH_ADJUSTED is filled (flag 8) on rows without a usable pressure.
   - name: "Derive CTD"
     parameters:
       # [to_derive]:

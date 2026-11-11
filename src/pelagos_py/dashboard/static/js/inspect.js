@@ -6,7 +6,11 @@ const Inspect = {
   // Read from the YAML text, not the builder state, so it works mid-resync.
   extractFilePath(yamlText) {
     let cfg;
-    try { cfg = jsyaml.load(yamlText); } catch (e) { return null; }
+    try {
+      cfg = jsyaml.load(yamlText);
+    } catch (e) {
+      return null;
+    }
     const steps = (cfg && cfg.steps) || [];
     const step = steps.find((s) => s && String(s.name || '').toLowerCase() === 'load og1');
     const fp = step && step.parameters && step.parameters.file_path;
@@ -43,8 +47,7 @@ const Inspect = {
 };
 
 // debounce() lives in app.js, which loads after this file.
-Inspect.schedule = () =>
-  (Inspect._schedule ||= debounce(() => Inspect.refresh(editor.getValue()), 400))();
+Inspect.schedule = () => (Inspect._schedule ||= debounce(() => Inspect.refresh(editor.getValue()), 400))();
 
 function inspectShowEmptyState(html) {
   document.getElementById('inspect-body').classList.add('hidden');
@@ -83,27 +86,38 @@ function inspectRow(name, tag, desc, plottable) {
 // Plot against TIME, coloured by its _QC if present; rendered server-side, fetched once per row.
 function toggleInspectPlot(row, name) {
   let host = row.querySelector('.inspect-plot');
-  if (host) { host.classList.toggle('hidden'); return; }
+  if (host) {
+    host.classList.toggle('hidden');
+    return;
+  }
   host = document.createElement('div');
   host.className = 'inspect-plot';
   host.textContent = 'Plotting…';
   row.appendChild(host);
-  const url = '/api/inspect/plot?file_path=' + encodeURIComponent(Inspect.lastPath) +
-    '&var=' + encodeURIComponent(name);
+  const url =
+    '/api/inspect/plot?file_path=' +
+    encodeURIComponent(Inspect.lastPath) +
+    '&var=' +
+    encodeURIComponent(name);
   fetch(url)
     .then(async (r) => {
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || 'Could not plot.');
       return r.json();
     })
     .then((d) => {
-      if (d.value !== undefined) { host.textContent = d.value; return; }
+      if (d.value !== undefined) {
+        host.textContent = d.value;
+        return;
+      }
       const fmt = (n) => n.toLocaleString();
       const shown = d.n_shown < d.n_valid ? ` (${fmt(d.n_shown)} shown)` : '';
       host.innerHTML =
         `<img src="${d.png}" alt="${escapeHtml(name)} vs TIME">` +
         `<div class="inspect-plot-note">${fmt(d.n_valid)} points${shown}</div>`;
     })
-    .catch((e) => { host.textContent = e.message; });
+    .catch((e) => {
+      host.textContent = e.message;
+    });
 }
 
 function inspectFillSection(section, rows, emptyText) {
@@ -137,12 +151,12 @@ function renderInspect(data) {
   inspectFillSection(
     'sensors',
     (data.sensors || []).map((s) => inspectRow(s, '', '')),
-    'No sensors listed.'
+    'No sensors listed.',
   );
   inspectFillSection(
     'attributes',
     Object.entries(data.global_attributes || {}).map(([k, v]) => inspectRow(k, '', v)),
-    'No attributes found.'
+    'No attributes found.',
   );
 
   applyInspectFilter();

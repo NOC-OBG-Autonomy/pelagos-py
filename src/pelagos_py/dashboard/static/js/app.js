@@ -1,6 +1,6 @@
 // Bootstrap: load the registry, build the UI, wire controls together.
 
-let editor = null;         // CodeMirror YAML pane
+let editor = null; // CodeMirror YAML pane
 let syncingFromBuilder = false;
 let errorLineHandle = null;
 let activeStepId = null;
@@ -12,16 +12,23 @@ let lastFocusedKey = null;
 
 function debounce(fn, ms) {
   let t;
-  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), ms);
+  };
 }
 
 // Line spans (0-based, inclusive) of each step under `steps:`, indexed like STATE.pipeline.items.
 function stepLineRanges() {
   const lines = editor.getValue().split('\n');
-  let inSteps = false, stepsIndent = null;
+  let inSteps = false,
+    stepsIndent = null;
   const starts = [];
   for (let i = 0; i < lines.length; i++) {
-    if (!inSteps) { if (/^steps:\s*$/.test(lines[i])) inSteps = true; continue; }
+    if (!inSteps) {
+      if (/^steps:\s*$/.test(lines[i])) inSteps = true;
+      continue;
+    }
     const m = lines[i].match(/^(\s*)-\s/);
     if (!m) continue;
     if (stepsIndent === null) stepsIndent = m[1].length;
@@ -29,7 +36,7 @@ function stepLineRanges() {
   }
   return starts.map((start, k) => ({
     start,
-    end: (k + 1 < starts.length ? starts[k + 1] - 1 : lines.length - 1),
+    end: k + 1 < starts.length ? starts[k + 1] - 1 : lines.length - 1,
   }));
 }
 
@@ -78,7 +85,12 @@ function yamlBlockForPath(from, to, path) {
   let block = { start: from, end: Math.min(to, lines.length - 1) };
   let inner = from;
   for (const key of path) {
-    const depth = Math.min(...lines.slice(inner, block.end + 1).filter((l) => !yamlBlank(l)).map(yamlIndent));
+    const depth = Math.min(
+      ...lines
+        .slice(inner, block.end + 1)
+        .filter((l) => !yamlBlank(l))
+        .map(yamlIndent),
+    );
     let found = null;
     for (let i = inner; i <= block.end; i++) {
       if (yamlBlank(lines[i]) || yamlIndent(lines[i]) !== depth || yamlKey(lines[i]) !== key) continue;
@@ -199,7 +211,9 @@ function syncYamlToBuilder() {
     if (RunLock.running && RunLock.index !== null) {
       RunLock.pauseAt(RunLock.index, RunLock.test);
     }
-  } catch (e) { /* structurally odd but parseable: leave builder, Validate reports it */ }
+  } catch (e) {
+    Config.notice('The builder could not read this YAML: ' + e.message, { err: true });
+  }
 }
 const scheduleYamlToBuilder = debounce(syncYamlToBuilder, 400);
 
@@ -258,8 +272,9 @@ function renderValidation(result) {
   }
 
   // Missing data is the most fundamental problem, so show it first.
-  const ranked = [...result.issues].sort((a, b) =>
-    (parseIssue(b.error).critical ? 1 : 0) - (parseIssue(a.error).critical ? 1 : 0));
+  const ranked = [...result.issues].sort(
+    (a, b) => (parseIssue(b.error).critical ? 1 : 0) - (parseIssue(a.error).critical ? 1 : 0),
+  );
 
   if (ranked.length === 1) {
     const issue = ranked[0];
@@ -276,7 +291,8 @@ function renderValidation(result) {
     const parsed = parseIssue(issue.error);
     const row = issueBody(
       `<div class="v-msg"><strong>${escapeHtml(parsed.tag)}</strong> ` +
-      `<span class="v-muted">· ${issueWhere(issue)}</span></div>${parsed.html}`);
+        `<span class="v-muted">· ${escapeHtml(issueWhere(issue))}</span></div>${parsed.html}`,
+    );
     linkToStep(row, issue);
     bar.appendChild(row);
   }
@@ -290,8 +306,9 @@ function warningsBar(warnings, slot) {
   bar.title = 'Show or hide the warnings';
   for (const warning of warnings) {
     const row = issueBody(
-      `<div class="v-msg"><span class="v-muted">${issueWhere(warning)} ·</span> ` +
-      `${escapeHtml(warning.message)}</div>`);
+      `<div class="v-msg"><span class="v-muted">${escapeHtml(issueWhere(warning))} ·</span> ` +
+        `${escapeHtml(warning.message)}</div>`,
+    );
     linkToStep(row, warning);
     bar.appendChild(row);
   }
@@ -318,7 +335,8 @@ function statusBar(kind, title, sub) {
   bar.className = `v-status v-${kind}`;
   const icons = { ok: 'check', pending: 'rerun', start: 'folder' };
   const icon = icons[kind] || 'alert';
-  bar.innerHTML = `<span class="v-icon">${Icon.svg(icon, 14)}</span>` +
+  bar.innerHTML =
+    `<span class="v-icon">${Icon.svg(icon, 14)}</span>` +
     `<div class="v-text"><strong>${escapeHtml(title)}</strong>` +
     `<span>${escapeHtml(sub)}</span></div>`;
   return bar;
@@ -333,7 +351,7 @@ function issueBody(html) {
 
 function issueWhere(issue) {
   if (issue.index == null) return 'Pipeline';
-  return `Step ${issue.index + 1}${issue.name ? ' · ' + escapeHtml(issue.name) : ''}`;
+  return `Step ${issue.index + 1}${issue.name ? ' · ' + issue.name : ''}`;
 }
 
 function linkToStep(el, issue) {
@@ -358,63 +376,104 @@ function parseIssue(raw) {
 
   let m = msg.match(/^Multiple data-loading steps found:\s*(.+?)\.\s*(.*)$/s);
   if (m) {
-    return { kind: 'load', tag: 'Multiple data sources', critical: true,
-      html: `<div class="v-msg">Only one step should load or generate the ` +
-        `pipeline's base data.</div><div class="v-detail v-muted">${escapeHtml(m[1])}</div>` };
+    return {
+      kind: 'load',
+      tag: 'Multiple data sources',
+      critical: true,
+      html:
+        `<div class="v-msg">Only one step should load or generate the ` +
+        `pipeline's base data.</div><div class="v-detail v-muted">${escapeHtml(m[1])}</div>`,
+    };
   }
   m = msg.match(/^'Load OG1' has no 'file_path' set[^.]*\.\s*(.*)$/s);
   if (m) {
     // The normal first-launch state, so it reads as a starting point, not an error.
-    return { kind: 'load', tag: 'Start with a data file', critical: true, start: true,
+    return {
+      kind: 'load',
+      tag: 'Start with a data file',
+      critical: true,
+      start: true,
       fields: [{ param: 'file_path', text: 'No file set' }],
-      html: `<div class="v-msg">Pick an OG1 NetCDF file in <a href="#" data-tab="files">Files</a> ` +
-        `to set up a pipeline for it, or try the demo data there.</div>` };
+      html:
+        `<div class="v-msg">Pick an OG1 NetCDF file in <a href="#" data-tab="files">Files</a> ` +
+        `to set up a pipeline for it, or try the demo data there.</div>`,
+    };
   }
   m = msg.match(/^Data file '(.*)' is not a NetCDF \(\.nc\) file\.$/s);
   if (m) {
-    return { kind: 'load', tag: 'Not a NetCDF file', critical: true,
+    return {
+      kind: 'load',
+      tag: 'Not a NetCDF file',
+      critical: true,
       fields: [{ param: 'file_path', text: 'Not a .nc file' }],
-      html: `<div class="v-msg">Choose a .nc file, or get a demo from ` +
-        `<a href="#" data-tab="files">Files</a>.</div>` };
+      html:
+        `<div class="v-msg">Choose a .nc file, or get a demo from ` +
+        `<a href="#" data-tab="files">Files</a>.</div>`,
+    };
   }
   m = msg.match(/^Could not find data file '(.*)'\.$/s);
   if (m) {
-    return { kind: 'load', tag: 'File not found', critical: true,
+    return {
+      kind: 'load',
+      tag: 'File not found',
+      critical: true,
       fields: [{ param: 'file_path', text: 'File not found' }],
-      html: `<div class="v-msg">Check the path, or get a demo from ` +
-        `<a href="#" data-tab="files">Files</a>.</div>` };
+      html:
+        `<div class="v-msg">Check the path, or get a demo from ` +
+        `<a href="#" data-tab="files">Files</a>.</div>`,
+    };
   }
-  m = msg.match(/^Missing variables for(?: QC test)? '([^']+)':\s*([^.]+)\.\s*(?:[^.]*\.\s*)*No data-loading step[^.]*\.\s*(.*)$/s);
+  m = msg.match(
+    /^Missing variables for(?: QC test)? '([^']+)':\s*([^.]+)\.\s*(?:[^.]*\.\s*)*No data-loading step[^.]*\.\s*(.*)$/s,
+  );
   if (m) {
-    return { kind: 'load', tag: 'No data source', critical: true,
-      html: `<div class="v-msg"><span class="chip">${escapeHtml(m[1])}</span> needs ` +
+    return {
+      kind: 'load',
+      tag: 'No data source',
+      critical: true,
+      html:
+        `<div class="v-msg"><span class="chip">${escapeHtml(m[1])}</span> needs ` +
         `${chips(splitNames(m[2]), 'bad')}, but nothing in the pipeline loads data.</div>` +
-        `<div class="v-detail">${escapeHtml(m[3])}</div>` };
+        `<div class="v-detail">${escapeHtml(m[3])}</div>`,
+    };
   }
 
   m = msg.match(/^invalid parameter value\(s\):\s*(.+)$/s);
   if (m) {
-    return { kind: 'value', tag: 'Invalid value',
+    return {
+      kind: 'value',
+      tag: 'Invalid value',
       fields: segmentParams(m[1], 'Value not allowed'),
-      html: m[1].split(';').map(formatValueSegment).join('') };
+      html: m[1].split(';').map(formatValueSegment).join(''),
+    };
   }
   m = msg.match(/^invalid parameter type\(s\):\s*(.+)$/s);
   if (m) {
-    return { kind: 'type', tag: 'Wrong type',
+    return {
+      kind: 'type',
+      tag: 'Wrong type',
       fields: segmentParams(m[1], 'Wrong type'),
-      html: m[1].split(';').map(formatTypeSegment).join('') };
+      html: m[1].split(';').map(formatTypeSegment).join(''),
+    };
   }
   m = msg.match(/^missing required parameter\(s\):\s*(.+)$/s);
   if (m) {
-    return { kind: 'missing', tag: 'Missing',
+    return {
+      kind: 'missing',
+      tag: 'Missing',
       fields: splitNames(m[1]).map((param) => ({ param, text: 'Required' })),
-      html: `<div class="v-detail">Add ${chips(splitNames(m[1]))}</div>` };
+      html: `<div class="v-detail">Add ${chips(splitNames(m[1]))}</div>`,
+    };
   }
   m = msg.match(/^unknown parameter\(s\):\s*([^.]+)\.\s*Valid parameters:\s*(.+?)\.?$/s);
   if (m) {
-    return { kind: 'unknown', tag: 'Unknown',
-      html: `<div class="v-detail">${chips(splitNames(m[1]), 'bad')} not recognised.</div>` +
-        `<div class="v-detail v-muted">Valid: ${chips(splitNames(m[2]))}</div>` };
+    return {
+      kind: 'unknown',
+      tag: 'Unknown',
+      html:
+        `<div class="v-detail">${chips(splitNames(m[1]), 'bad')} not recognised.</div>` +
+        `<div class="v-detail v-muted">Valid: ${chips(splitNames(m[2]))}</div>`,
+    };
   }
   return { kind: 'other', tag: 'Error', html: `<div class="v-msg">${escapeHtml(msg)}</div>` };
 }
@@ -430,29 +489,38 @@ function formatValueSegment(seg) {
   if (!m) return `<div class="v-detail">${escapeHtml(seg.trim())}</div>`;
   const options = pyTokens(m[2]);
   const got = pyTokens(m[3]);
-  return `<div class="v-detail"><span class="chip">${escapeHtml(m[1])}</span>: ` +
+  return (
+    `<div class="v-detail"><span class="chip">${escapeHtml(m[1])}</span>: ` +
     `${chips(got, 'bad')} not allowed.</div>` +
-    `<div class="v-detail v-muted">Allowed: ${chips(options)}</div>`;
+    `<div class="v-detail v-muted">Allowed: ${chips(options)}</div>`
+  );
 }
 
 // "temperature (expected float, got str value 'x')" → param + expected/got.
 function formatTypeSegment(seg) {
   const m = seg.match(/^\s*(\S+)\s*\(expected\s*(.+?),\s*got\s*(.+?)\)\s*$/s);
   if (!m) return `<div class="v-detail">${escapeHtml(seg.trim())}</div>`;
-  return `<div class="v-detail"><span class="chip">${escapeHtml(m[1])}</span>: ` +
+  return (
+    `<div class="v-detail"><span class="chip">${escapeHtml(m[1])}</span>: ` +
     `expected <span class="v-good">${escapeHtml(m[2])}</span>, ` +
-    `got <span class="v-got">${escapeHtml(m[3])}</span></div>`;
+    `got <span class="v-got">${escapeHtml(m[3])}</span></div>`
+  );
 }
 
 function chips(items, cls = '') {
   if (!items.length) return '<span class="v-muted">(none)</span>';
-  return `<span class="v-chips">` +
+  return (
+    `<span class="v-chips">` +
     items.map((t) => `<span class="chip ${cls === 'bad' ? 'bad' : ''}">${escapeHtml(t)}</span>`).join('') +
-    `</span>`;
+    `</span>`
+  );
 }
 
 function splitNames(s) {
-  return s.split(',').map((x) => x.trim()).filter(Boolean);
+  return s
+    .split(',')
+    .map((x) => x.trim())
+    .filter(Boolean);
 }
 
 // "['A', 'B']" or "'x'" -> values.
@@ -507,19 +575,35 @@ function friendlyYaml(text, problem) {
 }
 
 function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  return String(s).replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+  );
+}
+
+function fmtBytes(b) {
+  if (b == null || !isFinite(b)) return '–';
+  if (b >= 1e9) return (b / 1e9).toFixed(1) + ' GB';
+  if (b >= 1e6) return Math.round(b / 1e6) + ' MB';
+  if (b >= 1e3) return Math.round(b / 1e3) + ' kB';
+  return Math.round(b) + ' B';
 }
 
 async function boot() {
   Icon.hydrate();
   STATE.registry = await API.registry();
+  document.documentElement.style.setProperty('--log-step-w', STATE.registry.log_step_width);
   for (const s of STATE.registry.steps) STATE.stepsByName[s.name] = s;
   for (const q of STATE.registry.qc) STATE.qcByName[q.name] = q;
   STATE.onChange = refreshYAML;
 
   // Themes are defined in style.css, not loaded from a CDN.
   let savedTheme = 'vscode-dark';
-  try { savedTheme = localStorage.getItem('yamlTheme') || savedTheme; } catch (e) { /* private mode */ }
+  try {
+    savedTheme = localStorage.getItem('yamlTheme') || savedTheme;
+  } catch (e) {
+    /* private mode */
+  }
   editor = CodeMirror.fromTextArea(document.getElementById('yaml-editor'), {
     mode: 'yaml',
     theme: savedTheme,
@@ -531,7 +615,11 @@ async function boot() {
   themeSel.value = savedTheme;
   themeSel.addEventListener('change', () => {
     editor.setOption('theme', themeSel.value);
-    try { localStorage.setItem('yamlTheme', themeSel.value); } catch (e) { /* ignore */ }
+    try {
+      localStorage.setItem('yamlTheme', themeSel.value);
+    } catch (e) {
+      /* ignore */
+    }
   });
 
   editor.on('change', () => {
@@ -545,7 +633,11 @@ async function boot() {
   });
 
   // While editing the YAML, the builder follows the cursor rather than the other way round.
-  editor.on('focus', () => { activeStepId = null; activeFieldPath = null; clearStepHighlight(); });
+  editor.on('focus', () => {
+    activeStepId = null;
+    activeFieldPath = null;
+    clearStepHighlight();
+  });
   editor.on('cursorActivity', () => {
     if (syncingFromBuilder) return;
     const line = editor.getCursor().line;
@@ -573,10 +665,14 @@ async function boot() {
   // After a refresh mid-run, open the running config so pause markers index into the right steps.
   try {
     let opening = Config.known.includes('default.yaml') ? 'default.yaml' : null;
-    const running = await API.runStatus().then((s) => s.running).catch(() => false);
+    const running = await API.runStatus()
+      .then((s) => s.running)
+      .catch(() => false);
     if (running && Config.known.includes('_last_run.yaml')) opening = '_last_run.yaml';
     if (opening) await Config.load(opening);
-  } catch (e) { /* no default; start empty */ }
+  } catch (e) {
+    /* no default; start empty */
+  }
 
   document.querySelectorAll('.tab').forEach((tab) => {
     tab.addEventListener('click', () => {
@@ -586,13 +682,15 @@ async function boot() {
   });
 
   document.getElementById('btn-copy').addEventListener('click', () => {
-    navigator.clipboard.writeText(editor.getValue());
+    navigator.clipboard
+      .writeText(editor.getValue())
+      .catch((e) => Config.notice('Could not copy: ' + e.message, { sticky: true, err: true }));
   });
 
   const picker = document.getElementById('config-select');
   picker.querySelector('.cfg-trigger').addEventListener('click', () => {
     if (picker.classList.contains('open')) Config.closePicker();
-    else Config.openPicker();
+    else Config.openPicker().catch(Config.listFailed);
   });
   document.addEventListener('click', (e) => {
     if (!picker.contains(e.target)) Config.closePicker();
@@ -601,6 +699,7 @@ async function boot() {
     if (e.key === 'Escape') Config.closePicker();
   });
 
+  Forms.needsDisplay(document.getElementById('btn-reveal'));
   document.getElementById('btn-reveal').addEventListener('click', async () => {
     try {
       const { path } = await API.revealConfigs();
@@ -608,13 +707,16 @@ async function boot() {
     } catch (e) {
       Config.notice('Could not open the configs folder: ' + e.message);
     }
-    await Config.refreshList();
+    await Config.refreshList().catch(Config.listFailed);
   });
   document.getElementById('config-name').addEventListener('input', () => Config.updateSaveLabel());
   document.getElementById('btn-save').addEventListener('click', async () => {
     const input = document.getElementById('config-name');
     let name = input.value.trim();
-    if (!name) { alert('Enter a config name to save.'); return; }
+    if (!name) {
+      alert('Enter a config name to save.');
+      return;
+    }
     if (Config.isLocked(name)) {
       name = Config.nextCustomName();
       input.value = name;
@@ -628,7 +730,7 @@ async function boot() {
     }
     Config.savedText = editor.getValue();
     Config.builtFor = null;
-    await Config.refreshList(Config.withExt(name));
+    await Config.refreshList(Config.withExt(name)).catch(Config.listFailed);
     Config.setCurrent(name);
   });
   document.getElementById('btn-delete').addEventListener('click', async () => {
@@ -642,7 +744,7 @@ async function boot() {
       return;
     }
     if (Config.current === name) Config.current = null;
-    await Config.refreshList();
+    await Config.refreshList().catch(Config.listFailed);
   });
 
   Run.initScroll();
@@ -656,8 +758,9 @@ async function boot() {
   });
   document.getElementById('btn-stop').addEventListener('click', () => Run.stop());
   document.getElementById('btn-clear').addEventListener('click', () => Run.clearRun());
-  document.getElementById('btn-rerun').addEventListener('click', () =>
-    VisualQC.isActive() ? VisualQC.apply() : Run.rerunStep());
+  document
+    .getElementById('btn-rerun')
+    .addEventListener('click', () => (VisualQC.isActive() ? VisualQC.apply() : Run.rerunStep()));
 
   // Reattach after a refresh mid-run instead of offering a Run that would 409.
   Run.resumeIfRunning();
@@ -684,6 +787,5 @@ async function checkServer() {
 }
 
 boot().catch((e) => {
-  document.body.innerHTML =
-    `<pre style="padding:20px;color:#dc2626">Failed to start dashboard:\n${escapeHtml(e.stack || e)}</pre>`;
+  document.body.innerHTML = `<pre style="padding:20px;color:var(--danger)">Failed to start dashboard:\n${escapeHtml(e.stack || e)}</pre>`;
 });

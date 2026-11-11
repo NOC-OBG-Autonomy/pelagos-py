@@ -4,7 +4,7 @@ const Build = {
   async start({ name, filePath, description, onCancel }) {
     const root = document.getElementById('build-panel');
     if (!root) return;
-    Config.picks++;
+    const pick = ++Config.picks;
     root.innerHTML = '';
     root.hidden = false;
     Build.name = name; // the demo config the open panel is for, if any
@@ -15,18 +15,23 @@ const Build = {
 
     const head = document.createElement('div');
     head.className = 'build-head';
-    head.innerHTML = `<strong>Set up a pipeline for ${escapeHtml(file)}</strong>`
-      + '<span>Inspecting the file…</span>';
+    head.innerHTML =
+      `<strong>Set up a pipeline for ${escapeHtml(file)}</strong>` + '<span>Inspecting the file…</span>';
     root.appendChild(head);
 
+    // A later pick, or closing the panel, makes this inspection stale.
+    const stale = () => pick !== Config.picks || root.hidden;
     let decisions;
-    try { ({ decisions } = await API.buildDecisions(filePath)); }
-    catch (e) {
+    try {
+      ({ decisions } = await API.buildDecisions(filePath));
+    } catch (e) {
+      if (stale()) return;
       Build.close();
       Config.notice(`Could not inspect ${file}: ${e.message}`, { sticky: true, err: true });
       if (onCancel) onCancel();
       return;
     }
+    if (stale()) return;
     head.querySelector('span').textContent = decisions.length
       ? 'The full pipeline template is adapted to this file as listed below. Change a choice if needed, then build.'
       : 'The file supports the full pipeline template; nothing needs changing.';
@@ -42,14 +47,22 @@ const Build = {
       text.innerHTML = `<strong>${escapeHtml(d.title)}</strong><span>${escapeHtml(d.detail)}</span>`;
       row.appendChild(text);
       if (d.options.length) {
-        const sel = Forms.select(d.options.map((o) => [o.key, o.label]), d.default);
+        const sel = Forms.select(
+          d.options.map((o) => [o.key, o.label]),
+          d.default,
+        );
         choices[d.id] = d.default;
         const note = document.createElement('div');
         note.className = 'build-changed hidden';
         const defaultLabel = d.options.find((o) => o.key === d.default).label;
-        note.innerHTML = `Changed from the default (${escapeHtml(defaultLabel)}) — are you sure? `
-          + '<a href="#">Restore default</a>';
-        note.querySelector('a').onclick = (e) => { e.preventDefault(); sel.value = d.default; sel.onchange(); };
+        note.innerHTML =
+          `Changed from the default (${escapeHtml(defaultLabel)}) — are you sure? ` +
+          '<a href="#">Restore default</a>';
+        note.querySelector('a').onclick = (e) => {
+          e.preventDefault();
+          sel.value = d.default;
+          sel.onchange();
+        };
         sel.onchange = () => {
           choices[d.id] = sel.value;
           const changed = sel.value !== d.default;
@@ -70,7 +83,12 @@ const Build = {
 
     const actions = document.createElement('div');
     actions.className = 'build-actions';
-    const cancel = Forms.button('Cancel', { onclick: () => { Build.close(); if (onCancel) onCancel(); } });
+    const cancel = Forms.button('Cancel', {
+      onclick: () => {
+        Build.close();
+        if (onCancel) onCancel();
+      },
+    });
     const confirm = Forms.button('Build pipeline', { icon: 'check', cls: 'primary' });
     confirm.onclick = async () => {
       confirm.disabled = cancel.disabled = true;
@@ -94,7 +112,10 @@ const Build = {
 
   close() {
     const root = document.getElementById('build-panel');
-    if (root) { root.hidden = true; root.innerHTML = ''; }
+    if (root) {
+      root.hidden = true;
+      root.innerHTML = '';
+    }
     document.querySelector('.builder').classList.remove('building');
     Build.lockRun(false);
   },

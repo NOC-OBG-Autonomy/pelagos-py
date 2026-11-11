@@ -114,6 +114,7 @@ def test_validator_flags_qc_var_produced_by_later_step():
 def test_validator_passes_qc_var_in_correct_order():
     steps = [
         {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
+        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH"]}},
         {"name": "Find Profiles", "parameters": {}},
         {
             "name": "Apply QC",
@@ -462,13 +463,38 @@ def test_validator_warns_raw_variable_adjusted_by_later_step(monkeypatch, caplog
     steps = [
         {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
         _range_qc("PSAL"),
-        {"name": "Derive CTD", "parameters": {"to_derive": ["PSAL"]}},
+        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH", "PSAL"]}},
     ]
     with caplog.at_level(logging.WARNING):
         assert check_pipeline_variables(steps, LOGGER) is True
     assert "uses raw PSAL; PSAL_ADJUSTED is produced later by 'Derive CTD'" in (
         caplog.text
     )
+
+
+def test_validator_warns_depth_only_from_the_file(monkeypatch, caplog):
+    _file_with(monkeypatch, "DEPTH")
+    steps = [
+        {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
+        {"name": "Find Profiles", "parameters": {}},
+        {"name": "Mixed Layer Depth", "parameters": {"method": "temp"}},
+    ]
+    with caplog.at_level(logging.WARNING):
+        assert check_pipeline_variables(steps, LOGGER) is True
+    assert "uses DEPTH from the input file" in caplog.text
+
+
+def test_validator_quiet_when_depth_is_derived_first(monkeypatch, caplog):
+    _file_with(monkeypatch, "DEPTH")
+    steps = [
+        {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
+        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH"]}},
+        {"name": "Find Profiles", "parameters": {}},
+        {"name": "Mixed Layer Depth", "parameters": {"method": "temp"}},
+    ]
+    with caplog.at_level(logging.WARNING):
+        assert check_pipeline_variables(steps, LOGGER) is True
+    assert "DEPTH" not in caplog.text
 
 
 def test_validator_quiet_for_qc_before_correction(monkeypatch, caplog):

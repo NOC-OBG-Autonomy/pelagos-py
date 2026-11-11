@@ -3,7 +3,7 @@
 const Run = {
   source: null,
   progressEl: null,
-  stopping: false,  // so the end event reads as "stopped"
+  stopping: false, // so the end event reads as "stopped"
   runBtnMode: 'idle', // see setRunButton
   // {index, name, test, key}; figures group by index so a repeated step name still gets its own group.
   currentStep: null,
@@ -23,6 +23,7 @@ const Run = {
   // Marker prefixes run_bootstrap.py prints on stdout; formats in its module docstring.
   FIG_MARKER: '__PELAGOS_FIG__ ',
   LOG_MARKER: '__PELAGOS_LOG__ ',
+  LEVEL_MARKER: '__PELAGOS_LEVEL__ ',
   FAIL_MARKER: '__PELAGOS_FAIL__ ',
   STEP_MARKER: '__PELAGOS_STEP__ ',
   PAUSE_MARKER: '__PELAGOS_PAUSE__ ',
@@ -42,63 +43,7 @@ const Run = {
   outcomes: [],
   heldParams: null,
   sentParams: null,
-  continueAfter: false,  // carry on once the re-run passes
-
-  // The server forwards only SGR colour codes; it strips other escapes.
-  ANSI_SGR: /\x1b\[([0-9;]*)m/g,
-  ANSI_COLORS: {
-    30: 'ansi-black', 31: 'ansi-red', 32: 'ansi-green', 33: 'ansi-yellow',
-    34: 'ansi-blue', 35: 'ansi-magenta', 36: 'ansi-cyan', 37: 'ansi-white',
-    90: 'ansi-bright-black', 91: 'ansi-bright-red', 92: 'ansi-bright-green',
-    93: 'ansi-bright-yellow', 94: 'ansi-bright-blue', 95: 'ansi-bright-magenta',
-    96: 'ansi-bright-cyan', 97: 'ansi-bright-white',
-  },
-
-  stripAnsi(text) {
-    return text.replace(Run.ANSI_SGR, '');
-  },
-
-  // Text is escaped first, so log output can't inject markup.
-  ansiToHtml(text) {
-    let out = '', fg = null, bold = false, dim = false, open = false, last = 0;
-    const close = () => { if (open) { out += '</span>'; open = false; } };
-    const openSpan = () => {
-      const cls = [fg, bold ? 'ansi-bold' : null, dim ? 'ansi-dim' : null].filter(Boolean).join(' ');
-      if (cls) { out += `<span class="${cls}">`; open = true; }
-    };
-    for (const m of text.matchAll(Run.ANSI_SGR)) {
-      out += escapeHtml(text.slice(last, m.index));
-      last = m.index + m[0].length;
-      close();
-      const parts = (m[1] || '0').split(';');
-      for (let i = 0; i < parts.length; i++) {
-        const n = Number(parts[i] || 0);
-        if (n === 0) { fg = null; bold = false; dim = false; }
-        else if (n === 1) bold = true;
-        else if (n === 2) dim = true;
-        else if (n === 22) { bold = false; dim = false; }
-        else if (n === 39) fg = null;
-        // 256-colour: only the SEVERE amber (202) the pipeline emits is mapped.
-        else if (n === 38 && parts[i + 1] === '5') {
-          if (Number(parts[i + 2]) === 202) fg = 'ansi-amber';
-          i += 2;
-        }
-        else if (Run.ANSI_COLORS[n]) fg = Run.ANSI_COLORS[n];
-      }
-      openSpan();
-    }
-    out += escapeHtml(text.slice(last));
-    close();
-    return out;
-  },
-
-  levelClass(line) {
-    if (/ - ERROR - | ERROR:| Traceback/.test(line)) return 'lvl-error';
-    if (/ - WARNING - | WARN/.test(line)) return 'lvl-warn';
-    if (/ - SEVERE - /.test(line)) return 'lvl-severe';
-    if (/STOP|Pipeline stopped/.test(line)) return 'lvl-stop';
-    return '';
-  },
+  continueAfter: false, // carry on once the re-run passes
 
   looksLikeProgress(line) {
     return /\d+%\|/.test(line);
@@ -131,18 +76,58 @@ const Run = {
       Run.stick = Run.atBottom(c);
       document.getElementById('log-to-bottom').classList.toggle('hidden', Run.stick);
     });
-    document.getElementById('log-to-bottom')
-      .addEventListener('click', () => Run.scrollToBottom());
+    document.getElementById('log-to-bottom').addEventListener('click', () => Run.scrollToBottom());
   },
 
-  append(line) {
+  // "hh:mm:ss  step  message" from the console formatter and the progress bars.
+  LOG_LINE: /^(\d\d:\d\d:\d\d) {2}(.*?) {2,}(.*)$/s,
+  // uncoloured lines from outside the logger (uncaught errors, Python warnings)
+  STDERR_LEVEL: [
+    [/^Traceback \(most recent call last\)|\b\w*(Error|Exception): /, 'error'],
+    [/\b\w*Warning: /, 'warning'],
+  ],
+
+  get stepWidth() {
+    return STATE.registry.log_step_width;
+  },
+
+  // Splits a log line into time, step and message columns; the raw line stays in _raw.
+  fillLine(el, line, level = null) {
+    el._raw = line;
+    el.replaceChildren();
+    const w = Run.stepWidth;
+    const m = line.match(Run.LOG_LINE);
+    // a real step column is padded to its width; a bar with no step name ("Assembling steps  45%") isn't
+    if (m && line.length - m[3].length - 10 >= w + 2) {
+      const name = m[2].trim();
+      const time = document.createElement('span');
+      const step = document.createElement('span');
+      time.className = 'log-time';
+      step.className = 'log-step';
+      time.textContent = m[1] + '  ';
+      step.textContent = name.padEnd(w) + '  ';
+      step.title = name;
+      el.classList.add('log-row');
+      el.append(time, step);
+      line = m[3];
+    }
+    if (level) {
+      const tag = document.createElement('b');
+      tag.className = 'log-tag log-' + level.toLowerCase();
+      tag.textContent = level === 'WARNING' ? 'WARN' : level;
+      el.append(tag, ' ');
+    } else if (!el.classList.contains('log-row')) {
+      const hit = Run.STDERR_LEVEL.find(([re]) => re.test(line));
+      if (hit) el.classList.add('log-' + hit[1]);
+    }
+    el.append(line + '\n');
+  },
+
+  append(line, level = null) {
     Run.settleStart();
     const c = document.getElementById('log-console');
     const span = document.createElement('span');
-    // Fallback colour; real ANSI colour still wins, being set on a descendant span.
-    const cls = Run.levelClass(Run.stripAnsi(line));
-    if (cls) span.className = cls;
-    span.innerHTML = Run.ansiToHtml(line) + '\n';
+    Run.fillLine(span, line, level);
     c.appendChild(span);
     Run.autoScroll();
   },
@@ -160,10 +145,12 @@ const Run = {
     const c = document.getElementById('log-console');
     const span = document.createElement('span');
     span.className = 'lvl-banner banner-' + kind;
-    span.innerHTML = (kind === 'starting' ? ''
-      : `<span class="banner-ico">${Icon.svg(kind === 'ok' ? 'check' : 'alert', 13)}</span>`)
-      + `<strong>${escapeHtml(title)}</strong>`
-      + (sub ? `<span class="banner-sub">${escapeHtml(sub)}</span>` : '');
+    span.innerHTML =
+      (kind === 'starting'
+        ? ''
+        : `<span class="banner-ico">${Icon.svg(kind === 'ok' ? 'check' : 'alert', 13)}</span>`) +
+      `<strong>${escapeHtml(title)}</strong>` +
+      (sub ? `<span class="banner-sub">${escapeHtml(sub)}</span>` : '');
     c.appendChild(span);
     Run.autoScroll();
     return span;
@@ -191,11 +178,7 @@ const Run = {
   // "<PREFIX><index>\t<name>[\t<qc test>]" -> [index, name, test|null].
   splitMarker(plain, prefix) {
     const parts = plain.slice(prefix.length).split('\t');
-    return [
-      parseInt(parts[0], 10),
-      (parts[1] || '').trim(),
-      parts.length > 2 ? parts[2].trim() : null,
-    ];
+    return [parseInt(parts[0], 10), (parts[1] || '').trim(), parts.length > 2 ? parts[2].trim() : null];
   },
 
   // One pausable unit: a step, or one QC test within a split step.
@@ -206,9 +189,20 @@ const Run = {
   // A leave=False tqdm bar ends with a bare "\r", so a marker can land mid-line.
   markerAt(plain) {
     let best = null;
-    for (const marker of [Run.FIG_MARKER, Run.LOG_MARKER, Run.FAIL_MARKER, Run.STEP_MARKER,
-      Run.PAUSE_MARKER, Run.RERUN_MARKER, Run.MEM_MARKER, Run.REPORT_MARKER, Run.VARS_MARKER,
-      Run.TIME_MARKER, Run.SAMPLE_MARKER]) {
+    for (const marker of [
+      Run.FIG_MARKER,
+      Run.LOG_MARKER,
+      Run.LEVEL_MARKER,
+      Run.FAIL_MARKER,
+      Run.STEP_MARKER,
+      Run.PAUSE_MARKER,
+      Run.RERUN_MARKER,
+      Run.MEM_MARKER,
+      Run.REPORT_MARKER,
+      Run.VARS_MARKER,
+      Run.TIME_MARKER,
+      Run.SAMPLE_MARKER,
+    ]) {
       const at = plain.indexOf(marker);
       if (at >= 0 && (best === null || at < best.at)) best = { marker, at };
     }
@@ -216,23 +210,26 @@ const Run = {
   },
 
   handleLine(line) {
-    // Uncoloured, so a leading colour code can't hide a marker.
-    const plain = Run.stripAnsi(line);
-    const hit = Run.markerAt(plain);
+    const hit = Run.markerAt(line);
     if (hit) {
-      if (hit.at > 0) Run.renderLine(plain.slice(0, hit.at));
+      if (hit.at > 0) Run.renderLine(line.slice(0, hit.at));
       // RAM samples arrive mid-step, so they must not freeze a live bar.
       if (hit.marker !== Run.SAMPLE_MARKER) Run.finalizeProgress();
-      Run.handleMarker(hit.marker, plain.slice(hit.at));
+      Run.handleMarker(hit.marker, line.slice(hit.at));
       return;
     }
     Run.renderLine(line);
   },
 
   handleMarker(marker, plain) {
+    if (marker === Run.LEVEL_MARKER) {
+      const payload = plain.slice(marker.length);
+      const tab = payload.indexOf('\t');
+      Run.append(payload.slice(tab + 1), payload.slice(0, tab));
+      return;
+    }
     if (marker === Run.MEM_MARKER) {
-      // "<rss>\t<peak>\t<data>\t<label>" for the RAM meter, not the console.
-      Mem.add(plain.slice(marker.length));
+      Mem.setData(plain.slice(marker.length)); // dataset size at a step's end
       return;
     }
     if (marker === Run.SAMPLE_MARKER) {
@@ -246,8 +243,11 @@ const Run = {
     if (marker === Run.VARS_MARKER) {
       try {
         const vars = JSON.parse(plain.slice(marker.length));
-        Run.variables = vars.names; Run.emptyVariables = vars.empty;
-      } catch (e) { /* malformed */ }
+        Run.variables = vars.names;
+        Run.emptyVariables = vars.empty;
+      } catch (e) {
+        /* malformed */
+      }
       return;
     }
     if (marker === Run.REPORT_MARKER) {
@@ -270,7 +270,11 @@ const Run = {
       const test = (parts[2] || '').trim() || null;
       const isError = marker === Run.FAIL_MARKER;
       let text = '';
-      try { text = decodeURIComponent(escape(atob(parts[3] || ''))); } catch (e) { /* malformed payload */ }
+      try {
+        text = decodeURIComponent(escape(atob(parts[3] || '')));
+      } catch (e) {
+        /* malformed payload */
+      }
       if (Number.isInteger(idx) && text) {
         Run.addLog(idx, name, test, text, { isError });
         if (isError) {
@@ -291,8 +295,10 @@ const Run = {
       const spec = (parts[2] || '').trim();
       const reason = (parts[3] || '').trim();
       Run.addPlot(fname, caption, spec);
-      Run.note('plot', (caption || fname) +
-        (spec ? ' (interactive)' : reason ? ` (image only — ${reason})` : ''));
+      Run.note(
+        'plot',
+        (caption || fname) + (spec ? ' (interactive)' : reason ? ` (image only — ${reason})` : ''),
+      );
     } else if (marker === Run.STEP_MARKER) {
       // A garbled index would make every figure its own group (NaN !== NaN).
       if (!Number.isInteger(idx)) return;
@@ -310,9 +316,12 @@ const Run = {
 
   renderLine(line) {
     // The final bar frame arrives newline-terminated: finalise it rather than duplicate it.
-    if (Run.progressEl && Run.looksLikeProgress(Run.stripAnsi(line))
-        && Run.barDesc(line) === Run.barDesc(Run.progressEl.textContent || '')) {
-      Run.progressEl.innerHTML = Run.ansiToHtml(line) + '\n';
+    if (
+      Run.progressEl &&
+      Run.looksLikeProgress(line) &&
+      Run.barDesc(line) === Run.barDesc(Run.progressEl._raw || '')
+    ) {
+      Run.fillLine(Run.progressEl, line);
       Run.progressEl = null;
       Run.autoScroll();
       return;
@@ -323,20 +332,20 @@ const Run = {
 
   // The text before the percentage: "<time>  <step>  <desc>", minus the time.
   barDesc(plain) {
-    const m = Run.stripAnsi(plain).match(/^\S+\s+(.*?)\s*\d+%\|/);
-    return m ? m[1] : Run.stripAnsi(plain);
+    const m = plain.match(/^\S+\s+(.*?)\s*\d+%\|/);
+    return m ? m[1] : plain;
   },
 
   // A leave=False bar erases itself without a 100% frame, so it could freeze mid-way.
   finalizeProgress() {
     if (!Run.progressEl) return;
-    const plain = Run.stripAnsi(Run.progressEl.textContent || '').replace(/\n+$/, '');
+    const plain = Run.progressEl._raw || '';
     const m = plain.match(/^(.*?)\d+%\|([^|]*)\|\s*\d+\/(\d+)(.*)$/);
     if (m) {
       const [, desc, bar, total, tail] = m;
       const doneTail = tail.replace(/<.*?\]/, '<00:00]');
       const line = `${desc}100%|${'█'.repeat(bar.length)}| ${total}/${total}${doneTail}`;
-      Run.progressEl.innerHTML = Run.ansiToHtml(line) + '\n';
+      Run.fillLine(Run.progressEl, line);
     }
     Run.progressEl = null;
   },
@@ -344,11 +353,14 @@ const Run = {
   handleProgress(line) {
     Run.settleStart();
     const c = document.getElementById('log-console');
-    const plain = Run.stripAnsi(line);
+    const plain = line;
     if (!plain.trim()) return; // a closing bar's blank erase frame
     // A new description means a new loop: keep the finished bar, start another line.
-    if (Run.progressEl && Run.looksLikeProgress(plain)
-        && Run.barDesc(plain) !== Run.barDesc(Run.progressEl.textContent || '')) {
+    if (
+      Run.progressEl &&
+      Run.looksLikeProgress(plain) &&
+      Run.barDesc(plain) !== Run.barDesc(Run.progressEl._raw || '')
+    ) {
       Run.finalizeProgress();
     }
     if (!Run.progressEl) {
@@ -356,15 +368,19 @@ const Run = {
       Run.progressEl.className = 'lvl-progress';
       c.appendChild(Run.progressEl);
     }
-    Run.progressEl.innerHTML = Run.ansiToHtml(line) + '\n';
+    Run.fillLine(Run.progressEl, line);
     Run.autoScroll();
   },
 
   _groupFor(cur) {
     if (!Run.activeGroup || Run.activeGroup.key !== cur.key) {
       Run.activeGroup = {
-        index: cur.index, key: cur.key, step: cur.name, test: cur.test,
-        figs: [], params: Run.pendingParams,
+        index: cur.index,
+        key: cur.key,
+        step: cur.name,
+        test: cur.test,
+        figs: [],
+        params: Run.pendingParams,
       };
       Run.pendingParams = null;
       Run.groups.push(Run.activeGroup);
@@ -374,10 +390,12 @@ const Run = {
 
   addPlot(fname, caption, spec) {
     if (!fname) return;
-    const cur = Run.currentStep ||
-      { index: -1, name: 'Diagnostics', test: null, key: Run.unitKey(-1, null) };
+    const cur = Run.currentStep || { index: -1, name: 'Diagnostics', test: null, key: Run.unitKey(-1, null) };
     Run._groupFor(cur).figs.push({
-      fname, caption, spec: spec || null, url: Viewer.freshUrl(fname),
+      fname,
+      caption,
+      spec: spec || null,
+      url: Viewer.freshUrl(fname),
     });
     Run.plotCount += 1;
     Run.renderGallery();
@@ -388,9 +406,10 @@ const Run = {
   // Stored as a pseudo-figure (isLog) so attempts and re-runs work unchanged; only Viewer.card() differs.
   addLog(idx, name, test, text, { isError = false } = {}) {
     if (!text) return;
-    const cur = Run.currentStep && Run.currentStep.index === idx
-      ? Run.currentStep
-      : { index: idx, name, test, key: Run.unitKey(idx, test) };
+    const cur =
+      Run.currentStep && Run.currentStep.index === idx
+        ? Run.currentStep
+        : { index: idx, name, test, key: Run.unitKey(idx, test) };
     Run._groupFor(cur).figs.push({ isLog: true, isError, text, caption: '' });
     Run.renderGallery();
     if (Review.active && Review.key === cur.key) Review.renderPlots();
@@ -427,7 +446,9 @@ const Run = {
     const orphans = Run.groups.filter((g) => g.index === -1);
     if (!orphans.length) return;
     for (const g of orphans) {
-      g.index = index; g.step = name; g.test = test;
+      g.index = index;
+      g.step = name;
+      g.test = test;
       g.key = Run.unitKey(index, test);
     }
     Run.renderGallery();
@@ -484,8 +505,8 @@ const Run = {
     head.className = 'report-head';
     const meta = document.createElement('div');
     meta.className = 'report-meta';
-    meta.innerHTML = `<strong>${escapeHtml(name)}</strong>` +
-      `<span class="report-path">${escapeHtml(path)}</span>`;
+    meta.innerHTML =
+      `<strong>${escapeHtml(name)}</strong>` + `<span class="report-path">${escapeHtml(path)}</span>`;
     const open = document.createElement('a');
     open.className = 'btn primary';
     open.href = url;
@@ -508,7 +529,10 @@ const Run = {
 
   clearReport() {
     const view = document.getElementById('report-view');
-    if (view) { view.innerHTML = ''; view.classList.add('hidden'); }
+    if (view) {
+      view.innerHTML = '';
+      view.classList.add('hidden');
+    }
     const empty = document.getElementById('report-empty');
     if (empty) empty.classList.remove('hidden');
     const tab = document.querySelector('.tab[data-tab="report"]');
@@ -534,7 +558,7 @@ const Run = {
     Run.setRunButton('paused');
     RunLock.pauseAt(idx, test);
     if (Review.active && Review.key === key) {
-      Review.setBusy(false);   // a re-run finished
+      Review.setBusy(false); // a re-run finished
       Review.select(null);
       Review.renderTitle();
     } else {
@@ -593,11 +617,16 @@ const Run = {
     }
     const key = Run.unitKey(Run.pausedStep, Run.pausedTest);
     const form = Run.paramsAt(Run.pausedStep, Run.pausedTest);
+    Run.setRunButton('busy');
     try {
       await (action === 'skip' ? API.skipStep() : API.continueRun());
     } catch (e) {
-      Run.note('error', e.message, 'err');
-      return;
+      // "not paused" means an earlier Continue already got through
+      if (!/not paused/i.test(e.message)) {
+        Run.note('error', e.message, 'err');
+        Run.setRunButton('paused');
+        return;
+      }
     }
     const attempts = Run.groupsFor(key);
     const kept = attempts.filter((g) => g.params && Forms.equal(g.params, form)).pop();
@@ -626,15 +655,19 @@ const Run = {
       return;
     }
     if (step.name !== Run.pausedName) {
-      alert(`Step ${idx + 1} is now '${step.name}', not '${Run.pausedName}'. ` +
-        'Undo the reordering, or Continue and start a fresh run.');
+      alert(
+        `Step ${idx + 1} is now '${step.name}', not '${Run.pausedName}'. ` +
+          'Undo the reordering, or Continue and start a fresh run.',
+      );
       return;
     }
     const params = Run.paramsAt(idx, test);
     if (!params) {
-      alert(test
-        ? `QC test '${test}' is no longer configured on step ${idx + 1}.`
-        : `Could not read the parameters of step ${idx + 1}.`);
+      alert(
+        test
+          ? `QC test '${test}' is no longer configured on step ${idx + 1}.`
+          : `Could not read the parameters of step ${idx + 1}.`,
+      );
       return;
     }
     // Unchanged params give an identical figure, so replace that attempt instead of stacking one.
@@ -643,8 +676,7 @@ const Run = {
       Run.note('re-run', 'unchanged parameters — replacing attempt ' + Run.attemptNo(latest));
       Run.dropGroup(latest);
     }
-    Run.note('re-run', 'step ' + (idx + 1) + (test ? ` (${test})` : '') +
-      ' with ' + JSON.stringify(params));
+    Run.note('re-run', 'step ' + (idx + 1) + (test ? ` (${test})` : '') + ' with ' + JSON.stringify(params));
     Run.pendingParams = params;
     Run.sentParams = params;
     Run.continueAfter = thenContinue;
@@ -655,7 +687,7 @@ const Run = {
     try {
       await API.rerunStep(params, editor.getValue());
     } catch (e) {
-      Run.note('error', e.message, 'err');
+      if (!/not paused/i.test(e.message)) Run.note('error', e.message, 'err');
       Run.pendingParams = null;
       Run.sentParams = null;
       Run.continueAfter = false;
@@ -680,11 +712,17 @@ const Run = {
     const action = paused ? Run.continueAction() : null;
     btn.classList.toggle('primary', action !== 'skip');
     btn.classList.toggle('warn', action === 'skip');
-    btn.title = action === 'untested' ? 'These values have not been run yet: Continue re-runs the step first'
-      : action === 'rerun' ? 'Continue re-runs the step with these values first' : '';
-    Review.renderHint(action === 'untested'
-      ? "These values haven't been run yet. Re-run first? Continue will re-run the step, then carry on if it passes."
-      : '');
+    btn.title =
+      action === 'untested'
+        ? 'These values have not been run yet: Continue re-runs the step first'
+        : action === 'rerun'
+          ? 'Continue re-runs the step with these values first'
+          : '';
+    Review.renderHint(
+      action === 'untested'
+        ? "These values haven't been run yet. Re-run first? Continue will re-run the step, then carry on if it passes."
+        : '',
+    );
     if (paused) {
       btn.disabled = mode === 'busy';
       btn.innerHTML = Icon.svg('play') + (action === 'skip' ? 'Skip step' : 'Continue');
@@ -762,49 +800,66 @@ const Run = {
     Run.source = new EventSource('/api/run/stream');
     Run.source.onmessage = (ev) => Run.handleLine(ev.data);
     Run.source.addEventListener('progress', (ev) => Run.handleProgress(ev.data));
-    Run.source.addEventListener('end', (ev) => {
-      Run.finalizeProgress();
-      RunClock.stop();
-      const code = Number(ev.data);
-      const took = RunClock.epoch === null ? '' : RunClock.fmt(RunClock.seconds());
-      if (Run.stopping) {
-        Run.setStatus('stopped', 'err');
-        Run.settle('stopped', 'Pipeline stopped', took);
-      } else if (code === 0) {
-        Run.setStatus('finished', 'ok');
-        Run.banner('ok', 'Pipeline finished', [took,
-          Run.plotCount ? `${Run.plotCount} plot${Run.plotCount === 1 ? '' : 's'}` : '',
-          Run.reportName ? 'report ready in the Output tab' : ''].filter(Boolean).join(' · '));
-      } else if (code < 0) {
-        // Killed by a signal we didn't send, most often the OS reclaiming memory.
-        Run.setStatus('killed', 'err');
-        Run.banner('err', 'Pipeline killed', ['possibly out of memory', took].filter(Boolean).join(' · '));
-      } else {
-        Run.setStatus('failed', 'err');
-        Run.banner('err', 'Pipeline failed');
-      }
-      Run.cleanup();
-      Outputs.refresh();
-    });
+    Run.source.addEventListener('end', (ev) => Run.finish(Number(ev.data)));
     Run.source.onerror = () => Run.handleDrop();
+  },
+
+  finish(code) {
+    Run.finalizeProgress();
+    RunClock.stop();
+    const took = RunClock.epoch === null ? '' : RunClock.fmt(RunClock.seconds());
+    if (Run.stopping) {
+      Run.setStatus('stopped', 'err');
+      Run.settle('stopped', 'Pipeline stopped', took);
+    } else if (code === 0) {
+      Run.setStatus('finished', 'ok');
+      Run.banner(
+        'ok',
+        'Pipeline finished',
+        [
+          took,
+          Run.plotCount ? `${Run.plotCount} plot${Run.plotCount === 1 ? '' : 's'}` : '',
+          Run.reportName ? 'report ready in the Output tab' : '',
+        ]
+          .filter(Boolean)
+          .join(' · '),
+      );
+    } else if (code < 0) {
+      // Killed by a signal we didn't send, most often the OS reclaiming memory.
+      Run.setStatus('killed', 'err');
+      Run.banner('err', 'Pipeline killed', ['possibly out of memory', took].filter(Boolean).join(' · '));
+    } else {
+      Run.setStatus('failed', 'err');
+      Run.banner('err', 'Pipeline failed');
+    }
+    Run.cleanup();
+    Outputs.refresh();
   },
 
   // A dropped stream (laptop sleep) doesn't end the run: re-attach and let the backlog replay.
   handleDrop() {
-    if (Run.source) { Run.source.close(); Run.source = null; }
+    if (Run.source) {
+      Run.source.close();
+      Run.source = null;
+    }
     clearTimeout(Run._retry);
-    if (Run.stopping) return; // Stop is in flight; the end event settles it
-    Run.setStatus('reconnecting…', 'running');
-    API.runStatus().then((s) => {
-      if (s.running) {
-        Run._retry = setTimeout(() => Run.connect(true), 1500);
-      } else {
-        Run.setStatus('run ended while disconnected', '');
-        Run.cleanup();
-      }
-    }).catch(() => {
-      Run._retry = setTimeout(() => Run.handleDrop(), 3000);
-    });
+    if (!Run.stopping) Run.setStatus('reconnecting…', 'running');
+    API.runStatus()
+      .then((s) => {
+        if (s.running) {
+          // connect() would forget the stop, so keep polling until it lands
+          Run._retry = setTimeout(() => (Run.stopping ? Run.handleDrop() : Run.connect(true)), 1500);
+        } else if (Run.stopping) {
+          // the closed stream can't deliver the end event
+          Run.finish(null);
+        } else {
+          Run.setStatus('run ended while disconnected', '');
+          Run.cleanup();
+        }
+      })
+      .catch(() => {
+        Run._retry = setTimeout(() => Run.handleDrop(), 3000);
+      });
   },
 
   // Called when the tab is shown again, e.g. after laptop sleep.
@@ -813,7 +868,9 @@ const Run = {
     try {
       const s = await API.runStatus();
       if (s.running) Run.connect(true);
-    } catch (e) { /* server not reachable yet; the next event will retry */ }
+    } catch (e) {
+      /* server not reachable yet; the next event will retry */
+    }
   },
 
   async resumeIfRunning() {
@@ -823,14 +880,16 @@ const Run = {
         Run.showTab();
         Run.connect(true);
       }
-    } catch (e) { /* server not ready; ignore */ }
+    } catch (e) {
+      /* server not ready; ignore */
+    }
   },
 
   showTab(name = 'run') {
-    document.querySelectorAll('.tab').forEach((t) =>
-      t.classList.toggle('on', t.dataset.tab === name));
-    document.querySelectorAll('.tab-panel').forEach((p) =>
-      p.classList.toggle('hidden', p.dataset.panel !== name));
+    document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('on', t.dataset.tab === name));
+    document
+      .querySelectorAll('.tab-panel')
+      .forEach((p) => p.classList.toggle('hidden', p.dataset.panel !== name));
     if (name === 'report') Outputs.refresh();
     Run.onTabChange();
   },
@@ -846,7 +905,10 @@ const Run = {
     clearTimeout(Run._retry);
     Run.hidePause();
     RunLock.end();
-    if (Run.source) { Run.source.close(); Run.source = null; }
+    if (Run.source) {
+      Run.source.close();
+      Run.source = null;
+    }
     Run.setRunButton('idle');
     Run.setStopClear('clear');
   },

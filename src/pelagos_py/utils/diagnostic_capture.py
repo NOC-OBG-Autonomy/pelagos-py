@@ -343,8 +343,7 @@ def make_diagnostics_safe(step) -> None:
                 return _method(*args, **kwargs)
             except Exception as exc:  # noqa: BLE001 - diagnostics must never be fatal
                 step.logger.warning(
-                    "[%s] Diagnostic generation for the report failed: %s",
-                    step.name,
+                    "Diagnostic generation for the report failed: %s",
                     exc,
                 )
                 return None

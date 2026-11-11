@@ -38,7 +38,7 @@ INFLECTION = 5
 PROPELLED = 6
 TRANSITION = 7
 
-PHASE_COLOURS = palettes.CATEGORICAL["SCI_PHASE"]
+PHASE_COLOURS = palettes.CATEGORICAL["PHASE_SCI"]
 
 PHASE_NAMES = {
     UNKNOWN: "0 Unknown",
@@ -52,7 +52,7 @@ PHASE_NAMES = {
 }
 
 DERIVED_COLUMNS = [
-    "SCI_PHASE",
+    "PHASE_SCI",
     "PROFILE_NUMBER",
     "PROFILE_DIRECTION",
     "CYCLE",
@@ -321,7 +321,7 @@ def find_profiles(
     df = df_raw.dropna(subset=["TIME", depth_col]).sort_values("TIME")
 
     if df.empty:
-        df_raw["SCI_PHASE"] = UNKNOWN
+        df_raw["PHASE_SCI"] = UNKNOWN
         df_raw["PROFILE_NUMBER"] = np.nan
         df_raw["PROFILE_DIRECTION"] = np.nan
         df_raw["CYCLE"] = 1
@@ -374,7 +374,7 @@ def find_profiles(
 
     result = pd.DataFrame(
         {
-            "SCI_PHASE": phase,
+            "PHASE_SCI": phase,
             "PROFILE_NUMBER": profile_num,
             "PROFILE_DIRECTION": direction,
             "CYCLE": cycle,
@@ -386,7 +386,7 @@ def find_profiles(
     out = df_raw.copy()
     out[DERIVED_COLUMNS] = result.reindex(out.index)
     out["LABEL_QC"] = _fill_from_neighbours(out, df.index)
-    out["SCI_PHASE"] = out["SCI_PHASE"].fillna(UNKNOWN).astype(int)
+    out["PHASE_SCI"] = out["PHASE_SCI"].fillna(UNKNOWN).astype(int)
     out["CYCLE"] = out["CYCLE"].ffill().fillna(1).astype(int)
     return out
 
@@ -409,7 +409,7 @@ class FindProfilesStep(BaseStep, QCHandlingMixin):
     Phase definitions
     -----------------
     Phases follow the OceanGliders OG1 ``phase`` vocabulary [1]_ and are written to
-    ``SCI_PHASE``. This step's scope:
+    ``PHASE_SCI``. This step's scope:
 
     - **0 – unknown**: the default until reclassified below, and where it stays if
       nothing below applies.
@@ -508,7 +508,7 @@ class FindProfilesStep(BaseStep, QCHandlingMixin):
         "PROFILE_DIRECTION",
         "PROFILE_GRADIENT",
         "CYCLE",
-        "SCI_PHASE",
+        "PHASE_SCI",
     ]
     variable_parameters = ["depth_column"]
     uses_data_subset = True
@@ -653,8 +653,8 @@ class FindProfilesStep(BaseStep, QCHandlingMixin):
             "valid_max": np.inf,
         }
 
-        self.data["SCI_PHASE"] = (("N_MEASUREMENTS",), df_final["SCI_PHASE"].to_numpy())
-        self.data.SCI_PHASE.attrs = {
+        self.data["PHASE_SCI"] = (("N_MEASUREMENTS",), df_final["PHASE_SCI"].to_numpy())
+        self.data.PHASE_SCI.attrs = {
             "long_name": "Scientific Phase Classification",
             "units": "None",
             "valid_min": 0,
@@ -670,10 +670,10 @@ class FindProfilesStep(BaseStep, QCHandlingMixin):
             "PROFILE_DIRECTION",
             "PROFILE_GRADIENT",
             "CYCLE",
-            "SCI_PHASE",
+            "PHASE_SCI",
         ]:
             values = self.data[var].values
-            missing = values == UNKNOWN if var == "SCI_PHASE" else np.isnan(values)
+            missing = values == UNKNOWN if var == "PHASE_SCI" else np.isnan(values)
             self.data[f"{var}_QC"] = (
                 ("N_MEASUREMENTS",),
                 np.where(missing, 9, label_qc).astype(np.int8),
@@ -691,7 +691,7 @@ class FindProfilesStep(BaseStep, QCHandlingMixin):
         # Panel 1: high-resolution phase mapping, one series per scientific phase.
         has_data = mapped_df[depth_col].notna()
         for p_val in range(8):
-            mask = (mapped_df["SCI_PHASE"] == p_val) & has_data
+            mask = (mapped_df["PHASE_SCI"] == p_val) & has_data
             n_points = int(mask.sum())
             t_data = mapped_df["TIME"][mask] if n_points else []
             depth_data = mapped_df[depth_col][mask] if n_points else []

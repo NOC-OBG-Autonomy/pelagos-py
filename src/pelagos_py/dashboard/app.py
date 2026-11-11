@@ -20,17 +20,12 @@ Start it with ``pelagos-py dashboard``.
 
 from __future__ import annotations
 
-import atexit
-import codecs
 import json
 import logging
 import os
-import re
 import shutil
-import signal
 import subprocess
 import sys
-import tempfile
 import threading
 import time
 from pathlib import Path
@@ -57,26 +52,15 @@ from pelagos_py.utils.demo_data import (
     get_demo_file,
 )
 from pelagos_py.utils.valid_config_check import check_pipeline_variables
-from pelagos_py.utils import config_builder, file_probe
+from pelagos_py.utils import config_builder, console, fig_spec, file_probe
+from pelagos_py.dashboard.runner import FIG_DIR, _FIGDATA_CACHE, _run
 
 # HDF5 prints its own error stack on a failed open, which is already raised as an exception
 h5py._errors.silence_errors()
 
-_ANSI_RE = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
-
-
-def _clean_ansi(text: str) -> str:
-    # keep colour codes, drop cursor/clear-line ones
-    return _ANSI_RE.sub(lambda m: m.group(0) if m.group(0).endswith("m") else "", text)
-
 
 DASHBOARD_DIR = Path(__file__).resolve().parent
 STATIC_DIR = DASHBOARD_DIR / "static"
-RUN_BOOTSTRAP = DASHBOARD_DIR / "run_bootstrap.py"
-# one folder per dashboard process, so two dashboards can't delete each other's figures
-FIG_DIR = Path(tempfile.mkdtemp(prefix="pelagos-py-figures-"))
-atexit.register(shutil.rmtree, FIG_DIR, ignore_errors=True)
-_FIGDATA_CACHE: dict[str, dict] = {}
 CONFIG_DIR = WORKSPACE_DIR / "configs"
 CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -180,8 +164,33 @@ app = FastAPI(title="pelagos_py dashboard")
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1"])
 
 
+_SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
+# frame-ancestors 'self', not 'none': the Report tab shows PDFs in a same-origin iframe
+_CSP = "; ".join(
+    [
+        "default-src 'self'",
+        "script-src 'self'",
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "font-src 'self' https://fonts.gstatic.com",
+        "img-src 'self' data:",
+        "frame-ancestors 'self'",
+    ]
+)
+
+
+def _cross_site(request) -> bool:
+    # a cross-site form auto-submit needs no CORS preflight, so check where writes come from
+    if request.headers.get("sec-fetch-site") == "cross-site":
+        return True
+    # the Host header itself is checked by TrustedHostMiddleware
+    origin = request.headers.get("origin")
+    return origin is not None and origin != f"http://{request.headers.get('host')}"
+
+
 @app.middleware("http")
-async def _no_cache(request, call_next):
+async def _guard_and_headers(request, call_next):
+    if request.method not in _SAFE_METHODS and _cross_site(request):
+        return Response("Cross-site request blocked.", status_code=403)
     response = await call_next(request)
     path = request.url.path
     if (
@@ -190,6 +199,9 @@ async def _no_cache(request, call_next):
         or path.startswith("/api/")
     ):
         response.headers["Cache-Control"] = "no-store"
+    response.headers["Content-Security-Policy"] = _CSP
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "no-referrer"
     return response
 
 
@@ -214,6 +226,9 @@ def registry():
         "qc": qc,
         "pipeline_fields": PIPELINE_FIELDS,
         "combinatrix": QC_COMBINATRIX.tolist(),
+        "flag_colours": fig_spec.FLAG_COLOURS,
+        "log_step_width": console._NAME_WIDTH,
+        "display": _has_display(),
     }
 
 
@@ -320,8 +335,7 @@ def validate(payload: ValidatePayload):
     # the variable check instantiates steps, so only run it once the parameters are valid
     warnings = []
     if not issues:
-        # unregistered logger per request: validate runs on every keystroke, so its lines
-        # stay off the console, and concurrent requests can't mix up their warnings
+        # unregistered per-request logger: keeps per-keystroke warnings off the console and apart
         collector = _WarningCollector()
         logger = logging.Logger("pelagos_py.dashboard.validate")
         logger.addHandler(collector)
@@ -404,7 +418,22 @@ def list_configs():
     }
 
 
+def _has_display() -> bool:
+    # false in a VM or over SSH, where a window would open on a screen nobody sees
+    if not sys.platform.startswith("linux"):
+        return True
+    return bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
+
+
+def _no_file_explorer() -> HTTPException:
+    return HTTPException(
+        status_code=503, detail="Can't open a file explorer on this machine."
+    )
+
+
 def _reveal(folder: Path) -> dict:
+    if not _has_display():
+        raise _no_file_explorer()
     if sys.platform == "darwin":
         cmd = ["open", str(folder)]
     elif os.name == "nt":
@@ -472,7 +501,6 @@ _OUTPUT_KINDS = {
     ".parquet": "data",
     ".h5": "data",
     ".hdf5": "data",
-    ".rst": "report",
 }
 _listed_outputs: set[Path] = set()  # only listed files may be served or deleted
 
@@ -501,7 +529,10 @@ def _dir_size(path: Path) -> int:
 
 
 def _list_outputs(payload: OutputsPayload) -> dict:
-    exports = {Path(f).name for f in payload.exports if f}
+    # only files runs wrote, so "Delete all" can't take a user's own PDFs or logs
+    run_files = {(WORKSPACE_DIR / f).resolve() for f in payload.exports if f}
+    with _run._lock:
+        run_files |= _run.outputs
     dirs = _output_dirs(payload.dirs)
     files = []
     _listed_outputs.clear()
@@ -510,12 +541,12 @@ def _list_outputs(payload: OutputsPayload) -> dict:
             if entry.name.startswith("."):
                 continue
             if entry.is_dir():
-                if "_report_figures_" not in entry.name and entry.name != "_build":
+                if "_report_figures_" not in entry.name:
                     continue
                 kind, size = "figures", _dir_size(entry)
             else:
                 kind = _OUTPUT_KINDS.get(entry.suffix.lower())
-                if kind is None or (kind == "data" and entry.name not in exports):
+                if kind is None or entry not in run_files:
                     continue
                 size = entry.stat().st_size
             _listed_outputs.add(entry)
@@ -550,7 +581,7 @@ def output_file(path: str):
     p = _listed_output(path)
     if p.is_dir():
         raise HTTPException(status_code=400, detail="Not a file.")
-    inline = p.suffix.lower() in (".pdf", ".log", ".rst")
+    inline = p.suffix.lower() in (".pdf", ".log")
     return FileResponse(
         p,
         media_type="application/pdf" if p.suffix.lower() == ".pdf" else None,
@@ -577,13 +608,13 @@ def delete_output(path: str):
 
 
 @app.post("/api/outputs/clean")
-def clean_outputs(payload: OutputsPayload):
+def clean_outputs():
     _no_run_in_flight()
-    listing = _list_outputs(payload)
-    for f in listing["files"]:
-        _remove(Path(f["path"]))
+    removed = len(_listed_outputs)
+    for p in _listed_outputs:
+        _remove(p)
     _listed_outputs.clear()
-    return {"status": "deleted", "removed": len(listing["files"])}
+    return {"status": "deleted", "removed": removed}
 
 
 class RevealPayload(BaseModel):
@@ -623,16 +654,24 @@ class BrowsePayload(BaseModel):
     start: str = ""
 
 
-@app.post("/api/files/pick")
-def pick_files(payload: BrowsePayload):
-    # a picked folder adds all its .nc files
-    start = Path(payload.start).expanduser() if payload.start else None
-    start_dir = start.parent if start and start.parent.is_dir() else Path.cwd()
+def _native_dialog(start: str, prompt: str, multiple: bool) -> list[str]:
+    # browsers never expose a picked file's real path, so the OS picker runs here
+    start_path = Path(start).expanduser() if start else None
+    if start_path and start_path.parent.is_dir():
+        start_dir = start_path.parent
+    else:
+        start_dir = Path.cwd()
     if sys.platform == "darwin":
+        if multiple:
+            choose = (
+                'choose file of type {"public.folder", "public.data"} '
+                f'with prompt "{prompt}" with multiple selections allowed'
+            )
+        else:
+            choose = f'choose file with prompt "{prompt}"'
         script = (
             "on run argv\n"
-            'set fs to choose file of type {"public.folder", "public.data"} with prompt '
-            '"Choose OG1 NetCDF files or a folder" with multiple selections allowed default location POSIX file (item 1 of argv)\n'
+            f"set fs to ({choose} default location POSIX file (item 1 of argv))\n"
             "if class of fs is not list then set fs to {fs}\n"
             'set out to ""\nrepeat with f in fs\nset out to out & POSIX path of f & linefeed\nend repeat\nreturn out\n'
             "end run"
@@ -640,24 +679,43 @@ def pick_files(payload: BrowsePayload):
         proc = subprocess.run(
             ["osascript", "-e", script, str(start_dir)], capture_output=True, text=True
         )
-        chosen = proc.stdout.splitlines() if proc.returncode == 0 else []
-    else:
-        try:
-            import tkinter
-            from tkinter import filedialog
-        except ImportError as exc:
-            raise HTTPException(
-                status_code=500, detail=f"No file dialog available: {exc}"
-            )
+        if proc.returncode == 0:
+            return proc.stdout.splitlines()
+        if "(-128)" in proc.stderr:  # the user pressed Cancel
+            return []
+        raise _no_file_explorer()
+    if not _has_display():
+        raise _no_file_explorer()
+    try:
+        import tkinter
+        from tkinter import filedialog
+    except ImportError as exc:
+        raise _no_file_explorer() from exc
+    try:
         root = tkinter.Tk()
-        root.withdraw()
-        root.attributes("-topmost", True)
+    except tkinter.TclError as exc:
+        raise _no_file_explorer() from exc
+    root.withdraw()
+    root.attributes("-topmost", True)
+    if multiple:
         chosen = list(
             filedialog.askopenfilenames(
-                initialdir=str(start_dir), filetypes=[("NetCDF", "*.nc")]
+                initialdir=str(start_dir), title=prompt, filetypes=[("NetCDF", "*.nc")]
             )
         )
-        root.destroy()
+    else:
+        picked = filedialog.askopenfilename(initialdir=str(start_dir), title=prompt)
+        chosen = [picked] if picked else []
+    root.destroy()
+    return chosen
+
+
+@app.post("/api/files/pick")
+def pick_files(payload: BrowsePayload):
+    # a picked folder adds all its .nc files
+    chosen = _native_dialog(
+        payload.start, "Choose OG1 NetCDF files or a folder", multiple=True
+    )
     paths = []
     for c in chosen:
         if not c:
@@ -671,54 +729,35 @@ def pick_files(payload: BrowsePayload):
 
 @app.post("/api/browse")
 def browse_file(payload: BrowsePayload):
-    """Open the OS file picker; browsers never expose a picked file's real path."""
-    start = Path(payload.start).expanduser() if payload.start else None
-    start_dir = start.parent if start and start.parent.is_dir() else Path.cwd()
-    if sys.platform == "darwin":
-        script = (
-            "on run argv\n"
-            'POSIX path of (choose file with prompt "Choose an input NetCDF file" '
-            "default location POSIX file (item 1 of argv))\n"
-            "end run"
-        )
-        proc = subprocess.run(
-            ["osascript", "-e", script, str(start_dir)], capture_output=True, text=True
-        )
-        if proc.returncode != 0:
-            return {"path": None}
-        return {"path": proc.stdout.strip()}
-    try:
-        import tkinter
-        from tkinter import filedialog
-    except ImportError as exc:
-        raise HTTPException(status_code=500, detail=f"No file dialog available: {exc}")
-    root = tkinter.Tk()
-    root.withdraw()
-    root.attributes("-topmost", True)
-    chosen = filedialog.askopenfilename(
-        initialdir=str(start_dir), title="Choose an input NetCDF file"
+    """Open the OS file picker for one input file."""
+    chosen = _native_dialog(
+        payload.start, "Choose an input NetCDF file", multiple=False
     )
-    root.destroy()
-    return {"path": chosen or None}
+    return {"path": chosen[0] if chosen else None}
+
+
+# config name -> (bytes done, total or 0 if unknown)
+_DOWNLOADS: dict[str, tuple[int, int]] = {}
+# concurrent requests wait for the one download instead of sharing its .part file
+_download_lock = threading.Lock()
 
 
 def _ensure_demo_file(config_name: str) -> None:
     dest = _demo_dest(config_name)
-    if dest is None or dest.exists():
+    if dest is None:
         return
 
     def progress(done, total):
         _DOWNLOADS[config_name] = (done, total)
 
-    progress(0, 0)
-    try:
-        get_demo_file(on_progress=progress)
-    finally:
-        _DOWNLOADS.pop(config_name, None)
-
-
-# config name -> (bytes done, total or 0 if unknown)
-_DOWNLOADS: dict[str, tuple[int, int]] = {}
+    with _download_lock:
+        if dest.exists():
+            return
+        progress(0, 0)
+        try:
+            get_demo_file(on_progress=progress)
+        finally:
+            _DOWNLOADS.pop(config_name, None)
 
 
 @app.get("/api/demos/progress")
@@ -733,7 +772,7 @@ class BuildPayload(BaseModel):
 
 
 def _template_text() -> str:
-    return config_builder.DEFAULT_CONFIG.read_text()
+    return config_builder.DEFAULT_CONFIG.read_text(encoding="utf-8")
 
 
 @app.post("/api/build/decisions")
@@ -753,14 +792,11 @@ def build_config(payload: BuildPayload):
     probe = file_probe.probe_file(path)
     if probe is None:
         raise HTTPException(status_code=400, detail=f"Could not read '{path.name}'.")
-    # keep demo paths workspace-relative so the config works on any machine
-    file_path = payload.file_path
-    if not Path(file_path).is_absolute():
-        file_path = str(path.relative_to(WORKSPACE_DIR))
+    # relative paths stay relative (runs use the workspace as cwd), so the config is portable
     return {
         "yaml_content": config_builder.build(
             _template_text(),
-            file_path,
+            payload.file_path,
             probe,
             payload.choices,
             payload.description,
@@ -791,7 +827,7 @@ def load_config(name: str):
     path = _safe_config_path(name)
     if not path.exists():
         raise HTTPException(status_code=404, detail="Config not found.")
-    return {"name": path.name, "yaml_content": path.read_text()}
+    return {"name": path.name, "yaml_content": path.read_text(encoding="utf-8")}
 
 
 @app.post("/api/configs")
@@ -803,7 +839,7 @@ def save_config(payload: SavePayload):
             detail=f"'{path.name}' is a locked reference config. "
             "Save your changes under a different name.",
         )
-    path.write_text(payload.yaml_content)
+    path.write_text(payload.yaml_content, encoding="utf-8")
     return {"status": "saved", "name": path.name}
 
 
@@ -821,192 +857,6 @@ def delete_config(name: str):
 
 
 # ============================== Pipeline runner =============================
-class _Run:
-    # The one pipeline subprocess. Lines are append-only so a reconnecting client can replay them.
-
-    def __init__(self):
-        self.proc: subprocess.Popen | None = None
-        self.lines: list[str] = []
-        self.live: str | None = None  # latest progress-bar redraw
-        self.live_after = 0
-        self.finished = False
-        self.returncode: int | None = None
-        self.reports: set[str] = set()  # only announced PDFs are served
-        self._lock = threading.Lock()
-        # processing clock from __PELAGOS_TIME__, so RAM samples share the runtime readout's x-axis
-        self._active = 0.0
-        self._since: float | None = None
-        self._columns = threading.Condition()
-        self._columns_done: set[int] = set()
-        self._columns_id = 0
-
-    def _sample_mem(self, proc):
-        # polled from here so it can't interleave with the run's console output
-        try:
-            import psutil
-
-            child = psutil.Process(proc.pid)
-        except Exception:  # noqa: BLE001
-            return
-        while proc.poll() is None:
-            try:
-                rss = child.memory_info().rss / 1024**2
-            except Exception:  # noqa: BLE001
-                return
-            with self._lock:
-                if self._since is not None:
-                    x = self._active + time.time() - self._since
-                    self.lines.append(f"__PELAGOS_SAMPLE__ {x:.1f}\t{rss:.1f}")
-            time.sleep(0.5)
-
-    def is_running(self) -> bool:
-        return self.proc is not None and self.proc.poll() is None
-
-    def start(self, config_path: Path):
-        env = dict(os.environ)
-        env["PYTHONUNBUFFERED"] = "1"
-        # a pipe isn't a terminal, so force colour and tqdm bars (the browser console renders both)
-        env["FORCE_COLOR"] = "1"
-        env.pop("NO_COLOR", None)
-        env["COLUMNS"] = "110"
-        # locking can fail (Errno -101) right after another process (the variable check) closed the file
-        env["HDF5_USE_FILE_LOCKING"] = "FALSE"
-        for pattern in ("*.png", "*.json", "*.f32", "*_full.npz", "cols_*.bin"):
-            for old in FIG_DIR.glob(pattern):
-                old.unlink(missing_ok=True)
-        _FIGDATA_CACHE.clear()
-        self.proc = subprocess.Popen(
-            [sys.executable, str(RUN_BOOTSTRAP), str(config_path), str(FIG_DIR)],
-            cwd=str(WORKSPACE_DIR),
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            env=env,
-            bufsize=-1,  # binary BufferedReader: keeps \r and has read1, so bar ticks stream promptly
-        )
-        self.lines = []
-        self.live = None
-        self.live_after = 0
-        self.finished = False
-        self.returncode = None
-        self._active, self._since = 0.0, None
-        threading.Thread(target=self._pump, daemon=True).start()
-        threading.Thread(
-            target=self._sample_mem, args=(self.proc,), daemon=True
-        ).start()
-
-    def _commit(self, text: str):
-        if text.startswith("__PELAGOS_DATA__ "):  # a reply to columns(), not a log line
-            with self._columns:
-                self._columns_done.add(int(text.split(" ", 1)[1]))
-                self._columns.notify_all()
-            return
-        if text.startswith("__PELAGOS_REPORT__ "):
-            self.reports.add(text.split(" ", 1)[1].split("\t")[0].strip())
-        with self._lock:
-            self.lines.append(text)
-            self.live = None
-            self.live_after = len(self.lines)
-            if text.startswith("__PELAGOS_TIME__ "):
-                try:
-                    active, paused, _ = text.split(" ", 1)[1].split("\t")
-                    self._active = float(active)
-                    self._since = None if paused.strip() == "1" else time.time()
-                except ValueError:
-                    pass
-
-    def _progress(self, text: str):
-        with self._lock:
-            self.live = text
-            self.live_after = len(self.lines)
-
-    def _pump(self):
-        assert self.proc is not None
-        decoder = codecs.getincrementaldecoder("utf-8")("replace")
-        stream = self.proc.stdout
-        seg = ""  # chars since the last \r or \n
-        pending_cr = False
-        while True:
-            chunk = stream.read1(4096)  # type: ignore[union-attr]
-            if not chunk:
-                break
-            for ch in decoder.decode(chunk):
-                if ch == "\n":
-                    # \r\n is a line ending, not a redraw
-                    pending_cr = False
-                    self._commit(_clean_ansi(seg))
-                    seg = ""
-                    continue
-                if pending_cr:
-                    # a lone \r is a progress-bar redraw
-                    cleaned = _clean_ansi(seg)
-                    if cleaned:
-                        self._progress(cleaned)
-                    seg = ""
-                    pending_cr = False
-                if ch == "\r":
-                    pending_cr = True
-                else:
-                    seg += ch
-        if seg:
-            if pending_cr:
-                cleaned = _clean_ansi(seg)
-                if cleaned:
-                    self._progress(cleaned)
-            else:
-                self._commit(_clean_ansi(seg))
-        self.returncode = self.proc.wait()
-        self.proc.stdin.close()
-        self.finished = True
-
-    def stop(self):
-        if self.is_running() and sys.platform == "win32":
-            self.proc.terminate()  # Windows Popen can't send SIGINT (raises ValueError)
-        elif self.is_running():
-            # SIGINT first so the child runs its cleanup and doesn't leak pool semaphores
-            self.proc.send_signal(signal.SIGINT)
-            try:
-                self.proc.wait(timeout=1.5)
-            except subprocess.TimeoutExpired:
-                self.proc.terminate()
-                try:
-                    self.proc.wait(timeout=1)
-                except subprocess.TimeoutExpired:
-                    self.proc.kill()
-
-    def send(self, command: str):
-        # a control line for run_bootstrap.py's pause loop; ignored once the run has exited
-        if self.proc is not None and self.proc.stdin is not None and self.is_running():
-            try:
-                self.proc.stdin.write((command + "\n").encode())
-                self.proc.stdin.flush()
-            except (BrokenPipeError, ValueError, OSError):
-                pass
-
-    def columns(self, names: list[str], timeout: float = 60.0) -> bytes | None:
-        # packed columns from the paused runner, or None if it didn't answer
-        with self._columns:
-            self._columns_id += 1
-            request_id = self._columns_id
-        self.send("data " + json.dumps({"id": request_id, "names": names}))
-        with self._columns:
-            answered = self._columns.wait_for(
-                lambda: request_id in self._columns_done or not self.is_running(),
-                timeout,
-            )
-            self._columns_done.discard(request_id)
-        path = FIG_DIR / f"cols_{request_id}.bin"
-        if not answered or not path.is_file():
-            return None
-        blob = path.read_bytes()
-        path.unlink(missing_ok=True)
-        return blob
-
-
-_run = _Run()
-atexit.register(_run.stop)
-
-
 class RunPayload(BaseModel):
     yaml_content: str
 
@@ -1016,8 +866,11 @@ def run_pipeline(payload: RunPayload):
     if _run.is_running():
         raise HTTPException(status_code=409, detail="A pipeline is already running.")
     run_path = CONFIG_DIR / "_last_run.yaml"
-    run_path.write_text(payload.yaml_content)
-    _run.start(run_path)
+    run_path.write_text(payload.yaml_content, encoding="utf-8")
+    try:
+        _run.start(run_path)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from None
     return {"status": "started"}
 
 
@@ -1028,31 +881,48 @@ def stop_pipeline():
 
 
 class RerunPayload(BaseModel):
-    parameters: dict = {}
+    # YAML rather than JSON so bounds like -.inf survive the trip from the browser
+    parameters_yaml: str = ""
     yaml_content: str = ""
+
+
+def _resume(command: str):
+    if not _run.resume(command):
+        raise HTTPException(status_code=409, detail="The run is not paused.")
 
 
 @app.post("/api/run/continue")
 def continue_run():
     """Resume a paused run."""
-    _run.send("continue")
+    _resume("continue")
     return {"status": "continued"}
 
 
 @app.post("/api/run/skip")
 def skip_step():
     """Resume a paused run without the paused step's result."""
-    _run.send("skip")
+    _resume("skip")
     return {"status": "skipped"}
 
 
 @app.post("/api/run/rerun")
 def rerun_step(payload: RerunPayload):
     """Re-run the currently paused step with edited parameters, then re-pause."""
+    if not _run.paused:
+        raise HTTPException(status_code=409, detail="The run is not paused.")
+    try:
+        parameters = yaml.safe_load(payload.parameters_yaml)
+    except yaml.YAMLError as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid YAML: {exc}") from None
+    if parameters is not None and not isinstance(parameters, dict):
+        raise HTTPException(status_code=400, detail="Parameters must be a mapping.")
     if payload.yaml_content:
         # a page reload reopens this file, so keep it in step with the edits
-        (CONFIG_DIR / "_last_run.yaml").write_text(payload.yaml_content)
-    _run.send("rerun " + json.dumps(payload.parameters))
+        (CONFIG_DIR / "_last_run.yaml").write_text(
+            payload.yaml_content, encoding="utf-8"
+        )
+    # null re-runs with the step's current parameters; json.dumps keeps Infinity
+    _resume("rerun " + json.dumps(parameters))
     return {"status": "rerunning"}
 
 
@@ -1189,7 +1059,9 @@ def run_figpoint(name: str, panel: int, trace: int, index: int):
     key = f"{panel}_{trace}"
     if f"{key}_x" not in data or not 0 <= index < len(data[f"{key}_x"]):
         raise HTTPException(status_code=404, detail="No such point.")
-    spec = json.loads((FIG_DIR / (stem + ".json")).read_text())["panels"][panel]
+    spec = json.loads((FIG_DIR / (stem + ".json")).read_text(encoding="utf-8"))[
+        "panels"
+    ][panel]
 
     def fmt(v, is_date):
         if not np.isfinite(v):
@@ -1283,7 +1155,6 @@ def inspect_plot(file_path: str, var: str):
 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    from pelagos_py.utils import fig_spec
 
     path = _resolve_inspect_path(file_path)
     try:
@@ -1381,6 +1252,8 @@ def serve(port=8791):
 
     # Otherwise the browser opens on whatever already holds the port, e.g. a stale dashboard.
     with socket.socket() as probe:
+        # as uvicorn does, so closed connections still in TIME_WAIT don't count as "in use"
+        probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
             probe.bind(("127.0.0.1", port))
         except OSError:

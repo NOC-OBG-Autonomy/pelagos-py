@@ -26,17 +26,18 @@ import xarray as xr
 DEFAULT_CALCULATION_FLAGS = [3, 4, 9]
 
 # Argo flag-merge matrix: QC_COMBINATRIX[existing, new] never downgrades a
-# flag, and 0 (unchecked) never changes the other side.
+# flag, and 0 (unchecked) never changes the other side. An incoming 8 also
+# changes nothing: only the step that interpolates a variable flags it 8.
 QC_COMBINATRIX = np.array(
     [
-        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-        [1, 1, 2, 3, 4, 5, 1, 1, 8, 9],
-        [2, 2, 2, 3, 4, 5, 2, 2, 8, 9],
+        [0, 1, 2, 3, 4, 5, 6, 7, 0, 9],
+        [1, 1, 2, 3, 4, 5, 1, 1, 1, 9],
+        [2, 2, 2, 3, 4, 5, 2, 2, 2, 9],
         [3, 3, 3, 3, 4, 3, 3, 3, 3, 9],
         [4, 4, 4, 4, 4, 4, 4, 4, 4, 9],
-        [5, 5, 5, 3, 4, 5, 5, 5, 8, 9],
-        [6, 1, 2, 3, 4, 5, 6, 6, 8, 9],
-        [7, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        [5, 5, 5, 3, 4, 5, 5, 5, 5, 9],
+        [6, 1, 2, 3, 4, 5, 6, 6, 6, 9],
+        [7, 1, 2, 3, 4, 5, 6, 7, 7, 9],
         [8, 8, 8, 3, 4, 8, 8, 8, 8, 9],
         [9, 9, 9, 9, 9, 9, 9, 9, 9, 9],
     ]
@@ -296,7 +297,9 @@ class QCHandlingMixin:
                 continue
 
             # Assign the child the first parent's QC, then upgrade per parent.
-            self.data[qc_child] = self.data[qc_parents[0]].copy(deep=True)
+            # An interpolated (8) parent says nothing about the child, as in QC_COMBINATRIX.
+            first = self.data[qc_parents[0]]
+            self.data[qc_child] = first.where(first != 8, 0)
 
             for qc_parent in qc_parents[1:]:
                 self.data[qc_child][:] = QC_COMBINATRIX[
