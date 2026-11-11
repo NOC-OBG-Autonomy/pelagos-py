@@ -112,7 +112,7 @@ The geometric lag correction can be done using a default time value, or it can b
 
 - `vert_gradient` - vertical velocity of the platform, e.g. of the glider (optional) | determined by pelagos-py
 - `GLIDER_PITCH` - pitch of the platform, e.g. of the glider (optional)
-- `PROFILE_DIRECTION` or `SCI_PHASE` - variable distinguising up- and downcasts
+- `PROFILE_DIRECTION` or `PHASE_SCI` - variable distinguising up- and downcasts
 
 ## Calibration coefficients
 

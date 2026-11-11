@@ -115,7 +115,7 @@ def method(out):
     )
     fig_spec.legend(ax2)
 
-    _phase_points(ax3, minutes, df["PRES"].to_numpy(), result["SCI_PHASE"].to_numpy())
+    _phase_points(ax3, minutes, df["PRES"].to_numpy(), result["PHASE_SCI"].to_numpy())
     fig_spec.style_axes(
         ax3, title="3. Label each sample", xlabel="Minutes", ylabel="PRES [dbar]"
     )
@@ -147,7 +147,7 @@ def phases(out):
     fig, axes = fig_spec.new_fig(nrows=4, sharex=True, height_ratios=(3, 1, 1, 1))
     ax_depth, ax_profile, ax_direction, ax_cycle = (row[0] for row in axes)
     _phase_points(
-        ax_depth, minutes, df["PRES"].to_numpy(), result["SCI_PHASE"].to_numpy()
+        ax_depth, minutes, df["PRES"].to_numpy(), result["PHASE_SCI"].to_numpy()
     )
     gap_start, gap_end = minutes[gap_after - 1], minutes[gap_after]
     for ax in (ax_depth, ax_profile, ax_direction, ax_cycle):
@@ -159,7 +159,7 @@ def phases(out):
         ha="center",
         fontsize=fig_spec.FS_TICK,
     )
-    fig_spec.style_axes(ax_depth, title="SCI_PHASE", ylabel="PRES [dbar]")
+    fig_spec.style_axes(ax_depth, title="PHASE_SCI", ylabel="PRES [dbar]")
     fig_spec.legend(ax_depth)
 
     for ax, var in (
@@ -193,7 +193,7 @@ def demo_phases(out):
     fig.set_size_inches(fig_spec.FIG_W, fig_spec.BANNER_H)
     ax = axes[0][0]
     _phase_points(
-        ax, df["TIME"].to_numpy(), df["PRES"].to_numpy(), result["SCI_PHASE"].to_numpy()
+        ax, df["TIME"].to_numpy(), df["PRES"].to_numpy(), result["PHASE_SCI"].to_numpy()
     )
     fig_spec.date_axis(ax, which="x")
     fig_spec.style_axes(ax, ylabel="PRES [dbar]")

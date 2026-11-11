@@ -63,7 +63,7 @@ def test_output_columns_and_length():
     df = make_dive_dataframe()
     result = run(df)
 
-    expected = {"PROFILE_NUMBER", "PROFILE_DIRECTION", "GRADIENT", "CYCLE", "SCI_PHASE"}
+    expected = {"PROFILE_NUMBER", "PROFILE_DIRECTION", "GRADIENT", "CYCLE", "PHASE_SCI"}
     assert expected.issubset(result.columns)
     assert len(result) == len(df)
 
@@ -72,7 +72,7 @@ def test_ascent_and_descent_detected():
     """Clear up/down legs are classified as ascent (1) and descent (2), and the
     derived direction is consistent with the phase (+1 descent, -1 ascent)."""
     result = run(make_dive_dataframe())
-    phases = result["SCI_PHASE"]
+    phases = result["PHASE_SCI"]
 
     assert (phases == 1).any(), "expected some ascent samples"
     assert (phases == 2).any(), "expected some descent samples"
@@ -107,7 +107,7 @@ def test_turn_without_inflection_splits_profiles():
 
     result = run(df)
 
-    phases = result["SCI_PHASE"].to_numpy()
+    phases = result["PHASE_SCI"].to_numpy()
     assert not (phases == 7).any(), "test needs a turn with no inflection row"
     descent = result.loc[phases == 2, "PROFILE_NUMBER"]
     ascent = result.loc[phases == 1, "PROFILE_NUMBER"]
@@ -126,7 +126,7 @@ def test_empty_input_returns_defaults():
         "PROFILE_DIRECTION",
         "GRADIENT",
         "CYCLE",
-        "SCI_PHASE",
+        "PHASE_SCI",
     ):
         assert col in result.columns
 
@@ -152,7 +152,7 @@ def test_gap_ending_before_surface_stays_ascent():
     result = run(df)
 
     tail = result.iloc[len(first) - 5 : len(first)]
-    assert (tail["SCI_PHASE"] == 1).all(), "ascent tail before the gap was overwritten"
+    assert (tail["PHASE_SCI"] == 1).all(), "ascent tail before the gap was overwritten"
 
     profile_numbers = result["PROFILE_NUMBER"].dropna()
     assert profile_numbers.nunique() >= 2

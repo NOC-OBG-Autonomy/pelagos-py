@@ -349,7 +349,7 @@ steps:
 # ------------------------------------------------------------------------------------------- Profile Finding -------------------------------------------------------------------------------------------
 
 # Find Profiles (src/pelagos_py/steps/processing/find_profiles.py):
-# Classifies each measurement into an OG1 scientific phase (SCI_PHASE) and derives
+# Classifies each measurement into an OG1 scientific phase (PHASE_SCI) and derives
 # PROFILE_NUMBER, PROFILE_DIRECTION, PROFILE_GRADIENT and CYCLE. All parameters are
 # optional — the defaults shown below work out of the box, so `- name: "Find Profiles"`
 # on its own is a valid step.
@@ -378,7 +378,7 @@ steps:
       min_transect_duration_seconds: 300
     # [diagnostics]:
     #   If true, plots a static two-panel figure: the phase classification (DEPTH-TIME
-    #   coloured by SCI_PHASE) and the derived PROFILE_NUMBER / CYCLE numbering.
+    #   coloured by PHASE_SCI) and the derived PROFILE_NUMBER / CYCLE numbering.
     diagnostics: false
 
 # Apply QC (post-profile): tests that depend on PROFILE_NUMBER must run after "Find Profiles".

@@ -550,7 +550,7 @@ class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
         "cast_id_var": {
             "type": str,
             "default": "PROFILE_DIRECTION",
-            "options": ["PROFILE_DIRECTION", "SCI_PHASE"],
+            "options": ["PROFILE_DIRECTION", "PHASE_SCI"],
             "description": "Variable distinguishing up- and downcasts, used when deriving a per-profile lag.",
         },
     }
@@ -561,7 +561,7 @@ class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
 
     def _derive_profile_lag(self):
         # Per-profile geometric time lag (s) from mean pitch and dive rate, following Woo & Gourcuff (2023).
-        valid_casts = {"PROFILE_DIRECTION": (-1, 1), "SCI_PHASE": (1, 2)}[
+        valid_casts = {"PROFILE_DIRECTION": (-1, 1), "PHASE_SCI": (1, 2)}[
             self.cast_id_var
         ]
 
