@@ -49,4 +49,3 @@ def _supports_color(stream):
     if os.environ.get("TERM") == "dumb":
         return False
     return hasattr(stream, "isatty") and stream.isatty()
-
