@@ -18,7 +18,11 @@
 
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
-from pelagos_py.utils.qc_handling import QCHandlingMixin
+from pelagos_py.utils.qc_handling import (
+    QC_COMBINATRIX,
+    QCHandlingMixin,
+    prefer_adjusted,
+)
 
 #### Custom imports ####
 import gsw
@@ -26,9 +30,9 @@ import matplotlib
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pelagos_py.utils import fig_spec
+from pelagos_py.utils.processing_utils import interpolate_at
 import numpy as np
 import pandas as pd
-import xarray as xr
 
 
 def check_config(self, expected_params):
@@ -47,6 +51,20 @@ def check_config(self, expected_params):
                 raise KeyError(
                     f"[{self.step_name}] {getattr(self, param)} could not be found in the data"
                 )
+
+
+def _merge_flags(data, qc_name, *flag_arrays):
+    # Fold the flags of values interpolated onto this variable's rows into its QC.
+    merged = data[qc_name].values.astype(np.int8)
+    for flags in flag_arrays:
+        merged = QC_COMBINATRIX[merged, flags]
+    data[qc_name].values[:] = merged
+
+
+def _vertical(data):
+    # Plot against the filled DEPTH: PRES only exists on the CTD's rows, not the optode's.
+    depth = prefer_adjusted("DEPTH", data.variables)
+    return depth if depth in data else "PRES"
 
 
 def _plot_section(data, var, pressure_var, step_name):
@@ -203,7 +221,7 @@ class DeriveUncalibratedPhase(BaseStep, QCHandlingMixin):
     step_name = "Derive Uncalibrated Phase"
     beta = True
     provided_variables = ["UNCAL_PHASE_DOXY"]
-    optional_variables = ["TIME", "PRES"]
+    optional_variables = ["TIME", "PRES", "DEPTH"]
     variable_parameters = ["blue_phase_name", "red_phase_name"]
     uses_data_subset = True
 
@@ -263,7 +281,9 @@ class DeriveUncalibratedPhase(BaseStep, QCHandlingMixin):
         return self.context
 
     def generate_diagnostics(self):
-        _plot_section(self.data, "UNCAL_PHASE_DOXY", "PRES", self.step_name)
+        _plot_section(
+            self.data, "UNCAL_PHASE_DOXY", _vertical(self.data), self.step_name
+        )
 
 
 @register_step
@@ -288,7 +308,7 @@ class DeriveOptodeTemperature(BaseStep, QCHandlingMixin):
     step_name = "Derive Optode Temperature"
     beta = True
     provided_variables = ["TEMP_DOXY"]
-    optional_variables = ["TIME", "PRES"]
+    optional_variables = ["TIME", "PRES", "DEPTH"]
     variable_parameters = ["temp_voltage_name"]
     uses_data_subset = True
 
@@ -348,7 +368,7 @@ class DeriveOptodeTemperature(BaseStep, QCHandlingMixin):
         return self.context
 
     def generate_diagnostics(self):
-        _plot_section(self.data, "TEMP_DOXY", "PRES", self.step_name)
+        _plot_section(self.data, "TEMP_DOXY", _vertical(self.data), self.step_name)
 
 
 @register_step
@@ -373,7 +393,7 @@ class PhasePressureCorrection(BaseStep, QCHandlingMixin):
     beta = True
     required_variables = ["UNCAL_PHASE_DOXY"]
     provided_variables = ["UNCAL_PHASE_DOXY_PCORR"]
-    optional_variables = ["TIME"]
+    optional_variables = ["TIME", "DEPTH"]
     variable_parameters = ["optode_pressure_name"]
     uses_data_subset = True
 
@@ -401,10 +421,12 @@ class PhasePressureCorrection(BaseStep, QCHandlingMixin):
                 f"[{self.step_name}] UNCAL_PHASE_DOXY required but is missing from the data"
             )
 
-        # Apply the correction
+        pressure, pressure_flags = self.values_at_rows_of(
+            self.optode_pressure_name, "UNCAL_PHASE_DOXY"
+        )
         self.data["UNCAL_PHASE_DOXY_PCORR"] = (
             self.data["UNCAL_PHASE_DOXY"]
-            + 0.001 * self.correction_coefficient * self.data[self.optode_pressure_name]
+            + 0.001 * self.correction_coefficient * pressure
         )
         self.data["UNCAL_PHASE_DOXY_PCORR"].attrs["units"] = self.data[
             "UNCAL_PHASE_DOXY"
@@ -419,14 +441,8 @@ class PhasePressureCorrection(BaseStep, QCHandlingMixin):
         self.reconstruct_data()
         self.update_qc()
 
-        self.generate_qc(
-            {
-                "UNCAL_PHASE_DOXY_PCORR_QC": [
-                    f"{self.optode_pressure_name}_QC",
-                    "UNCAL_PHASE_DOXY_QC",
-                ]
-            }
-        )
+        self.generate_qc({"UNCAL_PHASE_DOXY_PCORR_QC": ["UNCAL_PHASE_DOXY_QC"]})
+        _merge_flags(self.data, "UNCAL_PHASE_DOXY_PCORR_QC", pressure_flags)
         self.mark_intermediate("UNCAL_PHASE_DOXY_PCORR")
 
         if self.diagnostics:
@@ -440,7 +456,7 @@ class PhasePressureCorrection(BaseStep, QCHandlingMixin):
             self.data,
             "UNCAL_PHASE_DOXY",
             "UNCAL_PHASE_DOXY_PCORR",
-            self.optode_pressure_name,
+            _vertical(self.data),
             self.step_name,
         )
 
@@ -488,17 +504,18 @@ def _plot_shift_diff(data, raw_var, shifted_var, pressure_var, step_name, lag_la
 @register_step
 class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
     """
-    Geometrically time-shifts optode measurements (e.g. phase, optode temperature) onto
-    the CTD's dense sampling grid, correcting for the water travel time between the two
-    sensors' positions on the glider (Woo & Gourcuff, 2023). This is the reverse of the
-    more common approach of cloning CTD data onto the sparse optode grid: it produces
-    one shifted oxygen value per ``N_MEASUREMENTS`` row, named ``<variable>_SHIFTED``.
+    Geometrically time-shifts optode measurements (e.g. phase, optode temperature) to
+    line them up with the CTD, correcting for the water travel time between the two
+    sensors' positions on the glider (Woo & Gourcuff, 2023). The shifted value at an
+    optode row at time ``t`` is the optode series read at ``t + lag``, interpolated
+    between the optode's own readings (at most 5 minutes apart). It is written as
+    ``<variable>_SHIFTED`` on the optode's rows only, keeping the reading's own flag.
 
     If ``lag_seconds`` is not set, the lag is instead derived per profile from mean
     pitch and dive rate. If ``pitch_name`` cannot be found (or is empty), a warning is
     logged and the step fails, since no lag is then available; set ``lag_seconds`` for a
     constant lag instead. Samples whose flags fall in ``calculation_flag_filter`` (by
-    default 3, 4 and 9) are not interpolated from, but every row is still shifted.
+    default 3, 4 and 9) are not interpolated from, but are still shifted.
 
     See :doc:`/user_guide/Pelagos-py_DOXY`.
 
@@ -521,7 +538,7 @@ class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
     step_name = "Shift Oxygen To CTD"
     beta = True
     required_variables = ["PROFILE_NUMBER"]
-    optional_variables = ["TIME", "PROFILE_GRADIENT", "PRES"]
+    optional_variables = ["TIME", "PROFILE_GRADIENT", "PRES", "DEPTH"]
     variable_parameters = ["shift_vars", "pitch_name", "cast_id_var"]
     # unused with lag_seconds
     variable_parameters_optional = ("pitch_name", "cast_id_var")
@@ -600,21 +617,16 @@ class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
 
         return lag_lookup
 
-    def _shift_onto_grid(self, var, lag_lookup):
-        epoch_s = (
-            self.data["TIME"].values.astype("datetime64[ns]").astype("int64") / 1e9
-        )
+    def _shift(self, var, lag_lookup):
+        time = self.data["TIME"].values.astype("datetime64[ns]")
+        epoch_s = np.where(np.isnat(time), np.nan, time.astype("int64") / 1e9)
         values = self.data[var].values.astype(float)
-        valid = ~np.isnan(values) & ~np.isnan(epoch_s) & self.calculation_mask([var])
+        own_rows = np.isfinite(values)
+        usable = np.where(self.calculation_mask([var]), values, np.nan)
 
-        if valid.sum() < 2:
+        if np.isfinite(usable).sum() < 2:
             self.log_warn(f"'{var}' has fewer than two valid samples; cannot shift.")
             return np.full(epoch_s.shape, np.nan)
-
-        src_time = epoch_s[valid]
-        src_values = values[valid]
-        order = np.argsort(src_time)
-        src_time, src_values = src_time[order], src_values[order]
 
         if lag_lookup is None:
             lag = self.lag_seconds
@@ -623,11 +635,9 @@ class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
                 [lag_lookup.get(p, np.nan) for p in self.data["PROFILE_NUMBER"].values]
             )
 
-        # Value at CTD time t is the optode measurement of the same water parcel, taken 'lag' seconds later.
-        query_time = epoch_s + lag
-        shifted = np.interp(query_time, src_time, src_values, left=np.nan, right=np.nan)
-        shifted[np.isnan(query_time)] = np.nan
-
+        # Value at optode time t is its measurement of the water parcel the CTD saw at t, taken 'lag' seconds later.
+        query_time = np.where(own_rows, epoch_s + lag, np.nan)
+        shifted, _, _ = interpolate_at(epoch_s, usable, query_time)
         return shifted
 
     def run(self):
@@ -681,12 +691,12 @@ class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
                 self.log_warn(f"{out_name} already exists in the data. Overwriting...")
             self.data[out_name] = (
                 ("N_MEASUREMENTS",),
-                self._shift_onto_grid(var, lag_lookup),
+                self._shift(var, lag_lookup),
             )
             self.data[out_name].attrs["units"] = self.data[var].attrs.get("units")
             parent_long_name = self.data[var].attrs.get("long_name", var)
             self.data[out_name].attrs["long_name"] = (
-                f"{parent_long_name}, geometrically shifted onto the CTD grid"
+                f"{parent_long_name}, geometrically shifted to the CTD's timing"
             )
             self.data[out_name].attrs["standard_name"] = out_name
 
@@ -697,12 +707,6 @@ class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
             {f"{var}_SHIFTED_QC": [f"{var}_QC"] for var in self.shift_vars}
         )
 
-        # The shift evaluates every row via interpolation, so a valid shifted value is
-        # never really its parent's original flag (e.g. still-missing 9) - it's "changed".
-        for var in self.shift_vars:
-            qc_name = f"{var}_SHIFTED_QC"
-            has_value = self.data[f"{var}_SHIFTED"].notnull()
-            self.data[qc_name] = xr.where(has_value, 5, self.data[qc_name])
         self.mark_intermediate(*(f"{var}_SHIFTED" for var in self.shift_vars))
 
         if self.diagnostics:
@@ -745,7 +749,7 @@ class DeriveCalibratedPhase(BaseStep, QCHandlingMixin):
     step_name = "Derive Calibrated Phase"
     beta = True
     provided_variables = ["CAL_PHASE_DOXY"]
-    optional_variables = ["TIME", "PRES"]
+    optional_variables = ["TIME", "PRES", "DEPTH"]
     variable_parameters = ["uncalibrated_phase_name"]
     uses_data_subset = True
 
@@ -808,7 +812,7 @@ class DeriveCalibratedPhase(BaseStep, QCHandlingMixin):
         return self.context
 
     def generate_diagnostics(self):
-        _plot_section(self.data, "CAL_PHASE_DOXY", "PRES", self.step_name)
+        _plot_section(self.data, "CAL_PHASE_DOXY", _vertical(self.data), self.step_name)
 
 
 @register_step
@@ -843,7 +847,7 @@ class DeriveOxygenConcentration(BaseStep, QCHandlingMixin):
     beta = True
     required_variables = ["CAL_PHASE_DOXY"]
     provided_variables = ["MOLAR_DOXY_ADJUSTED"]
-    optional_variables = ["TIME", "PRES"]
+    optional_variables = ["TIME", "PRES", "DEPTH"]
     variable_parameters = ["temperature_name"]
     uses_data_subset = True
 
@@ -885,7 +889,7 @@ class DeriveOxygenConcentration(BaseStep, QCHandlingMixin):
         coeffs_matrix = np.asarray(self.calib_coefficient_matrix, dtype=float)
         return np.polynomial.polynomial.polyval2d(
             self.data["CAL_PHASE_DOXY"].values,
-            self.data[self.temperature_name].values,
+            self.temperature,
             coeffs_matrix,
         )
 
@@ -896,7 +900,7 @@ class DeriveOxygenConcentration(BaseStep, QCHandlingMixin):
             )
         c0, c1, c2, c3, c4, c5, c6 = self.svu_coefficients
 
-        T = self.data[self.temperature_name].values
+        T = self.temperature
         phase = self.data["CAL_PHASE_DOXY"].values
 
         # Stern-Volmer-Uchida equation (Aanderaa manufacturer form)
@@ -933,6 +937,10 @@ class DeriveOxygenConcentration(BaseStep, QCHandlingMixin):
                 "MOLAR_DOXY_ADJUSTED already exists in the data. Overwriting..."
             )
 
+        self.temperature, temperature_flags = self.values_at_rows_of(
+            self.temperature_name, "CAL_PHASE_DOXY"
+        )
+
         self.data["MOLAR_DOXY_ADJUSTED"] = (("N_MEASUREMENTS",), func())
         self.data["MOLAR_DOXY_ADJUSTED"].attrs["units"] = "micromole/l"
         self.data["MOLAR_DOXY_ADJUSTED"].attrs["long_name"] = (
@@ -943,14 +951,8 @@ class DeriveOxygenConcentration(BaseStep, QCHandlingMixin):
         self.reconstruct_data()
         self.update_qc()
 
-        self.generate_qc(
-            {
-                "MOLAR_DOXY_ADJUSTED_QC": [
-                    "CAL_PHASE_DOXY_QC",
-                    f"{self.temperature_name}_QC",
-                ]
-            }
-        )
+        self.generate_qc({"MOLAR_DOXY_ADJUSTED_QC": ["CAL_PHASE_DOXY_QC"]})
+        _merge_flags(self.data, "MOLAR_DOXY_ADJUSTED_QC", temperature_flags)
         self.mark_intermediate("MOLAR_DOXY_ADJUSTED")
 
         if self.diagnostics:
@@ -960,7 +962,9 @@ class DeriveOxygenConcentration(BaseStep, QCHandlingMixin):
         return self.context
 
     def generate_diagnostics(self):
-        _plot_section(self.data, "MOLAR_DOXY_ADJUSTED", "PRES", self.step_name)
+        _plot_section(
+            self.data, "MOLAR_DOXY_ADJUSTED", _vertical(self.data), self.step_name
+        )
 
 
 @register_step
@@ -989,7 +993,7 @@ class MolarDOXYSalinityCorrection(BaseStep, QCHandlingMixin):
     beta = True
     required_variables = ["MOLAR_DOXY"]
     provided_variables = ["MOLAR_DOXY_PSAL"]
-    optional_variables = ["TIME", "PRES"]
+    optional_variables = ["TIME", "PRES", "DEPTH"]
     variable_parameters = ["salinity_name", "temperature_name"]
     uses_data_subset = True
 
@@ -1011,11 +1015,7 @@ class MolarDOXYSalinityCorrection(BaseStep, QCHandlingMixin):
         },
     }
 
-    def oxy_solubility_salinity_correction(self):
-        # Get data
-        T = self.data[self.temperature_name]
-        S = self.data[self.salinity_name]
-
+    def oxy_solubility_salinity_correction(self, T, S):
         # Coefficients (Garcia & Gordon 1992 – Benson & Krause refit)
         B0 = -6.24523e-3
         B1 = -7.37614e-3
@@ -1034,14 +1034,8 @@ class MolarDOXYSalinityCorrection(BaseStep, QCHandlingMixin):
 
         return salinity_correction_factor
 
-    def water_vapour_partial_pressure(self, reference_salinity=None):
-        # Get data
-        T = self.data[self.temperature_name]
-        if reference_salinity is None:
-            S = self.data[self.salinity_name]
-        else:
-            S = reference_salinity
-
+    @staticmethod
+    def water_vapour_partial_pressure(T, S):
         # Convert degrees C to Kelvin
         T = T + 273.15
 
@@ -1073,13 +1067,18 @@ class MolarDOXYSalinityCorrection(BaseStep, QCHandlingMixin):
                 f"[{self.step_name}] MOLAR_DOXY required but is missing from the data"
             )
 
-        # Calculate factor with partial pressure of water vapour, following Weiss & PRice (1980)
-        A = 1013.25 - self.water_vapour_partial_pressure(
-            reference_salinity=self.reference_salinity
+        T, temperature_flags = self.values_at_rows_of(
+            self.temperature_name, self.molar_doxy_name
         )
-        B = 1013.25 - self.water_vapour_partial_pressure()
+        S, salinity_flags = self.values_at_rows_of(
+            self.salinity_name, self.molar_doxy_name
+        )
 
-        S_Corr = self.oxy_solubility_salinity_correction()
+        # Calculate factor with partial pressure of water vapour, following Weiss & PRice (1980)
+        A = 1013.25 - self.water_vapour_partial_pressure(T, self.reference_salinity)
+        B = 1013.25 - self.water_vapour_partial_pressure(T, S)
+
+        S_Corr = self.oxy_solubility_salinity_correction(T, S)
 
         MOLAR_DOXY_PSAL = (A / B) * S_Corr * self.data[self.molar_doxy_name]
 
@@ -1096,15 +1095,8 @@ class MolarDOXYSalinityCorrection(BaseStep, QCHandlingMixin):
         self.reconstruct_data()
         self.update_qc()
 
-        self.generate_qc(
-            {
-                "MOLAR_DOXY_PSAL_QC": [
-                    f"{self.salinity_name}_QC",
-                    f"{self.temperature_name}_QC",
-                    f"{self.molar_doxy_name}_QC",
-                ]
-            }
-        )
+        self.generate_qc({"MOLAR_DOXY_PSAL_QC": [f"{self.molar_doxy_name}_QC"]})
+        _merge_flags(self.data, "MOLAR_DOXY_PSAL_QC", salinity_flags, temperature_flags)
         self.mark_intermediate("MOLAR_DOXY_PSAL")
 
         if self.diagnostics:
@@ -1115,7 +1107,11 @@ class MolarDOXYSalinityCorrection(BaseStep, QCHandlingMixin):
 
     def generate_diagnostics(self):
         _plot_diff(
-            self.data, self.molar_doxy_name, "MOLAR_DOXY_PSAL", "PRES", self.step_name
+            self.data,
+            self.molar_doxy_name,
+            "MOLAR_DOXY_PSAL",
+            _vertical(self.data),
+            self.step_name,
         )
 
 
@@ -1143,7 +1139,7 @@ class MolarDOXYPressureCorrection(BaseStep, QCHandlingMixin):
     step_name = "Molar DOXY Pressure Correction"
     beta = True
     provided_variables = ["MOLAR_DOXY_PSAL_PRES"]
-    optional_variables = ["TIME"]
+    optional_variables = ["TIME", "DEPTH"]
     variable_parameters = ["pressure_name", "temperature_name", "molar_doxy_name"]
     uses_data_subset = True
 
@@ -1195,13 +1191,14 @@ class MolarDOXYPressureCorrection(BaseStep, QCHandlingMixin):
         else:
             C1, C2 = 0.00025, 0.0328
 
+        T, temperature_flags = self.values_at_rows_of(
+            self.temperature_name, self.molar_doxy_name
+        )
+        P, pressure_flags = self.values_at_rows_of(
+            self.pressure_name, self.molar_doxy_name
+        )
         MOLAR_DOXY_PSAL_PRES = self.data[self.molar_doxy_name] * (
-            1.0
-            + (
-                (C1 * self.data[self.temperature_name] + C2)
-                * self.data[self.pressure_name]
-            )
-            / 1000
+            1.0 + ((C1 * T + C2) * P) / 1000
         )
 
         # Apply the correction
@@ -1219,14 +1216,9 @@ class MolarDOXYPressureCorrection(BaseStep, QCHandlingMixin):
         self.reconstruct_data()
         self.update_qc()
 
-        self.generate_qc(
-            {
-                "MOLAR_DOXY_PSAL_PRES_QC": [
-                    f"{self.pressure_name}_QC",
-                    f"{self.temperature_name}_QC",
-                    f"{self.molar_doxy_name}_QC",
-                ]
-            }
+        self.generate_qc({"MOLAR_DOXY_PSAL_PRES_QC": [f"{self.molar_doxy_name}_QC"]})
+        _merge_flags(
+            self.data, "MOLAR_DOXY_PSAL_PRES_QC", pressure_flags, temperature_flags
         )
         self.mark_intermediate("MOLAR_DOXY_PSAL_PRES")
 
@@ -1241,7 +1233,7 @@ class MolarDOXYPressureCorrection(BaseStep, QCHandlingMixin):
             self.data,
             self.molar_doxy_name,
             "MOLAR_DOXY_PSAL_PRES",
-            self.pressure_name,
+            _vertical(self.data),
             self.step_name,
         )
 
@@ -1274,7 +1266,7 @@ class DeriveDOXY(BaseStep, QCHandlingMixin):
     beta = True
     required_variables = ["LATITUDE", "LONGITUDE"]
     provided_variables = ["DOXY_ADJUSTED"]
-    optional_variables = ["TIME"]
+    optional_variables = ["TIME", "DEPTH"]
     variable_parameters = [
         "apply_to",
         "salinity_name",
@@ -1327,14 +1319,18 @@ class DeriveDOXY(BaseStep, QCHandlingMixin):
         if "DOXY_ADJUSTED" in self.data.data_vars:
             self.log_warn("DOXY_ADJUSTED already exists in the data. Overwriting...")
 
-        pres = self.data[self.pressure_name].values
+        pres, _ = self.values_at_rows_of(self.pressure_name, self.apply_to)
+        psal, salinity_flags = self.values_at_rows_of(self.salinity_name, self.apply_to)
+        temp, temperature_flags = self.values_at_rows_of(
+            self.temperature_name, self.apply_to
+        )
         sa = gsw.SA_from_SP(
-            self.data[self.salinity_name].values,
+            psal,
             pres,
             self.data["LONGITUDE"].values,
             self.data["LATITUDE"].values,
         )
-        ct = gsw.CT_from_t(sa, self.data[self.temperature_name].values, pres)
+        ct = gsw.CT_from_t(sa, temp, pres)
         rho0 = gsw.rho(sa, ct, 0)
 
         self.data["DOXY_ADJUSTED"] = (
@@ -1351,15 +1347,8 @@ class DeriveDOXY(BaseStep, QCHandlingMixin):
         self.reconstruct_data()
         self.update_qc()
 
-        self.generate_qc(
-            {
-                "DOXY_ADJUSTED_QC": [
-                    f"{self.apply_to}_QC",
-                    f"{self.salinity_name}_QC",
-                    f"{self.temperature_name}_QC",
-                ]
-            }
-        )
+        self.generate_qc({"DOXY_ADJUSTED_QC": [f"{self.apply_to}_QC"]})
+        _merge_flags(self.data, "DOXY_ADJUSTED_QC", salinity_flags, temperature_flags)
 
         if self.diagnostics:
             self.generate_diagnostics()
@@ -1368,4 +1357,4 @@ class DeriveDOXY(BaseStep, QCHandlingMixin):
         return self.context
 
     def generate_diagnostics(self):
-        _plot_section(self.data, "DOXY_ADJUSTED", self.pressure_name, self.step_name)
+        _plot_section(self.data, "DOXY_ADJUSTED", _vertical(self.data), self.step_name)

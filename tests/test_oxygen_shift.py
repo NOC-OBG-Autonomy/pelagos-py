@@ -76,6 +76,24 @@ def test_bad_flagged_samples_do_not_inform_the_shift():
     assert np.isclose(shifted[10], epoch_s[13])
 
 
+def test_shift_stays_on_the_optode_rows_and_keeps_their_flags():
+    ctx = make_context(n=50, dt_s=1.0)
+    phase = ctx["data"]["UNCAL_PHASE_DOXY"].values
+    phase[1::2] = np.nan  # CTD-only rows
+    ctx["data"]["UNCAL_PHASE_DOXY_QC"].values[:] = 1
+    ctx["data"]["UNCAL_PHASE_DOXY_QC"].values[1::2] = 9
+    step = make_step({"shift_vars": ["UNCAL_PHASE_DOXY"], "lag_seconds": 3.0}, ctx)
+
+    data = step.run()["data"]
+    shifted = data["UNCAL_PHASE_DOXY_SHIFTED"].values
+    qc = data["UNCAL_PHASE_DOXY_SHIFTED_QC"].values
+
+    epoch_s = data["TIME"].values.astype("datetime64[ns]").astype("int64") / 1e9
+    assert np.allclose(shifted[0:-4:2], epoch_s[0:-4:2] + 3.0)
+    assert np.isnan(shifted[1::2]).all()
+    assert (qc[0:-4:2] == 1).all() and (qc[1::2] == 9).all()
+
+
 def test_output_variables_follow_shift_vars():
     parameters = {"shift_vars": ["UNCAL_PHASE_DOXY", "TEMP_DOXY"]}
     assert ShiftOxygenToCTD.output_variables(parameters) == [
