@@ -19,7 +19,11 @@
 #### Mandatory imports ####
 import numpy as np
 from pelagos_py.steps.base_qc import BaseQC, register_qc
-from pelagos_py.utils.qc_handling import prefer_adjusted, propagate_flags
+from pelagos_py.utils.qc_handling import (
+    QC_COMBINATRIX,
+    prefer_adjusted,
+    propagate_flags,
+)
 
 #### Custom imports ####
 import matplotlib
@@ -90,6 +94,17 @@ class range_qc(BaseQC):
                     2: [0, 5, outside]    # deeper   -> probably good
                 flag_instead:
                   DEPTH: [CHLA]           # DEPTH's flags go onto CHLA; no DEPTH_QC written
+
+    Re-assessing flags after a correction (``reset_flags``). Flags normally merge so
+    the worst wins, so a probably-bad (3) can never become probably-good (2). Listed
+    existing flags are replaced by this test's result instead; the rest still merge::
+
+        range qc:
+          variable_ranges:
+            CHLA_ADJUSTED:
+              4: [-0.2, 100, outside]
+              2: [-0.2, 100, inside]
+          reset_flags: [3, 5]     # 3 and 5 become 2 or 4; existing 4 and 9 stay
     """
 
     qc_name = "range qc"
@@ -121,6 +136,13 @@ class range_qc(BaseQC):
             "{'DEPTH': ['CHLA']} flags CHLA by DEPTH's ranges while leaving DEPTH "
             "unflagged.",
         },
+        "reset_flags": {
+            "type": list,
+            "default": [],
+            "description": "Existing flags this test replaces instead of merging with, e.g. [3] "
+            "lets a re-test after a correction turn probably-bad (3) into probably-good (2). "
+            "Other existing flags merge as usual (worst wins).",
+        },
         "test_depth_range": {
             "type": list,
             "default": None,
@@ -135,6 +157,10 @@ class range_qc(BaseQC):
             self.also_flag = {}
         if self.flag_instead is None:
             self.flag_instead = {}
+        if self.reset_flags is None:
+            self.reset_flags = []
+        # Apply QC then hands this test the stored flags and keeps its result as is
+        self.overwrite_flags = bool(self.reset_flags)
 
         self.tested_variables = list(self.variable_ranges.keys())
 
@@ -273,6 +299,16 @@ class range_qc(BaseQC):
         # Drop the flag_instead sources now their flags have been propagated.
         for var in self.flag_instead:
             qc_arrays.pop(var, None)
+
+        if self.overwrite_flags and self.existing_flags is not None:
+            for var, qc in qc_arrays.items():
+                if f"{var}_QC" not in self.existing_flags:
+                    continue
+                existing = self.existing_flags[f"{var}_QC"].values.astype(int)
+                merged = QC_COMBINATRIX[existing, qc]
+                # unchecked samples (0, e.g. outside test_depth_range) keep their flag
+                reassessed = np.isin(existing, self.reset_flags) & (qc != 0)
+                qc_arrays[var] = np.where(reassessed, qc, merged)
 
         self.flags = xr.Dataset(coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]})
         for var, qc in qc_arrays.items():

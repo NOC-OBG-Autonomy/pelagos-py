@@ -313,3 +313,64 @@ def test_apply_qc_resolves_depth_to_adjusted():
 
     flags = step.run()["data"]["TEMP_QC"].values
     assert list(flags) == [4, 0]
+
+
+def run_apply_qc(data, range_settings):
+    step = ApplyQC(
+        name="Apply QC",
+        parameters={"qc_settings": {"range qc": range_settings}},
+        diagnostics=False,
+        context={"data": data, "global_parameters": {}},
+    )
+    return step.run()["data"]
+
+
+def test_reset_flags_replaces_listed_flags_and_merges_the_rest():
+    data = make_data(CHLA_ADJUSTED=[1.0, 1.0, 200.0, 1.0, 1.0, np.nan])
+    data["CHLA_ADJUSTED"].attrs["long_name"] = "chlorophyll"
+    data["CHLA_ADJUSTED_QC"] = ("N_MEASUREMENTS", np.array([3, 5, 3, 4, 1, 9]))
+    settings = {
+        "variable_ranges": {"CHLA_ADJUSTED": {4: [-0.2, 100], 2: [-0.2, 100, "in"]}},
+        "reset_flags": [3, 5],
+    }
+
+    flags = run_apply_qc(data, settings)["CHLA_ADJUSTED_QC"].values
+    # 3/5 re-assessed to 2 (or 4 out of range); 4 and 9 kept; 1 merges up to 2
+    assert list(flags) == [2, 2, 4, 4, 2, 9]
+
+
+def test_without_reset_flags_a_probably_bad_flag_is_not_downgraded():
+    data = make_data(CHLA_ADJUSTED=[1.0])
+    data["CHLA_ADJUSTED"].attrs["long_name"] = "chlorophyll"
+    data["CHLA_ADJUSTED_QC"] = ("N_MEASUREMENTS", np.array([3]))
+    settings = {"variable_ranges": {"CHLA_ADJUSTED": {2: [-0.2, 100, "in"]}}}
+
+    assert list(run_apply_qc(data, settings)["CHLA_ADJUSTED_QC"].values) == [3]
+
+
+def test_reset_flags_keeps_flags_outside_test_depth_range():
+    data = make_data(CHLA_ADJUSTED=[1.0, 1.0], DEPTH=[10.0, 500.0])
+    data["CHLA_ADJUSTED"].attrs["long_name"] = "chlorophyll"
+    data["CHLA_ADJUSTED_QC"] = ("N_MEASUREMENTS", np.array([3, 3]))
+    settings = {
+        "variable_ranges": {"CHLA_ADJUSTED": {2: [-0.2, 100, "in"]}},
+        "reset_flags": [3],
+        "test_depth_range": [0, 100],
+    }
+
+    assert list(run_apply_qc(data, settings)["CHLA_ADJUSTED_QC"].values) == [2, 3]
+
+
+def test_reset_flags_applies_to_flag_instead_companions():
+    data = make_data(DEPTH=[1.0, 10.0], CHLA_ADJUSTED=[1.0, 1.0])
+    data["CHLA_ADJUSTED"].attrs["long_name"] = "chlorophyll"
+    data["CHLA_ADJUSTED_QC"] = ("N_MEASUREMENTS", np.array([3, 3]))
+    settings = {
+        "variable_ranges": {"DEPTH": {3: [-np.inf, 2, "in"], 2: [-np.inf, 2, "out"]}},
+        "flag_instead": {"DEPTH": ["CHLA_ADJUSTED"]},
+        "reset_flags": [3],
+    }
+
+    result = run_apply_qc(data, settings)
+    assert list(result["CHLA_ADJUSTED_QC"].values) == [3, 2]
+    assert "DEPTH_QC" not in result
