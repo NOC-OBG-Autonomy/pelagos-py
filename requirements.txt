@@ -16,7 +16,6 @@ tqdm
 glidertools
 ipykernel
 pyarrow
-pytest
 fpdf2
 cartopy
 pyyaml
@@ -25,3 +24,5 @@ cc-plugin-ncei
 cc-plugin-og
 psutil>=5.9
 glidertest
+fastapi>=0.110
+uvicorn>=0.29

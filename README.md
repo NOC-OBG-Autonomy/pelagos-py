@@ -40,7 +40,6 @@ pipeline.run()
 A local web page to build, check and run configs, with live logs and diagnostic plots:
 
 ```bash
-pip install "pelagos-py[dashboard]"
 pelagos-py dashboard              # opens http://localhost:8791
 ```
 

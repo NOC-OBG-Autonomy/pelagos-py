@@ -8,12 +8,11 @@ from pathlib import Path
 
 import pytest
 
-pytest.importorskip("fastapi")
-from fastapi import HTTPException  # noqa: E402
-from fastapi.routing import APIRoute  # noqa: E402
-from fastapi.testclient import TestClient  # noqa: E402
+from fastapi import HTTPException
+from fastapi.routing import APIRoute
+from fastapi.testclient import TestClient
 
-from pelagos_py.utils import demo_data  # noqa: E402
+from pelagos_py.utils import demo_data
 
 # app.py creates WORKSPACE_DIR/configs on import, so point it away from the real workspace first
 _real_workspace = demo_data.WORKSPACE_DIR

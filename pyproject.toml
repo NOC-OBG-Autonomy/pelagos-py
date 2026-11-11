@@ -86,11 +86,6 @@ test = [
     "pytest",
     "pytest-cov",
     "httpx",
-    "pelagos_py[dashboard]",
-]
-dashboard = [
-    "fastapi>=0.110",
-    "uvicorn>=0.29",
 ]
 
 [tool.ruff]

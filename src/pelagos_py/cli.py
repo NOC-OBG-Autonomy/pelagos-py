@@ -16,7 +16,6 @@
 """The ``pelagos-py`` terminal command: ``dashboard``, ``build``, ``run`` and ``demo``."""
 
 import argparse
-import sys
 from pathlib import Path
 
 from pelagos_py import Pipeline, dashboard as dashboard_app, get_demo_file
@@ -25,8 +24,6 @@ from pelagos_py import Pipeline, dashboard as dashboard_app, get_demo_file
 def dashboard(args):
     try:
         dashboard_app.run()
-    except ImportError as exc:
-        sys.exit(str(exc))
     except KeyboardInterrupt:
         pass
 
