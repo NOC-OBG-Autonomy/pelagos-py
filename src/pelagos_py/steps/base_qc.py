@@ -73,6 +73,8 @@ class BaseQC:
         False  # set by Apply QC: return_qc then merges with existing_flags
     )
     existing_flags = None
+    # Flag for values that pass; Apply QC sets it from the pipeline's pass_flag setting
+    pass_flag = 1
 
     def __init__(self, data, **kwargs):
         # data may be None when a test is instantiated to introspect its

@@ -21,6 +21,7 @@ pipeline:
   out_directory: examples/data/OG1/
   log_file: complete_processing.log
   on_step_fail: pause  # pause (fix and re-run, or skip), skip, or stop
+  pass_flag: 2  # automated QC marks passing values probably good (2); only Visual QC gives good (1)
 
 # Steps in the pipeline
 # For further details on step parameters, see all_step_configs.yaml

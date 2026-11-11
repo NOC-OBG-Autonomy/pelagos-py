@@ -86,7 +86,7 @@ class impossible_speed_qc(BaseQC):
                 ref = i
         self.absolute_speed = speed  # for plot_diagnostics
 
-        qc = np.where(bad, 4, 1)
+        qc = np.where(bad, 4, self.pass_flag)
         # a coordinate whose partner is missing can't be checked (0); only its own absence is 9
         pos_qc = np.where(has_fix, qc, 0)
         lat_qc = np.where(np.isfinite(lat), pos_qc, 9)

@@ -110,7 +110,9 @@ class valid_profile_qc(BaseQC):
                 dtype=bool
             )
 
-        qc = np.where(has_profile, np.where(bad, self.flag, 1), 0).astype(np.int8)
+        qc = np.where(has_profile, np.where(bad, self.flag, self.pass_flag), 0).astype(
+            np.int8
+        )
         self.flags = xr.Dataset(
             {"PROFILE_NUMBER_QC": ("N_MEASUREMENTS", qc)},
             coords={"N_MEASUREMENTS": self.data["N_MEASUREMENTS"]},

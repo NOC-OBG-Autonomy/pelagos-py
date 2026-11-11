@@ -45,7 +45,9 @@ class position_on_land_qc(BaseQC):
     def return_qc(self):
         lon, lat = self.data["LONGITUDE"].values, self.data["LATITUDE"].values
         on_land = sh.contains_xy(fig_spec.land_polygons("110m"), lon, lat)
-        qc = np.where(np.isnan(lon) | np.isnan(lat), 9, np.where(on_land, 4, 1))
+        qc = np.where(
+            np.isnan(lon) | np.isnan(lat), 9, np.where(on_land, 4, self.pass_flag)
+        )
 
         # The same flags go on LATITUDE as well.
         self.flags = xr.Dataset(

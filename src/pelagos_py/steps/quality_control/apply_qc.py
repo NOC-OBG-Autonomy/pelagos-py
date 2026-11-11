@@ -23,6 +23,7 @@ from pelagos_py.utils.qc_handling import (
     QC_COMBINATRIX,
     adjusted_name,
     prefer_adjusted,
+    resolve_pass_flag,
 )
 
 #### Custom imports ####
@@ -138,6 +139,8 @@ class ApplyQC(BaseStep):
         # Check if the data is in the context
         self.check_data()
         full_data = self.context["data"]
+        global_parameters = self.context.get("global_parameters") or {}
+        self.pass_flag = resolve_pass_flag(global_parameters.get("pass_flag"))
 
         resolved_settings = prefer_adjusted(self.qc_settings, set(full_data.variables))
         if resolved_settings != self.qc_settings:
@@ -249,6 +252,7 @@ class ApplyQC(BaseStep):
                 f"Applying: {qc_qc_name}"
             )  # print(f"[Apply QC] Applying: {qc_qc_name}")
             qc_test_instance = QC_CLASSES[qc_qc_name](test_data, **qc_test_params)
+            qc_test_instance.pass_flag = self.pass_flag
             overwrite = qc_test_instance.overwrite_flags
             if overwrite:  # the test merges against the store itself
                 qc_test_instance.existing_flags = self.flag_store

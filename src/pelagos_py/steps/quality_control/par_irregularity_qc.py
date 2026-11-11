@@ -72,7 +72,7 @@ def calculate_solar_elevation(latitude, longitude, datetime):
     return solar_position["elevation"].values
 
 
-def qc_par_flagging(pres, par, sun_elev, nei_par=3e-2):
+def qc_par_flagging(pres, par, sun_elev, nei_par=3e-2, good_flag=1):
     """
     Real-time quality control (RT-QC) for PAR profiles
     following La Forgia & Organelli (2025, L&O Methods, 23:526–542).
@@ -135,7 +135,7 @@ def qc_par_flagging(pres, par, sun_elev, nei_par=3e-2):
     pres = np.asarray(pres, dtype=float)
     par = np.asarray(par, dtype=float)
     N = len(par)
-    flags = np.full(N, 1, int)
+    flags = np.full(N, good_flag, int)
 
     # ───────────────────────────────────────────────
     # 1. Preliminary checks
@@ -226,7 +226,7 @@ def qc_par_flagging(pres, par, sun_elev, nei_par=3e-2):
     # ───────────────────────────────────────────────
     if mode == "day":
         if np.isfinite(pa):
-            flags[pres < pa] = 1  # lit region
+            flags[pres < pa] = good_flag  # lit region
 
         # Transition / deep region polynomial fit
         trans_mask = pres >= (pa if np.isfinite(pa) else np.nanmin(pres))
@@ -343,13 +343,14 @@ class par_irregularity_qc(BaseQC):
                 profile["DOWNWELLING_PAR"],
                 solar_elevation,
                 self.noise_equivalent_estimate,
+                good_flag=self.pass_flag,
             )
 
             # Stitch the QC results back into the QC container
             par_qc[idx] = profile_element_qc
 
-        # any remaining flags that are 0 (unchecked) are updated to 1 (good)
-        par_qc[par_qc == 0] = 1
+        # any remaining unchecked (0) flags pass
+        par_qc[par_qc == 0] = self.pass_flag
 
         # Collect the flags
         self.data["DOWNWELLING_PAR_QC"] = (["N_MEASUREMENTS"], par_qc)

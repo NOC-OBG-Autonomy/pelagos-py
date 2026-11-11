@@ -29,6 +29,15 @@ DEFAULT_CALCULATION_FLAGS = [3, 4, 9]
 CHLA_CALCULATION_FLAGS = [4, 9]
 
 
+def resolve_pass_flag(value):
+    """The ``pass_flag`` pipeline setting: the flag automated QC tests give passing values (default 1)."""
+    if value is None:
+        return 1
+    if value not in (1, 2):
+        raise ValueError(f"pass_flag must be 1 or 2, got {value!r}")
+    return value
+
+
 def calculation_flags_for(name):
     """The default flags left out of calculations for variable ``name``."""
     if raw_name(name).startswith("CHLA"):

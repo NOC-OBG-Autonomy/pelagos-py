@@ -281,7 +281,7 @@ class range_qc(BaseQC):
                 qc[hit & depth_mask & (qc == 0)] = flag
 
             # Anything checked but unflagged is good.
-            qc[(qc == 0) & depth_mask] = 1
+            qc[(qc == 0) & depth_mask] = self.pass_flag
             qc_arrays[var] = qc
 
         # Propagate flags onto companions via the Argo merge matrix (worst wins).

@@ -142,12 +142,14 @@ class spike_qc(BaseQC):
                 threshold = np.nanstd(residules) * sensitivity
 
                 # Apply the threshold to residules to get the flags
-                spike_flags = np.where((np.abs(residules) > threshold), 4, 1)
+                spike_flags = np.where(
+                    (np.abs(residules) > threshold), 4, self.pass_flag
+                )
 
                 # NaNs are missing (9); excluded/usable points start good (1).
                 # Excluded points stay 1 so Apply QC's combinatrix keeps their
                 # existing (worse) flag; usable points take their spike result.
-                profile_flags = np.where(missing, 9, 1)
+                profile_flags = np.where(missing, 9, self.pass_flag)
                 profile_flags[usable] = spike_flags
                 spike_qc[indices] = profile_flags
 

@@ -23,6 +23,8 @@ pelagos-py follows the standardised Argo flagging system:
 * **8**: Interpolated value.
 * **9**: Missing value.
 
+Automated QC tests flag values that pass with the pipeline's ``pass_flag`` setting: 1 by default, 2 (probably good) in the default config, so that only a manual Visual QC check marks data good (1). Flags of 1 already in the input file are kept.
+
 Steps leave samples flagged 3, 4 or 9 out of their calculations (the samples are still corrected). Chlorophyll is the exception: raw ``CHLA`` is flagged 3 until it is corrected, so steps only leave out ``CHLA`` samples flagged 4 or 9.
 
 Flags are merged so the worse one wins: a sample flagged 3 stays 3 when a later check says 2. Chlorophyll is the exception the default config makes on purpose. Raw ``CHLA`` always needs correcting, so ``CHLA_QC`` is 3, or 4 outside the global range. After Deep Correction and CHLA Quenching (which flags the values it changes 5), a final range test with ``reset_flags: [3, 5]`` re-assesses ``CHLA_ADJUSTED_QC``, so it ends as 2 (probably good) or 4 (bad).

@@ -7,6 +7,7 @@ import pytest
 
 from pelagos_py.steps.quality_control.apply_qc import ApplyQC
 from pelagos_py.steps.quality_control.range_qc import range_qc
+from pelagos_py.utils.qc_handling import resolve_pass_flag
 
 
 def make_data(**variables):
@@ -374,3 +375,21 @@ def test_reset_flags_applies_to_flag_instead_companions():
     result = run_apply_qc(data, settings)
     assert list(result["CHLA_ADJUSTED_QC"].values) == [3, 2]
     assert "DEPTH_QC" not in result
+
+
+def test_pass_flag_setting_marks_passing_values_2():
+    data = make_data(TEMP=[10.0, 100.0])
+    step = ApplyQC(
+        name="Apply QC",
+        parameters={
+            "qc_settings": {"range qc": {"variable_ranges": {"TEMP": {4: [-2.5, 40]}}}}
+        },
+        diagnostics=False,
+        context={"data": data, "global_parameters": {"pass_flag": 2}},
+    )
+    assert step.run()["data"]["TEMP_QC"].values.tolist() == [2, 4]
+
+
+def test_pass_flag_must_be_1_or_2():
+    with pytest.raises(ValueError, match="pass_flag must be 1 or 2"):
+        resolve_pass_flag(3)
