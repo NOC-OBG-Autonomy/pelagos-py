@@ -18,7 +18,11 @@
 
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
-from pelagos_py.utils.qc_handling import QCHandlingMixin, adjusted_name
+from pelagos_py.utils.qc_handling import (
+    QC_COMBINATRIX,
+    QCHandlingMixin,
+    adjusted_name,
+)
 from pelagos_py.utils.processing_utils import profile_indices
 import pelagos_py.utils.palettes as palettes
 from pelagos_py.utils import fig_spec
@@ -95,6 +99,9 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
     sample; each method just reads a NaN-masked copy of its inputs wherever it
     derives a quantity, so flagging the unstable top few metres keeps it out of the
     references while it still gets corrected.
+
+    Values the correction changes are flagged 5 (value changed) in the output's
+    ``_QC``, merged so an existing 3 or 4 is kept.
 
     The mixed layer depth is read from the ``MLD`` variable, produced by a
     preceding Mixed Layer Depth step.
@@ -509,12 +516,28 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
 
         self.reconstruct_data()
         self.update_qc()
+        self.flag_changed_values()
 
         if self.diagnostics:
             self.generate_diagnostics()
 
         self.context["data"].update(self.data)
         return self.context
+
+    def flag_changed_values(self):
+        # Argo: values the quenching correction changed are flagged 5 (value changed)
+        qc_name = f"{self.output_as}_QC"
+        if qc_name not in self.data:
+            return
+        before = self.data_copy[self.apply_to].values
+        after = self.data[self.output_as].values
+        changed = np.isfinite(after) & ~np.isclose(after, before, equal_nan=True)
+        new_flags = np.where(changed, 5, 0)
+        merged = QC_COMBINATRIX[self.data[qc_name].values.astype(int), new_flags]
+        self.data[qc_name][:] = merged
+        self.log(
+            f"Flagged {int(changed.sum())} quench-corrected values 5.", console=False
+        )
 
     # ==================================================================
     # Shared helpers - inputs and per-profile quantities used by the methods below

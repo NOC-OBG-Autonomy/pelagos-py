@@ -435,9 +435,13 @@ def test_night_reference_falls_back_to_preceding_when_not_bracketed():
     assert _recon(_bracketed_step("mz", day_time_ns=9)) == pytest.approx(0.1)
 
 
-def test_run_writes_adjusted_leaving_raw_and_reads_depth_adjusted():
-    n = 50
-    depth = np.tile(np.linspace(0, 100, 25), 2)
+RUN_DEPTH = np.tile(np.linspace(0, 100, 25), 2)
+
+
+def _run_sackmann(chla_qc):
+    # two midday profiles whose top 20 m reads low (0.5 instead of 1.0)
+    n = RUN_DEPTH.size
+    depth = RUN_DEPTH
     data = xr.Dataset(
         {
             "PROFILE_NUMBER": ("N_MEASUREMENTS", np.repeat([1.0, 2.0], 25)),
@@ -450,7 +454,7 @@ def test_run_writes_adjusted_leaving_raw_and_reads_depth_adjusted():
             "LATITUDE": ("N_MEASUREMENTS", np.full(n, 50.0)),
             "LONGITUDE": ("N_MEASUREMENTS", np.full(n, -10.0)),
             "CHLA": ("N_MEASUREMENTS", np.where(depth < 20, 0.5, 1.0)),
-            "CHLA_QC": ("N_MEASUREMENTS", np.zeros(n, dtype=np.int8)),
+            "CHLA_QC": ("N_MEASUREMENTS", chla_qc),
             "BBP700": ("N_MEASUREMENTS", np.full(n, 1e-3)),
             "MLD": ("N_MEASUREMENTS", np.full(n, 40.0)),
         }
@@ -462,11 +466,27 @@ def test_run_writes_adjusted_leaving_raw_and_reads_depth_adjusted():
         context={"data": data, "global_parameters": {}},
     )
 
-    out = step.run()["data"]
+    return step.run()["data"]
 
-    assert np.allclose(out["CHLA"].values[depth < 20], 0.5)
+
+def test_run_writes_adjusted_leaving_raw_and_reads_depth_adjusted():
+    out = _run_sackmann(np.zeros(RUN_DEPTH.size, dtype=np.int8))
+
+    assert np.allclose(out["CHLA"].values[RUN_DEPTH < 20], 0.5)
     assert np.allclose(out["CHLA_ADJUSTED"].values, 1.0)
     assert "CHLA_QC" in out and "CHLA_ADJUSTED_QC" in out
+
+
+def test_run_flags_corrected_values_5_on_the_output_only():
+    flags = np.full(RUN_DEPTH.size, 2, dtype=np.int8)
+    flags[[1, 26]] = [3, 4]  # both shallow, so both get corrected
+
+    out = _run_sackmann(flags)
+
+    expected = np.where(RUN_DEPTH < 20, 5, 2)
+    expected[[1, 26]] = [3, 4]  # the merge keeps a worse existing flag
+    assert (out["CHLA_ADJUSTED_QC"].values == expected).all()
+    assert (out["CHLA_QC"].values == flags).all()
 
 
 def test_output_variables_is_adjusted_apply_to():
