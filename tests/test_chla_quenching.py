@@ -3,6 +3,7 @@
 from pelagos_py.steps.processing import chla_quenching
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 import pytest
 
@@ -472,3 +473,29 @@ def test_output_variables_is_adjusted_apply_to():
     assert Quenching.output_variables({"apply_to": "CHLA_FLUORESCENCE"}) == [
         "CHLA_FLUORESCENCE_ADJUSTED"
     ]
+
+
+def test_example_day_profile_is_the_median_change():
+    # Day profiles 1-4 change by 0, 1, 5 and 100; profile 5 is night.
+    change = {1: 0.0, 2: 1.0, 3: 5.0, 4: 100.0, 5: 0.0}
+    profile = np.repeat(list(change), 2)
+    raw = np.ones(profile.size)
+    adjusted = raw + np.repeat(list(change.values()), 2) / 2
+    step = Quenching.__new__(Quenching)
+    step.apply_to = "CHLA"
+    step.output_as = "CHLA_ADJUSTED"
+    step.data_copy = xr.Dataset({"CHLA": ("N_MEASUREMENTS", raw)})
+    step.data = xr.Dataset(
+        {
+            "PROFILE_NUMBER": ("N_MEASUREMENTS", profile.astype(float)),
+            "CHLA_ADJUSTED": ("N_MEASUREMENTS", adjusted),
+        }
+    )
+    step.sun_args = pd.DataFrame(
+        {"TIME": pd.date_range("2024-06-21", periods=5, freq="h")}, index=list(change)
+    )
+    step._sun_cache = {1: 40.0, 2: 40.0, 3: 40.0, 4: 40.0, 5: -20.0}
+    step.day_min_elevation = 0.0
+    step.night_max_elevation = -12.0
+
+    assert step._example_profiles() == (3, 5)

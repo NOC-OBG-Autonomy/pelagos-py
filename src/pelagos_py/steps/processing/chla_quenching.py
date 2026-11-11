@@ -254,8 +254,8 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
             "default": None,
             "description": (
                 "Profile numbers drawn by the 'profile' / 'quenching_depth' "
-                "diagnostic figures; defaults to the day profile the correction "
-                "changed most."
+                "diagnostic figures; defaults to a typical day profile (median "
+                "change from the correction)."
             ),
         },
         "max_photic_depth": {
@@ -2247,8 +2247,8 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
         )
 
     def _example_profiles(self):
-        # day profile = the one the configured method changed most; night profile
-        # = the nearest in time to it
+        # day profile = a typical one (median change among changed day profiles);
+        # night profile = the nearest in time to it
         change = np.abs(
             self.data[self.output_as].values - self.data_copy[self.apply_to].values
         )
@@ -2263,7 +2263,9 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
             p for p in total_change if elev.get(p, 0) > self.day_min_elevation
         ]
         pool = day_candidates or list(total_change)
-        day_pn = max(pool, key=lambda p: total_change[p])
+        changed = [p for p in pool if total_change[p] > 0] or pool
+        median_change = np.median([total_change[p] for p in changed])
+        day_pn = min(changed, key=lambda p: abs(total_change[p] - median_change))
 
         night_candidates = [
             p for p in total_change if elev.get(p, 0) < self.night_max_elevation
