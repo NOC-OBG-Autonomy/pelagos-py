@@ -1,246 +1,391 @@
 <!DOCTYPE html>
 
-<html data-content_root="./" lang="en">
-<head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="width=device-width, initial-scale=1" name="viewport"/>
-<meta content="2026-11-04T20:18:56+00:00" property="article:modified_time"/>
-<title>Getting Started — pelagos-py</title>
-<script data-cfasync="false">
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <meta property="article:modified_time" content="2026-11-11T00:07:32+00:00" />
+    <title>Getting Started &#8212; pelagos-py</title>
+  
+  
+  
+  <script data-cfasync="false">
     document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
     document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
   </script>
-<!--
+  <!--
     this give us a css class that will be invisible only if js is disabled
   -->
-<noscript>
-<style>
+  <noscript>
+    <style>
       .pst-js-only { display: none !important; }
 
     </style>
-</noscript>
-<!-- Loaded before other Sphinx assets -->
-<link href="_static/styles/theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet"/>
-<link href="_static/styles/pydata-sphinx-theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet"/>
-<link href="_static/pygments.css?v=d75fae25" rel="stylesheet" type="text/css"/>
-<link href="_static/copybutton.css?v=76b2166b" rel="stylesheet" type="text/css"/>
-<link href="_static/graphviz.css?v=4ae1632d" rel="stylesheet" type="text/css"/>
-<link href="_static/sphinx-codeautolink.css?v=b2176991" rel="stylesheet" type="text/css"/>
-<link href="_static/sphinx-design.min.css?v=95c83b7e" rel="stylesheet" type="text/css"/>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&amp;family=Ubuntu&amp;display=swap" rel="stylesheet" type="text/css"/>
-<link href="_static/custom.css?v=a20de4af" rel="stylesheet" type="text/css"/>
-<!-- So that users can add custom icons -->
-<script defer="" src="_static/scripts/fontawesome.js?digest=75c7c72ae941e8b558d8"></script>
-<!-- Pre-loaded scripts that we'll load fully later -->
-<link as="script" href="_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" rel="preload"/>
-<link as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" rel="preload"/>
-<script src="_static/documentation_options.js?v=f9910351"></script>
-<script src="_static/doctools.js?v=fd6eb6e6"></script>
-<script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
-<script src="_static/clipboard.min.js?v=a7894cd8"></script>
-<script src="_static/copybutton.js?v=df1a032d"></script>
-<script src="_static/design-tabs.js?v=f930bc37"></script>
-<script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-<script>DOCUMENTATION_OPTIONS.pagename = 'getting_started';</script>
-<script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
-<link href="https://noc-obg-autonomy.github.io/pelagos-py/getting_started.html" rel="canonical"/>
-<link href="_static/NOC_logo.svg" rel="icon"/>
-<link href="genindex.html" rel="index" title="Index"/>
-<link href="search.html" rel="search" title="Search"/>
-<link href="user_guide.html" rel="next" title="User Guide"/>
-<link href="index.html" rel="prev" title="pelagos-py documentation"/>
-<meta content="width=device-width, initial-scale=1" name="viewport"/>
-<meta content="light dark" name="color-scheme"/>
-<meta content="en" name="docsearch:language"/>
-<meta content="0.0" name="docsearch:version"/>
-<meta content="Nov 04, 2026" name="docbuild:last-update"/>
-<script src="_static/searchtools.js"></script>
-<script src="_static/language_data.js"></script>
-<script src="searchindex.js"></script>
-</head>
-<body data-default-mode="">
-<div class="skip-link d-print-none" id="pst-skip-link"><a href="#main-content">Skip to main content</a></div>
-<div id="pst-scroll-pixel-helper"></div>
-<button class="btn rounded-pill" id="pst-back-to-top" type="button">
-<i class="fa-solid fa-arrow-up"></i>Back to top</button>
-<dialog id="pst-search-dialog">
-<form action="search.html" class="bd-search d-flex align-items-center" method="get">
-<i class="fa-solid fa-magnifying-glass"></i>
-<input aria-label="Search the docs ..." autocapitalize="off" autocomplete="off" autocorrect="off" class="form-control" name="q" placeholder="Search the docs ..." spellcheck="false" type="search"/>
-<span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-codeautolink.css?v=b2176991" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=6a604523" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Ubuntu&display=swap" />
+    <link rel="stylesheet" type="text/css" href="_static/custom.css?v=a20de4af" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="_static/scripts/fontawesome.js?digest=75c7c72ae941e8b558d8"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
+
+    <script src="_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=df1a032d"></script>
+    <script data-sd-tabs-storage-prefix="sphinx-design-tab-id-" src="_static/design-tabs.js?v=fcb327ea"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'getting_started';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="canonical" href="https://noc-obg-autonomy.github.io/pelagos-py/getting_started.html" />
+    <link rel="icon" href="_static/NOC_logo.svg"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="User Guide" href="user_guide.html" />
+    <link rel="prev" title="pelagos-py documentation" href="index.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0" />
+    <meta name="docbuild:last-update" content="Nov 11, 2026"/>
+  
+    
+    <script src="_static/searchtools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
 </form>
-</dialog>
-<div class="pst-async-banner-revealer d-none">
-<aside aria-label="Version warning" class="d-none d-print-none" id="bd-header-version-warning"></aside>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
-<header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none" id="pst-header">
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
 <div class="bd-header__inner bd-page-width">
-<button aria-controls="pst-primary-sidebar-modal" aria-expanded="false" aria-label="Site navigation" class="pst-navbar-icon sidebar-toggle primary-toggle" type="button">
-<span class="fa-solid fa-bars"></span>
-</button>
-<div class="col-lg-3 navbar-header-items__start">
-<div class="navbar-item">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation" aria-expanded="false" aria-controls="pst-primary-sidebar-modal">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
 <a class="navbar-brand logo" href="index.html">
-<svg aria-label="pelagos-py - Home" class="logo__image pelagos-logo" height="100" role="img" viewbox="0 0 420 100" width="420" xmlns="http://www.w3.org/2000/svg">
-<rect class="pl-frame" height="100" rx="2.3" width="100" x="0" y="0"></rect>
-<rect fill="#fff" height="27.5" width="91.7" x="4.15" y="4.15"></rect>
-<rect fill="#00b4ff" height="64.19" width="91.7" x="4.15" y="31.66"></rect>
-<text class="pl-title" lengthadjust="spacingAndGlyphs" textlength="300" x="117" y="64">PELAGOS-PY</text>
-<text class="pl-sub" lengthadjust="spacingAndGlyphs" textlength="300" x="117" y="93.2">National Oceanography Centre</text>
-</svg>
+  <svg class="logo__image pelagos-logo" viewBox="0 0 420 100" width="420" height="100"
+       role="img" aria-label="pelagos-py - Home" xmlns="http://www.w3.org/2000/svg">
+    <rect class="pl-frame" x="0" y="0" width="100" height="100" rx="2.3"/>
+    <rect fill="#fff" x="4.15" y="4.15" width="91.7" height="27.5"/>
+    <rect fill="#00b4ff" x="4.15" y="31.66" width="91.7" height="64.19"/>
+    <text class="pl-title" x="117" y="64" textLength="300" lengthAdjust="spacingAndGlyphs">PELAGOS-PY</text>
+    <text class="pl-sub" x="117" y="93.2" textLength="300" lengthAdjust="spacingAndGlyphs">National Oceanography Centre</text>
+  </svg>
 </a></div>
-</div>
-<div class="col-lg-9 navbar-header-items">
-<div class="me-auto navbar-header-items__center">
-<div class="navbar-item">
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
 <nav>
-<ul class="bd-navbar-elements navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
 <li class="nav-item current active">
-<a aria-current="page" class="nav-link nav-internal" href="#">
+  <a class="nav-link nav-internal" href="#" aria-current="page">
     Getting Started
   </a>
 </li>
-<li class="nav-item">
-<a class="nav-link nav-internal" href="user_guide.html">
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="user_guide.html">
     User Guide
   </a>
 </li>
-<li class="nav-item">
-<a class="nav-link nav-internal" href="api_reference.html">
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="api_reference.html">
     API Reference
   </a>
 </li>
-<li class="nav-item">
-<a class="nav-link nav-internal" href="development.html">
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="development.html">
     Development
   </a>
 </li>
-</ul>
+
+  </ul>
 </nav></div>
-</div>
-<div class="navbar-header-items__end">
-<div class="navbar-item navbar-persistent--container">
-<button aria-label="Search" class="btn search-button-field search-button__button pst-js-only" data-bs-placement="bottom" data-bs-toggle="tooltip" title="Search" type="button">
-<i class="fa-solid fa-magnifying-glass"></i>
-<span class="search-button__default-text">Search</span>
-<span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
 </button>
-</div>
-<div class="navbar-item">
-<div class="theme-switch-container dropdown pst-js-only" data-bs-placement="bottom" data-bs-toggle="tooltip" title="Color mode">
-<button aria-label="Color mode" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" data-bs-toggle="dropdown" type="button">
-<i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
-<i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
-<i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
-</button>
-<ul class="dropdown-menu dropdown-menu-end">
-<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto" type="button"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
-<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light" type="button"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
-<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark" type="button"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
-</ul>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
+  </ul>
 </div></div>
-<div class="navbar-item"><ul aria-label="Icon Links" class="navbar-icon-links">
-<li class="nav-item">
-<a class="nav-link pst-navbar-icon" data-bs-placement="bottom" data-bs-toggle="tooltip" href="https://github.com/NOC-OBG-Autonomy/pelagos-py" rel="noopener" target="_blank" title="GitHub"><i aria-hidden="true" class="fa-brands fa-github fa-lg"></i><span class="visually-hidden">GitHub</span></a>
-</li>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NOC-OBG-Autonomy/pelagos-py" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
 </ul></div>
-</div>
-</div>
-<div class="navbar-persistent--mobile">
-<button aria-label="Search" class="btn search-button-field search-button__button pst-js-only" data-bs-placement="bottom" data-bs-toggle="tooltip" title="Search" type="button">
-<i class="fa-solid fa-magnifying-glass"></i>
-<span class="search-button__default-text">Search</span>
-<span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
 </button>
+    </div>
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page" aria-expanded="false" aria-controls="pst-secondary-sidebar-modal">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
 </div>
-<button aria-controls="pst-secondary-sidebar-modal" aria-expanded="false" aria-label="On this page" class="pst-navbar-icon sidebar-toggle secondary-toggle" type="button">
-<span class="fa-solid fa-outdent"></span>
-</button>
-</div>
-</header>
-<div class="bd-container">
-<div class="bd-container__inner bd-page-width">
-<dialog id="pst-primary-sidebar-modal" tabindex="-1"></dialog>
-<div class="bd-sidebar-primary bd-sidebar hide-on-wide" id="pst-primary-sidebar">
-<div class="sidebar-header-items sidebar-primary__section">
-<div class="sidebar-header-items__center">
-<div class="navbar-item">
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal" tabindex="-1"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
 <nav>
-<ul class="bd-navbar-elements navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
 <li class="nav-item current active">
-<a aria-current="page" class="nav-link nav-internal" href="#">
+  <a class="nav-link nav-internal" href="#" aria-current="page">
     Getting Started
   </a>
 </li>
-<li class="nav-item">
-<a class="nav-link nav-internal" href="user_guide.html">
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="user_guide.html">
     User Guide
   </a>
 </li>
-<li class="nav-item">
-<a class="nav-link nav-internal" href="api_reference.html">
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="api_reference.html">
     API Reference
   </a>
 </li>
-<li class="nav-item">
-<a class="nav-link nav-internal" href="development.html">
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="development.html">
     Development
   </a>
 </li>
-</ul>
+
+  </ul>
 </nav></div>
-</div>
-<div class="sidebar-header-items__end">
-<div class="navbar-item">
-<div class="theme-switch-container dropdown pst-js-only" data-bs-placement="bottom" data-bs-toggle="tooltip" title="Color mode">
-<button aria-label="Color mode" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" data-bs-toggle="dropdown" type="button">
-<i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
-<i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
-<i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
-</button>
-<ul class="dropdown-menu dropdown-menu-end">
-<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto" type="button"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
-<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light" type="button"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
-<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark" type="button"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
-</ul>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
+  </ul>
 </div></div>
-<div class="navbar-item"><ul aria-label="Icon Links" class="navbar-icon-links">
-<li class="nav-item">
-<a class="nav-link pst-navbar-icon" data-bs-placement="bottom" data-bs-toggle="tooltip" href="https://github.com/NOC-OBG-Autonomy/pelagos-py" rel="noopener" target="_blank" title="GitHub"><i aria-hidden="true" class="fa-brands fa-github fa-lg"></i><span class="visually-hidden">GitHub</span></a>
-</li>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NOC-OBG-Autonomy/pelagos-py" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
 </ul></div>
-</div>
-</div>
-<div class="sidebar-primary-items__end sidebar-primary__section">
-<div class="sidebar-primary-item">
-<div class="flat" data-ea-manual="true" data-ea-publisher="readthedocs" data-ea-type="readthedocs-sidebar" id="ethical-ad-placement">
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
 </div></div>
-</div>
-</div>
-<main class="bd-main" id="main-content" role="main">
-<div class="bd-content">
-<div class="bd-article-container">
-<div class="bd-header-article d-print-none">
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
 <div class="header-article-items header-article__inner">
-<div class="header-article-items__start">
-<div class="header-article-item">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
 <nav aria-label="Breadcrumb" class="d-print-none">
-<ul class="bd-breadcrumbs">
-<li class="breadcrumb-item breadcrumb-home">
-<a aria-label="Home" class="nav-link" href="index.html">
-<i class="fa-solid fa-house"></i>
-</a>
-</li>
-<li aria-current="page" class="breadcrumb-item active"><span class="ellipsis">Getting Started</span></li>
-</ul>
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-house"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Getting Started</span></li>
+  </ul>
 </nav>
 </div>
+      
+    </div>
+  
+  
 </div>
 </div>
-</div>
+              
+              
+              
+                
 <div id="searchbox"></div>
-<article class="bd-article">
-<section id="getting-started">
+                <article class="bd-article">
+                  
+  <section id="getting-started">
 <h1>Getting Started<a class="headerlink" href="#getting-started" title="Link to this heading">#</a></h1>
 <p>pelagos-py provides a modular pipeline framework for defining, running and visualising multi-step processing workflows for oceanographic data.</p>
 <p>Each pipeline is a series of steps built from a single YAML configuration file. Because the pipeline depends only on the config, processing can be reproduced by sharing the config.</p>
@@ -328,6 +473,30 @@ for your OG1 file or from a config you already have:</p>
 </pre></div>
 </div>
 </section>
+<section id="the-dashboard-and-command-line">
+<h2>The Dashboard and Command Line<a class="headerlink" href="#the-dashboard-and-command-line" title="Link to this heading">#</a></h2>
+<p>The dashboard is a local web page for building, checking and running configs without writing YAML by hand. Install its extra dependencies, then start it:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"pelagos-py[dashboard]"</span>
+pelagos-py<span class="w"> </span>dashboard
+</pre></div>
+</div>
+<p>It opens at <a class="reference external" href="http://localhost:8791">http://localhost:8791</a>. From there you can:</p>
+<ul class="simple">
+<li><p>build a pipeline from the list of available steps, with a form for each step’s parameters,</p></li>
+<li><p>see config errors (unknown steps or parameters, missing variables) as you type,</p></li>
+<li><p>run the pipeline and follow its log and diagnostic plots live,</p></li>
+<li><p>pause at a step with <code class="docutils literal notranslate"><span class="pre">diagnostics:</span> <span class="pre">true</span></code>, change its parameters and re-run just that step before continuing,</p></li>
+<li><p>flag data by hand with the <code class="docutils literal notranslate"><span class="pre">visual</span> <span class="pre">qc</span></code> test.</p></li>
+</ul>
+<p>A config made in the dashboard is an ordinary YAML file, so it runs the same way from Python. Saved configs go in <code class="docutils literal notranslate"><span class="pre">~/Documents/pelagos-py/configs/</span></code>, and runs start from <code class="docutils literal notranslate"><span class="pre">~/Documents/pelagos-py</span></code>, so relative paths in a config resolve from there.</p>
+<p>Installing pelagos-py also adds a <code class="docutils literal notranslate"><span class="pre">pelagos-py</span></code> command for the common tasks:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pelagos-py<span class="w"> </span>build<span class="w"> </span>glider.nc<span class="w">        </span><span class="c1"># writes glider.yaml (--ask to choose options, -o to save elsewhere)</span>
+pelagos-py<span class="w"> </span>run<span class="w"> </span>glider.nc<span class="w">          </span><span class="c1"># builds a config, then runs it</span>
+pelagos-py<span class="w"> </span>run<span class="w"> </span>my_pipeline.yaml<span class="w">   </span><span class="c1"># runs an existing config</span>
+pelagos-py<span class="w"> </span>demo<span class="w">                   </span><span class="c1"># downloads the demo file and prints its path</span>
+</pre></div>
+</div>
+</section>
 <section id="example-configuration">
 <h2>Example Configuration<a class="headerlink" href="#example-configuration" title="Link to this heading">#</a></h2>
 <p>A minimal YAML configuration for the demo file. See <code class="docutils literal notranslate"><span class="pre">examples/notebooks/pipeline_demo.ipynb</span></code> for a full demo.</p>
@@ -373,58 +542,94 @@ for your OG1 file or from a config you already have:</p>
 <p>If you spot any mistakes or would like specific documentation to be prioritised, please open an issue on the <a class="reference external" href="https://github.com/NOC-OBG-Autonomy/pelagos-py/issues">GitHub issues page</a>.</p>
 </section>
 </section>
-</article>
-</div>
-<dialog id="pst-secondary-sidebar-modal" tabindex="-1"></dialog>
-<div class="bd-sidebar-secondary bd-toc" id="pst-secondary-sidebar"><div class="sidebar-secondary-items sidebar-secondary__inner">
-<div class="sidebar-secondary-item">
-<div class="page-toc tocsection onthispage" id="pst-page-navigation-heading-2">
-<i class="fa-solid fa-list"></i> On this page
+
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal" tabindex="-1"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
   </div>
-<nav aria-labelledby="pst-page-navigation-heading-2" class="page-toc" id="pst-page-toc-nav">
-<ul class="pst-show_toc_level nav section-nav flex-column">
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installation">Installation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overview">Overview</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#how-to-run">How to Run</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-dashboard-and-command-line">The Dashboard and Command Line</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example-configuration">Example Configuration</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example-pipeline">Example Pipeline</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#documentation-and-feedback">Documentation and Feedback</a></li>
 </ul>
-</nav></div>
+  </nav></div>
+
 </div></div>
-</div>
-<footer class="bd-footer-content">
-</footer>
-</main>
-</div>
-</div>
-<!-- Scripts loaded after <body> so the DOM is not blocked -->
-<script defer="" src="_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8"></script>
-<script defer="" src="_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8"></script>
-<footer class="bd-footer">
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8"></script>
+
+  <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
-<div class="footer-items__start">
-<div class="footer-item">
-<p class="copyright">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
     
       © Copyright 2025, National Oceanography Centre.
       <br/>
-</p>
+    
+  </p>
 </div>
-<div class="footer-item">
-<p class="sphinx-version">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
     Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.1.
   </p>
 </div>
-</div>
-<div class="footer-items__end">
-<div class="footer-item">
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
 <p class="theme-version">
-<!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
   Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.24.0.
 </p></div>
+      
+    </div>
+  
 </div>
-</div>
-</footer>
-</body>
+
+  </footer>
+  </body>
 </html>

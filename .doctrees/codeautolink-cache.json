@@ -1,5 +1,11 @@
 {
   "api/index": [],
+  "api/pelagos_py/cli/index": [],
+  "api/pelagos_py/dashboard/app/index": [],
+  "api/pelagos_py/dashboard/fig_spec/index": [],
+  "api/pelagos_py/dashboard/index": [],
+  "api/pelagos_py/dashboard/run_bootstrap/index": [],
+  "api/pelagos_py/dashboard/runner/index": [],
   "api/pelagos_py/index": [],
   "api/pelagos_py/pipeline/index": [
     {
@@ -298,7 +304,7 @@
           "Documentation"
         ]
       },
-      "doc_lineno": 146
+      "doc_lineno": 152
     },
     {
       "source": "from pelagos_py.steps.base_step import BaseStep, register_step\n\n@register_step\nclass MyNewStep(BaseStep):\n    ...",

@@ -34,7 +34,7 @@
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-codeautolink.css?v=b2176991" />
-    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=6a604523" />
     <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Ubuntu&display=swap" />
     <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=a20de4af" />
   
@@ -44,12 +44,12 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=f9910351"></script>
+    <script src="../_static/documentation_options.js?v=82bd8ea8"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=df1a032d"></script>
-    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script data-sd-tabs-storage-prefix="sphinx-design-tab-id-" src="../_static/design-tabs.js?v=fcb327ea"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
@@ -513,10 +513,10 @@
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="initial-quality-control">
-<h1>1. Initial quality control<a class="headerlink" href="#initial-quality-control" title="Link to this heading">#</a></h1>
+<span id="1-initial-quality-control"></span><h1>1. Initial quality control<a class="headerlink" href="#initial-quality-control" title="Link to this heading">#</a></h1>
 <p>Backscatter QC is performed with the same generic <strong>Range QC</strong> and <strong>Stuck Value QC</strong> modules used elsewhere in pelagos-py (see the <strong>Quality Control</strong> documentation for the full algorithm descriptions). Unlike the chlorophyll initial range test, these QC steps have no code-level defaults of their own — the values below are drawn from pelagos-py’s reference deployment configurations (Churchill, Nelson, ALR) as a documented starting point.</p>
 <section id="range-test">
-<h2>1.1 Range test<a class="headerlink" href="#range-test" title="Link to this heading">#</a></h2>
+<span id="11-range-test"></span><h2>1.1 Range test<a class="headerlink" href="#range-test" title="Link to this heading">#</a></h2>
 <p>Recommended configuration for open ocean:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">qc_settings</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">range qc</span><span class="p">:</span>
@@ -529,7 +529,7 @@
 <p>Backscatter cannot physically be negative, but a small negative reading is typically dark-offset noise in clear water rather than a hardware fault, so values just below zero are only flagged probably bad (<code class="docutils literal notranslate"><span class="pre">3</span></code>). The wider band (<code class="docutils literal notranslate"><span class="pre">4</span></code>) catches values far enough out to be physically absurd or indicative of a sensor rail. Some platforms (e.g. Nelson) report beta directly under the <code class="docutils literal notranslate"><span class="pre">BBP700</span></code> name rather than a separate <code class="docutils literal notranslate"><span class="pre">BETA_BACKSCATTERING700</span></code> variable; the range test is applied to whichever variable holds the raw signal, and the BBP from Beta step (Section 2) carries the resulting flags across to the converted variable.</p>
 </section>
 <section id="stuck-value-test">
-<h2>1.2 Stuck value test<a class="headerlink" href="#stuck-value-test" title="Link to this heading">#</a></h2>
+<span id="12-stuck-value-test"></span><h2>1.2 Stuck value test<a class="headerlink" href="#stuck-value-test" title="Link to this heading">#</a></h2>
 <p>Recommended configuration:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">qc_settings</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">stuck value qc</span><span class="p">:</span>
@@ -540,37 +540,31 @@
 <p>A frozen reading (four or more identical consecutive values, using the recommended threshold of 3) indicates a dead or fouled sensor and is flagged bad (<code class="docutils literal notranslate"><span class="pre">4</span></code>).</p>
 </section>
 <section id="no-spike-test">
-<h2>1.3 No spike test<a class="headerlink" href="#no-spike-test" title="Link to this heading">#</a></h2>
+<span id="13-no-spike-test"></span><h2>1.3 No spike test<a class="headerlink" href="#no-spike-test" title="Link to this heading">#</a></h2>
 <p>Deliberately, <strong>no Spike QC test is applied</strong> to the raw backscatter signal. Large isolated spikes in b<sub>bp</sub> typically correspond to individual particles or aggregates passing through the sensor’s sample volume — genuine signal rather than sensor noise. Discarding them via a generic spike test would remove real information; instead, the Isolate BBP Spikes step (Section 3) separates the spike component from the baseline so that both are retained as independent variables.</p>
 </section>
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="bbp-from-beta">
-<h1>2. BBP from Beta<a class="headerlink" href="#bbp-from-beta" title="Link to this heading">#</a></h1>
+<span id="2-bbp-from-beta"></span><h1>2. BBP from Beta<a class="headerlink" href="#bbp-from-beta" title="Link to this heading">#</a></h1>
 <section id="physical-basis">
-<h2>2.1 Physical basis<a class="headerlink" href="#physical-basis" title="Link to this heading">#</a></h2>
+<span id="21-physical-basis"></span><h2>2.1 Physical basis<a class="headerlink" href="#physical-basis" title="Link to this heading">#</a></h2>
 <p>The conversion follows the BGC-Argo definition of particulate backscattering, using Zhang et al. (2009) for the pure-seawater scattering contribution (via <code class="docutils literal notranslate"><span class="pre">glidertools.flo_functions.flo_zhang_scatter_coeffs</span></code>) and Sullivan et al. (2013) for the particulate chi-factor scaling.</p>
 <p>The raw sensor measures the volume scattering function at the instrument’s effective scattering angle <span class="math notranslate nohighlight">\(\theta\)</span> and wavelength <span class="math notranslate nohighlight">\(\lambda\)</span>:</p>
 <div class="math notranslate nohighlight">
-\[
-\beta(\theta,\lambda) = \beta_{sw}(\theta,\lambda) + \beta_{p}(\theta,\lambda),
-\]</div>
+\[\beta(\theta,\lambda) = \beta_{sw}(\theta,\lambda) + \beta_{p}(\theta,\lambda),\]</div>
 <p>the sum of a theoretical seawater-only contribution <span class="math notranslate nohighlight">\(\beta_{sw}\)</span> and the contribution of particles <span class="math notranslate nohighlight">\(\beta_p\)</span>.</p>
 <p><strong>Seawater scattering.</strong> <span class="math notranslate nohighlight">\(\beta_{sw}(\theta,\lambda)\)</span> and the total (forward + backward) seawater scattering coefficient <span class="math notranslate nohighlight">\(b_{sw}(\lambda)\)</span> are computed from in-situ temperature and practical salinity following the Zhang et al. (2009) pure-seawater model, which combines scattering due to density fluctuations and due to salt-concentration fluctuations, each weighted by a depolarisation-ratio correction (<span class="math notranslate nohighlight">\(\delta = 0.039\)</span>).</p>
 <p><strong>Particulate scattering.</strong> The particulate contribution at the measurement angle is obtained by subtraction,</p>
 <div class="math notranslate nohighlight">
-\[
-\beta_p(\theta,\lambda) = \beta(\theta,\lambda) - \beta_{sw}(\theta,\lambda),
-\]</div>
+\[\beta_p(\theta,\lambda) = \beta(\theta,\lambda) - \beta_{sw}(\theta,\lambda),\]</div>
 <p>and scaled to the particulate backscattering coefficient (integrated over all backward angles) using the chi factor <span class="math notranslate nohighlight">\(\chi\)</span>:</p>
 <div class="math notranslate nohighlight">
-\[
-b_{bp}(\lambda) = \chi \cdot 2\pi \cdot \beta_p(\theta,\lambda).
-\]</div>
+\[b_{bp}(\lambda) = \chi \cdot 2\pi \cdot \beta_p(\theta,\lambda).\]</div>
 <p><strong>Output.</strong> The value written to the dataset is the particulate backscattering coefficient <span class="math notranslate nohighlight">\(b_{bp}(\lambda)\)</span> above, with units of m<sup>-1</sup>.</p>
 </section>
 <section id="default-configuration">
-<h2>2.2 Default configuration<a class="headerlink" href="#default-configuration" title="Link to this heading">#</a></h2>
+<span id="22-default-configuration"></span><h2>2.2 Default configuration<a class="headerlink" href="#default-configuration" title="Link to this heading">#</a></h2>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">"BBP</span><span class="nv"> </span><span class="s">from</span><span class="nv"> </span><span class="s">Beta"</span>
 <span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">apply_to</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BETA_BACKSCATTERING700</span>
@@ -588,7 +582,7 @@ b_{bp}(\lambda) = \chi \cdot 2\pi \cdot \beta_p(\theta,\lambda).
 </div></blockquote>
 </section>
 <section id="implementation-notes">
-<h2>2.3 Implementation notes<a class="headerlink" href="#implementation-notes" title="Link to this heading">#</a></h2>
+<span id="23-implementation-notes"></span><h2>2.3 Implementation notes<a class="headerlink" href="#implementation-notes" title="Link to this heading">#</a></h2>
 <ul class="simple">
 <li><p><strong>Required inputs</strong>: <code class="docutils literal notranslate"><span class="pre">TIME</span></code>, <code class="docutils literal notranslate"><span class="pre">TEMP</span></code>, <code class="docutils literal notranslate"><span class="pre">PSAL</span></code>, <code class="docutils literal notranslate"><span class="pre">DEPTH</span></code> and the beta variable named by <code class="docutils literal notranslate"><span class="pre">apply_to</span></code>; <code class="docutils literal notranslate"><span class="pre">_ADJUSTED</span></code> versions are used where available. Gaps in temperature or salinity are left as <code class="docutils literal notranslate"><span class="pre">NaN</span></code> — the step does not gap-fill its inputs — so b<sub>bp</sub> is not derived at those samples and the corresponding output is flagged missing (<code class="docutils literal notranslate"><span class="pre">9</span></code>). An <strong>Interpolate Data</strong> step run beforehand on <code class="docutils literal notranslate"><span class="pre">TEMP</span></code>/<code class="docutils literal notranslate"><span class="pre">PSAL</span></code> fills eligible gaps.</p></li>
 <li><p><strong>QC flag filtering</strong>: unlike the Isolate BBP Spikes step (Section 3) and the generic <code class="docutils literal notranslate"><span class="pre">deep_correction</span></code> step, BBP from Beta does <strong>not</strong> automatically exclude samples carrying bad/probably-bad/missing QC flags (<code class="docutils literal notranslate"><span class="pre">3</span></code>, <code class="docutils literal notranslate"><span class="pre">4</span></code>, <code class="docutils literal notranslate"><span class="pre">9</span></code>) from the conversion — every finite <code class="docutils literal notranslate"><span class="pre">apply_to</span></code> value is converted regardless of its QC flag, unless the user explicitly configures <code class="docutils literal notranslate"><span class="pre">qc_handling_settings</span></code> to NaN-out flagged beta first. Flags on the input are still carried across to the output’s QC via <code class="docutils literal notranslate"><span class="pre">generate_qc</span></code>, so a flagged input value converts to a flagged output value; the flag simply does not prevent the arithmetic conversion itself.</p></li>
@@ -597,7 +591,7 @@ b_{bp}(\lambda) = \chi \cdot 2\pi \cdot \beta_p(\theta,\lambda).
 </ul>
 </section>
 <section id="figure">
-<h2>2.4 Figure<a class="headerlink" href="#figure" title="Link to this heading">#</a></h2>
+<span id="24-figure"></span><h2>2.4 Figure<a class="headerlink" href="#figure" title="Link to this heading">#</a></h2>
 <figure class="align-default" id="id3">
 <a class="reference internal image-reference" href="../_images/bbp_from_beta_boxplot.png"><img alt="The beta vs bbp diagnostic box plot." src="../_images/bbp_from_beta_boxplot.png" style="width: 70%;" />
 </a>
@@ -609,24 +603,22 @@ b_{bp}(\lambda) = \chi \cdot 2\pi \cdot \beta_p(\theta,\lambda).
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="isolate-bbp-spikes">
-<h1>3. Isolate BBP Spikes<a class="headerlink" href="#isolate-bbp-spikes" title="Link to this heading">#</a></h1>
+<span id="3-isolate-bbp-spikes"></span><h1>3. Isolate BBP Spikes<a class="headerlink" href="#isolate-bbp-spikes" title="Link to this heading">#</a></h1>
 <section id="principle">
-<h2>3.1 Principle<a class="headerlink" href="#principle" title="Link to this heading">#</a></h2>
+<span id="31-principle"></span><h2>3.1 Principle<a class="headerlink" href="#principle" title="Link to this heading">#</a></h2>
 <p>Following conversion, pelagos-py separates each b<sub>bp</sub> record into a smooth baseline and an isolated-spike component using a rolling-window filter. The implementation (<code class="docutils literal notranslate"><span class="pre">glidertools.cleaning.despike</span></code>) follows Briggs et al. (2011), and offers two filter methods:</p>
 <ul class="simple">
 <li><p><strong><code class="docutils literal notranslate"><span class="pre">median</span></code></strong> (default) — a rolling median is applied directly to the record; this forms the baseline, and the spike component is the residual (measurement − baseline), which can be positive or negative.</p></li>
 <li><p><strong><code class="docutils literal notranslate"><span class="pre">minmax</span></code></strong> — a rolling minimum is applied first, followed by a rolling maximum of that result, forming a baseline that tracks the lower envelope of the signal; spikes under this method are strictly positive or zero, consistent with backscatter spikes being interpreted as discrete particles adding to a background baseline, but instrument noise will add a positive bias to the spike signal.</p></li>
 </ul>
 <div class="math notranslate nohighlight">
-\[
-\text{baseline}(t) = \operatorname{filter}\left[b_{b}(t);\ \text{window\_size}\right],
+\[\text{baseline}(t) = \operatorname{filter}\left[b_{b}(t);\ \text{window\_size}\right],
 \qquad
-\text{spikes}(t) = b_{b}(t) - \text{baseline}(t).
-\]</div>
+\text{spikes}(t) = b_{b}(t) - \text{baseline}(t).\]</div>
 <p>Both the baseline and spike components are retained as independent output variables; neither is discarded.</p>
 </section>
 <section id="id1">
-<h2>3.2 Default configuration<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
+<span id="32-default-configuration"></span><h2>3.2 Default configuration<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">"Isolate</span><span class="nv"> </span><span class="s">BBP</span><span class="nv"> </span><span class="s">Spikes"</span>
 <span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">apply_to</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BBP700</span>
@@ -638,11 +630,11 @@ b_{bp}(\lambda) = \chi \cdot 2\pi \cdot \beta_p(\theta,\lambda).
 <p><code class="docutils literal notranslate"><span class="pre">window_size:</span> <span class="pre">7</span></code> follows the 7-point rolling filter of Briggs et al. (2011), counted over valid (non-flagged) points. A larger window is a deliberate tuning choice, depending on the sensor’s sampling rate and the platform’s vertical speed.</p>
 </section>
 <section id="qc-filtering-and-missing-value-propagation">
-<h2>3.3 QC filtering and missing-value propagation<a class="headerlink" href="#qc-filtering-and-missing-value-propagation" title="Link to this heading">#</a></h2>
+<span id="33-qc-filtering-and-missing-value-propagation"></span><h2>3.3 QC filtering and missing-value propagation<a class="headerlink" href="#qc-filtering-and-missing-value-propagation" title="Link to this heading">#</a></h2>
 <p>Unlike BBP from Beta (Section 2.3), Isolate BBP Spikes <strong>does</strong> exclude flagged samples from the despike calculation by default: samples carrying QC flags <code class="docutils literal notranslate"><span class="pre">3</span></code>, <code class="docutils literal notranslate"><span class="pre">4</span></code> or <code class="docutils literal notranslate"><span class="pre">9</span></code> on <code class="docutils literal notranslate"><span class="pre">apply_to</span></code> are masked to <code class="docutils literal notranslate"><span class="pre">NaN</span></code> before the rolling filter is applied, so a flagged (e.g. biofouled) stretch cannot drag down the rolling baseline computed for an isolated good sample nearby. Samples excluded this way receive <strong>no</strong> baseline or spike value at all (both <code class="docutils literal notranslate"><span class="pre">NaN</span></code>), and are flagged missing (<code class="docutils literal notranslate"><span class="pre">9</span></code>) in the corresponding <code class="docutils literal notranslate"><span class="pre">_BASELINE_QC</span></code>/<code class="docutils literal notranslate"><span class="pre">_SPIKES_QC</span></code> outputs — this differs from steps such as <code class="docutils literal notranslate"><span class="pre">deep_correction</span></code>, where excluded samples are still corrected even though they do not inform the correction. A gap left this way in the baseline is not filled by this step; an <strong>Interpolate Data</strong> step run afterward on <code class="docutils literal notranslate"><span class="pre">&lt;var&gt;_BASELINE</span></code> produces a gap-free baseline for downstream use (e.g. by the chlorophyll NPQ methods that require a continuous backscatter reference).</p>
 </section>
 <section id="id2">
-<h2>3.4 Figure<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
+<span id="34-figure"></span><h2>3.4 Figure<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
 <figure class="align-default" id="id4">
 <a class="reference internal image-reference" href="../_images/bbp_baseline_spikes_timeseries.png"><img alt="The bbp baseline and spikes diagnostic time series." src="../_images/bbp_baseline_spikes_timeseries.png" style="width: 90%;" />
 </a>
@@ -654,7 +646,7 @@ b_{bp}(\lambda) = \chi \cdot 2\pi \cdot \beta_p(\theta,\lambda).
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="use-in-chlorophyll-npq-correction">
-<h1>4. Use in chlorophyll NPQ correction<a class="headerlink" href="#use-in-chlorophyll-npq-correction" title="Link to this heading">#</a></h1>
+<span id="4-use-in-chlorophyll-npq-correction"></span><h1>4. Use in chlorophyll NPQ correction<a class="headerlink" href="#use-in-chlorophyll-npq-correction" title="Link to this heading">#</a></h1>
 <p>b<sub>bp</sub> does not receive a dedicated correction analogous to chlorophyll’s deep-offset or NPQ corrections. Instead, the despiked baseline produced in Section 3 is consumed as the optical reference by several of the chlorophyll NPQ correction methods (Sackmann et al., 2008; Swart et al., 2015; Hemsley et al., 2015; Thomalla et al., 2018; Mitchell et al., 2024; Xing et al., 2018; Terrats et al., 2020), under the assumption that non-photochemical quenching alters chlorophyll fluorescence yield without substantially affecting particulate backscattering.</p>
 <p>When a backscatter-based NPQ method is configured without an explicit <code class="docutils literal notranslate"><span class="pre">bbp_var</span></code>, pelagos-py searches for a usable backscatter variable in the following order:</p>
 <ol class="arabic simple">
@@ -668,7 +660,7 @@ b_{bp}(\lambda) = \chi \cdot 2\pi \cdot \beta_p(\theta,\lambda).
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="outputs">
-<h1>5. Outputs<a class="headerlink" href="#outputs" title="Link to this heading">#</a></h1>
+<span id="5-outputs"></span><h1>5. Outputs<a class="headerlink" href="#outputs" title="Link to this heading">#</a></h1>
 <p>The backscatter processing workflow produces or updates the following variables:</p>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
@@ -704,7 +696,7 @@ b_{bp}(\lambda) = \chi \cdot 2\pi \cdot \beta_p(\theta,\lambda).
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="recommended-reporting">
-<h1>6. Recommended reporting<a class="headerlink" href="#recommended-reporting" title="Link to this heading">#</a></h1>
+<span id="6-recommended-reporting"></span><h1>6. Recommended reporting<a class="headerlink" href="#recommended-reporting" title="Link to this heading">#</a></h1>
 <p>A scientific methods section describing backscatter processing with pelagos-py should report:</p>
 <ul class="simple">
 <li><p>the raw signal variable and its initial range- and stuck-value-test thresholds;</p></li>

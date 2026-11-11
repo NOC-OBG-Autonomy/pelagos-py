@@ -34,7 +34,7 @@
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-codeautolink.css?v=b2176991" />
-    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=6a604523" />
     <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Ubuntu&display=swap" />
     <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=a20de4af" />
   
@@ -44,12 +44,12 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=f9910351"></script>
+    <script src="../_static/documentation_options.js?v=82bd8ea8"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=df1a032d"></script>
-    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script data-sd-tabs-storage-prefix="sphinx-design-tab-id-" src="../_static/design-tabs.js?v=fcb327ea"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
@@ -519,13 +519,13 @@
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="initial-quality-control">
-<h1>1. Initial quality control<a class="headerlink" href="#initial-quality-control" title="Link to this heading">#</a></h1>
+<span id="1-initial-quality-control"></span><h1>1. Initial quality control<a class="headerlink" href="#initial-quality-control" title="Link to this heading">#</a></h1>
 <p>Prior to correction of the raw fluorescence signal, pelagos-py performs an initial global range quality-control test on the manufacturer-calibrated chlorophyll-<em>a</em> concentration (<code class="docutils literal notranslate"><span class="pre">CHLA</span></code>). The purpose of this initial test is to identify grossly implausible sensor observations and assign the corresponding quality-control flags before subsequent processing.</p>
 <p><code class="docutils literal notranslate"><span class="pre">CHLA</span></code> is calculated from the raw fluorometer signal (<code class="docutils literal notranslate"><span class="pre">CHLA_FLUORESCENCE_RAW</span></code>, counts) using the manufacturer-supplied dark value (<code class="docutils literal notranslate"><span class="pre">DARK_CHLA</span></code>, counts) and scale factor (<code class="docutils literal notranslate"><span class="pre">SCALE_CHLA</span></code>, mg m<sup>-3</sup> count<sup>-1</sup>):</p>
 <p><code class="docutils literal notranslate"><span class="pre">CHLA</span> <span class="pre">=</span> <span class="pre">(CHLA_FLUORESCENCE_RAW</span> <span class="pre">-</span> <span class="pre">DARK_CHLA)</span> <span class="pre">×</span> <span class="pre">SCALE_CHLA</span></code></p>
 <p>The resulting <code class="docutils literal notranslate"><span class="pre">CHLA</span></code> values are used only for this initial quality-control test and are not used numerically in the subsequent spike, dark or NPQ correction calculations.</p>
 <section id="global-range-test">
-<h2>1.1 Global range test<a class="headerlink" href="#global-range-test" title="Link to this heading">#</a></h2>
+<span id="11-global-range-test"></span><h2>1.1 Global range test<a class="headerlink" href="#global-range-test" title="Link to this heading">#</a></h2>
 <p>Default configuration:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">variable_ranges</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">CHLA</span><span class="p">:</span>
@@ -540,7 +540,7 @@
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="spike-correction">
-<h1>2. Spike correction<a class="headerlink" href="#spike-correction" title="Link to this heading">#</a></h1>
+<span id="2-spike-correction"></span><h1>2. Spike correction<a class="headerlink" href="#spike-correction" title="Link to this heading">#</a></h1>
 <p>Following the initial global range test, pelagos-py applies the generic <strong>Spike QC</strong> algorithm directly to the raw fluorometer signal (<code class="docutils literal notranslate"><span class="pre">CHLA_FLUORESCENCE_RAW</span></code>, counts). This step separates isolated fluorescence spikes from the underlying fluorescence baseline before the in-situ dark correction is estimated.</p>
 <p>Default configuration:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">variables</span><span class="p">:</span>
@@ -556,7 +556,7 @@
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="deep-correction">
-<h1>3. Deep correction<a class="headerlink" href="#deep-correction" title="Link to this heading">#</a></h1>
+<span id="3-deep-correction"></span><h1>3. Deep correction<a class="headerlink" href="#deep-correction" title="Link to this heading">#</a></h1>
 <p>The procedure follows the principles of the BGC-Argo chlorophyll fluorescence dark-correction approach (Schmechtig et al., 2026), while adapting the method for the higher sampling frequency and variable profiling depths of glider deployments.</p>
 <p>The dark correction is performed on the despiked fluorescence baseline produced from <code class="docutils literal notranslate"><span class="pre">CHLA_FLUORESCENCE_RAW</span></code> in the preceding spike-correction step. The fluorescence baseline remains in counts, allowing the in-situ dark correction to be estimated and applied in the native fluorometer signal domain.</p>
 <p>The manufacturer calibration defines a factory dark value (<code class="docutils literal notranslate"><span class="pre">DARK_CHLA</span></code>, counts) and scale factor (<code class="docutils literal notranslate"><span class="pre">SCALE_CHLA</span></code>, mg m<sup>-3</sup> count<sup>-1</sup>), such that:</p>
@@ -592,7 +592,7 @@
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="surface-flagging">
-<h1>4. Surface flagging<a class="headerlink" href="#surface-flagging" title="Link to this heading">#</a></h1>
+<span id="4-surface-flagging"></span><h1>4. Surface flagging<a class="headerlink" href="#surface-flagging" title="Link to this heading">#</a></h1>
 <p>Before NPQ correction, pelagos-py temporarily flags <code class="docutils literal notranslate"><span class="pre">CHLA_ADJUSTED</span></code> observations within the upper 5 m as <strong>probably bad but correctable</strong> (<code class="docutils literal notranslate"><span class="pre">3</span></code>) using the generic Range QC module configured with <code class="docutils literal notranslate"><span class="pre">flag_instead</span></code>. The flags are applied to <code class="docutils literal notranslate"><span class="pre">CHLA_ADJUSTED</span></code> without modifying the depth variable itself.</p>
 <p>This step does <strong>not</strong> prevent the near-surface observations from being corrected. Instead, it excludes them from the calculation of the NPQ reference quantities, ensuring that potentially quenched surface fluorescence cannot define the reference used to reconstruct the profile. Once an appropriate reference has been established from unflagged observations deeper in the profile, the resulting correction is applied to all eligible observations, including those within the upper 5 m.</p>
 <p>The default configuration is</p>
@@ -609,27 +609,23 @@
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="non-photochemical-quenching-correction">
-<h1>5. Non-photochemical quenching correction<a class="headerlink" href="#non-photochemical-quenching-correction" title="Link to this heading">#</a></h1>
+<span id="5-non-photochemical-quenching-correction"></span><h1>5. Non-photochemical quenching correction<a class="headerlink" href="#non-photochemical-quenching-correction" title="Link to this heading">#</a></h1>
 <section id="background">
-<h2>5.1 Background<a class="headerlink" href="#background" title="Link to this heading">#</a></h2>
+<span id="51-background"></span><h2>5.1 Background<a class="headerlink" href="#background" title="Link to this heading">#</a></h2>
 <p>Chlorophyll fluorescence yield decreases under sufficiently high irradiance because phytoplankton dissipate a greater fraction of absorbed energy through regulated non-photochemical pathways. During daylight, the measured fluorescence can therefore decline near the surface even when chlorophyll concentration has not changed.</p>
 <p>NPQ primarily affects the illuminated upper ocean. Its magnitude and vertical extent vary with irradiance, mixing, physiological state and community composition. pelagos-py provides several published correction approaches because no single method is optimal for every platform or combination of available variables.</p>
 <p>The NPQ correction is applied to <code class="docutils literal notranslate"><span class="pre">CHLA_ADJUSTED</span></code>, the chlorophyll-<em>a</em> concentration derived from the despiked and dark-corrected fluorescence signal in the preceding processing steps. <code class="docutils literal notranslate"><span class="pre">CHLA_FLUORESCENCE_ADJUSTED</span></code> is retained as the despiked and dark-corrected fluorescence product and does <strong>not</strong> undergo NPQ correction.</p>
 <p>All implemented methods are applied only when the profile solar elevation is positive:</p>
 <div class="math notranslate nohighlight">
-\[
-\theta_{\mathrm{sun}} &gt; 0^\circ.
-\]</div>
+\[\theta_{\mathrm{sun}} &gt; 0^\circ.\]</div>
 <p>At night,</p>
 <div class="math notranslate nohighlight">
-\[
-F_{\mathrm{corr}}(z)=F(z).
-\]</div>
+\[F_{\mathrm{corr}}(z)=F(z).\]</div>
 <p>Solar elevation is calculated for each profile from the median time, latitude and longitude of the observations nearest the surface.</p>
 <p>Throughout the following descriptions, <span class="math notranslate nohighlight">\(F\)</span> denotes <code class="docutils literal notranslate"><span class="pre">CHLA_ADJUSTED</span></code>, the chlorophyll-<em>a</em> concentration derived from the despiked and dark-corrected fluorescence signal, and <span class="math notranslate nohighlight">\(b_{bp}\)</span> denotes the selected particulate backscattering variable. The term <em>fluorescence</em> is retained when describing the published NPQ algorithms because these methods reconstruct the fluorescence-derived chlorophyll signal suppressed by NPQ.</p>
 </section>
 <section id="available-methods">
-<h2>5.2 Available methods<a class="headerlink" href="#available-methods" title="Link to this heading">#</a></h2>
+<span id="52-available-methods"></span><h2>5.2 Available methods<a class="headerlink" href="#available-methods" title="Link to this heading">#</a></h2>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Method</p></th>
@@ -688,7 +684,7 @@ F_{\mathrm{corr}}(z)=F(z).
 </table>
 </div>
 <section id="evolution-of-npq-correction-methods">
-<h3>5.2.1 Evolution of NPQ correction methods<a class="headerlink" href="#evolution-of-npq-correction-methods" title="Link to this heading">#</a></h3>
+<span id="521-evolution-of-npq-correction-methods"></span><h3>5.2.1 Evolution of NPQ correction methods<a class="headerlink" href="#evolution-of-npq-correction-methods" title="Link to this heading">#</a></h3>
 <p>The NPQ correction methods implemented in pelagos-py represent a progression in complexity and in the supporting observations required to estimate the unquenched chlorophyll fluorescence signal.</p>
 <p>The earliest methods (Xing et al., 2012; Biermann et al., 2015) reconstruct fluorescence using only the measured fluorescence-derived chlorophyll profile together with either the mixed-layer depth or the euphotic depth.</p>
 <p>Sackmann et al. (2008) and Swart et al. (2015) introduced particulate backscattering as a conservative optical reference, assuming that the fluorescence-to-backscatter ratio remains approximately uniform within the unquenched water column.</p>
@@ -697,14 +693,14 @@ F_{\mathrm{corr}}(z)=F(z).
 <p>Xing et al. (2018) introduced a profile-specific correction based on the estimated NPQ layer, while the Terrats et al. (2020) X18_S08 extension modifies the shallow-mixing branch of the Xing et al. (2018) algorithm by replacing the mixed-layer sigmoid correction with a Sackmann et al. (2008)-style fluorescence-to-backscatter reconstruction.</p>
 </section>
 <section id="common-assumptions">
-<h3>5.2.2 Common assumptions<a class="headerlink" href="#common-assumptions" title="Link to this heading">#</a></h3>
+<span id="522-common-assumptions"></span><h3>5.2.2 Common assumptions<a class="headerlink" href="#common-assumptions" title="Link to this heading">#</a></h3>
 <p>Several of the implemented NPQ correction methods (Sackmann et al., 2008; Swart et al., 2015; Hemsley et al., 2015; Thomalla et al., 2018; Mitchell et al., 2024; Xing et al., 2018; and Terrats et al., 2020) use particulate optical backscattering as a conservative optical reference.</p>
 <p>These methods assume that non-photochemical quenching alters chlorophyll fluorescence yield without substantially affecting particulate backscattering. Consequently, variations in the fluorescence-to-backscatter ratio are interpreted primarily as changes in fluorescence yield rather than changes in particle concentration.</p>
 <p>The validity of this assumption depends on the fluorescence and backscatter measurements sampling the same particle population, the backscattering measurements having been appropriately quality controlled, and the fluorescence-to-backscatter relationship remaining sufficiently stable over the depth or time interval from which the reference is derived.</p>
 </section>
 </section>
 <section id="shared-implementation-rules">
-<h2>5.3 Shared implementation rules<a class="headerlink" href="#shared-implementation-rules" title="Link to this heading">#</a></h2>
+<span id="53-shared-implementation-rules"></span><h2>5.3 Shared implementation rules<a class="headerlink" href="#shared-implementation-rules" title="Link to this heading">#</a></h2>
 <section id="qc-filtering-during-reference-calculations">
 <h3>QC filtering during reference calculations<a class="headerlink" href="#qc-filtering-during-reference-calculations" title="Link to this heading">#</a></h3>
 <p>Several NPQ methods estimate a correction reference (e.g. a fluorescence maximum or fluorescence-to-backscatter ratio) from <code class="docutils literal notranslate"><span class="pre">CHLA_ADJUSTED</span></code>. Before these quantities are calculated, pelagos-py creates temporary copies of the required variables and replaces observations carrying selected QC flags with <code class="docutils literal notranslate"><span class="pre">NaN</span></code>. By default, observations with QC flags <code class="docutils literal notranslate"><span class="pre">3</span></code>, <code class="docutils literal notranslate"><span class="pre">4</span></code> and <code class="docutils literal notranslate"><span class="pre">9</span></code> are excluded from these reference calculations.</p>
@@ -766,9 +762,7 @@ F_{\mathrm{corr}}(z)=F(z).
 <h3>Day-only correction<a class="headerlink" href="#day-only-correction" title="Link to this heading">#</a></h3>
 <p>Every implemented method returns the input unchanged when</p>
 <div class="math notranslate nohighlight">
-\[
-\theta_{\mathrm{sun}}\leq 0^\circ.
-\]</div>
+\[\theta_{\mathrm{sun}}\leq 0^\circ.\]</div>
 </section>
 <section id="backscatter-selection">
 <h3>Backscatter selection<a class="headerlink" href="#backscatter-selection" title="Link to this heading">#</a></h3>
@@ -785,22 +779,20 @@ F_{\mathrm{corr}}(z)=F(z).
 <h3>Non-decreasing corrections<a class="headerlink" href="#non-decreasing-corrections" title="Link to this heading">#</a></h3>
 <p>Several NPQ methods implemented in pelagos-py apply the reconstructed fluorescence-derived chlorophyll signal only where it exceeds the observed daytime value. For the Sackmann et al. (2008), Swart et al. (2015), Thomalla et al. (2018), Mitchell et al. (2024) and Xing et al. (2018) methods, the corrected value is</p>
 <div class="math notranslate nohighlight">
-\[
-F_{\mathrm{out}}(z)
+\[F_{\mathrm{out}}(z)
 =
 \max
 \left[
 F(z),
 F_{\mathrm{reconstructed}}(z)
-\right].
-\]</div>
+\right].\]</div>
 <p>This safeguard ensures that the NPQ correction cannot reduce the measured chlorophyll signal. Instead, the correction is only applied where the reconstructed value is greater than the observed value.</p>
 <p>Methods that directly replace the measured fluorescence-derived chlorophyll signal, such as Xing et al. (2012), Biermann et al. (2015) and Hemsley et al. (2015), do not apply this constraint and instead use the reconstructed value throughout the correction layer.</p>
 </section>
 </section>
 <hr class="docutils" />
 <section id="sackmann-et-al-2008">
-<h2>5.4 Sackmann et al. (2008)<a class="headerlink" href="#sackmann-et-al-2008" title="Link to this heading">#</a></h2>
+<span id="54-sackmann-et-al-2008"></span><h2>5.4 Sackmann et al. (2008)<a class="headerlink" href="#sackmann-et-al-2008" title="Link to this heading">#</a></h2>
 <section id="principle">
 <h3>Principle<a class="headerlink" href="#principle" title="Link to this heading">#</a></h3>
 <p>The fluorescence-to-backscatter ratio is assumed to be vertically uniform in the mixed layer in the absence of quenching. The largest observed ratio within the mixed layer is treated as the least-quenched reference.</p>
@@ -808,55 +800,43 @@ F_{\mathrm{reconstructed}}(z)
 <section id="ratio-profile">
 <h3>Ratio profile<a class="headerlink" href="#ratio-profile" title="Link to this heading">#</a></h3>
 <div class="math notranslate nohighlight">
-\[
-R(z)
+\[R(z)
 =
 \frac{F^{*}(z)}
-{b_{bp}^{*}(z)}.
-\]</div>
+{b_{bp}^{*}(z)}.\]</div>
 <p>Only depths within the mixed layer are searched:</p>
 <div class="math notranslate nohighlight">
-\[
-0 \leq z \leq z_{\mathrm{MLD}}.
-\]</div>
+\[0 \leq z \leq z_{\mathrm{MLD}}.\]</div>
 <p>The reference ratio is</p>
 <div class="math notranslate nohighlight">
-\[
-R_{\max}
+\[R_{\max}
 =
 \max_{0\leq z\leq z_{\mathrm{MLD}}}
-R(z).
-\]</div>
+R(z).\]</div>
 <p>Let the depth at which this maximum occurs be</p>
 <div class="math notranslate nohighlight">
-\[
-z_R
+\[z_R
 =
 \operatorname*{arg\,max}_{0\leq z\leq z_{\mathrm{MLD}}}
-R(z).
-\]</div>
+R(z).\]</div>
 </section>
 <section id="reconstruction">
 <h3>Reconstruction<a class="headerlink" href="#reconstruction" title="Link to this heading">#</a></h3>
 <p>From the surface to <span class="math notranslate nohighlight">\(z_R\)</span>,</p>
 <div class="math notranslate nohighlight">
-\[
-\widehat{F}(z)
+\[\widehat{F}(z)
 =
-b_{bp}(z)R_{\max}.
-\]</div>
+b_{bp}(z)R_{\max}.\]</div>
 <p>The implemented output is</p>
 <div class="math notranslate nohighlight">
-\[\begin{split}
-F_{\mathrm{corr}}(z)
+\[\begin{split}F_{\mathrm{corr}}(z)
 =
 \begin{cases}
 \max\!\left[F(z),\,b_{bp}(z)R_{\max}\right],
 &amp; 0 \leq z \leq z_R, \\[4pt]
 F(z),
 &amp; z &gt; z_R.
-\end{cases}
-\end{split}\]</div>
+\end{cases}\end{split}\]</div>
 </section>
 <section id="assumptions">
 <h3>Assumptions<a class="headerlink" href="#assumptions" title="Link to this heading">#</a></h3>
@@ -878,45 +858,39 @@ F(z),
 </section>
 <hr class="docutils" />
 <section id="xing-et-al-2012">
-<h2>5.5 Xing et al. (2012)<a class="headerlink" href="#xing-et-al-2012" title="Link to this heading">#</a></h2>
+<span id="55-xing-et-al-2012"></span><h2>5.5 Xing et al. (2012)<a class="headerlink" href="#xing-et-al-2012" title="Link to this heading">#</a></h2>
 <section id="id1">
-<h3>Principle<a class="headerlink" href="#id1" title="Link to this heading">#</a></h3>
+<span id="principle-1"></span><h3>Principle<a class="headerlink" href="#id1" title="Link to this heading">#</a></h3>
 <p>The maximum acceptable value of <code class="docutils literal notranslate"><span class="pre">CHLA_ADJUSTED</span></code> observed within the mixed layer is assumed to represent the unquenched surface-layer chlorophyll signal. All shallower observations are raised to this maximum.</p>
 </section>
 <section id="reference-fluorescence">
 <h3>Reference fluorescence<a class="headerlink" href="#reference-fluorescence" title="Link to this heading">#</a></h3>
 <div class="math notranslate nohighlight">
-\[
-F_{\max}
+\[F_{\max}
 =
 \max_{0\leq z\leq z_{\mathrm{MLD}}}
-F^{*}(z).
-\]</div>
+F^{*}(z).\]</div>
 <p>The quenching depth is the depth of that maximum:</p>
 <div class="math notranslate nohighlight">
-\[
-z_q
+\[z_q
 =
 \operatorname*{arg\,max}_{0\leq z\leq z_{\mathrm{MLD}}}
-F^{*}(z).
-\]</div>
+F^{*}(z).\]</div>
 </section>
 <section id="correction">
 <h3>Correction<a class="headerlink" href="#correction" title="Link to this heading">#</a></h3>
 <div class="math notranslate nohighlight">
-\[\begin{split}
-F_{\mathrm{corr}}(z)
+\[\begin{split}F_{\mathrm{corr}}(z)
 =
 \begin{cases}
 F_{\max},
 &amp; 0 \leq z \leq z_q, \\[4pt]
 F(z),
 &amp; z &gt; z_q.
-\end{cases}
-\end{split}\]</div>
+\end{cases}\end{split}\]</div>
 </section>
 <section id="id2">
-<h3>Assumptions<a class="headerlink" href="#id2" title="Link to this heading">#</a></h3>
+<span id="assumptions-1"></span><h3>Assumptions<a class="headerlink" href="#id2" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>The maximum acceptable fluorescence-derived chlorophyll signal within the mixed layer approximates the unquenched value.</p></li>
 <li><p>The maximum acceptable value within the mixed layer is not a residual spike or other artefact.</p></li>
@@ -924,7 +898,7 @@ F(z),
 </ul>
 </section>
 <section id="id3">
-<h3>Figure<a class="headerlink" href="#id3" title="Link to this heading">#</a></h3>
+<span id="figure-1"></span><h3>Figure<a class="headerlink" href="#id3" title="Link to this heading">#</a></h3>
 <figure class="align-default" id="id32">
 <a class="reference internal image-reference" href="../_images/npq_xing2012.png"><img alt="The Xing 2012 correction." src="../_images/npq_xing2012.png" style="width: 90%;" />
 </a>
@@ -936,45 +910,39 @@ F(z),
 </section>
 <hr class="docutils" />
 <section id="biermann-et-al-2015">
-<h2>5.6 Biermann et al. (2015)<a class="headerlink" href="#biermann-et-al-2015" title="Link to this heading">#</a></h2>
+<span id="56-biermann-et-al-2015"></span><h2>5.6 Biermann et al. (2015)<a class="headerlink" href="#biermann-et-al-2015" title="Link to this heading">#</a></h2>
 <section id="id4">
-<h3>Principle<a class="headerlink" href="#id4" title="Link to this heading">#</a></h3>
+<span id="principle-2"></span><h3>Principle<a class="headerlink" href="#id4" title="Link to this heading">#</a></h3>
 <p>This method has the same maximum-fluorescence structure as Xing et al. (2012), but searches within the euphotic zone rather than the mixed layer.</p>
 </section>
 <section id="id5">
-<h3>Reference fluorescence<a class="headerlink" href="#id5" title="Link to this heading">#</a></h3>
+<span id="reference-fluorescence-1"></span><h3>Reference fluorescence<a class="headerlink" href="#id5" title="Link to this heading">#</a></h3>
 <div class="math notranslate nohighlight">
-\[
-F_{\max}
+\[F_{\max}
 =
 \max_{0\leq z\leq Z_{\mathrm{eu}}}
-F^{*}(z),
-\]</div>
+F^{*}(z),\]</div>
 <p>with quenching depth</p>
 <div class="math notranslate nohighlight">
-\[
-z_q
+\[z_q
 =
 \operatorname*{arg\,max}_{0\leq z\leq Z_{\mathrm{eu}}}
-F^{*}(z).
-\]</div>
+F^{*}(z).\]</div>
 </section>
 <section id="id6">
-<h3>Correction<a class="headerlink" href="#id6" title="Link to this heading">#</a></h3>
+<span id="correction-1"></span><h3>Correction<a class="headerlink" href="#id6" title="Link to this heading">#</a></h3>
 <div class="math notranslate nohighlight">
-\[\begin{split}
-F_{\mathrm{corr}}(z)
+\[\begin{split}F_{\mathrm{corr}}(z)
 =
 \begin{cases}
 F_{\max},
 &amp; 0 \leq z \leq z_q, \\[4pt]
 F(z),
 &amp; z &gt; z_q.
-\end{cases}
-\end{split}\]</div>
+\end{cases}\end{split}\]</div>
 </section>
 <section id="id7">
-<h3>Assumptions<a class="headerlink" href="#id7" title="Link to this heading">#</a></h3>
+<span id="assumptions-2"></span><h3>Assumptions<a class="headerlink" href="#id7" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>The maximum acceptable fluorescence-derived chlorophyll signal within the euphotic zone approximates the unquenched value.</p></li>
 <li><p>The euphotic depth provides an appropriate upper bound on the quenching layer.</p></li>
@@ -982,7 +950,7 @@ F(z),
 </ul>
 </section>
 <section id="id8">
-<h3>Figure<a class="headerlink" href="#id8" title="Link to this heading">#</a></h3>
+<span id="figure-2"></span><h3>Figure<a class="headerlink" href="#id8" title="Link to this heading">#</a></h3>
 <figure class="align-default" id="id33">
 <a class="reference internal image-reference" href="../_images/npq_biermann2015.png"><img alt="The Biermann 2015 correction." src="../_images/npq_biermann2015.png" style="width: 90%;" />
 </a>
@@ -994,32 +962,27 @@ F(z),
 </section>
 <hr class="docutils" />
 <section id="hemsley-et-al-2015">
-<h2>5.7 Hemsley et al. (2015)<a class="headerlink" href="#hemsley-et-al-2015" title="Link to this heading">#</a></h2>
+<span id="57-hemsley-et-al-2015"></span><h2>5.7 Hemsley et al. (2015)<a class="headerlink" href="#hemsley-et-al-2015" title="Link to this heading">#</a></h2>
 <section id="id9">
-<h3>Principle<a class="headerlink" href="#id9" title="Link to this heading">#</a></h3>
+<span id="principle-3"></span><h3>Principle<a class="headerlink" href="#id9" title="Link to this heading">#</a></h3>
 <p>The Hemsley et al. (2015) method assumes that a single relationship exists between fluorescence-derived chlorophyll and particulate backscattering throughout a deployment. pelagos-py first fits a deployment-wide linear regression using acceptable nighttime observations collected within the upper 60 m of the water column. The resulting regression is then evaluated for each daytime profile and used to reconstruct <code class="docutils literal notranslate"><span class="pre">CHLA_ADJUSTED</span></code> throughout the euphotic zone.</p>
 </section>
 <section id="nighttime-regression">
 <h3>Nighttime regression<a class="headerlink" href="#nighttime-regression" title="Link to this heading">#</a></h3>
 <p>The regression is fitted using acceptable nighttime observations shallower than the reference depth,</p>
 <div class="math notranslate nohighlight">
-\[
-z_H = 60~\mathrm{m},
-\]</div>
+\[z_H = 60~\mathrm{m},\]</div>
 <p>which is the default value used by the current implementation.</p>
 <p>pelagos-py fits the linear model</p>
 <div class="math notranslate nohighlight">
-\[
-F_{\mathrm{night}}
+\[F_{\mathrm{night}}
 =
 m\,b_{bp,\mathrm{night}}
 +
-c,
-\]</div>
+c,\]</div>
 <p>where the ordinary least-squares slope is</p>
 <div class="math notranslate nohighlight">
-\[
-m
+\[m
 =
 \frac{
 \sum_i
@@ -1040,45 +1003,38 @@ b_{bp,i}
 -
 \overline{b_{bp}}
 \right)^2
-},
-\]</div>
+},\]</div>
 <p>and the intercept is</p>
 <div class="math notranslate nohighlight">
-\[
-c
+\[c
 =
 \overline{F}
 -
-m\,\overline{b_{bp}}.
-\]</div>
+m\,\overline{b_{bp}}.\]</div>
 </section>
 <section id="daytime-reconstruction">
 <h3>Daytime reconstruction<a class="headerlink" href="#daytime-reconstruction" title="Link to this heading">#</a></h3>
 <p>Unlike the regression, which is fitted using only nighttime observations from the upper 60 m, the fitted relationship is evaluated throughout the daytime euphotic zone.</p>
 <p>The corrected value is therefore</p>
 <div class="math notranslate nohighlight">
-\[
-F_{\mathrm{corr}}(z)
+\[F_{\mathrm{corr}}(z)
 =
 m\,b_{bp,\mathrm{day}}(z)
 +
 c,
 \qquad
-0 \leq z \leq Z_{\mathrm{eu}}.
-\]</div>
+0 \leq z \leq Z_{\mathrm{eu}}.\]</div>
 <p>Below the euphotic depth, the original <code class="docutils literal notranslate"><span class="pre">CHLA_ADJUSTED</span></code> value is retained,</p>
 <div class="math notranslate nohighlight">
-\[
-F_{\mathrm{corr}}(z)
+\[F_{\mathrm{corr}}(z)
 =
 F(z),
 \qquad
-z &gt; Z_{\mathrm{eu}}.
-\]</div>
+z &gt; Z_{\mathrm{eu}}.\]</div>
 <p>Unlike several other NPQ methods implemented in pelagos-py, the regression estimate replaces the measured daytime value throughout the corrected region. The implementation does not constrain the corrected value to remain greater than or equal to the observed daytime value.</p>
 </section>
 <section id="id10">
-<h3>Assumptions<a class="headerlink" href="#id10" title="Link to this heading">#</a></h3>
+<span id="assumptions-3"></span><h3>Assumptions<a class="headerlink" href="#id10" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>A single deployment-wide nighttime fluorescence-to-backscatter relationship is representative of the deployment.</p></li>
 <li><p>Temporal changes in phytoplankton physiology and community composition do not substantially alter this relationship.</p></li>
@@ -1107,59 +1063,51 @@ z &gt; Z_{\mathrm{eu}}.
 </section>
 <hr class="docutils" />
 <section id="swart-et-al-2015">
-<h2>5.8 Swart et al. (2015)<a class="headerlink" href="#swart-et-al-2015" title="Link to this heading">#</a></h2>
+<span id="58-swart-et-al-2015"></span><h2>5.8 Swart et al. (2015)<a class="headerlink" href="#swart-et-al-2015" title="Link to this heading">#</a></h2>
 <section id="id11">
-<h3>Principle<a class="headerlink" href="#id11" title="Link to this heading">#</a></h3>
+<span id="principle-4"></span><h3>Principle<a class="headerlink" href="#id11" title="Link to this heading">#</a></h3>
 <p>The Swart implementation uses the same maximum fluorescence-to-backscatter framework as Sackmann et al. (2008), but searches within the euphotic zone.</p>
 </section>
 <section id="ratio-reference">
 <h3>Ratio reference<a class="headerlink" href="#ratio-reference" title="Link to this heading">#</a></h3>
 <div class="math notranslate nohighlight">
-\[
-R(z)
+\[R(z)
 =
 \frac{F^{*}(z)}
-{b_{bp}^{*}(z)},
-\]</div>
+{b_{bp}^{*}(z)},\]</div>
 <div class="math notranslate nohighlight">
-\[
-R_{\max}
+\[R_{\max}
 =
 \max_{0\leq z\leq Z_{\mathrm{eu}}}
-R(z),
-\]</div>
+R(z),\]</div>
 <p>and</p>
 <div class="math notranslate nohighlight">
-\[
-z_R
+\[z_R
 =
 \operatorname*{arg\,max}_{0\leq z\leq Z_{\mathrm{eu}}}
-R(z).
-\]</div>
+R(z).\]</div>
 </section>
 <section id="id12">
-<h3>Reconstruction<a class="headerlink" href="#id12" title="Link to this heading">#</a></h3>
+<span id="reconstruction-1"></span><h3>Reconstruction<a class="headerlink" href="#id12" title="Link to this heading">#</a></h3>
 <div class="math notranslate nohighlight">
-\[\begin{split}
-F_{\mathrm{corr}}(z)
+\[\begin{split}F_{\mathrm{corr}}(z)
 =
 \begin{cases}
 \max\!\left[F(z),\,b_{bp}(z)R_{\max}\right],
 &amp; 0 \leq z \leq z_R, \\[4pt]
 F(z),
 &amp; z &gt; z_R.
-\end{cases}
-\end{split}\]</div>
+\end{cases}\end{split}\]</div>
 </section>
 <section id="id13">
-<h3>Assumptions<a class="headerlink" href="#id13" title="Link to this heading">#</a></h3>
+<span id="assumptions-4"></span><h3>Assumptions<a class="headerlink" href="#id13" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>The maximum fluorescence-to-backscatter ratio within the euphotic zone approximates the unquenched ratio.</p></li>
 <li><p>The euphotic depth provides an appropriate upper bound on the quenching layer.</p></li>
 </ul>
 </section>
 <section id="id14">
-<h3>Figure<a class="headerlink" href="#id14" title="Link to this heading">#</a></h3>
+<span id="figure-3"></span><h3>Figure<a class="headerlink" href="#id14" title="Link to this heading">#</a></h3>
 <figure class="align-default" id="id36">
 <a class="reference internal image-reference" href="../_images/npq_swart2015.png"><img alt="The Swart 2015 correction." src="../_images/npq_swart2015.png" style="width: 90%;" />
 </a>
@@ -1171,9 +1119,9 @@ F(z),
 </section>
 <hr class="docutils" />
 <section id="thomalla-et-al-2018">
-<h2>5.9 Thomalla et al. (2018)<a class="headerlink" href="#thomalla-et-al-2018" title="Link to this heading">#</a></h2>
+<span id="59-thomalla-et-al-2018"></span><h2>5.9 Thomalla et al. (2018)<a class="headerlink" href="#thomalla-et-al-2018" title="Link to this heading">#</a></h2>
 <section id="id15">
-<h3>Principle<a class="headerlink" href="#id15" title="Link to this heading">#</a></h3>
+<span id="principle-5"></span><h3>Principle<a class="headerlink" href="#id15" title="Link to this heading">#</a></h3>
 <p>Each daytime profile is corrected using a depth-resolved fluorescence-to-backscatter ratio derived from the most recent preceding night. Unlike methods based on a single fluorescence or fluorescence-to-backscatter maximum, this approach preserves the vertical structure of the nighttime optical relationship.</p>
 <p>For the earliest daytime profiles, where no preceding night exists, the nearest following night is used instead.</p>
 </section>
@@ -1182,82 +1130,66 @@ F(z),
 <p>Consecutive nighttime profiles are grouped into individual nights and aggregated into 1 m depth bins.</p>
 <p>For night <span class="math notranslate nohighlight">\(n\)</span> and depth bin <span class="math notranslate nohighlight">\(k\)</span>,</p>
 <div class="math notranslate nohighlight">
-\[
-\overline{F}_{n,k}
+\[\overline{F}_{n,k}
 =
 \operatorname{mean}
 \left(
 F_{n,i}: z_{n,i} \in k
-\right),
-\]</div>
+\right),\]</div>
 <div class="math notranslate nohighlight">
-\[
-\overline{b}_{bp,n,k}
+\[\overline{b}_{bp,n,k}
 =
 \operatorname{mean}
 \left(
 b_{bp,n,i}: z_{n,i} \in k
-\right),
-\]</div>
+\right),\]</div>
 <p>and the corresponding fluorescence-to-backscatter ratio is</p>
 <div class="math notranslate nohighlight">
-\[
-R_{n,k}
+\[R_{n,k}
 =
 \frac{
 \overline{F}_{n,k}
 }{
 \overline{b}_{bp,n,k}
-}.
-\]</div>
+}.\]</div>
 <p>Both <span class="math notranslate nohighlight">\(\overline{F}_{n,k}\)</span> and <span class="math notranslate nohighlight">\(R_{n,k}\)</span> are linearly interpolated from the nighttime depth bins onto the measurement depths of the daytime profile,</p>
 <div class="math notranslate nohighlight">
-\[
-F_{\mathrm{night}}(z)
+\[F_{\mathrm{night}}(z)
 =
 \operatorname{interp}
 \left[
 z;
 z_{n,k},
 \overline{F}_{n,k}
-\right],
-\]</div>
+\right],\]</div>
 <div class="math notranslate nohighlight">
-\[
-R_{\mathrm{night}}(z)
+\[R_{\mathrm{night}}(z)
 =
 \operatorname{interp}
 \left[
 z;
 z_{n,k},
 R_{n,k}
-\right].
-\]</div>
+\right].\]</div>
 </section>
 <section id="night-day-difference">
 <h3>Night-day difference<a class="headerlink" href="#night-day-difference" title="Link to this heading">#</a></h3>
 <p>The nighttime and daytime profiles are compared to determine the vertical extent of NPQ:</p>
 <div class="math notranslate nohighlight">
-\[
-D(z)
+\[D(z)
 =
 F_{\mathrm{night}}(z)
 -
-F_{\mathrm{day}}^{*}(z).
-\]</div>
+F_{\mathrm{day}}^{*}(z).\]</div>
 <p>The algorithm identifies the largest night-day difference within the upper 5 m,</p>
 <div class="math notranslate nohighlight">
-\[
-z_a
+\[z_a
 =
 \operatorname*{arg\,max}_{0 \leq z \leq 5}
-D(z),
-\]</div>
+D(z),\]</div>
 <p>with anchor value</p>
 <div class="math notranslate nohighlight">
-\[
-D_a=D(z_a).
-\]</div>
+\[D_a=D(z_a).\]</div>
 <p>If no valid observations are available within the upper 5 m, the maximum difference across the profile is used instead.</p>
 </section>
 <section id="candidate-quenching-depths">
@@ -1269,38 +1201,31 @@ D_a=D(z_a).
 </ul>
 <p>For each candidate depth <span class="math notranslate nohighlight">\(z_c\)</span>, the gradient from the anchor point is</p>
 <div class="math notranslate nohighlight">
-\[
-G(z_c)
+\[G(z_c)
 =
 \frac{
 \left|D_a-D(z_c)\right|
 }{
 z_c-z_a
-}.
-\]</div>
+}.\]</div>
 <p>The quenching depth is taken as the candidate with the largest gradient,</p>
 <div class="math notranslate nohighlight">
-\[
-z_q
+\[z_q
 =
 \operatorname*{arg\,max}_{z_c}
-G(z_c).
-\]</div>
+G(z_c).\]</div>
 </section>
 <section id="id16">
-<h3>Reconstruction<a class="headerlink" href="#id16" title="Link to this heading">#</a></h3>
+<span id="reconstruction-2"></span><h3>Reconstruction<a class="headerlink" href="#id16" title="Link to this heading">#</a></h3>
 <p>The nighttime fluorescence-to-backscatter ratio is applied to the daytime backscatter profile,</p>
 <div class="math notranslate nohighlight">
-\[
-\widehat{F}_{\mathrm{day}}(z)
+\[\widehat{F}_{\mathrm{day}}(z)
 =
 R_{\mathrm{night}}(z)
-\,b_{bp,\mathrm{day}}(z).
-\]</div>
+\,b_{bp,\mathrm{day}}(z).\]</div>
 <p>The correction is applied only above the estimated quenching depth and only where it increases the measured value,</p>
 <div class="math notranslate nohighlight">
-\[\begin{split}
-F_{\mathrm{corr}}(z)
+\[\begin{split}F_{\mathrm{corr}}(z)
 =
 \begin{cases}
 \widehat{F}_{\mathrm{day}}(z),
@@ -1313,11 +1238,10 @@ F_{\mathrm{day}}(z), \\[4pt]
 F_{\mathrm{day}}(z),
 &amp;
 \text{otherwise}.
-\end{cases}
-\end{split}\]</div>
+\end{cases}\end{split}\]</div>
 </section>
 <section id="id17">
-<h3>Assumptions<a class="headerlink" href="#id17" title="Link to this heading">#</a></h3>
+<span id="assumptions-5"></span><h3>Assumptions<a class="headerlink" href="#id17" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>The preceding night’s fluorescence-to-backscatter relationship remains representative during the following day.</p></li>
 <li><p>Consecutive nighttime profiles provide a stable nighttime reference.</p></li>
@@ -1325,7 +1249,7 @@ F_{\mathrm{day}}(z),
 </ul>
 </section>
 <section id="id18">
-<h3>Figures<a class="headerlink" href="#id18" title="Link to this heading">#</a></h3>
+<span id="figures-1"></span><h3>Figures<a class="headerlink" href="#id18" title="Link to this heading">#</a></h3>
 <figure class="align-default" id="id37">
 <a class="reference internal image-reference" href="../_images/npq_thomalla_night_reference.png"><img alt="A Thomalla nighttime fluorescence-backscatter reference." src="../_images/npq_thomalla_night_reference.png" style="width: 90%;" />
 </a>
@@ -1351,9 +1275,9 @@ F_{\mathrm{day}}(z),
 </section>
 <hr class="docutils" />
 <section id="planned-mitchell-et-al-2024-extension">
-<h2>5.10 Planned Mitchell et al. (2024) extension<a class="headerlink" href="#planned-mitchell-et-al-2024-extension" title="Link to this heading">#</a></h2>
+<span id="510-planned-mitchell-et-al-2024-extension"></span><h2>5.10 Planned Mitchell et al. (2024) extension<a class="headerlink" href="#planned-mitchell-et-al-2024-extension" title="Link to this heading">#</a></h2>
 <section id="id19">
-<h3>Principle<a class="headerlink" href="#id19" title="Link to this heading">#</a></h3>
+<span id="principle-6"></span><h3>Principle<a class="headerlink" href="#id19" title="Link to this heading">#</a></h3>
 <p>Mitchell et al. (2024) extends the Thomalla et al. (2018) method to better accommodate autonomous platforms operating in spatially heterogeneous environments, such as continental shelf seas. Rather than assuming that the most recent preceding nighttime fluorescence-to-backscatter profile remains representative throughout the following day, the method constructs a time-interpolated nighttime reference from consecutive nights.</p>
 <p>All other aspects of the correction, including the determination of the quenching depth and reconstruction of the daytime chlorophyll profile, follow the Thomalla et al. (2018) implementation.</p>
 </section>
@@ -1362,25 +1286,21 @@ F_{\mathrm{day}}(z),
 <p>Depth-resolved nighttime fluorescence and fluorescence-to-backscatter reference profiles are first constructed following the Thomalla et al. (2018) workflow.</p>
 <p>For a daytime profile acquired at time <span class="math notranslate nohighlight">\(t\)</span>, bounded by nighttime reference profiles centred on times <span class="math notranslate nohighlight">\(t_n\)</span> and <span class="math notranslate nohighlight">\(t_{n+1}\)</span>, the interpolation weight is</p>
 <div class="math notranslate nohighlight">
-\[
-\alpha
+\[\alpha
 =
 \frac{t-t_n}
 {t_{n+1}-t_n},
 \qquad
-0 \leq \alpha \leq 1.
-\]</div>
+0 \leq \alpha \leq 1.\]</div>
 <p>The interpolated fluorescence-to-backscatter ratio is then</p>
 <div class="math notranslate nohighlight">
-\[
-R(z,t)
+\[R(z,t)
 =
 (1-\alpha)\,
 R_n(z)
 +
 \alpha\,
-R_{n+1}(z),
-\]</div>
+R_{n+1}(z),\]</div>
 <p>where <span class="math notranslate nohighlight">\(R_n(z)\)</span> and <span class="math notranslate nohighlight">\(R_{n+1}(z)\)</span> are the depth-resolved nighttime fluorescence-to-backscatter ratios from the preceding and following nights, respectively.</p>
 <p>Mitchell et al. (2024) describes two approaches for constructing the nighttime reference profiles before interpolation:</p>
 <ul class="simple">
@@ -1399,20 +1319,17 @@ R_{n+1}(z),
 </ul>
 </section>
 <section id="id20">
-<h3>Reconstruction<a class="headerlink" href="#id20" title="Link to this heading">#</a></h3>
+<span id="reconstruction-3"></span><h3>Reconstruction<a class="headerlink" href="#id20" title="Link to this heading">#</a></h3>
 <p>Following construction of the interpolated nighttime reference, daytime chlorophyll is reconstructed using the Thomalla et al. (2018) correction. The only modification is that the fluorescence-to-backscatter ratio varies continuously through time according to the interpolated nighttime reference.</p>
 <p>The reconstructed value is</p>
 <div class="math notranslate nohighlight">
-\[
-\widehat{F}_{\mathrm{day}}(z)
+\[\widehat{F}_{\mathrm{day}}(z)
 =
 R(z,t)\,
-b_{bp,\mathrm{day}}(z),
-\]</div>
+b_{bp,\mathrm{day}}(z),\]</div>
 <p>and the corrected value is</p>
 <div class="math notranslate nohighlight">
-\[\begin{split}
-F_{\mathrm{corr}}(z)
+\[\begin{split}F_{\mathrm{corr}}(z)
 =
 \begin{cases}
 \widehat{F}_{\mathrm{day}}(z),
@@ -1425,11 +1342,10 @@ F_{\mathrm{day}}(z), \\[4pt]
 F_{\mathrm{day}}(z),
 &amp;
 \text{otherwise}.
-\end{cases}
-\end{split}\]</div>
+\end{cases}\end{split}\]</div>
 </section>
 <section id="id21">
-<h3>Assumptions<a class="headerlink" href="#id21" title="Link to this heading">#</a></h3>
+<span id="assumptions-6"></span><h3>Assumptions<a class="headerlink" href="#id21" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>The fluorescence-to-backscatter relationship evolves smoothly between consecutive nights.</p></li>
 <li><p>Linear interpolation between consecutive nighttime reference profiles adequately represents temporal changes in phytoplankton physiology and optical properties.</p></li>
@@ -1438,7 +1354,7 @@ F_{\mathrm{day}}(z),
 </ul>
 </section>
 <section id="id22">
-<h3>Figures<a class="headerlink" href="#id22" title="Link to this heading">#</a></h3>
+<span id="figures-2"></span><h3>Figures<a class="headerlink" href="#id22" title="Link to this heading">#</a></h3>
 <figure class="align-default" id="id40">
 <a class="reference internal image-reference" href="../_images/npq_mitchell_interpolation.png"><img alt="Interpolation between consecutive nighttime reference profiles." src="../_images/npq_mitchell_interpolation.png" style="width: 90%;" />
 </a>
@@ -1457,44 +1373,37 @@ F_{\mathrm{day}}(z),
 </section>
 <hr class="docutils" />
 <section id="xing-et-al-2018-s08-correction">
-<h2>5.11 Xing et al. (2018): S08+ correction<a class="headerlink" href="#xing-et-al-2018-s08-correction" title="Link to this heading">#</a></h2>
+<span id="511-xing-et-al-2018-s08-correction"></span><h2>5.11 Xing et al. (2018): S08+ correction<a class="headerlink" href="#xing-et-al-2018-s08-correction" title="Link to this heading">#</a></h2>
 <section id="id23">
-<h3>Principle<a class="headerlink" href="#id23" title="Link to this heading">#</a></h3>
+<span id="principle-7"></span><h3>Principle<a class="headerlink" href="#id23" title="Link to this heading">#</a></h3>
 <p>The NPQ layer is bounded by the shallower of the mixed-layer depth and the depth of the selected irradiance isolume:</p>
 <div class="math notranslate nohighlight">
-\[
-z_{\mathrm{ref}}
+\[z_{\mathrm{ref}}
 =
 \min
 \left(
 z_{\mathrm{MLD}},
 Z_{\mathrm{IPAR}}
-\right).
-\]</div>
+\right).\]</div>
 <p>Within this layer, the maximum acceptable fluorescence-to-backscatter ratio is used as the unquenched reference.</p>
 </section>
 <section id="id24">
-<h3>Ratio reference<a class="headerlink" href="#id24" title="Link to this heading">#</a></h3>
+<span id="ratio-reference-1"></span><h3>Ratio reference<a class="headerlink" href="#id24" title="Link to this heading">#</a></h3>
 <div class="math notranslate nohighlight">
-\[
-R(z)
+\[R(z)
 =
 \frac{F^{*}(z)}
-{b_{bp}^{*}(z)},
-\]</div>
+{b_{bp}^{*}(z)},\]</div>
 <div class="math notranslate nohighlight">
-\[
-R_{\max}
+\[R_{\max}
 =
 \max_{0\leq z\leq z_{\mathrm{ref}}}
-R(z).
-\]</div>
+R(z).\]</div>
 </section>
 <section id="id25">
-<h3>Correction<a class="headerlink" href="#id25" title="Link to this heading">#</a></h3>
+<span id="correction-2"></span><h3>Correction<a class="headerlink" href="#id25" title="Link to this heading">#</a></h3>
 <div class="math notranslate nohighlight">
-\[\begin{split}
-F_{\mathrm{corr}}(z)
+\[\begin{split}F_{\mathrm{corr}}(z)
 =
 \begin{cases}
 \max\!\left[
@@ -1503,12 +1412,11 @@ b_{bp}(z)R_{\max}
 \right],
 &amp; 0\leq z\leq z_{\mathrm{ref}},\\[4pt]
 F(z), &amp; z&gt;z_{\mathrm{ref}}.
-\end{cases}
-\end{split}\]</div>
+\end{cases}\end{split}\]</div>
 <p>With <code class="docutils literal notranslate"><span class="pre">hybrid:</span> <span class="pre">false</span></code>, this S08+ formulation is applied to all daytime profiles.</p>
 </section>
 <section id="id26">
-<h3>Assumptions<a class="headerlink" href="#id26" title="Link to this heading">#</a></h3>
+<span id="assumptions-7"></span><h3>Assumptions<a class="headerlink" href="#id26" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>The maximum fluorescence-to-backscatter ratio within the NPQ layer approximates the unquenched ratio.</p></li>
 <li><p>The shallower of the mixed-layer depth and the selected irradiance isolume provides an appropriate estimate of the vertical extent of NPQ.</p></li>
@@ -1516,7 +1424,7 @@ F(z), &amp; z&gt;z_{\mathrm{ref}}.
 </ul>
 </section>
 <section id="id27">
-<h3>Figure<a class="headerlink" href="#id27" title="Link to this heading">#</a></h3>
+<span id="figure-4"></span><h3>Figure<a class="headerlink" href="#id27" title="Link to this heading">#</a></h3>
 <figure class="align-default" id="id42">
 <a class="reference internal image-reference" href="../_images/npq_xing2018.png"><img alt="The Xing 2018 S08+ correction." src="../_images/npq_xing2018.png" style="width: 90%;" />
 </a>
@@ -1528,9 +1436,9 @@ F(z), &amp; z&gt;z_{\mathrm{ref}}.
 </section>
 <hr class="docutils" />
 <section id="terrats-et-al-2020-x18-s08-extension">
-<h2>5.12 Terrats et al. (2020) X18_S08 extension<a class="headerlink" href="#terrats-et-al-2020-x18-s08-extension" title="Link to this heading">#</a></h2>
+<span id="512-terrats-et-al-2020-x18_s08-extension"></span><h2>5.12 Terrats et al. (2020) X18_S08 extension<a class="headerlink" href="#terrats-et-al-2020-x18-s08-extension" title="Link to this heading">#</a></h2>
 <section id="id28">
-<h3>Principle<a class="headerlink" href="#id28" title="Link to this heading">#</a></h3>
+<span id="principle-8"></span><h3>Principle<a class="headerlink" href="#id28" title="Link to this heading">#</a></h3>
 <p>Terrats et al. (2020) modified the Xing et al. (2018) method to improve performance under shallow-mixing conditions. In the original Xing et al. (2018) algorithm, shallow-mixing profiles are corrected using an irradiance-dependent sigmoid function throughout the mixed layer. Terrats et al. (2020) retained this sigmoid correction below the mixed-layer depth (MLD), but replaced the correction above the MLD with a Sackmann et al. (2008)-style fluorescence-to-backscatter reconstruction.</p>
 <p>The resulting method, referred to as <strong>X18_S08</strong>, therefore combines the Xing et al. (2018) sigmoid correction beneath the mixed layer with the Sackmann et al. (2008) assumption of a vertically uniform fluorescence-to-backscatter ratio within the mixed layer.</p>
 </section>
@@ -1538,23 +1446,18 @@ F(z), &amp; z&gt;z_{\mathrm{ref}}.
 <h3>Mixing regime<a class="headerlink" href="#mixing-regime" title="Link to this heading">#</a></h3>
 <p>The modification is applied only to shallow-mixing profiles. Following Xing et al. (2018), pelagos-py classifies a profile as shallow mixing when</p>
 <div class="math notranslate nohighlight">
-\[
-Z_{\mathrm{IPAR}} &gt; z_{\mathrm{MLD}},
-\]</div>
+\[Z_{\mathrm{IPAR}} &gt; z_{\mathrm{MLD}},\]</div>
 <p>indicating that the selected irradiance isolume extends beneath the mixed layer.</p>
 <p>Profiles satisfying</p>
 <div class="math notranslate nohighlight">
-\[
-Z_{\mathrm{IPAR}} \leq z_{\mathrm{MLD}}
-\]</div>
+\[Z_{\mathrm{IPAR}} \leq z_{\mathrm{MLD}}\]</div>
 <p>are classified as deep mixing and are corrected using the standard Xing et al. (2018) S08+ method.</p>
 </section>
 <section id="sigmoid-correction-below-the-mixed-layer">
 <h3>Sigmoid correction below the mixed layer<a class="headerlink" href="#sigmoid-correction-below-the-mixed-layer" title="Link to this heading">#</a></h3>
 <p>Below the mixed-layer depth, the retained fluorescence fraction is</p>
 <div class="math notranslate nohighlight">
-\[
-s(I)
+\[s(I)
 =
 r
 +
@@ -1562,62 +1465,50 @@ r
 {1+
 \left(
 \frac{I}{I_{\mathrm{mid}}}
-\right)^e},
-\]</div>
+\right)^e},\]</div>
 <p>where the implemented parameter values are</p>
 <div class="math notranslate nohighlight">
-\[
-r=0.092,
+\[r=0.092,
 \qquad
 I_{\mathrm{mid}}=261,
 \qquad
-e=2.2.
-\]</div>
+e=2.2.\]</div>
 <p>Prior to evaluation,</p>
 <div class="math notranslate nohighlight">
-\[
-I_{\mathrm{safe}}
+\[I_{\mathrm{safe}}
 =
-\max(I,10^{-3}),
-\]</div>
+\max(I,10^{-3}),\]</div>
 <p>and the retained fluorescence fraction is constrained to</p>
 <div class="math notranslate nohighlight">
-\[
-r
+\[r
 \leq
 s(I)
 \leq
-1.
-\]</div>
+1.\]</div>
 <p>The de-quenched chlorophyll signal below the mixed layer is then</p>
 <div class="math notranslate nohighlight">
-\[
-F_{\mathrm{sig}}(z)
+\[F_{\mathrm{sig}}(z)
 =
 \frac{F(z)}
 {s[I(z)]},
 \qquad
-z&gt;z_{\mathrm{MLD}}.
-\]</div>
+z&gt;z_{\mathrm{MLD}}.\]</div>
 </section>
 <section id="mixed-layer-reconstruction">
 <h3>Mixed-layer reconstruction<a class="headerlink" href="#mixed-layer-reconstruction" title="Link to this heading">#</a></h3>
 <p>Rather than continuing the sigmoid correction into the mixed layer, Terrats et al. (2020) assumes that the unquenched fluorescence-to-backscatter ratio is vertically uniform within the mixed layer.</p>
 <p>pelagos-py therefore searches downward from the MLD for the shallowest acceptable observation immediately beneath the mixed layer. At this depth,</p>
 <div class="math notranslate nohighlight">
-\[
-R_{\mathrm{MLD}}
+\[R_{\mathrm{MLD}}
 =
 \frac{
 F_{\mathrm{sig}}(z_k)
 }{
 b_{bp}^{*}(z_k)
-}.
-\]</div>
+}.\]</div>
 <p>The chlorophyll signal above the mixed layer is reconstructed as</p>
 <div class="math notranslate nohighlight">
-\[
-\widehat{F}(z)
+\[\widehat{F}(z)
 =
 b_{bp}(z)\,
 R_{\mathrm{MLD}},
@@ -1626,12 +1517,10 @@ R_{\mathrm{MLD}},
 \leq
 z
 \leq
-z_{\mathrm{MLD}}.
-\]</div>
+z_{\mathrm{MLD}}.\]</div>
 <p>As with the other ratio-based methods implemented in pelagos-py, the correction is constrained to be non-decreasing:</p>
 <div class="math notranslate nohighlight">
-\[
-F_{\mathrm{corr}}(z)
+\[F_{\mathrm{corr}}(z)
 =
 \max
 \left[
@@ -1643,12 +1532,10 @@ F(z),
 \leq
 z
 \leq
-z_{\mathrm{MLD}},
-\]</div>
+z_{\mathrm{MLD}},\]</div>
 <p>and</p>
 <div class="math notranslate nohighlight">
-\[
-F_{\mathrm{corr}}(z)
+\[F_{\mathrm{corr}}(z)
 =
 \max
 \left[
@@ -1658,15 +1545,14 @@ F_{\mathrm{sig}}(z)
 \qquad
 z
 &gt;
-z_{\mathrm{MLD}}.
-\]</div>
+z_{\mathrm{MLD}}.\]</div>
 </section>
 <section id="irradiance-requirements">
 <h3>Irradiance requirements<a class="headerlink" href="#irradiance-requirements" title="Link to this heading">#</a></h3>
 <p>The shallow-mixing correction requires a usable irradiance profile throughout the water column. pelagos-py therefore requires at least four finite positive irradiance observations on every daytime profile. If one or more daytime profiles do not satisfy this requirement, the X18_S08 extension is disabled and the standard Xing et al. (2018) correction is applied instead.</p>
 </section>
 <section id="id29">
-<h3>Assumptions<a class="headerlink" href="#id29" title="Link to this heading">#</a></h3>
+<span id="assumptions-8"></span><h3>Assumptions<a class="headerlink" href="#id29" title="Link to this heading">#</a></h3>
 <ul class="simple">
 <li><p>The water column can be classified into deep- and shallow-mixing regimes using the relative depths of the mixed layer and the selected irradiance isolume.</p></li>
 <li><p>The irradiance profile adequately characterises the vertical light field below the mixed layer.</p></li>
@@ -1676,7 +1562,7 @@ z_{\mathrm{MLD}}.
 </ul>
 </section>
 <section id="id30">
-<h3>Figures<a class="headerlink" href="#id30" title="Link to this heading">#</a></h3>
+<span id="figures-3"></span><h3>Figures<a class="headerlink" href="#id30" title="Link to this heading">#</a></h3>
 <figure class="align-default" id="id43">
 <a class="reference internal image-reference" href="../_images/npq_terrats_mixing_regimes.png"><img alt="Comparison of deep- and shallow-mixing regimes." src="../_images/npq_terrats_mixing_regimes.png" style="width: 90%;" />
 </a>
@@ -1702,7 +1588,7 @@ z_{\mathrm{MLD}}.
 </section>
 <hr class="docutils" />
 <section id="choosing-a-method">
-<h2>5.13 Choosing a method<a class="headerlink" href="#choosing-a-method" title="Link to this heading">#</a></h2>
+<span id="513-choosing-a-method"></span><h2>5.13 Choosing a method<a class="headerlink" href="#choosing-a-method" title="Link to this heading">#</a></h2>
 <p>Method selection should be guided by both the available supporting observations and the assumptions that are most appropriate for the deployment. All methods operate on <code class="docutils literal notranslate"><span class="pre">CHLA_ADJUSTED</span></code>, produced by the preceding spike and dark corrections. Simpler methods require fewer derived variables but generally assume a vertically homogeneous unquenched fluorescence field. More sophisticated methods exploit particulate backscattering, irradiance profiles and repeated day-night sampling to construct increasingly realistic estimates of the unquenched chlorophyll signal.</p>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
@@ -1756,25 +1642,22 @@ z_{\mathrm{MLD}}.
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="npq-diagnostics">
-<h1>6. NPQ diagnostics<a class="headerlink" href="#npq-diagnostics" title="Link to this heading">#</a></h1>
+<span id="6-npq-diagnostics"></span><h1>6. NPQ diagnostics<a class="headerlink" href="#npq-diagnostics" title="Link to this heading">#</a></h1>
 <p>When diagnostics are enabled, pelagos-py compares the available NPQ correction methods and displays the correction produced by the configured method.</p>
 <p>The method-comparison diagnostics pair daytime profiles with nearby nighttime profiles, bin the observations by depth and score the agreement in the upper 50 m, where the effects of NPQ and differences between correction methods are expected to be greatest.</p>
 <p>The comparison is performed using <code class="docutils literal notranslate"><span class="pre">CHLA_ADJUSTED</span></code>. For daytime profiles, this represents either the pre-NPQ value or the value produced by each candidate NPQ correction method. Nighttime <code class="docutils literal notranslate"><span class="pre">CHLA_ADJUSTED</span></code> observations are unchanged by the NPQ correction and provide the corresponding nighttime reference.</p>
 <p>For paired corrected daytime values <span class="math notranslate nohighlight">\(F_{d,i}^{\mathrm{corr}}\)</span> and nighttime values <span class="math notranslate nohighlight">\(F_{n,i}\)</span>, the bias is</p>
 <div class="math notranslate nohighlight">
-\[
-\mathrm{Bias}
+\[\mathrm{Bias}
 =
 \frac{1}{N}
 \sum_{i=1}^{N}
 \left(
 F_{d,i}^{\mathrm{corr}}-F_{n,i}
-\right),
-\]</div>
+\right),\]</div>
 <p>and the root-mean-square error is</p>
 <div class="math notranslate nohighlight">
-\[
-\mathrm{RMSE}
+\[\mathrm{RMSE}
 =
 \sqrt{
 \frac{1}{N}
@@ -1782,12 +1665,10 @@ F_{d,i}^{\mathrm{corr}}-F_{n,i}
 \left(
 F_{d,i}^{\mathrm{corr}}-F_{n,i}
 \right)^2
-}.
-\]</div>
+}.\]</div>
 <p>A linear regression is also fitted and its coefficient of determination reported:</p>
 <div class="math notranslate nohighlight">
-\[
-R^2
+\[R^2
 =
 1-
 \frac{
@@ -1800,8 +1681,7 @@ F_{n,i}-\widehat{F}_{n,i}
 \left(
 F_{n,i}-\overline{F_n}
 \right)^2
-}.
-\]</div>
+}.\]</div>
 <p>These diagnostics assess the consistency between daytime <code class="docutils literal notranslate"><span class="pre">CHLA_ADJUSTED</span></code> profiles and nearby nighttime <code class="docutils literal notranslate"><span class="pre">CHLA_ADJUSTED</span></code> profiles. They provide a comparative measure of how effectively the different NPQ methods reproduce the nighttime chlorophyll structure but do not establish that nighttime fluorescence-derived chlorophyll is an unbiased estimate of true chlorophyll concentration.</p>
 <figure class="align-default" id="id46">
 <a class="reference internal image-reference" href="../_images/npq_method_comparison.png"><img alt="The pelagos-py NPQ method-comparison diagnostics." src="../_images/npq_method_comparison.png" style="width: 100%;" />
@@ -1827,10 +1707,10 @@ F_{n,i}-\overline{F_n}
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="final-quality-control">
-<h1>7. Final quality control<a class="headerlink" href="#final-quality-control" title="Link to this heading">#</a></h1>
+<span id="7-final-quality-control"></span><h1>7. Final quality control<a class="headerlink" href="#final-quality-control" title="Link to this heading">#</a></h1>
 <p>Following dark-offset and NPQ correction, pelagos-py applies the generic <strong>Range QC</strong> algorithm a second time using chlorophyll-specific thresholds. This final screening step verifies that the corrected chlorophyll-<em>a</em> concentrations remain physically plausible and highlights observations or profiles that should be inspected before scientific interpretation.</p>
 <section id="default-configuration">
-<h2>7.1 Default configuration<a class="headerlink" href="#default-configuration" title="Link to this heading">#</a></h2>
+<span id="71-default-configuration"></span><h2>7.1 Default configuration<a class="headerlink" href="#default-configuration" title="Link to this heading">#</a></h2>
 <p>Following deep-offset and NPQ correction, pelagos-py applies a second Range QC test to the corrected chlorophyll-<em>a</em> concentration (<code class="docutils literal notranslate"><span class="pre">CHLA_ADJUSTED</span></code>). Unlike the initial range test, which identifies only grossly implausible observations in the manufacturer-calibrated <code class="docutils literal notranslate"><span class="pre">CHLA</span></code>, this final test provides a broader quality classification of the fully corrected product.</p>
 <p>The default configuration is</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">variable_ranges</span><span class="p">:</span>
@@ -1867,7 +1747,7 @@ F_{n,i}-\overline{F_n}
 <p>The mathematical formulation of the Range QC algorithm, including the treatment of overlapping intervals, QC flag merging and propagation rules, is described in the <strong>Quality Control</strong> documentation.</p>
 </section>
 <section id="why-repeat-the-range-test">
-<h2>7.2 Why repeat the range test?<a class="headerlink" href="#why-repeat-the-range-test" title="Link to this heading">#</a></h2>
+<span id="72-why-repeat-the-range-test"></span><h2>7.2 Why repeat the range test?<a class="headerlink" href="#why-repeat-the-range-test" title="Link to this heading">#</a></h2>
 <p>Both the dark-offset and NPQ corrections modify <code class="docutils literal notranslate"><span class="pre">CHLA_ADJUSTED</span></code>. Although these corrections are designed to improve the estimate of the underlying chlorophyll-<em>a</em> concentration, unrealistic corrected values can occasionally arise if a correction reference is poorly constrained, for example because of anomalously small backscatter values, an inappropriate dark estimate or an unsuitable NPQ reference.</p>
 <p>The final range test therefore provides an independent quality-control step on the fully corrected product, ensuring that unrealistic values are identified before the dataset is distributed or used for scientific analysis.</p>
 <blockquote>
@@ -1884,7 +1764,7 @@ F_{n,i}-\overline{F_n}
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="outputs">
-<h1>8. Outputs<a class="headerlink" href="#outputs" title="Link to this heading">#</a></h1>
+<span id="8-outputs"></span><h1>8. Outputs<a class="headerlink" href="#outputs" title="Link to this heading">#</a></h1>
 <p>The chlorophyll processing workflow produces or updates the following variables:</p>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
@@ -1926,7 +1806,7 @@ F_{n,i}-\overline{F_n}
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="recommended-reporting">
-<h1>9. Recommended reporting<a class="headerlink" href="#recommended-reporting" title="Link to this heading">#</a></h1>
+<span id="9-recommended-reporting"></span><h1>9. Recommended reporting<a class="headerlink" href="#recommended-reporting" title="Link to this heading">#</a></h1>
 <p>A scientific methods section describing chlorophyll processing with pelagos-py should report:</p>
 <ul class="simple">
 <li><p>the manufacturer calibration coefficients used to convert <code class="docutils literal notranslate"><span class="pre">CHLA_FLUORESCENCE_RAW</span></code> to <code class="docutils literal notranslate"><span class="pre">CHLA</span></code> for the initial global range test;</p></li>

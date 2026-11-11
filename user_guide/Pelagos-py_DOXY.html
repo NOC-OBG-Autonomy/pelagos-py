@@ -1,282 +1,500 @@
 <!DOCTYPE html>
 
-<html data-content_root="../" lang="en">
-<head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="width=device-width, initial-scale=1" name="viewport"/>
-<meta content="2026-11-04T20:18:56+00:00" property="article:modified_time"/>
-<title>Oxygen Processing: Aanderaa Optodes — pelagos-py</title>
-<script data-cfasync="false">
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <meta property="article:modified_time" content="2026-11-04T20:18:56+00:00" />
+    <title>Oxygen Processing: Aanderaa Optodes &#8212; pelagos-py</title>
+  
+  
+  
+  <script data-cfasync="false">
     document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
     document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
   </script>
-<!--
+  <!--
     this give us a css class that will be invisible only if js is disabled
   -->
-<noscript>
-<style>
+  <noscript>
+    <style>
       .pst-js-only { display: none !important; }
 
     </style>
-</noscript>
-<!-- Loaded before other Sphinx assets -->
-<link href="../_static/styles/theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet"/>
-<link href="../_static/styles/pydata-sphinx-theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet"/>
-<link href="../_static/pygments.css?v=d75fae25" rel="stylesheet" type="text/css"/>
-<link href="../_static/copybutton.css?v=76b2166b" rel="stylesheet" type="text/css"/>
-<link href="../_static/graphviz.css?v=4ae1632d" rel="stylesheet" type="text/css"/>
-<link href="../_static/sphinx-codeautolink.css?v=b2176991" rel="stylesheet" type="text/css"/>
-<link href="../_static/sphinx-design.min.css?v=95c83b7e" rel="stylesheet" type="text/css"/>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&amp;family=Ubuntu&amp;display=swap" rel="stylesheet" type="text/css"/>
-<link href="../_static/custom.css?v=a20de4af" rel="stylesheet" type="text/css"/>
-<!-- So that users can add custom icons -->
-<script defer="" src="../_static/scripts/fontawesome.js?digest=75c7c72ae941e8b558d8"></script>
-<!-- Pre-loaded scripts that we'll load fully later -->
-<link as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" rel="preload"/>
-<link as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" rel="preload"/>
-<script src="../_static/documentation_options.js?v=f9910351"></script>
-<script src="../_static/doctools.js?v=fd6eb6e6"></script>
-<script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
-<script src="../_static/clipboard.min.js?v=a7894cd8"></script>
-<script src="../_static/copybutton.js?v=df1a032d"></script>
-<script src="../_static/design-tabs.js?v=f930bc37"></script>
-<script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-<script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-<script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
-<script>DOCUMENTATION_OPTIONS.pagename = 'user_guide/Pelagos-py_DOXY';</script>
-<script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
-<link href="https://noc-obg-autonomy.github.io/pelagos-py/user_guide/Pelagos-py_DOXY.html" rel="canonical"/>
-<link href="../_static/NOC_logo.svg" rel="icon"/>
-<link href="../genindex.html" rel="index" title="Index"/>
-<link href="../search.html" rel="search" title="Search"/>
-<link href="Pelagos-py_PAR.html" rel="next" title="PAR Processing"/>
-<link href="Pelagos-py_MLD.html" rel="prev" title="Mixed Layer Depth"/>
-<meta content="width=device-width, initial-scale=1" name="viewport"/>
-<meta content="light dark" name="color-scheme"/>
-<meta content="en" name="docsearch:language"/>
-<meta content="0.0" name="docsearch:version"/>
-<meta content="Nov 04, 2026" name="docbuild:last-update"/>
-<script src="../_static/searchtools.js"></script>
-<script src="../_static/language_data.js"></script>
-<script src="../searchindex.js"></script>
-</head>
-<body data-default-mode="">
-<div class="skip-link d-print-none" id="pst-skip-link"><a href="#main-content">Skip to main content</a></div>
-<div id="pst-scroll-pixel-helper"></div>
-<button class="btn rounded-pill" id="pst-back-to-top" type="button">
-<i class="fa-solid fa-arrow-up"></i>Back to top</button>
-<dialog id="pst-search-dialog">
-<form action="../search.html" class="bd-search d-flex align-items-center" method="get">
-<i class="fa-solid fa-magnifying-glass"></i>
-<input aria-label="Search the docs ..." autocapitalize="off" autocomplete="off" autocorrect="off" class="form-control" name="q" placeholder="Search the docs ..." spellcheck="false" type="search"/>
-<span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-codeautolink.css?v=b2176991" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=6a604523" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Ubuntu&display=swap" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=a20de4af" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../_static/scripts/fontawesome.js?digest=75c7c72ae941e8b558d8"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
+
+    <script src="../_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=df1a032d"></script>
+    <script data-sd-tabs-storage-prefix="sphinx-design-tab-id-" src="../_static/design-tabs.js?v=fcb327ea"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'user_guide/Pelagos-py_DOXY';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="canonical" href="https://noc-obg-autonomy.github.io/pelagos-py/user_guide/Pelagos-py_DOXY.html" />
+    <link rel="icon" href="../_static/NOC_logo.svg"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="PAR Processing" href="Pelagos-py_PAR.html" />
+    <link rel="prev" title="Mixed Layer Depth" href="Pelagos-py_MLD.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0" />
+    <meta name="docbuild:last-update" content="Nov 04, 2026"/>
+  
+    
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
 </form>
-</dialog>
-<div class="pst-async-banner-revealer d-none">
-<aside aria-label="Version warning" class="d-none d-print-none" id="bd-header-version-warning"></aside>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
-<header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none" id="pst-header">
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
 <div class="bd-header__inner bd-page-width">
-<button aria-controls="pst-primary-sidebar-modal" aria-expanded="false" aria-label="Site navigation" class="pst-navbar-icon sidebar-toggle primary-toggle" type="button">
-<span class="fa-solid fa-bars"></span>
-</button>
-<div class="col-lg-3 navbar-header-items__start">
-<div class="navbar-item">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation" aria-expanded="false" aria-controls="pst-primary-sidebar-modal">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
 <a class="navbar-brand logo" href="../index.html">
-<svg aria-label="pelagos-py - Home" class="logo__image pelagos-logo" height="100" role="img" viewbox="0 0 420 100" width="420" xmlns="http://www.w3.org/2000/svg">
-<rect class="pl-frame" height="100" rx="2.3" width="100" x="0" y="0"></rect>
-<rect fill="#fff" height="27.5" width="91.7" x="4.15" y="4.15"></rect>
-<rect fill="#00b4ff" height="64.19" width="91.7" x="4.15" y="31.66"></rect>
-<text class="pl-title" lengthadjust="spacingAndGlyphs" textlength="300" x="117" y="64">PELAGOS-PY</text>
-<text class="pl-sub" lengthadjust="spacingAndGlyphs" textlength="300" x="117" y="93.2">National Oceanography Centre</text>
-</svg>
+  <svg class="logo__image pelagos-logo" viewBox="0 0 420 100" width="420" height="100"
+       role="img" aria-label="pelagos-py - Home" xmlns="http://www.w3.org/2000/svg">
+    <rect class="pl-frame" x="0" y="0" width="100" height="100" rx="2.3"/>
+    <rect fill="#fff" x="4.15" y="4.15" width="91.7" height="27.5"/>
+    <rect fill="#00b4ff" x="4.15" y="31.66" width="91.7" height="64.19"/>
+    <text class="pl-title" x="117" y="64" textLength="300" lengthAdjust="spacingAndGlyphs">PELAGOS-PY</text>
+    <text class="pl-sub" x="117" y="93.2" textLength="300" lengthAdjust="spacingAndGlyphs">National Oceanography Centre</text>
+  </svg>
 </a></div>
-</div>
-<div class="col-lg-9 navbar-header-items">
-<div class="me-auto navbar-header-items__center">
-<div class="navbar-item">
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
 <nav>
-<ul class="bd-navbar-elements navbar-nav">
-<li class="nav-item">
-<a class="nav-link nav-internal" href="../getting_started.html">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../getting_started.html">
     Getting Started
   </a>
 </li>
+
+
 <li class="nav-item current active">
-<a class="nav-link nav-internal" href="../user_guide.html">
+  <a class="nav-link nav-internal" href="../user_guide.html">
     User Guide
   </a>
 </li>
-<li class="nav-item">
-<a class="nav-link nav-internal" href="../api_reference.html">
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api_reference.html">
     API Reference
   </a>
 </li>
-<li class="nav-item">
-<a class="nav-link nav-internal" href="../development.html">
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../development.html">
     Development
   </a>
 </li>
-</ul>
+
+  </ul>
 </nav></div>
-</div>
-<div class="navbar-header-items__end">
-<div class="navbar-item navbar-persistent--container">
-<button aria-label="Search" class="btn search-button-field search-button__button pst-js-only" data-bs-placement="bottom" data-bs-toggle="tooltip" title="Search" type="button">
-<i class="fa-solid fa-magnifying-glass"></i>
-<span class="search-button__default-text">Search</span>
-<span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
 </button>
-</div>
-<div class="navbar-item">
-<div class="theme-switch-container dropdown pst-js-only" data-bs-placement="bottom" data-bs-toggle="tooltip" title="Color mode">
-<button aria-label="Color mode" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" data-bs-toggle="dropdown" type="button">
-<i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
-<i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
-<i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
-</button>
-<ul class="dropdown-menu dropdown-menu-end">
-<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto" type="button"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
-<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light" type="button"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
-<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark" type="button"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
-</ul>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
+  </ul>
 </div></div>
-<div class="navbar-item"><ul aria-label="Icon Links" class="navbar-icon-links">
-<li class="nav-item">
-<a class="nav-link pst-navbar-icon" data-bs-placement="bottom" data-bs-toggle="tooltip" href="https://github.com/NOC-OBG-Autonomy/pelagos-py" rel="noopener" target="_blank" title="GitHub"><i aria-hidden="true" class="fa-brands fa-github fa-lg"></i><span class="visually-hidden">GitHub</span></a>
-</li>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NOC-OBG-Autonomy/pelagos-py" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
 </ul></div>
-</div>
-</div>
-<div class="navbar-persistent--mobile">
-<button aria-label="Search" class="btn search-button-field search-button__button pst-js-only" data-bs-placement="bottom" data-bs-toggle="tooltip" title="Search" type="button">
-<i class="fa-solid fa-magnifying-glass"></i>
-<span class="search-button__default-text">Search</span>
-<span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
 </button>
+    </div>
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page" aria-expanded="false" aria-controls="pst-secondary-sidebar-modal">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
 </div>
-<button aria-controls="pst-secondary-sidebar-modal" aria-expanded="false" aria-label="On this page" class="pst-navbar-icon sidebar-toggle secondary-toggle" type="button">
-<span class="fa-solid fa-outdent"></span>
-</button>
-</div>
-</header>
-<div class="bd-container">
-<div class="bd-container__inner bd-page-width">
-<dialog id="pst-primary-sidebar-modal" tabindex="-1"></dialog>
-<div class="bd-sidebar-primary bd-sidebar" id="pst-primary-sidebar">
-<div class="sidebar-header-items sidebar-primary__section">
-<div class="sidebar-header-items__center">
-<div class="navbar-item">
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal" tabindex="-1"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
 <nav>
-<ul class="bd-navbar-elements navbar-nav">
-<li class="nav-item">
-<a class="nav-link nav-internal" href="../getting_started.html">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../getting_started.html">
     Getting Started
   </a>
 </li>
+
+
 <li class="nav-item current active">
-<a class="nav-link nav-internal" href="../user_guide.html">
+  <a class="nav-link nav-internal" href="../user_guide.html">
     User Guide
   </a>
 </li>
-<li class="nav-item">
-<a class="nav-link nav-internal" href="../api_reference.html">
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api_reference.html">
     API Reference
   </a>
 </li>
-<li class="nav-item">
-<a class="nav-link nav-internal" href="../development.html">
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../development.html">
     Development
   </a>
 </li>
-</ul>
+
+  </ul>
 </nav></div>
-</div>
-<div class="sidebar-header-items__end">
-<div class="navbar-item">
-<div class="theme-switch-container dropdown pst-js-only" data-bs-placement="bottom" data-bs-toggle="tooltip" title="Color mode">
-<button aria-label="Color mode" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" data-bs-toggle="dropdown" type="button">
-<i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
-<i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
-<i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
-</button>
-<ul class="dropdown-menu dropdown-menu-end">
-<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto" type="button"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
-<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light" type="button"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
-<li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark" type="button"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
-</ul>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
+  </ul>
 </div></div>
-<div class="navbar-item"><ul aria-label="Icon Links" class="navbar-icon-links">
-<li class="nav-item">
-<a class="nav-link pst-navbar-icon" data-bs-placement="bottom" data-bs-toggle="tooltip" href="https://github.com/NOC-OBG-Autonomy/pelagos-py" rel="noopener" target="_blank" title="GitHub"><i aria-hidden="true" class="fa-brands fa-github fa-lg"></i><span class="visually-hidden">GitHub</span></a>
-</li>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/NOC-OBG-Autonomy/pelagos-py" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
 </ul></div>
-</div>
-</div>
-<div class="sidebar-primary-items__start sidebar-primary__section">
-<div class="sidebar-primary-item pst-sidebar-collapse"><button aria-controls="pst-primary-sidebar" aria-expanded="true" id="pst-collapse-sidebar-button" type="button">
-<svg aria-hidden="true" class="pst-icon" focusable="false" role="img" viewbox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-<path d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z" fill="currentColor"></path>
-</svg>
-<span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
-<span class="pst-expand-sidebar-label">Expand Sidebar</span>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button type="button" id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar">
+  <svg class="pst-icon" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
 </button></div>
-<div class="sidebar-primary-item">
-<nav aria-label="Section Navigation" class="bd-docs-nav bd-links">
-<p aria-level="1" class="bd-links__title" role="heading">Section Navigation</p>
-<div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="../steps.html">Steps</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../quality_control.html">Quality Control</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Variable processing</span></p>
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="Pelagos-py_POSITION.html">Position and Time Processing</a></li>
+
+
+
 <li class="toctree-l1"><a class="reference internal" href="Pelagos-py_PRESSURE.html">Pressure Processing</a></li>
+
+
+
 <li class="toctree-l1"><a class="reference internal" href="Pelagos-py_PROFILES.html">Profile Finding</a></li>
+
+
+
+
+
 <li class="toctree-l1"><a class="reference internal" href="Pelagos-py_TEMP.html">Temperature Processing</a></li>
+
+
+
 <li class="toctree-l1"><a class="reference internal" href="Pelagos-py_SALINITY.html">Salinity Adjustment</a></li>
+
+
+
+
+
 <li class="toctree-l1"><a class="reference internal" href="Pelagos-py_DERIVED.html">Derived CTD Variables</a></li>
+
+
+
 <li class="toctree-l1"><a class="reference internal" href="Pelagos-py_MLD.html">Mixed Layer Depth</a></li>
+
+
+
+
 <li class="toctree-l1 current active"><a aria-current="page" class="current reference internal" href="#">Oxygen Processing: Aanderaa Optodes</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <li class="toctree-l1"><a class="reference internal" href="Pelagos-py_PAR.html">PAR Processing</a></li>
+
+
+
+
+
+
+
 <li class="toctree-l1"><a class="reference internal" href="Pelagos-py_CHLA.html">Chlorophyll-<em>a</em> Processing</a></li>
+
+
+
+
+
+
+
+
+
+
 <li class="toctree-l1"><a class="reference internal" href="Pelagos-py_BBP.html">Particulate Backscattering (b<sub>bp</sub>) Processing</a></li>
+
+
+
+
+
+
+
 <li class="toctree-l1"><a class="reference internal" href="Pelagos-py_CROSSCAL.html">Cross-Calibration</a></li>
+
+
+
 </ul>
 </div>
 </nav></div>
-</div>
-<div class="sidebar-primary-items__end sidebar-primary__section">
-<div class="sidebar-primary-item">
-<div class="flat" data-ea-manual="true" data-ea-publisher="readthedocs" data-ea-type="readthedocs-sidebar" id="ethical-ad-placement">
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
 </div></div>
-</div>
-</div>
-<main class="bd-main" id="main-content" role="main">
-<div class="bd-content">
-<div class="bd-article-container">
-<div class="bd-header-article d-print-none">
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
 <div class="header-article-items header-article__inner">
-<div class="header-article-items__start">
-<div class="header-article-item">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
 <nav aria-label="Breadcrumb" class="d-print-none">
-<ul class="bd-breadcrumbs">
-<li class="breadcrumb-item breadcrumb-home">
-<a aria-label="Home" class="nav-link" href="../index.html">
-<i class="fa-solid fa-house"></i>
-</a>
-</li>
-<li class="breadcrumb-item"><a class="nav-link" href="../user_guide.html">User Guide</a></li>
-<li aria-current="page" class="breadcrumb-item active"><span class="ellipsis">Oxygen Processing: Aanderaa Optodes</span></li>
-</ul>
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-house"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../user_guide.html" class="nav-link">User Guide</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Oxygen Processing: Aanderaa Optodes</span></li>
+  </ul>
 </nav>
 </div>
+      
+    </div>
+  
+  
 </div>
 </div>
-</div>
+              
+              
+              
+                
 <div id="searchbox"></div>
-<article class="bd-article">
-<section class="tex2jax_ignore mathjax_ignore" id="oxygen-processing-aanderaa-optodes">
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="oxygen-processing-aanderaa-optodes">
 <h1>Oxygen Processing: Aanderaa Optodes<a class="headerlink" href="#oxygen-processing-aanderaa-optodes" title="Link to this heading">#</a></h1>
 <a class="reference internal image-reference" href="../_images/doxy_section.png"><img alt="Oxygen concentration against pressure and time for the demo deployment" src="../_images/doxy_section.png" style="width: 100%;"/>
 </a>
@@ -412,10 +630,10 @@ Schematic illustration of the oxygen optode. From Aanderaa (2007).
 </section>
 <hr class="docutils"/>
 <section class="tex2jax_ignore mathjax_ignore" id="temperature-qc">
-<h1>1. Temperature QC<a class="headerlink" href="#temperature-qc" title="Link to this heading">#</a></h1>
+<span id="1-temperature-qc"></span><h1>1. Temperature QC<a class="headerlink" href="#temperature-qc" title="Link to this heading">#</a></h1>
 <p>The optode has its own temperature measurements (<code class="docutils literal notranslate"><span class="pre">TEMP_DOXY</span></code>). For Aanderaa 3830 optodes and similar, these temperature values should generally not be used as the response time of the temperature sensor was too slow for these optode series. For Aanderaa 4330 optodes and similar, <code class="docutils literal notranslate"><span class="pre">TEMP_DOXY</span></code> will be used for part of the processing pipeline, and some prior inital QC should be done.</p>
 <section id="global-range-check">
-<h2>1.1 Global range check<a class="headerlink" href="#global-range-check" title="Link to this heading">#</a></h2>
+<span id="11-global-range-check"></span><h2>1.1 Global range check<a class="headerlink" href="#global-range-check" title="Link to this heading">#</a></h2>
 <p>Optode temperature should be within the following value range, and flagged as “bad data” if not:</p>
 <div class="math notranslate nohighlight">
 \[-2.5 \leq TEMP\_DOXY \leq 40.0 \quad [^\circ\mathrm{C}]\]</div>
@@ -430,7 +648,7 @@ Schematic illustration of the oxygen optode. From Aanderaa (2007).
 </div>
 </section>
 <section id="regional-range-check">
-<h2>1.2 Regional range check<a class="headerlink" href="#regional-range-check" title="Link to this heading">#</a></h2>
+<span id="12-regional-range-check"></span><h2>1.2 Regional range check<a class="headerlink" href="#regional-range-check" title="Link to this heading">#</a></h2>
 <p>Values outside physically plausible regional ranges for the Red Sea and the Mediterranean Sea should be flagged as “bad data” (i.e., QC flag 4). Note that oxygen values need to be expressed in oxygen content in <span class="math notranslate nohighlight">\(\mu\)</span>mol kg<span class="math notranslate nohighlight">\(^{-1}\)</span> for this step.</p>
 <p><font color="orange"> Implemented? </font></p>
 <p>Red Sea:
@@ -439,7 +657,7 @@ $<span class="math notranslate nohighlight">\(21.7 \leq TEMP\_DOXY \leq 40.0 \qu
 $<span class="math notranslate nohighlight">\(10.0 \leq TEMP\_DOXY \leq 40.0 \quad [^\circ\mathrm{C}]\)</span>$</p>
 </section>
 <section id="spike-check">
-<h2>1.3 Spike check<a class="headerlink" href="#spike-check" title="Link to this heading">#</a></h2>
+<span id="13-spike-check"></span><h2>1.3 Spike check<a class="headerlink" href="#spike-check" title="Link to this heading">#</a></h2>
 <p>A spike check is applied using a test value:</p>
 <p>Test value = | V2 - (V3 + V1)/2 | - | (V3 - V1) / 2 |</p>
 <p>Where V2 is the measurement being tested as a spike, V1 and V3 are the values above and below.</p>
@@ -450,7 +668,7 @@ $<span class="math notranslate nohighlight">\(10.0 \leq TEMP\_DOXY \leq 40.0 \qu
 </ul>
 </section>
 <section id="gradient-test">
-<h2>1.4 Gradient test<a class="headerlink" href="#gradient-test" title="Link to this heading">#</a></h2>
+<span id="14-gradient-test"></span><h2>1.4 Gradient test<a class="headerlink" href="#gradient-test" title="Link to this heading">#</a></h2>
 <p>A gradient check is applied using a test value:</p>
 <p>Test value = | V2 − (V3 + V1)/2 |</p>
 <p>where V2 is the measurement being tested as a spike, and V1 and V3 are the values above and below.</p>
@@ -463,17 +681,15 @@ $<span class="math notranslate nohighlight">\(10.0 \leq TEMP\_DOXY \leq 40.0 \qu
 </section>
 <hr class="docutils"/>
 <section class="tex2jax_ignore mathjax_ignore" id="uncalibrated-phase-shift">
-<h1>2. Uncalibrated phase shift<a class="headerlink" href="#uncalibrated-phase-shift" title="Link to this heading">#</a></h1>
+<span id="2-uncalibrated-phase-shift"></span><h1>2. Uncalibrated phase shift<a class="headerlink" href="#uncalibrated-phase-shift" title="Link to this heading">#</a></h1>
 <p>The uncalibrated phase measurement (<code class="docutils literal notranslate"><span class="pre">UNCAL_PHASE_DOXY</span></code>) is defined and calculated as the difference between the phase from the blue light excitation (<code class="docutils literal notranslate"><span class="pre">BPHASE_DOXY</span></code>) and the red light excitation (<code class="docutils literal notranslate"><span class="pre">RPHASE_DOXY</span></code>).</p>
 <div class="math notranslate nohighlight">
-\[
-UNCAL\_PHASE\_DOXY = BPHASE\_DOXY - RPHASE\_DOXY
-\]</div>
+\[UNCAL\_PHASE\_DOXY = BPHASE\_DOXY - RPHASE\_DOXY\]</div>
 <p>The red light excitation is often not used, in which it does not appear in the dataset or is set to zero, and <code class="docutils literal notranslate"><span class="pre">UNCAL_PHASE_DOXY</span></code> = <code class="docutils literal notranslate"><span class="pre">BPHASE_DOXY</span></code>.</p>
 </section>
 <hr class="docutils"/>
 <section class="tex2jax_ignore mathjax_ignore" id="geometric-lag-correction">
-<h1>3. Geometric lag correction<a class="headerlink" href="#geometric-lag-correction" title="Link to this heading">#</a></h1>
+<span id="3-geometric-lag-correction"></span><h1>3. Geometric lag correction<a class="headerlink" href="#geometric-lag-correction" title="Link to this heading">#</a></h1>
 <p>The CTD and oxygen optode may not be physically co-located on the autonomous platform. For example, it is common for the CTD to be integrated nearer the middle or front of a glider, while the optode sits in the rear. The CTD therefore measures a water parcel at a different time than the optode measures the same parcel. Typically, this will lead to a time delay of several seconds. We can correct for this time offset by applying a geometric lag correction, which will align the optode data to the CTD data in time.</p>
 <!-- Hidden until the image and permission to reuse it are available.
 ```{figure} ../_static/doxy/diagram_geometric_alignment_WooGourcuff2023.png
@@ -485,14 +701,10 @@ Schematic illustration of the geometric lag correction. From Woo & Gourcuff (202
 -->
 <p>If the distance between the sensors is <span class="math notranslate nohighlight">\(d\)</span> and the glider’s along-track velocity is <span class="math notranslate nohighlight">\(v\)</span>, the geometric time delay is</p>
 <div class="math notranslate nohighlight">
-\[
-\tau_{\mathrm{geom}} = \frac{d}{v}
-\]</div>
+\[\tau_{\mathrm{geom}} = \frac{d}{v}\]</div>
 <p>For a glider, the vertical component of velocity can be approximated by</p>
 <div class="math notranslate nohighlight">
-\[
-v = r\sin(\theta)
-\]</div>
+\[v = r\sin(\theta)\]</div>
 <p>where:</p>
 <ul class="simple">
 <li><p><span class="math notranslate nohighlight">\(r\)</span> = glider dive rate</p></li>
@@ -522,7 +734,7 @@ v = r\sin(\theta)
 </section>
 <hr class="docutils"/>
 <section class="tex2jax_ignore mathjax_ignore" id="pressure-correction-on-phase-shift">
-<h1>4. Pressure correction on phase shift<a class="headerlink" href="#pressure-correction-on-phase-shift" title="Link to this heading">#</a></h1>
+<span id="4-pressure-correction-on-phase-shift"></span><h1>4. Pressure correction on phase shift<a class="headerlink" href="#pressure-correction-on-phase-shift" title="Link to this heading">#</a></h1>
 <p>Pressure affects the luminescence lifetime of the luminophores, quenching, and membrane O2 equilibrium level (Bittig et al., 2015a; Bittig et al., 2016). To account for the pressure effect on luminescence lifetime, a hydrostatic pressure correction is applied to the uncalibrated phase shift (following Thierry et al., 2015a; also see Bittig et al., 2018):</p>
 <div class="math notranslate nohighlight">
 \[UNCAL\_PHASE\_DOXY\_PCORR = UNCAL\_PHASE\_DOXY + Pcoef1 \frac{1}{1000} * PRES\]</div>
@@ -554,7 +766,7 @@ v = r\sin(\theta)
 </section>
 <hr class="docutils"/>
 <section class="tex2jax_ignore mathjax_ignore" id="calibrated-phase-shift">
-<h1>5. Calibrated phase shift<a class="headerlink" href="#calibrated-phase-shift" title="Link to this heading">#</a></h1>
+<span id="5-calibrated-phase-shift"></span><h1>5. Calibrated phase shift<a class="headerlink" href="#calibrated-phase-shift" title="Link to this heading">#</a></h1>
 <p>The raw phase shift (<code class="docutils literal notranslate"><span class="pre">BPHASE_DOXY</span></code>) measured by the optode itself is dependent on temperature. For example, higher temperatures reduce the lifetime of the excited state of the luminophores. High temperatures also increase oxygen diffusivity across the foil, increasing the efficiency of luminescence quenching. The conversion of phase shift to oxygen concentration therefore needs to consider these temperature and oxygen dependencies, which are parameterised using results of elaborate calibration set-ups by the manufacturer that systematically vary oxygen and temperature across a range of values. The calibration coefficients inform mathematical models that are applied to the data. These are described in more detail in the next step that converts the phase shift into oxygen concentration.</p>
 <p>However, each sensor responds differently to varying oxygen and temperature conditions due to differences in the luminophore foil, its thickness, batch, the LED, and electronics. This means that each sensor ideally requires its own set of calibration coefficients. In most new models, this is provided by the manufacturer. However, in some cases, sensors do not have their own individual multi-point calibration. Instead, only a few sensors of the same batch are calibrated for their O<span class="math notranslate nohighlight">\(_2\)</span>-T-response, the results of which are used as representative of the entire batch. To test how much each individual sensor within the same batch deviates from that batch-level multi-point calibration, manufacturers do a factory test on each sensor, the result of which is four coefficients, named phase coefficients represented on the calibrations sheet as <em>PhaseCoefs</em>, that describe how the individual sensors relate to the batch-level calibration in a 4th order polynomial model. This correction needs to be applied in the phase-domain, i.e., before the phase shift is converted into concentration. The result is the calibrated phase (<code class="docutils literal notranslate"><span class="pre">CAL_PHASE_DOXY</span></code>):</p>
 <div class="math notranslate nohighlight">
@@ -571,10 +783,10 @@ v = r\sin(\theta)
 </section>
 <hr class="docutils"/>
 <section class="tex2jax_ignore mathjax_ignore" id="molar-oxygen-concentration">
-<h1>6. Molar oxygen concentration<a class="headerlink" href="#molar-oxygen-concentration" title="Link to this heading">#</a></h1>
+<span id="6-molar-oxygen-concentration"></span><h1>6. Molar oxygen concentration<a class="headerlink" href="#molar-oxygen-concentration" title="Link to this heading">#</a></h1>
 <p>As described above, the phase shift measured by the optode itself is dependent on temperature and the impact of temperature also differs across O<span class="math notranslate nohighlight">\(_2\)</span> concentrations. The conversion of phase shift to oxygen concentration therefore needs to consider these temperature and oxygen dependencies, which are parameterised using results of elaborate calibration set-ups that systematically vary oxygen and temperature across a range of values. Results are translated into mathematical models that can be applied to the measured data. Different models/methods exist for optode types and are therefore described separately below, based on Thierry et al. (2025a) and Bittig et al. (2018). The choice of method depends on the available calibration data provided by the manufacturer. pelagos-py will choose a method based on the available coefficients in the data attributes, but both the choice of method and calibration coefficients can be altered by the user in the config file.</p>
 <section id="aanderaa-3830-optodes">
-<h2>6.1 Aanderaa 3830 optodes<a class="headerlink" href="#aanderaa-3830-optodes" title="Link to this heading">#</a></h2>
+<span id="61-aanderaa-3830-optodes"></span><h2>6.1 Aanderaa 3830 optodes<a class="headerlink" href="#aanderaa-3830-optodes" title="Link to this heading">#</a></h2>
 <p>Important for these optodes is that the temperature values used in the conversion of phase shift (<code class="docutils literal notranslate"><span class="pre">CAL_PHASE_DOXY</span></code>) to oxygen concentration (<code class="docutils literal notranslate"><span class="pre">MOLAR_DOXY</span></code>) need to come from the CTD’s temperature sensor <code class="docutils literal notranslate"><span class="pre">TEMP</span></code> (to which the optode data has been aligned in a previous step), <em>not</em> from the optode’s temperature sensor (<code class="docutils literal notranslate"><span class="pre">TEMP_DOXY_SHIFTED</span></code>). This is because the temperature sensor of these older optodes had slow response times. <font color="orange"> Based on the sensor type given in the data attributes, pelagos-py will select the appropriate temperature variable, but this can always be changed by the user. </font></p>
 <p>Default configuration:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">parameters</span><span class="p">:</span>
@@ -582,12 +794,10 @@ v = r\sin(\theta)
 </pre></div>
 </div>
 <section id="stern-volmer-svu">
-<h3>Stern-Volmer / SVU<a class="headerlink" href="#stern-volmer-svu" title="Link to this heading">#</a></h3>
+<span id="stern-volmer--svu"></span><h3>Stern-Volmer / SVU<a class="headerlink" href="#stern-volmer-svu" title="Link to this heading">#</a></h3>
 <p>This method uses the calibration coefficients derived from the multi-point calibration done that characterises the O<span class="math notranslate nohighlight">\(_2\)</span>-T dependence. The method shown here is only used in early shipments of these sensors:</p>
 <div class="math notranslate nohighlight">
-\[
-MOLAR\_DOXY_{S=0} = (\frac{F_1}{\frac{CAL\_PHASE\_DOXY}{K_0}-F_2}-1) K_1
-\]</div>
+\[MOLAR\_DOXY_{S=0} = (\frac{F_1}{\frac{CAL\_PHASE\_DOXY}{K_0}-F_2}-1) K_1\]</div>
 <p>, where K<span class="math notranslate nohighlight">\(_0\)</span> and K<span class="math notranslate nohighlight">\(_1\)</span> are temperature dependent coefficients calculated using a 3rd degree polynomial with temperature as argument and coefficients provided in the calibration sheet, named <em>K0Coefs</em> and <em>K1Coefs</em>, respectively. F<span class="math notranslate nohighlight">\(_1\)</span> and F<span class="math notranslate nohighlight">\(_2\)</span> are temperature independent coefficients given in the calibration certification. <code class="docutils literal notranslate"><span class="pre">MOLAR_DOXY</span></code> is in <span class="math notranslate nohighlight">\(\mu\)</span>mol L<span class="math notranslate nohighlight">\(^{-1}\)</span> and represents the oxygen concentration at salinity = 0.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">parameters</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">method</span><span class="p">:</span><span class="w"> </span><span class="s">"SVU38"</span>
@@ -603,14 +813,10 @@ MOLAR\_DOXY_{S=0} = (\frac{F_1}{\frac{CAL\_PHASE\_DOXY}{K_0}-F_2}-1) K_1
 <h3>Polynomial<a class="headerlink" href="#polynomial" title="Link to this heading">#</a></h3>
 <p>The calibrated phase can also be converted into oxygen concentration using 20 coefficients (provided by the manufacturer) that are sensor specific, in a 4<span class="math notranslate nohighlight">\(^{th}\)</span> degree polynomial function:</p>
 <div class="math notranslate nohighlight">
-\[
-MOLAR\_DOXY_{S=0} = C_0 + C_1 . CAL\_PHASE\_DOXY + C_2 . CAL\_PHASE\_DOXY^2 + C_3 . CAL\_PHASE\_DOXY^3 + C_4 . CAL\_PHASE\_DOXY^4
-\]</div>
+\[MOLAR\_DOXY_{S=0} = C_0 + C_1 . CAL\_PHASE\_DOXY + C_2 . CAL\_PHASE\_DOXY^2 + C_3 . CAL\_PHASE\_DOXY^3 + C_4 . CAL\_PHASE\_DOXY^4\]</div>
 <p>, where C<span class="math notranslate nohighlight">\(_{0...4}\)</span> are temperature-dependent coefficients given on the calibration sheet as <em>C0-4 Coefficients</em> (temperature in <span class="math notranslate nohighlight">\(^{\circ}\)</span>C):</p>
 <div class="math notranslate nohighlight">
-\[
-C_i = C_{i0} + C_{i1} . TEMP + C_{i2} . TEMP^2 + C_{i3} . TEMP^3
-\]</div>
+\[C_i = C_{i0} + C_{i1} . TEMP + C_{i2} . TEMP^2 + C_{i3} . TEMP^3\]</div>
 <p><code class="docutils literal notranslate"><span class="pre">MOLAR_DOXY</span></code> is in <span class="math notranslate nohighlight">\(\mu\)</span>mol L<span class="math notranslate nohighlight">\(^{-1}\)</span> and represents the oxygen concentration at salinity = 0.</p>
 <p>Default configuration:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">parameters</span><span class="p">:</span>
@@ -625,12 +831,12 @@ C_i = C_{i0} + C_{i1} . TEMP + C_{i2} . TEMP^2 + C_{i3} . TEMP^3
 </div>
 </section>
 <section id="modified-stern-volmer-equation-for-po-2">
-<h3>Modified Stern-Volmer equation for pO<span class="math notranslate nohighlight">\(_2\)</span><a class="headerlink" href="#modified-stern-volmer-equation-for-po-2" title="Link to this heading">#</a></h3>
+<span id="modified-stern-volmer-equation-for-po"></span><h3>Modified Stern-Volmer equation for pO<span class="math notranslate nohighlight">\(_2\)</span><a class="headerlink" href="#modified-stern-volmer-equation-for-po-2" title="Link to this heading">#</a></h3>
 <p><em>This method has not yet been implemented.</em></p>
 </section>
 </section>
 <section id="aanderaa-4330-optodes">
-<h2>6.2 Aanderaa 4330 optodes<a class="headerlink" href="#aanderaa-4330-optodes" title="Link to this heading">#</a></h2>
+<span id="62-aanderaa-4330-optodes"></span><h2>6.2 Aanderaa 4330 optodes<a class="headerlink" href="#aanderaa-4330-optodes" title="Link to this heading">#</a></h2>
 <p>In contrast to the Aanderaa 3830 optodes, the conversion of <code class="docutils literal notranslate"><span class="pre">CAL_PHASE_DOXY</span></code> to <code class="docutils literal notranslate"><span class="pre">MOLAR_DOXY</span></code> for Aanderaa 4330 optodes can use the temperature values of the optode’s temperature sensor (<code class="docutils literal notranslate"><span class="pre">TEMP_DOXY_SHIFTED</span></code>, shifted to geometrically align with CTD), as its accuracy and response time are much better than the older versions.</p>
 <p>Default configuration:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">parameters</span><span class="p">:</span>
@@ -638,7 +844,7 @@ C_i = C_{i0} + C_{i1} . TEMP + C_{i2} . TEMP^2 + C_{i3} . TEMP^3
 </pre></div>
 </div>
 <section id="id1">
-<h3>Stern-Volmer - SVU<a class="headerlink" href="#id1" title="Link to this heading">#</a></h3>
+<span id="stern-volmer---svu"></span><h3>Stern-Volmer - SVU<a class="headerlink" href="#id1" title="Link to this heading">#</a></h3>
 <p>This method uses the calibration coefficients derived from the multi-point calibration done that characterises the O<span class="math notranslate nohighlight">\(_2\)</span>-T dependence.</p>
 <p>The temperature-dependent coefficients of this method are</p>
 <div class="math notranslate nohighlight">
@@ -669,17 +875,13 @@ C_i = C_{i0} + C_{i1} . TEMP + C_{i2} . TEMP^2 + C_{i3} . TEMP^3
 <p><font color="orange"> I have changed the method name, but this has not been updated in pelagos yet. Have also added additional coefficient names but haven’t yet checked how these have been implemented. </font></p>
 </section>
 <section id="id2">
-<h3>Polynomial<a class="headerlink" href="#id2" title="Link to this heading">#</a></h3>
+<span id="polynomial-1"></span><h3>Polynomial<a class="headerlink" href="#id2" title="Link to this heading">#</a></h3>
 <p>The polynomial method for the Aanderaa 4330 series calculates <code class="docutils literal notranslate"><span class="pre">MOLAR_DOXY</span></code> based on oxygen solubility (C<span class="math notranslate nohighlight">\(^{\ast}\)</span>; cm<span class="math notranslate nohighlight">\(^3\)</span> dm<span class="math notranslate nohighlight">\(^{-3}\)</span>) and air saturation (AirSat; <span class="math notranslate nohighlight">\(\%\)</span>):</p>
 <div class="math notranslate nohighlight">
-\[
-MOLAR\_DOXY = C^{\ast} . 44.614 . \frac{AirSat}{100}
-\]</div>
+\[MOLAR\_DOXY = C^{\ast} . 44.614 . \frac{AirSat}{100}\]</div>
 <p>The air saturation of oxygen is dependent on the partial pressure of O<span class="math notranslate nohighlight">\(_2\)</span> (pO<span class="math notranslate nohighlight">\(_2\)</span>), which is determined from <code class="docutils literal notranslate"><span class="pre">CAL_PHASE_DOXY</span></code> using a two-dimensional polynomial:</p>
 <div class="math notranslate nohighlight">
-\[
-pO_2 =  C_0 . T^{m0} . CAL\_PHASE\_DOXY^{n0} + C_1 . T^{m1} . CAL\_PHASE\_DOXY^{m1} + ... + C_{27} . T^{m27} . CAL\_PHASE\_DOXY^{m27}
-\]</div>
+\[pO_2 =  C_0 . T^{m0} . CAL\_PHASE\_DOXY^{n0} + C_1 . T^{m1} . CAL\_PHASE\_DOXY^{m1} + ... + C_{27} . T^{m27} . CAL\_PHASE\_DOXY^{m27}\]</div>
 <p>, where C<span class="math notranslate nohighlight">\(_{0...13}\)</span> and C<span class="math notranslate nohighlight">\(_{14...27}\)</span> are provided on the calibration certificate as <em>FoilCoefA<span class="math notranslate nohighlight">\(_{0...13}\)</span></em> and <em>FoilCoefB<span class="math notranslate nohighlight">\(_{0...13}\)</span></em>, respectively. Temperature exponents m0…27 are shown as <em>FoilPolyDegT<span class="math notranslate nohighlight">\(_{0...27}\)</span></em> and phase exponents n0…27 as <em>FoilPolyDegO<span class="math notranslate nohighlight">\(_{0...27}\)</span></em>.</p>
 <p>A two-point concentration adjustment may subsequently be applied (see above).</p>
 <p><code class="docutils literal notranslate"><span class="pre">MOLAR_DOXY</span></code> is in <span class="math notranslate nohighlight">\(\mu\)</span>mol L<span class="math notranslate nohighlight">\(^{-1}\)</span> and represents the oxygen concentration at salinity = 0.</p>
@@ -697,20 +899,18 @@ pO_2 =  C_0 . T^{m0} . CAL\_PHASE\_DOXY^{n0} + C_1 . T^{m1} . CAL\_PHASE\_DOXY^{
 </div>
 </section>
 <section id="id3">
-<h3>Modified Stern-Volmer equation for pO<span class="math notranslate nohighlight">\(_2\)</span><a class="headerlink" href="#id3" title="Link to this heading">#</a></h3>
+<span id="modified-stern-volmer-equation-for-po-1"></span><h3>Modified Stern-Volmer equation for pO<span class="math notranslate nohighlight">\(_2\)</span><a class="headerlink" href="#id3" title="Link to this heading">#</a></h3>
 <p><em>This method has not yet been implemented.</em></p>
 </section>
 </section>
 </section>
 <hr class="docutils"/>
 <section class="tex2jax_ignore mathjax_ignore" id="salinity-correction">
-<h1>7. Salinity correction<a class="headerlink" href="#salinity-correction" title="Link to this heading">#</a></h1>
+<span id="7-salinity-correction"></span><h1>7. Salinity correction<a class="headerlink" href="#salinity-correction" title="Link to this heading">#</a></h1>
 <p>The optode measurements themselves are not dependent on salinity, as the sensor responds to the oxygen partial pressure (<span class="math notranslate nohighlight">\(pO{_2}\)</span>), which is independent of salinity. However, the O<span class="math notranslate nohighlight">\(_2\)</span> concentration it measures is salinity-dependent, as it affects seawater O<span class="math notranslate nohighlight">\(_2\)</span> solubility. The oxygen concentration determined using factory-provided calibration metadata is representative for freshwater, because it does not take this salinity-dependence into account. A correction is therefore necessary, which relates the the molar oxygen concentration for salinity = 0 to the molar oxygen concentration at seawater salinity (Bittig et al., 2016; 2018). The salinity-correction has two components. One is the correction term (S<span class="math notranslate nohighlight">\(_{corr}\)</span>), which addresses the effect of salinity on O<span class="math notranslate nohighlight">\(_2\)</span> solubility. The other component adjusts the water vapour pressure (Pvapour<span class="math notranslate nohighlight">\(_{corr}\)</span>), which depends on salinity as it changes the atmospheric composition and therefore pO<span class="math notranslate nohighlight">\(_2\)</span>.</p>
 <p>The overall salinity correction applied is represented by the following function:</p>
 <div class="math notranslate nohighlight">
-\[
-MOLAR\_DOXY_{PSAL} = Pvapour_{corr} . S_{corr} . MOLAR\_DOXY_{S=0}
-\]</div>
+\[MOLAR\_DOXY_{PSAL} = Pvapour_{corr} . S_{corr} . MOLAR\_DOXY_{S=0}\]</div>
 <p>where:</p>
 <ul class="simple">
 <li><p><span class="math notranslate nohighlight">\(S\)</span> = practical salinity (<code class="docutils literal notranslate"><span class="pre">PRAC_SALINITY</span></code>)</p></li>
@@ -727,9 +927,7 @@ MOLAR\_DOXY_{PSAL} = Pvapour_{corr} . S_{corr} . MOLAR\_DOXY_{S=0}
 <p>and <span class="math notranslate nohighlight">\(B_0,\ldots,B_3\)</span> and <span class="math notranslate nohighlight">\(C_0\)</span> are the coefficients recommended by the SCOR Working Group 142 (Bittig et al., 2016). S<span class="math notranslate nohighlight">\(_{ref}\)</span> is reference salinity given in the optode settings and what is used my its internal calculations. This is normally equal to 0.</p>
 <p>The water vapour pressure adjustment component (Pvapour<span class="math notranslate nohighlight">\(_{corr}\)</span>) is calculated as</p>
 <div class="math notranslate nohighlight">
-\[
-Pvapour_{corr} = \frac{1013.25-p_{\mathrm{H_2O}}(T,S_{preset})}{1013.25-p_{\mathrm{H_2O}}(T,S)}
-\]</div>
+\[Pvapour_{corr} = \frac{1013.25-p_{\mathrm{H_2O}}(T,S_{preset})}{1013.25-p_{\mathrm{H_2O}}(T,S)}\]</div>
 <p>Water vapour pressure is calculated according to Weiss &amp; Price (1980). S<span class="math notranslate nohighlight">\(_{preset}\)</span> is set to 0.</p>
 <p>Keep S<span class="math notranslate nohighlight">\(_{ref}\)</span> and S<span class="math notranslate nohighlight">\(_{preset}\)</span> = 0, as the former should not be used for <code class="docutils literal notranslate"><span class="pre">MOLAR_DOXY</span></code> re-calculated externally to the sensor and the latter needs to be set to 0 to account for the water vapour pressure effect, which Aanderaa neglects.</p>
 <p>Default configuration:</p>
@@ -743,7 +941,7 @@ Pvapour_{corr} = \frac{1013.25-p_{\mathrm{H_2O}}(T,S_{preset})}{1013.25-p_{\math
 </section>
 <hr class="docutils"/>
 <section class="tex2jax_ignore mathjax_ignore" id="pressure-correction-on-molar-oxygen-concentration">
-<h1>8. Pressure correction on molar oxygen concentration<a class="headerlink" href="#pressure-correction-on-molar-oxygen-concentration" title="Link to this heading">#</a></h1>
+<span id="8-pressure-correction-on-molar-oxygen-concentration"></span><h1>8. Pressure correction on molar oxygen concentration<a class="headerlink" href="#pressure-correction-on-molar-oxygen-concentration" title="Link to this heading">#</a></h1>
 <p>The pressure effect on luminescence lifetime needs to be applied to the uncalibrated phase shift. The pressure effect on quenching and on membrane O<span class="math notranslate nohighlight">\(_2\)</span> equilibrium level needs to be applied to the oxygen concentration once it has been corrected for salinity (Bittig et al., 2018).</p>
 <p>The pressure correction on molar oxygen concentration is applied:</p>
 <div class="math notranslate nohighlight">
@@ -757,22 +955,14 @@ Pvapour_{corr} = \frac{1013.25-p_{\mathrm{H_2O}}(T,S_{preset})}{1013.25-p_{\math
 <p>The correction should use the <strong>CTD temperature</strong>, not the optode temperature, regardless of the optode type.</p>
 <p>The values of the pressure-response coefficients depends on whether the first pressure correction has been applied on the uncalibrated phase shift. For optodes where phase has already been corrected for pressure:</p>
 <div class="math notranslate nohighlight">
-\[
-P_{\mathrm{coef2}}=0.00022
-\]</div>
+\[P_{\mathrm{coef2}}=0.00022\]</div>
 <div class="math notranslate nohighlight">
-\[
-P_{\mathrm{coef3}}=0.0419
-\]</div>
+\[P_{\mathrm{coef3}}=0.0419\]</div>
 <p>For optodes where phase has not been corrected for pressure:</p>
 <div class="math notranslate nohighlight">
-\[
-P_{\mathrm{coef2}}=0.00025
-\]</div>
+\[P_{\mathrm{coef2}}=0.00025\]</div>
 <div class="math notranslate nohighlight">
-\[
-P_{\mathrm{coef3}}=0.0328
-\]</div>
+\[P_{\mathrm{coef3}}=0.0328\]</div>
 <p>These coefficients are set automatically by setting <code class="docutils literal notranslate"><span class="pre">uncalibrated_phase_correction_applied</span></code> in the configuration file to true or false. <font color="orange"> If the first pressure correction step has been applied, pelagos-py will automatically set <code class="docutils literal notranslate"><span class="pre">uncalibrated_phase_correction_applied</span></code> to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</font></p>
 <p>Default configuration:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">parameters</span><span class="p">:</span>
@@ -785,7 +975,7 @@ P_{\mathrm{coef3}}=0.0328
 </section>
 <hr class="docutils"/>
 <section class="tex2jax_ignore mathjax_ignore" id="dissolved-oxygen-content">
-<h1>9. Dissolved oxygen content<a class="headerlink" href="#dissolved-oxygen-content" title="Link to this heading">#</a></h1>
+<span id="9-dissolved-oxygen-content"></span><h1>9. Dissolved oxygen content<a class="headerlink" href="#dissolved-oxygen-content" title="Link to this heading">#</a></h1>
 <p>At this point, the oxygen values need to be QC’ed before proceeding to the remaining part of the pipeline. In order to apply the global and regional range checks, oxygen concentration needs to be expressed in units <span class="math notranslate nohighlight">\(\mu\)</span>mol kg<span class="math notranslate nohighlight">\(^{-1}\)</span>, i.e., the same units as the values given in the range checks. For all unit conversions, pelagos-py follows the best practice recommendations by SCOR WG 142 (Bittig et al., 2016). If the phase shift was converted to molar oxygen concentration in <span class="math notranslate nohighlight">\(\mu\)</span>mol L<span class="math notranslate nohighlight">\(^{-1}\)</span> (including a subsequent salinity-correction), then the oxygen content is calculated using seawater density (<span class="math notranslate nohighlight">\(\rho\)</span>):</p>
 <div class="math notranslate nohighlight">
 \[DOXY=\frac{MOLAR\_DOXY\_PSAL\_PCORR}{\rho}\]</div>
@@ -795,10 +985,10 @@ P_{\mathrm{coef3}}=0.0328
 </section>
 <hr class="docutils"/>
 <section class="tex2jax_ignore mathjax_ignore" id="oxygen-qc">
-<h1>10. Oxygen QC<a class="headerlink" href="#oxygen-qc" title="Link to this heading">#</a></h1>
+<span id="10-oxygen-qc"></span><h1>10. Oxygen QC<a class="headerlink" href="#oxygen-qc" title="Link to this heading">#</a></h1>
 <p>All QC checks documented here need to be applied to the oxygen content in <span class="math notranslate nohighlight">\(\mu\)</span>mol kg<span class="math notranslate nohighlight">\(^{-1}\)</span>, i.e., on the <code class="docutils literal notranslate"><span class="pre">DOXY</span></code> variable.</p>
 <section id="id4">
-<h2>10.1 Global range check<a class="headerlink" href="#id4" title="Link to this heading">#</a></h2>
+<span id="101-global-range-check"></span><h2>10.1 Global range check<a class="headerlink" href="#id4" title="Link to this heading">#</a></h2>
 <p>Values outside physically plausible global ranges should be flagged as “bad data” (i.e., QC flag 4):</p>
 <div class="math notranslate nohighlight">
 \[-5 \leq DOXY \leq 600 \quad[\mu\mathrm{mol\,kg^{-1}}]\]</div>
@@ -813,7 +1003,7 @@ P_{\mathrm{coef3}}=0.0328
 </div>
 </section>
 <section id="id5">
-<h2>10.2 Spike check<a class="headerlink" href="#id5" title="Link to this heading">#</a></h2>
+<span id="102-spike-check"></span><h2>10.2 Spike check<a class="headerlink" href="#id5" title="Link to this heading">#</a></h2>
 <p>A spike check is applied using a test value:</p>
 <p>Test value = | V2 - (V3 + V1)/2 | - | (V3 - V1) / 2 |</p>
 <p>where V2 is the measurement being tested as a spike, V1 and V3 are the values above and below.</p>
@@ -824,7 +1014,7 @@ P_{\mathrm{coef3}}=0.0328
 </ul>
 </section>
 <section id="id6">
-<h2>10.3 Gradient test<a class="headerlink" href="#id6" title="Link to this heading">#</a></h2>
+<span id="103-gradient-test"></span><h2>10.3 Gradient test<a class="headerlink" href="#id6" title="Link to this heading">#</a></h2>
 <p>A gradient check is applied using a test value:</p>
 <p>Test value = | V2 − (V3 + V1)/2 |</p>
 <p>where V2 is the measurement being tested as a spike, and V1 and V3 are the values above and below.</p>
@@ -837,30 +1027,30 @@ P_{\mathrm{coef3}}=0.0328
 </section>
 <hr class="docutils"/>
 <section class="tex2jax_ignore mathjax_ignore" id="response-correction">
-<h1>11. Response correction<a class="headerlink" href="#response-correction" title="Link to this heading">#</a></h1>
+<span id="11-response-correction"></span><h1>11. Response correction<a class="headerlink" href="#response-correction" title="Link to this heading">#</a></h1>
 <p><em>Still to be implemented.</em></p>
 <p>The optode cannot respond instantaneously to changes in ambient oxygen levels. This is seen most clearly when the sensor moves through large gradients in the water column when the oxygen profile looks smeared. It is also seen in profiles of down- and up-cast pairs, which will show a pattern that looks like a hysteresis effect. This reponse delay can lead to significant under- or over-estimations. The reason for the slow response is that oxygen needs to diffuse through the sensing foil in order to reach equilibrium with the ambient seawater. The diffusion is temperature- and solubility- dependent, and is also affected by the thickness of the liquid boundary layer above the membrane and flow of water. Bittig et al. (2014) have developed a 1-D diffusion model that describes the sensor’s delay in response time (Bittig et al., 2018). However, scientific groups and communities working with glider optode data have developed other practical methods to correct for the response delay. Currently, no consensus exists on which method is “best” (López-García et al., 2022). pelagos-py therefore offers the following four most-used methods and provides diagnostics to compare, allowing the user to decide which one leads to the best results for their data. These methods have been adapted from López-García et al. (2022) to match the pelagos-py pipeline.</p>
 <section id="geomar-method">
-<h2>11.1 GEOMAR method<a class="headerlink" href="#geomar-method" title="Link to this heading">#</a></h2>
+<span id="111-geomar-method"></span><h2>11.1 GEOMAR method<a class="headerlink" href="#geomar-method" title="Link to this heading">#</a></h2>
 </section>
 <section id="imos-method">
-<h2>11.2 IMOS method<a class="headerlink" href="#imos-method" title="Link to this heading">#</a></h2>
+<span id="112-imos-method"></span><h2>11.2 IMOS method<a class="headerlink" href="#imos-method" title="Link to this heading">#</a></h2>
 </section>
 <section id="uea-method">
-<h2>11.3 UEA method<a class="headerlink" href="#uea-method" title="Link to this heading">#</a></h2>
+<span id="113-uea-method"></span><h2>11.3 UEA method<a class="headerlink" href="#uea-method" title="Link to this heading">#</a></h2>
 </section>
 <section id="altereco-method">
-<h2>11.4 AlterEco method<a class="headerlink" href="#altereco-method" title="Link to this heading">#</a></h2>
+<span id="114-altereco-method"></span><h2>11.4 AlterEco method<a class="headerlink" href="#altereco-method" title="Link to this heading">#</a></h2>
 </section>
 </section>
 <hr class="docutils"/>
 <section class="tex2jax_ignore mathjax_ignore" id="in-air-calibration">
-<h1>12. In-air calibration<a class="headerlink" href="#in-air-calibration" title="Link to this heading">#</a></h1>
+<span id="12-in-air-calibration"></span><h1>12. In-air calibration<a class="headerlink" href="#in-air-calibration" title="Link to this heading">#</a></h1>
 <p><em>Not yet implemented</em></p>
 </section>
 <hr class="docutils"/>
 <section class="tex2jax_ignore mathjax_ignore" id="two-point-calibration">
-<h1>13. Two-point calibration<a class="headerlink" href="#two-point-calibration" title="Link to this heading">#</a></h1>
+<span id="13-two-point-calibration"></span><h1>13. Two-point calibration<a class="headerlink" href="#two-point-calibration" title="Link to this heading">#</a></h1>
 <p><em>Not yet implemented</em></p>
 </section>
 <hr class="docutils"/>
@@ -877,16 +1067,30 @@ P_{\mathrm{coef3}}=0.0328
 <li><p>López-García,, P., Hull, T., Thomsen, S., Hahn, J., Queste, B.Y, et al (2022) OceanGliders Oxygen SOP, Version 1.0.0. OceanGliders, 55pp. DOI: <a class="reference external" href="http://dx.doi.org/10.25607/OBP-1756">http://dx.doi.org/10.25607/OBP-1756</a>. (GitHub Repository, OceanGliders Oxygen SOP. Available: <a class="reference external" href="https://oceangliderscommunity.github.io/Oxygen_SOP/sections/authors_SOP_development_process.html.">https://oceangliderscommunity.github.io/Oxygen_SOP/sections/authors_SOP_development_process.html.</a>)</p></li>
 </ul>
 </section>
-</article>
-</div>
-<dialog id="pst-secondary-sidebar-modal" tabindex="-1"></dialog>
-<div class="bd-sidebar-secondary bd-toc" id="pst-secondary-sidebar"><div class="sidebar-secondary-items sidebar-secondary__inner">
-<div class="sidebar-secondary-item">
-<div class="page-toc tocsection onthispage" id="pst-page-navigation-heading-2">
-<i class="fa-solid fa-list"></i> On this page
+
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal" tabindex="-1"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
   </div>
-<nav aria-labelledby="pst-page-navigation-heading-2" class="page-toc" id="pst-page-toc-nav">
-<ul class="pst-show_toc_level nav section-nav flex-column">
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Oxygen Processing: Aanderaa Optodes</a><ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overview">Overview</a></li>
 </ul>
@@ -944,41 +1148,63 @@ P_{\mathrm{coef3}}=0.0328
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#two-point-calibration">13. Two-point calibration</a></li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#references">References</a></li>
 </ul>
-</nav></div>
+
+  </nav></div>
+
 </div></div>
-</div>
-<footer class="bd-footer-content">
-</footer>
-</main>
-</div>
-</div>
-<!-- Scripts loaded after <body> so the DOM is not blocked -->
-<script defer="" src="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8"></script>
-<script defer="" src="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8"></script>
-<footer class="bd-footer">
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8"></script>
+
+  <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
-<div class="footer-items__start">
-<div class="footer-item">
-<p class="copyright">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
     
       © Copyright 2025, National Oceanography Centre.
       <br/>
-</p>
+    
+  </p>
 </div>
-<div class="footer-item">
-<p class="sphinx-version">
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
     Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.1.
   </p>
 </div>
-</div>
-<div class="footer-items__end">
-<div class="footer-item">
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
 <p class="theme-version">
-<!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
   Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.24.0.
 </p></div>
+      
+    </div>
+  
 </div>
-</div>
-</footer>
-</body>
+
+  </footer>
+  </body>
 </html>

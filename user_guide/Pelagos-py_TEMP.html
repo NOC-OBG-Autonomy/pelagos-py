@@ -34,7 +34,7 @@
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-codeautolink.css?v=b2176991" />
-    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=6a604523" />
     <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Ubuntu&display=swap" />
     <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=a20de4af" />
   
@@ -44,12 +44,12 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=f9910351"></script>
+    <script src="../_static/documentation_options.js?v=82bd8ea8"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=df1a032d"></script>
-    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script data-sd-tabs-storage-prefix="sphinx-design-tab-id-" src="../_static/design-tabs.js?v=fcb327ea"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'user_guide/Pelagos-py_TEMP';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
@@ -517,10 +517,10 @@
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="initial-quality-control">
-<h1>1. Initial quality control<a class="headerlink" href="#initial-quality-control" title="Link to this heading">#</a></h1>
+<span id="1-initial-quality-control"></span><h1>1. Initial quality control<a class="headerlink" href="#initial-quality-control" title="Link to this heading">#</a></h1>
 <p>Temperature QC is performed using general <strong>Range QC</strong>,  <strong>Stuck Value QC</strong> and <strong>Spike QC</strong> steps used elsewhere in pelagos-py (see the <strong>Quality Control</strong> documentation for the full algorithm descriptions). These QC steps have no code-level defaults of their own. Below we provide configurations for these steps that align with the [Argo CTD quality control manual](<a class="reference external" href="https://archimer.ifremer.fr/doc/00228/33951/">Argo Quality Control Manual for CTD and Trajectory Data</a>). Temperature QC flags may also affected by other CTD QC as data quality may be affected by the quality of other CTD variables. These linked-variable QC methods are not covered here.</p>
 <section id="global-range-test">
-<h2>1.1 Global range test<a class="headerlink" href="#global-range-test" title="Link to this heading">#</a></h2>
+<span id="11-global-range-test"></span><h2>1.1 Global range test<a class="headerlink" href="#global-range-test" title="Link to this heading">#</a></h2>
 <p>Recommended configuration for open ocean:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">qc_settings</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">range qc</span><span class="p">:</span>
@@ -532,7 +532,7 @@
 <p>Temperature cannot fall below -2.5 °C as this is well below the freezing temperature of saline water (~1.9 °C). Temperatures above 40 °C would significantly exceed the hottest temperatures measured in the global ocean (36 °C in the Persian Gulf due to intense surface heating of shallow waters).</p>
 </section>
 <section id="local-range-test">
-<h2>1.2 Local range test<a class="headerlink" href="#local-range-test" title="Link to this heading">#</a></h2>
+<span id="12-local-range-test"></span><h2>1.2 Local range test<a class="headerlink" href="#local-range-test" title="Link to this heading">#</a></h2>
 <p>Local range test should only be applied in cases where a glider has been deployed to a region where conditions are sufficiently unique. This test tightens the ranges checked by the prior global range test.</p>
 <p>Recommended configurations:</p>
 <ul class="simple">
@@ -558,7 +558,7 @@
 <p>The ranges specified above pertain to the lower and upper limits of temperatures measured in the respective regions</p>
 </section>
 <section id="stuck-value-test">
-<h2>1.3 Stuck value test<a class="headerlink" href="#stuck-value-test" title="Link to this heading">#</a></h2>
+<span id="13-stuck-value-test"></span><h2>1.3 Stuck value test<a class="headerlink" href="#stuck-value-test" title="Link to this heading">#</a></h2>
 <p>Recommended configuration:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">qc_settings</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">stuck value qc</span><span class="p">:</span>
@@ -569,13 +569,13 @@
 <p>A frozen reading (four or more identical consecutive values) indicates a potential sensor error. All involved values are flagged as bad (<code class="docutils literal notranslate"><span class="pre">4</span></code>).</p>
 </section>
 <section id="spike-test">
-<h2>1.4 Spike test<a class="headerlink" href="#spike-test" title="Link to this heading">#</a></h2>
+<span id="14-spike-test"></span><h2>1.4 Spike test<a class="headerlink" href="#spike-test" title="Link to this heading">#</a></h2>
 <p>The spike test step looks for unphysical spiking in temperature readings. A suit of approaches are currently being tested and the default spike test has yet to be implemented.</p>
 </section>
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="deriving-conservative-temperature">
-<h1>2. Deriving conservative temperature<a class="headerlink" href="#deriving-conservative-temperature" title="Link to this heading">#</a></h1>
+<span id="2-deriving-conservative-temperature"></span><h1>2. Deriving conservative temperature<a class="headerlink" href="#deriving-conservative-temperature" title="Link to this heading">#</a></h1>
 <p>Seawater’s temperature changes not just from heating/cooling but also from pressure changes (compression) and mixing effects tied to its salt content. In-situ temperature reflects all of this, which makes it a poor stand-in for actual heat content — a parcel can change in-situ temperature without gaining or losing any heat, just by moving to a different depth.</p>
 <p>Potential temperature (adjusting for pressure effects) improves on this, but it still isn’t perfectly conserved when water parcels mix, because seawater’s heat capacity depends on salinity.</p>
 <p>Conservative Temperature fixes this by being based on <strong>enthalpy</strong> — essentially the total heat energy contained in a parcel of seawater, accounting for both its temperature and the energy tied up in its pressure and volume. Because enthalpy is the quantity that heat budgets are actually built on, using it as the basis for temperature means Conservative Temperature stays almost perfectly consistent with the true heat content of the water, even through mixing.</p>

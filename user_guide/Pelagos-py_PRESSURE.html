@@ -34,7 +34,7 @@
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-codeautolink.css?v=b2176991" />
-    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=6a604523" />
     <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Ubuntu&display=swap" />
     <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=a20de4af" />
   
@@ -44,12 +44,12 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=f9910351"></script>
+    <script src="../_static/documentation_options.js?v=82bd8ea8"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=df1a032d"></script>
-    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script data-sd-tabs-storage-prefix="sphinx-design-tab-id-" src="../_static/design-tabs.js?v=fcb327ea"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'user_guide/Pelagos-py_PRESSURE';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
@@ -507,7 +507,7 @@
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="quality-control">
-<h1>1. Quality control<a class="headerlink" href="#quality-control" title="Link to this heading">#</a></h1>
+<span id="1-quality-control"></span><h1>1. Quality control<a class="headerlink" href="#quality-control" title="Link to this heading">#</a></h1>
 <p>Pressure QC uses <a class="reference internal" href="../api/pelagos_py/steps/quality_control/range_qc/index.html"><span class="doc">Range QC</span></a> and <a class="reference internal" href="../api/pelagos_py/steps/quality_control/stuck_value_qc/index.html"><span class="doc">Stuck Value QC</span></a>. Default configuration:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">qc_settings</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">range qc</span><span class="p">:</span>
@@ -529,7 +529,7 @@
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="interpolation">
-<h1>2. Interpolation<a class="headerlink" href="#interpolation" title="Link to this heading">#</a></h1>
+<span id="2-interpolation"></span><h1>2. Interpolation<a class="headerlink" href="#interpolation" title="Link to this heading">#</a></h1>
 <p>After QC, the <a class="reference internal" href="../api/pelagos_py/steps/processing/interpolate_data/index.html"><span class="doc">Interpolate Data</span></a> step fills pressure values flagged probably bad (<code class="docutils literal notranslate"><span class="pre">3</span></code>), bad (<code class="docutils literal notranslate"><span class="pre">4</span></code>) or missing (<code class="docutils literal notranslate"><span class="pre">9</span></code>) by linear interpolation in time, and re-flags them as interpolated (<code class="docutils literal notranslate"><span class="pre">8</span></code>). This gives every sample a usable pressure for <code class="docutils literal notranslate"><span class="pre">DEPTH</span></code> and profile finding.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Interpolate Data</span>
 <span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>

@@ -34,7 +34,7 @@
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-codeautolink.css?v=b2176991" />
-    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=6a604523" />
     <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Ubuntu&display=swap" />
     <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=a20de4af" />
   
@@ -44,12 +44,12 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=f9910351"></script>
+    <script src="../_static/documentation_options.js?v=82bd8ea8"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=df1a032d"></script>
-    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script data-sd-tabs-storage-prefix="sphinx-design-tab-id-" src="../_static/design-tabs.js?v=fcb327ea"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
@@ -512,14 +512,14 @@
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="conductivitytemperature-ct-lag-correction">
-<h1>1. Conductivity–Temperature (C–T) Lag Correction<a class="headerlink" href="#conductivitytemperature-ct-lag-correction" title="Link to this heading">#</a></h1>
+<span id="1-conductivitytemperature-ct-lag-correction"></span><h1>1. Conductivity–Temperature (C–T) Lag Correction<a class="headerlink" href="#conductivitytemperature-ct-lag-correction" title="Link to this heading">#</a></h1>
 <section id="physical-basis">
-<h2>1.1 Physical basis<a class="headerlink" href="#physical-basis" title="Link to this heading">#</a></h2>
+<span id="11-physical-basis"></span><h2>1.1 Physical basis<a class="headerlink" href="#physical-basis" title="Link to this heading">#</a></h2>
 <p>CNDC and TEMP are sampled by separate sensor elements with different response times. At a sharp vertical gradient this time mismatch means the CNDC value used to compute salinity at a given instant corresponds to slightly different water than the simultaneously-recorded TEMP value, producing spurious salinity spikes that track the gradient rather than any real feature.</p>
 <p><code class="docutils literal notranslate"><span class="pre">correct_ct_lag()</span></code> corrects this by shifting the conductivity time series relative to temperature/pressure by a fixed number of seconds, chosen to minimise the spikiness of the resulting salinity record. The underlying assumption is that the <em>correctly</em> time-aligned CNDC/TEMP pair produces the smoothest plausible salinity profile; spikiness is used as a proxy for misalignment, following the method described by Woo (2019).</p>
 </section>
 <section id="algorithm-as-implemented">
-<h2>1.2 Algorithm as implemented<a class="headerlink" href="#algorithm-as-implemented" title="Link to this heading">#</a></h2>
+<span id="12-algorithm-as-implemented"></span><h2>1.2 Algorithm as implemented<a class="headerlink" href="#algorithm-as-implemented" title="Link to this heading">#</a></h2>
 <p>For each unique <code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER</span></code> in the dataset:</p>
 <ol class="arabic simple">
 <li><p><strong>Qualification.</strong> A profile is only used to estimate a lag if it spans more than one hour and contains more than <code class="docutils literal notranslate"><span class="pre">3</span> <span class="pre">×</span> <span class="pre">filter_window_size</span></code> samples.</p></li>
@@ -539,7 +539,7 @@
 </ol>
 </section>
 <section id="figures">
-<h2>1.3 Figures<a class="headerlink" href="#figures" title="Link to this heading">#</a></h2>
+<span id="13-figures"></span><h2>1.3 Figures<a class="headerlink" href="#figures" title="Link to this heading">#</a></h2>
 <figure class="align-default" id="id6">
 <a class="reference internal image-reference" href="../_images/salinity_lag_search.png"><img alt="C-T lag search cost curve for one profile" src="../_images/salinity_lag_search.png" style="width: 90%;" />
 </a>
@@ -556,7 +556,7 @@
 </figure>
 </section>
 <section id="default-configuration">
-<h2>1.4 Default configuration<a class="headerlink" href="#default-configuration" title="Link to this heading">#</a></h2>
+<span id="14-default-configuration"></span><h2>1.4 Default configuration<a class="headerlink" href="#default-configuration" title="Link to this heading">#</a></h2>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Salinity Adjustment</span>
 <span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
@@ -567,27 +567,27 @@
 <p><code class="docutils literal notranslate"><span class="pre">filter_window_size</span></code> (default <code class="docutils literal notranslate"><span class="pre">21</span></code>, must be odd) controls only the running-mean smoothing window used inside the <em>lag search</em> (§1.2, step 4); it does not affect the thermal-mass correction (§2).</p>
 </section>
 <section id="implementation-notes-and-known-limitations">
-<h2>1.5 Implementation notes and known limitations<a class="headerlink" href="#implementation-notes-and-known-limitations" title="Link to this heading">#</a></h2>
+<span id="15-implementation-notes-and-known-limitations"></span><h2>1.5 Implementation notes and known limitations<a class="headerlink" href="#implementation-notes-and-known-limitations" title="Link to this heading">#</a></h2>
 <ul class="simple">
 <li><p><strong>Required inputs</strong>: <code class="docutils literal notranslate"><span class="pre">TIME</span></code> (or <code class="docutils literal notranslate"><span class="pre">TIME_CTD</span></code> if present — see §1.5), <code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER</span></code>, <code class="docutils literal notranslate"><span class="pre">CNDC</span></code>, <code class="docutils literal notranslate"><span class="pre">TEMP</span></code>, <code class="docutils literal notranslate"><span class="pre">PRES</span></code>. <code class="docutils literal notranslate"><span class="pre">PROFILE_DIRECTION</span></code> and <code class="docutils literal notranslate"><span class="pre">DEPTH</span></code> are optional and are only used to build the diagnostics QC mask, not the correction itself.</p></li>
 <li><p><strong>Flags inform the estimate but do not stop the correction.</strong> As with the thermal-mass step, samples flagged <code class="docutils literal notranslate"><span class="pre">3</span></code>/<code class="docutils literal notranslate"><span class="pre">4</span></code>/<code class="docutils literal notranslate"><span class="pre">9</span></code> are excluded from the lag search and from anchoring the correction interpolant, but the shift is still evaluated and applied at every valid-time sample, flagged or not.</p></li>
 </ul>
 </section>
 <section id="time-ctd-fallback">
-<h2>1.6 <code class="docutils literal notranslate"><span class="pre">TIME_CTD</span></code> fallback<a class="headerlink" href="#time-ctd-fallback" title="Link to this heading">#</a></h2>
+<span id="16-time_ctd-fallback"></span><h2>1.6 <code class="docutils literal notranslate"><span class="pre">TIME_CTD</span></code> fallback<a class="headerlink" href="#time-ctd-fallback" title="Link to this heading">#</a></h2>
 <p>If a <code class="docutils literal notranslate"><span class="pre">TIME_CTD</span></code> variable is present, it is used in preference to <code class="docutils literal notranslate"><span class="pre">TIME</span></code> throughout both corrections; otherwise the step falls back to <code class="docutils literal notranslate"><span class="pre">TIME</span></code> and logs that it has done so.</p>
 </section>
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="thermal-mass-thermal-lag-correction">
-<h1>2. Thermal-Mass (Thermal Lag) Correction<a class="headerlink" href="#thermal-mass-thermal-lag-correction" title="Link to this heading">#</a></h1>
+<span id="2-thermal-mass-thermal-lag-correction"></span><h1>2. Thermal-Mass (Thermal Lag) Correction<a class="headerlink" href="#thermal-mass-thermal-lag-correction" title="Link to this heading">#</a></h1>
 <section id="id1">
-<h2>2.1 Physical basis<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
+<span id="21-physical-basis"></span><h2>2.1 Physical basis<a class="headerlink" href="#id1" title="Link to this heading">#</a></h2>
 <p>The conductivity cell itself has thermal mass: it absorbs and releases heat as the glider moves through water of changing temperature, so the water temperature <em>inside the cell</em> briefly lags the ambient temperature recorded by the separate temperature sensor. This is a distinct error from the C–T timing lag corrected in §1 — it is a thermal equilibration effect, not a sensor-response timing offset — and it likewise manifests as salinity spiking correlated with the rate of temperature change, particularly across strong thermoclines.</p>
 <p><code class="docutils literal notranslate"><span class="pre">correct_thermal_lag()</span></code> corrects this using the recursive digital filter of Morison et al. (1994) (their eq. 5), which reconstructs the in-cell temperature from the ambient temperature record and a pair of fixed empirical coefficients (<code class="docutils literal notranslate"><span class="pre">alpha</span></code>, <code class="docutils literal notranslate"><span class="pre">tau</span></code>) that describe the amplitude and time constant of the thermal error for a given flow rate through the cell.</p>
 </section>
 <section id="id2">
-<h2>2.2 Algorithm as implemented<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
+<span id="22-algorithm-as-implemented"></span><h2>2.2 Algorithm as implemented<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
 <p>For each unique <code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER</span></code>, independently:</p>
 <ol class="arabic simple">
 <li><p><strong>Extraction and gap handling.</strong> The profile’s <code class="docutils literal notranslate"><span class="pre">TEMP</span></code>/<code class="docutils literal notranslate"><span class="pre">PRES</span></code>/time columns are sliced out and rows with <code class="docutils literal notranslate"><span class="pre">NaN</span></code> <code class="docutils literal notranslate"><span class="pre">TEMP</span></code> are dropped, retaining a mapping back to their original indices in the full dataset. Profiles with fewer than 5 remaining timestamped <code class="docutils literal notranslate"><span class="pre">TEMP</span></code> samples are skipped (left uncorrected).</p></li>
@@ -613,7 +613,7 @@ and the corrected in-cell temperature is \)</span>T_i^{\text{corr}} = T_i - \Del
 <p>After all profiles are processed, the working copy of <code class="docutils literal notranslate"><span class="pre">TEMP</span></code> is updated: samples for which a corrected value was produced replace the original; samples that were skipped at any of steps 1–3 (too few points, too few usable anchors, or the profile did not otherwise qualify) retain their original, uncorrected value rather than being flagged or set to <code class="docutils literal notranslate"><span class="pre">NaN</span></code>.</p>
 </section>
 <section id="id3">
-<h2>2.3 Figures<a class="headerlink" href="#id3" title="Link to this heading">#</a></h2>
+<span id="23-figures"></span><h2>2.3 Figures<a class="headerlink" href="#id3" title="Link to this heading">#</a></h2>
 <figure class="align-default" id="id8">
 <a class="reference internal image-reference" href="../_images/salinity_thermal_mass.png"><img alt="Thermal-mass correction against the rate of temperature change" src="../_images/salinity_thermal_mass.png" style="width: 90%;" />
 </a>
@@ -630,11 +630,11 @@ and the corrected in-cell temperature is \)</span>T_i^{\text{corr}} = T_i - \Del
 </figure>
 </section>
 <section id="id4">
-<h2>2.4 Default configuration<a class="headerlink" href="#id4" title="Link to this heading">#</a></h2>
+<span id="24-default-configuration"></span><h2>2.4 Default configuration<a class="headerlink" href="#id4" title="Link to this heading">#</a></h2>
 <p>The thermal-mass correction has <strong>no independent parameters of its own</strong> — all of <code class="docutils literal notranslate"><span class="pre">alpha_offset</span></code>, <code class="docutils literal notranslate"><span class="pre">alpha_slope</span></code>, <code class="docutils literal notranslate"><span class="pre">tau_offset</span></code>, <code class="docutils literal notranslate"><span class="pre">tau_slope</span></code> and the flow rate <code class="docutils literal notranslate"><span class="pre">U</span> <span class="pre">=</span> <span class="pre">0.4867</span></code> are hard-coded constants in <code class="docutils literal notranslate"><span class="pre">correct_thermal_lag()</span></code>. The only user-facing parameter for the whole <code class="docutils literal notranslate"><span class="pre">Salinity</span> <span class="pre">Adjustment</span></code> step is <code class="docutils literal notranslate"><span class="pre">filter_window_size</span></code> (§1.3), which affects the C–T lag search only.</p>
 </section>
 <section id="id5">
-<h2>2.5 Implementation notes and known limitations<a class="headerlink" href="#id5" title="Link to this heading">#</a></h2>
+<span id="25-implementation-notes-and-known-limitations"></span><h2>2.5 Implementation notes and known limitations<a class="headerlink" href="#id5" title="Link to this heading">#</a></h2>
 <ul class="simple">
 <li><p>The coefficients are used exactly as published by Morison et al. (1994) and are <strong>not re-optimised in T/S space</strong> for the specific platform or deployment (contrast with the approach of Garau et al., 2011, which re-tunes thermal-lag coefficients against measured T/S structure); they are treated as fixed physical constants of the recursive filter, not as fitted parameters.</p></li>
 <li><p>The correction operates entirely per-profile: it resamples to 1 Hz, filters, and resamples back within each profile independently, so the filter’s memory does not carry across profile boundaries (see step 4 above).</p></li>
@@ -647,7 +647,7 @@ and the corrected in-cell temperature is \)</span>T_i^{\text{corr}} = T_i - \Del
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="outputs">
-<h1>3. Outputs<a class="headerlink" href="#outputs" title="Link to this heading">#</a></h1>
+<span id="3-outputs"></span><h1>3. Outputs<a class="headerlink" href="#outputs" title="Link to this heading">#</a></h1>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Variable</p></th>
@@ -668,7 +668,7 @@ and the corrected in-cell temperature is \)</span>T_i^{\text{corr}} = T_i - \Del
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="recommended-reporting">
-<h1>4. Recommended reporting<a class="headerlink" href="#recommended-reporting" title="Link to this heading">#</a></h1>
+<span id="4-recommended-reporting"></span><h1>4. Recommended reporting<a class="headerlink" href="#recommended-reporting" title="Link to this heading">#</a></h1>
 <p>A scientific methods section describing salinity adjustment with pelagos-py should report:</p>
 <ul class="simple">
 <li><p>that a conductivity–temperature (C–T) lag correction was applied, the method used to estimate it (profile-based minimisation of post-smoothing salinity spikiness, following Woo, 2019), and — since the applied correction is a single dataset-wide shift — the resulting median lag value;</p></li>

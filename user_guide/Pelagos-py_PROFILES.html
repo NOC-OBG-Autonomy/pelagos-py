@@ -34,7 +34,7 @@
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-codeautolink.css?v=b2176991" />
-    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=6a604523" />
     <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Ubuntu&display=swap" />
     <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=a20de4af" />
   
@@ -44,12 +44,12 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=f9910351"></script>
+    <script src="../_static/documentation_options.js?v=82bd8ea8"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=df1a032d"></script>
-    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script data-sd-tabs-storage-prefix="sphinx-design-tab-id-" src="../_static/design-tabs.js?v=fcb327ea"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'user_guide/Pelagos-py_PROFILES';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
@@ -530,7 +530,7 @@
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="algorithm">
-<h1>1. Algorithm<a class="headerlink" href="#algorithm" title="Link to this heading">#</a></h1>
+<span id="1-algorithm"></span><h1>1. Algorithm<a class="headerlink" href="#algorithm" title="Link to this heading">#</a></h1>
 <figure class="align-default" id="id1">
 <a class="reference internal image-reference" href="../_images/find_profiles_method.png"><img alt="The three stages of profile finding on a simulated dive" src="../_images/find_profiles_method.png" style="width: 100%;" />
 </a>
@@ -539,16 +539,16 @@
 </figcaption>
 </figure>
 <section id="vertical-velocity">
-<h2>1.1 Vertical velocity<a class="headerlink" href="#vertical-velocity" title="Link to this heading">#</a></h2>
+<span id="11-vertical-velocity"></span><h2>1.1 Vertical velocity<a class="headerlink" href="#vertical-velocity" title="Link to this heading">#</a></h2>
 <p>Pressure is smoothed with a rolling mean over <code class="docutils literal notranslate"><span class="pre">smoothing_window_seconds</span></code> (30 s), differentiated in time, and the result smoothed again with a rolling median to remove spikes. Both windows are in seconds, so they work the same for any sampling rate.</p>
 <p>A time gap longer than <code class="docutils literal notranslate"><span class="pre">gap_threshold_minutes</span></code> (5 min) splits the record into separate chunks. Velocity is never computed across a gap and no phase or profile runs across one, so a profile whose data stops early stays a valid profile of its own.</p>
 </section>
 <section id="ascent-and-descent">
-<h2>1.2 Ascent and descent<a class="headerlink" href="#ascent-and-descent" title="Link to this heading">#</a></h2>
+<span id="12-ascent-and-descent"></span><h2>1.2 Ascent and descent<a class="headerlink" href="#ascent-and-descent" title="Link to this heading">#</a></h2>
 <p>Samples faster than <code class="docutils literal notranslate"><span class="pre">velocity_threshold</span></code> (0.033 dbar/s) are descent (going down) or ascent (going up). A run shorter than <code class="docutils literal notranslate"><span class="pre">min_duration_seconds</span></code> (60 s) is too short to trust and is reset to unknown. This pass runs first, and nothing later overrides it.</p>
 </section>
 <section id="everything-else">
-<h2>1.3 Everything else<a class="headerlink" href="#everything-else" title="Link to this heading">#</a></h2>
+<span id="13-everything-else"></span><h2>1.3 Everything else<a class="headerlink" href="#everything-else" title="Link to this heading">#</a></h2>
 <p>Samples still unknown are labelled in this order:</p>
 <ol class="arabic simple">
 <li><p><strong>Surfacing</strong> — a run whose median depth is within <code class="docutils literal notranslate"><span class="pre">surfacing_depth_threshold</span></code> (2 dbar) of the surface and lasts at least <code class="docutils literal notranslate"><span class="pre">min_duration_seconds</span></code>.</p></li>
@@ -559,13 +559,13 @@
 <p>Anything left after this stays unknown (<code class="docutils literal notranslate"><span class="pre">0</span></code>).</p>
 </section>
 <section id="flagged-samples">
-<h2>1.4 Flagged samples<a class="headerlink" href="#flagged-samples" title="Link to this heading">#</a></h2>
+<span id="14-flagged-samples"></span><h2>1.4 Flagged samples<a class="headerlink" href="#flagged-samples" title="Link to this heading">#</a></h2>
 <p>Samples whose pressure is flagged probably bad (<code class="docutils literal notranslate"><span class="pre">3</span></code>), bad (<code class="docutils literal notranslate"><span class="pre">4</span></code>), missing (<code class="docutils literal notranslate"><span class="pre">9</span></code>) or interpolated (<code class="docutils literal notranslate"><span class="pre">8</span></code>) are left out of the calculations. Afterwards they take the labels of the samples either side when those agree.</p>
 </section>
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="og1-phases">
-<h1>2. OG1 phases<a class="headerlink" href="#og1-phases" title="Link to this heading">#</a></h1>
+<span id="2-og1-phases"></span><h1>2. OG1 phases<a class="headerlink" href="#og1-phases" title="Link to this heading">#</a></h1>
 <p><code class="docutils literal notranslate"><span class="pre">SCI_PHASE</span></code> uses the OceanGliders OG1 phase vocabulary, adapted for the toolbox:</p>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
@@ -620,7 +620,7 @@
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="profiles-direction-and-cycles">
-<h1>3. Profiles, direction and cycles<a class="headerlink" href="#profiles-direction-and-cycles" title="Link to this heading">#</a></h1>
+<span id="3-profiles-direction-and-cycles"></span><h1>3. Profiles, direction and cycles<a class="headerlink" href="#profiles-direction-and-cycles" title="Link to this heading">#</a></h1>
 <ul class="simple">
 <li><p><strong><code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER</span></code>.</strong> Each ascent or descent is its own profile; an ascent does not need a matching descent (though there should almost always be one). A profile also includes the transition samples next to it, and the bottom inflection where it starts. Surfacing, parking and propelled samples belong to no profile.</p></li>
 <li><p><strong><code class="docutils literal notranslate"><span class="pre">PROFILE_DIRECTION</span></code>.</strong> Follows the phase: <code class="docutils literal notranslate"><span class="pre">1</span></code> for descent, <code class="docutils literal notranslate"><span class="pre">-1</span></code> for ascent, <code class="docutils literal notranslate"><span class="pre">0</span></code> for surfacing, parking and propelled. Inflection, transition and unknown samples are NaN.</p></li>
@@ -629,7 +629,7 @@
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="configuration">
-<h1>4. Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h1>
+<span id="4-configuration"></span><h1>4. Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h1>
 <p>All parameters are optional; the defaults suit typical glider data.</p>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>

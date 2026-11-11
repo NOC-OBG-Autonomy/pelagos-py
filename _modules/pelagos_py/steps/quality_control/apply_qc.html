@@ -32,7 +32,7 @@
     <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-codeautolink.css?v=b2176991" />
-    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-design.min.css?v=6a604523" />
     <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Ubuntu&display=swap" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=a20de4af" />
   
@@ -42,12 +42,12 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../../_static/documentation_options.js?v=f9910351"></script>
+    <script src="../../../../_static/documentation_options.js?v=82bd8ea8"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../../../_static/copybutton.js?v=df1a032d"></script>
-    <script src="../../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script data-sd-tabs-storage-prefix="sphinx-design-tab-id-" src="../../../../_static/design-tabs.js?v=fcb327ea"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_modules/pelagos_py/steps/quality_control/apply_qc';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
@@ -584,6 +584,20 @@
         <span class="n">subset_names</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">"TIME"</span><span class="p">)</span>  <span class="c1"># diagnostics plot against time</span>
         <span class="n">subset_vars</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">subset_names</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">full_data</span><span class="o">.</span><span class="n">variables</span><span class="p">]</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">full_data</span><span class="p">[</span><span class="n">subset_vars</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="c1"># The dashboard runs each test as its own step; tests still read the pre-step flags</span>
+        <span class="n">test_data</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="n">flags_before</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"qc_flags_before"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">flags_before</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">test_data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">drop_vars</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span> <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">"_QC"</span><span class="p">)]</span>
+            <span class="p">)</span>
+            <span class="n">test_data</span> <span class="o">=</span> <span class="n">test_data</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="n">name</span><span class="p">:</span> <span class="n">flags_before</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+                    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">subset_vars</span>
+                    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">flags_before</span>
+                <span class="p">}</span>
+            <span class="p">)</span>
         <span class="c1"># Fetch existing flags from the data and create a place to store them</span>
         <span class="n">existing_flags</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">flag_col</span> <span class="k">for</span> <span class="n">flag_col</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">data_vars</span> <span class="k">if</span> <span class="n">flag_col</span> <span class="ow">in</span> <span class="n">test_qc_outputs_cols</span>
@@ -629,7 +643,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">"Applying: </span><span class="si">{</span><span class="n">qc_qc_name</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>  <span class="c1"># print(f"[Apply QC] Applying: {qc_qc_name}")</span>
-            <span class="n">qc_test_instance</span> <span class="o">=</span> <span class="n">QC_CLASSES</span><span class="p">[</span><span class="n">qc_qc_name</span><span class="p">](</span><span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">qc_test_params</span><span class="p">)</span>
+            <span class="n">qc_test_instance</span> <span class="o">=</span> <span class="n">QC_CLASSES</span><span class="p">[</span><span class="n">qc_qc_name</span><span class="p">](</span><span class="n">test_data</span><span class="p">,</span> <span class="o">**</span><span class="n">qc_test_params</span><span class="p">)</span>
             <span class="n">overwrite</span> <span class="o">=</span> <span class="n">qc_test_instance</span><span class="o">.</span><span class="n">overwrite_flags</span>
             <span class="k">if</span> <span class="n">overwrite</span><span class="p">:</span>  <span class="c1"># the test merges against the store itself</span>
                 <span class="n">qc_test_instance</span><span class="o">.</span><span class="n">existing_flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span>

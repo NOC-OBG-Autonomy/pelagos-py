@@ -34,7 +34,7 @@
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-codeautolink.css?v=b2176991" />
-    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=6a604523" />
     <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Ubuntu&display=swap" />
     <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=a20de4af" />
   
@@ -44,12 +44,12 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=f9910351"></script>
+    <script src="../_static/documentation_options.js?v=82bd8ea8"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=df1a032d"></script>
-    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script data-sd-tabs-storage-prefix="sphinx-design-tab-id-" src="../_static/design-tabs.js?v=fcb327ea"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'user_guide/Pelagos-py_POSITION';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
@@ -508,7 +508,7 @@
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="time-filtering-on-load">
-<h1>1. Time filtering on load<a class="headerlink" href="#time-filtering-on-load" title="Link to this heading">#</a></h1>
+<span id="1-time-filtering-on-load"></span><h1>1. Time filtering on load<a class="headerlink" href="#time-filtering-on-load" title="Link to this heading">#</a></h1>
 <p><a class="reference internal" href="../api/pelagos_py/steps/input_output/load_data/index.html"><span class="doc">Load OG1</span></a> removes records whose <code class="docutils literal notranslate"><span class="pre">TIME</span></code> is outside the deployment window. By default this runs from <code class="docutils literal notranslate"><span class="pre">DEPLOYMENT_TIME</span></code> (or 1 Jan 1990 if the file has none) to the time the pipeline runs.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Load OG1</span>
 <span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
@@ -523,7 +523,7 @@
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="quality-control">
-<h1>2. Quality control<a class="headerlink" href="#quality-control" title="Link to this heading">#</a></h1>
+<span id="2-quality-control"></span><h1>2. Quality control<a class="headerlink" href="#quality-control" title="Link to this heading">#</a></h1>
 <p>All four tests flag bad values <code class="docutils literal notranslate"><span class="pre">4</span></code> and missing values <code class="docutils literal notranslate"><span class="pre">9</span></code>. Default configuration:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Apply QC</span>
 <span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
@@ -535,19 +535,19 @@
 </pre></div>
 </div>
 <section id="impossible-date">
-<h2>2.1 Impossible date<a class="headerlink" href="#impossible-date" title="Link to this heading">#</a></h2>
+<span id="21-impossible-date"></span><h2>2.1 Impossible date<a class="headerlink" href="#impossible-date" title="Link to this heading">#</a></h2>
 <p><a class="reference internal" href="../api/pelagos_py/steps/quality_control/impossible_date_qc/index.html"><span class="doc">Impossible Date QC</span></a> flags <code class="docutils literal notranslate"><span class="pre">TIME</span></code> before 1 Jan 1985 or after the current time. It has no parameters.</p>
 </section>
 <section id="impossible-location">
-<h2>2.2 Impossible location<a class="headerlink" href="#impossible-location" title="Link to this heading">#</a></h2>
+<span id="22-impossible-location"></span><h2>2.2 Impossible location<a class="headerlink" href="#impossible-location" title="Link to this heading">#</a></h2>
 <p><a class="reference internal" href="../api/pelagos_py/steps/quality_control/impossible_location_qc/index.html"><span class="doc">Impossible Location QC</span></a> flags <code class="docutils literal notranslate"><span class="pre">LATITUDE</span></code> outside ±90° and <code class="docutils literal notranslate"><span class="pre">LONGITUDE</span></code> outside ±180°. Each coordinate is flagged on its own. It has no parameters.</p>
 </section>
 <section id="position-on-land">
-<h2>2.3 Position on land<a class="headerlink" href="#position-on-land" title="Link to this heading">#</a></h2>
+<span id="23-position-on-land"></span><h2>2.3 Position on land<a class="headerlink" href="#position-on-land" title="Link to this heading">#</a></h2>
 <p><a class="reference internal" href="../api/pelagos_py/steps/quality_control/position_on_land_qc/index.html"><span class="doc">Position On Land QC</span></a> flags <code class="docutils literal notranslate"><span class="pre">LATITUDE</span></code> and <code class="docutils literal notranslate"><span class="pre">LONGITUDE</span></code> together where the position falls on land, using the Natural Earth 1:110m land polygons. Positions very close to the coast can be missed or incorrectly flagged.</p>
 </section>
 <section id="impossible-speed">
-<h2>2.4 Impossible speed<a class="headerlink" href="#impossible-speed" title="Link to this heading">#</a></h2>
+<span id="24-impossible-speed"></span><h2>2.4 Impossible speed<a class="headerlink" href="#impossible-speed" title="Link to this heading">#</a></h2>
 <p><a class="reference internal" href="../api/pelagos_py/steps/quality_control/impossible_speed_qc/index.html"><span class="doc">Impossible Speed QC</span></a> flags fixes that imply an impossible horizontal speed. Each fix is compared with the last good fix at least <code class="docutils literal notranslate"><span class="pre">min_interval</span></code> seconds earlier; if the speed between them reaches <code class="docutils literal notranslate"><span class="pre">threshold</span></code>, the fix is flagged on <code class="docutils literal notranslate"><span class="pre">TIME</span></code>, <code class="docutils literal notranslate"><span class="pre">LATITUDE</span></code> and <code class="docutils literal notranslate"><span class="pre">LONGITUDE</span></code>.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">impossible speed qc</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span><span class="w">      </span><span class="c1"># m/s</span>
@@ -558,7 +558,7 @@
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="interpolation">
-<h1>3. Interpolation<a class="headerlink" href="#interpolation" title="Link to this heading">#</a></h1>
+<span id="3-interpolation"></span><h1>3. Interpolation<a class="headerlink" href="#interpolation" title="Link to this heading">#</a></h1>
 <p>The GPS and science sensors do not sample at the same times, so many samples have no position. The <a class="reference internal" href="../api/pelagos_py/steps/processing/interpolate_data/index.html"><span class="doc">Interpolate Data</span></a> step fills positions flagged <code class="docutils literal notranslate"><span class="pre">3</span></code>, <code class="docutils literal notranslate"><span class="pre">4</span></code> or <code class="docutils literal notranslate"><span class="pre">9</span></code> by linear interpolation in time and flags them interpolated (<code class="docutils literal notranslate"><span class="pre">8</span></code>).</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Interpolate Data</span>
 <span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>

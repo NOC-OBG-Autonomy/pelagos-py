@@ -33,7 +33,7 @@
     <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-codeautolink.css?v=b2176991" />
-    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-design.min.css?v=6a604523" />
     <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Ubuntu&display=swap" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/custom.css?v=a20de4af" />
   
@@ -43,12 +43,12 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../../_static/documentation_options.js?v=f9910351"></script>
+    <script src="../../../../_static/documentation_options.js?v=82bd8ea8"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../../../_static/copybutton.js?v=df1a032d"></script>
-    <script src="../../../../_static/design-tabs.js?v=f930bc37"></script>
+    <script data-sd-tabs-storage-prefix="sphinx-design-tab-id-" src="../../../../_static/design-tabs.js?v=fcb327ea"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api/pelagos_py/steps/base_step/index';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
@@ -480,19 +480,17 @@
 <span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.base_step.</span></span><span class="sig-name descname"><span class="pre">REGISTERED_STEPS</span></span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_step.html#REGISTERED_STEPS"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_step.REGISTERED_STEPS" title="Link to this definition">#</a></dt>
 <dd><p>Registry of explicitly registered step classes.</p>
 </dd></dl>
-
 <dl class="py function">
 <dt class="sig sig-object py" id="pelagos_py.steps.base_step.register_step">
 <span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.base_step.</span></span><span class="sig-name descname"><span class="pre">register_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_step.html#register_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_step.register_step" title="Link to this definition">#</a></dt>
 <dd><p>Decorator to mark a step class for inclusion in the pipeline.</p>
 </dd></dl>
-
 <dl class="py class">
 <dt class="sig sig-object py" id="pelagos_py.steps.base_step.BaseStep">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.base_step.</span></span><span class="sig-name descname"><span class="pre">BaseStep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_step.html#BaseStep"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_step.BaseStep" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-obj docutils literal notranslate"><span class="pre">pelagos_py.utils.config_mirror.ConfigMirrorMixin</span></code></p>
 <p>Base class for pipeline steps with config-mirroring support.
-Every concrete subclass (registered via &#64;register_step) inherits this.</p>
+Every concrete subclass (registered via @register_step) inherits this.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.base_step.BaseStep.describe_parameters">
 <span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">describe_parameters</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_step.html#BaseStep.describe_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_step.BaseStep.describe_parameters" title="Link to this definition">#</a></dt>
@@ -501,67 +499,56 @@ Every concrete subclass (registered via &#64;register_step) inherits this.</p>
 render a parameter form without instantiating the step. See
 <a class="reference internal" href="../../utils/parameter_spec/index.html#pelagos_py.utils.parameter_spec.describe" title="pelagos_py.utils.parameter_spec.describe"><code class="xref py py-func docutils literal notranslate"><span class="pre">pelagos_py.utils.parameter_spec.describe()</span></code></a>.</p>
 </dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.base_step.BaseStep.output_variables">
 <span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">output_variables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_step.html#BaseStep.output_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_step.BaseStep.output_variables" title="Link to this definition">#</a></dt>
 <dd><p>Variables this step writes for the given config <code class="docutils literal notranslate"><span class="pre">parameters</span></code> (read by the config validator).</p>
 </dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.base_step.BaseStep.resolve">
 <span class="sig-name descname"><span class="pre">resolve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_step.html#BaseStep.resolve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_step.BaseStep.resolve" title="Link to this definition">#</a></dt>
 <dd><p><code class="docutils literal notranslate"><span class="pre">var</span></code>’s <code class="docutils literal notranslate"><span class="pre">_ADJUSTED</span></code> version if it exists in <code class="docutils literal notranslate"><span class="pre">self.data</span></code>, else the raw one.</p>
 </dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.base_step.BaseStep.adjusted_copy">
 <span class="sig-name descname"><span class="pre">adjusted_copy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_step.html#BaseStep.adjusted_copy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_step.BaseStep.adjusted_copy" title="Link to this definition">#</a></dt>
 <dd><p>Name of <code class="docutils literal notranslate"><span class="pre">var</span></code>’s <code class="docutils literal notranslate"><span class="pre">_ADJUSTED</span></code> version, created (with its <code class="docutils literal notranslate"><span class="pre">_QC</span></code>) as a copy of the raw variable if missing.</p>
 </dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.base_step.BaseStep.mark_intermediate">
 <span class="sig-name descname"><span class="pre">mark_intermediate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">names</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_step.html#BaseStep.mark_intermediate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_step.BaseStep.mark_intermediate" title="Link to this definition">#</a></dt>
 <dd><p>Record pipeline-made working variables that Data Export leaves out unless asked to keep them.</p>
 </dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.base_step.BaseStep.selected_figures">
 <span class="sig-name descname"><span class="pre">selected_figures</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_step.html#BaseStep.selected_figures"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_step.BaseStep.selected_figures" title="Link to this definition">#</a></dt>
 <dd><p>Figure names this run draws, resolved from the <code class="docutils literal notranslate"><span class="pre">diagnostics</span></code> setting.</p>
 </dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.base_step.BaseStep.log">
 <span class="sig-name descname"><span class="pre">log</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">console</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_step.html#BaseStep.log"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_step.BaseStep.log" title="Link to this definition">#</a></dt>
 <dd><p>Log an info-level message with step name prefix. <code class="docutils literal notranslate"><span class="pre">console=False</span></code> keeps it in the log file only.</p>
 </dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.base_step.BaseStep.log_generating_diagnostics">
 <span class="sig-name descname"><span class="pre">log_generating_diagnostics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_step.html#BaseStep.log_generating_diagnostics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_step.BaseStep.log_generating_diagnostics" title="Link to this definition">#</a></dt>
 <dd><p>Log that diagnostics are being produced, distinguishing report-capture runs from <code class="docutils literal notranslate"><span class="pre">diagnostics:</span> <span class="pre">true</span></code>.</p>
 </dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.base_step.BaseStep.log_progress">
 <span class="sig-name descname"><span class="pre">log_progress</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iterable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">desc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'it'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">leave</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_step.html#BaseStep.log_progress"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_step.BaseStep.log_progress" title="Link to this definition">#</a></dt>
 <dd><p>Wrap a countable sub-loop as a standard pipeline progress bar; drop-in for <code class="docutils literal notranslate"><span class="pre">tqdm(iterable,</span> <span class="pre">...)</span></code>.</p>
 </dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.base_step.BaseStep.log_warn">
 <span class="sig-name descname"><span class="pre">log_warn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warning_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">UserWarning</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_step.html#BaseStep.log_warn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_step.BaseStep.log_warn" title="Link to this definition">#</a></dt>
 <dd><p>Log a warning-level message with step name prefix.</p>
 </dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.base_step.BaseStep.check_data">
 <span class="sig-name descname"><span class="pre">check_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_step.html#BaseStep.check_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_step.BaseStep.check_data" title="Link to this definition">#</a></dt>
 <dd><p>Check for data in context for transformer steps.</p>
 </dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.base_step.BaseStep.halt">
 <span class="sig-name descname"><span class="pre">halt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_step.html#BaseStep.halt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_step.BaseStep.halt" title="Link to this definition">#</a></dt>
@@ -571,7 +558,6 @@ then a terminal STOP line marking the deliberate halt, and exits. Use
 this instead of raising for config problems discovered at run time, so
 the user sees one actionable error rather than a wrapped traceback.</p>
 </dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.base_step.BaseStep.update_parameters">
 <span class="sig-name descname"><span class="pre">update_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_step.html#BaseStep.update_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_step.BaseStep.update_parameters" title="Link to this definition">#</a></dt>
@@ -581,21 +567,17 @@ the user sees one actionable error rather than a wrapped traceback.</p>
 </pre></div>
 </div>
 </dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.base_step.BaseStep.generate_config">
 <span class="sig-name descname"><span class="pre">generate_config</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_step.html#BaseStep.generate_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_step.BaseStep.generate_config" title="Link to this definition">#</a></dt>
 <dd><p>Return this step’s config dict (suitable for saving to YAML).</p>
 </dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.base_step.BaseStep.save_config">
 <span class="sig-name descname"><span class="pre">save_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_step.html#BaseStep.save_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_step.BaseStep.save_config" title="Link to this definition">#</a></dt>
 <dd><p>Save this step’s config to YAML (for standalone debugging).</p>
 </dd></dl>
-
 </dd></dl>
-
 </section>
 
 
