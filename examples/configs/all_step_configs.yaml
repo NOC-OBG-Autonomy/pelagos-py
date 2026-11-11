@@ -225,6 +225,11 @@ steps:
           #   without flagging DEPTH itself:
           #     variable_ranges: {DEPTH: {3: [0, 5, inside], 2: [0, 5, outside]}}
           #     flag_instead: {DEPTH: [CHLA]}
+          # [reset_flags]:
+          #   Existing flags this test replaces instead of merging with (normally the worst flag wins,
+          #   so a 3 can't become a 2). eg. after the CHLA corrections, re-assess the interim 3 and 5:
+          #     variable_ranges: {CHLA_ADJUSTED: {4: [-0.2, 100, outside], 2: [-0.2, 100, inside]}}
+          #     reset_flags: [3, 5]
           # [diagnostics]:
           #   When the Apply QC step has diagnostics enabled, every flagged variable is plotted
           #   coloured by flag number (no separate 'plot' parameter is needed).
