@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../../_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="../../../../_static/documentation_options.js?v=a11416ff"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -425,7 +425,9 @@
 <span class="sd">    Fills gaps in each listed variable by linear interpolation in time. Samples</span>
 <span class="sd">    flagged with one of the variable's listed flags, and NaN samples, are gaps; filled</span>
 <span class="sd">    samples are flagged 8 (interpolated). Values before the first or after the last</span>
-<span class="sd">    real value are not filled. See :doc:`/user_guide/Pelagos-py_POSITION`.</span>
+<span class="sd">    real value are not filled. Meant for the coordinates (``LATITUDE``, ``LONGITUDE``):</span>
+<span class="sd">    measured variables are left on their own rows, and ``DEPTH_ADJUSTED`` is filled by</span>
+<span class="sd">    Derive CTD. See :doc:`/user_guide/Pelagos-py_POSITION`.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -442,7 +444,6 @@
 <span class="sd">        - name: "Interpolate Data"</span>
 <span class="sd">          parameters:</span>
 <span class="sd">            variables:  # per variable, the QC flags treated as gaps to fill</span>
-<span class="sd">              PRES: [3, 4, 9]</span>
 <span class="sd">              LATITUDE: [3, 4, 9]</span>
 <span class="sd">              LONGITUDE: [3, 4, 9]</span>
 <span class="sd">            max_interp_time: 5.0</span>

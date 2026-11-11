@@ -43,7 +43,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../../_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="../../../../_static/documentation_options.js?v=a11416ff"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -515,6 +515,15 @@ render a parameter form without instantiating the step. See
 <dd><p>Name of <code class="docutils literal notranslate"><span class="pre">var</span></code>’s <code class="docutils literal notranslate"><span class="pre">_ADJUSTED</span></code> version, created (with its <code class="docutils literal notranslate"><span class="pre">_QC</span></code>) as a copy of the raw variable if missing.</p>
 </dd></dl>
 <dl class="py method">
+<dt class="sig sig-object py" id="pelagos_py.steps.base_step.BaseStep.values_at_rows_of">
+<span class="sig-name descname"><span class="pre">values_at_rows_of</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rows_of</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_step.html#BaseStep.values_at_rows_of"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_step.BaseStep.values_at_rows_of" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">var</span></code> time-interpolated onto the rows where <code class="docutils literal notranslate"><span class="pre">rows_of</span></code> has data, as <code class="docutils literal notranslate"><span class="pre">(values,</span> <span class="pre">flags)</span></code>.</p>
+<p>For a step needing another sensor’s values at its own rows; the result is for
+the calculation only and never written to the data. Samples flagged in the
+calculation flags (default 3/4/9) are not interpolated from, and each row’s
+flag is the merged flag of the samples it came from (9 where no value).</p>
+</dd></dl>
+<dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.base_step.BaseStep.mark_intermediate">
 <span class="sig-name descname"><span class="pre">mark_intermediate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">names</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_step.html#BaseStep.mark_intermediate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_step.BaseStep.mark_intermediate" title="Link to this definition">#</a></dt>
 <dd><p>Record pipeline-made working variables that Data Export leaves out unless asked to keep them.</p>
@@ -527,7 +536,7 @@ render a parameter form without instantiating the step. See
 <dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.base_step.BaseStep.log">
 <span class="sig-name descname"><span class="pre">log</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">console</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_step.html#BaseStep.log"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_step.BaseStep.log" title="Link to this definition">#</a></dt>
-<dd><p>Log an info-level message with step name prefix. <code class="docutils literal notranslate"><span class="pre">console=False</span></code> keeps it in the log file only.</p>
+<dd><p>Log an info-level message. <code class="docutils literal notranslate"><span class="pre">console=False</span></code> keeps it in the log file only.</p>
 </dd></dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.base_step.BaseStep.log_generating_diagnostics">
@@ -542,7 +551,7 @@ render a parameter form without instantiating the step. See
 <dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.base_step.BaseStep.log_warn">
 <span class="sig-name descname"><span class="pre">log_warn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warning_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">UserWarning</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/steps/base_step.html#BaseStep.log_warn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.base_step.BaseStep.log_warn" title="Link to this definition">#</a></dt>
-<dd><p>Log a warning-level message with step name prefix.</p>
+<dd><p>Log a warning-level message.</p>
 </dd></dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="pelagos_py.steps.base_step.BaseStep.check_data">
@@ -610,6 +619,7 @@ the user sees one actionable error rather than a wrapped traceback.</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.base_step.BaseStep.output_variables"><code class="docutils literal notranslate"><span class="pre">BaseStep.output_variables()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.base_step.BaseStep.resolve"><code class="docutils literal notranslate"><span class="pre">BaseStep.resolve()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.base_step.BaseStep.adjusted_copy"><code class="docutils literal notranslate"><span class="pre">BaseStep.adjusted_copy()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.base_step.BaseStep.values_at_rows_of"><code class="docutils literal notranslate"><span class="pre">BaseStep.values_at_rows_of()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.base_step.BaseStep.mark_intermediate"><code class="docutils literal notranslate"><span class="pre">BaseStep.mark_intermediate()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.base_step.BaseStep.selected_figures"><code class="docutils literal notranslate"><span class="pre">BaseStep.selected_figures()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.steps.base_step.BaseStep.log"><code class="docutils literal notranslate"><span class="pre">BaseStep.log()</span></code></a></li>

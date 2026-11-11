@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <meta property="article:modified_time" content="2026-11-04T20:18:56+00:00" />
+    <meta property="article:modified_time" content="2026-11-11T15:35:53+00:00" />
     <title>Quality Control &#8212; pelagos-py</title>
   
   
@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="_static/documentation_options.js?v=a11416ff"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -63,7 +63,7 @@
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="0.0" />
-    <meta name="docbuild:last-update" content="Nov 04, 2026"/>
+    <meta name="docbuild:last-update" content="Nov 11, 2026"/>
   
     
     <script src="_static/searchtools.js"></script>
@@ -509,10 +509,13 @@
 <li><p><strong>2</strong>: Probably good data.</p></li>
 <li><p><strong>3</strong>: Probably bad data (potentially correctable).</p></li>
 <li><p><strong>4</strong>: Bad data (not correctable).</p></li>
-<li><p><strong>5</strong>: Value changed (e.g. by a correction step).</p></li>
+<li><p><strong>5</strong>: Value changed (only CHLA Quenching sets this, as in Argo).</p></li>
 <li><p><strong>8</strong>: Interpolated value.</p></li>
 <li><p><strong>9</strong>: Missing value.</p></li>
 </ul>
+<p>Automated QC tests flag values that pass with the pipeline’s <code class="docutils literal notranslate"><span class="pre">pass_flag</span></code> setting: 1 by default, 2 (probably good) in the default config, so that only a manual Visual QC check marks data good (1). Flags of 1 already in the input file are kept.</p>
+<p>Steps leave samples flagged 3, 4 or 9 out of their calculations (the samples are still corrected). Chlorophyll is the exception: raw <code class="docutils literal notranslate"><span class="pre">CHLA</span></code> is flagged 3 until it is corrected, so steps only leave out <code class="docutils literal notranslate"><span class="pre">CHLA</span></code> samples flagged 4 or 9.</p>
+<p>Flags are merged so the worse one wins: a sample flagged 3 stays 3 when a later check says 2. Chlorophyll is the exception the default config makes on purpose. Raw <code class="docutils literal notranslate"><span class="pre">CHLA</span></code> always needs correcting, so <code class="docutils literal notranslate"><span class="pre">CHLA_QC</span></code> is 3, or 4 outside the global range. After Deep Correction and CHLA Quenching (which flags the values it changes 5), a final range test with <code class="docutils literal notranslate"><span class="pre">reset_flags:</span> <span class="pre">[3,</span> <span class="pre">5]</span></code> re-assesses <code class="docutils literal notranslate"><span class="pre">CHLA_ADJUSTED_QC</span></code>, so it ends as 2 (probably good) or 4 (bad).</p>
 <section id="configuration">
 <h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h2>
 <p>QC is defined inside the <code class="docutils literal notranslate"><span class="pre">qc_settings</span></code> block of the <code class="docutils literal notranslate"><span class="pre">Apply</span> <span class="pre">QC</span></code> step. You can specify parameters for each QC, such as thresholds or which variables to target.</p>
@@ -542,7 +545,7 @@
 <h3>Range and Value Checks<a class="headerlink" href="#range-and-value-checks" title="Link to this heading">#</a></h3>
 <p>These identify data points that fall outside expected physical or sensor limits.</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="api/pelagos_py/steps/quality_control/range_qc/index.html"><span class="doc">Range</span></a>: Flags values by range, per variable. Each band carries an <code class="docutils literal notranslate"><span class="pre">inside</span></code>/<code class="docutils literal notranslate"><span class="pre">outside</span></code> keyword: <code class="docutils literal notranslate"><span class="pre">[low,</span> <span class="pre">high,</span> <span class="pre">&quot;outside&quot;]</span></code> is a band of good values (data outside it is flagged), while <code class="docutils literal notranslate"><span class="pre">[low,</span> <span class="pre">high,</span> <span class="pre">&quot;inside&quot;]</span></code> is an impossible band (data within it is flagged). A flag may list several bands. If the keyword is omitted the bound order is the fallback (ascending → outside, descending → inside). A single scalar flags exact matches (e.g. fill values).</p></li>
+<li><p><a class="reference internal" href="api/pelagos_py/steps/quality_control/range_qc/index.html"><span class="doc">Range</span></a>: Flags values by range, per variable. Each band carries an <code class="docutils literal notranslate"><span class="pre">inside</span></code>/<code class="docutils literal notranslate"><span class="pre">outside</span></code> keyword: <code class="docutils literal notranslate"><span class="pre">[low,</span> <span class="pre">high,</span> <span class="pre">&quot;outside&quot;]</span></code> is a band of good values (data outside it is flagged), while <code class="docutils literal notranslate"><span class="pre">[low,</span> <span class="pre">high,</span> <span class="pre">&quot;inside&quot;]</span></code> is an impossible band (data within it is flagged). A flag may list several bands. If the keyword is omitted the bound order is the fallback (ascending → outside, descending → inside). A single scalar flags exact matches (e.g. fill values). <code class="docutils literal notranslate"><span class="pre">reset_flags</span></code> lists existing flags the test replaces instead of merging with, so a re-test after a correction can turn a 3 into a 2.</p></li>
 <li><p><a class="reference internal" href="api/pelagos_py/steps/quality_control/visual_qc/index.html"><span class="doc">Visual</span></a>: Flags samples inside (or outside) hand-drawn boxes on an <code class="docutils literal notranslate"><span class="pre">x_variable</span></code>/<code class="docutils literal notranslate"><span class="pre">y_variable</span></code> plot — each box is a 2D range test with its own flag and target variables.</p></li>
 <li><p><a class="reference internal" href="api/pelagos_py/steps/quality_control/stuck_value_qc/index.html"><span class="doc">Stuck Value</span></a>: Identifies sensor “freezing” by looking for sequences of identical values where variation is expected.</p></li>
 <li><p><a class="reference internal" href="api/pelagos_py/steps/quality_control/spike_qc/index.html"><span class="doc">Spike</span></a>: Flags spikes: values that depart from a rolling median by more than a threshold.</p></li>

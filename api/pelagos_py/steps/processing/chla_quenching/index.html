@@ -43,7 +43,7 @@
   <link rel="preload" as="script" href="../../../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../../../_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="../../../../../_static/documentation_options.js?v=a11416ff"></script>
     <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -483,13 +483,15 @@
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.processing.chla_quenching.</span></span><span class="sig-name descname"><span class="pre">ChlaQuenchingCorrection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/chla_quenching.html#ChlaQuenchingCorrection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.chla_quenching.ChlaQuenchingCorrection" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="../../base_step/index.html#pelagos_py.steps.base_step.BaseStep" title="pelagos_py.steps.base_step.BaseStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pelagos_py.steps.base_step.BaseStep</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">pelagos_py.utils.qc_handling.QCHandlingMixin</span></code></p>
 <p>Correct non-photochemical quenching of chlorophyll fluorescence.</p>
-<p>Samples whose flags fall in <code class="docutils literal notranslate"><span class="pre">calculation_flag_filter</span></code> (by default probably-bad
-(3), bad (4) and missing (9); see <code class="docutils literal notranslate"><span class="pre">qc_handling_settings</span></code>) inform none of the
-quantities the methods derive — quenching depth, night fl:bbp references,
-in-mixed-layer maxima, euphotic depth. They are still corrected like any other
-sample; each method just reads a NaN-masked copy of its inputs wherever it
-derives a quantity, so flagging the unstable top few metres keeps it out of the
-references while it still gets corrected.</p>
+<p>Samples whose flags fall in <code class="docutils literal notranslate"><span class="pre">calculation_flag_filter</span></code> (by default bad (4) and
+missing (9) for CHLA, plus probably-bad (3) for the other inputs; see
+<code class="docutils literal notranslate"><span class="pre">qc_handling_settings</span></code>), and samples shallower than <code class="docutils literal notranslate"><span class="pre">reference_min_depth</span></code>,
+inform none of the quantities the methods derive — quenching depth, night fl:bbp
+references, in-mixed-layer maxima, euphotic depth. They are still corrected like
+any other sample; each method just reads a NaN-masked copy of its inputs wherever
+it derives a quantity.</p>
+<p>Values the correction changes are flagged 5 (value changed) in the output’s
+<code class="docutils literal notranslate"><span class="pre">_QC</span></code>, merged so an existing 3 or 4 is kept.</p>
 <p>The mixed layer depth is read from the <code class="docutils literal notranslate"><span class="pre">MLD</span></code> variable, produced by a
 preceding Mixed Layer Depth step.</p>
 <div class="admonition-example admonition">

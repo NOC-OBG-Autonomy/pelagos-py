@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../../_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="../../../../_static/documentation_options.js?v=a11416ff"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -479,21 +479,16 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">beta_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve_beta_var</span><span class="p">()</span>
 
-        <span class="n">temp</span><span class="p">,</span> <span class="n">psal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="s2">"TEMP"</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="s2">"PSAL"</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data_subset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span>
-            <span class="p">[</span><span class="s2">"TIME"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="s2">"DEPTH"</span><span class="p">),</span> <span class="n">temp</span><span class="p">,</span> <span class="n">psal</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_var</span><span class="p">]</span>
-        <span class="p">]</span>
-
-        <span class="c1"># Gaps in TEMP/PSAL are left as NaN: BBP is not derived there and is</span>
-        <span class="c1"># flagged missing (9) below. Add an Interpolate Data step first for gap-free BBP.</span>
+        <span class="c1"># The CTD samples on other rows: its TEMP/PSAL are interpolated onto the beta rows</span>
+        <span class="c1"># for this calculation only. Where that fails, BBP is not derived (flagged 9).</span>
+        <span class="n">temp</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">values_at_rows_of</span><span class="p">(</span><span class="s2">"TEMP"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_var</span><span class="p">)</span>
+        <span class="n">psal</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">values_at_rows_of</span><span class="p">(</span><span class="s2">"PSAL"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_var</span><span class="p">)</span>
 
         <span class="c1"># Particulate only, as BGC-Argo (Schmechtig et al.); gt's flo_bback_total adds seawater back in.</span>
         <span class="n">beta_sw</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">gt</span><span class="o">.</span><span class="n">flo_functions</span><span class="o">.</span><span class="n">flo_zhang_scatter_coeffs</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">data_subset</span><span class="p">[</span><span class="n">temp</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_subset</span><span class="p">[</span><span class="n">psal</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span> <span class="mi">700</span>
+            <span class="n">temp</span><span class="p">,</span> <span class="n">psal</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span> <span class="mi">700</span>
         <span class="p">)</span>
-        <span class="n">bbp_corrected</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">xfactor</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_subset</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">beta_var</span><span class="p">]</span> <span class="o">-</span> <span class="n">beta_sw</span><span class="p">)</span>
-        <span class="p">)</span>
+        <span class="n">bbp_corrected</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">xfactor</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">beta_var</span><span class="p">]</span> <span class="o">-</span> <span class="n">beta_sw</span><span class="p">)</span>
 
         <span class="c1"># Stitch back into the data</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">output_as</span><span class="p">]</span> <span class="o">=</span> <span class="n">bbp_corrected</span>
@@ -562,7 +557,7 @@
     <span class="n">diagnostic_figures</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"boxplot"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Beta vs BBP value distributions"</span><span class="p">,</span> <span class="kc">True</span><span class="p">)}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">draw_figure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
-        <span class="n">beta_clean</span> <span class="o">=</span> <span class="n">remove_outliers</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_subset</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">beta_var</span><span class="p">])</span>
+        <span class="n">beta_clean</span> <span class="o">=</span> <span class="n">remove_outliers</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">beta_var</span><span class="p">])</span>
         <span class="n">bbp_clean</span> <span class="o">=</span> <span class="n">remove_outliers</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">output_as</span><span class="p">])</span>
         <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">new_fig</span><span class="p">()</span>
         <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
@@ -576,7 +571,7 @@
             <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
             <span class="p">[</span>
                 <span class="n">fig_spec</span><span class="o">.</span><span class="n">axis_label</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">beta_var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_subset</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">beta_var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">beta_var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">beta_var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">)</span>
                 <span class="p">),</span>
                 <span class="n">fig_spec</span><span class="o">.</span><span class="n">axis_label</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_as</span><span class="p">,</span> <span class="s2">"m-1"</span><span class="p">),</span>
             <span class="p">],</span>

@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="../../../_static/documentation_options.js?v=a11416ff"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -741,8 +741,7 @@
                 <span class="k">return</span> <span class="n">_method</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># noqa: BLE001 - diagnostics must never be fatal</span>
                 <span class="n">step</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="s2">"[</span><span class="si">%s</span><span class="s2">] Diagnostic generation for the report failed: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
-                    <span class="n">step</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="s2">"Diagnostic generation for the report failed: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
                     <span class="n">exc</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">return</span> <span class="kc">None</span>

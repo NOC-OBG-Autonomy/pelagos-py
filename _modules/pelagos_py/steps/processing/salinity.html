@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../../_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="../../../../_static/documentation_options.js?v=a11416ff"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -652,8 +652,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_usable_temp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculation_mask</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_var</span><span class="p">])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_profile_index</span> <span class="o">=</span> <span class="n">profile_indices</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">cndc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">cndc_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">temp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cndc_corrected</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">cndc_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temp_corrected</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
         <span class="c1"># Correct conductivity-temperature response time misalignment (C-T Lag)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">correct_ct_lag</span><span class="p">()</span>
@@ -696,7 +696,7 @@
 
 <span class="sd">        Notes</span>
 <span class="sd">        -----</span>
-<span class="sd">        Shifts the working copy ``self.cndc``; ``self.data`` is not changed.</span>
+<span class="sd">        Shifts the working copy ``self.cndc_corrected``; ``self.data`` is not changed.</span>
 <span class="sd">        ``self.ct_lag_median`` is stored for the diagnostics figure.</span>
 <span class="sd">        """</span>
         <span class="n">profile_numbers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span>
@@ -817,7 +817,7 @@
         <span class="k">if</span> <span class="n">anchors</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
                 <span class="s2">"Fewer than two usable CNDC samples for the CT lag shift "</span>
-                <span class="sa">f</span><span class="s2">"(flags </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">calculation_flag_filter</span><span class="si">}</span><span class="s2"> excluded). Skipping."</span>
+                <span class="s2">"(flagged samples excluded). Skipping."</span>
             <span class="p">)</span>
             <span class="k">return</span>
 
@@ -830,7 +830,7 @@
         <span class="p">)</span>
         <span class="n">shifted_time</span> <span class="o">=</span> <span class="n">data_subset</span><span class="p">[</span><span class="s2">"ELAPSED_TIME[s]"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ct_lag_median</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">cndc</span><span class="p">[</span><span class="n">valid_data_mask</span><span class="o">.</span><span class="n">values</span><span class="p">]</span> <span class="o">=</span> <span class="n">CNDC_from_TIME</span><span class="p">(</span><span class="n">shifted_time</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cndc_corrected</span><span class="p">[</span><span class="n">valid_data_mask</span><span class="o">.</span><span class="n">values</span><span class="p">]</span> <span class="o">=</span> <span class="n">CNDC_from_TIME</span><span class="p">(</span><span class="n">shifted_time</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="AdjustSalinity.correct_thermal_lag">
@@ -853,13 +853,13 @@
 
 <span class="sd">        Notes</span>
 <span class="sd">        -----</span>
-<span class="sd">        Corrects the working copy ``self.temp``; ``self.data`` is not changed.</span>
+<span class="sd">        Corrects the working copy ``self.temp_corrected``; ``self.data`` is not changed.</span>
 <span class="sd">        """</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">scipy</span><span class="w"> </span><span class="kn">import</span> <span class="n">interpolate</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">lfilter</span>
 
-        <span class="n">corrected_temp_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
-        <span class="n">temp_arr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">temp</span>
+        <span class="n">corrected_temp_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_corrected</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+        <span class="n">temp_arr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">temp_corrected</span>
         <span class="n">time_arr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">time_col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
         <span class="n">profile_numbers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">)</span><span class="o">.</span><span class="n">values</span>
@@ -950,15 +950,23 @@
                     <span class="s2">"profile"</span><span class="p">:</span> <span class="n">prof</span><span class="p">,</span>
                 <span class="p">}</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">temp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temp_corrected</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
             <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">corrected_temp_array</span><span class="p">),</span> <span class="n">temp_arr</span><span class="p">,</span> <span class="n">corrected_temp_array</span>
         <span class="p">)</span></div>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">write_adjusted_salinity</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># Samples left uncorrected (e.g. reinserted after filter_qc) fall back to their raw values</span>
-        <span class="n">cndc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cndc</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">cndc_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cndc</span><span class="p">)</span>
-        <span class="n">temp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">temp</span><span class="p">)</span>
+        <span class="n">cndc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cndc_corrected</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">cndc_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cndc_corrected</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">temp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_corrected</span><span class="p">),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">temp_corrected</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="n">cndc_factor</span> <span class="o">=</span> <span class="n">cndc_scale_factor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">cndc_var</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"units"</span><span class="p">))</span>
         <span class="n">psal</span> <span class="o">=</span> <span class="n">gsw</span><span class="o">.</span><span class="n">conversions</span><span class="o">.</span><span class="n">SP_from_C</span><span class="p">(</span>
             <span class="n">cndc</span> <span class="o">*</span> <span class="n">cndc_factor</span><span class="p">,</span> <span class="n">temp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">pres_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>

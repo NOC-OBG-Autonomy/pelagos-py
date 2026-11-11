@@ -43,7 +43,7 @@
   <link rel="preload" as="script" href="../../../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../../../_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="../../../../../_static/documentation_options.js?v=a11416ff"></script>
     <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -550,15 +550,17 @@ calibration polynomial.</p>
 <dt class="sig sig-object py" id="pelagos_py.steps.processing.oxygen.ShiftOxygenToCTD">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">pelagos_py.steps.processing.oxygen.</span></span><span class="sig-name descname"><span class="pre">ShiftOxygenToCTD</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../../_modules/pelagos_py/steps/processing/oxygen.html#ShiftOxygenToCTD"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.steps.processing.oxygen.ShiftOxygenToCTD" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="../../base_step/index.html#pelagos_py.steps.base_step.BaseStep" title="pelagos_py.steps.base_step.BaseStep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pelagos_py.steps.base_step.BaseStep</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">pelagos_py.utils.qc_handling.QCHandlingMixin</span></code></p>
-<p>Geometrically time-shifts optode measurements (e.g. phase, optode temperature) onto
-the CTD’s dense sampling grid, correcting for the water travel time between the two
-sensors’ positions on the glider (Woo &amp; Gourcuff, 2023). This is the reverse of the
-more common approach of cloning CTD data onto the sparse optode grid: it produces
-one shifted oxygen value per <code class="docutils literal notranslate"><span class="pre">N_MEASUREMENTS</span></code> row, named <code class="docutils literal notranslate"><span class="pre">&lt;variable&gt;_SHIFTED</span></code>.</p>
+<p>Geometrically time-shifts optode measurements (e.g. phase, optode temperature) to
+line them up with the CTD, correcting for the water travel time between the two
+sensors’ positions on the glider (Woo &amp; Gourcuff, 2023). The shifted value at an
+optode row at time <code class="docutils literal notranslate"><span class="pre">t</span></code> is the optode series read at <code class="docutils literal notranslate"><span class="pre">t</span> <span class="pre">+</span> <span class="pre">lag</span></code>, interpolated
+between the optode’s own readings (at most 5 minutes apart). It is written as
+<code class="docutils literal notranslate"><span class="pre">&lt;variable&gt;_SHIFTED</span></code> on the optode’s rows only, keeping the reading’s own flag.</p>
 <p>If <code class="docutils literal notranslate"><span class="pre">lag_seconds</span></code> is not set, the lag is instead derived per profile from mean
 pitch and dive rate. If <code class="docutils literal notranslate"><span class="pre">pitch_name</span></code> cannot be found (or is empty), a warning is
 logged and the step fails, since no lag is then available; set <code class="docutils literal notranslate"><span class="pre">lag_seconds</span></code> for a
-constant lag instead.</p>
+constant lag instead. Samples whose flags fall in <code class="docutils literal notranslate"><span class="pre">calculation_flag_filter</span></code> (by
+default 3, 4 and 9) are not interpolated from, but are still shifted.</p>
 <p>See <a class="reference internal" href="../../../../../user_guide/Pelagos-py_DOXY.html"><span class="doc">Oxygen Processing: Aanderaa Optodes</span></a>.</p>
 <div class="admonition-examples admonition">
 <p class="admonition-title">Examples</p>

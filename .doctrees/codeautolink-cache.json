@@ -45,7 +45,7 @@
           "pelagos_py.steps.base_step"
         ]
       },
-      "doc_lineno": 385
+      "doc_lineno": 413
     }
   ],
   "api/pelagos_py/steps/index": [],
@@ -70,7 +70,7 @@
           "Example"
         ]
       },
-      "doc_lineno": 29
+      "doc_lineno": 32
     }
   ],
   "api/pelagos_py/steps/processing/deep_correction/index": [
@@ -93,7 +93,7 @@
   "api/pelagos_py/steps/processing/index": [],
   "api/pelagos_py/steps/processing/interpolate_data/index": [
     {
-      "source": "- name: \"Interpolate Data\"\n  parameters:\n    variables:  # per variable, the QC flags treated as gaps to fill\n      PRES: [3, 4, 9]\n      LATITUDE: [3, 4, 9]\n      LONGITUDE: [3, 4, 9]\n    max_interp_time: 5.0\n  diagnostics: false",
+      "source": "- name: \"Interpolate Data\"\n  parameters:\n    variables:  # per variable, the QC flags treated as gaps to fill\n      LATITUDE: [3, 4, 9]\n      LONGITUDE: [3, 4, 9]\n    max_interp_time: 5.0\n  diagnostics: false",
       "names": [],
       "example": {
         "document": "api/pelagos_py/steps/processing/interpolate_data/index",
@@ -103,7 +103,7 @@
           "Examples"
         ]
       },
-      "doc_lineno": 29
+      "doc_lineno": 31
     }
   ],
   "api/pelagos_py/steps/processing/interpolate_par/index": [],
@@ -157,6 +157,19 @@
         ]
       },
       "doc_lineno": 61
+    },
+    {
+      "source": "range qc:\n  variable_ranges:\n    CHLA_ADJUSTED:\n      4: [-0.2, 100, outside]\n      2: [-0.2, 100, inside]\n  reset_flags: [3, 5]     # 3 and 5 become 2 or 4; existing 4 and 9 stay",
+      "names": [],
+      "example": {
+        "document": "api/pelagos_py/steps/quality_control/range_qc/index",
+        "ref_id": "module-pelagos_py.steps.quality_control.range_qc",
+        "headings": [
+          "pelagos_py.steps.quality_control.range_qc",
+          "Example"
+        ]
+      },
+      "doc_lineno": 76
     }
   ],
   "api/pelagos_py/steps/quality_control/spike_qc/index": [
@@ -192,7 +205,7 @@
   "api/pelagos_py/steps/quality_control/valid_profile_qc/index": [],
   "api/pelagos_py/steps/quality_control/visual_qc/index": [
     {
-      "source": "- name: \"Apply QC\"\n  parameters:\n    qc_settings:\n      visual qc:\n        variables: [CHLA, [TEMP, PSAL]]   # CHLA alone, TEMP and PSAL together\n        x_variable: TIME              # axes for boxes that don't name their own\n        y_variable: PRES\n        boxes:\n          - {x: [\"2024-05-02T10:00:00\", \"2024-05-02T14:30:00\"], y: [0, 15], flag: 4, mode: inside, variables: [TEMP, PSAL]}\n          # everything outside, merged so no flag gets better\n          - {x: [\"2024-05-01\", \"2024-05-20\"], y: [0, 1000], flag: 3, mode: outside, override: false}\n          # a point: the nearest sample only\n          - {x: [\"2024-05-03T08:12:30\"], y: [42.5], flag: 4}\n          - x: [\"2024-05-04\", \"2024-05-05\"]\n            y: [10, 12]\n            flag: 3\n            y_variable: TEMP          # drawn on TEMP vs TIME, flags TEMP\n          # only within profile 42\n          - {x: [0.8, 3], y: [0, 20], flag: 4, x_variable: CHLA, y_variable: PRES, variables: [CHLA], profiles: [42]}\n        flag_remaining_good: true     # untouched samples become 1 (good)\n  diagnostics: true",
+      "source": "- name: \"Apply QC\"\n  parameters:\n    qc_settings:\n      visual qc:\n        variables: [CHLA, [TEMP, PSAL]]   # CHLA alone, TEMP and PSAL together\n        x_variable: TIME              # axes for boxes that don't name their own\n        y_variable: PRES\n        boxes:\n          - {x: [\"2024-05-02T10:00:00\", \"2024-05-02T14:30:00\"], y: [0, 15], flag: 4, mode: inside, variables: [TEMP, PSAL]}\n          # everything outside, merged so no flag gets better\n          - {x: [\"2024-05-01\", \"2024-05-20\"], y: [0, 1000], flag: 3, mode: outside, override: false}\n          # a point: the nearest sample only\n          - {x: [\"2024-05-03T08:12:30\"], y: [42.5], flag: 4}\n          - x: [\"2024-05-04\", \"2024-05-05\"]\n            y: [10, 12]\n            flag: 3\n            y_variable: TEMP          # drawn on TEMP vs TIME, flags TEMP\n          # only within profile 42\n          - {x: [0.8, 3], y: [0, 20], flag: 4, x_variable: CHLA, y_variable: DEPTH, variables: [CHLA], profiles: [42]}\n        flag_remaining_good: true     # untouched samples become 1 (good)\n  diagnostics: true",
       "names": [],
       "example": {
         "document": "api/pelagos_py/steps/quality_control/visual_qc/index",
@@ -797,7 +810,7 @@
           "How to add a new QC check"
         ]
       },
-      "doc_lineno": 247
+      "doc_lineno": 248
     },
     {
       "source": "from pelagos_py.steps.base_qc import BaseQC, register_qc, flag_cols\n\n@register_qc\nclass MyNewCheck(BaseQC):\n    qc_name = \"my new check\"  # How you refer to the check in config (see below)\n    parameter_schema = {'A_cutoff': {'type': float, 'default': 1}}  # Parameters the user may supply, with type and default\n    required_variables = ['A']  # Variables required for execution; cross-referenced against the data vars in context\n    provided_variables = []  # Variables this check itself provides, if any\n    qc_outputs = ['A_QC']  # QC outputs; references that help \"Apply QC\" update existing QC in the data",
@@ -898,7 +911,7 @@
           "How to add a new QC check"
         ]
       },
-      "doc_lineno": 257
+      "doc_lineno": 258
     },
     {
       "source": "from pelagos_py.steps.base_qc import BaseQC, register_qc, flag_cols\n\n@register_qc\nclass MyNewCheck(BaseQC):\n    qc_name = \"my new check\"\n    parameter_schema = {'A_cutoff': {'type': float, 'default': 1}}\n    required_variables = ['A']\n    provided_variables = []\n    qc_outputs = ['A_QC']\n\n    def return_qc(self):\n        # IMPORTANT: access the data with self.data.\n        # self.flags should be an xarray Dataset whose data_vars hold the\n        # \"{variable}_QC\" columns produced by the check.\n        return self.flags\n\n    def plot_diagnostics(self):\n        # Add your diagnostic plotting here\n        ...",
@@ -999,7 +1012,7 @@
           "How to add a new QC check"
         ]
       },
-      "doc_lineno": 273
+      "doc_lineno": 274
     }
   ],
   "getting_started": [
@@ -1261,7 +1274,7 @@
           "3. Geometric lag correction"
         ]
       },
-      "doc_lineno": 249
+      "doc_lineno": 247
     }
   ],
   "user_guide/Pelagos-py_MLD": [],

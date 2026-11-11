@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../../_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="../../../../_static/documentation_options.js?v=a11416ff"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -405,7 +405,11 @@
 
 <span class="c1">#### Mandatory imports ####</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStep</span><span class="p">,</span> <span class="n">register_step</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.qc_handling</span><span class="w"> </span><span class="kn">import</span> <span class="n">QCHandlingMixin</span><span class="p">,</span> <span class="n">adjusted_name</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.qc_handling</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">QC_COMBINATRIX</span><span class="p">,</span>
+    <span class="n">QCHandlingMixin</span><span class="p">,</span>
+    <span class="n">adjusted_name</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.processing_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile_indices</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pelagos_py.utils.palettes</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">palettes</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fig_spec</span>
@@ -477,13 +481,16 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">ChlaQuenchingCorrection</span><span class="p">(</span><span class="n">BaseStep</span><span class="p">,</span> <span class="n">QCHandlingMixin</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Correct non-photochemical quenching of chlorophyll fluorescence.</span>
 
-<span class="sd">    Samples whose flags fall in ``calculation_flag_filter`` (by default probably-bad</span>
-<span class="sd">    (3), bad (4) and missing (9); see ``qc_handling_settings``) inform none of the</span>
-<span class="sd">    quantities the methods derive — quenching depth, night fl:bbp references,</span>
-<span class="sd">    in-mixed-layer maxima, euphotic depth. They are still corrected like any other</span>
-<span class="sd">    sample; each method just reads a NaN-masked copy of its inputs wherever it</span>
-<span class="sd">    derives a quantity, so flagging the unstable top few metres keeps it out of the</span>
-<span class="sd">    references while it still gets corrected.</span>
+<span class="sd">    Samples whose flags fall in ``calculation_flag_filter`` (by default bad (4) and</span>
+<span class="sd">    missing (9) for CHLA, plus probably-bad (3) for the other inputs; see</span>
+<span class="sd">    ``qc_handling_settings``), and samples shallower than ``reference_min_depth``,</span>
+<span class="sd">    inform none of the quantities the methods derive — quenching depth, night fl:bbp</span>
+<span class="sd">    references, in-mixed-layer maxima, euphotic depth. They are still corrected like</span>
+<span class="sd">    any other sample; each method just reads a NaN-masked copy of its inputs wherever</span>
+<span class="sd">    it derives a quantity.</span>
+
+<span class="sd">    Values the correction changes are flagged 5 (value changed) in the output's</span>
+<span class="sd">    ``_QC``, merged so an existing 3 or 4 is kept.</span>
 
 <span class="sd">    The mixed layer depth is read from the ``MLD`` variable, produced by a</span>
 <span class="sd">    preceding Mixed Layer Depth step.</span>
@@ -500,7 +507,6 @@
 <span class="sd">    """</span>
 
     <span class="n">step_name</span> <span class="o">=</span> <span class="s2">"CHLA Quenching"</span>
-    <span class="n">beta</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="c1"># MLD, backscatter and PAR are only needed by some methods, so they are</span>
     <span class="c1"># checked at run time against the selected method rather than required here.</span>
     <span class="n">required_variables</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">,</span> <span class="s2">"TIME"</span><span class="p">,</span> <span class="s2">"DEPTH"</span><span class="p">,</span> <span class="s2">"LATITUDE"</span><span class="p">,</span> <span class="s2">"LONGITUDE"</span><span class="p">]</span>
@@ -643,8 +649,16 @@
             <span class="s2">"default"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
             <span class="s2">"description"</span><span class="p">:</span> <span class="p">(</span>
                 <span class="s2">"Profile numbers drawn by the 'profile' / 'quenching_depth' "</span>
-                <span class="s2">"diagnostic figures; defaults to the day profile the correction "</span>
-                <span class="s2">"changed most."</span>
+                <span class="s2">"diagnostic figures; defaults to a typical day profile (median "</span>
+                <span class="s2">"change from the correction)."</span>
+            <span class="p">),</span>
+        <span class="p">},</span>
+        <span class="s2">"reference_min_depth"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">,</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="p">(</span>
+                <span class="s2">"Depth (m) above which samples are corrected but don't inform the "</span>
+                <span class="s2">"references: the top few metres are unstable."</span>
             <span class="p">),</span>
         <span class="p">},</span>
         <span class="s2">"max_photic_depth"</span><span class="p">:</span> <span class="p">{</span>
@@ -843,7 +857,7 @@
             <span class="p">]</span>
 
         <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">calc_vars</span><span class="p">:</span>
-            <span class="n">usable</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculation_mask</span><span class="p">([</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth_var</span><span class="p">,</span> <span class="n">var</span><span class="p">])</span>
+            <span class="n">usable</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reference_mask</span><span class="p">([</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">depth_var</span><span class="p">,</span> <span class="n">var</span><span class="p">])</span>
             <span class="n">calc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
                 <span class="n">usable</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_copy</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
             <span class="p">)</span>
@@ -901,6 +915,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">reconstruct_data</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">update_qc</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flag_changed_values</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">generate_diagnostics</span><span class="p">()</span>
@@ -908,12 +923,32 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
 
+    <span class="k">def</span><span class="w"> </span><span class="nf">flag_changed_values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Argo: values the quenching correction changed are flagged 5 (value changed)</span>
+        <span class="n">qc_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">output_as</span><span class="si">}</span><span class="s2">_QC"</span>
+        <span class="k">if</span> <span class="n">qc_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">before</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_copy</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">after</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">output_as</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">changed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">after</span><span class="p">)</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">after</span><span class="p">,</span> <span class="n">before</span><span class="p">,</span> <span class="n">equal_nan</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">new_flags</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">changed</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">merged</span> <span class="o">=</span> <span class="n">QC_COMBINATRIX</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">qc_name</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">),</span> <span class="n">new_flags</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">qc_name</span><span class="p">][:]</span> <span class="o">=</span> <span class="n">merged</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"Flagged </span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">changed</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span><span class="si">}</span><span class="s2"> quench-corrected values 5."</span><span class="p">,</span> <span class="n">console</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+
     <span class="c1"># ==================================================================</span>
     <span class="c1"># Shared helpers - inputs and per-profile quantities used by the methods below</span>
     <span class="c1"># ==================================================================</span>
     <span class="nd">@cached_property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">depth_var</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="s2">"DEPTH"</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_reference_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variables</span><span class="p">):</span>
+        <span class="c1"># samples that may inform the references: unflagged and below the unstable top layer</span>
+        <span class="n">depth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">depth_var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculation_mask</span><span class="p">(</span><span class="n">variables</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">depth</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reference_min_depth</span><span class="p">)</span>
 
     <span class="nd">@cached_property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_profile_index</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1060,7 +1095,7 @@
 
         <span class="c1"># The references are pure calculation, so flagged samples are dropped from</span>
         <span class="c1"># them entirely (day profiles are still corrected against the result).</span>
-        <span class="n">usable</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculation_mask</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">depth_var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bbp_var</span><span class="p">])</span>
+        <span class="n">usable</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reference_mask</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">depth_var</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bbp_var</span><span class="p">])</span>
         <span class="n">fl_all</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">usable</span><span class="p">,</span> <span class="n">fl_all</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
         <span class="n">bbp_all</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">usable</span><span class="p">,</span> <span class="n">bbp_all</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
 
@@ -2660,8 +2695,8 @@
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_example_profiles</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="c1"># day profile = the one the configured method changed most; night profile</span>
-        <span class="c1"># = the nearest in time to it</span>
+        <span class="c1"># day profile = a typical one (median change among changed day profiles);</span>
+        <span class="c1"># night profile = the nearest in time to it</span>
         <span class="n">change</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">output_as</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_copy</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">apply_to</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
         <span class="p">)</span>
@@ -2676,7 +2711,9 @@
             <span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">total_change</span> <span class="k">if</span> <span class="n">elev</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">day_min_elevation</span>
         <span class="p">]</span>
         <span class="n">pool</span> <span class="o">=</span> <span class="n">day_candidates</span> <span class="ow">or</span> <span class="nb">list</span><span class="p">(</span><span class="n">total_change</span><span class="p">)</span>
-        <span class="n">day_pn</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="n">total_change</span><span class="p">[</span><span class="n">p</span><span class="p">])</span>
+        <span class="n">changed</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pool</span> <span class="k">if</span> <span class="n">total_change</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span> <span class="ow">or</span> <span class="n">pool</span>
+        <span class="n">median_change</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">([</span><span class="n">total_change</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">changed</span><span class="p">])</span>
+        <span class="n">day_pn</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">changed</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="nb">abs</span><span class="p">(</span><span class="n">total_change</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">-</span> <span class="n">median_change</span><span class="p">))</span>
 
         <span class="n">night_candidates</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">total_change</span> <span class="k">if</span> <span class="n">elev</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">night_max_elevation</span>

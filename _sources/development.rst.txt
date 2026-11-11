@@ -202,7 +202,8 @@ To use QC filtering, the step config must specify ``qc_handling_settings``:
              4: 8
              9: 8
            # [calculation_flag_filter]:
-           #   Flags a step's calculations ignore (defaults to [3, 4, 9]). Unlike
+           #   Flags a step's calculations ignore (defaults to [3, 4, 9], or [4, 9]
+           #   for CHLA variables, which are flagged 3 until corrected). Unlike
            #   flag_filter_settings this does not remove the data: the samples are
            #   still corrected, they just do not inform the correction. E.g. Deep
            #   Correction leaves bad values out of the dark-value estimate but

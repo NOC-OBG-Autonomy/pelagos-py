@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="../../_static/documentation_options.js?v=a11416ff"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -403,14 +403,7 @@
 <div class="viewcode-block" id="run">
 <a class="viewcode-back" href="../../api/pelagos_py/dashboard/index.html#pelagos_py.dashboard.run">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="n">port</span><span class="o">=</span><span class="mi">8791</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Open the config dashboard in your browser. Needs ``pip install "pelagos_py[dashboard]"``."""</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="kn">import</span><span class="w"> </span><span class="nn">fastapi</span>  <span class="c1"># noqa: F401</span>
-        <span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>  <span class="c1"># noqa: F401</span>
-    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
-            <span class="s1">'The dashboard needs extra packages: pip install "pelagos_py[dashboard]"'</span>
-        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+<span class="w">    </span><span class="sd">"""Open the config dashboard in your browser."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.dashboard.app</span><span class="w"> </span><span class="kn">import</span> <span class="n">serve</span>
 
     <span class="n">serve</span><span class="p">(</span><span class="n">port</span><span class="p">)</span></div>

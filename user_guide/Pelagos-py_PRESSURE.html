@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <meta property="article:modified_time" content="2026-11-04T20:18:56+00:00" />
+    <meta property="article:modified_time" content="2026-11-11T15:35:53+00:00" />
     <title>Pressure Processing &#8212; pelagos-py</title>
   
   
@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="../_static/documentation_options.js?v=a11416ff"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -63,7 +63,7 @@
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="0.0" />
-    <meta name="docbuild:last-update" content="Nov 04, 2026"/>
+    <meta name="docbuild:last-update" content="Nov 11, 2026"/>
   
     
     <script src="../_static/searchtools.js"></script>
@@ -501,7 +501,7 @@
 <p>Pressure (<code class="docutils literal notranslate"><span class="pre">PRES</span></code>, dbar) is measured directly by the CTD. It is used to find profiles, to derive <code class="docutils literal notranslate"><span class="pre">DEPTH</span></code>, and in the salinity and density calculations, so it is quality controlled early in the pipeline. Processing consists of:</p>
 <ol class="arabic simple">
 <li><p><strong>Quality control</strong> — range and stuck-value tests, with flags shared across the CTD triad (<code class="docutils literal notranslate"><span class="pre">PRES</span></code>, <code class="docutils literal notranslate"><span class="pre">TEMP</span></code>, <code class="docutils literal notranslate"><span class="pre">CNDC</span></code>).</p></li>
-<li><p><strong>Interpolation</strong> — flagged and missing pressure values are filled by linear interpolation in time.</p></li>
+<li><p><strong>Depth</strong> — <code class="docutils literal notranslate"><span class="pre">PRES</span></code> itself is not interpolated; <code class="docutils literal notranslate"><span class="pre">DEPTH_ADJUSTED</span></code> derived from it is filled onto every row.</p></li>
 </ol>
 </section>
 </section>
@@ -528,15 +528,9 @@
 <p>No spike test is applied: pressure changes smoothly with the platform’s vertical speed.</p>
 </section>
 <hr class="docutils" />
-<section class="tex2jax_ignore mathjax_ignore" id="interpolation">
-<span id="2-interpolation"></span><h1>2. Interpolation<a class="headerlink" href="#interpolation" title="Link to this heading">#</a></h1>
-<p>After QC, the <a class="reference internal" href="../api/pelagos_py/steps/processing/interpolate_data/index.html"><span class="doc">Interpolate Data</span></a> step fills pressure values flagged probably bad (<code class="docutils literal notranslate"><span class="pre">3</span></code>), bad (<code class="docutils literal notranslate"><span class="pre">4</span></code>) or missing (<code class="docutils literal notranslate"><span class="pre">9</span></code>) by linear interpolation in time, and re-flags them as interpolated (<code class="docutils literal notranslate"><span class="pre">8</span></code>). This gives every sample a usable pressure for <code class="docutils literal notranslate"><span class="pre">DEPTH</span></code> and profile finding.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Interpolate Data</span>
-<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">variables</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">PRES</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">4</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">9</span><span class="p p-Indicator">]</span>
-</pre></div>
-</div>
+<section class="tex2jax_ignore mathjax_ignore" id="depth">
+<span id="2-depth"></span><h1>2. Depth<a class="headerlink" href="#depth" title="Link to this heading">#</a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">PRES</span></code> keeps only its measured values. <a class="reference internal" href="Pelagos-py_DERIVED.html"><span class="doc">Derive CTD</span></a> derives <code class="docutils literal notranslate"><span class="pre">DEPTH_ADJUSTED</span></code> from it and fills rows with no usable pressure (flagged <code class="docutils literal notranslate"><span class="pre">3</span></code>, <code class="docutils literal notranslate"><span class="pre">4</span></code> or <code class="docutils literal notranslate"><span class="pre">9</span></code>, or without a CTD sample) by linear interpolation in time, flagging them interpolated (<code class="docutils literal notranslate"><span class="pre">8</span></code>). This gives every sample a depth for profile finding and plotting.</p>
 </section>
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="references">
@@ -575,7 +569,7 @@
 </ul>
 </li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#quality-control">1. Quality control</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#interpolation">2. Interpolation</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#depth">2. Depth</a></li>
 <li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#references">References</a></li>
 </ul>
 

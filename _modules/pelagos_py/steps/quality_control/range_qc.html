@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../../_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="../../../../_static/documentation_options.js?v=a11416ff"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -406,7 +406,11 @@
 <span class="c1">#### Mandatory imports ####</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.steps.base_qc</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseQC</span><span class="p">,</span> <span class="n">register_qc</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.qc_handling</span><span class="w"> </span><span class="kn">import</span> <span class="n">prefer_adjusted</span><span class="p">,</span> <span class="n">propagate_flags</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.qc_handling</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">QC_COMBINATRIX</span><span class="p">,</span>
+    <span class="n">prefer_adjusted</span><span class="p">,</span>
+    <span class="n">propagate_flags</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="c1">#### Custom imports ####</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
@@ -479,6 +483,17 @@
 <span class="sd">                    2: [0, 5, outside]    # deeper   -&gt; probably good</span>
 <span class="sd">                flag_instead:</span>
 <span class="sd">                  DEPTH: [CHLA]           # DEPTH's flags go onto CHLA; no DEPTH_QC written</span>
+
+<span class="sd">    Re-assessing flags after a correction (``reset_flags``). Flags normally merge so</span>
+<span class="sd">    the worst wins, so a probably-bad (3) can never become probably-good (2). Listed</span>
+<span class="sd">    existing flags are replaced by this test's result instead; the rest still merge::</span>
+
+<span class="sd">        range qc:</span>
+<span class="sd">          variable_ranges:</span>
+<span class="sd">            CHLA_ADJUSTED:</span>
+<span class="sd">              4: [-0.2, 100, outside]</span>
+<span class="sd">              2: [-0.2, 100, inside]</span>
+<span class="sd">          reset_flags: [3, 5]     # 3 and 5 become 2 or 4; existing 4 and 9 stay</span>
 <span class="sd">    """</span>
 
     <span class="n">qc_name</span> <span class="o">=</span> <span class="s2">"range qc"</span>
@@ -510,6 +525,13 @@
             <span class="s2">"{'DEPTH': ['CHLA']} flags CHLA by DEPTH's ranges while leaving DEPTH "</span>
             <span class="s2">"unflagged."</span><span class="p">,</span>
         <span class="p">},</span>
+        <span class="s2">"reset_flags"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"type"</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+            <span class="s2">"default"</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Existing flags this test replaces instead of merging with, e.g. [3] "</span>
+            <span class="s2">"lets a re-test after a correction turn probably-bad (3) into probably-good (2). "</span>
+            <span class="s2">"Other existing flags merge as usual (worst wins)."</span><span class="p">,</span>
+        <span class="p">},</span>
         <span class="s2">"test_depth_range"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"type"</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
             <span class="s2">"default"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
@@ -524,6 +546,10 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">also_flag</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">flag_instead</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">flag_instead</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">reset_flags</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reset_flags</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># Apply QC then hands this test the stored flags and keeps its result as is</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">overwrite_flags</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reset_flags</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">tested_variables</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variable_ranges</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
 
@@ -646,7 +672,7 @@
                 <span class="n">qc</span><span class="p">[</span><span class="n">hit</span> <span class="o">&amp;</span> <span class="n">depth_mask</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">qc</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)]</span> <span class="o">=</span> <span class="n">flag</span>
 
             <span class="c1"># Anything checked but unflagged is good.</span>
-            <span class="n">qc</span><span class="p">[(</span><span class="n">qc</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">depth_mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">qc</span><span class="p">[(</span><span class="n">qc</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">depth_mask</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pass_flag</span>
             <span class="n">qc_arrays</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">qc</span>
 
         <span class="c1"># Propagate flags onto companions via the Argo merge matrix (worst wins).</span>
@@ -664,6 +690,16 @@
         <span class="c1"># Drop the flag_instead sources now their flags have been propagated.</span>
         <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">flag_instead</span><span class="p">:</span>
             <span class="n">qc_arrays</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">var</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">overwrite_flags</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">existing_flags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">qc</span> <span class="ow">in</span> <span class="n">qc_arrays</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">existing_flags</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">existing</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">existing_flags</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+                <span class="n">merged</span> <span class="o">=</span> <span class="n">QC_COMBINATRIX</span><span class="p">[</span><span class="n">existing</span><span class="p">,</span> <span class="n">qc</span><span class="p">]</span>
+                <span class="c1"># unchecked samples (0, e.g. outside test_depth_range) keep their flag</span>
+                <span class="n">reassessed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">existing</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">reset_flags</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">qc</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="n">qc_arrays</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">reassessed</span><span class="p">,</span> <span class="n">qc</span><span class="p">,</span> <span class="n">merged</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">flags</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">coords</span><span class="o">=</span><span class="p">{</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">]})</span>
         <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">qc</span> <span class="ow">in</span> <span class="n">qc_arrays</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>

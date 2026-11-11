@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <meta property="article:modified_time" content="2026-11-11T00:07:32+00:00" />
+    <meta property="article:modified_time" content="2026-11-11T15:35:53+00:00" />
     <title>Contributing to pelagos-py &#8212; pelagos-py</title>
   
   
@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="_static/documentation_options.js?v=a11416ff"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -754,7 +754,8 @@ and — if you add new variables — <code class="docutils literal notranslate">
 <span class="w">          </span><span class="nt">4</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
 <span class="w">          </span><span class="nt">9</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
 <span class="w">        </span><span class="c1"># [calculation_flag_filter]:</span>
-<span class="w">        </span><span class="c1">#   Flags a step's calculations ignore (defaults to [3, 4, 9]). Unlike</span>
+<span class="w">        </span><span class="c1">#   Flags a step's calculations ignore (defaults to [3, 4, 9], or [4, 9]</span>
+<span class="w">        </span><span class="c1">#   for CHLA variables, which are flagged 3 until corrected). Unlike</span>
 <span class="w">        </span><span class="c1">#   flag_filter_settings this does not remove the data: the samples are</span>
 <span class="w">        </span><span class="c1">#   still corrected, they just do not inform the correction. E.g. Deep</span>
 <span class="w">        </span><span class="c1">#   Correction leaves bad values out of the dark-value estimate but</span>

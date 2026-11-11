@@ -43,7 +43,7 @@
   <link rel="preload" as="script" href="../../../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../../../_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="../../../../../_static/documentation_options.js?v=a11416ff"></script>
     <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -536,6 +536,17 @@ itself is left unflagged:</p>
             <span class="mi">2</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">outside</span><span class="p">]</span>    <span class="c1"># deeper   -&gt; probably good</span>
         <span class="n">flag_instead</span><span class="p">:</span>
           <span class="n">DEPTH</span><span class="p">:</span> <span class="p">[</span><span class="n">CHLA</span><span class="p">]</span>           <span class="c1"># DEPTH's flags go onto CHLA; no DEPTH_QC written</span>
+</pre></div>
+</div>
+<p>Re-assessing flags after a correction (<code class="docutils literal notranslate"><span class="pre">reset_flags</span></code>). Flags normally merge so
+the worst wins, so a probably-bad (3) can never become probably-good (2). Listed
+existing flags are replaced by this test’s result instead; the rest still merge:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">range</span> <span class="n">qc</span><span class="p">:</span>
+  <span class="n">variable_ranges</span><span class="p">:</span>
+    <span class="n">CHLA_ADJUSTED</span><span class="p">:</span>
+      <span class="mi">4</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mf">0.2</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="n">outside</span><span class="p">]</span>
+      <span class="mi">2</span><span class="p">:</span> <span class="p">[</span><span class="o">-</span><span class="mf">0.2</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="n">inside</span><span class="p">]</span>
+  <span class="n">reset_flags</span><span class="p">:</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">]</span>     <span class="c1"># 3 and 5 become 2 or 4; existing 4 and 9 stay</span>
 </pre></div>
 </div>
 </div>

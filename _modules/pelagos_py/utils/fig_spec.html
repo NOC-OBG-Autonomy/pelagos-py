@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="../../../_static/documentation_options.js?v=a11416ff"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -678,6 +678,8 @@
 <a class="viewcode-back" href="../../../api/pelagos_py/utils/fig_spec/index.html#pelagos_py.utils.fig_spec.legend">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">legend</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Compact legend just outside the axes on the right."""</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_legend_handles_labels</span><span class="p">()[</span><span class="mi">0</span><span class="p">]:</span>
+        <span class="k">return</span>  <span class="c1"># nothing labelled (e.g. every point NaN): matplotlib would only warn</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span>
         <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span>
         <span class="n">fontsize</span><span class="o">=</span><span class="n">FS_LEGEND</span><span class="p">,</span>

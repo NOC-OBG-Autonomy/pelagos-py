@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <meta property="article:modified_time" content="2026-11-04T20:18:56+00:00" />
+    <meta property="article:modified_time" content="2026-11-11T15:35:53+00:00" />
     <title>Salinity Adjustment &#8212; pelagos-py</title>
   
   
@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="../_static/documentation_options.js?v=a11416ff"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -65,7 +65,7 @@
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="0.0" />
-    <meta name="docbuild:last-update" content="Nov 04, 2026"/>
+    <meta name="docbuild:last-update" content="Nov 11, 2026"/>
   
     
     <script src="../_static/searchtools.js"></script>
@@ -500,7 +500,7 @@
 </a>
 <section id="overview">
 <h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">#</a></h2>
-<p>Practical salinity is not measured directly by a glider CTD; it is derived from conductivity (CNDC), in-situ temperature (TEMP) and pressure (PRES) using the practical salinity equation. Because conductivity and temperature are measured by physically separate sensors with different response times, and because the conductivity cell itself stores and releases heat, the raw CNDC/TEMP pair is not perfectly synchronised in time or thermally equilibrated. Left uncorrected, this produces characteristic salinity spiking at sharp temperature/conductivity gradients (e.g. at the thermocline) that is a sensor artefact rather than real water-mass structure. Note that this correction should be applied to pumped CTDs; umpuped CTDs still need to be included in the processing.</p>
+<p>Practical salinity is not measured directly by a glider CTD; it is derived from conductivity (CNDC), in-situ temperature (TEMP) and pressure (PRES) using the practical salinity equation. Because conductivity and temperature are measured by physically separate sensors with different response times, and because the conductivity cell itself stores and releases heat, the raw CNDC/TEMP pair is not perfectly synchronised in time or thermally equilibrated. Left uncorrected, this produces characteristic salinity spiking at sharp temperature/conductivity gradients (e.g. at the thermocline) that is a sensor artefact rather than real water-mass structure. Note that this correction should be applied to pumped CTDs; unpumped CTDs still need to be included in the processing.</p>
 <p>pelagos-py addresses this with the <code class="docutils literal notranslate"><span class="pre">Salinity</span> <span class="pre">Adjustment</span></code> step (<code class="docutils literal notranslate"><span class="pre">AdjustSalinity</span></code>), which applies two sequential corrections directly to the raw sensor records, ahead of practical salinity being derived:</p>
 <ol class="arabic simple">
 <li><p><strong>Conductivity–temperature lag (C–T lag) correction</strong> — <code class="docutils literal notranslate"><span class="pre">correct_ct_lag()</span></code> — estimates the optimal time shift needed to align the conductivity record with the temperature record, following the profile-based lag-search method of Woo (2019), and applies a single dataset-wide median shift to <code class="docutils literal notranslate"><span class="pre">CNDC</span></code>.</p></li>
@@ -589,24 +589,22 @@
 <section id="id2">
 <span id="22-algorithm-as-implemented"></span><h2>2.2 Algorithm as implemented<a class="headerlink" href="#id2" title="Link to this heading">#</a></h2>
 <p>For each unique <code class="docutils literal notranslate"><span class="pre">PROFILE_NUMBER</span></code>, independently:</p>
-<ol class="arabic simple">
+<ol class="arabic">
 <li><p><strong>Extraction and gap handling.</strong> The profile’s <code class="docutils literal notranslate"><span class="pre">TEMP</span></code>/<code class="docutils literal notranslate"><span class="pre">PRES</span></code>/time columns are sliced out and rows with <code class="docutils literal notranslate"><span class="pre">NaN</span></code> <code class="docutils literal notranslate"><span class="pre">TEMP</span></code> are dropped, retaining a mapping back to their original indices in the full dataset. Profiles with fewer than 5 remaining timestamped <code class="docutils literal notranslate"><span class="pre">TEMP</span></code> samples are skipped (left uncorrected).</p></li>
 <li><p><strong>Usable-sample check.</strong> Of the retained samples, at least 2 must be individually unflagged (<code class="docutils literal notranslate"><span class="pre">calculation_mask([&quot;TEMP&quot;])</span></code>); otherwise the profile is skipped. These unflagged samples alone anchor the interpolant built in the next step, though — as in §1 — the correction is still computed and applied at flagged samples within the profile.</p></li>
 <li><p><strong>Interpolation and 1 Hz resampling.</strong> A linear interpolant of <code class="docutils literal notranslate"><span class="pre">TEMP</span></code> against elapsed time is built from the unflagged anchors, this time with <strong><code class="docutils literal notranslate"><span class="pre">fill_value=&quot;extrapolate&quot;</span></code></strong> (unlike the C–T lag interpolants in §1, which return <code class="docutils literal notranslate"><span class="pre">NaN</span></code> outside their domain). <code class="docutils literal notranslate"><span class="pre">TEMP</span></code> is then resampled onto a regular <strong>1 Hz</strong> elapsed-time grid spanning the profile; profiles yielding fewer than 2 such 1 Hz samples are skipped.</p></li>
-<li><p><strong>Recursive filter.</strong> Using fixed Morison et al. (1994) coefficients,
-$<span class="math notranslate nohighlight">\(
-\tau = \tau_{\text{offset}} + \frac{\tau_{\text{slope}}}{\sqrt{U}}, \qquad
-\alpha = \alpha_{\text{offset}} + \frac{\alpha_{\text{slope}}}{U},
-\)</span><span class="math notranslate nohighlight">\(
-with \)</span>\alpha_{\text{offset}}=0.0135<span class="math notranslate nohighlight">\(, \)</span>\alpha_{\text{slope}}=0.0264<span class="math notranslate nohighlight">\(, \)</span>\tau_{\text{offset}}=7.1499\ \text{s}<span class="math notranslate nohighlight">\(, \)</span>\tau_{\text{slope}}=2.7858<span class="math notranslate nohighlight">\(, and a fixed flow rate \)</span>U = 0.4867<span class="math notranslate nohighlight">\( (from Woo, 2019), the filter coefficients for 1 Hz sampling (Nyquist frequency \)</span>f_N = 0.5<span class="math notranslate nohighlight">\( Hz) are
-\)</span><span class="math notranslate nohighlight">\(
-a = \frac{4 f_N \alpha \tau}{1 + 4 f_N \tau}, \qquad b = 1 - \frac{2a}{\alpha}.
-\)</span><span class="math notranslate nohighlight">\(
-The thermal-mass temperature error is then reconstructed recursively over the 1 Hz series,
-\)</span><span class="math notranslate nohighlight">\(
-\Delta T_i = -b\,\Delta T_{i-1} + a\left(T_i - T_{i-1}\right), \qquad \Delta T_0 = 0,
-\)</span><span class="math notranslate nohighlight">\(
-and the corrected in-cell temperature is \)</span>T_i^{\text{corr}} = T_i - \Delta T_i<span class="math notranslate nohighlight">\(. Because the recursion is reset to \)</span>\Delta T_0 = 0$ at the start of every profile, there is a brief filter warm-up transient at the beginning of each profile during which the correction has not yet converged; the filter carries no memory across profile boundaries.</p></li>
+<li><p><strong>Recursive filter.</strong> Using fixed Morison et al. (1994) coefficients,</p>
+<div class="math notranslate nohighlight">
+\[   \tau = \tau_{\text{offset}} + \frac{\tau_{\text{slope}}}{\sqrt{U}}, \qquad
+   \alpha = \alpha_{\text{offset}} + \frac{\alpha_{\text{slope}}}{U},\]</div>
+<p>with <span class="math notranslate nohighlight">\(\alpha_{\text{offset}}=0.0135\)</span>, <span class="math notranslate nohighlight">\(\alpha_{\text{slope}}=0.0264\)</span>, <span class="math notranslate nohighlight">\(\tau_{\text{offset}}=7.1499\ \text{s}\)</span>, <span class="math notranslate nohighlight">\(\tau_{\text{slope}}=2.7858\)</span>, and a fixed flow rate <span class="math notranslate nohighlight">\(U = 0.4867\)</span> (from Woo, 2019), the filter coefficients for 1 Hz sampling (Nyquist frequency <span class="math notranslate nohighlight">\(f_N = 0.5\)</span> Hz) are</p>
+<div class="math notranslate nohighlight">
+\[   a = \frac{4 f_N \alpha \tau}{1 + 4 f_N \tau}, \qquad b = 1 - \frac{2a}{\alpha}.\]</div>
+<p>The thermal-mass temperature error is then reconstructed recursively over the 1 Hz series,</p>
+<div class="math notranslate nohighlight">
+\[   \Delta T_i = -b\,\Delta T_{i-1} + a\left(T_i - T_{i-1}\right), \qquad \Delta T_0 = 0,\]</div>
+<p>and the corrected in-cell temperature is <span class="math notranslate nohighlight">\(T_i^{\text{corr}} = T_i - \Delta T_i\)</span>. Because the recursion is reset to <span class="math notranslate nohighlight">\(\Delta T_0 = 0\)</span> at the start of every profile, there is a brief filter warm-up transient at the beginning of each profile during which the correction has not yet converged; the filter carries no memory across profile boundaries.</p>
+</li>
 <li><p><strong>Resampling back.</strong> The corrected 1 Hz series is linearly interpolated (again with <code class="docutils literal notranslate"><span class="pre">fill_value=&quot;extrapolate&quot;</span></code>) back onto the profile’s original (non-1 Hz) sample times, and written into the corrected-temperature array at the original indices identified in step 1.</p></li>
 <li><p><strong>Diagnostics sampling.</strong> If <code class="docutils literal notranslate"><span class="pre">diagnostics:</span> <span class="pre">true</span></code>, the <span class="math notranslate nohighlight">\(dT/dt\)</span> vs. correction-amplitude scatter data is captured once, for the first profile encountered that both spans at least one hour (3600 s) and has a temperature range of at least 1.0 °C over the profile — used to visually verify that larger corrections track faster temperature changes.</p></li>
 </ol>

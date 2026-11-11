@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="../../../_static/documentation_options.js?v=a11416ff"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -471,6 +471,8 @@
         <span class="kc">False</span>  <span class="c1"># set by Apply QC: return_qc then merges with existing_flags</span>
     <span class="p">)</span>
     <span class="n">existing_flags</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="c1"># Flag for values that pass; Apply QC sets it from the pipeline's pass_flag setting</span>
+    <span class="n">pass_flag</span> <span class="o">=</span> <span class="mi">1</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="c1"># data may be None when a test is instantiated to introspect its</span>
@@ -517,15 +519,15 @@
 <div class="viewcode-block" id="BaseQC.log">
 <a class="viewcode-back" href="../../../api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.BaseQC.log">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">console</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">"""Log an info-level message with the QC name prefix. ``console=False`` keeps it in the log file only."""</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"[</span><span class="si">%s</span><span class="s2">] </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">qc_name</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">"console"</span><span class="p">:</span> <span class="n">console</span><span class="p">})</span></div>
+<span class="w">        </span><span class="sd">"""Log an info-level message. ``console=False`` keeps it in the log file only."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">"console"</span><span class="p">:</span> <span class="n">console</span><span class="p">})</span></div>
 
 
 <div class="viewcode-block" id="BaseQC.log_warn">
 <a class="viewcode-back" href="../../../api/pelagos_py/steps/base_qc/index.html#pelagos_py.steps.base_qc.BaseQC.log_warn">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">log_warn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">"""Log a warning-level message with the QC name prefix."""</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"[</span><span class="si">%s</span><span class="s2">] </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">qc_name</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span></div>
+<span class="w">        </span><span class="sd">"""Log a warning-level message."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">message</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="BaseQC.log_progress">

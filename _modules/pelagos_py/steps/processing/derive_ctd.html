@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../../_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="../../../../_static/documentation_options.js?v=a11416ff"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,6 +411,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">gsw</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fig_spec</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.processing_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">cndc_scale_factor</span>
 
@@ -428,6 +429,11 @@
 <span class="sd">    ``PSAL_ADJUSTED``), so raw versions from the input file are kept, and inputs are read from</span>
 <span class="sd">    their ``_ADJUSTED`` version where one exists. A ``PSAL_ADJUSTED`` already made by Salinity</span>
 <span class="sd">    Adjustment is not overwritten. See :doc:`/user_guide/Pelagos-py_DERIVED`.</span>
+
+<span class="sd">    ``DEPTH_ADJUSTED`` is the vertical coordinate, so it is the one derived variable</span>
+<span class="sd">    filled on every row: rows without a usable pressure (none, or</span>
+<span class="sd">    flagged 3/4/9) are interpolated in time from the depth either side, at most 5 minutes</span>
+<span class="sd">    apart, and flagged 8. The other variables only exist on the CTD's own rows.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -601,6 +607,9 @@
             <span class="k">if</span> <span class="n">source_qcs</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">generate_qc</span><span class="p">({</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">output_name</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">:</span> <span class="n">source_qcs</span><span class="p">})</span>
 
+        <span class="k">if</span> <span class="s2">"DEPTH"</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_derive</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fill_depth</span><span class="p">()</span>
+
         <span class="c1"># Show diagnostic plots if diagnostics are enabled</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">diagnostics</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">plot_diagnostics</span><span class="p">()</span>
@@ -612,6 +621,17 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
 
+    <span class="k">def</span><span class="w"> </span><span class="nf">fill_depth</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Every row needs a depth to place other sensors' samples in the water column.</span>
+        <span class="n">depth</span><span class="p">,</span> <span class="n">flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">values_at_rows_of</span><span class="p">(</span><span class="s2">"DEPTH_ADJUSTED"</span><span class="p">,</span> <span class="s2">"TIME"</span><span class="p">)</span>
+        <span class="n">usable</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"DEPTH_ADJUSTED"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="p">)</span> <span class="o">&amp;</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculation_mask</span><span class="p">([</span><span class="s2">"DEPTH_ADJUSTED"</span><span class="p">])</span>
+        <span class="n">filled</span> <span class="o">=</span> <span class="o">~</span><span class="n">usable</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">depth</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"DEPTH_ADJUSTED"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">filled</span><span class="p">]</span> <span class="o">=</span> <span class="n">depth</span><span class="p">[</span><span class="n">filled</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"DEPTH_ADJUSTED_QC"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="n">filled</span><span class="p">]</span> <span class="o">=</span> <span class="mi">8</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Filled DEPTH_ADJUSTED on </span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">filled</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span><span class="si">}</span><span class="s2"> rows (flagged 8)."</span><span class="p">)</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">plot_diagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="s2">"TIME"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
             <span class="k">return</span>
@@ -619,7 +639,8 @@
         <span class="n">plot_vars</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">var</span>
             <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">provided_variables</span>
-            <span class="k">if</span> <span class="n">raw_name</span><span class="p">(</span><span class="n">var</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_derive</span> <span class="ow">and</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">var</span> <span class="o">==</span> <span class="s2">"DEPTH_ADJUSTED"</span> <span class="ow">or</span> <span class="n">raw_name</span><span class="p">(</span><span class="n">var</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_derive</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="n">var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
         <span class="p">]</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">plot_vars</span><span class="p">:</span>

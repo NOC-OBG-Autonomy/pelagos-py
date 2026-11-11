@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="../../../_static/documentation_options.js?v=a11416ff"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -493,6 +493,15 @@
         <span class="s2">"the dashboard this behaves like 'skip'). 'skip' moves straight "</span>
         <span class="s2">"on to the next step. 'stop' ends the run."</span><span class="p">,</span>
     <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"pass_flag"</span><span class="p">,</span>
+        <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"int"</span><span class="p">,</span>
+        <span class="s2">"options"</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+        <span class="s2">"required"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s2">"default"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Flag automated QC tests give values that pass: 1 (good) or 2 "</span>
+        <span class="s2">"(probably good, so only a manual Visual QC check gives 1)."</span><span class="p">,</span>
+    <span class="p">},</span>
 <span class="p">]</span>
 
 
@@ -623,8 +632,11 @@
 
 
 <span class="c1"># ================================ Validation ================================</span>
+<div class="viewcode-block" id="ValidatePayload">
+<a class="viewcode-back" href="../../../api/pelagos_py/dashboard/app/index.html#pelagos_py.dashboard.app.ValidatePayload">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ValidatePayload</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">yaml_content</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">yaml_content</span><span class="p">:</span> <span class="nb">str</span></div>
+
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">_WarningCollector</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Handler</span><span class="p">):</span>
@@ -758,9 +770,12 @@
 
 
 <span class="c1"># ============================ Config management =============================</span>
+<div class="viewcode-block" id="SavePayload">
+<a class="viewcode-back" href="../../../api/pelagos_py/dashboard/app/index.html#pelagos_py.dashboard.app.SavePayload">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">SavePayload</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">yaml_content</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">yaml_content</span><span class="p">:</span> <span class="nb">str</span></div>
+
 
 
 <span class="c1"># virtual: no file on disk, the YAML is built per file by /api/build</span>
@@ -898,9 +913,12 @@
 <span class="n">_listed_outputs</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>  <span class="c1"># only listed files may be served or deleted</span>
 
 
+<div class="viewcode-block" id="OutputsPayload">
+<a class="viewcode-back" href="../../../api/pelagos_py/dashboard/app/index.html#pelagos_py.dashboard.app.OutputsPayload">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">OutputsPayload</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
     <span class="n">dirs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="n">exports</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">exports</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span></div>
+
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_output_dirs</span><span class="p">(</span><span class="n">dirs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
@@ -1010,8 +1028,11 @@
     <span class="k">return</span> <span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="s2">"deleted"</span><span class="p">,</span> <span class="s2">"removed"</span><span class="p">:</span> <span class="n">removed</span><span class="p">}</span>
 
 
+<div class="viewcode-block" id="RevealPayload">
+<a class="viewcode-back" href="../../../api/pelagos_py/dashboard/app/index.html#pelagos_py.dashboard.app.RevealPayload">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">RevealPayload</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
+    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span></div>
+
 
 
 <span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/api/outputs/reveal"</span><span class="p">)</span>
@@ -1022,8 +1043,11 @@
     <span class="k">return</span> <span class="n">_reveal</span><span class="p">(</span><span class="n">dirs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">payload</span><span class="o">.</span><span class="n">path</span> <span class="k">else</span> <span class="n">dirs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 
 
+<div class="viewcode-block" id="PathsPayload">
+<a class="viewcode-back" href="../../../api/pelagos_py/dashboard/app/index.html#pelagos_py.dashboard.app.PathsPayload">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">PathsPayload</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">paths</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">paths</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span></div>
+
 
 
 <span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/api/files/info"</span><span class="p">)</span>
@@ -1043,8 +1067,11 @@
     <span class="k">return</span> <span class="n">_reveal</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">parent</span><span class="p">)</span>
 
 
+<div class="viewcode-block" id="BrowsePayload">
+<a class="viewcode-back" href="../../../api/pelagos_py/dashboard/app/index.html#pelagos_py.dashboard.app.BrowsePayload">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">BrowsePayload</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">start</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
+    <span class="n">start</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span></div>
+
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_native_dialog</span><span class="p">(</span><span class="n">start</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">multiple</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
@@ -1161,10 +1188,13 @@
     <span class="k">return</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="p">{</span><span class="s2">"done"</span><span class="p">:</span> <span class="n">d</span><span class="p">,</span> <span class="s2">"total"</span><span class="p">:</span> <span class="n">t</span><span class="p">}</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span> <span class="ow">in</span> <span class="n">_DOWNLOADS</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
 
 
+<div class="viewcode-block" id="BuildPayload">
+<a class="viewcode-back" href="../../../api/pelagos_py/dashboard/app/index.html#pelagos_py.dashboard.app.BuildPayload">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">BuildPayload</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
     <span class="n">file_path</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">choices</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_template_text</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -1259,8 +1289,11 @@
 
 
 <span class="c1"># ============================== Pipeline runner =============================</span>
+<div class="viewcode-block" id="RunPayload">
+<a class="viewcode-back" href="../../../api/pelagos_py/dashboard/app/index.html#pelagos_py.dashboard.app.RunPayload">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">RunPayload</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
-    <span class="n">yaml_content</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">yaml_content</span><span class="p">:</span> <span class="nb">str</span></div>
+
 
 
 <span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/api/run"</span><span class="p">)</span>
@@ -1282,10 +1315,13 @@
     <span class="k">return</span> <span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="s2">"stopping"</span><span class="p">}</span>
 
 
+<div class="viewcode-block" id="RerunPayload">
+<a class="viewcode-back" href="../../../api/pelagos_py/dashboard/app/index.html#pelagos_py.dashboard.app.RerunPayload">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">RerunPayload</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
     <span class="c1"># YAML rather than JSON so bounds like -.inf survive the trip from the browser</span>
     <span class="n">parameters_yaml</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
-    <span class="n">yaml_content</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
+    <span class="n">yaml_content</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span></div>
+
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_resume</span><span class="p">(</span><span class="n">command</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>

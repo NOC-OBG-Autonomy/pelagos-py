@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../../_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="../../../../_static/documentation_options.js?v=a11416ff"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -429,6 +429,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">platform</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span>
@@ -437,7 +438,8 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.console</span><span class="w"> </span><span class="kn">import</span> <span class="n">progress_bar</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.console</span><span class="w"> </span><span class="kn">import</span> <span class="n">_NAME_WIDTH</span><span class="p">,</span> <span class="n">progress_bar</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.log_levels</span><span class="w"> </span><span class="kn">import</span> <span class="n">LEVEL_STYLES</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fig_spec</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.qc_handling</span><span class="w"> </span><span class="kn">import</span> <span class="n">adjusted_name</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pelagos_py.utils.diagnostic_capture</span><span class="w"> </span><span class="kn">import</span> <span class="n">save_figure</span><span class="p">,</span> <span class="n">wait_for_saves</span>
@@ -457,7 +459,15 @@
     <span class="s2">"”"</span><span class="p">:</span> <span class="s1">'"'</span><span class="p">,</span>
     <span class="s2">"‘"</span><span class="p">:</span> <span class="s2">"'"</span><span class="p">,</span>
     <span class="s2">"’"</span><span class="p">:</span> <span class="s2">"'"</span><span class="p">,</span>
+    <span class="s2">"…"</span><span class="p">:</span> <span class="s2">"."</span><span class="p">,</span>
 <span class="p">}</span>
+
+
+<span class="c1">#   A LogFormatter line: date, time, padded name, optional level tag, message.</span>
+<span class="n">_TAG_RGB</span> <span class="o">=</span> <span class="p">{</span><span class="n">style</span><span class="o">.</span><span class="n">tag</span><span class="p">:</span> <span class="n">style</span><span class="o">.</span><span class="n">rgb</span> <span class="k">for</span> <span class="n">style</span> <span class="ow">in</span> <span class="n">LEVEL_STYLES</span><span class="o">.</span><span class="n">values</span><span class="p">()}</span>
+<span class="n">_LOG_LINE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+    <span class="sa">rf</span><span class="s2">"^\S+ (\S+)  (.</span><span class="se">{{</span><span class="si">{</span><span class="n">_NAME_WIDTH</span><span class="si">}</span><span class="se">}}</span><span class="s2">)  (?:(</span><span class="si">{</span><span class="s1">'|'</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_TAG_RGB</span><span class="p">)</span><span class="si">}</span><span class="s2">)  )?(.*)$"</span>
+<span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">sanitize</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -1032,21 +1042,13 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">set_fill_color</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ln</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
 
-    <span class="c1">#   Terminal palette: dark background with light text; log levels are</span>
-    <span class="c1">#   tinted as they would be in a colourised console.</span>
+    <span class="c1">#   Terminal palette: dark background with light text.</span>
     <span class="n">_TERMINAL_BG</span> <span class="o">=</span> <span class="p">(</span><span class="mi">24</span><span class="p">,</span> <span class="mi">24</span><span class="p">,</span> <span class="mi">27</span><span class="p">)</span>
     <span class="n">_TERMINAL_FG</span> <span class="o">=</span> <span class="p">(</span><span class="mi">220</span><span class="p">,</span> <span class="mi">220</span><span class="p">,</span> <span class="mi">220</span><span class="p">)</span>
-    <span class="n">_TERMINAL_LEVEL_COLORS</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">"DEBUG"</span><span class="p">:</span> <span class="p">(</span><span class="mi">130</span><span class="p">,</span> <span class="mi">170</span><span class="p">,</span> <span class="mi">255</span><span class="p">),</span>
-        <span class="s2">"INFO"</span><span class="p">:</span> <span class="p">(</span><span class="mi">180</span><span class="p">,</span> <span class="mi">220</span><span class="p">,</span> <span class="mi">180</span><span class="p">),</span>
-        <span class="s2">"WARNING"</span><span class="p">:</span> <span class="p">(</span><span class="mi">240</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">110</span><span class="p">),</span>
-        <span class="s2">"ERROR"</span><span class="p">:</span> <span class="p">(</span><span class="mi">240</span><span class="p">,</span> <span class="mi">130</span><span class="p">,</span> <span class="mi">130</span><span class="p">),</span>
-        <span class="s2">"CRITICAL"</span><span class="p">:</span> <span class="p">(</span><span class="mi">240</span><span class="p">,</span> <span class="mi">130</span><span class="p">,</span> <span class="mi">130</span><span class="p">),</span>
-    <span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">terminal_block</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lines</span><span class="p">,</span> <span class="n">font_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">6.5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="c1">#   Render (time, level, location, message) log lines in a dark, mono</span>
-        <span class="c1">#   panel tinted by log level, like colourised console output.</span>
+        <span class="c1">#   Render (time, name, level tag, message) log lines in a dark, mono</span>
+        <span class="c1">#   panel; only the level tag of warnings and errors is coloured.</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">lines</span><span class="p">:</span>
             <span class="k">return</span>
         <span class="n">line_h</span> <span class="o">=</span> <span class="n">font_size</span> <span class="o">*</span> <span class="mf">0.62</span>
@@ -1054,19 +1056,41 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">set_fill_color</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_TERMINAL_BG</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">set_draw_color</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_TERMINAL_BG</span><span class="p">)</span>
 
-        <span class="k">for</span> <span class="n">time_s</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
-            <span class="n">text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">time_s</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">level</span><span class="si">:</span><span class="s2">&lt;7</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">location</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">"</span>
-            <span class="n">color</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_TERMINAL_LEVEL_COLORS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">level</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_TERMINAL_FG</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">set_text_color</span><span class="p">(</span><span class="o">*</span><span class="n">color</span><span class="p">)</span>
-            <span class="c1">#   multi_cell fills every wrapped line, so the dark panel stays</span>
-            <span class="c1">#   continuous even when a long message spills onto another line.</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">multi_cell</span><span class="p">(</span>
-                <span class="mi">0</span><span class="p">,</span>
+        <span class="k">for</span> <span class="n">time_s</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">tag</span><span class="p">,</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+            <span class="n">prefix</span> <span class="o">=</span> <span class="n">sanitize</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">time_s</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">  "</span><span class="p">)</span>
+            <span class="n">tag_text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">  "</span> <span class="k">if</span> <span class="n">tag</span> <span class="k">else</span> <span class="s2">""</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="n">sanitize</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+            <span class="n">prefix_w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_string_width</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span>
+            <span class="n">tag_w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_string_width</span><span class="p">(</span><span class="n">tag_text</span><span class="p">)</span>
+            <span class="n">message_w</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">epw</span> <span class="o">-</span> <span class="n">prefix_w</span> <span class="o">-</span> <span class="n">tag_w</span>
+            <span class="n">height</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">multi_cell</span><span class="p">(</span>
+                <span class="n">message_w</span><span class="p">,</span>
                 <span class="n">line_h</span><span class="p">,</span>
-                <span class="n">sanitize</span><span class="p">(</span><span class="n">text</span><span class="p">),</span>
+                <span class="n">message</span><span class="p">,</span>
+                <span class="n">dry_run</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">output</span><span class="o">=</span><span class="n">MethodReturnValue</span><span class="o">.</span><span class="n">HEIGHT</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_y</span><span class="p">()</span> <span class="o">+</span> <span class="n">height</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">page_break_trigger</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_page</span><span class="p">()</span>
+            <span class="c1">#   One rect per entry (covering wrapped lines), overlapping the next</span>
+            <span class="c1">#   slightly so no hairline seam shows between rows.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">l_margin</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_y</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">epw</span><span class="p">,</span> <span class="n">height</span> <span class="o">+</span> <span class="mf">0.3</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">"F"</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_text_color</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_TERMINAL_FG</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">prefix_w</span><span class="p">,</span> <span class="n">line_h</span><span class="p">,</span> <span class="n">prefix</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">tag</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">set_text_color</span><span class="p">(</span><span class="o">*</span><span class="n">_TAG_RGB</span><span class="p">[</span><span class="n">tag</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">set_font</span><span class="p">(</span><span class="s2">"Courier"</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">,</span> <span class="n">font_size</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">cell</span><span class="p">(</span><span class="n">tag_w</span><span class="p">,</span> <span class="n">line_h</span><span class="p">,</span> <span class="n">tag_text</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">set_text_color</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_TERMINAL_FG</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">set_font</span><span class="p">(</span><span class="s2">"Courier"</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="n">font_size</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">multi_cell</span><span class="p">(</span>
+                <span class="n">message_w</span><span class="p">,</span>
+                <span class="n">line_h</span><span class="p">,</span>
+                <span class="n">message</span><span class="p">,</span>
                 <span class="n">new_x</span><span class="o">=</span><span class="n">XPos</span><span class="o">.</span><span class="n">LMARGIN</span><span class="p">,</span>
                 <span class="n">new_y</span><span class="o">=</span><span class="n">YPos</span><span class="o">.</span><span class="n">NEXT</span><span class="p">,</span>
-                <span class="n">fill</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">align</span><span class="o">=</span><span class="s2">"L"</span><span class="p">,</span>
                 <span class="n">border</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
             <span class="p">)</span>
 
@@ -1527,31 +1551,19 @@
 
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">add_log</span><span class="p">(</span><span class="n">logfile</span><span class="p">,</span> <span class="n">pdf</span><span class="p">:</span> <span class="n">_ReportPDF</span><span class="p">,</span> <span class="n">ncols</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_log</span><span class="p">(</span><span class="n">logfile</span><span class="p">,</span> <span class="n">pdf</span><span class="p">:</span> <span class="n">_ReportPDF</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="c1">#   Add the logfile as a terminal-style block. Requires a log_file set in the</span>
-    <span class="c1">#   global pipeline parameters; ncols is the " - " fields per log line.</span>
+    <span class="c1">#   global pipeline parameters.</span>
     <span class="n">pdf</span><span class="o">.</span><span class="n">add_page</span><span class="p">()</span>
     <span class="n">pdf</span><span class="o">.</span><span class="n">section_heading</span><span class="p">(</span><span class="s2">"Logfile of run"</span><span class="p">)</span>
 
     <span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">logfile</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">logfile</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
-                <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="p">:</span>
-                    <span class="k">continue</span>
-
-                <span class="n">parts</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">" - "</span><span class="p">,</span> <span class="n">maxsplit</span><span class="o">=</span><span class="n">ncols</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">!=</span> <span class="n">ncols</span><span class="p">:</span>
-                    <span class="c1"># malformed or unexpected line, skip</span>
-                    <span class="k">continue</span>
-
-                <span class="n">timestamp</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">message</span> <span class="o">=</span> <span class="n">parts</span>
-                <span class="c1">#   Remove date for more space for comment</span>
-                <span class="n">timestamp</span> <span class="o">=</span> <span class="n">timestamp</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">" "</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="s2">" "</span> <span class="ow">in</span> <span class="n">timestamp</span> <span class="k">else</span> <span class="n">timestamp</span>
-                <span class="n">location</span> <span class="o">=</span> <span class="n">location</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="s2">"pelagos_py."</span><span class="p">)</span>
-
-                <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">timestamp</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">message</span><span class="p">))</span>
+                <span class="n">match</span> <span class="o">=</span> <span class="n">_LOG_LINE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">))</span>
+                <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+                    <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">groups</span><span class="p">())</span>
     <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
         <span class="n">pdf</span><span class="o">.</span><span class="n">body</span><span class="p">(</span><span class="s2">"Logfile not found."</span><span class="p">)</span>
         <span class="k">return</span>
@@ -1831,9 +1843,10 @@
     <span class="p">},</span>
 <span class="p">)</span>
 
-<span class="c1">#   Names tried (in order) for the cross-section's shared time and depth axes.</span>
+<span class="c1">#   Names tried (in order) for the cross-section's shared time and depth axes; DEPTH first,</span>
+<span class="c1">#   as it is filled on every row while PRES is only on the CTD's.</span>
 <span class="n">_CS_TIME_CANDIDATES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"TIME"</span><span class="p">,</span> <span class="s2">"time"</span><span class="p">)</span>
-<span class="n">_CS_PRES_CANDIDATES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"PRES"</span><span class="p">,</span> <span class="s2">"PRESSURE"</span><span class="p">,</span> <span class="s2">"pres"</span><span class="p">,</span> <span class="s2">"DEPTH"</span><span class="p">)</span>
+<span class="n">_CS_PRES_CANDIDATES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"DEPTH"</span><span class="p">,</span> <span class="s2">"PRES"</span><span class="p">,</span> <span class="s2">"PRESSURE"</span><span class="p">,</span> <span class="s2">"pres"</span><span class="p">)</span>
 
 <span class="c1">#   Default scatter marker size; BBP uses half this so its surfaced high values</span>
 <span class="c1">#   sit cleanly over the rest rather than smearing.</span>
@@ -2369,7 +2382,7 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">cross_section_figure</span><span class="p">(</span>
     <span class="n">data</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">,</span> <span class="n">outdir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ext</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">".png"</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="c1">#   A4-portrait stack of PRES-vs-TIME panels (see _CROSS_SECTION_PANELS), one</span>
+    <span class="c1">#   A4-portrait stack of DEPTH-vs-TIME panels (see _CROSS_SECTION_PANELS), one</span>
     <span class="c1">#   per variable, sharing the TIME axis, each with a profile strip and</span>
     <span class="c1">#   colourbar. Robust percentile colour limits; returns the saved path or None.</span>
     <span class="c1">#   ``labels`` limits it to those panels (e.g. ["Temperature"]), each BANNER_H tall.</span>
@@ -2392,6 +2405,13 @@
     <span class="c1"># Same points in every panel.</span>
     <span class="n">idx</span> <span class="o">=</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">thin_idx</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">fig_spec</span><span class="o">.</span><span class="n">CAPTURE_MAX_POINTS</span><span class="p">)</span>
     <span class="n">time</span><span class="p">,</span> <span class="n">pres</span> <span class="o">=</span> <span class="n">time</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">pres</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+    <span class="c1">#   A point with flagged pressure is at the wrong depth, so it's left out of every panel.</span>
+    <span class="n">pres_ok</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">pres</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="n">pres_qc_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">pres_name</span><span class="si">}</span><span class="s2">_QC"</span>
+    <span class="k">if</span> <span class="n">pres_qc_name</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
+        <span class="n">pres_qc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">pres_qc_name</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()[:</span><span class="n">n</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">pres_ok</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">pres_qc</span><span class="p">,</span> <span class="n">_CS_ALLOWED_QC_FLAGS</span><span class="p">)</span>
 
     <span class="c1">#   matplotlib date numbers for the shared X axis (NaT -&gt; NaN, ignored).</span>
     <span class="n">x</span> <span class="o">=</span> <span class="n">mdates</span><span class="o">.</span><span class="n">date2num</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
@@ -2418,6 +2438,7 @@
         <span class="k">if</span> <span class="n">qc_name</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
             <span class="n">qc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">qc_name</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()[:</span><span class="n">n</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span>
             <span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">qc</span><span class="p">,</span> <span class="n">_CS_ALLOWED_QC_FLAGS</span><span class="p">),</span> <span class="n">c</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">pres_ok</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
             <span class="k">continue</span>
@@ -2454,12 +2475,14 @@
         <span class="p">)</span>
 
         <span class="c1">#   Robust colour limits: percentiles, not raw min/max, so sharp spikes</span>
-        <span class="c1">#   don't blow out the scale. Guard the all-NaN case.</span>
+        <span class="c1">#   don't blow out the scale. Guard the all-NaN and constant cases.</span>
         <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
             <span class="n">vmin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanpercentile</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)</span>
             <span class="n">vmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanpercentile</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="mf">99.9</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span>
+        <span class="k">if</span> <span class="n">vmin</span> <span class="o">==</span> <span class="n">vmax</span><span class="p">:</span>
+            <span class="n">vmin</span><span class="p">,</span> <span class="n">vmax</span> <span class="o">=</span> <span class="n">vmin</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">vmax</span> <span class="o">+</span> <span class="mf">0.5</span>
 
         <span class="k">if</span> <span class="n">panel</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"special"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"bbp"</span><span class="p">:</span>
             <span class="c1">#   Largest-on-top: sort ascending so the highest BBP values draw last</span>

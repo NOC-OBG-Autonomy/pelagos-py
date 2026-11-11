@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <meta property="article:modified_time" content="2026-11-04T20:18:56+00:00" />
+    <meta property="article:modified_time" content="2026-11-11T15:35:53+00:00" />
     <title>Particulate Backscattering (bbp) Processing &#8212; pelagos-py</title>
   
   
@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="../_static/documentation_options.js?v=a11416ff"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -65,7 +65,7 @@
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="0.0" />
-    <meta name="docbuild:last-update" content="Nov 04, 2026"/>
+    <meta name="docbuild:last-update" content="Nov 11, 2026"/>
   
     
     <script src="../_static/searchtools.js"></script>
@@ -584,7 +584,7 @@
 <section id="implementation-notes">
 <span id="23-implementation-notes"></span><h2>2.3 Implementation notes<a class="headerlink" href="#implementation-notes" title="Link to this heading">#</a></h2>
 <ul class="simple">
-<li><p><strong>Required inputs</strong>: <code class="docutils literal notranslate"><span class="pre">TIME</span></code>, <code class="docutils literal notranslate"><span class="pre">TEMP</span></code>, <code class="docutils literal notranslate"><span class="pre">PSAL</span></code>, <code class="docutils literal notranslate"><span class="pre">DEPTH</span></code> and the beta variable named by <code class="docutils literal notranslate"><span class="pre">apply_to</span></code>; <code class="docutils literal notranslate"><span class="pre">_ADJUSTED</span></code> versions are used where available. Gaps in temperature or salinity are left as <code class="docutils literal notranslate"><span class="pre">NaN</span></code> — the step does not gap-fill its inputs — so b<sub>bp</sub> is not derived at those samples and the corresponding output is flagged missing (<code class="docutils literal notranslate"><span class="pre">9</span></code>). An <strong>Interpolate Data</strong> step run beforehand on <code class="docutils literal notranslate"><span class="pre">TEMP</span></code>/<code class="docutils literal notranslate"><span class="pre">PSAL</span></code> fills eligible gaps.</p></li>
+<li><p><strong>Required inputs</strong>: <code class="docutils literal notranslate"><span class="pre">TIME</span></code>, <code class="docutils literal notranslate"><span class="pre">TEMP</span></code>, <code class="docutils literal notranslate"><span class="pre">PSAL</span></code>, <code class="docutils literal notranslate"><span class="pre">DEPTH</span></code> and the beta variable named by <code class="docutils literal notranslate"><span class="pre">apply_to</span></code>; <code class="docutils literal notranslate"><span class="pre">_ADJUSTED</span></code> versions are used where available. <code class="docutils literal notranslate"><span class="pre">TEMP</span></code> and <code class="docutils literal notranslate"><span class="pre">PSAL</span></code> are interpolated in time onto the beta rows for the calculation only (not saved), skipping samples flagged <code class="docutils literal notranslate"><span class="pre">3</span></code>, <code class="docutils literal notranslate"><span class="pre">4</span></code> or <code class="docutils literal notranslate"><span class="pre">9</span></code>. Where no value can be interpolated, b<sub>bp</sub> is not derived and the output is flagged missing (<code class="docutils literal notranslate"><span class="pre">9</span></code>).</p></li>
 <li><p><strong>QC flag filtering</strong>: unlike the Isolate BBP Spikes step (Section 3) and the generic <code class="docutils literal notranslate"><span class="pre">deep_correction</span></code> step, BBP from Beta does <strong>not</strong> automatically exclude samples carrying bad/probably-bad/missing QC flags (<code class="docutils literal notranslate"><span class="pre">3</span></code>, <code class="docutils literal notranslate"><span class="pre">4</span></code>, <code class="docutils literal notranslate"><span class="pre">9</span></code>) from the conversion — every finite <code class="docutils literal notranslate"><span class="pre">apply_to</span></code> value is converted regardless of its QC flag, unless the user explicitly configures <code class="docutils literal notranslate"><span class="pre">qc_handling_settings</span></code> to NaN-out flagged beta first. Flags on the input are still carried across to the output’s QC via <code class="docutils literal notranslate"><span class="pre">generate_qc</span></code>, so a flagged input value converts to a flagged output value; the flag simply does not prevent the arithmetic conversion itself.</p></li>
 <li><p><strong>In-place overwrite</strong>: if <code class="docutils literal notranslate"><span class="pre">apply_to</span></code> and <code class="docutils literal notranslate"><span class="pre">output_as</span></code> are the same, the QC for the output variable is <strong>not</strong> regenerated — the pre-existing <code class="docutils literal notranslate"><span class="pre">_QC</span></code> array is left untouched and a warning is logged. This means that, for platforms using an in-place configuration, any new missing (<code class="docutils literal notranslate"><span class="pre">9</span></code>) flags arising from <code class="docutils literal notranslate"><span class="pre">TEMP</span></code>/<code class="docutils literal notranslate"><span class="pre">PSAL</span></code> gaps during the conversion are not automatically reflected in <code class="docutils literal notranslate"><span class="pre">BBP700_QC</span></code> unless <code class="docutils literal notranslate"><span class="pre">output_as</span></code> is set to a distinct variable name.</p></li>
 <li><p><strong>DEPTH is never modified</strong> by this step, consistent with its treatment throughout the pipeline.</p></li>

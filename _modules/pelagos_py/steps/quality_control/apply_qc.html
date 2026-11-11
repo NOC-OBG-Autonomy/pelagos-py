@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../../_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="../../../../_static/documentation_options.js?v=a11416ff"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,6 +410,7 @@
     <span class="n">QC_COMBINATRIX</span><span class="p">,</span>
     <span class="n">adjusted_name</span><span class="p">,</span>
     <span class="n">prefer_adjusted</span><span class="p">,</span>
+    <span class="n">resolve_pass_flag</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="c1">#### Custom imports ####</span>
@@ -532,6 +533,8 @@
         <span class="c1"># Check if the data is in the context</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">check_data</span><span class="p">()</span>
         <span class="n">full_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span>
+        <span class="n">global_parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"global_parameters"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pass_flag</span> <span class="o">=</span> <span class="n">resolve_pass_flag</span><span class="p">(</span><span class="n">global_parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"pass_flag"</span><span class="p">))</span>
 
         <span class="n">resolved_settings</span> <span class="o">=</span> <span class="n">prefer_adjusted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">qc_settings</span><span class="p">,</span> <span class="nb">set</span><span class="p">(</span><span class="n">full_data</span><span class="o">.</span><span class="n">variables</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">resolved_settings</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qc_settings</span><span class="p">:</span>
@@ -613,8 +616,7 @@
         <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">other_existing_qc</span><span class="p">):</span>
             <span class="c1"># File-only: this set can be large and repeats every QC step.</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                <span class="s2">"[</span><span class="si">%s</span><span class="s2">] </span><span class="si">%s</span><span class="s2"> pre-existing QC column(s) left untouched by this step: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="s2">"</span><span class="si">%s</span><span class="s2"> pre-existing QC column(s) left untouched by this step: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
                 <span class="nb">len</span><span class="p">(</span><span class="n">other_existing_qc</span><span class="p">),</span>
                 <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">other_existing_qc</span><span class="p">)),</span>
                 <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">"console"</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
@@ -644,6 +646,7 @@
                 <span class="sa">f</span><span class="s2">"Applying: </span><span class="si">{</span><span class="n">qc_qc_name</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>  <span class="c1"># print(f"[Apply QC] Applying: {qc_qc_name}")</span>
             <span class="n">qc_test_instance</span> <span class="o">=</span> <span class="n">QC_CLASSES</span><span class="p">[</span><span class="n">qc_qc_name</span><span class="p">](</span><span class="n">test_data</span><span class="p">,</span> <span class="o">**</span><span class="n">qc_test_params</span><span class="p">)</span>
+            <span class="n">qc_test_instance</span><span class="o">.</span><span class="n">pass_flag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pass_flag</span>
             <span class="n">overwrite</span> <span class="o">=</span> <span class="n">qc_test_instance</span><span class="o">.</span><span class="n">overwrite_flags</span>
             <span class="k">if</span> <span class="n">overwrite</span><span class="p">:</span>  <span class="c1"># the test merges against the store itself</span>
                 <span class="n">qc_test_instance</span><span class="o">.</span><span class="n">existing_flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flag_store</span>

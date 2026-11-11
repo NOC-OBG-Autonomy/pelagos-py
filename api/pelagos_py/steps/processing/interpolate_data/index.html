@@ -43,7 +43,7 @@
   <link rel="preload" as="script" href="../../../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../../../_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="../../../../../_static/documentation_options.js?v=a11416ff"></script>
     <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -486,7 +486,9 @@
 <p>Fills gaps in each listed variable by linear interpolation in time. Samples
 flagged with one of the variable’s listed flags, and NaN samples, are gaps; filled
 samples are flagged 8 (interpolated). Values before the first or after the last
-real value are not filled. See <a class="reference internal" href="../../../../../user_guide/Pelagos-py_POSITION.html"><span class="doc">Position and Time Processing</span></a>.</p>
+real value are not filled. Meant for the coordinates (<code class="docutils literal notranslate"><span class="pre">LATITUDE</span></code>, <code class="docutils literal notranslate"><span class="pre">LONGITUDE</span></code>):
+measured variables are left on their own rows, and <code class="docutils literal notranslate"><span class="pre">DEPTH_ADJUSTED</span></code> is filled by
+Derive CTD. See <a class="reference internal" href="../../../../../user_guide/Pelagos-py_POSITION.html"><span class="doc">Position and Time Processing</span></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -502,7 +504,6 @@ real value are not filled. See <a class="reference internal" href="../../../../.
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="s2">"Interpolate Data"</span>
   <span class="n">parameters</span><span class="p">:</span>
     <span class="n">variables</span><span class="p">:</span>  <span class="c1"># per variable, the QC flags treated as gaps to fill</span>
-      <span class="n">PRES</span><span class="p">:</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">9</span><span class="p">]</span>
       <span class="n">LATITUDE</span><span class="p">:</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">9</span><span class="p">]</span>
       <span class="n">LONGITUDE</span><span class="p">:</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">9</span><span class="p">]</span>
     <span class="n">max_interp_time</span><span class="p">:</span> <span class="mf">5.0</span>

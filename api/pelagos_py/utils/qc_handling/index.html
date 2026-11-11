@@ -43,7 +43,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../../_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="../../../../_static/documentation_options.js?v=a11416ff"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -476,6 +476,18 @@
   <section id="module-pelagos_py.utils.qc_handling">
 <span id="pelagos-py-utils-qc-handling"></span><h1>pelagos_py.utils.qc_handling<a class="headerlink" href="#module-pelagos_py.utils.qc_handling" title="Link to this heading">#</a></h1>
 <dl class="py function">
+<dt class="sig sig-object py" id="pelagos_py.utils.qc_handling.resolve_pass_flag">
+<span class="sig-prename descclassname"><span class="pre">pelagos_py.utils.qc_handling.</span></span><span class="sig-name descname"><span class="pre">resolve_pass_flag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/utils/qc_handling.html#resolve_pass_flag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.utils.qc_handling.resolve_pass_flag" title="Link to this definition">#</a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">pass_flag</span></code> pipeline setting: the flag automated QC tests give passing values (default 1).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pelagos_py.utils.qc_handling.calculation_flags_for">
+<span class="sig-prename descclassname"><span class="pre">pelagos_py.utils.qc_handling.</span></span><span class="sig-name descname"><span class="pre">calculation_flags_for</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/utils/qc_handling.html#calculation_flags_for"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.utils.qc_handling.calculation_flags_for" title="Link to this definition">#</a></dt>
+<dd><p>The default flags left out of calculations for variable <code class="docutils literal notranslate"><span class="pre">name</span></code>.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="pelagos_py.utils.qc_handling.propagate_flags">
 <span class="sig-prename descclassname"><span class="pre">pelagos_py.utils.qc_handling.</span></span><span class="sig-name descname"><span class="pre">propagate_flags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../../_modules/pelagos_py/utils/qc_handling.html#propagate_flags"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pelagos_py.utils.qc_handling.propagate_flags" title="Link to this definition">#</a></dt>
 <dd><p>Merge <code class="docutils literal notranslate"><span class="pre">src</span></code> flags onto companion <code class="docutils literal notranslate"><span class="pre">base</span></code>; missing (9) is per-variable so is not carried over.</p>
@@ -513,6 +525,8 @@ present in <code class="docutils literal notranslate"><span class="pre">names</s
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.utils.qc_handling.resolve_pass_flag"><code class="docutils literal notranslate"><span class="pre">resolve_pass_flag()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.utils.qc_handling.calculation_flags_for"><code class="docutils literal notranslate"><span class="pre">calculation_flags_for()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.utils.qc_handling.propagate_flags"><code class="docutils literal notranslate"><span class="pre">propagate_flags()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pelagos_py.utils.qc_handling.prefer_adjusted"><code class="docutils literal notranslate"><span class="pre">prefer_adjusted()</span></code></a></li>
 </ul>

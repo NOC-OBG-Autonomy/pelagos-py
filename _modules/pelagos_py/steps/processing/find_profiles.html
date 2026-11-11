@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../../_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="../../../../_static/documentation_options.js?v=a11416ff"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -425,7 +425,7 @@
 <span class="n">PROPELLED</span> <span class="o">=</span> <span class="mi">6</span>
 <span class="n">TRANSITION</span> <span class="o">=</span> <span class="mi">7</span>
 
-<span class="n">PHASE_COLOURS</span> <span class="o">=</span> <span class="n">palettes</span><span class="o">.</span><span class="n">CATEGORICAL</span><span class="p">[</span><span class="s2">"SCI_PHASE"</span><span class="p">]</span>
+<span class="n">PHASE_COLOURS</span> <span class="o">=</span> <span class="n">palettes</span><span class="o">.</span><span class="n">CATEGORICAL</span><span class="p">[</span><span class="s2">"PHASE_SCI"</span><span class="p">]</span>
 
 <span class="n">PHASE_NAMES</span> <span class="o">=</span> <span class="p">{</span>
     <span class="n">UNKNOWN</span><span class="p">:</span> <span class="s2">"0 Unknown"</span><span class="p">,</span>
@@ -439,7 +439,7 @@
 <span class="p">}</span>
 
 <span class="n">DERIVED_COLUMNS</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">"SCI_PHASE"</span><span class="p">,</span>
+    <span class="s2">"PHASE_SCI"</span><span class="p">,</span>
     <span class="s2">"PROFILE_NUMBER"</span><span class="p">,</span>
     <span class="s2">"PROFILE_DIRECTION"</span><span class="p">,</span>
     <span class="s2">"CYCLE"</span><span class="p">,</span>
@@ -708,7 +708,7 @@
     <span class="n">df</span> <span class="o">=</span> <span class="n">df_raw</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">,</span> <span class="n">depth_col</span><span class="p">])</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s2">"TIME"</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">df</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
-        <span class="n">df_raw</span><span class="p">[</span><span class="s2">"SCI_PHASE"</span><span class="p">]</span> <span class="o">=</span> <span class="n">UNKNOWN</span>
+        <span class="n">df_raw</span><span class="p">[</span><span class="s2">"PHASE_SCI"</span><span class="p">]</span> <span class="o">=</span> <span class="n">UNKNOWN</span>
         <span class="n">df_raw</span><span class="p">[</span><span class="s2">"PROFILE_NUMBER"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
         <span class="n">df_raw</span><span class="p">[</span><span class="s2">"PROFILE_DIRECTION"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
         <span class="n">df_raw</span><span class="p">[</span><span class="s2">"CYCLE"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
@@ -761,7 +761,7 @@
 
     <span class="n">result</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
         <span class="p">{</span>
-            <span class="s2">"SCI_PHASE"</span><span class="p">:</span> <span class="n">phase</span><span class="p">,</span>
+            <span class="s2">"PHASE_SCI"</span><span class="p">:</span> <span class="n">phase</span><span class="p">,</span>
             <span class="s2">"PROFILE_NUMBER"</span><span class="p">:</span> <span class="n">profile_num</span><span class="p">,</span>
             <span class="s2">"PROFILE_DIRECTION"</span><span class="p">:</span> <span class="n">direction</span><span class="p">,</span>
             <span class="s2">"CYCLE"</span><span class="p">:</span> <span class="n">cycle</span><span class="p">,</span>
@@ -773,7 +773,7 @@
     <span class="n">out</span> <span class="o">=</span> <span class="n">df_raw</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
     <span class="n">out</span><span class="p">[</span><span class="n">DERIVED_COLUMNS</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">out</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
     <span class="n">out</span><span class="p">[</span><span class="s2">"LABEL_QC"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_fill_from_neighbours</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
-    <span class="n">out</span><span class="p">[</span><span class="s2">"SCI_PHASE"</span><span class="p">]</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="s2">"SCI_PHASE"</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">UNKNOWN</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">out</span><span class="p">[</span><span class="s2">"PHASE_SCI"</span><span class="p">]</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="s2">"PHASE_SCI"</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">UNKNOWN</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
     <span class="n">out</span><span class="p">[</span><span class="s2">"CYCLE"</span><span class="p">]</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="s2">"CYCLE"</span><span class="p">]</span><span class="o">.</span><span class="n">ffill</span><span class="p">()</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">out</span>
 
@@ -798,7 +798,7 @@
 <span class="sd">    Phase definitions</span>
 <span class="sd">    -----------------</span>
 <span class="sd">    Phases follow the OceanGliders OG1 ``phase`` vocabulary [1]_ and are written to</span>
-<span class="sd">    ``SCI_PHASE``. This step's scope:</span>
+<span class="sd">    ``PHASE_SCI``. This step's scope:</span>
 
 <span class="sd">    - **0 – unknown**: the default until reclassified below, and where it stays if</span>
 <span class="sd">      nothing below applies.</span>
@@ -897,7 +897,7 @@
         <span class="s2">"PROFILE_DIRECTION"</span><span class="p">,</span>
         <span class="s2">"PROFILE_GRADIENT"</span><span class="p">,</span>
         <span class="s2">"CYCLE"</span><span class="p">,</span>
-        <span class="s2">"SCI_PHASE"</span><span class="p">,</span>
+        <span class="s2">"PHASE_SCI"</span><span class="p">,</span>
     <span class="p">]</span>
     <span class="n">variable_parameters</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"depth_column"</span><span class="p">]</span>
     <span class="n">uses_data_subset</span> <span class="o">=</span> <span class="kc">True</span>
@@ -1042,8 +1042,8 @@
             <span class="s2">"valid_max"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span>
         <span class="p">}</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"SCI_PHASE"</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">,),</span> <span class="n">df_final</span><span class="p">[</span><span class="s2">"SCI_PHASE"</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">())</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">SCI_PHASE</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"PHASE_SCI"</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">,),</span> <span class="n">df_final</span><span class="p">[</span><span class="s2">"PHASE_SCI"</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">PHASE_SCI</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">"long_name"</span><span class="p">:</span> <span class="s2">"Scientific Phase Classification"</span><span class="p">,</span>
             <span class="s2">"units"</span><span class="p">:</span> <span class="s2">"None"</span><span class="p">,</span>
             <span class="s2">"valid_min"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
@@ -1059,10 +1059,10 @@
             <span class="s2">"PROFILE_DIRECTION"</span><span class="p">,</span>
             <span class="s2">"PROFILE_GRADIENT"</span><span class="p">,</span>
             <span class="s2">"CYCLE"</span><span class="p">,</span>
-            <span class="s2">"SCI_PHASE"</span><span class="p">,</span>
+            <span class="s2">"PHASE_SCI"</span><span class="p">,</span>
         <span class="p">]:</span>
             <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-            <span class="n">missing</span> <span class="o">=</span> <span class="n">values</span> <span class="o">==</span> <span class="n">UNKNOWN</span> <span class="k">if</span> <span class="n">var</span> <span class="o">==</span> <span class="s2">"SCI_PHASE"</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+            <span class="n">missing</span> <span class="o">=</span> <span class="n">values</span> <span class="o">==</span> <span class="n">UNKNOWN</span> <span class="k">if</span> <span class="n">var</span> <span class="o">==</span> <span class="s2">"PHASE_SCI"</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2">_QC"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
                 <span class="p">(</span><span class="s2">"N_MEASUREMENTS"</span><span class="p">,),</span>
                 <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">missing</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="n">label_qc</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">),</span>
@@ -1080,7 +1080,7 @@
         <span class="c1"># Panel 1: high-resolution phase mapping, one series per scientific phase.</span>
         <span class="n">has_data</span> <span class="o">=</span> <span class="n">mapped_df</span><span class="p">[</span><span class="n">depth_col</span><span class="p">]</span><span class="o">.</span><span class="n">notna</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">p_val</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">):</span>
-            <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">mapped_df</span><span class="p">[</span><span class="s2">"SCI_PHASE"</span><span class="p">]</span> <span class="o">==</span> <span class="n">p_val</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">has_data</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">mapped_df</span><span class="p">[</span><span class="s2">"PHASE_SCI"</span><span class="p">]</span> <span class="o">==</span> <span class="n">p_val</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">has_data</span>
             <span class="n">n_points</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
             <span class="n">t_data</span> <span class="o">=</span> <span class="n">mapped_df</span><span class="p">[</span><span class="s2">"TIME"</span><span class="p">][</span><span class="n">mask</span><span class="p">]</span> <span class="k">if</span> <span class="n">n_points</span> <span class="k">else</span> <span class="p">[]</span>
             <span class="n">depth_data</span> <span class="o">=</span> <span class="n">mapped_df</span><span class="p">[</span><span class="n">depth_col</span><span class="p">][</span><span class="n">mask</span><span class="p">]</span> <span class="k">if</span> <span class="n">n_points</span> <span class="k">else</span> <span class="p">[]</span>

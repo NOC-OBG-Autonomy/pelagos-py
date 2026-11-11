@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <meta property="article:modified_time" content="2026-11-04T20:18:56+00:00" />
+    <meta property="article:modified_time" content="2026-11-11T15:35:53+00:00" />
     <title>Chlorophyll-a Processing &#8212; pelagos-py</title>
   
   
@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="../_static/documentation_options.js?v=a11416ff"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -65,7 +65,7 @@
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="0.0" />
-    <meta name="docbuild:last-update" content="Nov 04, 2026"/>
+    <meta name="docbuild:last-update" content="Nov 11, 2026"/>
   
     
     <script src="../_static/searchtools.js"></script>
@@ -532,7 +532,7 @@
 <span class="w">    </span><span class="nt">4</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">-0.2</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">100</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">outside</span><span class="p p-Indicator">]</span>
 </pre></div>
 </div>
-<p>This assigns a <strong>bad</strong> quality flag (<code class="docutils literal notranslate"><span class="pre">4</span></code>) to chlorophyll concentrations below -0.2 mg m<sup>-3</sup> or above 100 mg m<sup>-3</sup>.</p>
+<p>This assigns a <strong>bad</strong> quality flag (<code class="docutils literal notranslate"><span class="pre">4</span></code>) to chlorophyll concentrations below -0.2 mg m<sup>-3</sup> or above 100 mg m<sup>-3</sup>. Because raw <code class="docutils literal notranslate"><span class="pre">CHLA</span></code> always needs correcting, a following range test (run together with Spike QC) marks every other value <strong>probably bad</strong> (<code class="docutils literal notranslate"><span class="pre">3</span></code>), so <code class="docutils literal notranslate"><span class="pre">CHLA_QC</span></code> ends as <code class="docutils literal notranslate"><span class="pre">3</span></code> or <code class="docutils literal notranslate"><span class="pre">4</span></code>.</p>
 <p>These limits are intentionally conservative and are designed to identify grossly implausible observations while retaining the full range of chlorophyll concentrations expected across oligotrophic, coastal and bloom conditions. The slightly negative lower limit allows for small differences between the manufacturer-supplied dark value and the true in-situ fluorometer dark, preventing potentially recoverable observations from being rejected before the dark correction is applied.</p>
 <p>Observations assigned QC flag <code class="docutils literal notranslate"><span class="pre">4</span></code> remain in the dataset but are excluded from subsequent correction calculations where the configured calculation QC flags are applied.</p>
 <p>The mathematical formulation of the Range QC algorithm is documented separately in the pelagos-py Quality Control documentation.</p>
@@ -593,18 +593,13 @@
 <hr class="docutils" />
 <section class="tex2jax_ignore mathjax_ignore" id="surface-flagging">
 <span id="4-surface-flagging"></span><h1>4. Surface flagging<a class="headerlink" href="#surface-flagging" title="Link to this heading">#</a></h1>
-<p>Before NPQ correction, pelagos-py temporarily flags <code class="docutils literal notranslate"><span class="pre">CHLA_ADJUSTED</span></code> observations within the upper 5 m as <strong>probably bad but correctable</strong> (<code class="docutils literal notranslate"><span class="pre">3</span></code>) using the generic Range QC module configured with <code class="docutils literal notranslate"><span class="pre">flag_instead</span></code>. The flags are applied to <code class="docutils literal notranslate"><span class="pre">CHLA_ADJUSTED</span></code> without modifying the depth variable itself.</p>
-<p>This step does <strong>not</strong> prevent the near-surface observations from being corrected. Instead, it excludes them from the calculation of the NPQ reference quantities, ensuring that potentially quenched surface fluorescence cannot define the reference used to reconstruct the profile. Once an appropriate reference has been established from unflagged observations deeper in the profile, the resulting correction is applied to all eligible observations, including those within the upper 5 m.</p>
-<p>The default configuration is</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">variable_ranges</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">DEPTH</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">3</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">5</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">inside</span><span class="p p-Indicator">]</span>
-<span class="w">    </span><span class="nt">2</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">5</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">outside</span><span class="p p-Indicator">]</span>
-
-<span class="nt">flag_instead</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">DEPTH</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">CHLA_ADJUSTED</span><span class="p p-Indicator">]</span>
+<p>The CHLA Quenching step’s <code class="docutils literal notranslate"><span class="pre">reference_min_depth</span></code> parameter keeps <code class="docutils literal notranslate"><span class="pre">CHLA_ADJUSTED</span></code> observations shallower than a given depth out of the NPQ reference calculations. The default is 2 m; the configuration used for the figures in this guide uses 5 m:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CHLA Quenching</span>
+<span class="w">  </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">reference_min_depth</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
 </pre></div>
 </div>
+<p>This does <strong>not</strong> prevent the near-surface observations from being corrected. Instead, it excludes them from the calculation of the NPQ reference quantities, ensuring that potentially quenched surface fluorescence cannot define the reference used to reconstruct the profile. Once an appropriate reference has been established from observations deeper in the profile, the resulting correction is applied to all eligible observations, including those near the surface.</p>
 <p>The 5 m threshold is intended to exclude the shallowest observations, where wave action, platform motion and the strongest daytime quenching are most likely to compromise the calculation of NPQ reference quantities. Users may adjust this threshold if a different near-surface exclusion depth is more appropriate for their platform or sampling strategy.</p>
 </section>
 <hr class="docutils" />
@@ -1715,12 +1710,12 @@ F_{n,i}-\overline{F_n}
 <p>The default configuration is</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">variable_ranges</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">CHLA_ADJUSTED</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">2</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">70</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">inside</span><span class="p p-Indicator">]</span>
-<span class="w">    </span><span class="nt">3</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">50</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">outside</span><span class="p p-Indicator">]</span>
-<span class="w">    </span><span class="nt">4</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">100</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">outside</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">4</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">-0.2</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">100</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">outside</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">2</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">-0.2</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">100</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">inside</span><span class="p p-Indicator">]</span>
+<span class="nt">reset_flags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">3</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">5</span><span class="p p-Indicator">]</span>
 </pre></div>
 </div>
-<p>The overlapping intervals are interpreted using the pelagos-py Range QC algorithm together with the QC flag-combination matrix. The resulting effective classification is</p>
+<p><code class="docutils literal notranslate"><span class="pre">reset_flags</span></code> lets this test replace the interim <code class="docutils literal notranslate"><span class="pre">3</span></code> inherited from <code class="docutils literal notranslate"><span class="pre">CHLA</span></code> and the <code class="docutils literal notranslate"><span class="pre">5</span></code> set by CHLA Quenching on the values it corrected; <code class="docutils literal notranslate"><span class="pre">4</span></code> and <code class="docutils literal notranslate"><span class="pre">9</span></code> are kept. The resulting classification is</p>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head text-center"><p>Corrected chlorophyll-<em>a</em> concentration (mg m<sup>-3</sup>)</p></th>
@@ -1728,16 +1723,13 @@ F_{n,i}-\overline{F_n}
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td class="text-center"><p>&lt; 0</p></td>
+<tr class="row-even"><td class="text-center"><p>&lt; -0.2</p></td>
 <td class="text-center"><p><strong>4</strong> (bad)</p></td>
 </tr>
-<tr class="row-odd"><td class="text-center"><p>0–50</p></td>
+<tr class="row-odd"><td class="text-center"><p>-0.2–100</p></td>
 <td class="text-center"><p><strong>2</strong> (probably good)</p></td>
 </tr>
-<tr class="row-even"><td class="text-center"><p>50–100</p></td>
-<td class="text-center"><p><strong>3</strong> (probably bad)</p></td>
-</tr>
-<tr class="row-odd"><td class="text-center"><p>&gt; 100</p></td>
+<tr class="row-even"><td class="text-center"><p>&gt; 100</p></td>
 <td class="text-center"><p><strong>4</strong> (bad)</p></td>
 </tr>
 </tbody>
@@ -1752,7 +1744,7 @@ F_{n,i}-\overline{F_n}
 <p>The final range test therefore provides an independent quality-control step on the fully corrected product, ensuring that unrealistic values are identified before the dataset is distributed or used for scientific analysis.</p>
 <blockquote>
 <div><p><strong>Best practice</strong></p>
-<p>The final range test should not be used in isolation. Profiles receiving probably bad (<code class="docutils literal notranslate"><span class="pre">3</span></code>) or bad (<code class="docutils literal notranslate"><span class="pre">4</span></code>) flags should be inspected alongside the deep-correction and NPQ diagnostic plots to determine whether the correction parameters remain appropriate for the deployment.</p>
+<p>The final range test should not be used in isolation. Profiles receiving bad (<code class="docutils literal notranslate"><span class="pre">4</span></code>) flags should be inspected alongside the deep-correction and NPQ diagnostic plots to determine whether the correction parameters remain appropriate for the deployment.</p>
 </div></blockquote>
 <section id="diagnostics">
 <h3>Diagnostics<a class="headerlink" href="#diagnostics" title="Link to this heading">#</a></h3>

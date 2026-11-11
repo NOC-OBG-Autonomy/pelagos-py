@@ -43,7 +43,7 @@
   <link rel="preload" as="script" href="../../../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../../../_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="../../../../../_static/documentation_options.js?v=a11416ff"></script>
     <script src="../../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -489,6 +489,10 @@ in the dataset variables. Each derived variable is written as <code class="docut
 <code class="docutils literal notranslate"><span class="pre">PSAL_ADJUSTED</span></code>), so raw versions from the input file are kept, and inputs are read from
 their <code class="docutils literal notranslate"><span class="pre">_ADJUSTED</span></code> version where one exists. A <code class="docutils literal notranslate"><span class="pre">PSAL_ADJUSTED</span></code> already made by Salinity
 Adjustment is not overwritten. See <a class="reference internal" href="../../../../../user_guide/Pelagos-py_DERIVED.html"><span class="doc">Derived CTD Variables</span></a>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">DEPTH_ADJUSTED</span></code> is the vertical coordinate, so it is the one derived variable
+filled on every row: rows without a usable pressure (none, or
+flagged 3/4/9) are interpolated in time from the depth either side, at most 5 minutes
+apart, and flagged 8. The other variables only exist on the CTD’s own rows.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>to_derive</strong> (<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><em>list</em></a>) – Variables to derive, each written as <code class="docutils literal notranslate"><span class="pre">&lt;name&gt;_ADJUSTED</span></code>: <code class="docutils literal notranslate"><span class="pre">DEPTH</span></code>, <code class="docutils literal notranslate"><span class="pre">PSAL</span></code>

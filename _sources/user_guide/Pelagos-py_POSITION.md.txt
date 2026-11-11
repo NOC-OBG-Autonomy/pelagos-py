@@ -80,7 +80,6 @@ The GPS and science sensors do not sample at the same times, so many samples hav
 - name: Interpolate Data
   parameters:
     variables:
-      PRES: [3, 4, 9]
       LATITUDE: [3, 4, 9]
       LONGITUDE: [3, 4, 9]
 ```

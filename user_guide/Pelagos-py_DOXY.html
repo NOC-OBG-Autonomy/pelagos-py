@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <meta property="article:modified_time" content="2026-11-04T20:18:56+00:00" />
+    <meta property="article:modified_time" content="2026-11-11T15:35:53+00:00" />
     <title>Oxygen Processing: Aanderaa Optodes &#8212; pelagos-py</title>
   
   
@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=82bd8ea8"></script>
+    <script src="../_static/documentation_options.js?v=a11416ff"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -65,7 +65,7 @@
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="0.0" />
-    <meta name="docbuild:last-update" content="Nov 04, 2026"/>
+    <meta name="docbuild:last-update" content="Nov 11, 2026"/>
   
     
     <script src="../_static/searchtools.js"></script>
@@ -620,7 +620,7 @@ Schematic illustration of the oxygen optode. From Aanderaa (2007).
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">vert_gradient</span></code> - vertical velocity of the platform, e.g. of the glider (optional) | determined by pelagos-py</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">GLIDER_PITCH</span></code> - pitch of the platform, e.g. of the glider (optional)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">PROFILE_DIRECTION</span></code> or <code class="docutils literal notranslate"><span class="pre">SCI_PHASE</span></code> - variable distinguising up- and downcasts</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PROFILE_DIRECTION</span></code> or <code class="docutils literal notranslate"><span class="pre">PHASE_SCI</span></code> - variable distinguising up- and downcasts</p></li>
 </ul>
 </section>
 <section id="calibration-coefficients">
@@ -650,7 +650,6 @@ Schematic illustration of the oxygen optode. From Aanderaa (2007).
 <section id="regional-range-check">
 <span id="12-regional-range-check"></span><h2>1.2 Regional range check<a class="headerlink" href="#regional-range-check" title="Link to this heading">#</a></h2>
 <p>Values outside physically plausible regional ranges for the Red Sea and the Mediterranean Sea should be flagged as “bad data” (i.e., QC flag 4). Note that oxygen values need to be expressed in oxygen content in <span class="math notranslate nohighlight">\(\mu\)</span>mol kg<span class="math notranslate nohighlight">\(^{-1}\)</span> for this step.</p>
-<p><font color="orange"> Implemented? </font></p>
 <p>Red Sea:
 $<span class="math notranslate nohighlight">\(21.7 \leq TEMP\_DOXY \leq 40.0 \quad [^\circ\mathrm{C}]\)</span>$</p>
 <p>Mediterranean Sea:
@@ -713,7 +712,7 @@ Schematic illustration of the geometric lag correction. From Woo & Gourcuff (202
 <p>Thus,</p>
 <div class="math notranslate nohighlight">
 \[ \tau_{\mathrm{geom}} = \frac{d}{r\sin(\theta)} \]</div>
-<p>For a known constant geometric delay, the optode data are interpolated to the time at which the corresponding water parcel reaches the CTD.</p>
+<p>For a known constant geometric delay, the optode data are interpolated to the time at which the corresponding water parcel reaches the CTD. This is done only on the optode’s own rows, between its own readings, so the output keeps one value per optode measurement.</p>
 <p>If the optode measurement occurs <span class="math notranslate nohighlight">\(\tau_{\mathrm{geom}}\)</span> seconds after the CTD measurement, the optode time corresponding to a CTD observation at time <span class="math notranslate nohighlight">\(t\)</span> is</p>
 <div class="math notranslate nohighlight">
 \[ t_{\mathrm{optode}} = t_{\mathrm{CTD}} + \tau_{\mathrm{geom}} \]</div>
@@ -740,7 +739,7 @@ Schematic illustration of the geometric lag correction. From Woo & Gourcuff (202
 \[UNCAL\_PHASE\_DOXY\_PCORR = UNCAL\_PHASE\_DOXY + Pcoef1 \frac{1}{1000} * PRES\]</div>
 <p><code class="docutils literal notranslate"><span class="pre">UNCAL_PHASE_DOXY_PCORR</span></code> is then the hydrostatic pressure corrected uncalibrated phase shift.</p>
 <p><span class="math notranslate nohighlight">\(PRES\)</span> = Pressure in dbar.</p>
-<p><span class="math notranslate nohighlight">\(Pcoef1\)</span> is a phase offset that depends on the sensing foil and on the manufacturer (see table below; Bittig et al., 2018). <font color="orange"> These are provided in pelagos-py and will be automatically applied based on the sensor type in the attributes. The phase offset can also be changed by the user in the configuration file. </font></p>
+<p><span class="math notranslate nohighlight">\(Pcoef1\)</span> is a phase offset that depends on the sensing foil and on the manufacturer (see table below; Bittig et al., 2018).</p>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Sensor</p></th>
@@ -776,7 +775,6 @@ Schematic illustration of the geometric lag correction. From Woo & Gourcuff (202
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">phase_coeffs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
 </pre></div>
 </div>
-<p><font color="orange"> I changed the naming of the coefficients to reflect the calibration sheets. Discuss if/how to implement this in the toolbox. </font></p>
 <blockquote>
 <div><p>This step is sometimes referred to as the “temperature-compensation” step, which is a term that is carried over historically, but is misleading since this step in the methods does not address the temperature dependence of the foil (this is done in the next step).</p>
 </div></blockquote>
@@ -787,7 +785,7 @@ Schematic illustration of the geometric lag correction. From Woo & Gourcuff (202
 <p>As described above, the phase shift measured by the optode itself is dependent on temperature and the impact of temperature also differs across O<span class="math notranslate nohighlight">\(_2\)</span> concentrations. The conversion of phase shift to oxygen concentration therefore needs to consider these temperature and oxygen dependencies, which are parameterised using results of elaborate calibration set-ups that systematically vary oxygen and temperature across a range of values. Results are translated into mathematical models that can be applied to the measured data. Different models/methods exist for optode types and are therefore described separately below, based on Thierry et al. (2025a) and Bittig et al. (2018). The choice of method depends on the available calibration data provided by the manufacturer. pelagos-py will choose a method based on the available coefficients in the data attributes, but both the choice of method and calibration coefficients can be altered by the user in the config file.</p>
 <section id="aanderaa-3830-optodes">
 <span id="61-aanderaa-3830-optodes"></span><h2>6.1 Aanderaa 3830 optodes<a class="headerlink" href="#aanderaa-3830-optodes" title="Link to this heading">#</a></h2>
-<p>Important for these optodes is that the temperature values used in the conversion of phase shift (<code class="docutils literal notranslate"><span class="pre">CAL_PHASE_DOXY</span></code>) to oxygen concentration (<code class="docutils literal notranslate"><span class="pre">MOLAR_DOXY</span></code>) need to come from the CTD’s temperature sensor <code class="docutils literal notranslate"><span class="pre">TEMP</span></code> (to which the optode data has been aligned in a previous step), <em>not</em> from the optode’s temperature sensor (<code class="docutils literal notranslate"><span class="pre">TEMP_DOXY_SHIFTED</span></code>). This is because the temperature sensor of these older optodes had slow response times. <font color="orange"> Based on the sensor type given in the data attributes, pelagos-py will select the appropriate temperature variable, but this can always be changed by the user. </font></p>
+<p>Important for these optodes is that the temperature values used in the conversion of phase shift (<code class="docutils literal notranslate"><span class="pre">CAL_PHASE_DOXY</span></code>) to oxygen concentration (<code class="docutils literal notranslate"><span class="pre">MOLAR_DOXY</span></code>) need to come from the CTD’s temperature sensor <code class="docutils literal notranslate"><span class="pre">TEMP</span></code> (to which the optode data has been aligned in a previous step), <em>not</em> from the optode’s temperature sensor (<code class="docutils literal notranslate"><span class="pre">TEMP_DOXY_SHIFTED</span></code>). This is because the temperature sensor of these older optodes had slow response times.</p>
 <p>Default configuration:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">parameters</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">temperature_name</span><span class="p">:</span><span class="w"> </span><span class="s">"TEMP"</span>
@@ -807,7 +805,6 @@ Schematic illustration of the geometric lag correction. From Woo & Gourcuff (202
 <span class="w">    </span><span class="nt">f_coefs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">]</span>
 </pre></div>
 </div>
-<p><font color="orange"> I have changed method names, but this has not been updated in pelagos yet. Have also added additional coefficient names but haven’t yet checked how these have been implemented. </font></p>
 </section>
 <section id="polynomial">
 <h3>Polynomial<a class="headerlink" href="#polynomial" title="Link to this heading">#</a></h3>
@@ -872,7 +869,6 @@ Schematic illustration of the geometric lag correction. From Woo & Gourcuff (202
 <span class="w">    </span><span class="nt">conc_coefs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">1</span><span class="p p-Indicator">]</span>
 </pre></div>
 </div>
-<p><font color="orange"> I have changed the method name, but this has not been updated in pelagos yet. Have also added additional coefficient names but haven’t yet checked how these have been implemented. </font></p>
 </section>
 <section id="id2">
 <span id="polynomial-1"></span><h3>Polynomial<a class="headerlink" href="#id2" title="Link to this heading">#</a></h3>
@@ -963,7 +959,7 @@ Schematic illustration of the geometric lag correction. From Woo & Gourcuff (202
 \[P_{\mathrm{coef2}}=0.00025\]</div>
 <div class="math notranslate nohighlight">
 \[P_{\mathrm{coef3}}=0.0328\]</div>
-<p>These coefficients are set automatically by setting <code class="docutils literal notranslate"><span class="pre">uncalibrated_phase_correction_applied</span></code> in the configuration file to true or false. <font color="orange"> If the first pressure correction step has been applied, pelagos-py will automatically set <code class="docutils literal notranslate"><span class="pre">uncalibrated_phase_correction_applied</span></code> to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</font></p>
+<p>These coefficients are set automatically by setting <code class="docutils literal notranslate"><span class="pre">uncalibrated_phase_correction_applied</span></code> in the configuration file to true or false.</p>
 <p>Default configuration:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">parameters</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">pressure_name</span><span class="p">:</span><span class="w"> </span><span class="s">"PRES"</span>
