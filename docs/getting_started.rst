@@ -101,6 +101,35 @@ The entire pipeline configuration can be exported to a YAML file for reproducibi
 
    pipeline.export_config("exported_pipeline.yaml")
 
+The Dashboard and Command Line
+------------------------------
+
+The dashboard is a local web page for building, checking and running configs without writing YAML by hand. Install its extra dependencies, then start it:
+
+.. code-block:: bash
+
+   pip install "pelagos-py[dashboard]"
+   pelagos-py dashboard
+
+It opens at http://localhost:8791. From there you can:
+
+- build a pipeline from the list of available steps, with a form for each step's parameters,
+- see config errors (unknown steps or parameters, missing variables) as you type,
+- run the pipeline and follow its log and diagnostic plots live,
+- pause at a step with ``diagnostics: true``, change its parameters and re-run just that step before continuing,
+- flag data by hand with the ``visual qc`` test.
+
+A config made in the dashboard is an ordinary YAML file, so it runs the same way from Python. Saved configs go in ``~/Documents/pelagos-py/configs/``, and runs start from ``~/Documents/pelagos-py``, so relative paths in a config resolve from there.
+
+Installing pelagos-py also adds a ``pelagos-py`` command for the common tasks:
+
+.. code-block:: bash
+
+   pelagos-py build glider.nc        # writes glider.yaml (--ask to choose options, -o to save elsewhere)
+   pelagos-py run glider.nc          # builds a config, then runs it
+   pelagos-py run my_pipeline.yaml   # runs an existing config
+   pelagos-py demo                   # downloads the demo file and prints its path
+
 Example Configuration
 ---------------------
 

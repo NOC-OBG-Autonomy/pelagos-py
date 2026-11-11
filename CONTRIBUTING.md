@@ -91,6 +91,12 @@ ruff format .
 ruff check .
 ```
 
+The dashboard's JavaScript and HTML are formatted with [Prettier](https://prettier.io/) (settings in `.prettierrc.json`; CSS is left as written):
+
+```bash
+npx prettier@3.3.3 --write "src/pelagos_py/dashboard/static/**/*.{js,html}"
+```
+
 ## Testing
 
 We use [pytest](https://docs.pytest.org/) for testing. The tests live in the `tests/` directory at the root of the repository, one file per step or feature.
