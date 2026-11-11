@@ -63,6 +63,19 @@ def test_constant_lag_shifts_values_forward_in_time():
     assert out["intermediate_variables"] == ["UNCAL_PHASE_DOXY_SHIFTED"]
 
 
+def test_bad_flagged_samples_do_not_inform_the_shift():
+    ctx = make_context(n=50, dt_s=1.0)
+    ctx["data"]["UNCAL_PHASE_DOXY"].values[13] = 1e9
+    ctx["data"]["UNCAL_PHASE_DOXY_QC"].values[13] = 4
+    step = make_step({"shift_vars": ["UNCAL_PHASE_DOXY"], "lag_seconds": 3.0}, ctx)
+
+    shifted = step.run()["data"]["UNCAL_PHASE_DOXY_SHIFTED"].values
+
+    # Row 10 lands on the bad sample, so it is bridged from its neighbours instead.
+    epoch_s = ctx["data"]["TIME"].values.astype("datetime64[ns]").astype("int64") / 1e9
+    assert np.isclose(shifted[10], epoch_s[13])
+
+
 def test_output_variables_follow_shift_vars():
     parameters = {"shift_vars": ["UNCAL_PHASE_DOXY", "TEMP_DOXY"]}
     assert ShiftOxygenToCTD.output_variables(parameters) == [

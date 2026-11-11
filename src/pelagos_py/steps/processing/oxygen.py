@@ -497,7 +497,8 @@ class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
     If ``lag_seconds`` is not set, the lag is instead derived per profile from mean
     pitch and dive rate. If ``pitch_name`` cannot be found (or is empty), a warning is
     logged and the step fails, since no lag is then available; set ``lag_seconds`` for a
-    constant lag instead.
+    constant lag instead. Samples whose flags fall in ``calculation_flag_filter`` (by
+    default 3, 4 and 9) are not interpolated from, but every row is still shifted.
 
     See :doc:`/user_guide/Pelagos-py_DOXY`.
 
@@ -604,7 +605,7 @@ class ShiftOxygenToCTD(BaseStep, QCHandlingMixin):
             self.data["TIME"].values.astype("datetime64[ns]").astype("int64") / 1e9
         )
         values = self.data[var].values.astype(float)
-        valid = ~np.isnan(values) & ~np.isnan(epoch_s)
+        valid = ~np.isnan(values) & ~np.isnan(epoch_s) & self.calculation_mask([var])
 
         if valid.sum() < 2:
             self.log_warn(f"'{var}' has fewer than two valid samples; cannot shift.")
