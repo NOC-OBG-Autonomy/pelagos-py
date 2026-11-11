@@ -108,7 +108,7 @@ def test_turn_without_inflection_splits_profiles():
     result = run(df)
 
     phases = result["PHASE_SCI"].to_numpy()
-    assert not (phases == 7).any(), "test needs a turn with no inflection row"
+    assert not (phases == 5).any(), "test needs a turn with no inflection row"
     descent = result.loc[phases == 2, "PROFILE_NUMBER"]
     ascent = result.loc[phases == 1, "PROFILE_NUMBER"]
     assert descent.nunique() == 1
