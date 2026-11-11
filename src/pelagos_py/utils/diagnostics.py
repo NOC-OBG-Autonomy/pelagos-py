@@ -246,7 +246,7 @@ def plot_distance_time_grid(
 
     if output_path:
         plt.savefig(output_path)
-        logger.info(f"[Diagnostics] Saved glider distance grid to: {output_path}")
+        logger.info(f"Saved glider distance grid to: {output_path}")
     elif show:
         plt.show()
     else:
@@ -461,7 +461,7 @@ def plot_glider_pair_heatmap_grid(
     fig.tight_layout(rect=[0, 0, 1, 0.95])
     if output_path:
         plt.savefig(output_path)
-        logger.info(f"[Diagnostics] Saved glider heatmap grid to: {output_path}")
+        logger.info(f"Saved glider heatmap grid to: {output_path}")
     elif show:
         plt.show()
     else:

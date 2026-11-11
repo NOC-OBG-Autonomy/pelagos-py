@@ -95,7 +95,7 @@ class ConfigMirrorMixin:
         os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
         with open(path, "w") as f:
             yaml.safe_dump(self._parameters, f, sort_keys=False)
-        logger.info(f"[Config] Saved → {path}")
+        logger.info(f"Saved → {path}")
 
     # ---- dot-path getters/setters for nested values ----
     def get_param(self, keypath: str, default=None):
