@@ -415,12 +415,13 @@ steps:
 # Derives CTD variables using gsw-python (TEOS-10) from PRES, CNDC & TEMP (their _ADJUSTED
 # versions where present). Each derived variable is written as <name>_ADJUSTED, e.g. PSAL_ADJUSTED;
 # one already in the dataset (e.g. PSAL_ADJUSTED from Salinity Adjustment) is skipped with a warning.
-# DEPTH_ADJUSTED is always derived, and filled (flag 8) on rows without a usable pressure.
+# DEPTH_ADJUSTED is filled (flag 8) on rows without a usable pressure.
   - name: "Derive CTD"
     parameters:
       # [to_derive]:
       #   The user may specify a subset of the below variables to be derived and added to the dataset.
       to_derive: [
+        DEPTH,
         PSAL,
         ASAL,
         CONS_TEMP,

@@ -45,6 +45,8 @@ steps:
         LONGITUDE: [3, 4, 9]
 
   - name: Derive CTD
+    parameters:
+      to_derive: [DEPTH]
 
   - name: Find Profiles
 

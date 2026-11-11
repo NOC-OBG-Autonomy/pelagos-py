@@ -309,6 +309,15 @@ def _warn_adjusted_resolution(
                 producer,
                 extra={"step_index": index},
             )
+        elif used == "DEPTH":
+            logger.warning(
+                "%s '%s' uses DEPTH from the input file, which may only have values on "
+                "the CTD's rows. Derive it first (Derive CTD, to_derive: [DEPTH]) so "
+                "every row has a depth.",
+                kind,
+                label,
+                extra={"step_index": index},
+            )
 
 
 def _non_loader_provided_variables(steps_list):

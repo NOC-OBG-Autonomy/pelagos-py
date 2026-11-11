@@ -39,14 +39,16 @@ Variables are derived in the order of the table, so later ones can use earlier o
 
 | Parameter | Default | Meaning |
 |---|---|---|
-| `to_derive` | `[]` | Extra outputs: any of `PSAL`, `ASAL`, `CONS_TEMP`, `DENSITY`. `DEPTH_ADJUSTED` is always derived, and filled onto every row by time interpolation (flagged `8` where filled) |
+| `to_derive` | required | List of outputs: any of `DEPTH`, `PSAL`, `ASAL`, `CONS_TEMP`, `DENSITY`. `DEPTH_ADJUSTED` is filled onto every row by time interpolation (flagged `8` where filled) |
 
 The step needs `TIME`, `LATITUDE`, `LONGITUDE`, `CNDC`, `PRES` and `TEMP` in the dataset, whichever outputs are requested.
 
-The default pipeline runs it twice. First with no extra outputs, for the `DEPTH` that Find Profiles and the profile QC need:
+The default pipeline runs it twice. First, `DEPTH` only, because Find Profiles and the profile QC need it:
 
 ```yaml
 - name: Derive CTD
+  parameters:
+    to_derive: [DEPTH]
 ```
 
 Then, after Salinity Adjustment has written `PSAL_ADJUSTED`, the rest are derived from the corrected salinity:

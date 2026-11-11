@@ -135,9 +135,12 @@ steps:
 # ===========================================================
 #                    PROFILE FINDING
 # ===========================================================
-# Derive CTD always derives DEPTH_ADJUSTED from PRES and fills it on every row
-# (flagged 8 where filled), so every sensor's samples have a depth.
+# Derive DEPTH first, as profiling and the science steps need it. As the vertical
+# coordinate it is filled on every row (flagged 8 where filled), so every sensor's
+# samples have a depth.
   - name: Derive CTD
+    parameters:
+      to_derive: [DEPTH]
     diagnostics: false
 
 # Now we assign profile numbers, phases and profile direction

@@ -114,7 +114,7 @@ def test_validator_flags_qc_var_produced_by_later_step():
 def test_validator_passes_qc_var_in_correct_order():
     steps = [
         {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
-        {"name": "Derive CTD", "parameters": {}},
+        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH"]}},
         {"name": "Find Profiles", "parameters": {}},
         {
             "name": "Apply QC",
@@ -176,7 +176,7 @@ def test_validator_flags_out_of_order_variable_parameter():
             "name": "Deep Correction",
             "parameters": {"apply_to": "DEPTH", "depth_var": "PRES"},
         },
-        {"name": "Derive CTD", "parameters": {"to_derive": ["PSAL"]}},
+        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH", "PSAL"]}},
     ]
     with pytest.raises(ValueError, match="DEPTH"):
         check_pipeline_variables(steps, LOGGER)
@@ -186,7 +186,7 @@ def test_validator_ignores_self_produced_variable_parameter():
     # apply_to and output_as are both BBP700; that is not an ordering mistake.
     steps = [
         {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
-        {"name": "Derive CTD", "parameters": {"to_derive": ["PSAL"]}},
+        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH", "PSAL"]}},
         {"name": "BBP from Beta", "parameters": {}},
     ]
     # No file to check BBP700 against, so it is left for the run-time check.
@@ -242,7 +242,7 @@ def test_validator_flags_variable_parameter_missing_from_file(tmp_path):
     )
     steps = [
         {"name": "Load OG1", "parameters": {"file_path": str(file_path)}},
-        {"name": "Derive CTD", "parameters": {"to_derive": ["PSAL"]}},
+        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH", "PSAL"]}},
         {"name": "Isolate BBP Spikes", "parameters": {}},
     ]
     with pytest.raises(ValueError, match="BBP700"):
@@ -285,7 +285,7 @@ def test_validator_passes_when_file_has_everything(tmp_path):
     )
     steps = [
         {"name": "Load OG1", "parameters": {"file_path": str(file_path)}},
-        {"name": "Derive CTD", "parameters": {"to_derive": ["PSAL"]}},
+        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH", "PSAL"]}},
         {"name": "BBP from Beta", "parameters": {}},
     ]
     assert check_pipeline_variables(steps, LOGGER) is True
@@ -438,7 +438,7 @@ def test_validator_accepts_adjusted_version_of_required_variable(monkeypatch):
     _file_with(monkeypatch)
     steps = [
         {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
-        {"name": "Derive CTD", "parameters": {}},
+        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH"]}},
         {"name": "Find Profiles", "parameters": {}},
         {"name": "Mixed Layer Depth", "parameters": {"method": "temp"}},
     ]
@@ -463,13 +463,38 @@ def test_validator_warns_raw_variable_adjusted_by_later_step(monkeypatch, caplog
     steps = [
         {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
         _range_qc("PSAL"),
-        {"name": "Derive CTD", "parameters": {"to_derive": ["PSAL"]}},
+        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH", "PSAL"]}},
     ]
     with caplog.at_level(logging.WARNING):
         assert check_pipeline_variables(steps, LOGGER) is True
     assert "uses raw PSAL; PSAL_ADJUSTED is produced later by 'Derive CTD'" in (
         caplog.text
     )
+
+
+def test_validator_warns_depth_only_from_the_file(monkeypatch, caplog):
+    _file_with(monkeypatch, "DEPTH")
+    steps = [
+        {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
+        {"name": "Find Profiles", "parameters": {}},
+        {"name": "Mixed Layer Depth", "parameters": {"method": "temp"}},
+    ]
+    with caplog.at_level(logging.WARNING):
+        assert check_pipeline_variables(steps, LOGGER) is True
+    assert "uses DEPTH from the input file" in caplog.text
+
+
+def test_validator_quiet_when_depth_is_derived_first(monkeypatch, caplog):
+    _file_with(monkeypatch, "DEPTH")
+    steps = [
+        {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
+        {"name": "Derive CTD", "parameters": {"to_derive": ["DEPTH"]}},
+        {"name": "Find Profiles", "parameters": {}},
+        {"name": "Mixed Layer Depth", "parameters": {"method": "temp"}},
+    ]
+    with caplog.at_level(logging.WARNING):
+        assert check_pipeline_variables(steps, LOGGER) is True
+    assert "DEPTH" not in caplog.text
 
 
 def test_validator_quiet_for_qc_before_correction(monkeypatch, caplog):
