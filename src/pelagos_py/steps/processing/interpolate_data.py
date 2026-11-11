@@ -36,7 +36,9 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
     Fills gaps in each listed variable by linear interpolation in time. Samples
     flagged with one of the variable's listed flags, and NaN samples, are gaps; filled
     samples are flagged 8 (interpolated). Values before the first or after the last
-    real value are not filled. See :doc:`/user_guide/Pelagos-py_POSITION`.
+    real value are not filled. Meant for the coordinates (``LATITUDE``, ``LONGITUDE``):
+    measured variables are left on their own rows, and ``DEPTH_ADJUSTED`` is filled by
+    Derive CTD. See :doc:`/user_guide/Pelagos-py_POSITION`.
 
     Parameters
     ----------
@@ -53,7 +55,6 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
         - name: "Interpolate Data"
           parameters:
             variables:  # per variable, the QC flags treated as gaps to fill
-              PRES: [3, 4, 9]
               LATITUDE: [3, 4, 9]
               LONGITUDE: [3, 4, 9]
             max_interp_time: 5.0

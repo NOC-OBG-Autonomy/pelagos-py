@@ -41,13 +41,10 @@ steps:
   - name: Interpolate Data
     parameters:
       variables:
-        PRES: [3, 4, 9]
         LATITUDE: [3, 4, 9]
         LONGITUDE: [3, 4, 9]
 
   - name: Derive CTD
-    parameters:
-      to_derive: [DEPTH]
 
   - name: Find Profiles
 
@@ -59,7 +56,6 @@ steps:
           TEMP: [3, 4, 9]
           PROFILE_NUMBER: [3, 4, 9]
         reconstruction_behaviour: reinsert
-        flag_mapping: {0: 5, 1: 5, 2: 5}
       filter_window_size: 21
     diagnostics: [lag_search, lag_per_profile, thermal_mass, profiles]
 
