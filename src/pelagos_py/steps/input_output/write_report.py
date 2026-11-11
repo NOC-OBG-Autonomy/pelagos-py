@@ -670,7 +670,7 @@ class _ReportPDF(FPDF):
         self.set_draw_color(*self._TERMINAL_BG)
 
         for time_s, name, tag, message in lines:
-            prefix = f"{time_s}  {name}  "
+            prefix = sanitize(f"{time_s}  {name}  ")
             tag_text = f"{tag}  " if tag else ""
             message = sanitize(message)
             prefix_w = self.get_string_width(prefix)
@@ -690,7 +690,7 @@ class _ReportPDF(FPDF):
             self.rect(self.l_margin, self.get_y(), self.epw, height + 0.3, style="F")
 
             self.set_text_color(*self._TERMINAL_FG)
-            self.cell(prefix_w, line_h, sanitize(prefix))
+            self.cell(prefix_w, line_h, prefix)
             if tag:
                 self.set_text_color(*_TAG_RGB[tag])
                 self.set_font("Courier", "B", font_size)

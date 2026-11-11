@@ -267,6 +267,12 @@ def test_terminal_block_colours_only_warning_levels():
     assert set(colours) == {pdf._TERMINAL_FG, warn_rgb, (0,)}
 
 
+def test_terminal_block_draws_a_cut_step_name():
+    pdf = wrp._ReportPDF()
+    pdf.add_page()
+    pdf.terminal_block([("12:00:00", "Derive Uncalibrated…", None, "ok")])
+
+
 def test_add_log_missing_file(tmp_path):
     pdf = MagicMock()
     wrp.add_log(str(tmp_path / "nope.log"), pdf)
