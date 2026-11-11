@@ -145,8 +145,6 @@ parameters:
 
 Values outside physically plausible regional ranges for the Red Sea and the Mediterranean Sea should be flagged as "bad data" (i.e., QC flag 4). Note that oxygen values need to be expressed in oxygen content in $\mu$mol kg$^{-1}$ for this step.
 
-<font color=orange> Implemented? </font>
-
 Red Sea:
 $$21.7 \leq TEMP\_DOXY \leq 40.0 \quad [^\circ\mathrm{C}]$$
 
@@ -267,7 +265,7 @@ $$UNCAL\_PHASE\_DOXY\_PCORR = UNCAL\_PHASE\_DOXY + Pcoef1 \frac{1}{1000} * PRES$
 
 $PRES$ = Pressure in dbar.
 
-$Pcoef1$ is a phase offset that depends on the sensing foil and on the manufacturer (see table below; Bittig et al., 2018). <font color=orange> These are provided in pelagos-py and will be automatically applied based on the sensor type in the attributes. The phase offset can also be changed by the user in the configuration file. </font>
+$Pcoef1$ is a phase offset that depends on the sensing foil and on the manufacturer (see table below; Bittig et al., 2018).
 
 | Sensor | $Pcoef1$ |
 | -------------| :-------------:
@@ -303,8 +301,6 @@ Default configuration:
 phase_coeffs: [0, 1, 0, 0]
 ```
 
-<font color=orange> I changed the naming of the coefficients to reflect the calibration sheets. Discuss if/how to implement this in the toolbox. </font>
-
 > This step is sometimes referred to as the "temperature-compensation" step, which is a term that is carried over historically, but is misleading since this step in the methods does not address the temperature dependence of the foil (this is done in the next step).
 
 ---
@@ -315,7 +311,7 @@ As described above, the phase shift measured by the optode itself is dependent o
 
 ## 6.1 Aanderaa 3830 optodes
 
-Important for these optodes is that the temperature values used in the conversion of phase shift (`CAL_PHASE_DOXY`) to oxygen concentration (`MOLAR_DOXY`) need to come from the CTD's temperature sensor `TEMP` (to which the optode data has been aligned in a previous step), *not* from the optode's temperature sensor (`TEMP_DOXY_SHIFTED`). This is because the temperature sensor of these older optodes had slow response times. <font color=orange> Based on the sensor type given in the data attributes, pelagos-py will select the appropriate temperature variable, but this can always be changed by the user. </font>
+Important for these optodes is that the temperature values used in the conversion of phase shift (`CAL_PHASE_DOXY`) to oxygen concentration (`MOLAR_DOXY`) need to come from the CTD's temperature sensor `TEMP` (to which the optode data has been aligned in a previous step), *not* from the optode's temperature sensor (`TEMP_DOXY_SHIFTED`). This is because the temperature sensor of these older optodes had slow response times.
 
 Default configuration:
 
@@ -342,8 +338,6 @@ parameters:
     k1_coefs: [0, 0, 0, 0]
     f_coefs: [0, 0]
 ```
-<font color=orange> I have changed method names, but this has not been updated in pelagos yet. Have also added additional coefficient names but haven't yet checked how these have been implemented. </font>
-
 ### Polynomial
 
 The calibrated phase can also be converted into oxygen concentration using 20 coefficients (provided by the manufacturer) that are sensor specific, in a 4$^{th}$ degree polynomial function:
@@ -428,8 +422,6 @@ parameters:
     suvfoil_coefs: [0, 1, 0, 0, 0, 0]
     conc_coefs: [0, 1]
 ```
-
-<font color=orange> I have changed the method name, but this has not been updated in pelagos yet. Have also added additional coefficient names but haven't yet checked how these have been implemented. </font>
 
 ### Polynomial
 
@@ -558,7 +550,7 @@ $$
 P_{\mathrm{coef3}}=0.0328
 $$
 
-These coefficients are set automatically by setting `uncalibrated_phase_correction_applied` in the configuration file to true or false. <font color=orange> If the first pressure correction step has been applied, pelagos-py will automatically set `uncalibrated_phase_correction_applied` to `true`.</font>
+These coefficients are set automatically by setting `uncalibrated_phase_correction_applied` in the configuration file to true or false.
 
 Default configuration:
 
