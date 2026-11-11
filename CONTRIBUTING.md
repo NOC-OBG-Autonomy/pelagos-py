@@ -1,5 +1,5 @@
 <!-- omit in toc -->
-# Contributing to pelagos_py
+# Contributing to pelagos-py
 
 First off, thanks for taking the time to contribute!
 
@@ -12,10 +12,11 @@ All types of contributions are encouraged and valued. Please make sure to read t
 - [Development Workflow](#development-workflow)
 - [Reporting Bugs](#reporting-bugs)
 - [Code Quality and Testing](#code-quality-and-testing)
+- [Formatting and Linting](#formatting-and-linting)
 - [Testing](#testing)
 - [Documentation](#documentation)
 - [Common Commands](#common-commands)
-- [Legal Notice & Attribution](#legal-notice--attribution)
+- [Legal Notice and Attribution](#legal-notice-and-attribution)
 
 ## I Have a Question
 
@@ -31,12 +32,12 @@ We will then take care of the issue as soon as possible.
 
 ## Development Workflow
 
-To maintain code quality and stability, we use a workflow based on pull requests to ``main``. All new features and bug fixes should be submitted to the ``main`` branch.
+To maintain code quality and stability, we use a workflow based on pull requests to `main`. All new features and bug fixes should be submitted to the `main` branch.
 
 1. **Fork the repository**: Create your own copy of the project on GitHub.
 2. **Clone your fork**: Download the code to your local machine.
 3. **Create a branch**: Work on a new branch specifically for your changes.
-4. **Submit a Pull Request**: Direct your Pull Request (PR) from your fork to the ``main`` branch of the original repository.
+4. **Submit a Pull Request**: Direct your Pull Request (PR) from your fork to the `main` branch of the original repository.
 
 See [Common Commands](#common-commands) below for the exact git commands.
 
@@ -74,88 +75,89 @@ Once it's filed:
 
 ## Code Quality and Testing
 
-To ensure pelagos_py remains reliable, we enforce the following requirements:
+To ensure pelagos-py remains reliable, we enforce the following requirements:
 
-- **Automated Testing**: Once a PR is submitted, automated tests will run. Code must pass these tests to be considered for merging.
-- **Review Process**: A human reviewer must approve the changes before they are merged into ``main``.
+- **Automated checks**: Once a PR is submitted, the tests and the formatting/lint checks run automatically. Code must pass them to be considered for merging.
+- **Review Process**: A human reviewer must approve the changes before they are merged into `main`.
 
-The workflow automatically updates the version number upon a successful PR to ``main``. Any manually created release is then automatically published to PyPI.
+The workflow automatically updates the version number upon a successful PR to `main`. Any manually created release is then automatically published to PyPI.
+
+## Formatting and Linting
+
+Code is formatted and linted with [ruff](https://docs.astral.sh/ruff/); its settings are in `pyproject.toml`. CI checks every PR with a pinned ruff version, so run both before pushing:
+
+```bash
+ruff format .
+ruff check .
+```
+
+The dashboard's JavaScript and HTML are formatted with [Prettier](https://prettier.io/) (settings in `.prettierrc.json`; CSS is left as written):
+
+```bash
+npx prettier@3.3.3 --write "src/pelagos_py/dashboard/static/**/*.{js,html}"
+```
 
 ## Testing
 
-We use [pytest](https://docs.pytest.org/) for testing. The tests live in the
-``tests/`` directory at the root of the repository.
+We use [pytest](https://docs.pytest.org/) for testing. The tests live in the `tests/` directory at the root of the repository, one file per step or feature.
 
 **Installing the test dependencies**
 
-The testing tools (``pytest`` and ``pytest-cov``) are declared as an optional
-dependency group in ``pyproject.toml`` rather than being installed by default.
-To install pelagos_py together with everything needed to run the tests, do an
-*editable* install with the ``test`` extra from the root of the repository:
+The testing tools (`pytest` and `pytest-cov`) are an optional dependency group in `pyproject.toml`. Install pelagos-py in editable mode with the `test` extra from the root of the repository:
 
 ```bash
 pip install -e ".[test]"
 ```
 
-The ``-e`` flag installs the project in editable mode, so changes you make to
-the source are picked up without reinstalling. The ``[test]`` extra pulls in the
-testing dependencies. The quotes around ``".[test]"`` are required by some
-shells (such as ``zsh``) to stop the square brackets being interpreted as a glob
-pattern.
+The `-e` flag means changes to the source are picked up without reinstalling. The quotes around `".[test]"` stop some shells (such as `zsh`) treating the square brackets as a glob pattern.
 
-**Running the full test suite**
+**Running the tests**
 
-From the root of the repository, simply run:
+From the root of the repository:
 
 ```bash
-pytest
-```
-
-pytest discovers the configuration in ``pyproject.toml`` and collects every test
-under ``tests/`` automatically.
-
-**Running a specific test**
-
-To run a single test file, pass its path to pytest. You can narrow it down
-further to a single test function (or parametrised case) using the ``::``
-separator, and add ``-v`` for verbose output:
-
-```bash
-pytest tests/test_impossible_date_qc.py
-pytest tests/test_impossible_date_qc.py::test_dates -v
-```
-
-**Measuring coverage**
-
-Because ``pytest-cov`` is installed with the ``test`` extra, you can also produce
-a coverage report for the ``pelagos_py`` package:
-
-```bash
-pytest --cov=pelagos_py
+pytest                                                # full suite
+pytest tests/test_impossible_date_qc.py               # one file
+pytest tests/test_impossible_date_qc.py::test_dates -v  # one test, verbose
+pytest --cov=pelagos_py                               # with a coverage report
 ```
 
 ## Documentation
 
-The API reference is generated automatically from the source by
-[sphinx-autoapi](https://sphinx-autoapi.readthedocs.io/), which reads the code
-statically (it never imports the package). The rule for what appears is simple:
+**Building the docs**
 
-- **Has a docstring → it is shown.** Any class, method or function with a
-  docstring is added to the API reference.
-- **No docstring → it is hidden.** Undocumented members (and imported names,
-  ``__init__``, etc.) are left out automatically, keeping the pages clean.
+The documentation is built with Sphinx from the `docs/` folder:
 
-So to document something, write a docstring; to keep something out of the docs,
-leave its docstring off. We use NumPy-style docstrings (Parameters, Returns,
-Examples sections).
+```bash
+pip install -e .
+pip install -r docs/requirements.txt
+cd docs
+make figures   # draws the user-guide figures (downloads the demo file the first time)
+make html      # builds the site into docs/_build/html
+```
 
-If a member *has* a docstring but you still want to hide it from the docs, add
-``:meta private:`` anywhere in that docstring.
+The user-guide figures are not committed: `make figures` draws them from the demo file, and the docs CI does the same before publishing.
 
-> **Note:** A runtime marker such as a ``@nodoc`` decorator will **not** work,
-> because sphinx-autoapi parses the source without running it and never sees
-> attributes set at runtime. Use the docstring rule (or ``:meta private:``)
-> instead.
+**API reference**
+
+The API reference is generated automatically from the source by [sphinx-autoapi](https://sphinx-autoapi.readthedocs.io/), which reads the code statically (it never imports the package). The rule for what appears is simple:
+
+- **Has a docstring → it is shown.** Any class, method or function with a docstring is added to the API reference.
+- **No docstring → it is hidden.** Undocumented members (and imported names, `__init__`, etc.) are left out automatically, keeping the pages clean.
+
+So to document something, write a docstring; to keep something out of the docs, leave its docstring off. We use NumPy-style docstrings (Parameters, Returns, Examples sections).
+
+If a member *has* a docstring but you still want to hide it from the docs, add `:meta private:` anywhere in that docstring:
+
+```python
+def helper(self):
+    """Do the thing.
+
+    :meta private:
+    """
+```
+
+> **Note:** A runtime marker such as a `@nodoc` decorator will **not** work, because sphinx-autoapi parses the source without running it and never sees attributes set at runtime. Use the docstring rule (or `:meta private:`) instead.
 
 ## Common Commands
 
@@ -175,8 +177,7 @@ git checkout -b my-new-feature
 
 **Stay updated with main**
 
-Before submitting a PR, ensure your local code is up to date with the latest
-changes from the official ``main`` branch:
+Before submitting a PR, ensure your local code is up to date with the latest changes from the official `main` branch:
 
 ```bash
 git fetch upstream
@@ -185,8 +186,7 @@ git merge upstream/main
 
 **Submitting changes**
 
-Push your changes to your fork and then use the GitHub web interface to open a
-Pull Request. Ensure the **base branch** is set to ``main``.
+Push your changes to your fork and then use the GitHub web interface to open a Pull Request. Ensure the **base branch** is set to `main`.
 
 ```bash
 git add .
@@ -194,10 +194,8 @@ git commit -m "Brief description of changes"
 git push origin my-new-feature
 ```
 
-## Legal Notice & Attribution
+## Legal Notice and Attribution
 
-When contributing to this project, you must agree that you have authored 100% of
-the content, that you have the necessary rights to the content and that the
-content you contribute will be provided under the project's Apache-2.0 license.
+When contributing to this project, you must agree that you have authored 100% of the content, that you have the necessary rights to the content and that the content you contribute will be provided under the project's Apache-2.0 license.
 
 This guide is based on [contributing.md](https://contributing.md/generator).

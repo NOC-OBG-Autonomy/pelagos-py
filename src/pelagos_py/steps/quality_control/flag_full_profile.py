@@ -37,7 +37,7 @@ class flag_full_profile(BaseQC):
 
     For each variable in ``check_vars``, the number of bad (4) flags in its ``_QC``
     column is counted per profile (grouped by ``PROFILE_NUMBER``, as produced by
-    :doc:`Find Profiles <../processing/find_profiles/index>`). If a profile's count
+    :class:`Find Profiles <pelagos_py.steps.processing.find_profiles.FindProfilesStep>`). If a profile's count
     reaches the variable's threshold, **every** measurement of that variable in the
     profile is set to bad (4) — the rationale being that a profile riddled with bad
     points is untrustworthy as a whole.

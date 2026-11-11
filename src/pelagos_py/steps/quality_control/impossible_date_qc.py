@@ -34,7 +34,7 @@ class impossible_date_qc(BaseQC):
     Target Variable: TIME
     Flag Number: 4 (bad data)
     Variables Flagged: TIME
-    Checks that the datetime of each point is valid.
+    Flags times before 1985-01-01 or after the current time.
     """
 
     qc_name = "impossible date qc"

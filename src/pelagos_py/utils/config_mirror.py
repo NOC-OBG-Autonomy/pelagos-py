@@ -85,7 +85,7 @@ class ConfigMirrorMixin:
         self._reset_parameter_bridge(mirror_keys)
 
     def _load_config_file(self, path: str, mirror_keys=None):
-        with open(path, "r") as f:
+        with open(path, "r", encoding="utf-8") as f:
             cfg = yaml_safe_load(f) or {}
         self._load_config_dict(cfg, mirror_keys=mirror_keys)
         return cfg

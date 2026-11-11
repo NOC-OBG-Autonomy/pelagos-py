@@ -31,6 +31,25 @@ from pelagos_py.utils import fig_spec
 
 @register_step
 class BBPFromBeta(BaseStep, QCHandlingMixin):
+    """
+    Converts measured beta backscatter to the particulate backscattering coefficient
+    (BBP), using temperature and salinity for the seawater term.
+
+    See :doc:`/user_guide/Pelagos-py_BBP`.
+
+    Examples
+    --------
+    .. code-block:: yaml
+
+        - name: "BBP from Beta"
+          parameters:
+            apply_to: "BETA_BACKSCATTERING700"
+            output_as: "BBP700"
+            theta: 124
+            xfactor: 1.076
+          diagnostics: false
+    """
+
     step_name = "BBP from Beta"
     required_variables = ["TIME", "DEPTH", "TEMP", "PSAL"]
     provided_variables = []
@@ -67,23 +86,6 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
     }
 
     def run(self):
-        """
-        Example
-        -------
-        ::
-
-            - name: "BBP from Beta"
-              parameters:
-                apply_to: "BETA_BACKSCATTERING700"
-                output_as: "BBP700"
-                theta: 124
-                xfactor: 1.076
-              diagnostics: false
-
-        Returns
-        -------
-
-        """
         self.filter_qc()
 
         self.beta_var = self._resolve_beta_var()
@@ -224,6 +226,24 @@ def despike(var, window_size, spike_method="median"):
 
 @register_step
 class IsolateBBPSpikes(BaseStep, QCHandlingMixin):
+    """
+    Splits a backscatter record into a smooth baseline and isolated spikes (Briggs et
+    al. 2011), written as ``<var>_BASELINE`` and ``<var>_SPIKES``.
+
+    See :doc:`/user_guide/Pelagos-py_BBP`.
+
+    Examples
+    --------
+    .. code-block:: yaml
+
+        - name: "Isolate BBP Spikes"
+          parameters:
+            apply_to: "BBP700"
+            window_size: 7
+            method: "median"
+          diagnostics: false
+    """
+
     step_name = "Isolate BBP Spikes"
     required_variables = ["TIME"]
     provided_variables = []
@@ -256,22 +276,6 @@ class IsolateBBPSpikes(BaseStep, QCHandlingMixin):
         return [f"{raw_name(apply_to)}_BASELINE", f"{raw_name(apply_to)}_SPIKES"]
 
     def run(self):
-        """
-        Example
-        -------
-        ::
-
-            - name: "Isolate BBP Spikes"
-              parameters:
-                apply_to: "BBP700"
-                window_size: 7
-                method: "median"
-              diagnostics: false
-
-        Returns
-        -------
-
-        """
         self.filter_qc()
         self.source = self.resolve(self.apply_to)
         base = raw_name(self.apply_to)

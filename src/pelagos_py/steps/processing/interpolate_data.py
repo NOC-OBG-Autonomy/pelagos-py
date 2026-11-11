@@ -33,27 +33,18 @@ class InterpolateVariables(BaseStep, QCHandlingMixin):
     """
     A processing step for interpolating data.
 
-    This class processes data to interpolate missing values and fill gaps in
-    variables using time-based interpolation. It supports quality control
-    handling and optional diagnostic visualization.
-
-    Inherits from BaseStep and processes data stored in the context dictionary.
+    Fills gaps in each listed variable by linear interpolation in time. Samples
+    flagged with one of the variable's listed flags, and NaN samples, are gaps; filled
+    samples are flagged 8 (interpolated). Values before the first or after the last
+    real value are not filled. See :doc:`/user_guide/Pelagos-py_POSITION`.
 
     Parameters
     ----------
-    name : str
-        Name identifier for this step instance.
-    parameters : dict, optional
-        Configuration parameters for the interpolation step.
-    diagnostics : bool, optional
-        Whether to generate diagnostic visualizations. Default is False.
-    context : dict, optional
-        Processing context dictionary.
-
-    Attributes
-    ----------
-    step_name : str
-        Identifier for this processing step. Set to "Interpolate Data".
+    variables : dict
+        Variable name -> list of QC flags whose samples are treated as gaps.
+    max_interp_time : float, optional
+        Largest gap (minutes between the surrounding real values) that is filled.
+        ``0``/``False``/``"off"`` fills gaps of any size. Default ``5.0``.
 
     Examples
     --------
