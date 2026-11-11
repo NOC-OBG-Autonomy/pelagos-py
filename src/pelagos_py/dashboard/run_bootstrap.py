@@ -49,7 +49,7 @@ plt.switch_backend = lambda *args, **kwargs: None
 
 import numpy as np  # noqa: E402
 from pelagos_py.dashboard import fig_spec  # noqa: E402
-from pelagos_py.utils.console import ConsoleFormatter  # noqa: E402
+from pelagos_py.utils.console import LogFormatter  # noqa: E402
 import pelagos_py.pipeline as pipeline_module  # noqa: E402
 from pelagos_py.pipeline import (  # noqa: E402
     REPORT_STEP_NAME,
@@ -420,23 +420,19 @@ def _read_command():
     return ("continue", None)
 
 
-class _LevelFormatter(ConsoleFormatter):
-    # warning+ lines carry their level, so the browser tags them instead of reading colour codes
-    def __init__(self):
-        super().__init__()
-        self._use_color = False
-
+class _LevelFormatter(LogFormatter):
+    # warning+ lines carry their level instead of a tag, so the browser draws the tag itself
     def format(self, record):
-        line = super().format(record)
         if record.levelno < logging.WARNING or getattr(record, "raw", False):
-            return line
+            return super().format(record)
+        line = self.prefix(record) + record.getMessage()
         return f"__PELAGOS_LEVEL__ {record.levelname}\t{line}"
 
 
 def _send_levels():
     for name in list(logging.Logger.manager.loggerDict):
         for handler in logging.getLogger(name).handlers:
-            if isinstance(handler.formatter, ConsoleFormatter):
+            if isinstance(handler.formatter, LogFormatter):
                 handler.setFormatter(_LevelFormatter())
     # Pipeline() makes a fresh console handler, and logs while doing so
     make_handler = pipeline_module.make_console_handler

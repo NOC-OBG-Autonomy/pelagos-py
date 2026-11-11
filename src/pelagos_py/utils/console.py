@@ -84,14 +84,16 @@ class LogFormatter(logging.Formatter):
         super().__init__(datefmt=datefmt)
         self.color = color
 
+    def prefix(self, record):
+        stamp = self.formatTime(record, self.datefmt)
+        return f"{stamp}  {_name_column(_display_name(record))}  "
+
     def format(self, record):
         message = record.getMessage()
         if getattr(record, "raw", False):
             return message
 
-        stamp = self.formatTime(record, self.datefmt)
-        prefix = f"{stamp}  {_name_column(_display_name(record))}  "
-
+        prefix = self.prefix(record)
         style = LEVEL_STYLES.get(record.levelname)
         if style is None:
             return prefix + message
