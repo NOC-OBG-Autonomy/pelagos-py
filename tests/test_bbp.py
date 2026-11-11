@@ -54,17 +54,15 @@ def make_beta_step(context, parameters=None):
 # --- BBP from Beta ----------------------------------------------------------
 
 
-def test_gaps_in_inputs_are_left_alone_and_bbp_is_not_derived_there():
-    # The step must not gap-fill its inputs (that is Interpolate Data's job): a NaN TEMP yields no BBP there, flagged missing (9).
-    ctx = make_beta_context(temp=[10, 10, np.nan, 10, 10, 10, 10, 10])
+def test_temp_is_interpolated_onto_the_beta_rows_but_not_written():
+    ctx = make_beta_context(temp=[10, 10, np.nan, 10, 10, 10, 10, np.nan])
     out = make_beta_step(ctx).run()["data"]
 
-    # The input keeps its gap - the step used to silently interpolate it away.
-    assert np.isnan(out["TEMP"].values[2])
-    assert np.isnan(out["BBP700_OUT"].values[2])
-    assert out["BBP700_OUT_QC"].values[2] == 9
-    # Every other sample is derived normally.
-    assert np.isfinite(out["BBP700_OUT"].values[[0, 1, 3, 4, 5, 6, 7]]).all()
+    assert np.isnan(out["TEMP"].values[[2, 7]]).all()
+    assert np.isclose(out["BBP700_OUT"].values[2], out["BBP700_OUT"].values[1])
+    # nothing after row 7 to interpolate from: no BBP there, flagged missing (9)
+    assert np.isnan(out["BBP700_OUT"].values[7])
+    assert out["BBP700_OUT_QC"].values[7] == 9
 
 
 def test_runs_without_profile_number():

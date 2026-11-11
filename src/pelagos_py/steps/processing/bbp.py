@@ -90,21 +90,16 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
 
         self.beta_var = self._resolve_beta_var()
 
-        temp, psal = self.resolve("TEMP"), self.resolve("PSAL")
-        self.data_subset = self.data[
-            ["TIME", self.resolve("DEPTH"), temp, psal, self.beta_var]
-        ]
-
-        # Gaps in TEMP/PSAL are left as NaN: BBP is not derived there and is
-        # flagged missing (9) below. Add an Interpolate Data step first for gap-free BBP.
+        # The CTD samples on other rows: its TEMP/PSAL are interpolated onto the beta rows
+        # for this calculation only. Where that fails, BBP is not derived (flagged 9).
+        temp, _ = self.values_at_rows_of("TEMP", self.beta_var)
+        psal, _ = self.values_at_rows_of("PSAL", self.beta_var)
 
         # Particulate only, as BGC-Argo (Schmechtig et al.); gt's flo_bback_total adds seawater back in.
         beta_sw, _ = gt.flo_functions.flo_zhang_scatter_coeffs(
-            self.data_subset[temp], self.data_subset[psal], self.theta, 700
+            temp, psal, self.theta, 700
         )
-        bbp_corrected = (
-            2 * np.pi * self.xfactor * (self.data_subset[self.beta_var] - beta_sw)
-        )
+        bbp_corrected = 2 * np.pi * self.xfactor * (self.data[self.beta_var] - beta_sw)
 
         # Stitch back into the data
         self.data[self.output_as] = bbp_corrected
@@ -173,7 +168,7 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
     diagnostic_figures = {"boxplot": ("Beta vs BBP value distributions", True)}
 
     def draw_figure(self, name):
-        beta_clean = remove_outliers(self.data_subset[self.beta_var])
+        beta_clean = remove_outliers(self.data[self.beta_var])
         bbp_clean = remove_outliers(self.data[self.output_as])
         fig, axes = fig_spec.new_fig()
         ax = axes[0][0]
@@ -187,7 +182,7 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
             [1, 2],
             [
                 fig_spec.axis_label(
-                    self.beta_var, self.data_subset[self.beta_var].attrs.get("units")
+                    self.beta_var, self.data[self.beta_var].attrs.get("units")
                 ),
                 fig_spec.axis_label(self.output_as, "m-1"),
             ],
