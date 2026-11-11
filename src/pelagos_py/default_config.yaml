@@ -176,6 +176,16 @@ steps:
       filter_window_size: 21
     diagnostics: false
 
+# Range test on the adjusted salinity (Argo global range).
+  - name: Apply QC
+    parameters:
+      qc_settings:
+        range qc:
+          variable_ranges:
+            PSAL_ADJUSTED:
+              4: [2, 41, outside]
+    diagnostics: false
+
 # ===========================================================
 #                SALINITY CROSS CALIBRATION
 # ===========================================================
@@ -199,6 +209,21 @@ steps:
         CONS_TEMP,
         DENSITY
       ]
+    diagnostics: false
+
+# Range tests on the derived CTD variables: Argo's PSAL/TEMP ranges, and a
+# plausible in-situ seawater density (kg/m3).
+  - name: Apply QC
+    parameters:
+      qc_settings:
+        range qc:
+          variable_ranges:
+            ASAL_ADJUSTED: # PSAL range scaled to absolute salinity (SA ~ 1.0047 x SP)
+              4: [2, 41.5, outside]
+            CONS_TEMP_ADJUSTED:
+              4: [-2.5, 40, outside]
+            DENSITY_ADJUSTED:
+              4: [1000, 1045, outside]
     diagnostics: false
 
 # ===========================================================
@@ -250,6 +275,17 @@ steps:
       output_as: BBP700
       theta: 124               # Effective optical backscatter scattering angle (degrees)
       xfactor: 1.076           # Chi factor scaling particulate scattering to total backscatter
+    diagnostics: false
+
+# Range test on the converted BBP (Argo global range); slightly negative is noise.
+  - name: Apply QC
+    parameters:
+      qc_settings:
+        range qc:
+          variable_ranges:
+            BBP700:
+              3: [0, 0.1, outside]
+              4: [-2.5e-5, 0.1, outside]
     diagnostics: false
 
 # Large isolated spikes in BBP correspond to individual particles/aggregates.
