@@ -89,20 +89,9 @@ steps:
       depth_var: DEPTH
       depth_threshold: 950
 
-  # surface flagging: top 5 m of CHLA_ADJUSTED is kept out of NPQ reference calculations
-  - name: Apply QC
-    parameters:
-      qc_settings:
-        range qc:
-          variable_ranges:
-            DEPTH:
-              3: [0, 5, inside]
-              2: [0, 5, outside]
-          flag_instead:
-            DEPTH: [CHLA_ADJUSTED]
-
   - name: CHLA Quenching
     parameters:
       method: xing2018
       apply_to: CHLA_ADJUSTED
+      reference_min_depth: 5  # top 5 m kept out of the NPQ reference calculations
     diagnostics: [method_comparison, timeseries, example_profile]

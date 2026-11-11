@@ -131,3 +131,8 @@ def test_prefer_adjusted_falls_back_to_raw():
     settings = {"variable_ranges": {"CHLA_ADJUSTED": {4: [0, 100, "outside"]}}}
     resolved = qc_handling.prefer_adjusted(settings, {"CHLA"})
     assert resolved == {"variable_ranges": {"CHLA": {4: [0, 100, "outside"]}}}
+
+
+def test_chla_variables_are_only_left_out_when_bad_or_missing():
+    assert qc_handling.calculation_flags_for("CHLA_ADJUSTED") == [4, 9]
+    assert qc_handling.calculation_flags_for("TEMP") == [3, 4, 9]

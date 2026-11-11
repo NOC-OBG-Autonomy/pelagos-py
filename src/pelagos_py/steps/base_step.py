@@ -20,9 +20,9 @@ from pelagos_py.utils import parameter_spec
 from pelagos_py.utils.log_levels import STOP
 from pelagos_py.utils.processing_utils import interpolate_at
 from pelagos_py.utils.qc_handling import (
-    DEFAULT_CALCULATION_FLAGS,
     QC_COMBINATRIX,
     adjusted_name,
+    calculation_flags_for,
     prefer_adjusted,
     raw_name,
 )
@@ -167,7 +167,9 @@ class BaseStep(ConfigMirrorMixin):
             flags = np.nan_to_num(self.data[f"{var}_QC"].values, nan=9).astype(np.int8)
         else:
             flags = np.zeros(values.shape, dtype=np.int8)
-        excluded = getattr(self, "calculation_flag_filter", DEFAULT_CALCULATION_FLAGS)
+        excluded = getattr(self, "calculation_flag_filter", None)
+        if excluded is None:
+            excluded = calculation_flags_for(var)
         usable = np.where(np.isin(flags, excluded), np.nan, values)
 
         time = self.data["TIME"].values.astype("datetime64[ns]")

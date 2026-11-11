@@ -92,13 +92,13 @@ def check_chl_variables(self, allowed_requests):
 class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
     """Correct non-photochemical quenching of chlorophyll fluorescence.
 
-    Samples whose flags fall in ``calculation_flag_filter`` (by default probably-bad
-    (3), bad (4) and missing (9); see ``qc_handling_settings``) inform none of the
-    quantities the methods derive — quenching depth, night fl:bbp references,
-    in-mixed-layer maxima, euphotic depth. They are still corrected like any other
-    sample; each method just reads a NaN-masked copy of its inputs wherever it
-    derives a quantity, so flagging the unstable top few metres keeps it out of the
-    references while it still gets corrected.
+    Samples whose flags fall in ``calculation_flag_filter`` (by default bad (4) and
+    missing (9) for CHLA, plus probably-bad (3) for the other inputs; see
+    ``qc_handling_settings``), and samples shallower than ``reference_min_depth``,
+    inform none of the quantities the methods derive — quenching depth, night fl:bbp
+    references, in-mixed-layer maxima, euphotic depth. They are still corrected like
+    any other sample; each method just reads a NaN-masked copy of its inputs wherever
+    it derives a quantity.
 
     Values the correction changes are flagged 5 (value changed) in the output's
     ``_QC``, merged so an existing 3 or 4 is kept.
@@ -118,7 +118,6 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
     """
 
     step_name = "CHLA Quenching"
-    beta = True
     # MLD, backscatter and PAR are only needed by some methods, so they are
     # checked at run time against the selected method rather than required here.
     required_variables = ["PROFILE_NUMBER", "TIME", "DEPTH", "LATITUDE", "LONGITUDE"]
@@ -263,6 +262,14 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
                 "Profile numbers drawn by the 'profile' / 'quenching_depth' "
                 "diagnostic figures; defaults to a typical day profile (median "
                 "change from the correction)."
+            ),
+        },
+        "reference_min_depth": {
+            "type": float,
+            "default": 2.0,
+            "description": (
+                "Depth (m) above which samples are corrected but don't inform the "
+                "references: the top few metres are unstable."
             ),
         },
         "max_photic_depth": {
@@ -458,7 +465,7 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
             ]
 
         for var in calc_vars:
-            usable = self.calculation_mask(["PROFILE_NUMBER", self.depth_var, var])
+            usable = self._reference_mask(["PROFILE_NUMBER", self.depth_var, var])
             calc = np.where(
                 usable, np.asarray(self.data_copy[var].values, dtype=float), np.nan
             )
@@ -545,6 +552,11 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
     @cached_property
     def depth_var(self):
         return self.resolve("DEPTH")
+
+    def _reference_mask(self, variables):
+        # samples that may inform the references: unflagged and below the unstable top layer
+        depth = np.asarray(self.data[self.depth_var].values, dtype=float)
+        return self.calculation_mask(variables) & (depth >= self.reference_min_depth)
 
     @cached_property
     def _profile_index(self):
@@ -691,7 +703,7 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
 
         # The references are pure calculation, so flagged samples are dropped from
         # them entirely (day profiles are still corrected against the result).
-        usable = self.calculation_mask([self.depth_var, self.apply_to, self.bbp_var])
+        usable = self._reference_mask([self.depth_var, self.apply_to, self.bbp_var])
         fl_all = np.where(usable, fl_all, np.nan)
         bbp_all = np.where(usable, bbp_all, np.nan)
 

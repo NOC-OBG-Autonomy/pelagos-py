@@ -24,6 +24,17 @@ import xarray as xr
 # ``flag_filter_settings``, these samples are still corrected, they just don't
 # inform the correction.
 DEFAULT_CALCULATION_FLAGS = [3, 4, 9]
+# Raw CHLA always needs correcting, so it is all flagged 3 until the final range test;
+# CHLA variables are therefore only left out of calculations when bad or missing.
+CHLA_CALCULATION_FLAGS = [4, 9]
+
+
+def calculation_flags_for(name):
+    """The default flags left out of calculations for variable ``name``."""
+    if raw_name(name).startswith("CHLA"):
+        return list(CHLA_CALCULATION_FLAGS)
+    return list(DEFAULT_CALCULATION_FLAGS)
+
 
 # Argo flag-merge matrix: QC_COMBINATRIX[existing, new] never downgrades a
 # flag, and 0 (unchecked) never changes the other side. An incoming 8 also
@@ -94,11 +105,10 @@ class QCHandlingMixin:
         )
         self.behaviour = qc_settings.get("reconstruction_behaviour") or "reinsert"
 
+        # None means each variable's default (calculation_flags_for)
         calculation_flags = qc_settings.get("calculation_flag_filter")
         self.calculation_flag_filter = (
-            list(DEFAULT_CALCULATION_FLAGS)
-            if calculation_flags is None
-            else list(calculation_flags)
+            None if calculation_flags is None else list(calculation_flags)
         )
 
         self.flag_mapping = {flag: flag for flag in list(range(10))}
@@ -185,7 +195,7 @@ class QCHandlingMixin:
         Boolean mask over N_MEASUREMENTS of the samples a step may compute from.
 
         True only where *every* listed variable carries a flag outside
-        ``calculation_flag_filter``. Unlike :meth:`filter_qc` this doesn't touch
+        ``calculation_flag_filter`` (by default :func:`calculation_flags_for` each one). Unlike :meth:`filter_qc` this doesn't touch
         ``self.data``, so excluded samples are still corrected, they just don't
         inform the correction. A variable with no ``_QC`` contributes nothing.
 
@@ -195,7 +205,7 @@ class QCHandlingMixin:
             Variables whose flags gate the calculation.
         """
         mask = np.ones(self.data.sizes["N_MEASUREMENTS"], dtype=bool)
-        if not self.calculation_flag_filter:
+        if self.calculation_flag_filter == []:
             return mask
 
         ungated = []
@@ -203,9 +213,10 @@ class QCHandlingMixin:
             if f"{var}_QC" not in self.data:
                 ungated.append(var)
                 continue
-            mask &= ~np.isin(
-                self.data[f"{var}_QC"].values, self.calculation_flag_filter
-            )
+            excluded = self.calculation_flag_filter
+            if excluded is None:
+                excluded = calculation_flags_for(var)
+            mask &= ~np.isin(self.data[f"{var}_QC"].values, excluded)
 
         if ungated:
             self.log(

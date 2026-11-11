@@ -232,10 +232,9 @@ class DeriveCTDVariables(BaseStep, QCHandlingMixin):
     def fill_depth(self):
         # Every row needs a depth to place other sensors' samples in the water column.
         depth, flags = self.values_at_rows_of("DEPTH_ADJUSTED", "TIME")
-        qc = self.data["DEPTH_ADJUSTED_QC"].values
-        usable = np.isfinite(self.data["DEPTH_ADJUSTED"].values) & ~np.isin(
-            qc, self.calculation_flag_filter
-        )
+        usable = np.isfinite(
+            self.data["DEPTH_ADJUSTED"].values
+        ) & self.calculation_mask(["DEPTH_ADJUSTED"])
         filled = ~usable & np.isfinite(depth)
         self.data["DEPTH_ADJUSTED"].values[filled] = depth[filled]
         self.data["DEPTH_ADJUSTED_QC"].values[filled] = 8

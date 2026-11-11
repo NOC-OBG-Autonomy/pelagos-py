@@ -426,7 +426,7 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
         if anchors.sum() < 2:
             self.log(
                 "Fewer than two usable CNDC samples for the CT lag shift "
-                f"(flags {self.calculation_flag_filter} excluded). Skipping."
+                "(flagged samples excluded). Skipping."
             )
             return
 

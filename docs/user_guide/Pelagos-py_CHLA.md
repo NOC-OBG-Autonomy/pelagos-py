@@ -141,21 +141,15 @@ If `dark_value` is supplied by the user, this value is used instead of estimatin
 
 # 4. Surface flagging
 
-Before NPQ correction, pelagos-py temporarily flags `CHLA_ADJUSTED` observations within the upper 5 m as **probably bad but correctable** (`3`) using the generic Range QC module configured with `flag_instead`. The flags are applied to `CHLA_ADJUSTED` without modifying the depth variable itself.
-
-This step does **not** prevent the near-surface observations from being corrected. Instead, it excludes them from the calculation of the NPQ reference quantities, ensuring that potentially quenched surface fluorescence cannot define the reference used to reconstruct the profile. Once an appropriate reference has been established from unflagged observations deeper in the profile, the resulting correction is applied to all eligible observations, including those within the upper 5 m.
-
-The default configuration is
+The CHLA Quenching step's `reference_min_depth` parameter keeps `CHLA_ADJUSTED` observations shallower than a given depth out of the NPQ reference calculations. The default is 2 m; the configuration used for the figures in this guide uses 5 m:
 
 ```yaml
-variable_ranges:
-  DEPTH:
-    3: [0, 5, inside]
-    2: [0, 5, outside]
-
-flag_instead:
-  DEPTH: [CHLA_ADJUSTED]
+- name: CHLA Quenching
+  parameters:
+    reference_min_depth: 5
 ```
+
+This does **not** prevent the near-surface observations from being corrected. Instead, it excludes them from the calculation of the NPQ reference quantities, ensuring that potentially quenched surface fluorescence cannot define the reference used to reconstruct the profile. Once an appropriate reference has been established from observations deeper in the profile, the resulting correction is applied to all eligible observations, including those near the surface.
 
 The 5 m threshold is intended to exclude the shallowest observations, where wave action, platform motion and the strongest daytime quenching are most likely to compromise the calculation of NPQ reference quantities. Users may adjust this threshold if a different near-surface exclusion depth is more appropriate for their platform or sampling strategy.
 

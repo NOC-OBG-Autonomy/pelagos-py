@@ -22,7 +22,7 @@ import pandas as pd
 from pelagos_py.steps.base_qc import BaseQC, register_qc
 from pelagos_py.utils.processing_utils import profile_indices
 from pelagos_py.utils.qc_handling import (
-    DEFAULT_CALCULATION_FLAGS,
+    calculation_flags_for,
     propagate_flags,
     raw_name,
 )
@@ -122,7 +122,7 @@ class spike_qc(BaseQC):
                 # inform the baseline, so prior-bad spikes can't bias detection.
                 usable = ~missing
                 if qc_flags is not None:
-                    usable &= ~np.isin(qc_flags[indices], DEFAULT_CALCULATION_FLAGS)
+                    usable &= ~np.isin(qc_flags[indices], calculation_flags_for(var))
 
                 var_data = profile[usable]
                 if len(var_data) < self.window_size:

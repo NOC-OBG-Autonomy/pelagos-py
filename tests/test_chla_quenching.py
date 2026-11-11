@@ -519,3 +519,20 @@ def test_example_day_profile_is_the_median_change():
     step.night_max_elevation = -12.0
 
     assert step._example_profiles() == (3, 5)
+
+
+def test_reference_mask_keeps_probably_bad_chla_below_the_top_layer():
+    step = Quenching.__new__(Quenching)
+    step.data = xr.Dataset(
+        {
+            "DEPTH": ("N_MEASUREMENTS", np.array([1.0, 3.0, 10.0, 20.0])),
+            "CHLA": ("N_MEASUREMENTS", np.ones(4)),
+            "CHLA_QC": ("N_MEASUREMENTS", np.array([3, 3, 3, 4])),
+        }
+    )
+    step.depth_var = "DEPTH"
+    step.calculation_flag_filter = None
+    step.reference_min_depth = 2.0
+    step.log = lambda *args, **kwargs: None
+
+    assert step._reference_mask(["CHLA"]).tolist() == [False, True, True, False]
