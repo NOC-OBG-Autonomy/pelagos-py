@@ -1447,9 +1447,10 @@ _CROSS_SECTION_PANELS = (
     },
 )
 
-#   Names tried (in order) for the cross-section's shared time and depth axes.
+#   Names tried (in order) for the cross-section's shared time and depth axes; DEPTH first,
+#   as it is filled on every row while PRES is only on the CTD's.
 _CS_TIME_CANDIDATES = ("TIME", "time")
-_CS_PRES_CANDIDATES = ("PRES", "PRESSURE", "pres", "DEPTH")
+_CS_PRES_CANDIDATES = ("DEPTH", "PRES", "PRESSURE", "pres")
 
 #   Default scatter marker size; BBP uses half this so its surfaced high values
 #   sit cleanly over the rest rather than smearing.
@@ -1982,7 +1983,7 @@ def glidertest_section(
 def cross_section_figure(
     data: xr.Dataset, outdir: str, ext: str = ".png", labels=None
 ) -> str:
-    #   A4-portrait stack of PRES-vs-TIME panels (see _CROSS_SECTION_PANELS), one
+    #   A4-portrait stack of DEPTH-vs-TIME panels (see _CROSS_SECTION_PANELS), one
     #   per variable, sharing the TIME axis, each with a profile strip and
     #   colourbar. Robust percentile colour limits; returns the saved path or None.
     #   ``labels`` limits it to those panels (e.g. ["Temperature"]), each BANNER_H tall.
