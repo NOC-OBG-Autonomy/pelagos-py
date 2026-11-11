@@ -44,6 +44,12 @@ class FakePipeline:
         self.seen.append((name, context["data"]["X"].values.tolist()))
         return self.behaviour[name](step_config, context)
 
+    def _skip_failed_step(self, fail_mode, label):
+        # imported here so run_bootstrap sets the matplotlib backend first
+        from pelagos_py.pipeline import Pipeline
+
+        return Pipeline._skip_failed_step(self, fail_mode, label)
+
 
 def corrupt_then_fail(step_config, context):
     context["data"]["X"].values[:] += 100

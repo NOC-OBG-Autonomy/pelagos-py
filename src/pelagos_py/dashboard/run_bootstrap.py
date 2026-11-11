@@ -498,14 +498,10 @@ def _run(pipeline):
                 has_result = True
             except (RuntimeError, ValueError, SystemExit) as exc:
                 _diag_capture["chunks"] = None
-                # same on_step_fail handling as Pipeline.run()
                 if fail_mode == "stop":
                     pipeline.logger.log(STOP, "Pipeline stopped at step '%s'.", label)
                     sys.exit(1)
-                if fail_mode == "skip":
-                    pipeline.logger.log(
-                        SEVERE, "Step '%s' failed and was skipped.", label
-                    )
+                if pipeline._skip_failed_step(fail_mode, label):
                     continue
                 failed = True
                 _emit_fail(idx, name, test, exc)

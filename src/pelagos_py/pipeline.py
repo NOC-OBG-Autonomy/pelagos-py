@@ -487,9 +487,7 @@ class Pipeline(ConfigMirrorMixin):
         Runs the entire pipeline.
         """
         # Pausing needs the dashboard; here it stops, so a failed step never goes unnoticed.
-        skip_on_fail = (
-            resolve_on_step_fail(self.global_parameters.get("on_step_fail")) == "skip"
-        )
+        fail_mode = resolve_on_step_fail(self.global_parameters.get("on_step_fail"))
         with self.run_context() as report_present:
             # Headless Agg for the whole run: toggling the backend per step can crash on Windows
             backend_ctx = (
@@ -502,14 +500,16 @@ class Pipeline(ConfigMirrorMixin):
                     try:
                         self._context = self.execute_step(step, self._context)
                     except (RuntimeError, SystemExit):
-                        if not skip_on_fail:
+                        if not self._skip_failed_step(fail_mode, step["name"]):
                             raise
-                        # execute_step/halt() already logged the underlying
-                        # error; this just marks the step as skipped and moves
-                        # on, keeping the prior step's context.
-                        self.logger.log(
-                            SEVERE, "Step '%s' failed and was skipped.", step["name"]
-                        )
+
+    def _skip_failed_step(self, fail_mode, label):
+        # Shared with the dashboard run: on "skip" the caller keeps the prior step's context
+        if fail_mode != "skip":
+            return False
+        # execute_step/halt() already logged the underlying error
+        self.logger.log(SEVERE, "Step '%s' failed and was skipped.", label)
+        return True
 
     @contextlib.contextmanager
     def run_context(self):
