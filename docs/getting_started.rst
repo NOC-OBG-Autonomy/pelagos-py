@@ -150,9 +150,8 @@ A minimal YAML configuration for the demo file. See ``examples/notebooks/pipelin
 
      - name: Derive CTD
        parameters:
-         # written as DEPTH_ADJUSTED, PSAL_ADJUSTED, ...
+         # written as PSAL_ADJUSTED, ...; DEPTH_ADJUSTED is always derived
          to_derive: [
-           DEPTH,
            PSAL,
            ASAL,
            CONS_TEMP,

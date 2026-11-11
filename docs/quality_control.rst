@@ -19,7 +19,7 @@ pelagos-py follows the standardised Argo flagging system:
 * **2**: Probably good data.
 * **3**: Probably bad data (potentially correctable).
 * **4**: Bad data (not correctable).
-* **5**: Value changed (e.g. by a correction step).
+* **5**: Value changed (only CHLA Quenching sets this, as in Argo).
 * **8**: Interpolated value.
 * **9**: Missing value.
 

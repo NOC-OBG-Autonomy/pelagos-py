@@ -227,7 +227,7 @@ Thus,
 
 $$ \tau_{\mathrm{geom}} = \frac{d}{r\sin(\theta)} $$
 
-For a known constant geometric delay, the optode data are interpolated to the time at which the corresponding water parcel reaches the CTD.
+For a known constant geometric delay, the optode data are interpolated to the time at which the corresponding water parcel reaches the CTD. This is done only on the optode's own rows, between its own readings, so the output keeps one value per optode measurement.
 
 If the optode measurement occurs $\tau_{\mathrm{geom}}$ seconds after the CTD measurement, the optode time corresponding to a CTD observation at time $t$ is
 
