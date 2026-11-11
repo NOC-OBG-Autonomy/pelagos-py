@@ -2076,12 +2076,14 @@ def cross_section_figure(
         )
 
         #   Robust colour limits: percentiles, not raw min/max, so sharp spikes
-        #   don't blow out the scale. Guard the all-NaN case.
+        #   don't blow out the scale. Guard the all-NaN and constant cases.
         if np.isfinite(c).any():
             vmin = np.nanpercentile(c, 0.1)
             vmax = np.nanpercentile(c, 99.9)
         else:
             vmin, vmax = 0.0, 1.0
+        if vmin == vmax:
+            vmin, vmax = vmin - 0.5, vmax + 0.5
 
         if panel.get("special") == "bbp":
             #   Largest-on-top: sort ascending so the highest BBP values draw last

@@ -103,4 +103,8 @@ per-file-ignores = { "*.ipynb" = ["E402"], "src/pelagos_py/steps/templates/*" = 
 
 [tool.pytest.ini_options]
 # Diagnostics call plt.show(), which can't display under the test backend
-filterwarnings = ["ignore:FigureCanvasAgg is non-interactive:UserWarning"]
+filterwarnings = [
+    "ignore:FigureCanvasAgg is non-interactive:UserWarning",
+    # raised inside glidertest, not our code
+    "ignore:GroupBy.apply may be deprecated:PendingDeprecationWarning:glidertest",
+]
