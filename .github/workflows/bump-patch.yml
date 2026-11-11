@@ -4,6 +4,8 @@ name: Auto patch tag
 # are NOT releases, so they never trigger publish.yml — they just advance the
 # version reported by setuptools-scm between PyPI releases. Tags pushed with
 # GITHUB_TOKEN do not trigger other workflows, so there is no publish risk.
+# Put "[no bump]" in the merge commit message to skip it, e.g. before tagging a
+# minor/major release by hand.
 
 on:
   push:
@@ -13,7 +15,9 @@ on:
 jobs:
   tag:
     # Never runs on forks.
-    if: github.repository == 'NOC-OBG-Autonomy/pelagos-py'
+    if: >-
+      github.repository == 'NOC-OBG-Autonomy/pelagos-py' &&
+      !contains(github.event.head_commit.message, '[no bump]')
     runs-on: ubuntu-latest
 
     permissions:

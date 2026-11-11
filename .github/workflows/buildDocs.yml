@@ -1,10 +1,16 @@
 name: Build Documentation
 
+# main builds after the patch tag exists (and again on a release), so the docs
+# show the tagged version rather than a .dev one.
 on:
   push:
     branches:
-      - main
       - dev
+  workflow_run:
+    workflows: ["Auto patch tag"]
+    types: [completed]
+  release:
+    types: [published]
 
 permissions:
   contents: write
@@ -56,7 +62,7 @@ jobs:
         run: touch docs/_build/html/.nojekyll
 
       - name: Deploy to GitHub Pages
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.event_name == 'release'
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages  # Deploy to the root of gh-pages
