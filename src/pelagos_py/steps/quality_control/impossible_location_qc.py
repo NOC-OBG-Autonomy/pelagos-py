@@ -49,7 +49,7 @@ class impossible_location_qc(BaseQC):
             values = self.data[label].values
             in_bounds = (values > bounds[0]) & (values < bounds[1])
             flags[f"{label}_QC"] = np.where(
-                np.isnan(values), 9, np.where(in_bounds, 1, 4)
+                np.isnan(values), 9, np.where(in_bounds, self.pass_flag, 4)
             )
 
         self.flags = xr.Dataset(

@@ -750,11 +750,11 @@ const VisualQC = {
     ['Bio-optics', ['CHLA', 'DOXY', 'MOLAR_DOXY', 'OXYSAT', 'BBP', 'DOWNWELLING_PAR', 'RAW_DOWNWELLING_PAR']],
   ],
 
-  // SCI_PHASE first, then the groups, other variables, and finally those all NaN or 0.
+  // PHASE_SCI first, then the groups, other variables, and finally those all NaN or 0.
   variableSelect(value, onChange, { placeholder, cls = '', skip = new Set() } = {}) {
     const vars = VisualQC.variables().filter((v) => v !== 'TIME' && !skip.has(v));
     const empty = new Set(Run.emptyVariables);
-    const top = vars.filter((v) => v === 'SCI_PHASE' && !empty.has(v));
+    const top = vars.filter((v) => v === 'PHASE_SCI' && !empty.has(v));
     let rest = vars.filter((v) => !empty.has(v) && !top.includes(v));
     const groups = [];
     for (const [label, prefixes] of VisualQC.VARIABLE_GROUPS) {
@@ -1215,7 +1215,7 @@ const VisualQC = {
     } else {
       const hexRGB = (h) => [1, 3, 5].map((j) => parseInt(h.slice(j, j + 2), 16));
       const grey = hexRGB('#d0d4d8');
-      // Categorical (e.g. SCI_PHASE): a fixed colour per category, as its own step plots it.
+      // Categorical (e.g. PHASE_SCI): a fixed colour per category, as its own step plots it.
       const byValue = new Map(
         (col.categories || []).map(([v, meaning, colour]) => [
           v,

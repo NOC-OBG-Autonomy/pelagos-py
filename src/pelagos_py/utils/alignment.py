@@ -174,7 +174,7 @@ def interpolate_DEPTH(
             # Per-profile × depth-bin coverage (counts), limited to first N profiles
             profs = np.unique(ds["PROFILE_NUMBER"].values)
             if profs.size == 0:
-                logger.warning("[Diagnostics] No profiles available for heatmap.")
+                logger.warning("No profiles available for heatmap.")
             else:
                 profs = profs[:max_profiles_heatmap]
                 # Build a small 2D grid of counts
@@ -280,7 +280,7 @@ def aggregate_vars(
     out_vars = {}
     for var in vars_to_aggregate:
         if var not in ds:
-            logger.warning(f"[aggregate_vars] Skipping missing variable: {var}")
+            logger.warning(f"Skipping missing variable: {var}")
             continue
 
         da = ds[var]
@@ -632,7 +632,7 @@ def compute_r2_for_merged_profiles_xr(
         anc_var = f"median_{var}_{ancillary_name}"
 
         if target_var not in ds or anc_var not in ds:
-            logger.warning(f"[R²] Skipping variable '{var}' — missing data.")
+            logger.warning(f"Skipping R² for '{var}' — missing data.")
             continue
 
         r2_values = []
@@ -697,7 +697,7 @@ def plot_r2_heatmaps_per_pair(
             if c in ds:
                 needed.append(c)
             else:
-                logger.warning(f"[Plot] Missing {c} in dataset for {ancillary_name}")
+                logger.warning(f"Missing {c} in dataset for {ancillary_name}")
 
         # We’ll also try to include the ancillary profile id + optional filters
         anc_prof_col = f"{ancillary_name}_PROFILE_NUMBER"
@@ -799,7 +799,7 @@ def plot_r2_heatmaps_per_pair(
             fname = f"r2_heatmap_{title_target}_vs_{ancillary_name}.png"
             path = os.path.join(output_path, fname)
             plt.savefig(path, dpi=300)
-            logger.info(f"[Plot] Saved: {path}")
+            logger.info(f"Saved: {path}")
 
         if show_plots:
             plt.show()

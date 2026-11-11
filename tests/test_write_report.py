@@ -1,7 +1,10 @@
 """Tests the step 'Write Data Report' (fpdf2-based report)."""
 
 #   Test module import
+import logging
+
 from pelagos_py.steps.input_output import write_report as wrp
+from pelagos_py.utils.console import LogFormatter
 import pytest
 from unittest.mock import patch, MagicMock
 
@@ -224,27 +227,50 @@ def test_qc_section_no_rows(qc_dataset):
     pdf.add_table.assert_not_called()
 
 
-def test_add_log(tmp_path):
-    log_content = (
-        "2026-02-17 12:56:08 - INFO - pelagos_py.pipeline - Logging to file\n"
-        "\n"  #   blank line -> ignored
-        "2026-02-17 12:56:18 - WARNING - pelagos_py.pipeline.step.Apply QC - flagged\n"
-        "not a properly formatted line\n"  #   wrong field count -> skipped
-    )
+def test_add_log_reads_the_log_file_format(tmp_path):
     logfile = tmp_path / "processing.log"
-    logfile.write_text(log_content)
+    handler = logging.FileHandler(logfile, encoding="utf-8")
+    handler.setFormatter(LogFormatter(datefmt="%Y-%m-%d %H:%M:%S"))
+    logger = logging.getLogger("pelagos_py.pipeline.step.Apply QC")
+    logger.addHandler(handler)
+    try:
+        logger.warning("flagged")
+        logger.warning("Traceback (most recent call last):\n  a second line")
+    finally:
+        logger.removeHandler(handler)
+        handler.close()
 
     pdf = MagicMock()
     wrp.add_log(str(logfile), pdf)
 
     pdf.section_heading.assert_called_once_with("Logfile of run")
     rows = pdf.terminal_block.call_args[0][0]
+    assert [row[1:] for row in rows] == [
+        ("Apply QC            ", "WARN", "flagged"),
+        ("Apply QC            ", "WARN", "Traceback (most recent call last):"),
+    ]
 
-    assert rows[0] == ("12:56:08", "INFO", "pipeline", "Logging to file")
-    assert rows[1][0] == "12:56:18"
-    assert rows[1][1] == "WARNING"
-    assert rows[1][2] == "pipeline.step.Apply QC"
-    assert len(rows) == 2
+
+def test_terminal_block_colours_only_warning_levels():
+    pdf = wrp._ReportPDF()
+    pdf.add_page()
+    colours = []
+    with patch.object(pdf, "set_text_color", side_effect=lambda *c: colours.append(c)):
+        pdf.terminal_block(
+            [
+                ("12:00:00", "pipeline", None, "fine " * 80),
+                ("12:00:01", "pipeline", "WARN", "odd"),
+            ]
+        )
+    warn_rgb = wrp.LEVEL_STYLES["WARNING"].rgb
+    assert colours.count(warn_rgb) == 1
+    assert set(colours) == {pdf._TERMINAL_FG, warn_rgb, (0,)}
+
+
+def test_terminal_block_draws_a_cut_step_name():
+    pdf = wrp._ReportPDF()
+    pdf.add_page()
+    pdf.terminal_block([("12:00:00", "Derive Uncalibrated…", None, "ok")])
 
 
 def test_add_log_missing_file(tmp_path):

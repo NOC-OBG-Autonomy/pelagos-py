@@ -309,6 +309,15 @@ def _warn_adjusted_resolution(
                 producer,
                 extra={"step_index": index},
             )
+        elif used == "DEPTH":
+            logger.warning(
+                "%s '%s' uses DEPTH from the input file, which may only have values on "
+                "the CTD's rows. Derive it first (Derive CTD, to_derive: [DEPTH]) so "
+                "every row has a depth.",
+                kind,
+                label,
+                extra={"step_index": index},
+            )
 
 
 def _non_loader_provided_variables(steps_list):
@@ -558,7 +567,12 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
                     configured, _ = _qc_test_io(qc_class, qc_params)
                     qc_params = prefer_adjusted(qc_params, available_vars)
                     qc_required, qc_outputs = _qc_test_io(qc_class, qc_params)
-                    qc_missing = [v for v in qc_required if v not in available_vars]
+                    # static names like DEPTH count as present through their _ADJUSTED version
+                    qc_missing = [
+                        v
+                        for v in qc_required
+                        if prefer_adjusted(v, available_vars) not in available_vars
+                    ]
                     if qc_missing:
                         _raise_missing_variables(
                             logger,

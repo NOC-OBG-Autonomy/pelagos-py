@@ -13,7 +13,6 @@ accepts.
 ## Running
 
 ```bash
-pip install -e ".[dashboard]"
 pelagos-py dashboard
 ```
 

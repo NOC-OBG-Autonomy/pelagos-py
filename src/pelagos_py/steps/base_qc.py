@@ -73,6 +73,8 @@ class BaseQC:
         False  # set by Apply QC: return_qc then merges with existing_flags
     )
     existing_flags = None
+    # Flag for values that pass; Apply QC sets it from the pipeline's pass_flag setting
+    pass_flag = 1
 
     def __init__(self, data, **kwargs):
         # data may be None when a test is instantiated to introspect its
@@ -114,12 +116,12 @@ class BaseQC:
         return parameter_spec.describe(cls.parameter_schema or {})
 
     def log(self, message, console=True):
-        """Log an info-level message with the QC name prefix. ``console=False`` keeps it in the log file only."""
-        self.logger.info("[%s] %s", self.qc_name, message, extra={"console": console})
+        """Log an info-level message. ``console=False`` keeps it in the log file only."""
+        self.logger.info(message, extra={"console": console})
 
     def log_warn(self, message):
-        """Log a warning-level message with the QC name prefix."""
-        self.logger.warning("[%s] %s", self.qc_name, message)
+        """Log a warning-level message."""
+        self.logger.warning(message)
 
     def log_progress(self, iterable=None, *, desc, total=None, unit="it", leave=False):
         """Wrap a countable loop as a standard pipeline progress bar (see :meth:`BaseStep.log_progress`)."""

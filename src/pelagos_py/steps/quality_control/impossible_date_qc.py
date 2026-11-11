@@ -50,7 +50,7 @@ class impossible_date_qc(BaseQC):
         in_range = (time > np.datetime64(datetime(1985, 1, 1))) & (
             time < np.datetime64(datetime.now())
         )
-        time_qc = np.where(np.isnat(time), 9, np.where(in_range, 1, 4))
+        time_qc = np.where(np.isnat(time), 9, np.where(in_range, self.pass_flag, 4))
 
         self.flags = xr.Dataset(
             data_vars={"TIME_QC": ("N_MEASUREMENTS", time_qc)},

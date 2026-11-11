@@ -56,7 +56,7 @@ variable_ranges:
     4: [-0.2, 100, outside]
 ```
 
-This assigns a **bad** quality flag (`4`) to chlorophyll concentrations below -0.2 mg m<sup>-3</sup> or above 100 mg m<sup>-3</sup>.
+This assigns a **bad** quality flag (`4`) to chlorophyll concentrations below -0.2 mg m<sup>-3</sup> or above 100 mg m<sup>-3</sup>. Because raw `CHLA` always needs correcting, a following range test (run together with Spike QC) marks every other value **probably bad** (`3`), so `CHLA_QC` ends as `3` or `4`.
 
 These limits are intentionally conservative and are designed to identify grossly implausible observations while retaining the full range of chlorophyll concentrations expected across oligotrophic, coastal and bloom conditions. The slightly negative lower limit allows for small differences between the manufacturer-supplied dark value and the true in-situ fluorometer dark, preventing potentially recoverable observations from being rejected before the dark correction is applied.
 
@@ -141,21 +141,15 @@ If `dark_value` is supplied by the user, this value is used instead of estimatin
 
 # 4. Surface flagging
 
-Before NPQ correction, pelagos-py temporarily flags `CHLA_ADJUSTED` observations within the upper 5 m as **probably bad but correctable** (`3`) using the generic Range QC module configured with `flag_instead`. The flags are applied to `CHLA_ADJUSTED` without modifying the depth variable itself.
-
-This step does **not** prevent the near-surface observations from being corrected. Instead, it excludes them from the calculation of the NPQ reference quantities, ensuring that potentially quenched surface fluorescence cannot define the reference used to reconstruct the profile. Once an appropriate reference has been established from unflagged observations deeper in the profile, the resulting correction is applied to all eligible observations, including those within the upper 5 m.
-
-The default configuration is
+The CHLA Quenching step's `reference_min_depth` parameter keeps `CHLA_ADJUSTED` observations shallower than a given depth out of the NPQ reference calculations. The default is 2 m; the configuration used for the figures in this guide uses 5 m:
 
 ```yaml
-variable_ranges:
-  DEPTH:
-    3: [0, 5, inside]
-    2: [0, 5, outside]
-
-flag_instead:
-  DEPTH: [CHLA_ADJUSTED]
+- name: CHLA Quenching
+  parameters:
+    reference_min_depth: 5
 ```
+
+This does **not** prevent the near-surface observations from being corrected. Instead, it excludes them from the calculation of the NPQ reference quantities, ensuring that potentially quenched surface fluorescence cannot define the reference used to reconstruct the profile. Once an appropriate reference has been established from observations deeper in the profile, the resulting correction is applied to all eligible observations, including those near the surface.
 
 The 5 m threshold is intended to exclude the shallowest observations, where wave action, platform motion and the strongest daytime quenching are most likely to compromise the calculation of NPQ reference quantities. Users may adjust this threshold if a different near-surface exclusion depth is more appropriate for their platform or sampling strategy.
 
@@ -1310,18 +1304,17 @@ The default configuration is
 ```yaml
 variable_ranges:
   CHLA_ADJUSTED:
-    2: [0, 70, inside]
-    3: [0, 50, outside]
-    4: [0, 100, outside]
+    4: [-0.2, 100, outside]
+    2: [-0.2, 100, inside]
+reset_flags: [3, 5]
 ```
 
-The overlapping intervals are interpreted using the pelagos-py Range QC algorithm together with the QC flag-combination matrix. The resulting effective classification is
+`reset_flags` lets this test replace the interim `3` inherited from `CHLA` and the `5` set by CHLA Quenching on the values it corrected; `4` and `9` are kept. The resulting classification is
 
 | Corrected chlorophyll-*a* concentration (mg m<sup>-3</sup>) | QC flag |
 |:------------------------------------------------------------:|:-------:|
-| < 0 | **4** (bad) |
-| 0–50 | **2** (probably good) |
-| 50–100 | **3** (probably bad) |
+| < -0.2 | **4** (bad) |
+| -0.2–100 | **2** (probably good) |
 | > 100 | **4** (bad) |
 
 These thresholds are intended as conservative defaults suitable for a wide range of marine environments. Rather than defining universal limits on naturally occurring chlorophyll concentrations, they provide a simple quality classification of the corrected product. Users working in highly productive coastal waters, estuaries or harmful algal bloom conditions may wish to increase the upper thresholds to better reflect the expected concentration range for their deployment.
@@ -1336,7 +1329,7 @@ The final range test therefore provides an independent quality-control step on t
 
 > **Best practice**
 >
-> The final range test should not be used in isolation. Profiles receiving probably bad (`3`) or bad (`4`) flags should be inspected alongside the deep-correction and NPQ diagnostic plots to determine whether the correction parameters remain appropriate for the deployment.
+> The final range test should not be used in isolation. Profiles receiving bad (`4`) flags should be inspected alongside the deep-correction and NPQ diagnostic plots to determine whether the correction parameters remain appropriate for the deployment.
 
 ### Diagnostics
 

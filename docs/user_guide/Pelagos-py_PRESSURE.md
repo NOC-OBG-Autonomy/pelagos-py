@@ -10,7 +10,7 @@
 Pressure (`PRES`, dbar) is measured directly by the CTD. It is used to find profiles, to derive `DEPTH`, and in the salinity and density calculations, so it is quality controlled early in the pipeline. Processing consists of:
 
 1. **Quality control** — range and stuck-value tests, with flags shared across the CTD triad (`PRES`, `TEMP`, `CNDC`).
-2. **Interpolation** — flagged and missing pressure values are filled by linear interpolation in time.
+2. **Depth** — `PRES` itself is not interpolated; `DEPTH_ADJUSTED` derived from it is filled onto every row.
 
 ---
 
@@ -40,16 +40,9 @@ No spike test is applied: pressure changes smoothly with the platform's vertical
 
 ---
 
-# 2. Interpolation
+# 2. Depth
 
-After QC, the {doc}`Interpolate Data </api/pelagos_py/steps/processing/interpolate_data/index>` step fills pressure values flagged probably bad (`3`), bad (`4`) or missing (`9`) by linear interpolation in time, and re-flags them as interpolated (`8`). This gives every sample a usable pressure for `DEPTH` and profile finding.
-
-```yaml
-- name: Interpolate Data
-  parameters:
-    variables:
-      PRES: [3, 4, 9]
-```
+`PRES` keeps only its measured values. {doc}`Derive CTD <Pelagos-py_DERIVED>` derives `DEPTH_ADJUSTED` from it and fills rows with no usable pressure (flagged `3`, `4` or `9`, or without a CTD sample) by linear interpolation in time, flagging them interpolated (`8`). This gives every sample a depth for profile finding and plotting.
 
 ---
 

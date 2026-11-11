@@ -18,7 +18,11 @@
 
 #### Mandatory imports ####
 from pelagos_py.steps.base_step import BaseStep, register_step
-from pelagos_py.utils.qc_handling import QCHandlingMixin, adjusted_name
+from pelagos_py.utils.qc_handling import (
+    QC_COMBINATRIX,
+    QCHandlingMixin,
+    adjusted_name,
+)
 from pelagos_py.utils.processing_utils import profile_indices
 import pelagos_py.utils.palettes as palettes
 from pelagos_py.utils import fig_spec
@@ -88,13 +92,16 @@ def check_chl_variables(self, allowed_requests):
 class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
     """Correct non-photochemical quenching of chlorophyll fluorescence.
 
-    Samples whose flags fall in ``calculation_flag_filter`` (by default probably-bad
-    (3), bad (4) and missing (9); see ``qc_handling_settings``) inform none of the
-    quantities the methods derive — quenching depth, night fl:bbp references,
-    in-mixed-layer maxima, euphotic depth. They are still corrected like any other
-    sample; each method just reads a NaN-masked copy of its inputs wherever it
-    derives a quantity, so flagging the unstable top few metres keeps it out of the
-    references while it still gets corrected.
+    Samples whose flags fall in ``calculation_flag_filter`` (by default bad (4) and
+    missing (9) for CHLA, plus probably-bad (3) for the other inputs; see
+    ``qc_handling_settings``), and samples shallower than ``reference_min_depth``,
+    inform none of the quantities the methods derive — quenching depth, night fl:bbp
+    references, in-mixed-layer maxima, euphotic depth. They are still corrected like
+    any other sample; each method just reads a NaN-masked copy of its inputs wherever
+    it derives a quantity.
+
+    Values the correction changes are flagged 5 (value changed) in the output's
+    ``_QC``, merged so an existing 3 or 4 is kept.
 
     The mixed layer depth is read from the ``MLD`` variable, produced by a
     preceding Mixed Layer Depth step.
@@ -111,7 +118,6 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
     """
 
     step_name = "CHLA Quenching"
-    beta = True
     # MLD, backscatter and PAR are only needed by some methods, so they are
     # checked at run time against the selected method rather than required here.
     required_variables = ["PROFILE_NUMBER", "TIME", "DEPTH", "LATITUDE", "LONGITUDE"]
@@ -254,8 +260,16 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
             "default": None,
             "description": (
                 "Profile numbers drawn by the 'profile' / 'quenching_depth' "
-                "diagnostic figures; defaults to the day profile the correction "
-                "changed most."
+                "diagnostic figures; defaults to a typical day profile (median "
+                "change from the correction)."
+            ),
+        },
+        "reference_min_depth": {
+            "type": float,
+            "default": 2.0,
+            "description": (
+                "Depth (m) above which samples are corrected but don't inform the "
+                "references: the top few metres are unstable."
             ),
         },
         "max_photic_depth": {
@@ -451,7 +465,7 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
             ]
 
         for var in calc_vars:
-            usable = self.calculation_mask(["PROFILE_NUMBER", self.depth_var, var])
+            usable = self._reference_mask(["PROFILE_NUMBER", self.depth_var, var])
             calc = np.where(
                 usable, np.asarray(self.data_copy[var].values, dtype=float), np.nan
             )
@@ -509,6 +523,7 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
 
         self.reconstruct_data()
         self.update_qc()
+        self.flag_changed_values()
 
         if self.diagnostics:
             self.generate_diagnostics()
@@ -516,12 +531,32 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
         self.context["data"].update(self.data)
         return self.context
 
+    def flag_changed_values(self):
+        # Argo: values the quenching correction changed are flagged 5 (value changed)
+        qc_name = f"{self.output_as}_QC"
+        if qc_name not in self.data:
+            return
+        before = self.data_copy[self.apply_to].values
+        after = self.data[self.output_as].values
+        changed = np.isfinite(after) & ~np.isclose(after, before, equal_nan=True)
+        new_flags = np.where(changed, 5, 0)
+        merged = QC_COMBINATRIX[self.data[qc_name].values.astype(int), new_flags]
+        self.data[qc_name][:] = merged
+        self.log(
+            f"Flagged {int(changed.sum())} quench-corrected values 5.", console=False
+        )
+
     # ==================================================================
     # Shared helpers - inputs and per-profile quantities used by the methods below
     # ==================================================================
     @cached_property
     def depth_var(self):
         return self.resolve("DEPTH")
+
+    def _reference_mask(self, variables):
+        # samples that may inform the references: unflagged and below the unstable top layer
+        depth = np.asarray(self.data[self.depth_var].values, dtype=float)
+        return self.calculation_mask(variables) & (depth >= self.reference_min_depth)
 
     @cached_property
     def _profile_index(self):
@@ -668,7 +703,7 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
 
         # The references are pure calculation, so flagged samples are dropped from
         # them entirely (day profiles are still corrected against the result).
-        usable = self.calculation_mask([self.depth_var, self.apply_to, self.bbp_var])
+        usable = self._reference_mask([self.depth_var, self.apply_to, self.bbp_var])
         fl_all = np.where(usable, fl_all, np.nan)
         bbp_all = np.where(usable, bbp_all, np.nan)
 
@@ -2247,8 +2282,8 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
         )
 
     def _example_profiles(self):
-        # day profile = the one the configured method changed most; night profile
-        # = the nearest in time to it
+        # day profile = a typical one (median change among changed day profiles);
+        # night profile = the nearest in time to it
         change = np.abs(
             self.data[self.output_as].values - self.data_copy[self.apply_to].values
         )
@@ -2263,7 +2298,9 @@ class ChlaQuenchingCorrection(BaseStep, QCHandlingMixin):
             p for p in total_change if elev.get(p, 0) > self.day_min_elevation
         ]
         pool = day_candidates or list(total_change)
-        day_pn = max(pool, key=lambda p: total_change[p])
+        changed = [p for p in pool if total_change[p] > 0] or pool
+        median_change = np.median([total_change[p] for p in changed])
+        day_pn = min(changed, key=lambda p: abs(total_change[p] - median_change))
 
         night_candidates = [
             p for p in total_change if elev.get(p, 0) < self.night_max_elevation

@@ -28,6 +28,10 @@ def make_context(
     n = len(pres)
     ds = xr.Dataset(
         {
+            "TIME": (
+                "N_MEASUREMENTS",
+                np.datetime64("2024-01-01") + np.arange(n).astype("timedelta64[s]"),
+            ),
             "PRES": ("N_MEASUREMENTS", np.array(pres)),
             var: ("N_MEASUREMENTS", np.array(vals)),
             f"{var}_QC": ("N_MEASUREMENTS", np.zeros(n, dtype=int)),
@@ -68,6 +72,18 @@ def test_computes_dark_value_and_creates_adjusted():
         data["CHLA"].values - step.dark_value,
         equal_nan=True,
     )
+
+
+def test_pressure_on_other_rows_is_interpolated_onto_the_chla_rows():
+    ctx = make_context(dark=0.7)
+    ctx["data"]["PRES"].values[1::2] = np.nan  # CHLA-only rows
+    ctx["data"]["CHLA"].values[::2] = np.nan  # CTD-only rows
+    step = make_step({"apply_to": "CHLA"}, ctx)
+
+    data = step.run()["data"]
+
+    assert step.dark_value == pytest.approx(0.7, abs=0.1)
+    assert np.isnan(data["PRES"].values[1::2]).all()
 
 
 def _corrupt_deep(data, profiles):

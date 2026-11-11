@@ -19,10 +19,15 @@ SVU_COEFFICIENTS = [
 ]
 
 
+def seconds(n):
+    return np.datetime64("2024-01-01") + np.arange(n).astype("timedelta64[s]")
+
+
 def make_context(temp, phase):
     n = len(temp)
     ds = xr.Dataset(
         {
+            "TIME": ("N_MEASUREMENTS", seconds(n)),
             "TEMP_DOXY": ("N_MEASUREMENTS", np.asarray(temp, dtype=float)),
             "TEMP_DOXY_QC": ("N_MEASUREMENTS", np.zeros(n, dtype=int)),
             "CAL_PHASE_DOXY": ("N_MEASUREMENTS", np.asarray(phase, dtype=float)),
@@ -92,6 +97,7 @@ def make_doxy_context(molar_name, molar, psal=35.0, temp=10.0, pres=0.0):
     zeros = np.zeros(n, dtype=int)
     ds = xr.Dataset(
         {
+            "TIME": ("N_MEASUREMENTS", seconds(n)),
             molar_name: ("N_MEASUREMENTS", np.asarray(molar, dtype=float)),
             f"{molar_name}_QC": ("N_MEASUREMENTS", zeros.copy()),
             "PSAL": ("N_MEASUREMENTS", np.full(n, psal)),
@@ -136,11 +142,25 @@ def test_derive_doxy_uses_potential_not_in_situ_density():
 
 
 def test_derive_doxy_from_shipped_molar_doxy_reads_adjusted_inputs():
-    ctx = make_doxy_context("MOLAR_DOXY", [300.0, 300.0], psal=0.0)
-    ctx["data"]["PSAL_ADJUSTED"] = ("N_MEASUREMENTS", np.full(2, 35.0))
-    ctx["data"]["PSAL_ADJUSTED_QC"] = ("N_MEASUREMENTS", np.array([0, 4]))
+    ctx = make_doxy_context("MOLAR_DOXY", [300.0, 300.0, 300.0], psal=0.0)
+    ctx["data"]["PSAL_ADJUSTED"] = ("N_MEASUREMENTS", np.array([35.0, 0.0, 35.0]))
+    ctx["data"]["PSAL_ADJUSTED_QC"] = ("N_MEASUREMENTS", np.array([1, 4, 1]))
     data = run_derive_doxy({"apply_to": "MOLAR_DOXY"}, ctx)
 
+    # the bad (4) salinity isn't used: it's bridged from the samples either side
     assert np.allclose(data["DOXY_ADJUSTED"].values, 300.0 * 1000 / 1026.95, rtol=1e-5)
-    assert list(data["DOXY_ADJUSTED_QC"].values) == [0, 4]
-    assert np.array_equal(data["MOLAR_DOXY"].values, [300.0, 300.0])
+    assert list(data["DOXY_ADJUSTED_QC"].values) == [1, 1, 1]
+    assert np.array_equal(data["MOLAR_DOXY"].values, [300.0, 300.0, 300.0])
+
+
+def test_derive_doxy_interpolates_ctd_values_onto_the_optode_rows():
+    nan = np.nan
+    ctx = make_doxy_context("MOLAR_DOXY", [nan, 300.0, nan])
+    for var in ("PSAL", "TEMP", "PRES"):
+        ctx["data"][var].values[1] = nan
+        ctx["data"][f"{var}_QC"].values[1] = 9
+    data = run_derive_doxy({"apply_to": "MOLAR_DOXY"}, ctx)
+
+    assert np.isclose(data["DOXY_ADJUSTED"].values[1], 300.0 * 1000 / 1026.95)
+    assert np.isnan(data["DOXY_ADJUSTED"].values[[0, 2]]).all()
+    assert np.isnan(data["TEMP"].values[1])

@@ -3,6 +3,7 @@
 from pelagos_py.steps.processing import chla_quenching
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 import pytest
 
@@ -434,9 +435,13 @@ def test_night_reference_falls_back_to_preceding_when_not_bracketed():
     assert _recon(_bracketed_step("mz", day_time_ns=9)) == pytest.approx(0.1)
 
 
-def test_run_writes_adjusted_leaving_raw_and_reads_depth_adjusted():
-    n = 50
-    depth = np.tile(np.linspace(0, 100, 25), 2)
+RUN_DEPTH = np.tile(np.linspace(0, 100, 25), 2)
+
+
+def _run_sackmann(chla_qc):
+    # two midday profiles whose top 20 m reads low (0.5 instead of 1.0)
+    n = RUN_DEPTH.size
+    depth = RUN_DEPTH
     data = xr.Dataset(
         {
             "PROFILE_NUMBER": ("N_MEASUREMENTS", np.repeat([1.0, 2.0], 25)),
@@ -449,7 +454,7 @@ def test_run_writes_adjusted_leaving_raw_and_reads_depth_adjusted():
             "LATITUDE": ("N_MEASUREMENTS", np.full(n, 50.0)),
             "LONGITUDE": ("N_MEASUREMENTS", np.full(n, -10.0)),
             "CHLA": ("N_MEASUREMENTS", np.where(depth < 20, 0.5, 1.0)),
-            "CHLA_QC": ("N_MEASUREMENTS", np.zeros(n, dtype=np.int8)),
+            "CHLA_QC": ("N_MEASUREMENTS", chla_qc),
             "BBP700": ("N_MEASUREMENTS", np.full(n, 1e-3)),
             "MLD": ("N_MEASUREMENTS", np.full(n, 40.0)),
         }
@@ -461,14 +466,73 @@ def test_run_writes_adjusted_leaving_raw_and_reads_depth_adjusted():
         context={"data": data, "global_parameters": {}},
     )
 
-    out = step.run()["data"]
+    return step.run()["data"]
 
-    assert np.allclose(out["CHLA"].values[depth < 20], 0.5)
+
+def test_run_writes_adjusted_leaving_raw_and_reads_depth_adjusted():
+    out = _run_sackmann(np.zeros(RUN_DEPTH.size, dtype=np.int8))
+
+    assert np.allclose(out["CHLA"].values[RUN_DEPTH < 20], 0.5)
     assert np.allclose(out["CHLA_ADJUSTED"].values, 1.0)
     assert "CHLA_QC" in out and "CHLA_ADJUSTED_QC" in out
+
+
+def test_run_flags_corrected_values_5_on_the_output_only():
+    flags = np.full(RUN_DEPTH.size, 2, dtype=np.int8)
+    flags[[1, 26]] = [3, 4]  # both shallow, so both get corrected
+
+    out = _run_sackmann(flags)
+
+    expected = np.where(RUN_DEPTH < 20, 5, 2)
+    expected[[1, 26]] = [3, 4]  # the merge keeps a worse existing flag
+    assert (out["CHLA_ADJUSTED_QC"].values == expected).all()
+    assert (out["CHLA_QC"].values == flags).all()
 
 
 def test_output_variables_is_adjusted_apply_to():
     assert Quenching.output_variables({"apply_to": "CHLA_FLUORESCENCE"}) == [
         "CHLA_FLUORESCENCE_ADJUSTED"
     ]
+
+
+def test_example_day_profile_is_the_median_change():
+    # Day profiles 1-4 change by 0, 1, 5 and 100; profile 5 is night.
+    change = {1: 0.0, 2: 1.0, 3: 5.0, 4: 100.0, 5: 0.0}
+    profile = np.repeat(list(change), 2)
+    raw = np.ones(profile.size)
+    adjusted = raw + np.repeat(list(change.values()), 2) / 2
+    step = Quenching.__new__(Quenching)
+    step.apply_to = "CHLA"
+    step.output_as = "CHLA_ADJUSTED"
+    step.data_copy = xr.Dataset({"CHLA": ("N_MEASUREMENTS", raw)})
+    step.data = xr.Dataset(
+        {
+            "PROFILE_NUMBER": ("N_MEASUREMENTS", profile.astype(float)),
+            "CHLA_ADJUSTED": ("N_MEASUREMENTS", adjusted),
+        }
+    )
+    step.sun_args = pd.DataFrame(
+        {"TIME": pd.date_range("2024-06-21", periods=5, freq="h")}, index=list(change)
+    )
+    step._sun_cache = {1: 40.0, 2: 40.0, 3: 40.0, 4: 40.0, 5: -20.0}
+    step.day_min_elevation = 0.0
+    step.night_max_elevation = -12.0
+
+    assert step._example_profiles() == (3, 5)
+
+
+def test_reference_mask_keeps_probably_bad_chla_below_the_top_layer():
+    step = Quenching.__new__(Quenching)
+    step.data = xr.Dataset(
+        {
+            "DEPTH": ("N_MEASUREMENTS", np.array([1.0, 3.0, 10.0, 20.0])),
+            "CHLA": ("N_MEASUREMENTS", np.ones(4)),
+            "CHLA_QC": ("N_MEASUREMENTS", np.array([3, 3, 3, 4])),
+        }
+    )
+    step.depth_var = "DEPTH"
+    step.calculation_flag_filter = None
+    step.reference_min_depth = 2.0
+    step.log = lambda *args, **kwargs: None
+
+    assert step._reference_mask(["CHLA"]).tolist() == [False, True, True, False]

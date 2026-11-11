@@ -95,11 +95,14 @@ class stuck_value_qc(BaseQC):
             values = pd.Series(var_data.values)
             run_id = (values != values.shift()).cumsum()
             run_length = values.groupby(run_id).transform("size").to_numpy()
-            stuck_value_mask = np.where(run_length > n_stuck, 4, 1)
+            stuck_value_mask = np.where(run_length > n_stuck, 4, self.pass_flag)
 
             # Insert the flags into the QC column
             nan_mask = np.isnan(self.data[var])
-            self.data[f"{var}_QC"] = (["N_MEASUREMENTS"], np.where(nan_mask, 9, 1))
+            self.data[f"{var}_QC"] = (
+                ["N_MEASUREMENTS"],
+                np.where(nan_mask, 9, self.pass_flag),
+            )
             self.data[f"{var}_QC"][np.where(~nan_mask)] = stuck_value_mask
 
             # Broadcast the QC found for var into variables specified by "also_flag"

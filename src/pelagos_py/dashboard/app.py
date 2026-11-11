@@ -106,6 +106,15 @@ PIPELINE_FIELDS = [
         "the dashboard this behaves like 'skip'). 'skip' moves straight "
         "on to the next step. 'stop' ends the run.",
     },
+    {
+        "name": "pass_flag",
+        "type": "int",
+        "options": [1, 2],
+        "required": False,
+        "default": 1,
+        "description": "Flag automated QC tests give values that pass: 1 (good) or 2 "
+        "(probably good, so only a manual Visual QC check gives 1).",
+    },
 ]
 
 

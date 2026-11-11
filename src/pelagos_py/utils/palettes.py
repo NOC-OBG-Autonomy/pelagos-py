@@ -133,7 +133,7 @@ VARIABLE_PALETTES = {
 # Fixed colours for categorical variables (value -> hex), so every plot of one agrees.
 CATEGORICAL = {
     # Find Profiles phases: unknown, ascent, descent, surfacing, parking, inflection, propelled, transition
-    "SCI_PHASE": {
+    "PHASE_SCI": {
         0: "#9ca3af",
         1: "#22c55e",
         2: "#3b82f6",

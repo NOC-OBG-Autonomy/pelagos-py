@@ -75,7 +75,7 @@ class visual_qc(BaseQC):
                     flag: 3
                     y_variable: TEMP          # drawn on TEMP vs TIME, flags TEMP
                   # only within profile 42
-                  - {x: [0.8, 3], y: [0, 20], flag: 4, x_variable: CHLA, y_variable: PRES, variables: [CHLA], profiles: [42]}
+                  - {x: [0.8, 3], y: [0, 20], flag: 4, x_variable: CHLA, y_variable: DEPTH, variables: [CHLA], profiles: [42]}
                 flag_remaining_good: true     # untouched samples become 1 (good)
           diagnostics: true
     """

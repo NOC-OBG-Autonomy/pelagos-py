@@ -34,6 +34,10 @@ pipeline:
  #   What happens when a step fails. pause (default) waits so an interactive front end
  #   can show the failure plot and let you fix and re-run; run from Python, it stops.
  on_step_fail: pause
+ # [pass_flag]: 1 | 2
+ #   Flag automated QC tests give values that pass. 1 (default) or 2 (probably good), so that
+ #   only a manual Visual QC check marks data good.
+ pass_flag: 2
 
 # All step configs
 # The general structure of a step follows:
@@ -225,6 +229,11 @@ steps:
           #   without flagging DEPTH itself:
           #     variable_ranges: {DEPTH: {3: [0, 5, inside], 2: [0, 5, outside]}}
           #     flag_instead: {DEPTH: [CHLA]}
+          # [reset_flags]:
+          #   Existing flags this test replaces instead of merging with (normally the worst flag wins,
+          #   so a 3 can't become a 2). eg. after the CHLA corrections, re-assess the interim 3 and 5:
+          #     variable_ranges: {CHLA_ADJUSTED: {4: [-0.2, 100, outside], 2: [-0.2, 100, inside]}}
+          #     reset_flags: [3, 5]
           # [diagnostics]:
           #   When the Apply QC step has diagnostics enabled, every flagged variable is plotted
           #   coloured by flag number (no separate 'plot' parameter is needed).
@@ -326,7 +335,8 @@ steps:
           4: 8
           9: 8
         # [calculation_flag_filter]:
-        #   Flags that a step's calculations ignore (defaults to [3, 4, 9]). Unlike flag_filter_settings this does
+        #   Flags that a step's calculations ignore (defaults to [3, 4, 9], or [4, 9] for CHLA variables, which are
+        #   flagged 3 until the final range test). Unlike flag_filter_settings this does
         #   not remove the data: the samples are still corrected, they just don't inform the correction. Eg. Deep
         #   Correction leaves bad values out of the dark value estimate but still subtracts the dark value from
         #   them, and CHLA Quenching won't use them to find the quenching depth. Set to [] to opt out.
@@ -338,7 +348,6 @@ steps:
   - name: "Interpolate Data"
     parameters:
       variables:  # per variable, the QC flags treated as gaps to fill
-        PRES: [3, 4, 9]
         LATITUDE: [3, 4, 9]
         LONGITUDE: [3, 4, 9]
     # [diagnostics]:
@@ -349,7 +358,7 @@ steps:
 # ------------------------------------------------------------------------------------------- Profile Finding -------------------------------------------------------------------------------------------
 
 # Find Profiles (src/pelagos_py/steps/processing/find_profiles.py):
-# Classifies each measurement into an OG1 scientific phase (SCI_PHASE) and derives
+# Classifies each measurement into an OG1 scientific phase (PHASE_SCI) and derives
 # PROFILE_NUMBER, PROFILE_DIRECTION, PROFILE_GRADIENT and CYCLE. All parameters are
 # optional — the defaults shown below work out of the box, so `- name: "Find Profiles"`
 # on its own is a valid step.
@@ -378,7 +387,7 @@ steps:
       min_transect_duration_seconds: 300
     # [diagnostics]:
     #   If true, plots a static two-panel figure: the phase classification (DEPTH-TIME
-    #   coloured by SCI_PHASE) and the derived PROFILE_NUMBER / CYCLE numbering.
+    #   coloured by PHASE_SCI) and the derived PROFILE_NUMBER / CYCLE numbering.
     diagnostics: false
 
 # Apply QC (post-profile): tests that depend on PROFILE_NUMBER must run after "Find Profiles".
@@ -411,6 +420,7 @@ steps:
 # Derives CTD variables using gsw-python (TEOS-10) from PRES, CNDC & TEMP (their _ADJUSTED
 # versions where present). Each derived variable is written as <name>_ADJUSTED, e.g. PSAL_ADJUSTED;
 # one already in the dataset (e.g. PSAL_ADJUSTED from Salinity Adjustment) is skipped with a warning.
+# DEPTH_ADJUSTED is filled (flag 8) on rows without a usable pressure.
   - name: "Derive CTD"
     parameters:
       # [to_derive]:
@@ -505,6 +515,10 @@ steps:
       # [apply_to]:
       #   Name of the variable to apply the correction to.
       apply_to: CHLA
+      # [reference_min_depth]:
+      #   Depth (m) above which samples are corrected but don't inform the references
+      #   (the top few metres are unstable).
+      reference_min_depth: 2.0
       # [bbp_var]:
       #   Backscatter variable used by the backscatter-based methods. Defaults to the
       #   despiked 'BBP700_BASELINE'; falls back through BBP700/BBP532 if absent.

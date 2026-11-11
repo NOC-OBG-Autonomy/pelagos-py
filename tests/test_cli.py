@@ -79,13 +79,3 @@ def test_demo_prints_the_demo_path(monkeypatch, capsys):
     monkeypatch.setattr(cli, "get_demo_file", lambda: "/data/demo_OG1.nc")
     run_cli(monkeypatch, "demo")
     assert capsys.readouterr().out.strip() == "/data/demo_OG1.nc"
-
-
-def test_dashboard_missing_extra_exits_with_message(monkeypatch):
-    def missing_extra():
-        raise ImportError("needs the dashboard extra")
-
-    monkeypatch.setattr(cli.dashboard_app, "run", missing_extra)
-    with pytest.raises(SystemExit) as info:
-        run_cli(monkeypatch, "dashboard")
-    assert info.value.code == "needs the dashboard extra"

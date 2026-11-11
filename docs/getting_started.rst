@@ -104,11 +104,10 @@ The entire pipeline configuration can be exported to a YAML file for reproducibi
 The Dashboard and Command Line
 ------------------------------
 
-The dashboard is a local web page for building, checking and running configs without writing YAML by hand. Install its extra dependencies, then start it:
+The dashboard is a local web page for building, checking and running configs without writing YAML by hand. Start it with:
 
 .. code-block:: bash
 
-   pip install "pelagos-py[dashboard]"
    pelagos-py dashboard
 
 It opens at http://localhost:8791. From there you can:

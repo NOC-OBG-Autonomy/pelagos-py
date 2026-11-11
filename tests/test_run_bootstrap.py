@@ -44,6 +44,12 @@ class FakePipeline:
         self.seen.append((name, context["data"]["X"].values.tolist()))
         return self.behaviour[name](step_config, context)
 
+    def _skip_failed_step(self, fail_mode, label):
+        # imported here so run_bootstrap sets the matplotlib backend first
+        from pelagos_py.pipeline import Pipeline
+
+        return Pipeline._skip_failed_step(self, fail_mode, label)
+
 
 def corrupt_then_fail(step_config, context):
     context["data"]["X"].values[:] += 100
@@ -231,12 +237,10 @@ def test_level_formatter_tags_warnings_but_not_info(bootstrap):
             logger.makeRecord(logger.name, level, "f", 1, msg, None, None)
         )
 
-    assert fmt(logging.INFO, "[Salinity Adjustment] lag 0.3 s").endswith(
-        "Salinity Adjustment   lag 0.3 s"
-    )
-    level, line = fmt(logging.WARNING, "[Salinity Adjustment] no CNDC").split("\t")
+    assert fmt(logging.INFO, "lag 0.3 s").endswith("salinity adjustment   lag 0.3 s")
+    level, line = fmt(logging.WARNING, "no CNDC").split("\t")
     assert level == "__PELAGOS_LEVEL__ WARNING"
-    assert line.endswith("Salinity Adjustment   no CNDC")
+    assert line.endswith("salinity adjustment   no CNDC")
     assert "\x1b" not in line
 
 

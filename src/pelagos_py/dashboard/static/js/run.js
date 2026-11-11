@@ -91,7 +91,7 @@ const Run = {
     return STATE.registry.log_step_width;
   },
 
-  // Long step names are cut so every message starts in the same column; the raw line stays in _raw.
+  // Splits a log line into time, step and message columns; the raw line stays in _raw.
   fillLine(el, line, level = null) {
     el._raw = line;
     el.replaceChildren();
@@ -105,7 +105,7 @@ const Run = {
       time.className = 'log-time';
       step.className = 'log-step';
       time.textContent = m[1] + '  ';
-      step.textContent = (name.length > w ? name.slice(0, w - 1) + '…' : name).padEnd(w) + '  ';
+      step.textContent = name.padEnd(w) + '  ';
       step.title = name;
       el.classList.add('log-row');
       el.append(time, step);

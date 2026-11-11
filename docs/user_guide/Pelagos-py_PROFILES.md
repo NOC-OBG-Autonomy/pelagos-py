@@ -13,7 +13,7 @@ The step adds:
 
 | Variable | Meaning |
 |---|---|
-| `SCI_PHASE` | OG1 phase of each sample (see §2) |
+| `PHASE_SCI` | OG1 phase of each sample (see §2) |
 | `PROFILE_NUMBER` | Number of the ascent or descent the sample belongs to; NaN outside profiles |
 | `PROFILE_DIRECTION` | `1` descent, `-1` ascent, `0` surfacing, parking or propelled, NaN otherwise |
 | `CYCLE` | Dive cycle number, starting at 1 |
@@ -61,7 +61,7 @@ Samples whose pressure is flagged probably bad (`3`), bad (`4`), missing (`9`) o
 
 # 2. OG1 phases
 
-`SCI_PHASE` uses the OceanGliders OG1 phase vocabulary, adapted for the toolbox:
+`PHASE_SCI` uses the OceanGliders OG1 phase vocabulary, adapted for the toolbox:
 
 | Code | Phase | Meaning |
 |---|---|---|

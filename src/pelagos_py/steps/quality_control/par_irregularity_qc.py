@@ -23,6 +23,7 @@ QC tests to identify irregularities in PAR profiles based on La Forgia & Organel
 #### Mandatory imports ####
 from pelagos_py.steps.base_qc import BaseQC, register_qc, flag_cols
 from pelagos_py.utils.processing_utils import profile_indices
+from pelagos_py.utils.qc_handling import prefer_adjusted
 
 #### Custom imports ####
 import matplotlib.pyplot as plt
@@ -71,7 +72,7 @@ def calculate_solar_elevation(latitude, longitude, datetime):
     return solar_position["elevation"].values
 
 
-def qc_par_flagging(pres, par, sun_elev, nei_par=3e-2):
+def qc_par_flagging(pres, par, sun_elev, nei_par=3e-2, good_flag=1):
     """
     Real-time quality control (RT-QC) for PAR profiles
     following La Forgia & Organelli (2025, L&O Methods, 23:526–542).
@@ -134,7 +135,7 @@ def qc_par_flagging(pres, par, sun_elev, nei_par=3e-2):
     pres = np.asarray(pres, dtype=float)
     par = np.asarray(par, dtype=float)
     N = len(par)
-    flags = np.full(N, 1, int)
+    flags = np.full(N, good_flag, int)
 
     # ───────────────────────────────────────────────
     # 1. Preliminary checks
@@ -225,7 +226,7 @@ def qc_par_flagging(pres, par, sun_elev, nei_par=3e-2):
     # ───────────────────────────────────────────────
     if mode == "day":
         if np.isfinite(pa):
-            flags[pres < pa] = 1  # lit region
+            flags[pres < pa] = good_flag  # lit region
 
         # Transition / deep region polynomial fit
         trans_mask = pres >= (pa if np.isfinite(pa) else np.nanmin(pres))
@@ -304,15 +305,18 @@ class par_irregularity_qc(BaseQC):
         "LATITUDE",
         "LONGITUDE",
         "TIME",
-        "PRES",
+        "DEPTH",
         "DOWNWELLING_PAR",
         "PROFILE_NUMBER",
     ]
     qc_outputs = ["DOWNWELLING_PAR_QC"]
 
     def return_qc(self):
-        # Subset the data
-        self.data = self.data[self.required_variables]
+        # DEPTH (filled on every row by Derive CTD), as PRES is only on the CTD's rows
+        self.depth_var = prefer_adjusted("DEPTH", self.data.variables)
+        self.data = self.data[
+            [prefer_adjusted(v, self.data.variables) for v in self.required_variables]
+        ]
 
         # Make an unchecked (0) QC container for PAR QC
         par_qc = np.full(len(self.data["DOWNWELLING_PAR"]), 0)
@@ -335,17 +339,18 @@ class par_irregularity_qc(BaseQC):
 
             # Apply the QC opperation
             profile_element_qc, _, _ = qc_par_flagging(
-                profile["PRES"],
+                profile[self.depth_var],
                 profile["DOWNWELLING_PAR"],
                 solar_elevation,
                 self.noise_equivalent_estimate,
+                good_flag=self.pass_flag,
             )
 
             # Stitch the QC results back into the QC container
             par_qc[idx] = profile_element_qc
 
-        # any remaining flags that are 0 (unchecked) are updated to 1 (good)
-        par_qc[par_qc == 0] = 1
+        # any remaining unchecked (0) flags pass
+        par_qc[par_qc == 0] = self.pass_flag
 
         # Collect the flags
         self.data["DOWNWELLING_PAR_QC"] = (["N_MEASUREMENTS"], par_qc)
@@ -381,7 +386,7 @@ class par_irregularity_qc(BaseQC):
             # Select the profile data
             profile = self.data.where(
                 self.data["PROFILE_NUMBER"] == profile_number, drop=True
-            ).dropna(dim="N_MEASUREMENTS", subset=["DOWNWELLING_PAR", "PRES"])
+            ).dropna(dim="N_MEASUREMENTS", subset=["DOWNWELLING_PAR", self.depth_var])
 
             if len(profile["DOWNWELLING_PAR"]) == 0:
                 ax.legend(
@@ -399,7 +404,7 @@ class par_irregularity_qc(BaseQC):
 
                 ax.plot(
                     plot_data["DOWNWELLING_PAR"],
-                    plot_data["PRES"],
+                    plot_data[self.depth_var],
                     c=flag_cols[flag],
                     ls="",
                     marker="o",
@@ -408,8 +413,8 @@ class par_irregularity_qc(BaseQC):
 
             ax.set(
                 xlabel="PAR",
-                ylabel="PRES",
-                ylim=(np.nanmax(profile["PRES"]), 0),
+                ylabel=self.depth_var,
+                ylim=(np.nanmax(profile[self.depth_var]), 0),
             )
 
             ax.legend(title=f"Prof. {profile_number} flags", loc="upper right")

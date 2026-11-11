@@ -39,7 +39,7 @@ Variables are derived in the order of the table, so later ones can use earlier o
 
 | Parameter | Default | Meaning |
 |---|---|---|
-| `to_derive` | required | List of outputs: any of `DEPTH`, `PSAL`, `ASAL`, `CONS_TEMP`, `DENSITY` |
+| `to_derive` | required | List of outputs: any of `DEPTH`, `PSAL`, `ASAL`, `CONS_TEMP`, `DENSITY`. `DEPTH_ADJUSTED` is filled onto every row by time interpolation (flagged `8` where filled) |
 
 The step needs `TIME`, `LATITUDE`, `LONGITUDE`, `CNDC`, `PRES` and `TEMP` in the dataset, whichever outputs are requested.
 

@@ -48,12 +48,11 @@ variants:
     parameters: {method: swart2015, apply_to: CHLA_ADJUSTED, plot_profiles: [PROFILE]}
     figures: {profile: chla/npq_swart2015.png}
   - step: CHLA Quenching
-    # Thomalla anchors its quenching depth in the top 5 m, which the surface flag
-    # (3) excludes from calculations; let flag 3 through so the method can run.
+    # Thomalla anchors its quenching depth in the top 5 m, so it keeps the default
+    # reference_min_depth (2 m) rather than the 5 m used above.
     parameters:
       method: thomalla2018
       apply_to: CHLA_ADJUSTED
-      qc_handling_settings: {calculation_flag_filter: [4, 9]}
     figures:
       reference: chla/npq_thomalla_night_reference.png
       quenching_depth: chla/npq_thomalla_quenching_depth.png
@@ -63,7 +62,6 @@ variants:
       method: thomalla2018
       night_reference: mz
       apply_to: CHLA_ADJUSTED
-      qc_handling_settings: {calculation_flag_filter: [4, 9]}
     figures:
       reference: chla/npq_mitchell_interpolation.png
       profile: chla/npq_mitchell_profile.png

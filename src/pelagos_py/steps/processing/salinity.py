@@ -263,8 +263,8 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
         self._usable_temp = self.calculation_mask([self.temp_var])
         self._profile_index = profile_indices(self.data["PROFILE_NUMBER"].values)
 
-        self.cndc = self.data[self.cndc_var].values.copy()
-        self.temp = self.data[self.temp_var].values.copy()
+        self.cndc_corrected = self.data[self.cndc_var].values.copy()
+        self.temp_corrected = self.data[self.temp_var].values.copy()
 
         # Correct conductivity-temperature response time misalignment (C-T Lag)
         self.correct_ct_lag()
@@ -305,7 +305,7 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
 
         Notes
         -----
-        Shifts the working copy ``self.cndc``; ``self.data`` is not changed.
+        Shifts the working copy ``self.cndc_corrected``; ``self.data`` is not changed.
         ``self.ct_lag_median`` is stored for the diagnostics figure.
         """
         profile_numbers = np.unique(
@@ -426,7 +426,7 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
         if anchors.sum() < 2:
             self.log(
                 "Fewer than two usable CNDC samples for the CT lag shift "
-                f"(flags {self.calculation_flag_filter} excluded). Skipping."
+                "(flagged samples excluded). Skipping."
             )
             return
 
@@ -439,7 +439,7 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
         )
         shifted_time = data_subset["ELAPSED_TIME[s]"].values + self.ct_lag_median
 
-        self.cndc[valid_data_mask.values] = CNDC_from_TIME(shifted_time)
+        self.cndc_corrected[valid_data_mask.values] = CNDC_from_TIME(shifted_time)
 
     def correct_thermal_lag(self):
         """
@@ -459,13 +459,13 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
 
         Notes
         -----
-        Corrects the working copy ``self.temp``; ``self.data`` is not changed.
+        Corrects the working copy ``self.temp_corrected``; ``self.data`` is not changed.
         """
         from scipy import interpolate
         from scipy.signal import lfilter
 
-        corrected_temp_array = np.full(len(self.temp), np.nan)
-        temp_arr = self.temp
+        corrected_temp_array = np.full(len(self.temp_corrected), np.nan)
+        temp_arr = self.temp_corrected
         time_arr = self.data[self.time_col].values
         profile_numbers = np.unique(
             self.data["PROFILE_NUMBER"].dropna(dim="N_MEASUREMENTS").values
@@ -556,14 +556,22 @@ class AdjustSalinity(BaseStep, QCHandlingMixin):
                     "profile": prof,
                 }
 
-        self.temp = np.where(
+        self.temp_corrected = np.where(
             np.isnan(corrected_temp_array), temp_arr, corrected_temp_array
         )
 
     def write_adjusted_salinity(self):
         # Samples left uncorrected (e.g. reinserted after filter_qc) fall back to their raw values
-        cndc = np.where(np.isnan(self.cndc), self.data[self.cndc_var].values, self.cndc)
-        temp = np.where(np.isnan(self.temp), self.data[self.temp_var].values, self.temp)
+        cndc = np.where(
+            np.isnan(self.cndc_corrected),
+            self.data[self.cndc_var].values,
+            self.cndc_corrected,
+        )
+        temp = np.where(
+            np.isnan(self.temp_corrected),
+            self.data[self.temp_var].values,
+            self.temp_corrected,
+        )
         cndc_factor = cndc_scale_factor(self.data[self.cndc_var].attrs.get("units"))
         psal = gsw.conversions.SP_from_C(
             cndc * cndc_factor, temp, self.data[self.pres_var].values

@@ -21,6 +21,7 @@ pipeline:
   out_directory: examples/data/OG1/
   log_file: complete_processing.log
   on_step_fail: pause  # pause (fix and re-run, or skip), skip, or stop
+  pass_flag: 2  # automated QC marks passing values probably good (2); only Visual QC gives good (1)
 
 # Steps in the pipeline
 # For further details on step parameters, see all_step_configs.yaml
@@ -120,14 +121,14 @@ steps:
 # ===========================================================
 #                      INTERPOLATION
 # ===========================================================
-# Since we are using near-realtime data there are a lot of missing values. Also, since
-# the GPS and science measurement clocks do not sample at the same rate, there are many
-# points that have a CTD measurement but nans for GPS location. Since we need both to
-# process CTD, we need to intepolate to fill in the missing data.
+# Each sensor only fills its own rows, and the position is not logged on every row.
+# The coordinates are the exception to "no interpolated values in the output": the
+# position is filled in time here (flagged 8), and DEPTH by Derive CTD below.
+# Measured variables (PRES, TEMP, CHLA, ...) are never filled; steps needing another
+# sensor's values at their own rows interpolate them internally.
   - name: Interpolate Data
     parameters:
       variables:  # per variable, the QC flags treated as gaps to fill
-        PRES: [3, 4, 9]
         LATITUDE: [3, 4, 9]
         LONGITUDE: [3, 4, 9]
     diagnostics: false # Plot the outcome after interpolation
@@ -135,8 +136,9 @@ steps:
 # ===========================================================
 #                    PROFILE FINDING
 # ===========================================================
-# We now use the derive CTD step to add the DEPTH variable to the dataset as it
-# is needed for profiling.
+# Derive DEPTH first, as profiling and the science steps need it. As the vertical
+# coordinate it is filled on every row (flagged 8 where filled), so every sensor's
+# samples have a depth.
   - name: Derive CTD
     parameters:
       to_derive: [DEPTH]
@@ -169,11 +171,17 @@ steps:
           TEMP: [3, 4, 9]
           PROFILE_NUMBER: [3, 4, 9]
         reconstruction_behaviour: reinsert # The bad data will be added back in after processing
-        flag_mapping: # The data that goes through adjustment will be reflagged as processed (5)
-          0: 5
-          1: 5
-          2: 5
       filter_window_size: 21
+    diagnostics: false
+
+# Range test on the adjusted salinity (Argo global range).
+  - name: Apply QC
+    parameters:
+      qc_settings:
+        range qc:
+          variable_ranges:
+            PSAL_ADJUSTED:
+              4: [2, 41, outside]
     diagnostics: false
 
 # ===========================================================
@@ -191,7 +199,8 @@ steps:
       intercept: 0.0    # PLACEHOLDER - identity, replace with real offset
     diagnostics: false
 
-# Now derive the remaining CTD variables from the calibrated salinity.
+# Now derive the remaining CTD variables from the calibrated TEMP and salinity, after
+# every CTD correction above. Like PSAL_ADJUSTED, they only exist on the CTD's rows.
   - name: Derive CTD
     parameters:
       to_derive: [
@@ -201,18 +210,19 @@ steps:
       ]
     diagnostics: false
 
-# ===========================================================
-#              CTD INTERPOLATION (POST CALIBRATION)
-# ===========================================================
-# Fill out the calibrated CTD variables so every timestamp carries a TEMP, PRES
-# and PSAL_ADJUSTED value. Bad (4), probably-bad (3) and missing (9) points are
-# nan'd out, interpolated over, and reflagged as interpolated (8).
-  - name: Interpolate Data
+# Range tests on the derived CTD variables: Argo's PSAL/TEMP ranges, and a
+# plausible in-situ seawater density (kg/m3).
+  - name: Apply QC
     parameters:
-      variables:  # per variable, the QC flags treated as gaps to fill
-        TEMP: [3, 4, 9]
-        PRES: [3, 4, 9]
-        PSAL_ADJUSTED: [3, 4, 9]
+      qc_settings:
+        range qc:
+          variable_ranges:
+            ASAL_ADJUSTED: # PSAL range scaled to absolute salinity (SA ~ 1.0047 x SP)
+              4: [2, 41.5, outside]
+            CONS_TEMP_ADJUSTED:
+              4: [-2.5, 40, outside]
+            DENSITY_ADJUSTED:
+              4: [1000, 1045, outside]
     diagnostics: false
 
 # ===========================================================
@@ -250,6 +260,17 @@ steps:
       output_as: BBP700
       theta: 124               # Effective optical backscatter scattering angle (degrees)
       xfactor: 1.076           # Chi factor scaling particulate scattering to total backscatter
+    diagnostics: false
+
+# Range test on the converted BBP (Argo global range); slightly negative is noise.
+  - name: Apply QC
+    parameters:
+      qc_settings:
+        range qc:
+          variable_ranges:
+            BBP700:
+              3: [0, 0.1, outside]
+              4: [-2.5e-5, 0.1, outside]
     diagnostics: false
 
 # Large isolated spikes in BBP correspond to individual particles/aggregates.
@@ -295,11 +316,12 @@ steps:
               4: [1, -.inf, inside]
     diagnostics: false
 
-# Geometrically shift the optode phase onto the CTD's dense sampling grid,
-# correcting for the water travel time between the two sensors. GLIDER_PITCH
-# isn't available, so this uses the fixed default lag from Woo & Gourcuff
-# (2023) rather than a per-profile derived one. TEMP is already on the CTD
-# grid (it comes from the CTD, not the optode), so it doesn't need shifting.
+# Geometrically shift the optode phase in time to line it up with the CTD,
+# correcting for the water travel time between the two sensors. The shifted
+# phase stays on the optode's own rows; the steps below interpolate the CTD's
+# TEMP, PSAL and PRES onto those rows internally (never written out).
+# GLIDER_PITCH isn't available, so this uses the fixed default lag from Woo &
+# Gourcuff (2023) rather than a per-profile derived one.
   - name: "Shift Oxygen To CTD"
     parameters:
       shift_vars: ["UNCAL_PHASE_DOXY_PCORR"]
@@ -412,9 +434,10 @@ steps:
   - name: Mixed Layer Depth
     diagnostics: false
 
-# Global range test on the raw CHLA: probably-bad (3) outside 0.14-50, bad (4)
-# outside -0.2-100. Most-severe flag wins on overlap, so e.g. a -0.5 value is 4
-# and a 0.1 value is 3; anything in-band is good (1).
+# Raw CHLA always needs correcting, so it is never flagged good: bad (4) outside the
+# global range (-0.2-100 mg/m3), probably bad (3) everywhere else. CHLA steps only
+# leave out bad (4) and missing (9) samples, so the 3s are still used. The final
+# range test below re-assesses CHLA_ADJUSTED as 2 or 4.
   - name: Apply QC
     parameters:
       qc_settings:
@@ -422,13 +445,8 @@ steps:
           variable_ranges:
             CHLA:
               4: [-0.2, 100, outside]
-    diagnostics: false
-
-# Spike-test CHLA (per-profile MAD-style residual test).
-  - name: Apply QC
-    parameters:
-      qc_settings:
-        spike qc:
+              3: [-0.2, 100, inside]
+        spike qc: # per-profile MAD-style residual test
           variables:
             CHLA: 2
           window_size: 7
@@ -447,27 +465,6 @@ steps:
       depth_threshold: 950     # Only use data below this depth to estimate the dark value
     diagnostics: false         # Plot the computed dark value and corrected profiles
 
-# Flag CHLA by DEPTH rather than by its own value: the top 2 m is unstable, so
-# mark it probably-bad-but-correctable (3) and everything deeper probably-good
-# (2). DEPTH itself is not flagged, and the Argo merge means the 2 can't
-# downgrade a 3/4 from the range or spike tests above. The quenching step below
-# then leaves the top 2 m out of its calculations while still correcting it.
-# Kept at 2 m (not 5): thomalla2018 needs at least one calc-eligible CHLA point
-# within its own 5 m surface-anchor window, so this can't reach/exceed that.
-# The flags go on CHLA_ADJUSTED: Deep Correction has already run, so the
-# quenching step reads CHLA_ADJUSTED and gates on CHLA_ADJUSTED_QC.
-  - name: Apply QC
-    parameters:
-      qc_settings:
-        range qc:
-          variable_ranges:
-            DEPTH:
-              3: [-.inf, 2, inside]
-              2: [-.inf, 2, outside]
-          flag_instead:
-            DEPTH: [CHLA_ADJUSTED]
-    diagnostics: false
-
 # Second, a non-photochemical quenching (NPQ) correction. Near the surface,
 # daylight suppresses fluorescence, so chlorophyll reads artificially low. The
 # thomalla2018 method builds a per-night fluorescence:backscatter ratio profile
@@ -476,19 +473,21 @@ steps:
   - name: CHLA Quenching
     parameters:
       method: thomalla2018
-    diagnostics: false
+      reference_min_depth: 2   # The unstable top 2 m is corrected but doesn't inform the references
+    diagnostics: false         # Corrected values are flagged 5 (value changed)
 
-# Re-run the range test on the corrected CHLA_ADJUSTED, in case the deep and
-# quenching corrections pushed any values out of range.
+# Final global range test on the corrected CHLA_ADJUSTED: probably good (2)
+# inside -0.2-100 mg/m3, bad (4) outside. reset_flags replaces the 3 from the raw
+# CHLA and the 5 from quenching, so CHLA_ADJUSTED_QC ends up 2, 4 or 9.
   - name: Apply QC
     parameters:
       qc_settings:
         range qc:
           variable_ranges:
             CHLA_ADJUSTED:
-              2: [0, 70, inside]
-              3: [0, 50, outside]
-              4: [0, 100, outside]
+              4: [-0.2, 100, outside]
+              2: [-0.2, 100, inside]
+          reset_flags: [3, 5]
     diagnostics: false
 
 # ===========================================================

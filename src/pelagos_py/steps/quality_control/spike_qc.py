@@ -21,7 +21,11 @@ import numpy as np
 import pandas as pd
 from pelagos_py.steps.base_qc import BaseQC, register_qc
 from pelagos_py.utils.processing_utils import profile_indices
-from pelagos_py.utils.qc_handling import propagate_flags, raw_name
+from pelagos_py.utils.qc_handling import (
+    calculation_flags_for,
+    propagate_flags,
+    raw_name,
+)
 
 #### Custom imports ####
 import matplotlib.pyplot as plt
@@ -56,10 +60,6 @@ class spike_qc(BaseQC):
     """
 
     qc_name = "spike qc"
-
-    # Samples already carrying these flags don't inform the rolling median / std
-    # baseline (they'd bias detection); they keep their existing flag.
-    IGNORE_FLAGS = [3, 4, 9]
 
     # Specify if test target variable is user-defined (if True, __init__ has to be redefined)
     dynamic = True
@@ -122,7 +122,7 @@ class spike_qc(BaseQC):
                 # inform the baseline, so prior-bad spikes can't bias detection.
                 usable = ~missing
                 if qc_flags is not None:
-                    usable &= ~np.isin(qc_flags[indices], self.IGNORE_FLAGS)
+                    usable &= ~np.isin(qc_flags[indices], calculation_flags_for(var))
 
                 var_data = profile[usable]
                 if len(var_data) < self.window_size:
@@ -142,12 +142,14 @@ class spike_qc(BaseQC):
                 threshold = np.nanstd(residules) * sensitivity
 
                 # Apply the threshold to residules to get the flags
-                spike_flags = np.where((np.abs(residules) > threshold), 4, 1)
+                spike_flags = np.where(
+                    (np.abs(residules) > threshold), 4, self.pass_flag
+                )
 
                 # NaNs are missing (9); excluded/usable points start good (1).
                 # Excluded points stay 1 so Apply QC's combinatrix keeps their
                 # existing (worse) flag; usable points take their spike result.
-                profile_flags = np.where(missing, 9, 1)
+                profile_flags = np.where(missing, 9, self.pass_flag)
                 profile_flags[usable] = spike_flags
                 spike_qc[indices] = profile_flags
 

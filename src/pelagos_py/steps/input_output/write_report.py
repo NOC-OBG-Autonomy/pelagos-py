@@ -42,6 +42,7 @@ from glidertest import plots as gtplots
 import os
 import platform
 import json
+import re
 import shutil
 import tempfile
 import yaml
@@ -50,7 +51,8 @@ import matplotlib.pyplot as plt
 import xarray as xr
 import numpy as np
 
-from pelagos_py.utils.console import progress_bar
+from pelagos_py.utils.console import _NAME_WIDTH, progress_bar
+from pelagos_py.utils.log_levels import LEVEL_STYLES
 from pelagos_py.utils import fig_spec
 from pelagos_py.utils.qc_handling import adjusted_name
 from pelagos_py.utils.diagnostic_capture import save_figure, wait_for_saves
@@ -70,7 +72,15 @@ CHAR_REPLACEMENTS = {
     "”": '"',
     "‘": "'",
     "’": "'",
+    "…": ".",
 }
+
+
+#   A LogFormatter line: date, time, padded name, optional level tag, message.
+_TAG_RGB = {style.tag: style.rgb for style in LEVEL_STYLES.values()}
+_LOG_LINE = re.compile(
+    rf"^\S+ (\S+)  (.{{{_NAME_WIDTH}}})  (?:({'|'.join(_TAG_RGB)})  )?(.*)$"
+)
 
 
 def sanitize(text) -> str:
@@ -645,21 +655,13 @@ class _ReportPDF(FPDF):
         self.set_fill_color(255, 255, 255)
         self.ln(2)
 
-    #   Terminal palette: dark background with light text; log levels are
-    #   tinted as they would be in a colourised console.
+    #   Terminal palette: dark background with light text.
     _TERMINAL_BG = (24, 24, 27)
     _TERMINAL_FG = (220, 220, 220)
-    _TERMINAL_LEVEL_COLORS = {
-        "DEBUG": (130, 170, 255),
-        "INFO": (180, 220, 180),
-        "WARNING": (240, 200, 110),
-        "ERROR": (240, 130, 130),
-        "CRITICAL": (240, 130, 130),
-    }
 
     def terminal_block(self, lines, font_size: float = 6.5) -> None:
-        #   Render (time, level, location, message) log lines in a dark, mono
-        #   panel tinted by log level, like colourised console output.
+        #   Render (time, name, level tag, message) log lines in a dark, mono
+        #   panel; only the level tag of warnings and errors is coloured.
         if not lines:
             return
         line_h = font_size * 0.62
@@ -667,19 +669,41 @@ class _ReportPDF(FPDF):
         self.set_fill_color(*self._TERMINAL_BG)
         self.set_draw_color(*self._TERMINAL_BG)
 
-        for time_s, level, location, message in lines:
-            text = f"{time_s}  {level:<7} {location}: {message}"
-            color = self._TERMINAL_LEVEL_COLORS.get(level.upper(), self._TERMINAL_FG)
-            self.set_text_color(*color)
-            #   multi_cell fills every wrapped line, so the dark panel stays
-            #   continuous even when a long message spills onto another line.
-            self.multi_cell(
-                0,
+        for time_s, name, tag, message in lines:
+            prefix = sanitize(f"{time_s}  {name}  ")
+            tag_text = f"{tag}  " if tag else ""
+            message = sanitize(message)
+            prefix_w = self.get_string_width(prefix)
+            tag_w = self.get_string_width(tag_text)
+            message_w = self.epw - prefix_w - tag_w
+            height = self.multi_cell(
+                message_w,
                 line_h,
-                sanitize(text),
+                message,
+                dry_run=True,
+                output=MethodReturnValue.HEIGHT,
+            )
+            if self.get_y() + height > self.page_break_trigger:
+                self.add_page()
+            #   One rect per entry (covering wrapped lines), overlapping the next
+            #   slightly so no hairline seam shows between rows.
+            self.rect(self.l_margin, self.get_y(), self.epw, height + 0.3, style="F")
+
+            self.set_text_color(*self._TERMINAL_FG)
+            self.cell(prefix_w, line_h, prefix)
+            if tag:
+                self.set_text_color(*_TAG_RGB[tag])
+                self.set_font("Courier", "B", font_size)
+                self.cell(tag_w, line_h, tag_text)
+                self.set_text_color(*self._TERMINAL_FG)
+                self.set_font("Courier", "", font_size)
+            self.multi_cell(
+                message_w,
+                line_h,
+                message,
                 new_x=XPos.LMARGIN,
                 new_y=YPos.NEXT,
-                fill=True,
+                align="L",
                 border=0,
             )
 
@@ -1131,31 +1155,19 @@ def qc_section(pdf: _ReportPDF, data: xr.Dataset) -> None:
         )
 
 
-def add_log(logfile, pdf: _ReportPDF, ncols: int = 4) -> None:
+def add_log(logfile, pdf: _ReportPDF) -> None:
     #   Add the logfile as a terminal-style block. Requires a log_file set in the
-    #   global pipeline parameters; ncols is the " - " fields per log line.
+    #   global pipeline parameters.
     pdf.add_page()
     pdf.section_heading("Logfile of run")
 
     rows = []
     try:
-        with open(logfile, "r") as f:
+        with open(logfile, encoding="utf-8") as f:
             for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-
-                parts = line.split(" - ", maxsplit=ncols - 1)
-                if len(parts) != ncols:
-                    # malformed or unexpected line, skip
-                    continue
-
-                timestamp, level, location, message = parts
-                #   Remove date for more space for comment
-                timestamp = timestamp.split(" ")[1] if " " in timestamp else timestamp
-                location = location.removeprefix("pelagos_py.")
-
-                rows.append((timestamp, level, location, message))
+                match = _LOG_LINE.match(line.rstrip("\n"))
+                if match:
+                    rows.append(match.groups())
     except FileNotFoundError:
         pdf.body("Logfile not found.")
         return
@@ -1435,9 +1447,10 @@ _CROSS_SECTION_PANELS = (
     },
 )
 
-#   Names tried (in order) for the cross-section's shared time and depth axes.
+#   Names tried (in order) for the cross-section's shared time and depth axes; DEPTH first,
+#   as it is filled on every row while PRES is only on the CTD's.
 _CS_TIME_CANDIDATES = ("TIME", "time")
-_CS_PRES_CANDIDATES = ("PRES", "PRESSURE", "pres", "DEPTH")
+_CS_PRES_CANDIDATES = ("DEPTH", "PRES", "PRESSURE", "pres")
 
 #   Default scatter marker size; BBP uses half this so its surfaced high values
 #   sit cleanly over the rest rather than smearing.
@@ -1970,7 +1983,7 @@ def glidertest_section(
 def cross_section_figure(
     data: xr.Dataset, outdir: str, ext: str = ".png", labels=None
 ) -> str:
-    #   A4-portrait stack of PRES-vs-TIME panels (see _CROSS_SECTION_PANELS), one
+    #   A4-portrait stack of DEPTH-vs-TIME panels (see _CROSS_SECTION_PANELS), one
     #   per variable, sharing the TIME axis, each with a profile strip and
     #   colourbar. Robust percentile colour limits; returns the saved path or None.
     #   ``labels`` limits it to those panels (e.g. ["Temperature"]), each BANNER_H tall.
@@ -1993,6 +2006,13 @@ def cross_section_figure(
     # Same points in every panel.
     idx = fig_spec.thin_idx(n, fig_spec.CAPTURE_MAX_POINTS)
     time, pres = time[idx], pres[idx]
+
+    #   A point with flagged pressure is at the wrong depth, so it's left out of every panel.
+    pres_ok = np.ones(pres.size, dtype=bool)
+    pres_qc_name = f"{pres_name}_QC"
+    if pres_qc_name in data.variables:
+        pres_qc = np.asarray(data[pres_qc_name].values, dtype=float).ravel()[:n][idx]
+        pres_ok = np.isin(pres_qc, _CS_ALLOWED_QC_FLAGS)
 
     #   matplotlib date numbers for the shared X axis (NaT -> NaN, ignored).
     x = mdates.date2num(time)
@@ -2019,6 +2039,7 @@ def cross_section_figure(
         if qc_name in data.variables:
             qc = np.asarray(data[qc_name].values, dtype=float).ravel()[:n][idx]
             c = np.where(np.isin(qc, _CS_ALLOWED_QC_FLAGS), c, np.nan)
+        c = np.where(pres_ok, c, np.nan)
 
         if not np.isfinite(c).any():
             continue
@@ -2055,12 +2076,14 @@ def cross_section_figure(
         )
 
         #   Robust colour limits: percentiles, not raw min/max, so sharp spikes
-        #   don't blow out the scale. Guard the all-NaN case.
+        #   don't blow out the scale. Guard the all-NaN and constant cases.
         if np.isfinite(c).any():
             vmin = np.nanpercentile(c, 0.1)
             vmax = np.nanpercentile(c, 99.9)
         else:
             vmin, vmax = 0.0, 1.0
+        if vmin == vmax:
+            vmin, vmax = vmin - 0.5, vmax + 0.5
 
         if panel.get("special") == "bbp":
             #   Largest-on-top: sort ascending so the highest BBP values draw last
