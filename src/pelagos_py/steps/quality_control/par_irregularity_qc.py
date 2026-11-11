@@ -23,6 +23,7 @@ QC tests to identify irregularities in PAR profiles based on La Forgia & Organel
 #### Mandatory imports ####
 from pelagos_py.steps.base_qc import BaseQC, register_qc, flag_cols
 from pelagos_py.utils.processing_utils import profile_indices
+from pelagos_py.utils.qc_handling import prefer_adjusted
 
 #### Custom imports ####
 import matplotlib.pyplot as plt
@@ -304,15 +305,18 @@ class par_irregularity_qc(BaseQC):
         "LATITUDE",
         "LONGITUDE",
         "TIME",
-        "PRES",
+        "DEPTH",
         "DOWNWELLING_PAR",
         "PROFILE_NUMBER",
     ]
     qc_outputs = ["DOWNWELLING_PAR_QC"]
 
     def return_qc(self):
-        # Subset the data
-        self.data = self.data[self.required_variables]
+        # DEPTH (filled on every row by Derive CTD), as PRES is only on the CTD's rows
+        self.depth_var = prefer_adjusted("DEPTH", self.data.variables)
+        self.data = self.data[
+            [prefer_adjusted(v, self.data.variables) for v in self.required_variables]
+        ]
 
         # Make an unchecked (0) QC container for PAR QC
         par_qc = np.full(len(self.data["DOWNWELLING_PAR"]), 0)
@@ -335,7 +339,7 @@ class par_irregularity_qc(BaseQC):
 
             # Apply the QC opperation
             profile_element_qc, _, _ = qc_par_flagging(
-                profile["PRES"],
+                profile[self.depth_var],
                 profile["DOWNWELLING_PAR"],
                 solar_elevation,
                 self.noise_equivalent_estimate,
@@ -381,7 +385,7 @@ class par_irregularity_qc(BaseQC):
             # Select the profile data
             profile = self.data.where(
                 self.data["PROFILE_NUMBER"] == profile_number, drop=True
-            ).dropna(dim="N_MEASUREMENTS", subset=["DOWNWELLING_PAR", "PRES"])
+            ).dropna(dim="N_MEASUREMENTS", subset=["DOWNWELLING_PAR", self.depth_var])
 
             if len(profile["DOWNWELLING_PAR"]) == 0:
                 ax.legend(
@@ -399,7 +403,7 @@ class par_irregularity_qc(BaseQC):
 
                 ax.plot(
                     plot_data["DOWNWELLING_PAR"],
-                    plot_data["PRES"],
+                    plot_data[self.depth_var],
                     c=flag_cols[flag],
                     ls="",
                     marker="o",
@@ -408,8 +412,8 @@ class par_irregularity_qc(BaseQC):
 
             ax.set(
                 xlabel="PAR",
-                ylabel="PRES",
-                ylim=(np.nanmax(profile["PRES"]), 0),
+                ylabel=self.depth_var,
+                ylim=(np.nanmax(profile[self.depth_var]), 0),
             )
 
             ax.legend(title=f"Prof. {profile_number} flags", loc="upper right")

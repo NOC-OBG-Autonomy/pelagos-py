@@ -114,6 +114,7 @@ def test_validator_flags_qc_var_produced_by_later_step():
 def test_validator_passes_qc_var_in_correct_order():
     steps = [
         {"name": "Load OG1", "parameters": {"file_path": "x.nc"}},
+        {"name": "Derive CTD", "parameters": {}},
         {"name": "Find Profiles", "parameters": {}},
         {
             "name": "Apply QC",

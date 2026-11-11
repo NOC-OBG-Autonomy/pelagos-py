@@ -558,7 +558,12 @@ def check_pipeline_variables(steps_list, logger, available_vars=None):
                     configured, _ = _qc_test_io(qc_class, qc_params)
                     qc_params = prefer_adjusted(qc_params, available_vars)
                     qc_required, qc_outputs = _qc_test_io(qc_class, qc_params)
-                    qc_missing = [v for v in qc_required if v not in available_vars]
+                    # static names like DEPTH count as present through their _ADJUSTED version
+                    qc_missing = [
+                        v
+                        for v in qc_required
+                        if prefer_adjusted(v, available_vars) not in available_vars
+                    ]
                     if qc_missing:
                         _raise_missing_variables(
                             logger,
