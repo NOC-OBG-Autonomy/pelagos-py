@@ -448,9 +448,9 @@ steps:
   - name: Mixed Layer Depth
     diagnostics: false
 
-# Global range test on the raw CHLA: probably-bad (3) outside 0.14-50, bad (4)
-# outside -0.2-100. Most-severe flag wins on overlap, so e.g. a -0.5 value is 4
-# and a 0.1 value is 3; anything in-band is good (1).
+# CHLA flags end up only 2 (probably good) or 4 (bad), never 1: raw CHLA always
+# needs correcting. Raw CHLA_QC stays 3/4; CHLA_ADJUSTED_QC is re-assessed at the end.
+# Global range test on the raw CHLA: bad (4) outside -0.2-100 mg/m3.
   - name: Apply QC
     parameters:
       qc_settings:
@@ -460,7 +460,9 @@ steps:
               4: [-0.2, 100, outside]
     diagnostics: false
 
-# Spike-test CHLA (per-profile MAD-style residual test).
+# Spike-test CHLA (per-profile MAD-style residual test), then mark everything
+# else probably bad (3) as it still needs correcting. Both read the flags from
+# before this step, so the spike test still sees the in-range values as usable.
   - name: Apply QC
     parameters:
       qc_settings:
@@ -469,6 +471,10 @@ steps:
             CHLA: 2
           window_size: 7
           plot: [CHLA]
+        range qc:
+          variable_ranges:
+            CHLA:
+              3: [-0.2, 100, inside]
     diagnostics: false
 
 # Chlorophyll fluorescence needs two corrections. First, a deep (dark-offset)
@@ -481,13 +487,16 @@ steps:
       apply_to: CHLA           # Variable to correct
       dark_value: null         # null -> compute the dark offset from the data
       depth_threshold: 950     # Only use data below this depth to estimate the dark value
+      qc_handling_settings:
+        calculation_flag_filter: [4, 9] # CHLA is all 3 (needs correcting) here, so only skip bad/missing
     diagnostics: false         # Plot the computed dark value and corrected profiles
 
 # Flag CHLA by DEPTH rather than by its own value: the top 2 m is unstable, so
 # mark it probably-bad-but-correctable (3) and everything deeper probably-good
-# (2). DEPTH itself is not flagged, and the Argo merge means the 2 can't
-# downgrade a 3/4 from the range or spike tests above. The quenching step below
-# then leaves the top 2 m out of its calculations while still correcting it.
+# (2). DEPTH itself is not flagged. reset_flags lets the 2 replace the 3
+# CHLA_ADJUSTED inherited from CHLA; 4s from the tests above stay. The quenching
+# step below then leaves the top 2 m out of its calculations while still
+# correcting it.
 # Kept at 2 m (not 5): thomalla2018 needs at least one calc-eligible CHLA point
 # within its own 5 m surface-anchor window, so this can't reach/exceed that.
 # The flags go on CHLA_ADJUSTED: Deep Correction has already run, so the
@@ -502,6 +511,7 @@ steps:
               2: [-.inf, 2, outside]
           flag_instead:
             DEPTH: [CHLA_ADJUSTED]
+          reset_flags: [3]
     diagnostics: false
 
 # Second, a non-photochemical quenching (NPQ) correction. Near the surface,
@@ -512,19 +522,20 @@ steps:
   - name: CHLA Quenching
     parameters:
       method: thomalla2018
-    diagnostics: false
+    diagnostics: false         # Corrected values are flagged 5 (value changed)
 
-# Re-run the range test on the corrected CHLA_ADJUSTED, in case the deep and
-# quenching corrections pushed any values out of range.
+# Final global range test on the corrected CHLA_ADJUSTED: probably good (2)
+# inside -0.2-100 mg/m3, bad (4) outside. reset_flags replaces the interim 3
+# (top 2 m) and 5 (quench-corrected), so CHLA_ADJUSTED_QC ends up 2, 4 or 9.
   - name: Apply QC
     parameters:
       qc_settings:
         range qc:
           variable_ranges:
             CHLA_ADJUSTED:
-              2: [0, 70, inside]
-              3: [0, 50, outside]
-              4: [0, 100, outside]
+              4: [-0.2, 100, outside]
+              2: [-0.2, 100, inside]
+          reset_flags: [3, 5]
     diagnostics: false
 
 # ===========================================================
