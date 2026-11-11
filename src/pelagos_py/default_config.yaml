@@ -312,11 +312,12 @@ steps:
               4: [1, -.inf, inside]
     diagnostics: false
 
-# Geometrically shift the optode phase onto the CTD's dense sampling grid,
-# correcting for the water travel time between the two sensors. GLIDER_PITCH
-# isn't available, so this uses the fixed default lag from Woo & Gourcuff
-# (2023) rather than a per-profile derived one. TEMP is already on the CTD
-# grid (it comes from the CTD, not the optode), so it doesn't need shifting.
+# Geometrically shift the optode phase in time to line it up with the CTD,
+# correcting for the water travel time between the two sensors. The shifted
+# phase stays on the optode's own rows; the steps below interpolate the CTD's
+# TEMP, PSAL and PRES onto those rows internally (never written out).
+# GLIDER_PITCH isn't available, so this uses the fixed default lag from Woo &
+# Gourcuff (2023) rather than a per-profile derived one.
   - name: "Shift Oxygen To CTD"
     parameters:
       shift_vars: ["UNCAL_PHASE_DOXY_PCORR"]
