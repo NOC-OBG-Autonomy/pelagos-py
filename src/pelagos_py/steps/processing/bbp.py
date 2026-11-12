@@ -24,7 +24,6 @@ from pelagos_py.utils.processing_utils import remove_outliers
 #### Custom imports ####
 import re
 import numpy as np
-import glidertools as gt
 import pandas as pd
 from pelagos_py.utils import fig_spec
 
@@ -95,10 +94,8 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
         temp, _ = self.values_at_rows_of("TEMP", self.beta_var)
         psal, _ = self.values_at_rows_of("PSAL", self.beta_var)
 
-        # Particulate only, as BGC-Argo (Schmechtig et al.); gt's flo_bback_total adds seawater back in.
-        beta_sw, _ = gt.flo_functions.flo_zhang_scatter_coeffs(
-            temp, psal, self.theta, 700
-        )
+        # Particulate only, as BGC-Argo (Schmechtig et al.): the seawater term is subtracted.
+        beta_sw = seawater_beta(temp, psal, self.theta, 700)
         bbp_corrected = 2 * np.pi * self.xfactor * (self.data[self.beta_var] - beta_sw)
 
         # Stitch back into the data
@@ -190,6 +187,92 @@ class BBPFromBeta(BaseStep, QCHandlingMixin):
         fig_spec.style_axes(ax, ylabel="value")
         fig_spec.finish(fig, f"{self.beta_var} vs {self.output_as}")
         return fig
+
+
+def seawater_beta(temp, psal, theta, wavelength, delta=0.039):
+    """Volume scattering function of pure seawater (m-1 sr-1) at angle ``theta`` (degrees).
+
+    Zhang, Hu & He (2009), Optics Express 17(7), doi:10.1364/OE.17.005698; the same
+    model as glidertools' ``flo_zhang_scatter_coeffs``.
+    """
+    t, s = np.asarray(temp, dtype=float), np.asarray(psal, dtype=float)
+    avogadro = 6.0221417930e23
+    boltzmann = 1.3806503e-23
+    water_molar_mass = 0.018  # kg/mol
+
+    # refractive index of air (Ciddor 1996) and seawater (Quan & Fry 1995)
+    inv_um2 = 1 / (wavelength / 1e3) ** 2
+    n_air = 1 + (5792105 / (238.0185 - inv_um2) + 167917 / (57.362 - inv_um2)) / 1e8
+    n_sw = n_air * (
+        1.31405
+        + (1.779e-4 - 1.05e-6 * t + 1.6e-8 * t**2) * s
+        - 2.02e-6 * t**2
+        + (15.868 + 0.01155 * s - 0.00423 * t) / wavelength
+        - 4382 / wavelength**2
+        + 1.1455e6 / wavelength**3
+    )
+    dn_ds = n_air * (1.779e-4 - 1.05e-6 * t + 1.6e-8 * t**2 + 0.01155 / wavelength)
+
+    # isothermal compressibility (Pa-1) from the secant bulk modulus (Millero et al. 1980)
+    bulk_water = (
+        19652.21
+        + 148.4206 * t
+        - 2.327105 * t**2
+        + 1.360477e-2 * t**3
+        - 5.155288e-5 * t**4
+    )
+    bulk = (
+        bulk_water
+        + (54.6746 - 0.603459 * t + 1.09987e-2 * t**2 - 6.167e-5 * t**3) * s
+        + (7.944e-2 + 1.6483e-2 * t - 5.3009e-4 * t**2) * s**1.5
+    )
+    compressibility = 1e-5 / bulk
+
+    # surface density (UNESCO 1981)
+    rho_water = (
+        999.842594
+        + 6.793952e-2 * t
+        - 9.09529e-3 * t**2
+        + 1.001685e-4 * t**3
+        - 1.120083e-6 * t**4
+        + 6.536332e-9 * t**5
+    )
+    rho = (
+        rho_water
+        + (
+            8.24493e-1
+            - 4.0899e-3 * t
+            + 7.6438e-5 * t**2
+            - 8.2467e-7 * t**3
+            + 5.3875e-9 * t**4
+        )
+        * s
+        + (-5.72466e-3 + 1.0227e-4 * t - 1.6546e-6 * t**2) * s**1.5
+        + 4.8314e-4 * s**2
+    )
+
+    # d ln(water activity) / dS (Millero & Leung 1976)
+    a0 = -5.58651e-4 + 2.40452e-7 * t - 3.12165e-9 * t**2 + 2.40808e-11 * t**3
+    a1 = 1.79613e-5 - 9.9422e-8 * t + 2.08919e-9 * t**2 - 1.39872e-11 * t**3
+    a2 = -2.31065e-6 - 1.37674e-9 * t - 1.93316e-11 * t**2
+    dlnaw_ds = a0 + 1.5 * a1 * s**0.5 + 2 * a2 * s
+
+    # scattering at 90 degrees from density and concentration fluctuations
+    density_term = (n_sw**2 - 1) * (
+        1 + 2 / 3 * (n_sw**2 + 2) * (n_sw / 3 - 1 / (3 * n_sw)) ** 2
+    )
+    depolarisation = (6 + 6 * delta) / (6 - 7 * delta)
+    lambda4 = (wavelength * 1e-9) ** -4
+    thermal = boltzmann * (t + 273.15) * compressibility
+    beta90_density = np.pi**2 / 2 * lambda4 * thermal * density_term**2 * depolarisation
+    concentration = s * water_molar_mass * dn_ds**2 / rho / -dlnaw_ds / avogadro
+    beta90_concentration = (
+        2 * np.pi**2 * lambda4 * n_sw**2 * concentration * depolarisation
+    )
+    beta90 = beta90_density + beta90_concentration
+
+    angle = np.radians(theta)
+    return beta90 * (1 + (1 - delta) / (1 + delta) * np.cos(angle) ** 2)
 
 
 def _rolling(arr, n, name):

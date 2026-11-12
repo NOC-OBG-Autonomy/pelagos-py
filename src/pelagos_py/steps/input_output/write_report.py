@@ -37,6 +37,7 @@ from fpdf.enums import (
     TableCellStyle,
 )
 from fpdf.fonts import FontFace
+import contextlib
 from datetime import datetime, timezone
 from glidertest import plots as gtplots
 import os
@@ -1701,6 +1702,17 @@ def make_plots(pdf: _ReportPDF, figures: list) -> None:
             pdf.image_full(hist_img, aspect=3.2 / 8)
 
 
+@contextlib.contextmanager
+def _quiet_glidertest():
+    # glidertest calls plt.show() itself; under report capture that saves every figure a second time
+    show = plt.show
+    plt.show = lambda *args, **kwargs: None
+    try:
+        yield
+    finally:
+        plt.show = show
+
+
 def glidertest_section(
     pdf: _ReportPDF, data: xr.Dataset, outdir: str, log=print, log_warn=print
 ) -> None:
@@ -1774,7 +1786,7 @@ def glidertest_section(
 
         #   TODO: Pull these out as a config option.
         for var in ["TEMP", "CNDC", "DOXY"]:
-            fig, __ = gtplots.plot_updown_bias(data, var=var)
+            fig, __ = gtplots.plot_updown_bias(data, variable=var)
             fig_name = os.path.join(outdir, f"{var}_updown.png")
             fig.savefig(fig_name)
             plt.close(fig)
@@ -1806,7 +1818,7 @@ def glidertest_section(
         pdf.section_heading("Glidertest Plots: Day/Night")
         for var in ["CHLA", "CDOM", "DPAR", "DOXY"]:  #   TODO: Pull these out into yaml
             if var in data.data_vars:
-                fig, __ = gtplots.plot_daynight_avg(ds=data, var=var)
+                fig, __ = gtplots.plot_daynight_avg(ds=data, variable=var)
                 fig_name = os.path.join(outdir, f"daynight_avg_{var}.png")
                 fig.savefig(fig_name)
                 plt.close(fig)
@@ -1818,7 +1830,7 @@ def glidertest_section(
     #   Chlorophyll quenching
     try:
         if "CHLA" in data.data_vars:
-            fig, __ = gtplots.plot_quench_assess(ds=data, sel_var="CHLA")
+            fig, __ = gtplots.plot_quench_assess(ds=data, variable="CHLA")
             fig_name = os.path.join(outdir, "chla_quench_assess.png")
             fig.savefig(fig_name)
             plt.close(fig)
@@ -1841,7 +1853,7 @@ def glidertest_section(
         pdf.section_heading("Glidertest Plots: Temporal Drift by Variable")
 
         for var in ["CNDC", "PSAL", "DOXY"]:
-            fig, __ = gtplots.check_temporal_drift(ds=data, var=var)
+            fig, __ = gtplots.check_temporal_drift(ds=data, variable=var)
             fig_name = os.path.join(outdir, f"{var}_temporal_drift_check.png")
             fig.savefig(fig_name)
             plt.close(fig)
@@ -1918,7 +1930,7 @@ def glidertest_section(
             "DOXY",
         ]:  #   TODO: Pull these out into yaml
             if var in data.data_vars:
-                fig, __ = gtplots.plot_hysteresis(ds=data, var=var)
+                fig, __ = gtplots.plot_hysteresis(ds=data, variable=var)
                 fig_name = os.path.join(outdir, f"hysteresis_{var}.png")
                 fig.savefig(fig_name)
                 plt.close(fig)
@@ -1938,12 +1950,14 @@ def glidertest_section(
         ]:  #   TODO: Pull these out into yaml
             if var in data.data_vars:
                 #   Just using the "bad" bounds, extracted from config stashed in QC variable
-                params = json.loads(data[var + "_QC"].attrs["range_qc_params"])[
+                ranges = json.loads(data[var + "_QC"].attrs["range_qc_params"])[
                     "variable_ranges"
-                ][var]["4"]
-                min_val, max_val = params[0:2]
+                ]
+                # var may hold the _ADJUSTED values, whose range test is keyed by that name
+                bounds = ranges.get(var) or ranges[var + "_ADJUSTED"]
+                min_val, max_val = bounds["4"][0:2]
                 fig, __ = gtplots.plot_global_range(
-                    ds=data, var=var, min_val=min_val, max_val=max_val
+                    ds=data, variable=var, min_val=min_val, max_val=max_val
                 )
                 fig_name = os.path.join(outdir, f"global_range_{var}.png")
                 fig.savefig(fig_name)
@@ -2466,9 +2480,10 @@ class WriteDataReport(BaseStep):
 
             if self.parameters.get("show_glidertest", True):
                 self.log("Generating figures from glidertest.")
-                glidertest_section(
-                    pdf, data, fig_dir, log=self.log, log_warn=self.log_warn
-                )
+                with _quiet_glidertest():
+                    glidertest_section(
+                        pdf, data, fig_dir, log=self.log, log_warn=self.log_warn
+                    )
 
             if self.parameters.get("show_logs", True):
                 log_path = os.path.join(

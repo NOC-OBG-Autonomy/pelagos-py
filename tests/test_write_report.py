@@ -436,3 +436,38 @@ def test_glidertest_section_uses_adjusted_names(tmp_path):
     assert list(shown["PSAL"].values) == [35.0] * n
     assert "PSAL_QC" in shown
     assert "PSAL" not in data
+
+
+def test_glidertest_global_range_reads_adjusted_bounds(tmp_path):
+    n = 5
+    ranges = {"variable_ranges": {"DOXY_ADJUSTED": {"4": [0, 500]}}}
+    qc = xr.DataArray(np.ones(n, dtype=np.int8), dims="N_MEASUREMENTS")
+    qc.attrs["range_qc_params"] = json.dumps(ranges)
+    data = xr.Dataset(
+        {
+            "TIME": ("N_MEASUREMENTS", np.arange(n).astype("datetime64[s]")),
+            "DOXY_ADJUSTED": (
+                "N_MEASUREMENTS",
+                np.full(n, 250.0),
+                {"units": "umol/kg"},
+            ),
+            "DOXY_ADJUSTED_QC": qc,
+        }
+    )
+    with patch.object(wrp, "gtplots") as gtplots:
+        gtplots.plot_global_range.return_value = (MagicMock(), None)
+        wrp.glidertest_section(
+            MagicMock(), data, f"{tmp_path}/", log=MagicMock(), log_warn=MagicMock()
+        )
+
+    call = gtplots.plot_global_range.call_args.kwargs
+    assert (call["variable"], call["min_val"], call["max_val"]) == ("DOXY", 0, 500)
+
+
+def test_quiet_glidertest_blocks_show_until_exit():
+    calls = []
+    with patch.object(wrp.plt, "show", lambda *args, **kwargs: calls.append(1)):
+        with wrp._quiet_glidertest():
+            wrp.plt.show()
+        wrp.plt.show()
+    assert calls == [1]
