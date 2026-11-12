@@ -101,16 +101,19 @@ def test_reads_adjusted_inputs_when_only_they_exist():
     assert "DEPTH" not in out and "PSAL" not in out
 
 
-def _seawater_beta(temp=10.0, sal=35.0, theta=124.0):
-    import glidertools as gt
+# glidertools' flo_zhang_scatter_coeffs(10, 35, 124, 700), the implementation this replaces
+SEAWATER_BETA = 5.008667149842519e-05
 
-    beta_sw, _ = gt.flo_functions.flo_zhang_scatter_coeffs(temp, sal, theta, 700)
-    return float(beta_sw)
+
+def test_seawater_beta_matches_glidertools():
+    assert bbp.seawater_beta(10.0, 35.0, 124.0, 700) == pytest.approx(
+        SEAWATER_BETA, rel=1e-12
+    )
 
 
 def test_pure_seawater_beta_gives_zero_bbp():
     ctx = make_beta_context()
-    ctx["data"]["BBP700"].values[:] = _seawater_beta()
+    ctx["data"]["BBP700"].values[:] = SEAWATER_BETA
     out = make_beta_step(ctx).run()["data"]
     assert out["BBP700_OUT"].values == pytest.approx(0.0, abs=1e-9)
 
@@ -121,7 +124,7 @@ def test_bbp_is_particulate_definition():
     ctx = make_beta_context()
     ctx["data"]["BBP700"].values[:] = beta
     out = make_beta_step(ctx).run()["data"]
-    expected = 2 * np.pi * 1.076 * (beta - _seawater_beta())
+    expected = 2 * np.pi * 1.076 * (beta - SEAWATER_BETA)
     assert out["BBP700_OUT"].values == pytest.approx(expected, rel=1e-9)
 
 

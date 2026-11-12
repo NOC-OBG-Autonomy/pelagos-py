@@ -47,7 +47,6 @@ dependencies:
 
   # Pypi only
   - pip:
-    - glidertools
     - fpdf2
     - compliance-checker
     - cc-plugin-ncei

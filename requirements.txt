@@ -13,7 +13,6 @@ requests
 shapely
 pvlib
 tqdm
-glidertools
 ipykernel
 pyarrow
 fpdf2
