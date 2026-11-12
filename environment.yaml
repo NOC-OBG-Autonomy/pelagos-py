@@ -3,7 +3,7 @@ channels:
   - conda-forge
 dependencies:
   # Core environment (matches requirements.txt)
-  - python
+  - python>=3.12
   - pip
   - numpy
   - pandas
