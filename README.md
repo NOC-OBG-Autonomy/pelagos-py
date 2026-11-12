@@ -63,4 +63,10 @@ pelagos-py demo                   # downloads the demo file and prints its path
 
 [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0)
 
+## Try it without installing
+
+You can try out pelagos-py without installing it through MyBinder. Click the "Launch Binder" button below. 
+
+[![Try it in MyBinder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/NOC-OBG-Autonomy/pelagos-py/mybinder)
+
 Copyright 2025-2026 The National Oceanography Centre and contributors.
