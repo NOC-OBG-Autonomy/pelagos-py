@@ -37,6 +37,7 @@ from fpdf.enums import (
     TableCellStyle,
 )
 from fpdf.fonts import FontFace
+import contextlib
 from datetime import datetime, timezone
 from glidertest import plots as gtplots
 import os
@@ -1701,6 +1702,17 @@ def make_plots(pdf: _ReportPDF, figures: list) -> None:
             pdf.image_full(hist_img, aspect=3.2 / 8)
 
 
+@contextlib.contextmanager
+def _quiet_glidertest():
+    # glidertest calls plt.show() itself; under report capture that saves every figure a second time
+    show = plt.show
+    plt.show = lambda *args, **kwargs: None
+    try:
+        yield
+    finally:
+        plt.show = show
+
+
 def glidertest_section(
     pdf: _ReportPDF, data: xr.Dataset, outdir: str, log=print, log_warn=print
 ) -> None:
@@ -2468,9 +2480,10 @@ class WriteDataReport(BaseStep):
 
             if self.parameters.get("show_glidertest", True):
                 self.log("Generating figures from glidertest.")
-                glidertest_section(
-                    pdf, data, fig_dir, log=self.log, log_warn=self.log_warn
-                )
+                with _quiet_glidertest():
+                    glidertest_section(
+                        pdf, data, fig_dir, log=self.log, log_warn=self.log_warn
+                    )
 
             if self.parameters.get("show_logs", True):
                 log_path = os.path.join(

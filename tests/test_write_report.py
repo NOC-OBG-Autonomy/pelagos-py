@@ -462,3 +462,12 @@ def test_glidertest_global_range_reads_adjusted_bounds(tmp_path):
 
     call = gtplots.plot_global_range.call_args.kwargs
     assert (call["variable"], call["min_val"], call["max_val"]) == ("DOXY", 0, 500)
+
+
+def test_quiet_glidertest_blocks_show_until_exit():
+    calls = []
+    with patch.object(wrp.plt, "show", lambda *args, **kwargs: calls.append(1)):
+        with wrp._quiet_glidertest():
+            wrp.plt.show()
+        wrp.plt.show()
+    assert calls == [1]
