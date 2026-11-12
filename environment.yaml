@@ -24,7 +24,7 @@ dependencies:
   - cartopy
   - pyyaml
   - psutil>=5.9
-  - glidertest
+  - glidertest>=1.0.1
 
   # Dashboard web UI
   - fastapi>=0.110

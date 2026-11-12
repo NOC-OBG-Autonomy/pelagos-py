@@ -1774,7 +1774,7 @@ def glidertest_section(
 
         #   TODO: Pull these out as a config option.
         for var in ["TEMP", "CNDC", "DOXY"]:
-            fig, __ = gtplots.plot_updown_bias(data, var=var)
+            fig, __ = gtplots.plot_updown_bias(data, variable=var)
             fig_name = os.path.join(outdir, f"{var}_updown.png")
             fig.savefig(fig_name)
             plt.close(fig)
@@ -1806,7 +1806,7 @@ def glidertest_section(
         pdf.section_heading("Glidertest Plots: Day/Night")
         for var in ["CHLA", "CDOM", "DPAR", "DOXY"]:  #   TODO: Pull these out into yaml
             if var in data.data_vars:
-                fig, __ = gtplots.plot_daynight_avg(ds=data, var=var)
+                fig, __ = gtplots.plot_daynight_avg(ds=data, variable=var)
                 fig_name = os.path.join(outdir, f"daynight_avg_{var}.png")
                 fig.savefig(fig_name)
                 plt.close(fig)
@@ -1818,7 +1818,7 @@ def glidertest_section(
     #   Chlorophyll quenching
     try:
         if "CHLA" in data.data_vars:
-            fig, __ = gtplots.plot_quench_assess(ds=data, sel_var="CHLA")
+            fig, __ = gtplots.plot_quench_assess(ds=data, variable="CHLA")
             fig_name = os.path.join(outdir, "chla_quench_assess.png")
             fig.savefig(fig_name)
             plt.close(fig)
@@ -1841,7 +1841,7 @@ def glidertest_section(
         pdf.section_heading("Glidertest Plots: Temporal Drift by Variable")
 
         for var in ["CNDC", "PSAL", "DOXY"]:
-            fig, __ = gtplots.check_temporal_drift(ds=data, var=var)
+            fig, __ = gtplots.check_temporal_drift(ds=data, variable=var)
             fig_name = os.path.join(outdir, f"{var}_temporal_drift_check.png")
             fig.savefig(fig_name)
             plt.close(fig)
@@ -1918,7 +1918,7 @@ def glidertest_section(
             "DOXY",
         ]:  #   TODO: Pull these out into yaml
             if var in data.data_vars:
-                fig, __ = gtplots.plot_hysteresis(ds=data, var=var)
+                fig, __ = gtplots.plot_hysteresis(ds=data, variable=var)
                 fig_name = os.path.join(outdir, f"hysteresis_{var}.png")
                 fig.savefig(fig_name)
                 plt.close(fig)
