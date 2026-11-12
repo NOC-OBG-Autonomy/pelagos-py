@@ -1938,12 +1938,14 @@ def glidertest_section(
         ]:  #   TODO: Pull these out into yaml
             if var in data.data_vars:
                 #   Just using the "bad" bounds, extracted from config stashed in QC variable
-                params = json.loads(data[var + "_QC"].attrs["range_qc_params"])[
+                ranges = json.loads(data[var + "_QC"].attrs["range_qc_params"])[
                     "variable_ranges"
-                ][var]["4"]
-                min_val, max_val = params[0:2]
+                ]
+                # var may hold the _ADJUSTED values, whose range test is keyed by that name
+                bounds = ranges.get(var) or ranges[var + "_ADJUSTED"]
+                min_val, max_val = bounds["4"][0:2]
                 fig, __ = gtplots.plot_global_range(
-                    ds=data, var=var, min_val=min_val, max_val=max_val
+                    ds=data, variable=var, min_val=min_val, max_val=max_val
                 )
                 fig_name = os.path.join(outdir, f"global_range_{var}.png")
                 fig.savefig(fig_name)
