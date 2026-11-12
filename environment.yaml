@@ -5,24 +5,24 @@ dependencies:
   # Core environment (matches requirements.txt)
   - python>=3.12
   - pip
-  - numpy
-  - pandas
-  - scipy
-  - xarray
-  - netcdf4
-  - h5py
-  - h5netcdf
-  - gsw
-  - geopy
-  - scikit-learn
-  - matplotlib=3.11.0
-  - requests
-  - shapely
-  - pvlib
-  - tqdm
-  - pyarrow
-  - cartopy
-  - pyyaml
+  - numpy>=2.4
+  - pandas>=3.0
+  - scipy>=1.17
+  - xarray>=2026.4
+  - netcdf4>=1.7
+  - h5py>=3.16
+  - h5netcdf>=1.8
+  - gsw>=3.6
+  - geopy>=2.4
+  - scikit-learn>=1.8
+  - matplotlib>=3.11
+  - requests>=2.33
+  - shapely>=2.1
+  - pvlib>=0.15
+  - tqdm>=4.67
+  - pyarrow>=26.0
+  - cartopy>=0.25
+  - pyyaml>=6.0
   - psutil>=5.9
   - glidertest>=1.0.1
 
@@ -47,10 +47,10 @@ dependencies:
 
   # Pypi only
   - pip:
-    - fpdf2
-    - compliance-checker
-    - cc-plugin-ncei
-    - cc-plugin-og
+    - fpdf2>=2.8
+    - compliance-checker>=6.0
+    - cc-plugin-ncei>=2.0
+    - cc-plugin-og>=0.1
     - autoapi
     - sphinx_copybutton
     - sphinx_last_updated_by_git
