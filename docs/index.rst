@@ -10,7 +10,16 @@ processing method can be shared and reproduced by sharing the raw data and the c
 It covers a broad and growing range of oceanographic variables. Suggestions are always welcome, and adding your own steps
 is kept as simple as possible: see :doc:`Development<development>`.
 
-The tool is written in Python, but using it needs little Python. In most cases processing takes a few lines:
+The simplest way to use it needs is from the web interface:
+
+In a terminal run:
+.. code-block:: bash
+
+   pip install pelagos-py
+
+   pelagos-py dashboard
+
+From Python, processing in most cases takes a few lines:
 
 .. code-block:: python
 
