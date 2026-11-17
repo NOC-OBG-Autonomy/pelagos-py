@@ -53,9 +53,18 @@ The ``Pipeline`` class runs data through a sequence of modular steps. Each step 
 How to Run
 ----------
 
+**Launch the dashboard**
+
+The simplest way to run pelagos-py is from the dashboard, a local web page to build, check and run configs, with live
+logs and diagnostic plots. After installing, launch it with:
+
+.. code-block:: bash
+
+   pelagos-py dashboard   # opens http://localhost:8791
+
 **Initialisation**
 
-Import the ``Pipeline`` class and create a pipeline, either by letting pelagos-py build a config
+To use pelagos-py from Python, import the ``Pipeline`` class and create a pipeline, either by letting pelagos-py build a config
 for your OG1 file or from a config you already have:
 
 .. code-block:: python
