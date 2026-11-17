@@ -10,9 +10,8 @@ processing method can be shared and reproduced by sharing the raw data and the c
 It covers a broad and growing range of oceanographic variables. Suggestions are always welcome, and adding your own steps
 is kept as simple as possible: see :doc:`Development<development>`.
 
-The simplest way to use it needs is from the web interface:
+The simplest way to use it is from the web interface. In a terminal run:
 
-In a terminal run:
 .. code-block:: bash
 
    pip install pelagos-py
