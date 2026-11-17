@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <meta property="article:modified_time" content="2026-11-04T20:18:56+00:00" />
+    <meta property="article:modified_time" content="2026-11-17T05:38:32+00:00" />
     <title>pelagos-py documentation &#8212; pelagos-py</title>
   
   
@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="_static/documentation_options.js?v=292eb321"></script>
+    <script src="_static/documentation_options.js?v=3294188c"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -61,8 +61,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.0" />
-    <meta name="docbuild:last-update" content="Nov 04, 2026"/>
+  <meta name="docsearch:version" content="0.0" />
+    <meta name="docbuild:last-update" content="Nov 17, 2026"/>
   
     
     <script src="_static/searchtools.js"></script>
@@ -362,7 +362,7 @@
 <h1>pelagos-py documentation<a class="headerlink" href="#pelagos-py-documentation" title="Link to this heading">#</a></h1>
 <dl class="field-list simple">
 <dt class="field-odd">Version<span class="colon">:</span></dt>
-<dd class="field-odd"><p>1.0.1</p>
+<dd class="field-odd"><p>0.0.23</p>
 </dd>
 </dl>
 <p>pelagos-py, from the NOC (National Oceanography Centre) Autonomy group, is a modular processing pipeline for raw
@@ -370,7 +370,14 @@ OG1-format glider and ALR data that outputs science-ready datasets. You control 
 processing method can be shared and reproduced by sharing the raw data and the config.</p>
 <p>It covers a broad and growing range of oceanographic variables. Suggestions are always welcome, and adding your own steps
 is kept as simple as possible: see <a class="reference internal" href="development.html"><span class="doc">Development</span></a>.</p>
-<p>The tool is written in Python, but using it needs little Python. In most cases processing takes a few lines:</p>
+<p>The simplest way to use it needs is from the web interface:</p>
+<p>In a terminal run:
+.. code-block:: bash</p>
+<blockquote>
+<div><p>pip install pelagos-py</p>
+<p>pelagos-py dashboard</p>
+</div></blockquote>
+<p>From Python, processing in most cases takes a few lines:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><a class="sphinx-codeautolink-a" href="api/pelagos_py/index.html#module-pelagos_py"><span class="nn">pelagos_py</span></a><span class="w"> </span><span class="kn">import</span> <a class="sphinx-codeautolink-a" href="api/pelagos_py/pipeline/index.html#pelagos_py.pipeline.Pipeline" title="pelagos_py.pipeline.Pipeline"><span class="n">Pipeline</span></a>
 
 <span class="c1"># Create the pipeline using the specified config</span>

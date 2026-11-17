@@ -1085,7 +1085,7 @@
           "How to Run"
         ]
       },
-      "doc_lineno": 61
+      "doc_lineno": 70
     },
     {
       "source": "from pelagos_py import Pipeline, get_demo_file\n\npipeline = Pipeline.make_config(get_demo_file())",
@@ -1154,7 +1154,7 @@
           "How to Run"
         ]
       },
-      "doc_lineno": 77
+      "doc_lineno": 86
     },
     {
       "source": "pipeline.run()\ndata = pipeline.get_data()",
@@ -1167,7 +1167,7 @@
           "How to Run"
         ]
       },
-      "doc_lineno": 87
+      "doc_lineno": 96
     },
     {
       "source": "pipeline.export_config(\"exported_pipeline.yaml\")",
@@ -1180,7 +1180,7 @@
           "How to Run"
         ]
       },
-      "doc_lineno": 100
+      "doc_lineno": 109
     }
   ],
   "index": [
@@ -1240,7 +1240,7 @@
           "pelagos-py documentation"
         ]
       },
-      "doc_lineno": 15
+      "doc_lineno": 24
     }
   ],
   "quality_control": [],

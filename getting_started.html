@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <meta property="article:modified_time" content="2026-11-11T15:35:53+00:00" />
+    <meta property="article:modified_time" content="2026-11-17T05:38:32+00:00" />
     <title>Getting Started &#8212; pelagos-py</title>
   
   
@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="_static/documentation_options.js?v=292eb321"></script>
+    <script src="_static/documentation_options.js?v=3294188c"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -62,8 +62,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="1.0" />
-    <meta name="docbuild:last-update" content="Nov 11, 2026"/>
+  <meta name="docsearch:version" content="0.0" />
+    <meta name="docbuild:last-update" content="Nov 17, 2026"/>
   
     
     <script src="_static/searchtools.js"></script>
@@ -437,8 +437,14 @@ pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </s
 </section>
 <section id="how-to-run">
 <h2>How to Run<a class="headerlink" href="#how-to-run" title="Link to this heading">#</a></h2>
+<p><strong>Launch the dashboard</strong></p>
+<p>The simplest way to run pelagos-py is from the dashboard, a local web page to build, check and run configs, with live
+logs and diagnostic plots. After installing, launch it with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pelagos-py<span class="w"> </span>dashboard<span class="w">   </span><span class="c1"># opens http://localhost:8791</span>
+</pre></div>
+</div>
 <p><strong>Initialisation</strong></p>
-<p>Import the <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code> class and create a pipeline, either by letting pelagos-py build a config
+<p>To use pelagos-py from Python, import the <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code> class and create a pipeline, either by letting pelagos-py build a config
 for your OG1 file or from a config you already have:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><a class="sphinx-codeautolink-a" href="api/pelagos_py/index.html#module-pelagos_py"><span class="nn">pelagos_py</span></a><span class="w"> </span><span class="kn">import</span> <a class="sphinx-codeautolink-a" href="api/pelagos_py/pipeline/index.html#pelagos_py.pipeline.Pipeline" title="pelagos_py.pipeline.Pipeline"><span class="n">Pipeline</span></a>
 
